@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-anton: 'Anton';
+  --font-inter: 'Inter';
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-asphalt text-ink font-body antialiased;
+  }
+  ::selection {
+    @apply bg-signal text-asphalt;
+  }
+}
+
+@layer utilities {
+  /* Signature type treatment: heavy Anton, tight, uppercase — the brand voice */
+  .display-hero {
+    @apply font-display uppercase text-hero text-ink;
+  }
+  .display-section {
+    @apply font-display uppercase text-section text-ink;
+  }
+  .eyebrow {
+    @apply font-body uppercase text-eyebrow text-signal font-semibold;
+  }
+  /* Respect reduced motion — quality floor, not announced */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
