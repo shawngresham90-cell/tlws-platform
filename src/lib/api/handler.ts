@@ -40,7 +40,8 @@ export function guardedPost<S extends z.ZodTypeAny>(
       opts.rateLimitMax ?? 5,
       opts.rateLimitWindowMs ?? 60_000,
     );
-    if (!rl.allowed) return fail('Too many requests. Slow down and try again.', 429, 'rate_limited');
+    if (!rl.allowed)
+      return fail('Too many requests. Slow down and try again.', 429, 'rate_limited');
 
     let json: unknown;
     try {

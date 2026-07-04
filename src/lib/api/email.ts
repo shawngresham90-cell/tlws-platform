@@ -13,7 +13,9 @@ export type EmailPayload = {
   replyTo?: string;
 };
 
-export async function sendEmail(payload: EmailPayload): Promise<{ sent: boolean; dryRun: boolean }> {
+export async function sendEmail(
+  payload: EmailPayload,
+): Promise<{ sent: boolean; dryRun: boolean }> {
   const enabled = process.env.EMAIL_SENDING_ENABLED === 'true';
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;

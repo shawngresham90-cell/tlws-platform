@@ -18,9 +18,7 @@ export const applicationStep1Schema = z.object({
   last_name: name,
   email,
   phone,
-  start_timeframe: z
-    .enum(['asap', '30_days', '60_days', '90_plus', 'researching'])
-    .optional(),
+  start_timeframe: z.enum(['asap', '30_days', '60_days', '90_plus', 'researching']).optional(),
   utm,
   turnstileToken,
 });
