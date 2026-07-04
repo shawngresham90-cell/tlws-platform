@@ -1,30 +1,78 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
+import { SITE } from '@/lib/seo/site';
 
-/** Footer shell. "Keep the shiny side up." stays — it's the brand signoff. */
+const COLUMNS = [
+  {
+    heading: 'School',
+    links: [
+      { label: 'Academy', href: '/academy' },
+      { label: 'Founders Wall', href: '/founders' },
+      { label: 'Sponsors', href: '/sponsors' },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+  {
+    heading: 'Resources',
+    links: [
+      { label: 'Knowledge Center', href: '/knowledge' },
+      { label: 'DOT Guide', href: '/dot-guide' },
+      { label: 'Practice Tests', href: '/practice-tests' },
+      { label: 'Truck Parking', href: '/truck-parking' },
+    ],
+  },
+  {
+    heading: 'More',
+    links: [
+      { label: 'Books', href: '/books' },
+      { label: 'Apps', href: '/apps' },
+      { label: 'Directories', href: '/directories' },
+      { label: 'Videos', href: '/videos' },
+    ],
+  },
+];
+
 export function Footer() {
   return (
     <footer className="border-t border-line bg-asphalt-800">
-      <Container className="flex flex-col gap-4 py-10 sm:flex-row sm:items-center sm:justify-between">
+      <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-lg uppercase text-ink">
+          <p className="font-display text-xl uppercase text-ink">
             Trucking Life<span className="text-signal">.</span>
           </p>
-          <p className="mt-1 text-sm text-muted">Drivers helping drivers. Dalton, GA · off I-75.</p>
+          <p className="mt-2 max-w-xs text-sm text-muted">
+            {SITE.tagline} CDL-A training in {SITE.city}, {SITE.region}, off I-75.
+          </p>
+          <div className="mt-4 flex gap-4 text-sm text-muted">
+            <a href={SITE.social.youtube} className="hover:text-signal" rel="me">
+              YouTube
+            </a>
+            <a href={SITE.social.facebook} className="hover:text-signal" rel="me">
+              Facebook
+            </a>
+            <a href={SITE.social.tiktok} className="hover:text-signal" rel="me">
+              TikTok
+            </a>
+          </div>
         </div>
-        <div className="flex gap-6 text-sm text-muted">
-          <Link href="/academy" className="hover:text-signal">
-            Academy
-          </Link>
-          <Link href="/founders" className="hover:text-signal">
-            Founders Wall
-          </Link>
-          <Link href="/sponsors" className="hover:text-signal">
-            Sponsors
-          </Link>
-        </div>
+        {COLUMNS.map((col) => (
+          <nav key={col.heading} aria-label={col.heading}>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-signal">
+              {col.heading}
+            </p>
+            <ul className="space-y-2">
+              {col.links.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-sm text-muted hover:text-signal">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
       </Container>
-      <Container className="border-t border-line py-4">
+      <Container className="border-t border-line py-5">
         <p className="text-xs text-muted">
           © {new Date().getFullYear()} Trucking Life Academy LLC. Keep the shiny side up. 🚛
         </p>
