@@ -2,12 +2,10 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { JsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo/schema';
+import { buildMetadata } from '@/lib/seo/metadata';
 import './globals.css';
 
-/**
- * Self-hosted fonts — no build-time Google fetch, no external request at runtime.
- * Faster, privacy-friendly, and the build never depends on a third party being up.
- */
 const anton = localFont({
   src: '../../public/fonts/anton-400.woff2',
   weight: '400',
@@ -26,22 +24,26 @@ const inter = localFont({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Trucking Life Academy — CDL Training in Dalton, GA',
-    template: '%s · Trucking Life',
-  },
-  description:
-    'Drivers helping drivers. CDL-A training built by a 17-year driver with zero violations. Dalton, GA off I-75.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://truckinglifewithshawn.com'),
-};
+export const metadata: Metadata = buildMetadata();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${anton.variable} ${inter.variable}`}>
+      <head>
+        {/* Site-wide structured data — Organization, Person, WebSite */}
+        <JsonLd schema={[organizationSchema(), personSchema(), websiteSchema()]} />
+      </head>
       <body className="flex min-h-screen flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-card focus:bg-signal focus:px-4 focus:py-2 focus:font-semibold focus:text-asphalt"
+        >
+          Skip to content
+        </a>
         <Header />
-        <main className="flex-1">{children}</main>
+        <main id="main" className="flex-1">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
