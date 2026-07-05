@@ -16,6 +16,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE.url}/knowledge`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
   ];
 
+  // Academy module (Milestone 7) — static routes.
+  const academyPaths = [
+    '/academy',
+    '/academy/curriculum',
+    '/academy/requirements',
+    '/academy/financing',
+    '/academy/facility',
+    '/academy/instructors',
+    '/academy/faq',
+    '/academy/cdl-school-dalton-ga',
+  ];
+  for (const path of academyPaths) {
+    entries.push({
+      url: `${SITE.url}${path}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: path === '/academy' ? 0.9 : 0.7,
+    });
+  }
+
   try {
     const supabase = createStaticClient();
     const { data: cats } = await supabase
