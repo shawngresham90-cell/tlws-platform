@@ -1,11 +1,55 @@
 import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/seo/site';
+import { createStaticClient } from '@/lib/supabase/static';
 
 /**
- * Sitemap. Homepage now; future modules append their routes here as they ship.
- * Keeping it code-generated means new sections are one line, not a manual XML edit.
+ * Sitemap. Static routes + every Knowledge Center category and published article,
+ * pulled at build/revalidate. New KC content shows up automatically — no manual
+ * XML edits. Uses the cookieless client so it runs outside a request scope.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 3600;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  return [{ url: SITE.url, lastModified: now, changeFrequency: 'weekly', priority: 1 }];
+  const entries: MetadataRoute.Sitemap = [
+    { url: SITE.url, lastModified: now, changeFrequency: 'weekly', priority: 1 },
+    { url: `${SITE.url}/knowledge`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+  ];
+
+  try {
+    const supabase = createStaticClient();
+    const { data: cats } = await supabase
+      .from('kc_categories')
+      .select('slug')
+      .eq('is_active', true);
+    for (const c of cats ?? []) {
+      entries.push({
+        url: `${SITE.url}/knowledge/${(c as { slug: string }).slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
+    }
+    const { data: arts } = await supabase
+      .from('kc_articles')
+      .select('slug, updated_at, kc_categories!inner(slug)')
+      .eq('status', 'published');
+    for (const a of arts ?? []) {
+      const row = a as unknown as {
+        slug: string;
+        updated_at: string;
+        kc_categories: { slug: string };
+      };
+      entries.push({
+        url: `${SITE.url}/knowledge/${row.kc_categories.slug}/${row.slug}`,
+        lastModified: new Date(row.updated_at),
+        changeFrequency: 'monthly',
+        priority: 0.6,
+      });
+    }
+  } catch {
+    // If the DB is unreachable at build, still ship the static sitemap.
+  }
+
+  return entries;
 }

@@ -6,6 +6,9 @@ export function buildMetadata(opts?: {
   title?: string;
   description?: string;
   path?: string;
+  noindex?: boolean;
+  image?: string;
+  type?: 'website' | 'article';
 }): Metadata {
   const title = opts?.title ?? `${SITE.name} — CDL Training in ${SITE.city}, ${SITE.region}`;
   const description = opts?.description ?? SITE.description;
@@ -17,18 +20,20 @@ export function buildMetadata(opts?: {
     description,
     alternates: { canonical },
     openGraph: {
-      type: 'website',
+      type: opts?.type ?? 'website',
       url: canonical,
       siteName: SITE.name,
       title,
       description,
       locale: 'en_US',
+      images: opts?.image ? [{ url: opts.image }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: opts?.image ? [opts.image] : undefined,
     },
-    robots: { index: true, follow: true },
+    robots: opts?.noindex ? { index: false, follow: false } : { index: true, follow: true },
   };
 }
