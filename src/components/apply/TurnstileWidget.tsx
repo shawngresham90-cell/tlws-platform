@@ -121,11 +121,24 @@ export function TurnstileWidget({
           // user retry. Don't auto-reset here — a persistent error (e.g. blocked
           // network or a hostname not on the widget's allowlist) would loop.
           onTokenRef.current('');
+          const host = typeof window !== 'undefined' ? window.location.hostname : '';
           // eslint-disable-next-line no-console
-          console.error('[Turnstile] challenge error-callback', errorCode ?? '(no code)');
-          onErrorRef.current?.(
-            errorCode ? `${CHALLENGE_ERROR_MESSAGE} (error ${errorCode})` : CHALLENGE_ERROR_MESSAGE,
-          );
+          console.error('[Turnstile] challenge error-callback', {
+            errorCode: errorCode ?? '(no code)',
+            hostname: host,
+            sitekey: siteKey,
+          });
+          // 110200 = this hostname isn't on the widget's allowlist. Surface the
+          // exact host so it can be copied straight into the Cloudflare Turnstile
+          // domain list (Netlify mints a new deploy-preview-N host per PR).
+          const message =
+            errorCode === '110200'
+              ? `This page’s domain “${host}” isn’t on the verification widget’s allowlist. ` +
+                `Add it in Cloudflare Turnstile, or use the production URL. (error 110200)`
+              : errorCode
+                ? `${CHALLENGE_ERROR_MESSAGE} (error ${errorCode})`
+                : CHALLENGE_ERROR_MESSAGE;
+          onErrorRef.current?.(message);
         },
       });
     }
