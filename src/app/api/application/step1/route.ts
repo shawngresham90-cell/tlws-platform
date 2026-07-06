@@ -23,6 +23,8 @@ export const POST = guardedPost(
         last_name: data.last_name,
         email: data.email,
         phone: data.phone || null,
+        city: data.city,
+        state: data.state,
         start_timeframe: data.start_timeframe ?? null,
         utm: data.utm,
         status: 'new',

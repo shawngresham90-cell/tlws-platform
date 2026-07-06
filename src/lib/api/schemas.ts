@@ -9,16 +9,24 @@ const phone = z
   .optional()
   .or(z.literal(''));
 const name = z.string().trim().min(1).max(80);
+const city = z.string().trim().min(1, 'Enter your city.').max(80);
+const usState = z
+  .string()
+  .trim()
+  .regex(/^[A-Z]{2}$/, 'Select your state.');
+const startTimeframe = z.enum(['asap', '30_days', '60_days', '90_plus', 'researching']);
 const utm = z.record(z.string(), z.string()).optional().default({});
 const turnstileToken = z.string().min(1, 'Verification failed. Reload and try again.');
 
-// --- Application step 1: the low-friction hook (name + email + contact intent) ---
+// --- Application step 1: the low-friction hook (name + contact + location) ---
 export const applicationStep1Schema = z.object({
   first_name: name,
   last_name: name,
   email,
   phone,
-  start_timeframe: z.enum(['asap', '30_days', '60_days', '90_plus', 'researching']).optional(),
+  city,
+  state: usState,
+  start_timeframe: startTimeframe.optional(),
   utm,
   turnstileToken,
 });
@@ -27,7 +35,9 @@ export const applicationStep1Schema = z.object({
 export const applicationStep2Schema = z.object({
   application_id: z.string().uuid('Missing application reference.'),
   has_permit: z.boolean().optional(),
+  age_confirmed: z.boolean().optional(),
   cdl_class: z.enum(['A', 'B', 'none']).optional(),
+  start_timeframe: startTimeframe.optional(),
   funding_type: z.enum(['self', 'employer', 'wioa', 'va', 'sponsor', 'unsure']).optional(),
   sms_consent: z.boolean().default(false),
   sms_consent_text: z.string().max(500).optional(),
