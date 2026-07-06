@@ -35,7 +35,7 @@ declare global {
         opts: {
           sitekey: string;
           callback: (token: string) => void;
-          'error-callback'?: () => void;
+          'error-callback'?: (errorCode?: string) => void;
           'expired-callback'?: () => void;
           theme?: 'light' | 'dark' | 'auto';
         },
@@ -53,7 +53,8 @@ const CONFIG_ERROR_MESSAGE =
   'Please try again shortly, or contact us directly and we’ll get your application in.';
 
 const CHALLENGE_ERROR_MESSAGE =
-  'Verification didn’t go through. Complete the challenge again to continue.';
+  'Verification couldn’t load. Reload the page — and if it keeps happening, turn off any ' +
+  'ad or privacy blocker for this site, or try another browser.';
 
 export function TurnstileWidget({
   siteKey,
@@ -115,11 +116,16 @@ export function TurnstileWidget({
           onTokenRef.current('');
           if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
         },
-        'error-callback': () => {
-          // Make the failure visible and let the user retry. Don't auto-reset
-          // here — a persistent error (e.g. blocked network) would loop.
+        'error-callback': (errorCode?: string) => {
+          // Make the failure visible (with Cloudflare's error code) and let the
+          // user retry. Don't auto-reset here — a persistent error (e.g. blocked
+          // network or a hostname not on the widget's allowlist) would loop.
           onTokenRef.current('');
-          onErrorRef.current?.(CHALLENGE_ERROR_MESSAGE);
+          // eslint-disable-next-line no-console
+          console.error('[Turnstile] challenge error-callback', errorCode ?? '(no code)');
+          onErrorRef.current?.(
+            errorCode ? `${CHALLENGE_ERROR_MESSAGE} (error ${errorCode})` : CHALLENGE_ERROR_MESSAGE,
+          );
         },
       });
     }
