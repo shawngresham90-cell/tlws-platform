@@ -13,12 +13,13 @@ export const metadata = buildMetadata({
 
 /**
  * /academy/apply — the Student Application System entry point (Milestone 8).
- * Server component: reads the (non-secret) Turnstile site key from env and
- * hands it to the client form. The form posts to the existing guarded API
- * routes /api/application/step1 and /api/application/step2.
+ * Reads the public Turnstile site key (NEXT_PUBLIC_*, so it's inlined into the
+ * client bundle at build time) and hands it to the client form. The form posts
+ * to the existing guarded API routes /api/application/step1 and
+ * /api/application/step2, which verify the token with TURNSTILE_SECRET_KEY.
  */
 export default function ApplyPage() {
-  const siteKey = process.env.TURNSTILE_SITE_KEY ?? '';
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   return (
     <>
