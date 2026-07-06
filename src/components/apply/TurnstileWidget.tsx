@@ -6,17 +6,26 @@ import { useEffect, useRef } from 'react';
  * Cloudflare Turnstile widget. Renders the challenge and hands the resulting
  * token back via `onToken`.
  *
+ * Token lifecycle matters here: a solved Turnstile token is only valid for a
+ * few minutes, and in "managed" mode the widget often solves automatically on
+ * load. If the token then lapses while the user is still filling the form, the
+ * widget must recover — otherwise the form is stuck on "please complete the
+ * verification challenge" even though the widget visibly solved. So:
+ *   - expired-callback: clear the token AND reset the widget so a fresh token
+ *     arrives automatically (Cloudflare's recommended handling), instead of
+ *     stranding the user as "unverified".
+ *   - error-callback: clear the token and surface a clear message via `onError`
+ *     so the failure is visible rather than looking like a silent no-op.
+ * Callbacks are held in refs so the widget initializes exactly once per site
+ * key and its long-lived Turnstile callbacks never capture stale state.
+ *
  * Missing-site-key behavior is environment-aware:
  *   - Local dev (`next dev`, NODE_ENV !== 'production'): renders nothing and
  *     supplies a dev sentinel token so the form isn't blocked before Cloudflare
- *     is wired. The server's verifyTurnstile() also skips verification when its
- *     secret is unset, so the flow works end-to-end locally.
- *   - Production builds (this includes Netlify deploy previews — `next build`
- *     sets NODE_ENV=production): a missing site key is a real misconfiguration.
- *     Emitting a sentinel here would send a fake token that siteverify rejects,
- *     surfacing as a bogus "Verification failed" that looks like a Cloudflare
- *     problem. Instead we render a clear configuration error, report it to the
- *     parent via `onError`, and keep the token empty so submission is blocked.
+ *     is wired.
+ *   - Production builds (incl. Netlify deploy previews): a missing site key is a
+ *     real misconfiguration — render a clear config error, report it via
+ *     `onError`, and keep the token empty so submission stays blocked.
  */
 declare global {
   interface Window {
@@ -32,6 +41,7 @@ declare global {
         },
       ) => string;
       reset: (id?: string) => void;
+      remove: (id?: string) => void;
     };
   }
 }
@@ -41,6 +51,9 @@ const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 const CONFIG_ERROR_MESSAGE =
   'Verification is temporarily unavailable due to a configuration issue on our end. ' +
   'Please try again shortly, or contact us directly and we’ll get your application in.';
+
+const CHALLENGE_ERROR_MESSAGE =
+  'Verification didn’t go through. Complete the challenge again to continue.';
 
 export function TurnstileWidget({
   siteKey,
@@ -53,6 +66,15 @@ export function TurnstileWidget({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
+
+  // Hold the latest callbacks in refs so the render effect can run exactly once
+  // per site key. The Turnstile widget outlives many parent re-renders; reading
+  // callbacks through refs keeps them current without re-initializing the widget
+  // and without capturing a stale `onToken`.
+  const onTokenRef = useRef(onToken);
+  const onErrorRef = useRef(onError);
+  onTokenRef.current = onToken;
+  onErrorRef.current = onError;
 
   // A missing site key in a production build is a real misconfiguration, not a
   // dev convenience — surface the error instead of faking a token.
@@ -69,26 +91,36 @@ export function TurnstileWidget({
             'The verification widget cannot render and the application form is blocked. ' +
             'Set the env var (Builds scope + the correct deploy context) and rebuild.',
         );
-        onToken('');
-        onError?.(CONFIG_ERROR_MESSAGE);
+        onTokenRef.current('');
+        onErrorRef.current?.(CONFIG_ERROR_MESSAGE);
         return;
       }
       // Local dev only: unblock the form with a sentinel token.
-      onToken('dev-no-turnstile');
+      onTokenRef.current('dev-no-turnstile');
       return;
     }
 
     let cancelled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     function renderWidget() {
-      if (cancelled || !ref.current || !window.turnstile) return;
-      if (widgetId.current) return; // already rendered
+      if (cancelled || !ref.current || !window.turnstile || widgetId.current) return;
       widgetId.current = window.turnstile.render(ref.current, {
         sitekey: siteKey,
         theme: 'dark',
-        callback: (token) => onToken(token),
-        'expired-callback': () => onToken(''),
-        'error-callback': () => onToken(''),
+        callback: (token: string) => onTokenRef.current(token),
+        'expired-callback': () => {
+          // Token lapsed before submit — drop it and re-run the challenge so a
+          // fresh token arrives automatically. Do NOT leave the form stuck.
+          onTokenRef.current('');
+          if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
+        },
+        'error-callback': () => {
+          // Make the failure visible and let the user retry. Don't auto-reset
+          // here — a persistent error (e.g. blocked network) would loop.
+          onTokenRef.current('');
+          onErrorRef.current?.(CHALLENGE_ERROR_MESSAGE);
+        },
       });
     }
 
@@ -103,19 +135,27 @@ export function TurnstileWidget({
       document.head.appendChild(script);
     } else {
       // Script tag exists but not ready yet — poll briefly for the global.
-      const t = setInterval(() => {
+      pollTimer = setInterval(() => {
         if (window.turnstile) {
-          clearInterval(t);
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = null;
           renderWidget();
         }
       }, 200);
-      return () => clearInterval(t);
     }
 
     return () => {
       cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      // Tear down the widget on unmount so navigating away and back (e.g. the
+      // apply form's step 1 → 2 → back) never strands a dead iframe or a token
+      // tied to a widget that no longer exists.
+      if (widgetId.current && window.turnstile) {
+        window.turnstile.remove(widgetId.current);
+        widgetId.current = null;
+      }
     };
-  }, [siteKey, onToken, onError]);
+  }, [siteKey]);
 
   if (misconfigured) {
     return (
