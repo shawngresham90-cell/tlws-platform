@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/academy/instructors',
     '/academy/faq',
     '/academy/cdl-school-dalton-ga',
+    '/academy/apply',
   ];
   for (const path of academyPaths) {
     entries.push({

@@ -19,10 +19,14 @@ export const POST = guardedPost(
 
     const update: Record<string, unknown> = {
       has_permit: data.has_permit ?? null,
+      age_confirmed: data.age_confirmed ?? null,
       cdl_class: data.cdl_class ?? null,
       funding_type: data.funding_type ?? null,
       step2_completed: true,
     };
+
+    // Only set the timeframe if this step supplied one — don't clobber step 1.
+    if (data.start_timeframe) update.start_timeframe = data.start_timeframe;
 
     if (data.sms_consent) {
       update.sms_consent = true;
