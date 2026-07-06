@@ -124,6 +124,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [token, setToken] = useState('');
+  const [turnstileError, setTurnstileError] = useState('');
   const [appId, setAppId] = useState('');
 
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -175,7 +176,9 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
       return;
     }
     if (!token) {
-      setFormError('Please complete the verification challenge before continuing.');
+      setFormError(
+        turnstileError || 'Please complete the verification challenge before continuing.',
+      );
       return;
     }
     setSubmitting(true);
@@ -369,7 +372,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
           </div>
 
           <div className="mt-6">
-            <TurnstileWidget siteKey={siteKey} onToken={setToken} />
+            <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
           </div>
 
           <div className="mt-8">
