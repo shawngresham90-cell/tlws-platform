@@ -18,7 +18,7 @@ const COLUMNS = [
       { label: 'Knowledge Center', href: '/knowledge' },
       { label: 'DOT Guide', href: '/dot-guide' },
       { label: 'Practice Tests', href: '/practice-tests' },
-      { label: 'Truck Parking', href: '/truck-parking' },
+      { label: 'Truck Parking', href: '/directory/parking' },
     ],
   },
   {
@@ -26,7 +26,7 @@ const COLUMNS = [
     links: [
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
-      { label: 'Directories', href: '/directories' },
+      { label: 'Directories', href: '/directory' },
       { label: 'Videos', href: '/videos' },
     ],
   },
