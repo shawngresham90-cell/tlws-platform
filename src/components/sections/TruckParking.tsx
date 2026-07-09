@@ -11,7 +11,7 @@ export function TruckParking() {
           Finding safe, legal overnight parking shouldn&apos;t cost you an hour of drive time.
           Reserve a guaranteed spot ahead and park without the stress.
         </p>
-        <Button href="/truck-parking">Find parking</Button>
+        <Button href="/directory/parking">Find parking</Button>
       </div>
     </Section>
   );
