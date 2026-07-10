@@ -1,8 +1,9 @@
 name: Production health check
 
 # Curls the homepage and every public directory route on production and
-# fails if any returns a non-200. Dispatch manually from the Actions tab
-# (or via API) for a 30-second smoke test of the live site.
+# fails if any returns a non-200, then asserts a sample of published
+# listings render on their category pages (and unpublished ones don't).
+# Dispatch manually from the Actions tab for a 30-second smoke test.
 on:
   workflow_dispatch:
 
@@ -32,4 +33,31 @@ jobs:
             echo "$code $BASE$route"
             if [ "$code" != "200" ]; then fail=1; fi
           done
+          exit $fail
+
+      - name: Check published listings render (and unpublished don't)
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          fail=0
+          expect() { # route, string that MUST appear
+            if curl -s --max-time 30 "$BASE$1" | grep -qF "$2"; then
+              echo "OK   $1 contains \"$2\""
+            else
+              echo "FAIL $1 missing \"$2\""; fail=1
+            fi
+          }
+          absent() { # route, string that must NOT appear
+            if curl -s --max-time 30 "$BASE$1" | grep -qF "$2"; then
+              echo "FAIL $1 shows unpublished \"$2\""; fail=1
+            else
+              echo "OK   $1 hides \"$2\""
+            fi
+          }
+          expect /directory/cat-scales "Pilot Travel Center #4558"
+          expect /directory/hotels-truck-parking "Days Inn"
+          expect /directory/tire-repair "BestDrive"
+          expect /directory/truck-stops "Adel Truck Plaza"
+          expect /directory/roadside-service "24/7 Diesel"
+          absent /directory/truck-stops "Pathway Travel Plaza"
+          absent /directory/truck-stops "A-1 Truck Stop"
           exit $fail
