@@ -2,9 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Refreshes the Supabase session on every request and gates /admin.
- * Anonymous users hitting /admin are bounced to /login before any admin
- * code runs. Role-level checks happen again server-side in the admin layout.
+ * Refreshes the Supabase session cookie on every request (keeps the /login and
+ * /auth flow's tokens fresh). It does NOT gate /admin: the admin dashboard is
+ * protected by the env-var gate in its own layout (src/lib/admin/auth.ts), so
+ * the middleware must let /admin and /admin/login through untouched.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -28,29 +29,9 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: getUser() revalidates the token with Supabase — do not trust getSession alone.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-  const isAdminPath = path.startsWith('/admin');
-  const isLoginPath = path === '/login';
-
-  if (isAdminPath && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', path);
-    return NextResponse.redirect(url);
-  }
-
-  // Already signed in and visiting /login → send to admin.
-  if (isLoginPath && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin';
-    url.search = '';
-    return NextResponse.redirect(url);
-  }
+  // Revalidate/refresh the Supabase session (side effect: refreshed auth
+  // cookies via setAll). /admin is intentionally not gated here.
+  await supabase.auth.getUser();
 
   return response;
 }
