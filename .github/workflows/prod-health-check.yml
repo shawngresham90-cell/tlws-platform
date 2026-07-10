@@ -3,9 +3,20 @@ name: Production health check
 # Curls the homepage and every public directory route on production and
 # fails if any returns a non-200, then asserts a sample of published
 # listings render on their category pages (and unpublished ones don't).
-# Dispatch manually from the Actions tab for a 30-second smoke test.
+# Optional dispatch inputs add per-run assertions (one "route|string" per
+# line) checked with retries, so staged imports can be verified without
+# editing this file. Dispatch from the Actions tab for a 30-second smoke test.
 on:
   workflow_dispatch:
+    inputs:
+      expect:
+        description: 'Extra MUST-CONTAIN checks, one "/route|text" per line'
+        required: false
+        default: ''
+      absent:
+        description: 'Extra MUST-NOT-CONTAIN checks, one "/route|text" per line'
+        required: false
+        default: ''
 
 jobs:
   check:
@@ -39,14 +50,14 @@ jobs:
         run: |
           BASE="https://truckinglifewithshawn.com"
           fail=0
-          expect() { # route, string that MUST appear
+          expect() {
             if curl -s --max-time 30 "$BASE$1" | grep -qF "$2"; then
               echo "OK   $1 contains \"$2\""
             else
               echo "FAIL $1 missing \"$2\""; fail=1
             fi
           }
-          absent() { # route, string that must NOT appear
+          absent() {
             if curl -s --max-time 30 "$BASE$1" | grep -qF "$2"; then
               echo "FAIL $1 shows unpublished \"$2\""; fail=1
             else
@@ -68,3 +79,40 @@ jobs:
           absent /directory/truck-stops "America&#x27;s Truck Stop"
           absent /directory/truck-washes "S &amp; B Truck Wash"
           exit $fail
+
+      - name: Per-run assertions (dispatch inputs, ISR-aware retries)
+        if: ${{ github.event.inputs.expect != '' || github.event.inputs.absent != '' }}
+        env:
+          EXPECT: ${{ github.event.inputs.expect }}
+          ABSENT: ${{ github.event.inputs.absent }}
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          check_all() {
+            local fail=0
+            while IFS='|' read -r route text; do
+              [ -z "$route" ] && continue
+              if curl -s --max-time 30 "$BASE$route" | grep -qF "$text"; then
+                echo "OK   $route contains \"$text\""
+              else
+                echo "MISS $route missing \"$text\""; fail=1
+              fi
+            done <<< "$EXPECT"
+            while IFS='|' read -r route text; do
+              [ -z "$route" ] && continue
+              if curl -s --max-time 30 "$BASE$route" | grep -qF "$text"; then
+                echo "SHOW $route shows \"$text\" (must be hidden)"; fail=1
+              else
+                echo "OK   $route hides \"$text\""
+              fi
+            done <<< "$ABSENT"
+            return $fail
+          }
+          # ISR pages refresh on demand (5-min TTL): retry so a stale first
+          # response doesn't fail a check that passes once regenerated.
+          for attempt in 1 2 3 4; do
+            echo "--- attempt $attempt ---"
+            if check_all; then exit 0; fi
+            [ "$attempt" != "4" ] && sleep 45
+          done
+          echo "Assertions still failing after 4 attempts."
+          exit 1
