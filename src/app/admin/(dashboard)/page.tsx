@@ -10,6 +10,7 @@ export default async function AdminOverviewPage() {
   const counts = await getCounts();
 
   const cards = [
+    { href: '/admin/directory', label: 'Directory listings', n: counts.directory },
     { href: '/admin/applications', label: 'Applications', n: counts.applications },
     { href: '/admin/founders', label: 'Founders', n: counts.founders },
     { href: '/admin/sponsors', label: 'Sponsors', n: counts.sponsors },
@@ -22,7 +23,7 @@ export default async function AdminOverviewPage() {
         Trucking Life Academy — applications, founders, and sponsors.
       </p>
 
-      <div className="grid gap-5 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <Link
             key={c.href}

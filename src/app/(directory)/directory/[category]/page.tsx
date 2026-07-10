@@ -5,6 +5,7 @@ import { Section } from '@/components/ui';
 import { DirectoryHero, DirectoryBrowser } from '@/components/directory';
 import { ENGINE_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import { getEntries } from '@/lib/directory/data';
+import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -16,6 +17,10 @@ import { buildMetadata } from '@/lib/seo/metadata';
  * later = one registry entry; this page, its SEO, search, and filters come free.
  */
 export const dynamicParams = false;
+
+// Listings come from the database now (Milestone 12) — refresh periodically
+// in addition to the on-save revalidation the admin actions trigger.
+export const revalidate = 300;
 
 export function generateStaticParams() {
   return ENGINE_CATEGORIES.map((c) => ({ category: c.slug }));
@@ -36,15 +41,24 @@ export default async function DirectoryCategoryPage({ params }: { params: { cate
   if (!category || category.customHref) notFound();
 
   const entries = await getEntries(category.slug);
+  const listings = listingListSchema(
+    entries,
+    category.slug,
+    category.title,
+    `/directory/${category.slug}`,
+  );
 
   return (
     <>
       <JsonLd
-        schema={breadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Directory', path: '/directory' },
-          { name: category.title, path: `/directory/${category.slug}` },
-        ])}
+        schema={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Directory', path: '/directory' },
+            { name: category.title, path: `/directory/${category.slug}` },
+          ]),
+          ...(listings ? [listings] : []),
+        ]}
       />
 
       <DirectoryHero
