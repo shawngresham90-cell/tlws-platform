@@ -2,6 +2,9 @@ import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/seo/site';
 import { createStaticClient } from '@/lib/supabase/static';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
+import { getDirectoryFacets } from '@/lib/directory/data';
+import { stateByCode } from '@/lib/directory/states';
+import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -54,6 +57,42 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
       priority: 0.7,
     });
+  }
+
+  // State pages, interstate corridors, and exit pages come from the published
+  // data itself — a new state's import adds its URLs on the next revalidation.
+  try {
+    const facets = await getDirectoryFacets();
+    for (const code of facets.states) {
+      const state = stateByCode(code);
+      if (!state) continue;
+      entries.push({
+        url: `${SITE.url}/directory/${state.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
+    }
+    for (const designation of facets.interstates) {
+      const slug = interstateSlug(designation);
+      if (!slug) continue;
+      entries.push({
+        url: `${SITE.url}/directory/${slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
+      for (const exit of facets.exitsByInterstate[designation] ?? []) {
+        entries.push({
+          url: `${SITE.url}/directory/${slug}/${exitSlug(exit)}`,
+          lastModified: now,
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        });
+      }
+    }
+  } catch {
+    // Directory facet URLs are additive — a DB hiccup still ships the rest.
   }
 
   try {
