@@ -60,8 +60,11 @@ jobs:
           expect /directory/truck-stops "Big Foot Travel Center"
           expect /directory/truck-stops "TA Lake Park"
           expect /directory/roadside-service "24/7 Diesel"
+          expect /directory/truck-washes "Blue Beacon"
+          expect /directory/weigh-stations "Georgia DPS Weigh Station"
           absent /directory/truck-stops "Pathway Travel Plaza"
           absent /directory/truck-stops "A-1 Truck Stop"
           absent /directory/truck-stops "JP Truck Center"
           absent /directory/truck-stops "America&#x27;s Truck Stop"
+          absent /directory/truck-washes "S &amp; B Truck Wash"
           exit $fail
