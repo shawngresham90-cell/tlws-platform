@@ -1,6 +1,10 @@
+import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { CategoryCardGrid } from '@/components/directory';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
+import { getDirectoryFacets } from '@/lib/directory/data';
+import { stateByCode } from '@/lib/directory/states';
+import { interstateSlug } from '@/lib/directory/interstates';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
@@ -20,7 +24,28 @@ export const metadata = buildMetadata({
  * link to real pages now: Truck Parking to its foundation page, the rest to
  * the shared Directory Engine page.
  */
-export default function DirectoryPage() {
+// Refresh the browse-by-state / browse-by-interstate blocks as data grows.
+export const revalidate = 300;
+
+const browseChip =
+  'rounded-card border border-line bg-asphalt-800 px-4 py-2 text-sm font-semibold text-ink ' +
+  'transition-colors hover:border-signal hover:text-signal';
+
+export default async function DirectoryPage() {
+  // States and corridors listed here come straight from the published data —
+  // importing a new state's batch adds its links automatically.
+  const facets = await getDirectoryFacets();
+  const states = facets.states
+    .map((code) => ({ state: stateByCode(code), count: facets.countsByState[code] ?? 0 }))
+    .filter((s): s is { state: NonNullable<typeof s.state>; count: number } => Boolean(s.state));
+  const interstates = facets.interstates
+    .map((designation) => ({
+      designation,
+      slug: interstateSlug(designation),
+      count: facets.countsByInterstate[designation] ?? 0,
+    }))
+    .filter((i): i is { designation: string; slug: string; count: number } => Boolean(i.slug));
+
   return (
     <>
       <JsonLd
@@ -57,6 +82,41 @@ export default function DirectoryPage() {
         <div className="mt-10">
           <CategoryCardGrid categories={DIRECTORY_CATEGORIES} />
         </div>
+
+        {(states.length > 0 || interstates.length > 0) && (
+          <div className="mt-14 grid gap-10 lg:grid-cols-2">
+            {states.length > 0 && (
+              <div>
+                <h2 className="font-display text-2xl uppercase text-ink">Browse by state</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Every state with verified locations — more loading state by state.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {states.map(({ state, count }) => (
+                    <Link key={state.code} href={`/directory/${state.slug}`} className={browseChip}>
+                      {state.name} ({count})
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            {interstates.length > 0 && (
+              <div>
+                <h2 className="font-display text-2xl uppercase text-ink">Browse by interstate</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Whole corridors, organized by state and exit.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {interstates.map(({ designation, slug, count }) => (
+                    <Link key={slug} href={`/directory/${slug}`} className={browseChip}>
+                      {designation} ({count})
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Section>
     </>
   );

@@ -72,7 +72,7 @@ const PARKING_TYPES: ParkingType[] = [
 
 export default async function TruckParkingPage() {
   const entries = await getEntries('parking');
-  const listings = listingListSchema(entries, 'parking', 'Truck Parking', '/directory/parking');
+  const listings = listingListSchema(entries, 'Truck Parking', '/directory/parking');
 
   return (
     <>

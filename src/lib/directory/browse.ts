@@ -1,4 +1,5 @@
 import type { DirectoryEntry } from './types';
+import { getCategory } from './categories';
 
 /**
  * Public directory search + sort, extracted from the browser component so it
@@ -32,7 +33,21 @@ export function distanceMiles(
 }
 
 function haystack(e: DirectoryEntry): string {
-  return [e.name, e.city, e.state, e.zip, e.interstate, e.exitNumber, e.description]
+  // Business name (which carries the brand: Pilot, Love's, TA…), location
+  // fields, exit/interstate, category title, and amenity labels — one string,
+  // so "showers exit 201" or "cat scale knoxville" both just work.
+  return [
+    e.name,
+    e.city,
+    e.state,
+    e.zip,
+    e.interstate,
+    e.exitNumber,
+    e.exitNumber ? `exit ${e.exitNumber}` : undefined,
+    getCategory(e.category)?.title,
+    ...(e.amenities ?? []),
+    e.description,
+  ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();

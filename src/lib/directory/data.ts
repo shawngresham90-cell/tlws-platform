@@ -91,15 +91,17 @@ const COLUMNS =
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
   'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at';
 
-export async function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
+/** Shared query base: published, not deleted, capped, featured-then-name order. */
+async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {
   try {
     const supabase = createStaticClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from('locations')
       .select(COLUMNS)
-      .eq('category_slug', categorySlug)
       .eq('is_published', true)
-      .is('deleted_at', null)
+      .is('deleted_at', null);
+    for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
+    const { data, error } = await query
       .order('is_featured', { ascending: false })
       .order('name', { ascending: true })
       .limit(1000);
@@ -107,6 +109,103 @@ export async function getEntries(categorySlug: string): Promise<DirectoryEntry[]
     return (data as unknown as LocationRow[]).map(toEntry);
   } catch {
     return [];
+  }
+}
+
+export function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
+  return selectEntries({ category_slug: categorySlug });
+}
+
+/** All published listings in a state (two-letter code), for state pages. */
+export function getEntriesByState(stateCode: string): Promise<DirectoryEntry[]> {
+  return selectEntries({ state: stateCode.toUpperCase() });
+}
+
+/** All published listings on an interstate ("I-75"), for corridor pages. */
+export function getEntriesByInterstate(designation: string): Promise<DirectoryEntry[]> {
+  return selectEntries({ interstate: designation });
+}
+
+/** Published listings at one interstate exit, for exit pages. */
+export function getEntriesByExit(
+  designation: string,
+  exitNumber: string,
+): Promise<DirectoryEntry[]> {
+  return selectEntries({ interstate: designation, exit_number: exitNumber });
+}
+
+export type DirectoryFacets = {
+  /** Two-letter codes of states that have at least one published listing. */
+  states: string[];
+  /** Interstate designations ("I-75") with at least one published listing. */
+  interstates: string[];
+  /** exit_number values per interstate that have at least one published listing. */
+  exitsByInterstate: Record<string, string[]>;
+  /** Published-listing counts per state code. */
+  countsByState: Record<string, number>;
+  /** Published-listing counts per interstate designation. */
+  countsByInterstate: Record<string, number>;
+};
+
+const EMPTY_FACETS: DirectoryFacets = {
+  states: [],
+  interstates: [],
+  exitsByInterstate: {},
+  countsByState: {},
+  countsByInterstate: {},
+};
+
+/**
+ * Distinct states / interstates / exits present among published listings —
+ * drives generateStaticParams, the sitemap, and the hub's browse blocks, so
+ * new states and corridors appear everywhere the moment their data lands.
+ * Fails soft to empty facets (pages then render on demand instead).
+ */
+export async function getDirectoryFacets(): Promise<DirectoryFacets> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select('state, interstate, exit_number')
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .limit(5000);
+    if (error || !data) return EMPTY_FACETS;
+    const rows = data as unknown as {
+      state: string;
+      interstate: string | null;
+      exit_number: string | null;
+    }[];
+    const states = new Map<string, number>();
+    const interstates = new Map<string, number>();
+    const exits = new Map<string, Set<string>>();
+    for (const r of rows) {
+      const state = r.state?.trim().toUpperCase();
+      if (state) states.set(state, (states.get(state) ?? 0) + 1);
+      const hwy = r.interstate?.trim();
+      if (hwy) {
+        interstates.set(hwy, (interstates.get(hwy) ?? 0) + 1);
+        const exit = r.exit_number?.trim();
+        if (exit) {
+          if (!exits.has(hwy)) exits.set(hwy, new Set());
+          exits.get(hwy)!.add(exit);
+        }
+      }
+    }
+    return {
+      states: [...states.keys()].sort(),
+      interstates: [...interstates.keys()].sort(),
+      exitsByInterstate: Object.fromEntries(
+        [...exits.entries()].map(([hwy, set]) => [
+          hwy,
+          [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+        ]),
+      ),
+      countsByState: Object.fromEntries(states),
+      countsByInterstate: Object.fromEntries(interstates),
+    };
+  } catch {
+    return EMPTY_FACETS;
   }
 }
 

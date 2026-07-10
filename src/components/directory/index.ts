@@ -3,3 +3,4 @@ export { CategoryCardGrid } from './CategoryCardGrid';
 export { DirectoryBrowser } from './DirectoryBrowser';
 export { EntryCard } from './EntryCard';
 export { DirectoryEmptyState } from './DirectoryEmptyState';
+export { MultiCategoryBrowser } from './MultiCategoryBrowser';
