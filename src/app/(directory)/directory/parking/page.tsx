@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
+import { DirectoryBrowser } from '@/components/directory';
+import { getEntries } from '@/lib/directory/data';
+import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+
+// Listings come from the database now (Milestone 12) — refresh periodically
+// in addition to the on-save revalidation the admin actions trigger.
+export const revalidate = 300;
 
 export const metadata = buildMetadata({
   title: 'Truck Parking Directory — Free, Paid & Reserved Parking | Trucking Life with Shawn',
@@ -63,15 +70,21 @@ const PARKING_TYPES: ParkingType[] = [
   },
 ];
 
-export default function TruckParkingPage() {
+export default async function TruckParkingPage() {
+  const entries = await getEntries('parking');
+  const listings = listingListSchema(entries, 'parking', 'Truck Parking', '/directory/parking');
+
   return (
     <>
       <JsonLd
-        schema={breadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Directory', path: '/directory' },
-          { name: 'Truck Parking', path: '/directory/parking' },
-        ])}
+        schema={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Directory', path: '/directory' },
+            { name: 'Truck Parking', path: '/directory/parking' },
+          ]),
+          ...(listings ? [listings] : []),
+        ]}
       />
 
       {/* Hero */}
@@ -147,8 +160,21 @@ export default function TruckParkingPage() {
         </div>
       </Section>
 
+      {/* Live listings — published rows from the directory database */}
+      <Section id="listings" className="border-b border-line bg-asphalt-800">
+        <div className="mb-8 max-w-2xl">
+          <Eyebrow>Browse parking</Eyebrow>
+          <h2 className="display-section">Find a spot</h2>
+          <p className="mt-4 text-muted">
+            Every published parking location in the directory — search by name or filter by state
+            and city. Verified locations are being loaded state by state.
+          </p>
+        </div>
+        <DirectoryBrowser categoryTitle="Truck Parking" entries={entries} />
+      </Section>
+
       {/* Back to hub */}
-      <Section className="border-b border-line bg-asphalt-800">
+      <Section className="border-b border-line">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-2xl uppercase text-ink">More from the directory</h2>

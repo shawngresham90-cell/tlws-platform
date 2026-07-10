@@ -7,6 +7,11 @@ import type { DirectoryEntry } from '@/lib/directory/types';
 export function EntryCard({ entry }: { entry: DirectoryEntry }) {
   return (
     <div className="flex flex-col rounded-card border border-line bg-asphalt-800 p-5">
+      {entry.featured && (
+        <span className="mb-2 self-start rounded-card bg-signal px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-asphalt">
+          Featured
+        </span>
+      )}
       <h3 className="font-display text-lg uppercase text-ink">{entry.name}</h3>
       <p className="mt-1 text-sm text-muted">
         {entry.city}, {entry.state}
@@ -49,6 +54,16 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
             </a>
           )}
         </div>
+      )}
+      {entry.tpcUrl && (
+        <a
+          href={entry.tpcUrl}
+          target="_blank"
+          rel="noopener sponsored"
+          className="mt-4 inline-flex items-center justify-center rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
+        >
+          Reserve a spot →
+        </a>
       )}
     </div>
   );

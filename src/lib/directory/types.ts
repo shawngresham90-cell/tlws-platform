@@ -24,6 +24,13 @@ export type DirectoryEntry = {
   amenities?: string[];
   parkingSpaces?: number;
   description?: string;
+  /** Validated https URL to reserve this spot on TruckParkingClub (affiliate). */
+  tpcUrl?: string;
+  featured?: boolean;
+  /** Complete enough for SEO surfaces (schema, indexing). Set in the admin. */
+  indexable?: boolean;
+  lat?: number;
+  lng?: number;
 };
 
 export type DirectoryCategory = {

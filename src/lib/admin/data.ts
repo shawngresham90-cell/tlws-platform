@@ -79,19 +79,25 @@ export async function getCounts(): Promise<{
   applications: number;
   founders: number;
   sponsors: number;
+  directory: number;
 }> {
-  const zero = { applications: 0, founders: 0, sponsors: 0 };
+  const zero = { applications: 0, founders: 0, sponsors: 0, directory: 0 };
   try {
     const supabase = createAdminClient();
-    const [a, f, s] = await Promise.all([
+    const [a, f, s, d] = await Promise.all([
       supabase.from('applications').select('id', { count: 'exact', head: true }),
       supabase.from('founders').select('id', { count: 'exact', head: true }),
       supabase.from('sponsors').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('locations')
+        .select('id', { count: 'exact', head: true })
+        .is('deleted_at', null),
     ]);
     return {
       applications: a.count ?? 0,
       founders: f.count ?? 0,
       sponsors: s.count ?? 0,
+      directory: d.count ?? 0,
     };
   } catch {
     return zero;
