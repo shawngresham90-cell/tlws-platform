@@ -5,8 +5,8 @@ No field was invented: anything a source did not state is blank in the CSV.
 Research method: web search + public directory/brand-site cross-checks per location;
 each corridor segment was researched independently and cross-referenced.
 
-- Records in CSV: **79**
-- Records researched but excluded: **1** (see end of file)
+- Records in CSV: **78**
+- Records researched but excluded: **2** (see end of file)
 
 ## CAT Scales
 
@@ -452,7 +452,8 @@ each corridor segment was researched independently and cross-referenced.
 ### A-1 Truck Stop — Ashburn, GA
 
 - **Verified:** 2026-07-10
-- **Published:** yes
+- **Published:** no
+- **Held because:** Demoted in the final pre-import audit (owner-approved 2026-07-10): operating status unverified — no 2025–2026 reviews found, fuel brand ambiguous across sources (Chevron vs. Citgo), and the property appears in a commercial real-estate listing. Confirm by phone (229-567-3000) before publishing.
 - **Sources:**
   - https://www.findfuelstops.com/truck-stop-008885
   - https://truckmap.com/place/a1-truck-stop-citgo-i-75-exit-84-ashburn-ga-31714-usa
@@ -728,6 +729,7 @@ each corridor segment was researched independently and cross-referenced.
   - https://www.iexitapp.com/business/Circle%20K/1252558
   - https://www.gasbuddy.com/station/106648
 - **Left blank (not verifiable from sources):** lat, lng
+- **Editorial overrides:** laundry: "yes" -> "no"
 - **Notes:** Former Kangaroo Express; some directory amenity lists (repair, towing) may be legacy data so repair left blank; nearby Cochran's Travel Center at this exit is reported closed and demolished.
 
 ### Love's Travel Stop #325 — Tifton, GA
@@ -753,18 +755,6 @@ each corridor segment was researched independently and cross-referenced.
   - https://restaurants.subway.com/united-states/ga/tifton/4431-union-rd
 - **Left blank (not verifiable from sources):** lat, lng
 - **Notes:** Some listings give address as 4431 Old Union Rd; official Pilot page uses 4431 Union Rd; scales listed but not confirmed as CAT.
-
-### Citgo Valdosta Truck/Auto Plaza — Valdosta, GA
-
-- **Verified:** 2026-07-10
-- **Published:** yes
-- **Sources:**
-  - https://www.truckstopsandservices.com/location_details.php?id=47490
-  - http://gas-stations.citgo.com/ga/valdosta/31601/2102-west-hill-ave
-  - https://www.chamberofcommerce.com/united-states/georgia/valdosta/gas-station/2006845615-citgo-valdosta-truck-auto-plaza
-  - https://www.loc8nearme.com/georgia/valdosta/citgo/1021165/
-- **Left blank (not verifiable from sources):** lat, lng
-- **Notes:** Listed in directories as Citgo Truck Plaza; repair status unclear despite one listing categorizing it under car repair.
 
 ### Love's Travel Stop #550 — Valdosta, GA
 
@@ -914,6 +904,16 @@ each corridor segment was researched independently and cross-referenced.
 - **Notes:** Verified 2026-07-10 via GA DPS CVE Regions search data; no street address, zip, coordinates, or hours published in sources.
 
 ## Researched but excluded from the CSV
+
+### Citgo Valdosta Truck/Auto Plaza — Valdosta, GA
+
+- **Why excluded:** Removed in the final pre-import audit (owner-approved 2026-07-10): the site at 2102 W Hill Ave, Valdosta is now a RaceTrac travel center (RaceTrac #2622) per Dec 2025 reviews and fuel-price listings; the Citgo locator URL is stale. Candidate for re-research as RaceTrac in a future batch.
+- **Sources:**
+  - https://www.truckstopsandservices.com/location_details.php?id=47490
+  - http://gas-stations.citgo.com/ga/valdosta/31601/2102-west-hill-ave
+  - https://www.chamberofcommerce.com/united-states/georgia/valdosta/gas-station/2006845615-citgo-valdosta-truck-auto-plaza
+  - https://www.loc8nearme.com/georgia/valdosta/citgo/1021165/
+- **Notes:** Listed in directories as Citgo Truck Plaza; repair status unclear despite one listing categorizing it under car repair.
 
 ### CAT Scale — Cochran's Travel Center, Ringgold — Ringgold, GA
 

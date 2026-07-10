@@ -4,10 +4,10 @@ CSV file: `data/imports/i75-georgia-batch-001.csv` · verified 2026-07-10 · dry
 
 ## Totals
 
-- Total rows in CSV: **79**
-- Published = yes: **71**
-- Published = no (held for manual confirmation): **8**
-- Researched but excluded entirely: **1**
+- Total rows in CSV: **78**
+- Published = yes: **69**
+- Published = no (held for manual confirmation): **9**
+- Researched but excluded entirely: **2**
 - Featured = yes: **0** (per instructions, featuring requires explicit approval)
 - TruckParkingClub URLs: only on the 4 verified truckparkingclub.com listings; no affiliate codes anywhere (none exist yet).
 
@@ -20,10 +20,10 @@ CSV file: `data/imports/i75-georgia-batch-001.csv` · verified 2026-07-10 · dry
 | Roadside Service | 3 | 2 | 1 |
 | Tire Repair | 10 | 9 | 1 |
 | Truck Parking | 4 | 4 | 0 |
-| Truck Stops | 33 | 30 | 3 |
+| Truck Stops | 32 | 28 | 4 |
 | Truck Washes | 4 | 3 | 1 |
 | Weigh Stations | 6 | 6 | 0 |
-| **Total** | **79** | **71** | **8** |
+| **Total** | **78** | **69** | **9** |
 
 ## Rows by city (north to south where known)
 
@@ -50,7 +50,7 @@ CSV file: `data/imports/i75-georgia-batch-001.csv` · verified 2026-07-10 · dry
 | Tifton | 6 |
 | Adel | 2 |
 | Hahira | 1 |
-| Valdosta | 9 |
+| Valdosta | 8 |
 | Lake Park | 4 |
 
 ## Held records (Published = no) — need manual confirmation
@@ -60,25 +60,27 @@ CSV file: `data/imports/i75-georgia-batch-001.csv` · verified 2026-07-10 · dry
 - **Allstate Repair (All State Truck Stop)** (Roadside Service, Unadilla): The co-located All State Truck Stop is reported closed; unclear whether the repair business still operates at this address. Confirm before publishing.
 - **Southern Tire Mart #165** (Tire Repair, Atlanta): Shop is on Fulton Industrial Blvd on Atlanta's west side; no source ties it to an I-75 exit (Interstate left blank). Confirm corridor relevance before publishing.
 - **Pathway Travel Plaza** (Truck Stops, Adairsville): Recently rebranded (ex-Pride/76) with no official website found; amenity data is from third-party directories only. Needs a phone call or brand confirmation.
+- **A-1 Truck Stop** (Truck Stops, Ashburn): Demoted in the final pre-import audit (owner-approved 2026-07-10): operating status unverified — no 2025–2026 reviews found, fuel brand ambiguous across sources (Chevron vs. Citgo), and the property appears in a commercial real-estate listing. Confirm by phone (229-567-3000) before publishing.
 - **America's Truck Stop** (Truck Stops, Atlanta): No phone number verified, and the address sits on the I-75/I-85 downtown connector rather than mainline I-75. Confirm details before publishing.
 - **JP Truck Center** (Truck Stops, Cartersville): Only one independent source found for this small independent stop. Needs a second source or a phone call before publishing.
 - **S & B Truck Wash — Cartersville** (Truck Washes, Cartersville): No phone number verified and third-party listings conflict on details. Needs direct confirmation.
 
 ## Excluded records (not in the CSV)
 
+- **Citgo Valdosta Truck/Auto Plaza** (Truck Stops, Valdosta): Removed in the final pre-import audit (owner-approved 2026-07-10): the site at 2102 W Hill Ave, Valdosta is now a RaceTrac travel center (RaceTrac #2622) per Dec 2025 reviews and fuel-price listings; the Citgo locator URL is stale. Candidate for re-research as RaceTrac in a future batch.
 - **CAT Scale — Cochran's Travel Center, Ringgold** (CAT Scales, Ringgold): Host truck stop (Cochran's Travel Center, I-75 Exit 345) is reported closed and demolished by an independent source found while researching Circle K Ringgold. A scale record pointing at a closed host cannot be published, so the record is excluded from the batch entirely.
 
 ## Missing-field summary (blank = could not be verified; never guessed)
 
-| Field | Rows blank | Of 79 |
+| Field | Rows blank | Of 78 |
 | --- | --- | --- |
-| zip | 9 | 11% |
-| lat | 79 | 100% |
-| lng | 79 | 100% |
+| zip | 9 | 12% |
+| lat | 78 | 100% |
+| lng | 78 | 100% |
 | phone | 7 | 9% |
 | website | 14 | 18% |
-| truck spaces | 39 | 49% |
-| exit number | 20 | 25% |
+| truck spaces | 39 | 50% |
+| exit number | 20 | 26% |
 | interstate | 2 | 3% |
 
 - **Latitude/Longitude are blank on every row** — no source published exact coordinates, and coordinates are on the do-not-invent list. They can be added later from a geocoding pass you approve.
@@ -106,6 +108,14 @@ The database supports one record per category, so co-located businesses are sepa
 The remaining CAT Scale rows are also physically co-located with their host truck stops by design; they only escape the list above because a source spelled the street address slightly differently.
 
 - Checked against the live database: the `locations` table currently has **0 rows**, so there are no collisions with existing records.
+
+## Final pre-import audit corrections (owner-approved 2026-07-10)
+
+A second verification pass (~33 of 79 rows independently re-checked online, including all 4 TruckParkingClub URLs and all 6 DPS weigh stations) produced three owner-approved corrections:
+
+1. **Removed — Citgo Valdosta Truck/Auto Plaza** (2102 W Hill Ave, Valdosta): the site is now a RaceTrac travel center (RaceTrac #2622); the Citgo locator URL is stale. Candidate for re-research as RaceTrac.
+2. **Demoted to Published = no — A-1 Truck Stop** (Ashburn): operating status unverified (no recent reviews, ambiguous fuel brand, property in a commercial real-estate listing). Confirm by phone.
+3. **Circle K (Ringgold Travel Center): Laundry set to "no"** — the flag traced only to a legacy directory from the site's Kangaroo Express era; Circle K's own page does not list laundry. Row stays published.
 
 ## Validation performed (dry run only)
 
