@@ -5,20 +5,7 @@ import { useFormState, useFormStatus } from 'react-dom';
 import type { ListingRow } from '@/lib/admin/directory';
 import type { FormState } from '@/app/admin/(dashboard)/directory/actions';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
-
-/** Amenity vocabulary duplicated as a plain list for rendering (source of
- *  truth for validation lives in lib/directory/admin.ts). */
-const AMENITIES = [
-  'Showers',
-  'Food',
-  'Fuel',
-  'Laundry',
-  'Restrooms',
-  'Repair',
-  'CAT Scale',
-  'Wi-Fi',
-  'Security',
-];
+import { AMENITIES } from '@/lib/directory/amenities';
 
 const inputClasses =
   'w-full rounded-card border border-line bg-asphalt px-3 py-2.5 text-ink placeholder:text-muted/60 ' +
@@ -38,10 +25,18 @@ function Fieldset({ legend, children }: { legend: string; children: React.ReactN
 function Check({
   name,
   label,
+  value,
   defaultChecked,
 }: {
   name: string;
   label: string;
+  /**
+   * Submitted value when checked. REQUIRED for multi-value groups like
+   * amenities — a checkbox without a value submits the HTML default "on",
+   * which is not a valid amenity and fails validation. Boolean toggles
+   * (published, parking flags) omit it on purpose: the server checks for "on".
+   */
+  value?: string;
   defaultChecked?: boolean;
 }) {
   return (
@@ -49,6 +44,7 @@ function Check({
       <input
         type="checkbox"
         name={name}
+        value={value}
         defaultChecked={defaultChecked}
         className="h-4 w-4 accent-[#FFEB00]"
       />
@@ -300,7 +296,13 @@ export function ListingForm({
       <Fieldset legend="Amenities">
         <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-3">
           {AMENITIES.map((a) => (
-            <Check key={a} name="amenities" label={a} defaultChecked={amenities.has(a)} />
+            <Check
+              key={a}
+              name="amenities"
+              label={a}
+              value={a}
+              defaultChecked={amenities.has(a)}
+            />
           ))}
         </div>
       </Fieldset>

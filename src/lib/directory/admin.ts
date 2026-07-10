@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DIRECTORY_CATEGORIES } from './categories';
+import { AMENITIES } from './amenities';
 
 /**
  * Directory admin domain: the zod schema every write passes through, the
@@ -10,17 +11,9 @@ import { DIRECTORY_CATEGORIES } from './categories';
  * Shared by the admin server actions only — nothing here touches the browser.
  */
 
-export const AMENITIES = [
-  'Showers',
-  'Food',
-  'Fuel',
-  'Laundry',
-  'Restrooms',
-  'Repair',
-  'CAT Scale',
-  'Wi-Fi',
-  'Security',
-] as const;
+// Re-exported so existing imports keep working; the list itself lives in
+// lib/directory/amenities.ts (shared with the client form — do not duplicate).
+export { AMENITIES } from './amenities';
 
 export const CATEGORY_SLUGS = DIRECTORY_CATEGORIES.map((c) => c.slug) as [string, ...string[]];
 
