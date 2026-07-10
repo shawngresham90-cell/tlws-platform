@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/seo/site';
 import { createStaticClient } from '@/lib/supabase/static';
+import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -36,6 +37,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: path === '/academy' ? 0.9 : 0.7,
+    });
+  }
+
+  // Directory Engine (Milestone 11) — hub + every category in the registry.
+  entries.push({
+    url: `${SITE.url}/directory`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  });
+  for (const category of DIRECTORY_CATEGORIES) {
+    entries.push({
+      url: `${SITE.url}${categoryHref(category)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
     });
   }
 
