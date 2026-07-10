@@ -16,7 +16,11 @@ import { buildMetadata } from '@/lib/seo/metadata';
  * precedence over this dynamic segment and is untouched). Adding a directory
  * later = one registry entry; this page, its SEO, search, and filters come free.
  */
-export const dynamicParams = false;
+// dynamicParams stays TRUE (the Next default). With it locked to false,
+// Netlify's runtime refuses to re-render these paths after the admin's
+// revalidatePath() purge (imports/publishes), serving 404s until the next
+// deploy — reproduced twice in production. Unknown slugs still 404 via the
+// getCategory() notFound() guard below, so behavior for bad URLs is unchanged.
 
 // Listings come from the database now (Milestone 12) — refresh periodically
 // in addition to the on-save revalidation the admin actions trigger.
