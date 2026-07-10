@@ -57,7 +57,11 @@ jobs:
           expect /directory/hotels-truck-parking "Days Inn"
           expect /directory/tire-repair "BestDrive"
           expect /directory/truck-stops "Adel Truck Plaza"
+          expect /directory/truck-stops "Big Foot Travel Center"
+          expect /directory/truck-stops "TA Lake Park"
           expect /directory/roadside-service "24/7 Diesel"
           absent /directory/truck-stops "Pathway Travel Plaza"
           absent /directory/truck-stops "A-1 Truck Stop"
+          absent /directory/truck-stops "JP Truck Center"
+          absent /directory/truck-stops "America&#x27;s Truck Stop"
           exit $fail
