@@ -34,6 +34,9 @@ type LocationRow = {
   is_indexable: boolean | null;
   lat: number | null;
   lng: number | null;
+  interstate: string | null;
+  exit_number: string | null;
+  created_at: string | null;
 };
 
 /** Only ever emit http(s) URLs to the page (defense in depth after zod). */
@@ -77,13 +80,16 @@ function toEntry(row: LocationRow): DirectoryEntry {
     indexable: row.is_indexable ?? false,
     lat: row.lat ?? undefined,
     lng: row.lng ?? undefined,
+    interstate: row.interstate ?? undefined,
+    exitNumber: row.exit_number ?? undefined,
+    createdAt: row.created_at ?? undefined,
   };
 }
 
 const COLUMNS =
   'id, name, category_slug, state, city, slug, address, zip, phone, website, description, ' +
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
-  'tpc_url, is_featured, is_indexable, lat, lng';
+  'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at';
 
 export async function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
   try {
@@ -96,7 +102,7 @@ export async function getEntries(categorySlug: string): Promise<DirectoryEntry[]
       .is('deleted_at', null)
       .order('is_featured', { ascending: false })
       .order('name', { ascending: true })
-      .limit(500);
+      .limit(1000);
     if (error || !data) return [];
     return (data as unknown as LocationRow[]).map(toEntry);
   } catch {

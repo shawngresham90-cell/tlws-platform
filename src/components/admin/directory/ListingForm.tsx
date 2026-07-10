@@ -201,6 +201,34 @@ export function ListingForm({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
+            <label htmlFor="f-interstate" className={labelClasses}>
+              Interstate
+            </label>
+            <input
+              id="f-interstate"
+              name="interstate"
+              maxLength={20}
+              placeholder="I-75"
+              defaultValue={l?.interstate ?? ''}
+              className={inputClasses}
+            />
+          </div>
+          <div>
+            <label htmlFor="f-exit" className={labelClasses}>
+              Exit number
+            </label>
+            <input
+              id="f-exit"
+              name="exit_number"
+              maxLength={20}
+              placeholder="333"
+              defaultValue={l?.exit_number ?? ''}
+              className={inputClasses}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
             <label htmlFor="f-lat" className={labelClasses}>
               Latitude
             </label>

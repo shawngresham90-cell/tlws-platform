@@ -2,18 +2,22 @@
 
 import { useMemo, useState } from 'react';
 import type { DirectoryEntry } from '@/lib/directory/types';
+import { filterAndSortEntries, type SortKey } from '@/lib/directory/browse';
 import { EntryCard } from './EntryCard';
 import { DirectoryEmptyState } from './DirectoryEmptyState';
 
 /**
- * The interactive half of every directory page: search box + state and city
- * filters over whatever entries the (currently static) data layer provides.
- * Purely client-side filtering — when the database lands this component keeps
- * working unchanged; only the data source behind the page swaps.
+ * The interactive half of every directory page: search (name, city, state,
+ * ZIP, interstate), state/city filters, sorting (featured / A–Z / newest /
+ * distance via browser geolocation), and lazy "load more" rendering so a
+ * thousand-listing category doesn't paint a thousand cards up front. The
+ * filter/sort logic lives in lib/directory/browse.ts (pure, tested).
  */
 const inputClasses =
   'w-full rounded-card border border-line bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
   'focus:border-signal focus:outline-none';
+
+const PAGE = 30;
 
 export function DirectoryBrowser({
   categoryTitle,
@@ -25,6 +29,10 @@ export function DirectoryBrowser({
   const [query, setQuery] = useState('');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
+  const [sort, setSort] = useState<SortKey>('featured');
+  const [visible, setVisible] = useState(PAGE);
+  const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'asking' | 'denied'>('idle');
 
   const stateOptions = useMemo(() => [...new Set(entries.map((e) => e.state))].sort(), [entries]);
   const cityOptions = useMemo(
@@ -33,16 +41,11 @@ export function DirectoryBrowser({
     [entries, state],
   );
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return entries.filter((e) => {
-      if (state && e.state !== state) return false;
-      if (city && e.city !== city) return false;
-      if (!q) return true;
-      const haystack = `${e.name} ${e.city} ${e.state} ${e.description ?? ''}`.toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [entries, query, state, city]);
+  const results = useMemo(
+    () => filterAndSortEntries(entries, { query, state, city, sort, origin }),
+    [entries, query, state, city, sort, origin],
+  );
+  const shown = results.slice(0, visible);
 
   const hasFilters = Boolean(query.trim() || state || city);
 
@@ -50,12 +53,33 @@ export function DirectoryBrowser({
     setQuery('');
     setState('');
     setCity('');
+    setVisible(PAGE);
+  }
+
+  function chooseSort(next: SortKey) {
+    setSort(next);
+    setVisible(PAGE);
+    if (next === 'distance' && !origin && typeof navigator !== 'undefined') {
+      if (!navigator.geolocation) {
+        setGeoStatus('denied');
+        return;
+      }
+      setGeoStatus('asking');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setGeoStatus('idle');
+        },
+        () => setGeoStatus('denied'),
+        { maximumAge: 300_000, timeout: 10_000 },
+      );
+    }
   }
 
   return (
     <div>
-      {/* Search + filters — stacks on mobile, one row on desktop */}
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      {/* Search + filters + sort — stacks on mobile, one row on desktop */}
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto]">
         <div>
           <label htmlFor="directory-search" className="sr-only">
             Search {categoryTitle}
@@ -64,8 +88,11 @@ export function DirectoryBrowser({
             id="directory-search"
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${categoryTitle.toLowerCase()}…`}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setVisible(PAGE);
+            }}
+            placeholder={`Search name, city, state, ZIP, interstate…`}
             className={inputClasses}
           />
         </div>
@@ -79,9 +106,10 @@ export function DirectoryBrowser({
             onChange={(e) => {
               setState(e.target.value);
               setCity('');
+              setVisible(PAGE);
             }}
             disabled={stateOptions.length === 0}
-            className={`${inputClasses} sm:w-44 disabled:opacity-50`}
+            className={`${inputClasses} lg:w-40 disabled:opacity-50`}
           >
             <option value="">All states</option>
             {stateOptions.map((s) => (
@@ -98,9 +126,12 @@ export function DirectoryBrowser({
           <select
             id="directory-city"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={(e) => {
+              setCity(e.target.value);
+              setVisible(PAGE);
+            }}
             disabled={cityOptions.length === 0}
-            className={`${inputClasses} sm:w-44 disabled:opacity-50`}
+            className={`${inputClasses} lg:w-40 disabled:opacity-50`}
           >
             <option value="">All cities</option>
             {cityOptions.map((c) => (
@@ -110,13 +141,32 @@ export function DirectoryBrowser({
             ))}
           </select>
         </div>
+        <div>
+          <label htmlFor="directory-sort" className="sr-only">
+            Sort
+          </label>
+          <select
+            id="directory-sort"
+            value={sort}
+            onChange={(e) => chooseSort(e.target.value as SortKey)}
+            className={`${inputClasses} lg:w-44`}
+          >
+            <option value="featured">Featured first</option>
+            <option value="alpha">A–Z</option>
+            <option value="newest">Newest</option>
+            <option value="distance">Nearest to me</option>
+          </select>
+        </div>
       </div>
 
-      {/* Result count (screen-reader announced) */}
+      {/* Result count + geolocation status (screen-reader announced) */}
       <p aria-live="polite" className="mt-4 text-sm text-muted">
         {entries.length === 0
           ? 'No locations loaded yet.'
           : `${results.length} of ${entries.length} location${entries.length === 1 ? '' : 's'}`}
+        {sort === 'distance' && geoStatus === 'asking' && ' · finding your location…'}
+        {sort === 'distance' && geoStatus === 'denied' && ' · location unavailable — sorted A–Z'}
+        {sort === 'distance' && origin && ' · sorted by distance from you'}
       </p>
 
       {/* Results / empty states */}
@@ -130,11 +180,24 @@ export function DirectoryBrowser({
             onClear={hasFilters ? clearFilters : undefined}
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((e) => (
-              <EntryCard key={e.id} entry={e} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {shown.map((e) => (
+                <EntryCard key={e.id} entry={e} />
+              ))}
+            </div>
+            {results.length > visible && (
+              <div className="mt-8 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisible((v) => v + PAGE)}
+                  className="rounded-card border border-line px-6 py-3 font-display text-lg uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal"
+                >
+                  Load more ({results.length - visible} left)
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

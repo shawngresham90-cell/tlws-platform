@@ -31,6 +31,12 @@ export type DirectoryEntry = {
   indexable?: boolean;
   lat?: number;
   lng?: number;
+  /** Highway designation, e.g. "I-75" (searchable). */
+  interstate?: string;
+  /** Exit number — future-ready for exit-based navigation. */
+  exitNumber?: string;
+  /** ISO timestamp, powers the "Newest" sort. */
+  createdAt?: string;
 };
 
 export type DirectoryCategory = {
