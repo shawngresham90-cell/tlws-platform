@@ -1,0 +1,35 @@
+name: Production health check
+
+# Curls the homepage and every public directory route on production and
+# fails if any returns a non-200. Dispatch manually from the Actions tab
+# (or via API) for a 30-second smoke test of the live site.
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check production routes
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          ROUTES=(
+            /
+            /directory
+            /directory/parking
+            /directory/truck-stops
+            /directory/cat-scales
+            /directory/truck-washes
+            /directory/tire-repair
+            /directory/weigh-stations
+            /directory/hotels-truck-parking
+            /directory/cdl-schools
+            /directory/roadside-service
+          )
+          fail=0
+          for route in "${ROUTES[@]}"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE$route")
+            echo "$code $BASE$route"
+            if [ "$code" != "200" ]; then fail=1; fi
+          done
+          exit $fail
