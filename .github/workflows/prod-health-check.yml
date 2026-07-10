@@ -37,6 +37,11 @@ jobs:
             /directory/hotels-truck-parking
             /directory/cdl-schools
             /directory/roadside-service
+            /directory/georgia
+            /directory/tennessee
+            /directory/i75
+            /directory/i75/exit-201
+            /directory/i75/exit-369
           )
           fail=0
           for route in "${ROUTES[@]}"; do
