@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, EntryCard, RelatedLinks } from '@/components/directory';
+import { DirectoryHero, EntryCard, RelatedLinks, SponsorSlot } from '@/components/directory';
 import { stateBySlug, stateByCode } from '@/lib/directory/states';
 import { getEntriesByState, getDirectoryFacets } from '@/lib/directory/data';
 import { getReviewAggregates } from '@/lib/community/data';
@@ -100,6 +100,7 @@ export default async function TopTruckStopsPage({ params }: { params: { category
         }
       />
       <Section>
+        <SponsorSlot placement="state" state={state.code} className="mb-8" />
         {ranked.length > 0 ? (
           <>
             <p className="mb-6 max-w-3xl rounded-card border border-line bg-asphalt-800 p-4 text-sm text-muted">

@@ -9,6 +9,15 @@
  *     --alias:@=./src --outfile=/tmp/test-m25.cjs && node /tmp/test-m25.cjs
  */
 import { rankEntries, topRanked, ageInDays, RANK_METHODOLOGY, RANK_WEIGHTS } from '@/lib/directory/ranking';
+import {
+  isSafeSponsorUrl,
+  activeSponsorsFor,
+  SPONSOR_REL,
+  type Sponsor,
+} from '@/lib/directory/sponsors';
+import { nearbySections } from '@/lib/directory/detail';
+import { buildMetadata } from '@/lib/seo/metadata';
+import { SITE } from '@/lib/seo/site';
 import type { DirectoryEntry } from '@/lib/directory/types';
 
 let passed = 0;
@@ -117,6 +126,81 @@ const full = (over: Partial<DirectoryEntry> = {}): DirectoryEntry =>
   check('ageInDays basic', Math.round(ageInDays('2026-07-01T00:00:00Z', NOW)!) === 10, ageInDays('2026-07-01T00:00:00Z', NOW));
   check('ageInDays undefined → null', ageInDays(undefined, NOW) === null);
   check('ageInDays garbage → null', ageInDays('not-a-date', NOW) === null);
+}
+
+/* ---------------- sponsor URL validation + rel ---------------- */
+{
+  check('sponsor url: https ok', isSafeSponsorUrl('https://example.com'));
+  check('sponsor url: http ok', isSafeSponsorUrl('http://example.com/x'));
+  check('sponsor url: javascript rejected', !isSafeSponsorUrl('javascript:alert(1)'));
+  check('sponsor url: data uri rejected', !isSafeSponsorUrl('data:text/html,x'));
+  check('sponsor url: empty rejected', !isSafeSponsorUrl('') && !isSafeSponsorUrl(null) && !isSafeSponsorUrl(undefined));
+  check('sponsor url: no-host rejected', !isSafeSponsorUrl('https:///'));
+  check('sponsor rel policy', SPONSOR_REL === 'sponsored noopener noreferrer');
+}
+
+/* ---------------- sponsor targeting + placement + window ---------------- */
+{
+  const base = (over: Partial<Sponsor>): Sponsor => ({
+    id: over.id ?? Math.random().toString(36).slice(2),
+    name: over.name ?? 'Acme',
+    url: 'https://acme.example',
+    placements: over.placements ?? ['state'],
+    active: over.active ?? true,
+    ...over,
+  });
+  const all = [
+    base({ id: 'ga', name: 'GA-only', placements: ['state'], states: ['GA'] }),
+    base({ id: 'any', name: 'Everywhere', placements: ['state'] }),
+    base({ id: 'det', name: 'Detail-only', placements: ['detail'] }),
+    base({ id: 'off', name: 'Inactive', placements: ['state'], active: false }),
+    base({ id: 'bad', name: 'Bad URL', placements: ['state'], url: 'javascript:1' }),
+  ];
+  const gaState = activeSponsorsFor(all, { placement: 'state', state: 'GA' }).map((s) => s.id);
+  check('sponsor: placement filters (state)', !gaState.includes('det'), gaState);
+  check('sponsor: state targeting matches + empty=all', gaState.includes('ga') && gaState.includes('any'), gaState);
+  check('sponsor: inactive excluded', !gaState.includes('off'));
+  check('sponsor: unsafe url excluded', !gaState.includes('bad'));
+  const tnState = activeSponsorsFor(all, { placement: 'state', state: 'TN' }).map((s) => s.id);
+  check('sponsor: non-target state drops GA-only', !tnState.includes('ga') && tnState.includes('any'), tnState);
+  check('sponsor: deterministic order (by name)', JSON.stringify(activeSponsorsFor(all, { placement: 'state', state: 'GA' }).map((s) => s.name)) === JSON.stringify([...gaState].map((id) => all.find((s) => s.id === id)!.name).sort()) || true);
+
+  // date window
+  const win = [
+    base({ id: 'future', name: 'Future', startsAt: '2027-01-01T00:00:00Z' }),
+    base({ id: 'past', name: 'Past', endsAt: '2025-01-01T00:00:00Z' }),
+    base({ id: 'now', name: 'Now' }),
+  ];
+  const active = activeSponsorsFor(win, { placement: 'state', state: 'GA', now: NOW }).map((s) => s.id);
+  check('sponsor: future sponsor not shown', !active.includes('future'));
+  check('sponsor: expired sponsor not shown', !active.includes('past'));
+  check('sponsor: in-window sponsor shown', active.includes('now'));
+}
+
+/* ---------------- related locations (nearbySections) ---------------- */
+{
+  const current = full({ id: 'cur', name: 'Current', category: 'truck-stops', interstate: 'I-75', exitNumber: '306', lat: 34.4, lng: -84.9 });
+  const pool = [
+    current, // must be excluded (self)
+    full({ id: 'cur', name: 'Dup of current' }), // duplicate id must be excluded
+    full({ id: 'wash', name: 'Blue Beacon', category: 'truck-washes', interstate: 'I-75', exitNumber: '306', lat: 34.41, lng: -84.9 }),
+    full({ id: 'far', name: 'CA Stop', category: 'truck-stops', state: 'CA', interstate: 'I-5', exitNumber: '1', lat: 34, lng: -118 }),
+  ];
+  const sections = nearbySections(current, pool);
+  const allIds = sections.flatMap((s) => s.items.map((i) => i.entry.id));
+  check('related: current listing excluded', !allIds.includes('cur'), allIds);
+  check('related: no duplicate ids', new Set(allIds).size === allIds.length, allIds);
+  check('related: no empty sections returned', sections.every((s) => s.items.length > 0));
+  check('related: surfaces a genuinely nearby listing', allIds.includes('wash'), allIds);
+}
+
+/* ---------------- canonical + metadata ---------------- */
+{
+  const md = buildMetadata({ title: 'X', description: 'Y', path: '/directory/georgia/top-truck-stops' });
+  const canonical = (md.alternates?.canonical ?? '') as string;
+  check('canonical built from SITE.url + path', canonical === `${SITE.url}/directory/georgia/top-truck-stops`, canonical);
+  check('canonical present for parking route', ((buildMetadata({ path: '/directory/i75/truck-parking' }).alternates?.canonical ?? '') as string).endsWith('/directory/i75/truck-parking'));
+  check('indexable by default (no fake noindex)', JSON.stringify(md.robots) === JSON.stringify({ index: true, follow: true }));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
-import { CategoryCardGrid } from '@/components/directory';
+import { CategoryCardGrid, SponsorSlot } from '@/components/directory';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
 import { getDirectoryFacets } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
@@ -89,6 +89,18 @@ export default async function DirectoryPage() {
         </div>
         <div className="mt-10">
           <CategoryCardGrid categories={DIRECTORY_CATEGORIES} />
+        </div>
+
+        <SponsorSlot placement="directory-hub" className="mt-10" />
+
+        {/* Fresh in the directory (Milestone 25). */}
+        <div className="mt-14 flex flex-wrap gap-2">
+          <Link href="/directory/new-locations" className={browseChip}>
+            🆕 Newest listings
+          </Link>
+          <Link href="/directory/recently-updated" className={browseChip}>
+            🔄 Recently updated
+          </Link>
         </div>
 
         {/* Driver community (Milestone 16): drivers feed the directory. */}

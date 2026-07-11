@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, DetailNearbySections } from '@/components/directory';
+import { DirectoryHero, DetailNearbySections, SponsorSlot, ViewBeacon } from '@/components/directory';
 import { MapPreview } from '@/components/map/MapPreview';
 import { ReviewList, Stars } from '@/components/community/ReviewList';
 import { getCategory, categoryHref } from '@/lib/directory/categories';
@@ -387,7 +387,17 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
           </div>
         </div>
 
+        <SponsorSlot
+          placement="detail"
+          state={entry.state}
+          interstate={entry.interstate}
+          category={entry.category}
+          className="mt-10"
+        />
+
         <DetailNearbySections sections={nearby} scopeLabel={entry.name} />
+
+        <ViewBeacon id={entry.id} />
 
         <p className="mt-10 text-sm text-muted">
           {category && (

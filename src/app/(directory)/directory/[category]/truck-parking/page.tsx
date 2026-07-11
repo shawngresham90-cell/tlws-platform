@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, EntryCard, RelatedLinks } from '@/components/directory';
+import { DirectoryHero, EntryCard, RelatedLinks, SponsorSlot } from '@/components/directory';
 import { interstateBySlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
 import { getEntriesByInterstate, getDirectoryFacets } from '@/lib/directory/data';
@@ -116,6 +116,7 @@ export default async function InterstateParkingPage({ params }: { params: { cate
         }
       />
       <Section>
+        <SponsorSlot placement="parking" interstate={interstate.designation} className="mb-8" />
         {parking.length > 0 ? (
           <>
             {(typeCounts.length > 0 || withSpaces > 0) && (
