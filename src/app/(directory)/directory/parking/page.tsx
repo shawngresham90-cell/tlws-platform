@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { DirectoryBrowser } from '@/components/directory';
 import { getEntries } from '@/lib/directory/data';
-import { listingListSchema } from '@/lib/directory/seo';
+import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -72,7 +72,7 @@ const PARKING_TYPES: ParkingType[] = [
 
 export default async function TruckParkingPage() {
   const entries = await getEntries('parking');
-  const listings = listingListSchema(entries, 'Truck Parking', '/directory/parking');
+  const listings = await listingListSchemaWithReviews(entries, 'Truck Parking', '/directory/parking');
 
   return (
     <>

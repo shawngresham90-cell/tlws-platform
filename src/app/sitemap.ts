@@ -50,6 +50,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: 0.8,
   });
+  // Driver community (Milestone 16): submissions + reviews.
+  entries.push(
+    {
+      url: `${SITE.url}/directory/submit`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE.url}/directory/reviews`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.7,
+    },
+  );
   for (const category of DIRECTORY_CATEGORIES) {
     entries.push({
       url: `${SITE.url}${categoryHref(category)}`,

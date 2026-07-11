@@ -10,7 +10,7 @@ import {
   exitFromSlug,
 } from '@/lib/directory/interstates';
 import { getEntriesByExit, getDirectoryFacets } from '@/lib/directory/data';
-import { listingListSchema } from '@/lib/directory/seo';
+import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -84,7 +84,7 @@ export default async function ExitPage({
 
   const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
   const path = `/directory/${interstate.slug}/${exitSlug(exit)}`;
-  const listings = listingListSchema(
+  const listings = await listingListSchemaWithReviews(
     entries,
     `${interstate.designation} Exit ${exit} — Truck Stops & Driver Services`,
     path,
