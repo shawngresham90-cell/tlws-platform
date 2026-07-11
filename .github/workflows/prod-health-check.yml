@@ -44,6 +44,7 @@ jobs:
             /directory/i75/exit-369
             /directory/submit
             /directory/reviews
+            /directory/map
           )
           fail=0
           for route in "${ROUTES[@]}"; do
