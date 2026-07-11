@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
+import { detailHref } from '@/lib/directory/detail-slug';
 import { DIRECTORY_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import { AMENITIES } from '@/lib/directory/amenities';
 import { coordinateIssues } from '@/lib/map/geo';
@@ -74,7 +77,24 @@ export function MapExplorer({
   const [searchText, setSearchText] = useState('');
   const [mapFailed, setMapFailed] = useState(false);
   const [fitKey, setFitKey] = useState(0);
+  const [focus, setFocus] = useState<{ lat: number; lng: number } | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // Detail pages deep-link one listing (?listing=<detail slug>): select it and
+  // zoom to it once on load. Any later interaction releases the focus.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const slug = searchParams.get('listing');
+    if (!slug) return;
+    const entry = entries.find((e) => e.detailSlug === slug);
+    if (entry && entry.lat != null && entry.lng != null) {
+      setSelectedId(entry.id);
+      setFocus({ lat: entry.lat, lng: entry.lng });
+      setStatus(`Showing ${entry.name} — ${entry.city}, ${entry.state}.`);
+    }
+    // Run once for the initial URL only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const cities = useMemo(() => citiesIn(entries), [entries]);
   const categoriesPresent = useMemo(() => {
@@ -109,6 +129,7 @@ export function MapExplorer({
   }, [results.length, origin, filters]);
 
   function set<K extends keyof ExploreFilters>(key: K, value: ExploreFilters[K]) {
+    setFocus(null);
     setFilters((f) => ({ ...f, [key]: value }));
   }
   function toggleAmenity(a: string) {
@@ -125,6 +146,7 @@ export function MapExplorer({
     setServerDistances(null);
     setSelectedId(null);
     setSearchText('');
+    setFocus(null);
     setStatus('Filters cleared.');
   }
 
@@ -135,6 +157,7 @@ export function MapExplorer({
       return;
     }
     setLocating(true);
+    setFocus(null);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
@@ -188,6 +211,7 @@ export function MapExplorer({
       return;
     }
     setServerDistances(null);
+    setFocus(null);
     setOrigin(result.origin);
     setStatus(`Centered on ${result.matches.length} listing${result.matches.length === 1 ? '' : 's'} matching “${searchText.trim()}”.`);
   }
@@ -376,6 +400,7 @@ export function MapExplorer({
             onSelect={selectFromMarker}
             origin={origin}
             fitKey={fitKey}
+            focus={focus}
             onError={() => setMapFailed(true)}
           />
         )}
@@ -456,6 +481,15 @@ function MapResultCard({
           )}
         </button>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {entry.detailSlug && (
+            <Link
+              href={detailHref(entry.detailSlug)}
+              className="font-semibold text-signal hover:underline"
+              aria-label={`View details for ${entry.name}`}
+            >
+              View details
+            </Link>
+          )}
           {entry.phone && (
             <a href={`tel:${entry.phone}`} className="font-semibold text-signal hover:underline">
               {entry.phone}

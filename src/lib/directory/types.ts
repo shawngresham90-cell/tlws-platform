@@ -37,6 +37,12 @@ export type DirectoryEntry = {
   exitNumber?: string;
   /** ISO timestamp, powers the "Newest" sort. */
   createdAt?: string;
+  /** Globally unique slug for /directory/location/[slug] (migration 022). */
+  detailSlug?: string;
+  /** ISO timestamp of the last change — dateModified on detail pages. */
+  updatedAt?: string;
+  /** ISO timestamp the listing was last verified by the admin, when set. */
+  verifiedAt?: string;
 };
 
 export type DirectoryCategory = {

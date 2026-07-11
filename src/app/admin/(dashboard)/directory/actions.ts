@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseListingForm, toRow, slugify } from '@/lib/directory/admin';
+import { detailSlugBase, uniqueDetailSlug, detailHref } from '@/lib/directory/detail-slug';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
 import { prepareImport, IMPORT_LIMITS, type ImportSummary } from '@/lib/directory/import';
 import { orderPair } from '@/lib/directory/duplicates';
@@ -23,6 +24,8 @@ function revalidateListing(categorySlug: string | null) {
   revalidatePath('/admin/directory');
   revalidatePath('/directory');
   if (categorySlug) revalidatePath(`/directory/${categorySlug}`);
+  // Detail pages (Milestone 20) mirror every listing — purge them together.
+  revalidatePath('/directory/location/[slug]', 'page');
 }
 
 /** Create (id === null) or update a listing from the admin form. */
@@ -107,6 +110,66 @@ export async function softDeleteAction(id: string, categorySlug: string | null):
   if (error) redirect('/admin/directory?error=delete');
   revalidateListing(categorySlug);
   redirect('/admin/directory?ok=deleted');
+}
+
+/**
+ * Regenerate a listing's public detail slug from its CURRENT name/city/state
+ * (Milestone 20). Deliberately narrow — no free-text slug editing: the only
+ * thing this can produce is the deterministic base (plus a collision suffix),
+ * and the admin UI gates it behind an explicit are-you-sure warning because
+ * changing a public URL breaks existing links. No-op when already in sync.
+ */
+export async function regenerateDetailSlugAction(id: string): Promise<void> {
+  requireAdmin();
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from('locations')
+    .select('id, name, city, state, category_slug, detail_slug')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (error || !data) redirect(`/admin/directory/${id}/edit?error=slug`);
+
+  const row = data as {
+    name: string;
+    city: string;
+    state: string;
+    category_slug: string | null;
+    detail_slug: string | null;
+  };
+  const base = detailSlugBase(row.name, row.city, row.state);
+  const current = row.detail_slug ?? '';
+  if (current === base || current.match(new RegExp(`^${base}-\\d+$`))) {
+    redirect(`/admin/directory/${id}/edit?ok=slug-current`);
+  }
+
+  // Collision-safe: collect existing slugs sharing the base (excluding this
+  // row) and pick the first free one — the DB unique constraint backstops.
+  const { data: takenRows, error: takenError } = await supabase
+    .from('locations')
+    .select('detail_slug')
+    .neq('id', id)
+    .like('detail_slug', `${base}%`)
+    .limit(1000);
+  if (takenError) redirect(`/admin/directory/${id}/edit?error=slug`);
+  const taken = new Set(
+    ((takenRows as { detail_slug: string | null }[]) ?? [])
+      .map((r) => r.detail_slug)
+      .filter((s): s is string => Boolean(s)),
+  );
+  const next = uniqueDetailSlug(base, taken);
+
+  const { error: updateError } = await supabase
+    .from('locations')
+    .update({ detail_slug: next })
+    .eq('id', id);
+  if (updateError) redirect(`/admin/directory/${id}/edit?error=slug`);
+
+  revalidateListing(row.category_slug);
+  if (current) revalidatePath(detailHref(current));
+  revalidatePath(detailHref(next));
+  redirect(`/admin/directory/${id}/edit?ok=slug-updated`);
 }
 
 /* ============================================================

@@ -1,8 +1,12 @@
+import Link from 'next/link';
 import type { DirectoryEntry } from '@/lib/directory/types';
+import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
  * One directory listing. Renders whatever fields an entry has and skips the
- * rest, so thin early data and rich future data use the same card.
+ * rest, so thin early data and rich future data use the same card. Entries
+ * with a detail slug (Milestone 20) link through to their own page; the
+ * phone/website/TPC actions stay either way.
  */
 export function EntryCard({ entry }: { entry: DirectoryEntry }) {
   return (
@@ -12,7 +16,18 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
           Featured
         </span>
       )}
-      <h3 className="font-display text-lg uppercase text-ink">{entry.name}</h3>
+      <h3 className="font-display text-lg uppercase text-ink">
+        {entry.detailSlug ? (
+          <Link
+            href={detailHref(entry.detailSlug)}
+            className="transition-colors hover:text-signal"
+          >
+            {entry.name}
+          </Link>
+        ) : (
+          entry.name
+        )}
+      </h3>
       <p className="mt-1 text-sm text-muted">
         {entry.city}, {entry.state}
         {entry.address ? ` · ${entry.address}` : ''}
@@ -54,6 +69,17 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
             </a>
           )}
         </div>
+      )}
+      {entry.detailSlug && (
+        <p className="mt-4 text-sm">
+          <Link
+            href={detailHref(entry.detailSlug)}
+            className="font-semibold text-signal underline-offset-4 hover:underline"
+            aria-label={`View details for ${entry.name}`}
+          >
+            View details →
+          </Link>
+        </p>
       )}
       {entry.tpcUrl && (
         <a

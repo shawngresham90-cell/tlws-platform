@@ -37,13 +37,15 @@ export type ListingRow = {
   verified_at: string | null;
   updated_at: string;
   created_at: string;
+  /** Globally unique public detail-page slug (migration 022). */
+  detail_slug: string | null;
 };
 
 const COLUMNS =
   'id, name, category_slug, address, city, state, zip, lat, lng, phone, website, description, ' +
   'free_parking, paid_parking, reserved_parking, overnight_parking, parking_spaces, amenities, ' +
   'tpc_url, affiliate_code, image_url, interstate, exit_number, is_published, is_featured, ' +
-  'is_indexable, verified_at, updated_at, created_at';
+  'is_indexable, verified_at, updated_at, created_at, detail_slug';
 
 export type ListingFilters = {
   q?: string;

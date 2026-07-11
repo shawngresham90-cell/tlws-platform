@@ -7,6 +7,7 @@ import { getCategory } from '@/lib/directory/categories';
 import { clusterMarkers, markersFromEntries } from '@/lib/map/cluster';
 import { boundsForPoints } from '@/lib/map/bounds';
 import { gridSizeForZoom, directionsUrl, type ExploreResult, type ExploreOrigin } from '@/lib/map/explore';
+import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
  * The interactive Leaflet + OpenStreetMap surface (Milestone 19). Leaflet is
@@ -31,6 +32,7 @@ export function LeafletMap({
   onSelect,
   origin,
   fitKey,
+  focus = null,
   onError,
 }: {
   results: ExploreResult[];
@@ -39,6 +41,8 @@ export function LeafletMap({
   origin: ExploreOrigin | null;
   /** Changes whenever the map should refit to the current results. */
   fitKey: number;
+  /** Deep-link focus (?listing=): zoom to this point instead of fitting all results. */
+  focus?: { lat: number; lng: number } | null;
   onError: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,6 +112,13 @@ export function LeafletMap({
     links.style.display = 'flex';
     links.style.gap = '10px';
     links.style.flexWrap = 'wrap';
+    if (entry.detailSlug) {
+      const a = document.createElement('a');
+      a.href = detailHref(entry.detailSlug);
+      a.textContent = 'View details';
+      a.style.fontWeight = '700';
+      links.appendChild(a);
+    }
     if (entry.website) {
       const a = document.createElement('a');
       a.href = entry.website;
@@ -231,6 +242,10 @@ export function LeafletMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    if (focus) {
+      map.setView([focus.lat, focus.lng], 13);
+      return;
+    }
     const points = results
       .filter((e) => e.lat != null && e.lng != null)
       .map((e) => ({ lat: e.lat as number, lng: e.lng as number }));
@@ -243,7 +258,7 @@ export function LeafletMap({
     const b = boundsForPoints(points);
     if (b) map.fitBounds([[b.south, b.west], [b.north, b.east]], { padding: [24, 24] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fitKey, ready]);
+  }, [fitKey, ready, focus]);
 
   /* ------------------------------------------------ pan to selection */
   useEffect(() => {

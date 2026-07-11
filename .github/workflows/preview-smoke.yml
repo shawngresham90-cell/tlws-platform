@@ -1,0 +1,115 @@
+name: Preview smoke — listing detail pages
+
+# Milestone 20 verification harness. Dispatch with the Netlify deploy-preview
+# URL as `base` to exercise the new /directory/location/[slug] pages from
+# outside the build sandbox: sample pages 200 with the right content,
+# unpublished + unknown slugs 404, existing routes unaffected, and the
+# sitemap carries the new URLs. Runs read-only GETs only.
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base URL to test (e.g. https://deploy-preview-20--lighthearted-clafoutis-144512.netlify.app)'
+        required: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Existing routes still 200
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          ROUTES=(
+            / /directory /directory/parking /directory/truck-stops /directory/cat-scales
+            /directory/truck-washes /directory/tire-repair /directory/weigh-stations
+            /directory/hotels-truck-parking /directory/cdl-schools /directory/roadside-service
+            /directory/georgia /directory/tennessee /directory/i75 /directory/i75/exit-201
+            /directory/i75/exit-369 /directory/submit /directory/reviews /directory/map
+          )
+          fail=0
+          for route in "${ROUTES[@]}"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE$route")
+            echo "$code $BASE$route"
+            [ "$code" = "200" ] || fail=1
+          done
+          exit $fail
+
+      - name: Sample listing detail pages return 200
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          SLUGS=(
+            pilot-travel-center-4558-calhoun-ga
+            adel-truck-plaza-adel-ga
+            cat-scale-adel-truck-plaza-adel-adel-ga
+            cat-scale-flying-j-travel-center-630-jackson-jackson-ga
+            days-inn-by-wyndham-valdosta-i-75-valdosta-ga
+            econo-lodge-athens-i-75-athens-tn
+            howard-johnson-by-wyndham-tifton-ga-i-75-tifton-ga
+            super-8-by-wyndham-caryville-tn-caryville-tn
+            truck-parking-club-693-karen-dr-ringgold-ringgold-ga
+            truck-parking-club-415-scruggs-road-chattanooga-chattanooga-tn
+            atlanta-commercial-tire-cartersville-cartersville-ga
+            bestdrive-commercial-tire-center-cartersville-cartersville-ga
+          )
+          fail=0
+          for slug in "${SLUGS[@]}"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE/directory/location/$slug")
+            echo "$code $BASE/directory/location/$slug"
+            [ "$code" = "200" ] || fail=1
+          done
+          exit $fail
+
+      - name: Detail page content (facts, CTAs, schema, canonical, no noindex)
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          fail=0
+          PAGE=$(curl -s --max-time 30 "$BASE/directory/location/pilot-travel-center-4558-calhoun-ga")
+          expect() {
+            if echo "$PAGE" | grep -qF "$1"; then echo "OK   contains \"$1\""; else echo "FAIL missing \"$1\""; fail=1; fi
+          }
+          absent() {
+            if echo "$PAGE" | grep -qF "$1"; then echo "FAIL shows \"$1\""; fail=1; else echo "OK   hides \"$1\""; fi
+          }
+          expect "Pilot Travel Center #4558"
+          expect "At a glance"
+          expect "Get directions"
+          expect "View on full map"
+          expect "Driver reviews"
+          expect "Report incorrect information"
+          expect "Leave a review"
+          expect "Nearby"
+          expect "google.com/maps/dir/?api=1"
+          expect 'truckinglifewithshawn.com/directory/location/pilot-travel-center-4558-calhoun-ga'
+          expect 'application/ld+json'
+          expect '"@type":"LocalBusiness"'
+          expect 'BreadcrumbList'
+          absent 'content="noindex'
+          absent 'aggregateRating'
+          exit $fail
+
+      - name: Unpublished, unknown, and malformed slugs 404
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          fail=0
+          for slug in a-1-truck-stop-ashburn-ga america-s-truck-stop-atlanta-ga jp-truck-center-cartersville-ga no-such-listing-anywhere-zz UPPER-Case-Slug; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE/directory/location/$slug")
+            echo "$code $BASE/directory/location/$slug (must be 404)"
+            [ "$code" = "404" ] || fail=1
+          done
+          exit $fail
+
+      - name: List pages link to detail pages; sitemap carries them
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          fail=0
+          curl -s --max-time 30 "$BASE/directory/truck-stops" | grep -qF '/directory/location/' \
+            && echo "OK   category page links to detail pages" \
+            || { echo "FAIL category page has no detail links"; fail=1; }
+          curl -s --max-time 30 "$BASE/directory/truck-stops" | grep -qF 'View details' \
+            && echo "OK   category page shows View details" \
+            || { echo "FAIL category page missing View details"; fail=1; }
+          SITEMAP=$(curl -s --max-time 30 "$BASE/sitemap.xml")
+          echo "$SITEMAP" | grep -qF '/directory/location/pilot-travel-center-4558-calhoun-ga' \
+            && echo "OK   sitemap lists detail pages" \
+            || { echo "FAIL sitemap missing detail pages"; fail=1; }
+          exit $fail

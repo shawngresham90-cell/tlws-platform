@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { NEARBY_CATEGORIES, groupByCategory } from '@/lib/directory/related';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
+import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
  * "Nearby Truck Stops / Parking / CAT Scales / Truck Washes" — compact,
@@ -13,6 +14,8 @@ import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 const MAX_PER_CATEGORY = 6;
 
 function bestHref(entry: DirectoryEntry): string {
+  // The listing's own page beats any scope page (Milestone 20).
+  if (entry.detailSlug) return detailHref(entry.detailSlug);
   if (entry.interstate && entry.exitNumber) {
     const slug = interstateSlug(entry.interstate);
     if (slug) return `/directory/${slug}/${exitSlug(entry.exitNumber)}`;

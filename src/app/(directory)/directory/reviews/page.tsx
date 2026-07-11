@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Section, Eyebrow } from '@/components/ui';
 import { ReviewForm } from '@/components/community/ReviewForm';
 import { ReviewList } from '@/components/community/ReviewList';
@@ -52,7 +53,11 @@ export default async function ReviewsPage() {
           <div>
             <h2 className="font-display text-2xl uppercase text-ink">Write a review</h2>
             <div className="mt-4">
-              <ReviewForm siteKey={siteKey} listings={listings} />
+              {/* Suspense: the form reads ?listing= via useSearchParams to
+                  preselect the listing a detail page linked from. */}
+              <Suspense fallback={null}>
+                <ReviewForm siteKey={siteKey} listings={listings} />
+              </Suspense>
             </div>
           </div>
           <div>
