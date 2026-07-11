@@ -60,3 +60,10 @@ create table if not exists public.location_pair_decisions (
 
 alter table public.location_pair_decisions enable row level security;
 -- Admin/service-role only: no policies. Anon cannot read moderation decisions.
+
+-- ------------------------------------------------------------- grant hygiene
+-- RLS is the enforcement boundary, but match migration 011's defense-in-depth:
+-- the public roles never hold write grants on directory tables, and the
+-- moderation-decision table is not readable by them at all.
+revoke insert, update, delete on public.directory_slug_redirects from anon, authenticated;
+revoke all on public.location_pair_decisions from anon, authenticated;
