@@ -1,6 +1,6 @@
 import { Section, Button, Eyebrow } from '@/components/ui';
 import { PageHero, AcademyFaq, CtaBand, Placeholder } from '@/components/academy';
-import { JsonLd, breadcrumbSchema, personSchema } from '@/lib/seo/schema';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
 import type { KcFaq } from '@/lib/kc/types';
@@ -37,7 +37,8 @@ export default function InstructorsPage() {
             { name: 'Academy', path: '/academy' },
             { name: 'Instructors', path: '/academy/instructors' },
           ]),
-          personSchema(),
+          // personSchema() is already emitted site-wide by the root layout —
+          // repeating it here duplicated the Person object on this page.
         ]}
       />
 

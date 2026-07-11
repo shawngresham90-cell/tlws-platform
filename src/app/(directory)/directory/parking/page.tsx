@@ -3,6 +3,9 @@ import { Section, Eyebrow } from '@/components/ui';
 import { DirectoryBrowser } from '@/components/directory';
 import { getEntries } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
+import { getDirectoryFacets } from '@/lib/directory/data';
+import { RelatedLinks } from '@/components/directory';
+import { categoryScopeLinks } from '@/lib/directory/scope-links';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -71,7 +74,7 @@ const PARKING_TYPES: ParkingType[] = [
 ];
 
 export default async function TruckParkingPage() {
-  const entries = await getEntries('parking');
+  const [entries, facets] = await Promise.all([getEntries('parking'), getDirectoryFacets()]);
   const listings = await listingListSchemaWithReviews(entries, 'Truck Parking', '/directory/parking');
 
   return (
@@ -194,6 +197,7 @@ export default async function TruckParkingPage() {
             Browse the directory →
           </Link>
         </div>
+        <RelatedLinks groups={categoryScopeLinks(facets)} />
       </Section>
     </>
   );
