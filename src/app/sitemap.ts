@@ -73,6 +73,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.7,
     },
+    // Growth surfaces (Milestone 25).
+    {
+      url: `${SITE.url}/directory/recently-updated`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
+    {
+      url: `${SITE.url}/directory/new-locations`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.6,
+    },
   );
   for (const category of DIRECTORY_CATEGORIES) {
     entries.push({
@@ -96,6 +109,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly',
         priority: 0.7,
       });
+      // Top-truck-stops landing page for the state (Milestone 25).
+      entries.push({
+        url: `${SITE.url}/directory/${state.slug}/top-truck-stops`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
     }
     for (const designation of facets.interstates) {
       const slug = interstateSlug(designation);
@@ -105,6 +125,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
+      });
+      // Corridor parking landing page (Milestone 25).
+      entries.push({
+        url: `${SITE.url}/directory/${slug}/truck-parking`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
       });
       for (const exit of facets.exitsByInterstate[designation] ?? []) {
         entries.push({
