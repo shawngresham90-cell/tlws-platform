@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
@@ -20,7 +21,14 @@ const TRUCK_TYPE_OPTIONS = TRUCK_TYPES.map((t) => ({ value: t, label: t }));
 type Errors = Record<string, string>;
 
 export function ReviewForm({ siteKey, listings }: { siteKey: string; listings: ListingRef[] }) {
-  const [locationId, setLocationId] = useState('');
+  // Detail pages deep-link here (?listing=<detail slug>) with the listing
+  // preselected. Slugs only — internal ids never ride in URLs.
+  const searchParams = useSearchParams();
+  const linkedListing = listings.find(
+    (l) => l.detailSlug && l.detailSlug === searchParams.get('listing'),
+  );
+
+  const [locationId, setLocationId] = useState(linkedListing?.id ?? '');
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

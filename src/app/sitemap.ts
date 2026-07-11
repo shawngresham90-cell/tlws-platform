@@ -2,9 +2,11 @@ import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/seo/site';
 import { createStaticClient } from '@/lib/supabase/static';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
-import { getDirectoryFacets } from '@/lib/directory/data';
+import { getDirectoryFacets, getAllPublishedEntries } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
+import { isDetailIndexable } from '@/lib/directory/detail';
+import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -115,6 +117,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Directory facet URLs are additive — a DB hiccup still ships the rest.
+  }
+
+  // Per-listing detail pages (Milestone 20). Only pages past the completeness
+  // gate are listed — thin listings render with noindex and stay out of the
+  // sitemap until their data fills in.
+  try {
+    const listings = await getAllPublishedEntries();
+    for (const entry of listings) {
+      if (!entry.detailSlug || !isDetailIndexable(entry)) continue;
+      entries.push({
+        url: `${SITE.url}${detailHref(entry.detailSlug)}`,
+        lastModified: entry.updatedAt ? new Date(entry.updatedAt) : now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
+    }
+  } catch {
+    // Detail URLs are additive too.
   }
 
   try {

@@ -18,6 +18,8 @@ export type ListingRef = {
   city: string;
   state: string;
   category: string;
+  /** Public detail-page slug — lets ?listing= deep links avoid internal ids. */
+  detailSlug?: string;
 };
 
 export async function getListingRefs(): Promise<ListingRef[]> {
@@ -25,7 +27,7 @@ export async function getListingRefs(): Promise<ListingRef[]> {
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select('id, name, city, state, category_slug')
+      .select('id, name, city, state, category_slug, detail_slug')
       .eq('is_published', true)
       .is('deleted_at', null)
       .order('state', { ascending: true })
@@ -40,6 +42,7 @@ export async function getListingRefs(): Promise<ListingRef[]> {
         city: string;
         state: string;
         category_slug: string | null;
+        detail_slug: string | null;
       }[]
     ).map((r) => ({
       id: r.id,
@@ -47,6 +50,7 @@ export async function getListingRefs(): Promise<ListingRef[]> {
       city: r.city,
       state: r.state,
       category: r.category_slug ?? 'other',
+      detailSlug: r.detail_slug ?? undefined,
     }));
   } catch {
     return [];
@@ -199,6 +203,34 @@ export async function getApprovedReviewsForSeo(): Promise<Record<string, SeoRevi
     return grouped;
   } catch {
     return {};
+  }
+}
+
+/**
+ * Approved-review count + average for ONE listing — the detail page's
+ * AggregateRating source. Server-side filtered, ratings only, so the query
+ * stays tiny however large the review table grows. Null = no approved reviews.
+ */
+export async function getReviewStatsForLocation(
+  locationId: string,
+): Promise<ReviewAggregate | null> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('location_reviews')
+      .select('rating')
+      .eq('status', 'approved')
+      .eq('location_id', locationId)
+      .limit(10000);
+    if (error || !data || data.length === 0) return null;
+    const ratings = (data as unknown as { rating: number }[]).map((r) => r.rating);
+    const total = ratings.reduce((sum, r) => sum + r, 0);
+    return {
+      count: ratings.length,
+      average: Math.round((total / ratings.length) * 10) / 10,
+    };
+  } catch {
+    return null;
   }
 }
 

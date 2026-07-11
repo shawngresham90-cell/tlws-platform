@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { TextField, SelectField, CheckboxField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
@@ -81,8 +82,26 @@ export function SubmitLocationForm({
   siteKey: string;
   listings: ListingRef[];
 }) {
-  const [kind, setKind] = useState<SubmissionKind>('new');
-  const [locationId, setLocationId] = useState('');
+  // Detail pages deep-link here (?listing=<detail slug>&kind=correction) so
+  // the report arrives with the listing already picked. Slugs only — internal
+  // ids never ride in URLs. Unknown values fall back to the default form.
+  const searchParams = useSearchParams();
+  const linkedListing = listings.find(
+    (l) => l.detailSlug && l.detailSlug === searchParams.get('listing'),
+  );
+  const kindParam = searchParams.get('kind');
+  const linkedKind = (SUBMISSION_KINDS as readonly string[]).includes(kindParam ?? '')
+    ? (kindParam as SubmissionKind)
+    : undefined;
+
+  const [kind, setKind] = useState<SubmissionKind>(
+    linkedKind && (linkedKind !== 'new' ? Boolean(linkedListing) : true)
+      ? linkedKind
+      : linkedListing
+        ? 'correction'
+        : 'new',
+  );
+  const [locationId, setLocationId] = useState(linkedListing?.id ?? '');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [address, setAddress] = useState('');

@@ -6,4 +6,5 @@ export { DirectoryEmptyState } from './DirectoryEmptyState';
 export { MultiCategoryBrowser } from './MultiCategoryBrowser';
 export { FaqSection } from './FaqSection';
 export { NearbySections } from './NearbySections';
+export { DetailNearbySections } from './DetailNearbySections';
 export { RelatedLinks } from './RelatedLinks';

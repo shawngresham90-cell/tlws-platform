@@ -246,6 +246,17 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
                     <td className="whitespace-nowrap px-4 py-3 text-muted">{fmtDate(r.updated_at)}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
+                        {r.is_published && r.detail_slug && (
+                          <a
+                            href={`/directory/location/${r.detail_slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={smallBtn}
+                            aria-label={`View public page for ${r.name} (opens in new tab)`}
+                          >
+                            View
+                          </a>
+                        )}
                         <Link href={`/admin/directory/${r.id}/edit`} className={smallBtn}>
                           Edit
                         </Link>

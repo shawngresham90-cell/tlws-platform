@@ -27,7 +27,14 @@ function formatDate(iso: string): string {
   }
 }
 
-export function ReviewList({ reviews }: { reviews: ApprovedReview[] }) {
+export function ReviewList({
+  reviews,
+  showLocation = true,
+}: {
+  reviews: ApprovedReview[];
+  /** Off on a listing's own detail page, where the location is the page. */
+  showLocation?: boolean;
+}) {
   if (reviews.length === 0) {
     return (
       <div className="rounded-card border border-line bg-asphalt-800 p-8 text-center">
@@ -49,9 +56,11 @@ export function ReviewList({ reviews }: { reviews: ApprovedReview[] }) {
             <span className="text-xs text-muted">{formatDate(r.createdAt)}</span>
           </div>
           <h3 className="mt-2 font-display text-lg uppercase text-ink">{r.title}</h3>
-          <p className="mt-1 text-sm font-semibold text-signal">
-            {r.location.name} — {r.location.city}, {r.location.state}
-          </p>
+          {showLocation && (
+            <p className="mt-1 text-sm font-semibold text-signal">
+              {r.location.name} — {r.location.city}, {r.location.state}
+            </p>
+          )}
           <p className="mt-3 whitespace-pre-line text-sm text-muted">{r.body}</p>
           <p className="mt-3 text-xs text-muted">
             {r.reviewerName ?? 'Verified driver submission'}

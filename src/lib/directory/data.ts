@@ -37,6 +37,9 @@ type LocationRow = {
   interstate: string | null;
   exit_number: string | null;
   created_at: string | null;
+  detail_slug: string | null;
+  updated_at: string | null;
+  verified_at: string | null;
 };
 
 /** Only ever emit http(s) URLs to the page (defense in depth after zod). */
@@ -83,13 +86,17 @@ function toEntry(row: LocationRow): DirectoryEntry {
     interstate: row.interstate ?? undefined,
     exitNumber: row.exit_number ?? undefined,
     createdAt: row.created_at ?? undefined,
+    detailSlug: row.detail_slug ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
+    verifiedAt: row.verified_at ?? undefined,
   };
 }
 
 const COLUMNS =
   'id, name, category_slug, state, city, slug, address, zip, phone, website, description, ' +
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
-  'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at';
+  'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at, ' +
+  'detail_slug, updated_at, verified_at';
 
 /** Shared query base: published, not deleted, capped, featured-then-name order. */
 async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {
@@ -114,6 +121,11 @@ async function selectEntries(filters: Record<string, string>): Promise<Directory
 
 export function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
   return selectEntries({ category_slug: categorySlug });
+}
+
+/** Every published listing — sitemap + completeness checks (capped like all reads). */
+export function getAllPublishedEntries(): Promise<DirectoryEntry[]> {
+  return selectEntries({});
 }
 
 /** All published listings in a state (two-letter code), for state pages. */
@@ -157,6 +169,59 @@ export async function getEntriesWithCoordinates(
     const { data, error } = await query.order('name', { ascending: true }).limit(2000);
     if (error || !data) return [];
     return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve one published listing by its public detail slug (Milestone 20).
+ * Anon client + explicit published/non-deleted filters (RLS enforces the same
+ * boundary), so unpublished, soft-deleted, and unknown slugs all resolve to
+ * null — the detail route turns that into a 404. Fails soft to null.
+ */
+export async function getEntryByDetailSlug(detailSlug: string): Promise<DirectoryEntry | null> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .eq('detail_slug', detailSlug)
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return toEntry(data as unknown as LocationRow);
+  } catch {
+    return null;
+  }
+}
+
+export type DetailSlugRef = {
+  detailSlug: string;
+  updatedAt?: string;
+};
+
+/**
+ * Every published listing's detail slug — drives generateStaticParams and the
+ * sitemap without pulling full rows. Fails soft to [].
+ */
+export async function getPublishedDetailSlugs(): Promise<DetailSlugRef[]> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select('detail_slug, updated_at')
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .not('detail_slug', 'is', null)
+      .limit(5000);
+    if (error || !data) return [];
+    return (data as unknown as { detail_slug: string; updated_at: string | null }[]).map((r) => ({
+      detailSlug: r.detail_slug,
+      updatedAt: r.updated_at ?? undefined,
+    }));
   } catch {
     return [];
   }

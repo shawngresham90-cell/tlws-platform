@@ -79,6 +79,37 @@ function listingSchema(entry: DirectoryEntry, reviewSeo?: ReviewSeo) {
   };
 }
 
+/**
+ * Standalone LocalBusiness/Place schema for a listing's own detail page
+ * (Milestone 20). AggregateRating and Review objects appear only when
+ * APPROVED reviews exist; geo only with verified coordinates; dateModified
+ * prefers the newest approved review, falling back to the row's updated_at.
+ */
+export function listingDetailSchema(
+  entry: DirectoryEntry,
+  path: string,
+  aggregate: ReviewAggregate | null,
+  reviews: SeoReview[],
+): object {
+  const base = listingSchema(entry, {
+    aggregates: aggregate && aggregate.count > 0 ? { [entry.id]: aggregate } : {},
+    reviewsByLocation: { [entry.id]: reviews },
+  }) as Record<string, unknown>;
+  const dateModified =
+    reviews.length > 0
+      ? reviews[0].createdAt.slice(0, 10)
+      : entry.updatedAt
+        ? entry.updatedAt.slice(0, 10)
+        : undefined;
+  return {
+    '@context': 'https://schema.org',
+    ...base,
+    '@id': `${SITE.url}${path}#listing`,
+    mainEntityOfPage: `${SITE.url}${path}`,
+    ...(dateModified ? { dateModified } : {}),
+  };
+}
+
 /** ItemList of LocalBusiness/Place for a directory page, or null when empty. */
 export function listingListSchema(
   entries: DirectoryEntry[],
