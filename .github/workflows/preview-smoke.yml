@@ -124,6 +124,21 @@ jobs:
             || { echo "FAIL parking TPC link rel incomplete"; fail=1; }
           exit $fail
 
+      - name: Admin gate holds for directory tools (M21 routes included)
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          fail=0
+          for route in /admin/directory /admin/directory/quality /admin/directory/tpc \
+                       /admin/directory/corrections /admin/directory/duplicates \
+                       /admin/directory/expansion /admin/directory/geocoding; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE$route")
+            dest=$(curl -s -o /dev/null -w "%{redirect_url}" --max-time 30 "$BASE$route")
+            echo "$route -> $code (to $dest)"
+            case "$code" in 3*) : ;; *) echo "FAIL $route not redirected"; fail=1 ;; esac
+            case "$dest" in */admin/login*) : ;; *) echo "FAIL $route redirect target"; fail=1 ;; esac
+          done
+          exit $fail
+
       - name: List pages link to detail pages; sitemap carries them
         run: |
           BASE="${{ github.event.inputs.base }}"
