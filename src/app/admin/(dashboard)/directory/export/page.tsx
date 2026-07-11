@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
+import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export default function AdminDirectoryExportPage() {
   requireAdmin();
   return (
     <div>
+      <DirectoryToolsNav />
       <p className="mb-2 text-sm text-muted">
         <Link href="/admin/directory" className="hover:text-signal">
           ← Directory

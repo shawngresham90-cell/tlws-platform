@@ -56,6 +56,26 @@ function escapeCell(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
+/**
+ * Spreadsheet formula-injection guard (Milestone 21). Cells beginning with
+ * = + - @ or a tab would execute as formulas when an exported CSV is opened
+ * in Excel/Sheets; prefixing a single quote makes them inert text (the
+ * spreadsheet convention). Apply to every human-authored cell in exports.
+ */
+export function safeCsvCell(value: string): string {
+  return /^[=+\-@\t]/.test(value) ? `'${value}` : value;
+}
+
+/**
+ * Inverse of safeCsvCell for round-trip uploads: a leading apostrophe that
+ * guards a formula character is a display artifact, not data — strip exactly
+ * that one case so re-uploading our own export never writes the guard into
+ * the database.
+ */
+export function unguardCsvCell(value: string): string {
+  return /^'[=+\-@\t]/.test(value) ? value.slice(1) : value;
+}
+
 /** Serialize rows to CSV text (CRLF line endings for spreadsheet apps). */
 export function toCsv(rows: (string | number | boolean | null | undefined)[][]): string {
   return rows

@@ -19,7 +19,8 @@ export const metadata = {
 };
 
 const SLUG_MESSAGES: Record<string, string> = {
-  'slug-updated': 'Public URL regenerated. Old links to the previous URL will now 404.',
+  'slug-updated':
+    'Public URL regenerated. The previous URL now permanently redirects to the new one.',
   'slug-current': 'The public URL already matches the listing’s name, city, and state — nothing to change.',
 };
 
@@ -45,7 +46,12 @@ export default async function AdminDirectoryEditPage({
   const editAction = saveListingAction.bind(null, row.id);
   const slugMessage = searchParams.ok ? SLUG_MESSAGES[searchParams.ok] : null;
   const slugError =
-    searchParams.error === 'slug' ? 'Could not regenerate the public URL — try again.' : null;
+    searchParams.error === 'slug'
+      ? 'Could not regenerate the public URL — try again.'
+      : searchParams.error === 'slug-redirects-missing'
+        ? 'Regeneration is blocked: the slug-redirect table (migration 023) is not provisioned, ' +
+          'so the old URL could not be preserved. Apply the migration first.'
+        : null;
   const expectedBase = detailSlugBase(row.name, row.city, row.state);
   const slugInSync =
     row.detail_slug != null &&
@@ -130,10 +136,11 @@ export default async function AdminDirectoryEditPage({
                   message={
                     `Regenerate the public URL from the current name/city/state?\n\n` +
                     `New URL: /directory/location/${expectedBase} (or a -2/-3 variant if taken)\n\n` +
-                    `WARNING: the current URL (/directory/location/${row.detail_slug}) will start ` +
-                    `returning 404. Anyone who bookmarked or linked it loses the page. Search ` +
-                    `engines must re-discover the new URL. Only do this after a rename that made ` +
-                    `the old URL misleading.`
+                    `The current URL (/directory/location/${row.detail_slug}) will permanently ` +
+                    `redirect (301) to the new one, so bookmarks keep working — but search ` +
+                    `engines still need time to pick up the change, and the canonical URL you ` +
+                    `share going forward changes. Only do this after a rename that made the old ` +
+                    `URL misleading.`
                   }
                   className="rounded-card border border-line px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-signal hover:text-signal"
                 >

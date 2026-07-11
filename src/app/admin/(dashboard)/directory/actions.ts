@@ -6,6 +6,9 @@ import { requireAdmin } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { parseListingForm, toRow, slugify } from '@/lib/directory/admin';
 import { detailSlugBase, uniqueDetailSlug, detailHref } from '@/lib/directory/detail-slug';
+import { planSlugRedirect } from '@/lib/directory/redirects';
+import { MODERATION_ADMIN } from '@/lib/admin/community';
+import { recordHistory } from '@/lib/admin/history';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
 import { prepareImport, IMPORT_LIMITS, type ImportSummary } from '@/lib/directory/import';
 import { orderPair } from '@/lib/directory/duplicates';
@@ -114,10 +117,12 @@ export async function softDeleteAction(id: string, categorySlug: string | null):
 
 /**
  * Regenerate a listing's public detail slug from its CURRENT name/city/state
- * (Milestone 20). Deliberately narrow — no free-text slug editing: the only
- * thing this can produce is the deterministic base (plus a collision suffix),
- * and the admin UI gates it behind an explicit are-you-sure warning because
- * changing a public URL breaks existing links. No-op when already in sync.
+ * (Milestone 20, redirect-protected in Milestone 21). Deliberately narrow —
+ * no free-text slug editing. Sequence, aborting at the first failure:
+ * history record → redirect row for the retiring slug (permanent 301 to the
+ * canonical) → slug update. Without the redirect table (migration 023
+ * unapplied) regeneration REFUSES to run rather than silently breaking the
+ * old URL. No-op when already in sync.
  */
 export async function regenerateDetailSlugAction(id: string): Promise<void> {
   requireAdmin();
@@ -160,6 +165,52 @@ export async function regenerateDetailSlugAction(id: string): Promise<void> {
   );
   const next = uniqueDetailSlug(base, taken);
 
+  // Redirect protection is mandatory: probe the redirect table BEFORE any
+  // write. A missing table (migration 023 not applied) aborts regeneration.
+  const { data: redirectRows, error: redirectReadError } = await supabase
+    .from('directory_slug_redirects')
+    .select('old_slug')
+    .in('old_slug', [current, next]);
+  if (redirectReadError) redirect(`/admin/directory/${id}/edit?error=slug-redirects-missing`);
+
+  const plan = planSlugRedirect({
+    currentSlug: current,
+    nextSlug: next,
+    existingOldSlugs: new Set(
+      ((redirectRows as { old_slug: string }[]) ?? []).map((r) => r.old_slug),
+    ),
+  });
+  if (!plan.ok) redirect(`/admin/directory/${id}/edit?error=slug`);
+
+  // 1) History first — a slug change without a record never happens.
+  const historyError = await recordHistory(supabase, {
+    location_id: id,
+    source: 'admin-edit',
+    admin: MODERATION_ADMIN,
+    changed_fields: { detail_slug: { from: current, to: next } },
+    note: `slug-regenerate: /directory/location/${current} → /directory/location/${next}`.slice(0, 500),
+  });
+  if (historyError) redirect(`/admin/directory/${id}/edit?error=slug`);
+
+  // 2) Prune rows that would loop (the listing reclaiming a retired slug),
+  //    then write the redirect. Failure here aborts BEFORE the slug changes.
+  if (plan.deleteOldSlugs.length > 0) {
+    const { error: pruneError } = await supabase
+      .from('directory_slug_redirects')
+      .delete()
+      .in('old_slug', plan.deleteOldSlugs);
+    if (pruneError) redirect(`/admin/directory/${id}/edit?error=slug`);
+  }
+  const { error: redirectWriteError } = await supabase.from('directory_slug_redirects').insert({
+    location_id: id,
+    old_slug: plan.insert.oldSlug,
+    new_slug: plan.insert.newSlug,
+    reason: 'regenerated from name/city/state',
+    created_by: MODERATION_ADMIN,
+  });
+  if (redirectWriteError) redirect(`/admin/directory/${id}/edit?error=slug`);
+
+  // 3) Only now does the public URL change.
   const { error: updateError } = await supabase
     .from('locations')
     .update({ detail_slug: next })
@@ -287,6 +338,49 @@ export async function mergeDuplicateAction(keepId: string, dropId: string): Prom
   revalidateAllDirectory();
   revalidatePath('/admin/directory/duplicates');
   redirect('/admin/directory/duplicates?ok=merged');
+}
+
+/**
+ * Persist a duplicate-review decision (Milestone 21): legitimate co-location,
+ * false positive (not duplicates), or confirmed duplicate awaiting manual
+ * merge. Prefers the location_pair_decisions table (migration 023); when it
+ * is not provisioned yet, falls back to the exclusion-only ignore table so
+ * the pair still stops resurfacing, and says so.
+ */
+export async function recordPairDecisionAction(
+  xId: string,
+  yId: string,
+  decision: 'co-located' | 'not-duplicates' | 'duplicate-confirmed',
+): Promise<void> {
+  requireAdmin();
+  if (xId === yId) redirect('/admin/directory/duplicates?error=decision');
+  const { a, b } = orderPair(xId, yId);
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from('location_pair_decisions')
+    .upsert({ a, b, decision, admin: 'owner' }, { onConflict: 'a,b' });
+  if (!error) {
+    // Confirmed duplicates must KEEP surfacing in the finder until merged;
+    // the other decisions also suppress the ignore-table path for safety.
+    if (decision !== 'duplicate-confirmed') {
+      await supabase.from('location_duplicate_ignores').upsert({ a, b });
+    }
+    revalidatePath('/admin/directory/duplicates');
+    redirect('/admin/directory/duplicates?ok=decision-saved');
+  }
+
+  // Table missing (migration 023 unapplied) → exclusion-only fallback.
+  if (decision !== 'duplicate-confirmed') {
+    const { error: fallbackError } = await supabase
+      .from('location_duplicate_ignores')
+      .upsert({ a, b });
+    if (!fallbackError) {
+      revalidatePath('/admin/directory/duplicates');
+      redirect('/admin/directory/duplicates?ok=decision-fallback');
+    }
+  }
+  redirect('/admin/directory/duplicates?error=decision-table-missing');
 }
 
 /** Remember a pair as "not duplicates" so the finder stops flagging it. */
