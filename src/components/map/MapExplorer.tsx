@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useSearchParams } from 'next/navigation';
 import { detailHref } from '@/lib/directory/detail-slug';
 import { DIRECTORY_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import { AMENITIES } from '@/lib/directory/amenities';
@@ -81,10 +80,12 @@ export function MapExplorer({
   const listRef = useRef<HTMLUListElement>(null);
 
   // Detail pages deep-link one listing (?listing=<detail slug>): select it and
-  // zoom to it once on load. Any later interaction releases the focus.
-  const searchParams = useSearchParams();
+  // zoom to it once on load. Any later interaction releases the focus. Read
+  // from window.location instead of useSearchParams so the explorer stays
+  // fully prerenderable — useSearchParams bails the whole tree out of static
+  // HTML, which stripped the map UI from ISR copies of /directory/map.
   useEffect(() => {
-    const slug = searchParams.get('listing');
+    const slug = new URLSearchParams(window.location.search).get('listing');
     if (!slug) return;
     const entry = entries.find((e) => e.detailSlug === slug);
     if (entry && entry.lat != null && entry.lng != null) {

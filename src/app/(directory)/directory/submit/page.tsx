@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { Section, Eyebrow } from '@/components/ui';
 import { SubmitLocationForm } from '@/components/community/SubmitLocationForm';
 import { getListingRefs } from '@/lib/community/data';
@@ -49,11 +48,7 @@ export default async function SubmitPage() {
         </div>
 
         <div className="mt-10 max-w-3xl">
-          {/* Suspense: the form reads ?listing=&kind= via useSearchParams to
-              preselect the listing a detail page linked from. */}
-          <Suspense fallback={null}>
-            <SubmitLocationForm siteKey={siteKey} listings={listings} />
-          </Suspense>
+          <SubmitLocationForm siteKey={siteKey} listings={listings} />
         </div>
       </Section>
     </>
