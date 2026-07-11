@@ -4,7 +4,7 @@
 
 - **Total listings audited:** 139 (GA 78, TN 61)
 - **Coordinates already present in the live DB:** 0 of 139 (every listing needed geocoding)
-- **High-confidence `ready` rows:** 48 (GA 43, TN 5)
+- **High-confidence `ready` rows:** 45 after the final approval audit (GA 41, TN 4)
 - **`manual-review` rows (medium 60 + low 19):** 79
 - **`skip` rows (unresolved, no verifiable coordinates):** 12
 - **Adversarial second-pass audit:** 55 rows re-verified (41 confirmed, 7 suspect → demoted, 7 wrong → corrected or dropped)
@@ -96,6 +96,39 @@ across every same-address group. Two flagged groups are explained below.
 - The 12 `skip` rows need fresh research (7 TN listings had no reachable
   coordinate source; the Bradley SB weigh station likely does not exist as a
   separate facility — consider unpublishing or merging it).
+
+
+## Final approval audit (third pass — all 48 ready rows)
+
+Every ready row was re-verified by a third independent pass before staging.
+**Decision: 45 approved to apply · 3 demoted to manual-review · 0 skipped.**
+
+Demotions:
+1. **GA DPS Weigh Station 1 (I-75 SB, Catoosa/Tunnel Hill)** and
+2. **GA DPS Weigh Station 2 (I-75 NB, Catoosa)** — the audit discovered the
+   two "cross-checking" weigh-station datasets are NOT independent (one is a
+   decimal truncation of the other), and unlike the Forsyth/Valdosta pairs
+   there is no OSM feature here to corroborate the side-of-road placement.
+3. **TN Weigh Station I-40 EB MM 372 (Knox)** — facility and mile marker are
+   official (THP), but the required south-side placement could not be
+   independently confirmed (the dataset's WB row is a duplicate of the EB row).
+
+The Forsyth and Valdosta weigh-station pairs stay approved: OSM features
+independently confirm both position and side (13–120 m agreement).
+
+## Staged apply files (approved rows only)
+
+| file | rows |
+|---|---|
+| `i75-ga-tn-geocoding-batch-001-part1.csv` | 10 |
+| `i75-ga-tn-geocoding-batch-001-part2.csv` | 10 |
+| `i75-ga-tn-geocoding-batch-001-part3.csv` | 10 |
+| `i75-ga-tn-geocoding-batch-001-part4.csv` | 15 |
+
+Apply them in order at /admin/directory/geocoding (each file passes the
+tool's validation with every row applicable); verify listings after each
+part before uploading the next. The master CSV remains the full record —
+its 45 ready rows are exactly the union of the four parts.
 
 ## How to apply this batch (exact steps)
 
