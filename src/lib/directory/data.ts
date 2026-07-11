@@ -134,6 +134,34 @@ export function getEntriesByExit(
   return selectEntries({ interstate: designation, exit_number: exitNumber });
 }
 
+/**
+ * Published listings that carry coordinates — the map/near-me data source
+ * (Milestone 17). Optional exact-match filters mirror selectEntries. Fails
+ * soft to [] like every other public read.
+ */
+export async function getEntriesWithCoordinates(
+  filters: { category?: string; state?: string; interstate?: string } = {},
+): Promise<DirectoryEntry[]> {
+  try {
+    const supabase = createStaticClient();
+    let query = supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null);
+    if (filters.category) query = query.eq('category_slug', filters.category);
+    if (filters.state) query = query.eq('state', filters.state.toUpperCase());
+    if (filters.interstate) query = query.eq('interstate', filters.interstate);
+    const { data, error } = await query.order('name', { ascending: true }).limit(2000);
+    if (error || !data) return [];
+    return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
 export type DirectoryFacets = {
   /** Two-letter codes of states that have at least one published listing. */
   states: string[];

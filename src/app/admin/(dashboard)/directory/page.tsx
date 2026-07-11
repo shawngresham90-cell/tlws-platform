@@ -94,6 +94,9 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           <Link href="/admin/directory/duplicates" className={toolbarBtn}>
             Duplicates
           </Link>
+          <Link href="/admin/directory/geocoding" className={toolbarBtn}>
+            Geocoding
+          </Link>
           <Link
             href="/admin/directory/new"
             className="rounded-card bg-signal px-4 py-2 font-display text-base uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"

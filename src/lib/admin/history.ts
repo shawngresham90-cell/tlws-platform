@@ -9,7 +9,13 @@ import type { ChangedFields } from './community';
  * write ABORTS the change — a listing is never overwritten without a record.
  */
 
-export type HistorySource = 'submission' | 'review' | 'admin-edit' | 'merge' | 'closure';
+export type HistorySource =
+  | 'submission'
+  | 'review'
+  | 'admin-edit'
+  | 'merge'
+  | 'closure'
+  | 'geocoding';
 
 export type HistoryEntry = {
   location_id: string;
