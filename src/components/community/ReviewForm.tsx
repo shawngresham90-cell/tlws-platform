@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
@@ -21,14 +20,19 @@ const TRUCK_TYPE_OPTIONS = TRUCK_TYPES.map((t) => ({ value: t, label: t }));
 type Errors = Record<string, string>;
 
 export function ReviewForm({ siteKey, listings }: { siteKey: string; listings: ListingRef[] }) {
-  // Detail pages deep-link here (?listing=<detail slug>) with the listing
-  // preselected. Slugs only — internal ids never ride in URLs.
-  const searchParams = useSearchParams();
-  const linkedListing = listings.find(
-    (l) => l.detailSlug && l.detailSlug === searchParams.get('listing'),
-  );
+  const [locationId, setLocationId] = useState('');
 
-  const [locationId, setLocationId] = useState(linkedListing?.id ?? '');
+  // Detail pages deep-link here (?listing=<detail slug>) with the listing
+  // preselected. Slugs only — internal ids never ride in URLs. Read from
+  // window.location in a mount effect instead of useSearchParams, which
+  // would bail the form out of the page's static HTML.
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('listing');
+    const linked = slug ? listings.find((l) => l.detailSlug === slug) : undefined;
+    if (linked) setLocationId(linked.id);
+    // Mount-only: the deep link is the initial URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { Section, Eyebrow } from '@/components/ui';
 import { MapExplorer } from '@/components/map/MapExplorer';
 import { getEntriesWithCoordinates, getDirectoryFacets } from '@/lib/directory/data';
@@ -60,16 +59,12 @@ export default async function DirectoryMapPage() {
         </div>
 
         <div className="mt-8">
-          {/* Suspense: the explorer reads ?listing= via useSearchParams to
-              zoom to a deep-linked listing from its detail page. */}
-          <Suspense fallback={null}>
-            <MapExplorer
-              entries={entries}
-              states={statesWithCoords}
-              interstates={interstatesWithCoords}
-              stateNamesByCode={stateNamesByCode}
-            />
-          </Suspense>
+          <MapExplorer
+            entries={entries}
+            states={statesWithCoords}
+            interstates={interstatesWithCoords}
+            stateNamesByCode={stateNamesByCode}
+          />
         </div>
 
         <p className="mt-10 text-xs text-muted">

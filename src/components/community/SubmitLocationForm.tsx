@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField, SelectField, CheckboxField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
@@ -82,26 +81,8 @@ export function SubmitLocationForm({
   siteKey: string;
   listings: ListingRef[];
 }) {
-  // Detail pages deep-link here (?listing=<detail slug>&kind=correction) so
-  // the report arrives with the listing already picked. Slugs only — internal
-  // ids never ride in URLs. Unknown values fall back to the default form.
-  const searchParams = useSearchParams();
-  const linkedListing = listings.find(
-    (l) => l.detailSlug && l.detailSlug === searchParams.get('listing'),
-  );
-  const kindParam = searchParams.get('kind');
-  const linkedKind = (SUBMISSION_KINDS as readonly string[]).includes(kindParam ?? '')
-    ? (kindParam as SubmissionKind)
-    : undefined;
-
-  const [kind, setKind] = useState<SubmissionKind>(
-    linkedKind && (linkedKind !== 'new' ? Boolean(linkedListing) : true)
-      ? linkedKind
-      : linkedListing
-        ? 'correction'
-        : 'new',
-  );
-  const [locationId, setLocationId] = useState(linkedListing?.id ?? '');
+  const [kind, setKind] = useState<SubmissionKind>('new');
+  const [locationId, setLocationId] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [address, setAddress] = useState('');
@@ -127,6 +108,27 @@ export function SubmitLocationForm({
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Detail pages deep-link here (?listing=<detail slug>&kind=correction) so
+  // the report arrives with the listing already picked. Slugs only — internal
+  // ids never ride in URLs. Read from window.location in a mount effect
+  // instead of useSearchParams, which would bail the form out of the page's
+  // static HTML. Unknown values leave the default form untouched.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linked = listings.find(
+      (l) => l.detailSlug && l.detailSlug === params.get('listing'),
+    );
+    const kindParam = params.get('kind');
+    const linkedKind = (SUBMISSION_KINDS as readonly string[]).includes(kindParam ?? '')
+      ? (kindParam as SubmissionKind)
+      : undefined;
+    if (linked) setLocationId(linked.id);
+    if (linkedKind && (linkedKind === 'new' || linked)) setKind(linkedKind);
+    else if (linked) setKind('correction');
+    // Mount-only: the deep link is the initial URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showDetails = DETAIL_KINDS.includes(kind);
   const showAmenities = AMENITY_KINDS.includes(kind);
