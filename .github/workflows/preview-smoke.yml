@@ -98,6 +98,32 @@ jobs:
           done
           exit $fail
 
+      - name: Map preview, no-coords fallback, sponsored rel
+        run: |
+          BASE="${{ github.event.inputs.base }}"
+          fail=0
+          COORDS=$(curl -s --max-time 30 "$BASE/directory/location/cat-scale-flying-j-travel-center-630-jackson-jackson-ga")
+          echo "$COORDS" | grep -qF 'Loading map preview' \
+            && echo "OK   coords page mounts the map preview" \
+            || { echo "FAIL coords page missing map preview"; fail=1; }
+          echo "$COORDS" | grep -qF 'GeoCoordinates' \
+            && echo "OK   coords page has geo schema" \
+            || { echo "FAIL coords page missing geo schema"; fail=1; }
+          NOCOORDS=$(curl -s --max-time 30 "$BASE/directory/location/blue-beacon-truck-wash-jackson-jackson-ga")
+          echo "$NOCOORDS" | grep -qF 'still being confirmed' \
+            && echo "OK   no-coords page shows honest fallback" \
+            || { echo "FAIL no-coords page missing fallback"; fail=1; }
+          echo "$NOCOORDS" | grep -qF 'Loading map preview' \
+            && { echo "FAIL no-coords page mounts a map"; fail=1; } \
+            || echo "OK   no-coords page mounts no map"
+          echo "$NOCOORDS" | grep -qF 'GeoCoordinates' \
+            && { echo "FAIL no-coords page invents geo schema"; fail=1; } \
+            || echo "OK   no-coords page has no geo schema"
+          curl -s --max-time 30 "$BASE/directory/parking" | grep -qF 'rel="sponsored noopener noreferrer"' \
+            && echo "OK   TPC affiliate link carries full rel triple" \
+            || { echo "FAIL parking TPC link rel incomplete"; fail=1; }
+          exit $fail
+
       - name: List pages link to detail pages; sitemap carries them
         run: |
           BASE="${{ github.event.inputs.base }}"
