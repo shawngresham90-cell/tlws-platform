@@ -1,5 +1,6 @@
 import type { DirectoryEntry } from './types';
 import { scoreCompleteness } from './completeness';
+import { isDetailIndexable } from './detail';
 
 /**
  * Directory ranking (Milestone 25) — deterministic ordering built ONLY from
@@ -156,8 +157,11 @@ export function rankEntries(entries: DirectoryEntry[], input: RankInput = {}): R
 }
 
 /**
- * The listings worth featuring in a "top" list: published + indexable (already
- * admin-marked complete) with a meaningful composite. Returns [] rather than a
+ * The listings worth featuring in a "top" list: published entries that clear
+ * the deterministic indexability gate (isDetailIndexable — street address plus
+ * ≥2 substance signals), the same gate the sitemap and detail pages use. This
+ * is deliberately NOT the locations.is_indexable column, which is an unused
+ * manual override that is false on every current row. Returns [] rather than a
  * thin/empty list so pages can hide the section instead of showing filler.
  */
 export function topRanked(
@@ -166,7 +170,7 @@ export function topRanked(
 ): RankedEntry[] {
   const { limit = 25, minScore = 1, ...rankInput } = input;
   return rankEntries(
-    entries.filter((e) => e.indexable),
+    entries.filter(isDetailIndexable),
     rankInput,
   )
     .filter((r) => r.score >= minScore)
