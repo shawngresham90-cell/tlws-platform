@@ -42,6 +42,8 @@ jobs:
             /directory/i75
             /directory/i75/exit-201
             /directory/i75/exit-369
+            /directory/submit
+            /directory/reviews
           )
           fail=0
           for route in "${ROUTES[@]}"; do
@@ -83,6 +85,21 @@ jobs:
           absent /directory/truck-stops "JP Truck Center"
           absent /directory/truck-stops "America&#x27;s Truck Stop"
           absent /directory/truck-washes "S &amp; B Truck Wash"
+          exit $fail
+
+      - name: Admin gate holds (moderation queues never public)
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          fail=0
+          for route in /admin/submissions /admin/reviews /admin/directory; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BASE$route")
+            dest=$(curl -s -o /dev/null -w "%{redirect_url}" --max-time 30 "$BASE$route")
+            final=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 30 "$BASE$route")
+            echo "$route -> $code (to $dest), follows to $final"
+            case "$code" in 3*) : ;; *) echo "FAIL $route not redirected"; fail=1 ;; esac
+            case "$dest" in */admin/login*) : ;; *) echo "FAIL $route redirect target"; fail=1 ;; esac
+            [ "$final" = "200" ] || { echo "FAIL $route login page not 200"; fail=1; }
+          done
           exit $fail
 
       - name: Per-run assertions (dispatch inputs, ISR-aware retries)
