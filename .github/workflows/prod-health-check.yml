@@ -6,6 +6,11 @@ name: Production health check
 # Optional dispatch inputs add per-run assertions (one "route|string" per
 # line) checked with retries, so staged imports can be verified without
 # editing this file. Dispatch from the Actions tab for a 30-second smoke test.
+#
+# Pattern gotcha: React SSR inserts <!-- --> between static text and JSX
+# interpolations ("Around {label}" serves as "Around <!-- -->I-75"), so
+# grep -F can only match strings that are a single static segment or live
+# inside an attribute (aria-label, href). Assert those, never mixed text.
 on:
   workflow_dispatch:
     inputs:
