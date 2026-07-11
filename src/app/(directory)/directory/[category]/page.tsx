@@ -9,6 +9,7 @@ import {
   FaqSection,
   NearbySections,
   RelatedLinks,
+  SponsorSlot,
 } from '@/components/directory';
 import { buildFaqs } from '@/lib/directory/faq';
 import {
@@ -219,6 +220,17 @@ export default async function DirectoryEnginePage({
           }
         />
         <Section>
+          <SponsorSlot placement="state" state={state.code} className="mb-8" />
+          {entries.some((e) => e.category === 'truck-stops') && (
+            <p className="mb-6 text-sm">
+              <Link
+                href={`/directory/${state.slug}/top-truck-stops`}
+                className="font-semibold text-signal underline-offset-4 hover:underline"
+              >
+                🏆 Top truck stops in {state.name} →
+              </Link>
+            </p>
+          )}
           <MultiCategoryBrowser entries={entries} scopeLabel={state.name} groupBy="category" />
           <NearbySections entries={entries} scopeLabel={state.name} />
           <FaqSection faqs={faqs} heading={`${state.name} driver FAQ`} />
@@ -279,6 +291,15 @@ export default async function DirectoryEnginePage({
         }
       />
       <Section>
+        <SponsorSlot placement="interstate" interstate={interstate.designation} className="mb-8" />
+        <p className="mb-6 text-sm">
+          <Link
+            href={`/directory/${interstate.slug}/truck-parking`}
+            className="font-semibold text-signal underline-offset-4 hover:underline"
+          >
+            🅿️ Truck parking on {interstate.designation}, state by state →
+          </Link>
+        </p>
         {exits.length > 0 && (
           <nav aria-label={`${interstate.designation} exits with coverage`} className="mb-8">
             <h2 className="font-display text-xl uppercase text-ink">Jump to an exit</h2>

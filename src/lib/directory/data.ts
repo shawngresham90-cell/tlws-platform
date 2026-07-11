@@ -147,6 +147,53 @@ export function getEntriesByExit(
 }
 
 /**
+ * Published listings ordered by most-recently-updated (Milestone 25). Only rows
+ * with a real updated_at are returned, so "recently updated" never implies a
+ * change that didn't happen. Fails soft to [].
+ */
+export async function getRecentlyUpdated(limit = 50): Promise<DirectoryEntry[]> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .not('updated_at', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(Math.min(Math.max(limit, 1), 200));
+    if (error || !data) return [];
+    return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Published listings ordered newest-first by creation date (Milestone 25), with
+ * a bounded window for pagination. Rows without a created_at sort last. Fails
+ * soft to [].
+ */
+export async function getNewestListings(limit = 24, offset = 0): Promise<DirectoryEntry[]> {
+  try {
+    const supabase = createStaticClient();
+    const from = Math.max(offset, 0);
+    const to = from + Math.min(Math.max(limit, 1), 100) - 1;
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false, nullsFirst: false })
+      .range(from, to);
+    if (error || !data) return [];
+    return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Published listings that carry coordinates — the map/near-me data source
  * (Milestone 17). Optional exact-match filters mirror selectEntries. Fails
  * soft to [] like every other public read.
