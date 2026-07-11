@@ -130,7 +130,7 @@ export default async function TruckParkingPage() {
             <a
               href={TPC_URL}
               target="_blank"
-              rel="noopener sponsored"
+              rel="sponsored noopener noreferrer"
               className="inline-flex items-center justify-center rounded-card bg-signal px-6 py-3 font-display text-lg uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
             >
               Reserve paid parking through TruckParkingClub →
