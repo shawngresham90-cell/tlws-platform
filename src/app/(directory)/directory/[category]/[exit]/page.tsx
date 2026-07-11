@@ -2,16 +2,25 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, MultiCategoryBrowser } from '@/components/directory';
+import {
+  DirectoryHero,
+  MultiCategoryBrowser,
+  FaqSection,
+  NearbySections,
+  RelatedLinks,
+} from '@/components/directory';
+import { buildFaqs } from '@/lib/directory/faq';
+import { entriesNearExit } from '@/lib/directory/related';
+import { exitScopeLinks } from '@/lib/directory/scope-links';
 import {
   interstateBySlug,
   interstateSlug,
   exitSlug,
   exitFromSlug,
 } from '@/lib/directory/interstates';
-import { getEntriesByExit, getDirectoryFacets } from '@/lib/directory/data';
+import { getEntriesByExit, getEntriesByInterstate, getDirectoryFacets } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
-import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
+import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
@@ -60,11 +69,17 @@ export async function generateMetadata({
   const resolved = await resolveExit(params);
   if (!resolved) return {};
   const { interstate, exit } = resolved;
+  const entries = await getEntriesByExit(interstate.designation, exit);
+  const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
   return buildMetadata({
     title: `${interstate.designation} Exit ${exit} — Truck Stops, Parking & Services | Trucking Life with Shawn`,
     description:
-      `What's at ${interstate.designation} Exit ${exit} for drivers: verified truck stops, ` +
-      'truck parking, CAT scales, truck washes, tire repair, and hotels with truck parking.',
+      entries.length > 0
+        ? `${entries.length} verified driver service${entries.length === 1 ? '' : 's'} at ` +
+          `${interstate.designation} Exit ${exit} (${places.join('; ')}): truck stops, parking, ` +
+          'CAT scales, washes, tires, and hotels — checked by a 17-year driver.'
+        : `What's at ${interstate.designation} Exit ${exit} for drivers: verified truck stops, ` +
+          'truck parking, CAT scales, truck washes, tire repair, and hotels with truck parking.',
     path: `/directory/${interstate.slug}/${params.exit.toLowerCase()}`,
   });
 }
@@ -78,11 +93,20 @@ export default async function ExitPage({
   if (!resolved) notFound();
   const { interstate, exit } = resolved;
 
-  const entries = await getEntriesByExit(interstate.designation, exit);
+  const [entries, corridorEntries, facets] = await Promise.all([
+    getEntriesByExit(interstate.designation, exit),
+    getEntriesByInterstate(interstate.designation),
+    getDirectoryFacets(),
+  ]);
   // An exit page only exists while it has published listings.
   if (entries.length === 0) notFound();
 
   const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
+  const statesAtExit = [...new Set(entries.map((e) => e.state))];
+  const scopeLabel = `${interstate.designation} Exit ${exit}`;
+  const faqs = buildFaqs(entries, { kind: 'exit', label: scopeLabel });
+  const nearby = entriesNearExit(corridorEntries, exit, statesAtExit);
+  const allExits = facets.exitsByInterstate[interstate.designation] ?? [];
   const path = `/directory/${interstate.slug}/${exitSlug(exit)}`;
   const listings = await listingListSchemaWithReviews(
     entries,
@@ -101,6 +125,7 @@ export default async function ExitPage({
             { name: `Exit ${exit}`, path },
           ]),
           ...(listings ? [listings] : []),
+          ...(faqSchema(faqs) ? [faqSchema(faqs)!] : []),
         ]}
       />
       <DirectoryHero
@@ -111,7 +136,7 @@ export default async function ExitPage({
           { name: `Exit ${exit}` },
         ]}
         eyebrow={`${interstate.designation} · Exit ${exit}`}
-        title={`Everything at Exit ${exit}`}
+        title={`${interstate.designation} Exit ${exit}, truck stop to scale`}
         intro={`${entries.length} verified location${entries.length === 1 ? '' : 's'} serving ${
           interstate.designation
         } Exit ${exit} — ${places.join(' · ')}.`}
@@ -122,6 +147,22 @@ export default async function ExitPage({
           scopeLabel={`${interstate.designation} Exit ${exit}`}
           groupBy="state"
           stateOrder={interstate.stateOrder}
+        />
+        <NearbySections
+          entries={nearby}
+          scopeLabel={scopeLabel}
+          excludeIds={new Set(entries.map((e) => e.id))}
+        />
+        <FaqSection faqs={faqs} heading={`Exit ${exit} driver FAQ`} />
+        <RelatedLinks
+          groups={exitScopeLinks(
+            interstate.designation,
+            interstate.slug,
+            exit,
+            allExits,
+            statesAtExit,
+            facets,
+          )}
         />
         <p className="mt-10 text-sm text-muted">
           <Link

@@ -4,3 +4,6 @@ export { DirectoryBrowser } from './DirectoryBrowser';
 export { EntryCard } from './EntryCard';
 export { DirectoryEmptyState } from './DirectoryEmptyState';
 export { MultiCategoryBrowser } from './MultiCategoryBrowser';
+export { FaqSection } from './FaqSection';
+export { NearbySections } from './NearbySections';
+export { RelatedLinks } from './RelatedLinks';
