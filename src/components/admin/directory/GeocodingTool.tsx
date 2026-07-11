@@ -8,7 +8,14 @@ import {
   type GeocodingPreviewState,
   type GeocodingApplyState,
 } from '@/app/admin/(dashboard)/directory/geocoding/actions';
-import { rejectedRowsCsv, type ValidatedRow } from '@/lib/directory/geocoding';
+import {
+  rejectedRowsCsv,
+  batchSummary,
+  stagingCsv,
+  reviewQueueCsv,
+  osmUrl,
+  type ValidatedRow,
+} from '@/lib/directory/geocoding';
 
 /**
  * Admin geocoding apply tool (Milestone 17). Flow: upload CSV → server
@@ -37,11 +44,94 @@ function PendingButton({ label, pendingLabel }: { label: string; pendingLabel: s
 const fmtCoord = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(6));
 
 const CONFIDENCE_FILTERS = ['all', 'high', 'medium', 'low', 'unresolved'] as const;
+const ACTION_FILTERS = ['all', 'ready', 'manual-review', 'skip'] as const;
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Row-level evidence drawer (Milestone 21): sources, confirmations, notes. */
+function EvidenceDrawer({ row }: { row: ValidatedRow }) {
+  const e = row.evidence;
+  const hasEvidence =
+    e.confidenceReason || e.sourceCount != null || e.sourceUrls.length > 0 || e.lastResearched ||
+    e.reviewerNotes || e.sideOfRoadConfirmed != null || e.propertyConfirmed != null ||
+    e.cityStateValidated != null || e.priority || e.concernFlag || e.status;
+  if (!hasEvidence) return null;
+  const yn = (v: boolean | null) => (v == null ? '—' : v ? 'yes' : 'no');
+  return (
+    <details className="mt-1">
+      <summary className="cursor-pointer text-xs font-semibold text-signal">
+        Evidence{e.concernFlag ? ' · ⚠ concern' : ''}{e.priority ? ` · ${e.priority} priority` : ''}
+      </summary>
+      <dl className="mt-1 grid gap-0.5 text-xs text-muted">
+        {e.status && (
+          <div>
+            <dt className="inline font-semibold">Status:</dt> <dd className="inline">{e.status}</dd>
+          </div>
+        )}
+        {e.confidenceReason && (
+          <div>
+            <dt className="inline font-semibold">Why this confidence:</dt>{' '}
+            <dd className="inline">{e.confidenceReason}</dd>
+          </div>
+        )}
+        {e.sourceCount != null && (
+          <div>
+            <dt className="inline font-semibold">Sources:</dt> <dd className="inline">{e.sourceCount}</dd>
+          </div>
+        )}
+        {e.sourceUrls.length > 0 && (
+          <div>
+            <dt className="inline font-semibold">Source URLs:</dt>{' '}
+            <dd className="inline">
+              {e.sourceUrls.map((u, i) => (
+                <a key={u} href={u} target="_blank" rel="noreferrer" className="mr-2 break-all text-signal hover:underline">
+                  [{i + 1}]
+                </a>
+              ))}
+            </dd>
+          </div>
+        )}
+        {e.lastResearched && (
+          <div>
+            <dt className="inline font-semibold">Last researched:</dt>{' '}
+            <dd className="inline">{e.lastResearched}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="inline font-semibold">Side of road:</dt> <dd className="inline">{yn(e.sideOfRoadConfirmed)}</dd>
+        </div>
+        <div>
+          <dt className="inline font-semibold">On business property:</dt>{' '}
+          <dd className="inline">{yn(e.propertyConfirmed)}</dd>
+        </div>
+        <div>
+          <dt className="inline font-semibold">City/state validated:</dt>{' '}
+          <dd className="inline">{yn(e.cityStateValidated)}</dd>
+        </div>
+        {e.reviewerNotes && (
+          <div>
+            <dt className="inline font-semibold">Reviewer notes:</dt>{' '}
+            <dd className="inline">{e.reviewerNotes}</dd>
+          </div>
+        )}
+      </dl>
+    </details>
+  );
+}
 
 export function GeocodingTool() {
   const [csvText, setCsvText] = useState('');
   const [fileName, setFileName] = useState('');
   const [confidenceFilter, setConfidenceFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [concernsOnly, setConcernsOnly] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [overwriteOk, setOverwriteOk] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
@@ -70,9 +160,15 @@ export function GeocodingTool() {
 
   const visible = useMemo(() => {
     if (!rows) return [];
-    if (confidenceFilter === 'all') return rows;
-    return rows.filter((r) => r.confidence === confidenceFilter);
-  }, [rows, confidenceFilter]);
+    return rows.filter(
+      (r) =>
+        (confidenceFilter === 'all' || r.confidence === confidenceFilter) &&
+        (actionFilter === 'all' || r.action === actionFilter) &&
+        (!concernsOnly || r.evidence.concernFlag),
+    );
+  }, [rows, confidenceFilter, actionFilter, concernsOnly]);
+
+  const summary = useMemo(() => (rows ? batchSummary(rows) : null), [rows]);
 
   const applicable = rows?.filter((r) => r.applicable) ?? [];
   const selectedRows = applicable.filter((r) => selected.has(r.listing_id));
@@ -89,14 +185,13 @@ export function GeocodingTool() {
   }
 
   function downloadRejected() {
-    if (!rows) return;
-    const csv = rejectedRowsCsv(rows);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'geocoding-manual-review.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    if (rows) downloadCsv(rejectedRowsCsv(rows), 'geocoding-manual-review.csv');
+  }
+  function downloadReviewQueue() {
+    if (rows) downloadCsv(reviewQueueCsv(rows), 'geocoding-review-queue.csv');
+  }
+  function downloadStaging() {
+    if (rows) downloadCsv(stagingCsv(rows, selected), 'geocoding-staging-batch.csv');
   }
 
   async function onFileChange(ev: React.ChangeEvent<HTMLInputElement>) {
@@ -185,6 +280,25 @@ export function GeocodingTool() {
       {/* Step 2: preview table */}
       {rows && (
         <div>
+          {summary && (
+            <dl className="mb-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {(
+                [
+                  ['Rows', summary.total],
+                  ['Applicable', summary.applicable],
+                  ['High confidence', summary.byConfidence.high ?? 0],
+                  ['Manual review', summary.byAction['manual-review'] ?? 0],
+                  ['Overwrites', summary.overwrites],
+                  ['Concern flags', summary.concerns],
+                ] as const
+              ).map(([label, n]) => (
+                <div key={label} className="rounded-card border border-line bg-asphalt-800 p-3 text-center">
+                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</dt>
+                  <dd className="mt-0.5 font-display text-2xl text-ink">{n}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted">
               {rows.length} rows · <span className="font-semibold text-signal">{applicable.length} applicable</span> ·{' '}
@@ -209,8 +323,38 @@ export function GeocodingTool() {
                   </option>
                 ))}
               </select>
+              <label htmlFor="action-filter" className="text-xs font-semibold text-muted">
+                Action
+              </label>
+              <select
+                id="action-filter"
+                value={actionFilter}
+                onChange={(e) => setActionFilter(e.target.value)}
+                className="rounded-card border border-line bg-asphalt px-3 py-1.5 text-sm text-ink focus:border-signal focus:outline-none"
+              >
+                {ACTION_FILTERS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <input
+                  type="checkbox"
+                  checked={concernsOnly}
+                  onChange={(e) => setConcernsOnly(e.target.checked)}
+                  className="h-3.5 w-3.5"
+                />
+                concerns only
+              </label>
               <button type="button" onClick={downloadRejected} className={smallBtn}>
-                Download manual-review rows
+                Manual-review rows
+              </button>
+              <button type="button" onClick={downloadReviewQueue} className={smallBtn}>
+                Review queue (priority)
+              </button>
+              <button type="button" onClick={downloadStaging} disabled={selected.size === 0} className={smallBtn}>
+                Export selected as staging CSV
               </button>
             </div>
           </div>
@@ -252,6 +396,17 @@ export function GeocodingTool() {
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 align-top text-muted">
                       {fmtCoord(r.live?.lat)}, {fmtCoord(r.live?.lng)}
+                      {r.live?.lat != null && r.live?.lng != null && (
+                        <a
+                          href={osmUrl(r.live.lat, r.live.lng)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-1.5 text-xs text-signal hover:underline"
+                          aria-label={`View existing coordinates for ${r.business_name} on OpenStreetMap`}
+                        >
+                          map↗
+                        </a>
+                      )}
                       {r.wouldOverwrite && (
                         <label className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-diesel">
                           <input
@@ -273,6 +428,17 @@ export function GeocodingTool() {
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 align-top text-ink">
                       {fmtCoord(r.proposed_latitude)}, {fmtCoord(r.proposed_longitude)}
+                      {r.proposed_latitude != null && r.proposed_longitude != null && (
+                        <a
+                          href={osmUrl(r.proposed_latitude, r.proposed_longitude)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-1.5 text-xs text-signal hover:underline"
+                          aria-label={`View proposed coordinates for ${r.business_name} on OpenStreetMap`}
+                        >
+                          map↗
+                        </a>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       <span
@@ -302,6 +468,7 @@ export function GeocodingTool() {
                         <span className="block font-semibold text-diesel">{r.problemDetails.join('; ')}</span>
                       )}
                       {r.verification_notes}
+                      <EvidenceDrawer row={r} />
                     </td>
                   </tr>
                 ))}

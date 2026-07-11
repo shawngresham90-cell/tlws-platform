@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
+import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { getListings, PAGE_SIZE } from '@/lib/admin/directory';
 import { DIRECTORY_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import { ConfirmSubmit } from '@/components/admin/directory/ConfirmSubmit';
@@ -80,6 +81,7 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
 
   return (
     <div>
+      <DirectoryToolsNav />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="display-section">
           Directory <span className="text-lg text-muted">({total})</span>

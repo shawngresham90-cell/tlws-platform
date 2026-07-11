@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
+import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { ImportForm } from '@/components/admin/directory/ImportForm';
 import { AMENITIES } from '@/lib/directory/amenities';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
@@ -41,6 +42,7 @@ export default function AdminDirectoryImportPage() {
   requireAdmin();
   return (
     <div>
+      <DirectoryToolsNav />
       <p className="mb-2 text-sm text-muted">
         <Link href="/admin/directory" className="hover:text-signal">
           ← Directory

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
+import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { GeocodingTool } from '@/components/admin/directory/GeocodingTool';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ export default function AdminGeocodingPage() {
 
   return (
     <div>
+      <DirectoryToolsNav />
       <Link href="/admin/directory" className="text-sm font-semibold text-muted hover:text-signal">
         ← Back to directory
       </Link>

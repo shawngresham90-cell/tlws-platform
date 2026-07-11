@@ -172,6 +172,39 @@ export async function getIgnoredPairKeys(): Promise<Set<string>> {
   }
 }
 
+export type PairDecisionRow = {
+  a: string;
+  b: string;
+  decision: 'co-located' | 'not-duplicates' | 'duplicate-confirmed';
+};
+
+/**
+ * Persisted pair decisions (Milestone 21). The table ships in migration 023,
+ * which may not be applied yet — `tableAvailable: false` tells the page to
+ * fall back to the ignore table and explain why reasons aren't stored.
+ */
+export async function getPairDecisions(): Promise<{
+  decisions: Map<string, PairDecisionRow['decision']>;
+  tableAvailable: boolean;
+}> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('location_pair_decisions')
+      .select('a, b, decision')
+      .limit(5000);
+    if (error) return { decisions: new Map(), tableAvailable: false };
+    return {
+      decisions: new Map(
+        ((data as PairDecisionRow[]) ?? []).map((r) => [`${r.a}|${r.b}`, r.decision]),
+      ),
+      tableAvailable: true,
+    };
+  } catch {
+    return { decisions: new Map(), tableAvailable: false };
+  }
+}
+
 export async function getListing(
   id: string,
 ): Promise<{ row: ListingRow | null; error: string | null }> {

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { cache } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Section } from '@/components/ui';
 import { DirectoryHero, DetailNearbySections } from '@/components/directory';
 import { MapPreview } from '@/components/map/MapPreview';
@@ -22,6 +22,7 @@ import {
   detailDirectionsUrl,
 } from '@/lib/directory/detail';
 import { isValidDetailSlug, detailHref } from '@/lib/directory/detail-slug';
+import { resolveSlugRedirect } from '@/lib/directory/redirects';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
 import {
@@ -99,7 +100,14 @@ const actionClasses =
 export default async function ListingDetailPage({ params }: { params: { slug: string } }) {
   if (!isValidDetailSlug(params.slug)) notFound();
   const entry = await getEntry(params.slug);
-  if (!entry) notFound();
+  if (!entry) {
+    // A retired slug 301s to the CURRENT canonical slug (Milestone 21); the
+    // lookup fails soft when the redirect table isn't provisioned, so unknown
+    // slugs still 404 and unpublished/deleted destinations never redirect.
+    const redirect = await resolveSlugRedirect(params.slug);
+    if (redirect) permanentRedirect(detailHref(redirect.currentSlug));
+    notFound();
+  }
 
   const category = getCategory(entry.category);
   const path = detailHref(params.slug);
@@ -190,7 +198,8 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
   if (entry.parkingSpaces != null) {
     facts.push({ label: 'Truck spaces', value: `${entry.parkingSpaces}` });
   }
-  if (entry.verifiedAt) facts.push({ label: 'Verified', value: fmtDate(entry.verifiedAt) });
+  if (entry.verifiedAt)
+    facts.push({ label: 'Information last verified', value: fmtDate(entry.verifiedAt) });
   if (entry.updatedAt) facts.push({ label: 'Last updated', value: fmtDate(entry.updatedAt) });
 
   const seoReviews = reviews.slice(0, 3).map((r) => ({

@@ -35,6 +35,93 @@ export const ACTION_VALUES = ['ready', 'manual-review', 'skip'] as const;
 export type Confidence = (typeof CONFIDENCE_VALUES)[number];
 export type GeocodingAction = (typeof ACTION_VALUES)[number];
 
+/**
+ * OPTIONAL evidence columns (Milestone 21). A 15-column batch file stays
+ * fully valid; when any of these headers are present their values ride along
+ * into the review console (evidence drawer, priority sorting, review-queue
+ * export). None of them affect applicability — action + confidence remain
+ * the only gates.
+ */
+export const GEOCODING_EVIDENCE_COLUMNS = [
+  'confidence_reason',
+  'source_count',
+  'source_urls',
+  'last_researched',
+  'reviewer_notes',
+  'side_of_road_confirmed',
+  'property_confirmed',
+  'city_state_validated',
+  'priority',
+  'concern_flag',
+  'status',
+] as const;
+
+export const CANDIDATE_STATUS_VALUES = ['ready', 'manual-review', 'skipped', 'rejected', 'applied'] as const;
+export const PRIORITY_VALUES = ['high', 'normal', 'low'] as const;
+
+export type GeocodingEvidence = {
+  confidenceReason: string;
+  sourceCount: number | null;
+  /** Multiple URLs, ;-separated in the cell. */
+  sourceUrls: string[];
+  lastResearched: string;
+  reviewerNotes: string;
+  sideOfRoadConfirmed: boolean | null;
+  propertyConfirmed: boolean | null;
+  cityStateValidated: boolean | null;
+  priority: (typeof PRIORITY_VALUES)[number] | '';
+  concernFlag: boolean;
+  /** Candidate lifecycle status when tracked ('' when the column is absent). */
+  status: (typeof CANDIDATE_STATUS_VALUES)[number] | '';
+};
+
+const EMPTY_EVIDENCE: GeocodingEvidence = {
+  confidenceReason: '',
+  sourceCount: null,
+  sourceUrls: [],
+  lastResearched: '',
+  reviewerNotes: '',
+  sideOfRoadConfirmed: null,
+  propertyConfirmed: null,
+  cityStateValidated: null,
+  priority: '',
+  concernFlag: false,
+  status: '',
+};
+
+const parseYesNo = (v: string): boolean | null => {
+  const s = v.trim().toLowerCase();
+  if (['yes', 'y', 'true'].includes(s)) return true;
+  if (['no', 'n', 'false'].includes(s)) return false;
+  return null;
+};
+
+function parseEvidence(record: Record<string, string>): GeocodingEvidence {
+  const count = Number((record.source_count ?? '').trim());
+  const priority = (record.priority ?? '').trim().toLowerCase();
+  const status = (record.status ?? '').trim().toLowerCase();
+  return {
+    confidenceReason: (record.confidence_reason ?? '').trim(),
+    sourceCount: Number.isFinite(count) && (record.source_count ?? '').trim() !== '' ? count : null,
+    sourceUrls: (record.source_urls ?? '')
+      .split(';')
+      .map((u) => u.trim())
+      .filter((u) => /^https?:\/\//.test(u)),
+    lastResearched: (record.last_researched ?? '').trim(),
+    reviewerNotes: (record.reviewer_notes ?? '').trim(),
+    sideOfRoadConfirmed: parseYesNo(record.side_of_road_confirmed ?? ''),
+    propertyConfirmed: parseYesNo(record.property_confirmed ?? ''),
+    cityStateValidated: parseYesNo(record.city_state_validated ?? ''),
+    priority: (PRIORITY_VALUES as readonly string[]).includes(priority)
+      ? (priority as GeocodingEvidence['priority'])
+      : '',
+    concernFlag: parseYesNo(record.concern_flag ?? '') === true,
+    status: (CANDIDATE_STATUS_VALUES as readonly string[]).includes(status)
+      ? (status as GeocodingEvidence['status'])
+      : '',
+  };
+}
+
 /** '' → null, otherwise a finite number. */
 const optionalNumber = z.preprocess(
   (v) => (typeof v === 'string' && v.trim() === '' ? null : v),
@@ -59,7 +146,7 @@ const rowSchema = z.object({
   action: z.enum(ACTION_VALUES),
 });
 
-export type GeocodingRow = z.infer<typeof rowSchema>;
+export type GeocodingRow = z.infer<typeof rowSchema> & { evidence: GeocodingEvidence };
 
 export type ParsedBatch = {
   rows: GeocodingRow[];
@@ -79,6 +166,10 @@ export function parseGeocodingCsv(text: string): ParsedBatch {
     return { rows: [], errors: [`Missing required column(s): ${missing.join(', ')}`] };
   }
   const idx = Object.fromEntries(GEOCODING_COLUMNS.map((c) => [c, header.indexOf(c)]));
+  // Optional evidence columns: captured when present, ignored when absent.
+  const evidenceIdx = Object.fromEntries(
+    GEOCODING_EVIDENCE_COLUMNS.filter((c) => header.includes(c)).map((c) => [c, header.indexOf(c)]),
+  );
 
   const rows: GeocodingRow[] = [];
   for (let i = 1; i < table.length; i++) {
@@ -93,7 +184,13 @@ export function parseGeocodingCsv(text: string): ParsedBatch {
       errors.push(`Row ${i + 1}: ${first.path.join('.')}: ${first.message}`);
       continue;
     }
-    rows.push(parsed.data);
+    const evidenceRecord = Object.fromEntries(
+      Object.entries(evidenceIdx).map(([c, col]) => [c, raw[col as number] ?? '']),
+    );
+    rows.push({
+      ...parsed.data,
+      evidence: Object.keys(evidenceRecord).length > 0 ? parseEvidence(evidenceRecord) : { ...EMPTY_EVIDENCE },
+    });
   }
   return { rows, errors };
 }
@@ -213,6 +310,111 @@ export function validateBatch(
       live: liveRow ? { name: liveRow.name, lat: liveRow.lat, lng: liveRow.lng } : null,
     };
   });
+}
+
+/* ============================================================ console helpers */
+
+export type BatchSummary = {
+  total: number;
+  applicable: number;
+  overwrites: number;
+  concerns: number;
+  byConfidence: Record<string, number>;
+  byAction: Record<string, number>;
+  byStatus: Record<string, number>;
+  byProblem: Record<string, number>;
+};
+
+/** Summary counts for the review console header. */
+export function batchSummary(rows: ValidatedRow[]): BatchSummary {
+  const bump = (record: Record<string, number>, key: string) => {
+    record[key] = (record[key] ?? 0) + 1;
+  };
+  const summary: BatchSummary = {
+    total: rows.length,
+    applicable: rows.filter((r) => r.applicable).length,
+    overwrites: rows.filter((r) => r.wouldOverwrite).length,
+    concerns: rows.filter((r) => r.evidence.concernFlag).length,
+    byConfidence: {},
+    byAction: {},
+    byStatus: {},
+    byProblem: {},
+  };
+  for (const r of rows) {
+    bump(summary.byConfidence, r.confidence);
+    bump(summary.byAction, r.action);
+    if (r.evidence.status) bump(summary.byStatus, r.evidence.status);
+    for (const p of r.problems) bump(summary.byProblem, p);
+  }
+  return summary;
+}
+
+/** OpenStreetMap link for eyeballing a coordinate (no API key, no Google). */
+export function osmUrl(lat: number, lng: number, zoom = 17): string {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
+}
+
+const rowCells = (r: GeocodingRow): (string | number | null)[] => [
+  r.listing_id,
+  r.business_name,
+  r.category,
+  r.address,
+  r.city,
+  r.state,
+  r.zip,
+  r.current_latitude,
+  r.current_longitude,
+  r.proposed_latitude,
+  r.proposed_longitude,
+  r.confidence,
+  r.source_url,
+  r.verification_notes,
+  r.action,
+];
+
+/**
+ * Staging file for a selected subset — the same 15-column contract the apply
+ * tool takes, so a reviewed slice of a big batch can be saved, re-checked,
+ * and applied later as its own file.
+ */
+export function stagingCsv(rows: ValidatedRow[], selectedIds: Set<string>): string {
+  const selected = rows.filter((r) => selectedIds.has(r.listing_id));
+  return toCsv([[...GEOCODING_COLUMNS], ...selected.map(rowCells)]);
+}
+
+const PRIORITY_ORDER: Record<string, number> = { high: 0, normal: 1, '': 1, low: 2 };
+
+/**
+ * The manual-review queue: everything not applicable, priority-first, with
+ * evidence columns appended so the researcher sees the full picture offline.
+ */
+export function reviewQueueCsv(rows: ValidatedRow[]): string {
+  const queue = rows
+    .filter((r) => !r.applicable)
+    .sort(
+      (a, b) =>
+        (PRIORITY_ORDER[a.evidence.priority] ?? 1) - (PRIORITY_ORDER[b.evidence.priority] ?? 1) ||
+        a.state.localeCompare(b.state) ||
+        a.business_name.localeCompare(b.business_name),
+    );
+  return toCsv([
+    [...GEOCODING_COLUMNS, ...GEOCODING_EVIDENCE_COLUMNS, 'problems'],
+    ...queue.map((r) => [
+      ...rowCells(r),
+      r.evidence.confidenceReason,
+      r.evidence.sourceCount,
+      r.evidence.sourceUrls.join(';'),
+      r.evidence.lastResearched,
+      r.evidence.reviewerNotes,
+      r.evidence.sideOfRoadConfirmed == null ? '' : r.evidence.sideOfRoadConfirmed ? 'yes' : 'no',
+      r.evidence.propertyConfirmed == null ? '' : r.evidence.propertyConfirmed ? 'yes' : 'no',
+      r.evidence.cityStateValidated == null ? '' : r.evidence.cityStateValidated ? 'yes' : 'no',
+      r.evidence.priority,
+      r.evidence.concernFlag ? 'yes' : '',
+      r.evidence.status,
+      r.problemDetails.join('; ') || r.problems.join('; '),
+    ]),
+  ]);
 }
 
 /** Rows that are NOT applicable, as a downloadable CSV for manual review. */
