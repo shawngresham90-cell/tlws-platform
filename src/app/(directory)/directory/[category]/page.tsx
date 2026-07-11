@@ -18,7 +18,7 @@ import {
   getEntriesByInterstate,
   getDirectoryFacets,
 } from '@/lib/directory/data';
-import { listingListSchema } from '@/lib/directory/seo';
+import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -119,7 +119,11 @@ export default async function DirectoryEnginePage({
   if (resolved.kind === 'category') {
     const category = resolved.category;
     const entries = await getEntries(category.slug);
-    const listings = listingListSchema(entries, category.title, `/directory/${category.slug}`);
+    const listings = await listingListSchemaWithReviews(
+      entries,
+      category.title,
+      `/directory/${category.slug}`,
+    );
     return (
       <>
         <JsonLd
@@ -159,7 +163,7 @@ export default async function DirectoryEnginePage({
     const state = resolved.state;
     const entries = await getEntriesByState(state.code);
     const cities = new Set(entries.map((e) => e.city));
-    const listings = listingListSchema(
+    const listings = await listingListSchemaWithReviews(
       entries,
       `${state.name} Truck Stops & Driver Services`,
       `/directory/${state.slug}`,
@@ -212,7 +216,7 @@ export default async function DirectoryEnginePage({
   ]);
   const exits = facets.exitsByInterstate[interstate.designation] ?? [];
   const stateCodes = new Set(entries.map((e) => e.state));
-  const listings = listingListSchema(
+  const listings = await listingListSchemaWithReviews(
     entries,
     `${interstate.designation} Truck Stops & Driver Services`,
     `/directory/${interstate.slug}`,

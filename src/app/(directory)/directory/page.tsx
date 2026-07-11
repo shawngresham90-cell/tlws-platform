@@ -83,6 +83,36 @@ export default async function DirectoryPage() {
           <CategoryCardGrid categories={DIRECTORY_CATEGORIES} />
         </div>
 
+        {/* Driver community (Milestone 16): drivers feed the directory. */}
+        <div className="mt-14 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/directory/submit"
+            className="rounded-card border border-line bg-asphalt-800 p-6 transition-colors hover:border-signal"
+          >
+            <span className="text-2xl" aria-hidden="true">
+              📍
+            </span>
+            <h2 className="mt-2 font-display text-xl uppercase text-ink">Submit a location</h2>
+            <p className="mt-1 text-sm text-muted">
+              Add a spot we don’t list, or report corrections, closures, and amenity changes.
+              Every report is human-reviewed before it goes live.
+            </p>
+          </Link>
+          <Link
+            href="/directory/reviews"
+            className="rounded-card border border-line bg-asphalt-800 p-6 transition-colors hover:border-signal"
+          >
+            <span className="text-2xl" aria-hidden="true">
+              ⭐
+            </span>
+            <h2 className="mt-2 font-display text-xl uppercase text-ink">Driver reviews</h2>
+            <p className="mt-1 text-sm text-muted">
+              Rate the stops in the directory so the next driver knows what’s really at the exit —
+              moderated, driver-only reviews.
+            </p>
+          </Link>
+        </div>
+
         {(states.length > 0 || interstates.length > 0) && (
           <div className="mt-14 grid gap-10 lg:grid-cols-2">
             {states.length > 0 && (
