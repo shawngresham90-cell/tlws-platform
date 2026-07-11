@@ -149,7 +149,10 @@ export default async function DirectoryEnginePage({
         <Section>
           <DirectoryBrowser categoryTitle={category.title} entries={entries} />
           <p className="mt-10 text-sm text-muted">
-            Looking for something else?{' '}
+            <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+              View on map →
+            </Link>{' '}
+            · Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
               Browse all directories →
             </Link>
@@ -199,7 +202,10 @@ export default async function DirectoryEnginePage({
         <Section>
           <MultiCategoryBrowser entries={entries} scopeLabel={state.name} groupBy="category" />
           <p className="mt-10 text-sm text-muted">
-            Looking for something else?{' '}
+            <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+              View on map →
+            </Link>{' '}
+            · Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
               Browse all directories →
             </Link>
@@ -275,7 +281,10 @@ export default async function DirectoryEnginePage({
           stateOrder={interstate.stateOrder}
         />
         <p className="mt-10 text-sm text-muted">
-          Looking for something else?{' '}
+          <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+            View on map →
+          </Link>{' '}
+          · Looking for something else?{' '}
           <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
             Browse all directories →
           </Link>

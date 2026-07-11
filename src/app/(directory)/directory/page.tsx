@@ -79,6 +79,14 @@ export default async function DirectoryPage() {
             verified locations are being loaded state by state.
           </p>
         </div>
+        <div className="mt-6">
+          <Link
+            href="/directory/map"
+            className="inline-flex items-center gap-2 rounded-card border border-signal px-4 py-2 font-display text-base uppercase tracking-wide text-signal transition-colors hover:bg-signal hover:text-asphalt"
+          >
+            🗺️ View on map
+          </Link>
+        </div>
         <div className="mt-10">
           <CategoryCardGrid categories={DIRECTORY_CATEGORIES} />
         </div>

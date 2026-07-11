@@ -50,6 +50,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: 0.8,
   });
+  // Public interactive map (Milestone 19).
+  entries.push({
+    url: `${SITE.url}/directory/map`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  });
   // Driver community (Milestone 16): submissions + reviews.
   entries.push(
     {
