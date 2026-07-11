@@ -65,6 +65,20 @@ export function breadcrumbSchema(crumbs: Crumb[]) {
   };
 }
 
+/** FAQPage schema from visible Q/A pairs (must mirror on-page content). */
+export function faqSchema(faqs: { question: string; answer: string }[]): object | null {
+  if (faqs.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  };
+}
+
 /** Renders one or more schema objects into a single JSON-LD script tag. */
 export function JsonLd({ schema }: { schema: object | object[] }) {
   const payload = Array.isArray(schema) ? schema : [schema];

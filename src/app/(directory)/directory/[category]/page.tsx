@@ -2,7 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, DirectoryBrowser, MultiCategoryBrowser } from '@/components/directory';
+import {
+  DirectoryHero,
+  DirectoryBrowser,
+  MultiCategoryBrowser,
+  FaqSection,
+  NearbySections,
+  RelatedLinks,
+} from '@/components/directory';
+import { buildFaqs } from '@/lib/directory/faq';
+import {
+  stateScopeLinks,
+  interstateScopeLinks,
+  categoryScopeLinks,
+} from '@/lib/directory/scope-links';
 import { ENGINE_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import type { DirectoryCategory } from '@/lib/directory/types';
 import { stateBySlug, stateByCode, type DirectoryState } from '@/lib/directory/states';
@@ -19,7 +32,7 @@ import {
   getDirectoryFacets,
 } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
-import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
+import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
@@ -118,7 +131,7 @@ export default async function DirectoryEnginePage({
 
   if (resolved.kind === 'category') {
     const category = resolved.category;
-    const entries = await getEntries(category.slug);
+    const [entries, facets] = await Promise.all([getEntries(category.slug), getDirectoryFacets()]);
     const listings = await listingListSchemaWithReviews(
       entries,
       category.title,
@@ -148,6 +161,7 @@ export default async function DirectoryEnginePage({
         />
         <Section>
           <DirectoryBrowser categoryTitle={category.title} entries={entries} />
+          <RelatedLinks groups={categoryScopeLinks(facets)} />
           <p className="mt-10 text-sm text-muted">
             Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
@@ -161,8 +175,12 @@ export default async function DirectoryEnginePage({
 
   if (resolved.kind === 'state') {
     const state = resolved.state;
-    const entries = await getEntriesByState(state.code);
+    const [entries, facets] = await Promise.all([
+      getEntriesByState(state.code),
+      getDirectoryFacets(),
+    ]);
     const cities = new Set(entries.map((e) => e.city));
+    const faqs = buildFaqs(entries, { kind: 'state', label: state.name });
     const listings = await listingListSchemaWithReviews(
       entries,
       `${state.name} Truck Stops & Driver Services`,
@@ -178,6 +196,7 @@ export default async function DirectoryEnginePage({
               { name: state.name, path: `/directory/${state.slug}` },
             ]),
             ...(listings ? [listings] : []),
+            ...(faqSchema(faqs) ? [faqSchema(faqs)!] : []),
           ]}
         />
         <DirectoryHero
@@ -198,6 +217,9 @@ export default async function DirectoryEnginePage({
         />
         <Section>
           <MultiCategoryBrowser entries={entries} scopeLabel={state.name} groupBy="category" />
+          <NearbySections entries={entries} scopeLabel={state.name} />
+          <FaqSection faqs={faqs} heading={`${state.name} driver FAQ`} />
+          <RelatedLinks groups={stateScopeLinks(state.name, state.code, entries, facets)} />
           <p className="mt-10 text-sm text-muted">
             Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
@@ -216,6 +238,7 @@ export default async function DirectoryEnginePage({
   ]);
   const exits = facets.exitsByInterstate[interstate.designation] ?? [];
   const stateCodes = new Set(entries.map((e) => e.state));
+  const faqs = buildFaqs(entries, { kind: 'interstate', label: interstate.designation });
   const listings = await listingListSchemaWithReviews(
     entries,
     `${interstate.designation} Truck Stops & Driver Services`,
@@ -231,6 +254,7 @@ export default async function DirectoryEnginePage({
             { name: interstate.designation, path: `/directory/${interstate.slug}` },
           ]),
           ...(listings ? [listings] : []),
+          ...(faqSchema(faqs) ? [faqSchema(faqs)!] : []),
         ]}
       />
       <DirectoryHero
@@ -273,6 +297,16 @@ export default async function DirectoryEnginePage({
           scopeLabel={interstate.designation}
           groupBy="state"
           stateOrder={interstate.stateOrder}
+        />
+        <NearbySections entries={entries} scopeLabel={interstate.designation} />
+        <FaqSection faqs={faqs} heading={`${interstate.designation} driver FAQ`} />
+        <RelatedLinks
+          groups={interstateScopeLinks(
+            interstate.designation,
+            interstate.stateOrder,
+            entries,
+            facets,
+          )}
         />
         <p className="mt-10 text-sm text-muted">
           Looking for something else?{' '}
