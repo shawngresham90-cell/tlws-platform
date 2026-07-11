@@ -106,6 +106,11 @@ export default async function TruckParkingPage() {
             built on top of it. What’s here now: the categories we cover and the fastest way to
             lock in a reserved spot tonight.
           </p>
+          <p className="mt-3 text-sm">
+            <Link href="/directory/map" className="font-semibold text-signal underline-offset-4 hover:underline">
+              🗺️ View on map →
+            </Link>
+          </p>
         </div>
       </Section>
 

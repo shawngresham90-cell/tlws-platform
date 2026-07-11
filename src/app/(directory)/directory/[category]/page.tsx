@@ -163,7 +163,10 @@ export default async function DirectoryEnginePage({
           <DirectoryBrowser categoryTitle={category.title} entries={entries} />
           <RelatedLinks groups={categoryScopeLinks(facets)} />
           <p className="mt-10 text-sm text-muted">
-            Looking for something else?{' '}
+            <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+              View on map →
+            </Link>{' '}
+            · Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
               Browse all directories →
             </Link>
@@ -221,7 +224,10 @@ export default async function DirectoryEnginePage({
           <FaqSection faqs={faqs} heading={`${state.name} driver FAQ`} />
           <RelatedLinks groups={stateScopeLinks(state.name, state.code, entries, facets)} />
           <p className="mt-10 text-sm text-muted">
-            Looking for something else?{' '}
+            <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+              View on map →
+            </Link>{' '}
+            · Looking for something else?{' '}
             <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
               Browse all directories →
             </Link>
@@ -309,7 +315,10 @@ export default async function DirectoryEnginePage({
           )}
         />
         <p className="mt-10 text-sm text-muted">
-          Looking for something else?{' '}
+          <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
+            View on map →
+          </Link>{' '}
+          · Looking for something else?{' '}
           <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
             Browse all directories →
           </Link>
