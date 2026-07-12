@@ -112,13 +112,20 @@ const full = (over: Partial<DirectoryEntry> = {}): DirectoryEntry =>
   check('parking signal caps at 100', r.find((x) => x.entry.id === 'big')!.signals.parking === 100);
 }
 
-/* ---------------- topRanked: indexable-only + cap + no filler ---------------- */
+/* ---------------- topRanked: detail-indexable gate + cap + no filler ---------------- */
 {
-  const set = [full({ id: 'i1', indexable: true }), full({ id: 'i2', indexable: true }), full({ id: 'ni', indexable: false })];
-  const top = topRanked(set, { now: NOW });
-  check('topRanked excludes non-indexable', top.every((r) => r.entry.indexable) && top.length === 2, top.map((r) => r.entry.id));
-  check('topRanked respects limit', topRanked(set, { now: NOW, limit: 1 }).length === 1);
-  check('topRanked empty when nothing indexable', topRanked([full({ indexable: false })], { now: NOW }).length === 0);
+  // The gate is the deterministic isDetailIndexable (address + >=2 signals),
+  // NOT the unused is_indexable column — so full() entries qualify regardless
+  // of their `indexable` flag, and a thin entry (no address) is excluded.
+  const eligible1 = full({ id: 'e1', indexable: false });
+  const eligible2 = full({ id: 'e2', indexable: false });
+  const thin = entry({ id: 'thin', name: 'Thin' }); // no address → fails isDetailIndexable
+  const top = topRanked([eligible1, eligible2, thin], { now: NOW });
+  const ids = top.map((r) => r.entry.id);
+  check('topRanked includes detail-indexable listings (ignores is_indexable flag)', ids.includes('e1') && ids.includes('e2'), ids);
+  check('topRanked excludes non-detail-indexable (thin) listings', !ids.includes('thin') && top.length === 2, ids);
+  check('topRanked respects limit', topRanked([eligible1, eligible2], { now: NOW, limit: 1 }).length === 1);
+  check('topRanked empty when nothing eligible', topRanked([thin], { now: NOW }).length === 0);
 }
 
 /* ---------------- ageInDays ---------------- */
