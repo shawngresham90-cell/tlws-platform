@@ -25,12 +25,19 @@ export const STATE_BOUNDS: Record<string, LatLngBounds> = {
   KY: { north: 39.15, south: 36.5, east: -81.96, west: -89.57 },
   OH: { north: 42.0, south: 38.4, east: -80.52, west: -84.82 },
   MI: { north: 48.3, south: 41.7, east: -82.12, west: -90.42 },
+  AL: { north: 35.01, south: 30.14, east: -84.89, west: -88.48 },
+  IN: { north: 41.77, south: 37.77, east: -84.78, west: -88.1 },
+  IL: { north: 42.51, south: 36.97, east: -87.02, west: -91.52 },
 };
 
 /** Coarse corridor framing bounds per interstate (extend per corridor). */
 export const INTERSTATE_BOUNDS: Record<string, LatLngBounds> = {
   // Miami → Sault Ste. Marie.
   'I-75': { north: 46.5, south: 25.7, east: -80.1, west: -88.0 },
+  // Mobile → Gary.
+  'I-65': { north: 41.8, south: 30.4, east: -85.4, west: -88.2 },
+  // Pulley's Mill (I-57) → Chattanooga.
+  'I-24': { north: 37.8, south: 34.8, east: -84.9, west: -89.2 },
 };
 
 export function boundsCenter(b: LatLngBounds): LatLng {
