@@ -7,6 +7,13 @@ import { stateByCode } from '@/lib/directory/states';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { isDetailIndexable } from '@/lib/directory/detail';
 import { detailHref } from '@/lib/directory/detail-slug';
+import {
+  computeFreshness,
+  exitKey,
+  lastModifiedOr,
+  type FreshnessMaps,
+} from '@/lib/directory/sitemap-freshness';
+import type { DirectoryEntry } from '@/lib/directory/types';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -45,10 +52,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // Freshness: hub pages (directory / category / state / interstate / exit) are
+  // aggregations of published listings, so their lastmod is the newest
+  // updated_at among the listings they contain — not the sitemap build time.
+  // Best-effort: any DB hiccup falls back to `now` everywhere below.
+  let listings: DirectoryEntry[] = [];
+  let fresh: FreshnessMaps = computeFreshness([]);
+  try {
+    listings = await getAllPublishedEntries();
+    fresh = computeFreshness(listings);
+  } catch {
+    // Freshness is additive; the static sitemap still ships.
+  }
+  const dirHubLm = lastModifiedOr(fresh.global, now);
+
   // Directory Engine (Milestone 11) — hub + every category in the registry.
   entries.push({
     url: `${SITE.url}/directory`,
-    lastModified: now,
+    lastModified: dirHubLm,
     changeFrequency: 'weekly',
     priority: 0.8,
   });
@@ -76,13 +97,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Growth surfaces (Milestone 25).
     {
       url: `${SITE.url}/directory/recently-updated`,
-      lastModified: now,
+      lastModified: dirHubLm,
       changeFrequency: 'daily',
       priority: 0.6,
     },
     {
       url: `${SITE.url}/directory/new-locations`,
-      lastModified: now,
+      lastModified: dirHubLm,
       changeFrequency: 'daily',
       priority: 0.6,
     },
@@ -90,7 +111,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const category of DIRECTORY_CATEGORIES) {
     entries.push({
       url: `${SITE.url}${categoryHref(category)}`,
-      lastModified: now,
+      lastModified: lastModifiedOr(fresh.byCategory.get(category.slug) ?? null, now),
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -103,16 +124,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const code of facets.states) {
       const state = stateByCode(code);
       if (!state) continue;
+      const stateLm = lastModifiedOr(fresh.byState.get(code) ?? null, now);
       entries.push({
         url: `${SITE.url}/directory/${state.slug}`,
-        lastModified: now,
+        lastModified: stateLm,
         changeFrequency: 'weekly',
         priority: 0.7,
       });
       // Top-truck-stops landing page for the state (Milestone 25).
       entries.push({
         url: `${SITE.url}/directory/${state.slug}/top-truck-stops`,
-        lastModified: now,
+        lastModified: stateLm,
         changeFrequency: 'weekly',
         priority: 0.6,
       });
@@ -120,23 +142,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const designation of facets.interstates) {
       const slug = interstateSlug(designation);
       if (!slug) continue;
+      const interstateLm = lastModifiedOr(fresh.byInterstate.get(designation) ?? null, now);
       entries.push({
         url: `${SITE.url}/directory/${slug}`,
-        lastModified: now,
+        lastModified: interstateLm,
         changeFrequency: 'weekly',
         priority: 0.7,
       });
       // Corridor parking landing page (Milestone 25).
       entries.push({
         url: `${SITE.url}/directory/${slug}/truck-parking`,
-        lastModified: now,
+        lastModified: interstateLm,
         changeFrequency: 'weekly',
         priority: 0.6,
       });
       for (const exit of facets.exitsByInterstate[designation] ?? []) {
         entries.push({
           url: `${SITE.url}/directory/${slug}/${exitSlug(exit)}`,
-          lastModified: now,
+          lastModified: lastModifiedOr(fresh.byExit.get(exitKey(designation, exit)) ?? null, now),
           changeFrequency: 'weekly',
           priority: 0.6,
         });
@@ -146,22 +169,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Directory facet URLs are additive — a DB hiccup still ships the rest.
   }
 
-  // Per-listing detail pages (Milestone 20). Only pages past the completeness
-  // gate are listed — thin listings render with noindex and stay out of the
-  // sitemap until their data fills in.
-  try {
-    const listings = await getAllPublishedEntries();
-    for (const entry of listings) {
-      if (!entry.detailSlug || !isDetailIndexable(entry)) continue;
-      entries.push({
-        url: `${SITE.url}${detailHref(entry.detailSlug)}`,
-        lastModified: entry.updatedAt ? new Date(entry.updatedAt) : now,
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      });
-    }
-  } catch {
-    // Detail URLs are additive too.
+  // Per-listing detail pages (Milestone 20). Reuses the listings fetched above
+  // for freshness. Only pages past the completeness gate are listed — thin
+  // listings render with noindex and stay out of the sitemap until their data
+  // fills in.
+  for (const entry of listings) {
+    if (!entry.detailSlug || !isDetailIndexable(entry)) continue;
+    entries.push({
+      url: `${SITE.url}${detailHref(entry.detailSlug)}`,
+      lastModified: entry.updatedAt ? new Date(entry.updatedAt) : now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
   }
 
   try {

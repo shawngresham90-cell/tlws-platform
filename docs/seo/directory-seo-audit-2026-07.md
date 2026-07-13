@@ -90,6 +90,13 @@ Milestone 16.
    with full LocalBusiness schema, reviews, history, and map once coordinates land.
 2. City hub pages (`/directory/georgia/valdosta`) once listing density justifies them.
 3. Category H1 keyword variants (see §2) if category-term rankings lag.
-4. `dateModified`/`lastmod` per URL in the sitemap from listing `updated_at`.
+4. ~~`dateModified`/`lastmod` per URL in the sitemap from listing `updated_at`.~~
+   **[DONE]** Detail pages already used `updated_at`; hub pages (directory,
+   category, state, interstate, exit, top-truck-stops, corridor parking,
+   recently-updated, new-locations) now derive `lastmod` from the newest
+   `updated_at` of the listings they aggregate (`computeFreshness` in
+   `src/lib/directory/sitemap-freshness.ts`, covered by
+   `scripts/test-sitemap-freshness.ts`). Falls back to build time when a hub
+   has no dated listings.
 5. Approve driver reviews promptly once they arrive — AggregateRating stars in
    SERPs are already wired and waiting on approved content.
