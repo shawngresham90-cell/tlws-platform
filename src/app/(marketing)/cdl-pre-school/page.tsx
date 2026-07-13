@@ -30,8 +30,7 @@ export const revalidate = 300;
 
 export const metadata = buildMetadata({
   title: 'CDL Pre-School — Prepare Before CDL School | Trucking Life with Shawn',
-  description:
-    'Online CDL school preparation from a 17-year driver: permit knowledge, money and family planning, and what to know before CDL school. Founding Student price $149 — first 20 verified students.',
+  description: `Online CDL school preparation from a 17-year driver: permit knowledge, money and family planning, and what to know before CDL school. Founding Student price ${PRESCHOOL_PRICE_LABEL} — first ${FOUNDING_STUDENT_CAPACITY} verified students.`,
   path: PRESCHOOL_PATH,
 });
 

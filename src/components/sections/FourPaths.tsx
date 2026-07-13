@@ -11,7 +11,7 @@ import {
  * The four ways into Trucking Life, right under the hero: CDL Pre-School
  * (featured — the new offering), Apply, Fund, Free Resources. The Pre-School
  * card is the only one with a purchase CTA; capacity copy states the real
- * 20-spot limit and nothing else (no timers, no fake counters — house rule).
+ * 20-spot limit and nothing else — no artificial urgency, house rule.
  */
 const PATHS = [
   {
