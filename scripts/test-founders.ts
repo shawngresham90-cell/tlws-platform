@@ -148,12 +148,34 @@ const stripComments = (s: string) =>
 /* ---------------------- remaining tier capacity ---------------------- */
 {
   const usage = tierUsage(ROSTER as { tier: 'iron' | 'steel' | 'brick' }[]);
+  // Confirmed capacities: Iron 10 / Steel 25 / Brick 50.
+  check('iron capacity is 10', TIER_CAPACITY.iron === 10);
+  check('steel capacity is 25', TIER_CAPACITY.steel === 25);
+  check('brick capacity is 50', TIER_CAPACITY.brick === 50);
   check('iron open = 10 − 2 = 8', tierRemaining(TIER_CAPACITY.iron, usage.iron) === 8);
   check('steel open = 25 − 7 = 18', tierRemaining(TIER_CAPACITY.steel, usage.steel) === 18);
   check('brick open = 50 − 16 = 34', tierRemaining(TIER_CAPACITY.brick, usage.brick) === 34);
+  const totalOpen =
+    (tierRemaining(TIER_CAPACITY.iron, usage.iron) ?? 0) +
+    (tierRemaining(TIER_CAPACITY.steel, usage.steel) ?? 0) +
+    (tierRemaining(TIER_CAPACITY.brick, usage.brick) ?? 0);
+  check('total open spots = 60', totalOpen === 60, totalOpen);
   check('remaining never negative (over-subscribed)', tierRemaining(10, 12) === 0);
   check('uncapped tier → null', tierRemaining(TIER_CAPACITY.equipment_sponsor, 3) === null);
   check('all capped tiers have non-negative remaining', (['iron', 'steel', 'brick'] as const).every((t) => (tierRemaining(TIER_CAPACITY[t], usage[t]) ?? 0) >= 0));
+}
+
+/* ---------------------- confirmed report reconciliation ---------------------- */
+{
+  // Single-source-of-truth end-to-end: the exact numbers the owner confirmed.
+  const usage = tierUsage(ROSTER as { tier: 'iron' | 'steel' | 'brick' }[]);
+  check('spots sold = 25', ROSTER.length === 25);
+  check('unique names = 24', uniqueFounderCount(ROSTER) === 24);
+  check('tier occupancy Iron 2 / Steel 7 / Brick 16', usage.iron === 2 && usage.steel === 7 && usage.brick === 16);
+  check('raised = $7,100', dollars(RAISED) === '$7,100' && RAISED === 710_000);
+  check('goal = $12,000', dollars(GOAL) === '$12,000' && GOAL === 1_200_000);
+  check('remaining = $4,900', dollars(remainingCents(GOAL, RAISED)) === '$4,900' && remainingCents(GOAL, RAISED) === 490_000);
+  check('percent renders 59.2 (project 1-decimal convention)', pctToGoal(GOAL, RAISED) === 59.2);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -33,9 +33,10 @@ founder's contribution amount (privacy-first model — see below).
 | Remaining | $4,900   | 490,000   | Derived: goal − raised.                 |
 | Percent   | 59.2%    | —         | Derived: raised ÷ goal.                 |
 
-> If the current screenshots show a **raised** total other than $7,100, that
-> number needs to be updated in `campaign_settings.raised_cents_override`
-> (migration 026). The figure above is the last value confirmed by the owner.
+These figures are **confirmed by the site owner** (2026-07-13) and stored in
+`campaign_settings` (migration 026): `goal_cents = 1200000`,
+`raised_cents_override = 710000`. Percentage renders as **59.2%** using the
+project's existing 1-decimal rounding convention (exact value 59.16…%).
 
 ## Founder roster (from screenshots)
 
@@ -106,22 +107,20 @@ Two counts, used for different things:
 
 ## Tier capacity / open spots
 
-Capacities are **provisional**, carried from the legacy fundraiser structure and
-pending confirmation against the screenshots:
+Capacities are **confirmed by the site owner** (2026-07-13). Open spots count
+**spots sold** (records), so a founder holding two spots fills two.
 
-| Tier             | Capacity | Filled | Open |
-| ---------------- | -------- | ------ | ---- |
-| Iron             | 10       | 2      | 8    |
-| Steel            | 25       | 7      | 18   |
-| Brick            | 50       | 16     | 34   |
-| Equipment Sponsor| —        | 0      | —    |
-| Student Sponsor  | —        | 0      | —    |
+| Tier              | Capacity | Filled | Open |
+| ----------------- | -------- | ------ | ---- |
+| Iron              | 10       | 2      | 8    |
+| Steel             | 25       | 7      | 18   |
+| Brick             | 50       | 16     | 34   |
+| Equipment Sponsor | —        | 0      | —    |
+| Student Sponsor   | —        | 0      | —    |
+| **Total**         | **85**   | **25** | **60** |
 
-> **Confirm these capacities.** If the screenshots show a different number of
-> OPEN slots per tier, update `capacity` in
-> `src/components/community/tiers.ts`. Open spots are derived
-> (`capacity − published founders in tier`), so correcting the capacity fixes
-> the counts everywhere.
+Open spots are derived (`capacity − spots filled in tier`) from
+`src/components/community/tiers.ts`, so the numbers stay in sync everywhere.
 
 ## Data still needed (per-founder)
 
@@ -137,8 +136,9 @@ Display Name | Tier | Business Name | Public Website | Anonymous Yes/No
   the wall. Website links render `rel="sponsored nofollow noopener noreferrer"`.
 - **Anonymous Yes/No** — an anonymous founder still counts toward totals but
   should have `is_public = false` (kept off the public wall).
-- **Confirm** the tier capacities above (the Jose Cotto two-spot purchase is
-  confirmed — both spots kept).
+
+Tier capacities, campaign totals, and the Jose Cotto two-spot purchase are all
+confirmed; nothing on this page is awaiting confirmation.
 
 ## Applied vs. committed
 

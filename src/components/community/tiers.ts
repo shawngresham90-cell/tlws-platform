@@ -7,11 +7,11 @@ import type { FounderTier } from '@/lib/community/founders';
  * so the page marks them with <Placeholder> rather than shipping a made-up number.
  *
  * `capacity` is the number of spots a tier offers, used to derive "open spots"
- * (capacity − published founders in that tier). `null` = uncapped / unknown.
- * The Iron/Steel/Brick capacities below are PROVISIONAL — carried from the
- * legacy fundraiser wall (Iron 10 / Steel 25 / Brick 50) and pending
- * confirmation against the authoritative founder screenshots. The two sponsor
- * tiers have no published cap. See docs/founders-wall-source-audit.md.
+ * (capacity − founder spots filled in that tier). `null` = uncapped.
+ * Iron/Steel/Brick capacities (10 / 25 / 50) are confirmed by the site owner.
+ * The two sponsor tiers have no published cap. Open spots count SPOTS SOLD
+ * (records), so a founder holding two spots fills two.
+ * See docs/founders-wall-source-audit.md.
  */
 export type TierMeta = {
   value: FounderTier;
