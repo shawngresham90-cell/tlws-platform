@@ -1,0 +1,109 @@
+{
+ "mean": 43.3,
+ "median": 27,
+ "min": 24,
+ "max": 80,
+ "dist": {
+  "Incomplete": 10,
+  "Needs work": 1,
+  "Good": 5
+ },
+ "scores": [
+  {
+   "name": "Mapco Express #3524",
+   "city": "Wildwood",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Fort Massac Welcome Center / Rest Area (I-24 MM 37)",
+   "city": "Metropolis",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Truck Parking Club lot - 2409 IL-145 Metropolis",
+   "city": "Metropolis",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Truck parking only lot - 5570 S US Route 45 (former truck stop)",
+   "city": "Metropolis",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Holiday Inn Express Metropolis",
+   "city": "Metropolis",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "On-Site Truck and Trailer Services",
+   "city": "Metropolis",
+   "score": 27,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Keen's Truck & Trailer Repair (at Metropolis Truck Plaza)",
+   "city": "Metropolis",
+   "score": 27,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Plaza Tire Service - Metropolis",
+   "city": "Metropolis",
+   "score": 27,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Vienna Automotive Center",
+   "city": "Vienna",
+   "score": 27,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Georgia I-24 Weigh / Inspection Station (Dade County)",
+   "city": "Wildwood",
+   "score": 35,
+   "label": "Incomplete"
+  },
+  {
+   "name": "BP Vienna (E Vine St)",
+   "city": "Vienna",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Metropolis Truck Plaza",
+   "city": "Metropolis",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Super 8 by Wyndham Metropolis",
+   "city": "Metropolis",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Hotel 7 Inn Vienna",
+   "city": "Vienna",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "ONE9 Travel Center (former Pilot Travel Center #254)",
+   "city": "Wildwood",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at ONE9 Travel Center Wildwood",
+   "city": "Wildwood",
+   "score": 80,
+   "label": "Good"
+  }
+ ]
+}

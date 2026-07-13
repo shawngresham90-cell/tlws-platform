@@ -1,0 +1,230 @@
+{
+  "segment": "memphis",
+  "included": [
+    {
+      "business_name": "QuikTrip #7154 Travel Center",
+      "category": "truck-stops",
+      "address": "1731 Whitten Rd",
+      "city": "Memphis",
+      "state": "TN",
+      "zip": "",
+      "phone": "(901) 427-6070",
+      "website": "https://locations.quiktrip.com/tn/memphis/1731-whitten-rd",
+      "description": "24-hour QuikTrip travel center at I-40 Exit 14 (Whitten Rd) in Memphis, opened April 2025 with six truck diesel bays, bulk DEF, certified truck scales, and a full-service QT Kitchens. Built as a travel-center format store to serve commercial truck traffic on I-40.",
+      "truck_spaces": null,
+      "free_parking": false,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": false,
+      "showers": false,
+      "food": true,
+      "fuel": true,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": false,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-40",
+      "exit_number": "14",
+      "published": true,
+      "sources": [
+        "https://locations.quiktrip.com/tn/memphis/1731-whitten-rd",
+        "https://www.cspdailynews.com/company-news/quiktrip-opens-first-memphis-store",
+        "https://www.iexitapp.com/business/QuikTrip/2267876",
+        "https://tennessee.view.interstatelogos.com/I-40-E/13755/85661/"
+      ]
+    },
+    {
+      "business_name": "American Travel Center",
+      "category": "truck-stops",
+      "address": "3660 Canada Rd",
+      "city": "Lakeland",
+      "state": "TN",
+      "zip": "38002",
+      "phone": "(901) 386-2726",
+      "website": "",
+      "description": "Independent 24-hour travel center (formerly listed as Lakeland 66) about 0.1 mile from I-40 Exit 20 (Canada Rd) in Lakeland, with diesel, a convenience store, restrooms, ATM, and truck parking.",
+      "truck_spaces": null,
+      "free_parking": false,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": false,
+      "showers": false,
+      "food": false,
+      "fuel": true,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": false,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-40",
+      "exit_number": "20",
+      "published": true,
+      "sources": [
+        "https://www.allstays.com/truckstops-details/90497.php",
+        "https://truckerpath.com/location-details/fuel-stops/tn/lakeland/american-travel-center?id=6988",
+        "https://www.parkadvisor.com/us/tennessee/lakeland/734150/American+Travel+Center",
+        "https://gas-stations.cmac.ws/american-travel-center/47464/"
+      ]
+    },
+    {
+      "business_name": "Motel 6 Memphis, TN - East (Sycamore View)",
+      "category": "hotels-truck-parking",
+      "address": "1585 Sycamore View Rd",
+      "city": "Memphis",
+      "state": "TN",
+      "zip": "38134",
+      "phone": "",
+      "website": "https://www.motel6.com/property/motel-memphis-tennessee-us-294310/",
+      "description": "Budget motel directly off I-40 Exit 12 (Sycamore View Rd) in northeast Memphis that explicitly advertises on-site truck parking for guests with large vehicles. Rooms include free Wi-Fi.",
+      "truck_spaces": null,
+      "free_parking": false,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": true,
+      "showers": false,
+      "food": false,
+      "fuel": false,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": true,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-40",
+      "exit_number": "12",
+      "published": true,
+      "sources": [
+        "https://www.motel6.com/property/motel-memphis-tennessee-us-294310/",
+        "https://hoteltruckparking.com/memphis_tn/",
+        "https://truckerpath.com/location-details/hotels/tn/memphis/motel-6-memphis,-tn---east?id=11158928"
+      ]
+    },
+    {
+      "business_name": "Tennessee Welcome Center - Memphis (I-40 Riverside Dr)",
+      "category": "parking",
+      "address": "119 N Riverside Dr",
+      "city": "Memphis",
+      "state": "TN",
+      "zip": "38103",
+      "phone": "",
+      "website": "https://www.tn.gov/tdot/engineering-operations-division/welcome-center-rest-areas.html",
+      "description": "Official TDOT state welcome center at I-40 mile marker 0.3, Exit 1 (Riverside Dr) in downtown Memphis, with dedicated car, RV, and truck parking spaces, restrooms, and vending. Parking is limited to two hours and overnight parking is not allowed.",
+      "truck_spaces": null,
+      "free_parking": true,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": false,
+      "showers": false,
+      "food": false,
+      "fuel": false,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": false,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-40",
+      "exit_number": "1",
+      "published": true,
+      "sources": [
+        "https://www.tn.gov/tdot/engineering-operations-division/welcome-center-rest-areas.html",
+        "https://www.restareas.org/tennessee/memphis/tennessee-welcome-center-tennessee-memphis-2/",
+        "https://downtownmemphis.com/go/tennessee-state-welcome-center"
+      ]
+    }
+  ],
+  "held": [
+    {
+      "business_name": "Mapco Express #3316 (5325 Summer Ave)",
+      "category": "truck-stops",
+      "city": "Memphis",
+      "state": "TN",
+      "published": false,
+      "hold_reason": "Near I-40 Exit 12A but sources conflict: findfuelstops lists truck parking while allstays describes it as a no-parking small fuel stop. Truck relevance and amenities unverified.",
+      "sources": [
+        "https://www.findfuelstops.com/truck-stop-on-I-40",
+        "https://www.allstays.com/c/truck-stops-tennessee.htm"
+      ]
+    },
+    {
+      "business_name": "Arlington Truck and Trailer Repair",
+      "category": "roadside-service",
+      "city": "Eads",
+      "state": "TN",
+      "published": false,
+      "hold_reason": "Advertises 24-hour truck/trailer repair serving I-40 near Exit 25, but service appears primarily mobile-dispatch and the fixed shop is in Eads off Highway 385, not verified at an I-40 exit. Only one substantive source.",
+      "sources": [
+        "https://www.arlingtontruckrepairs.com/"
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "business_name": "South Memphis truck stop cluster (TA, Flying J, Love's, Broadway Truck Stop area)",
+      "reason": "Located at I-55 exit 9 / Brooks Rd-Lamar Ave corridor in south Memphis, not at an I-40 exit 1-25. Per segment rules the I-55 south Memphis cluster is excluded.",
+      "source": "https://www.allstays.com/c/truck-stops-tennessee.htm"
+    },
+    {
+      "business_name": "Blue Beacon Truck Wash Memphis South",
+      "reason": "Located at 3435 US Hwy 78 at I-240 Exit 21 (Lamar Ave), not on I-40 exits 1-25; also listed as temporarily closed.",
+      "source": "https://bluebeacon.com/locations/listing/memphis-south-tn"
+    },
+    {
+      "business_name": "Blue Beacon / Qualawash West Memphis",
+      "reason": "Located in West Memphis, Arkansas (I-40 exit 280 AR / I-55 exit 4), outside Tennessee segment.",
+      "source": "https://bluebeacon.com/locations/"
+    },
+    {
+      "business_name": "National Truck Parking - Memphis Getwell",
+      "reason": "1,600-space paid truck parking facility at 4867 Getwell Rd with I-240 access; not at an I-40 exit 1-25.",
+      "source": "https://nationaltruckparking.com/locations/truck-parking-in-memphis-tn/"
+    },
+    {
+      "business_name": "Riggy's Truck Parking Memphis",
+      "reason": "Paid truck parking at 5178 Citation Dr in southeast Memphis (Lamar/I-240 corridor), not at an I-40 exit 1-25.",
+      "source": "https://www.findtruckservice.com/page/riggys-truck-parking-memphis-tn-447087"
+    },
+    {
+      "business_name": "TCB Truck Service",
+      "reason": "Fixed heavy-duty repair shop at 4225 Getwell Rd (I-240/south Memphis), not at an I-40 exit 1-25.",
+      "source": "https://www.tcbtruckservice.com/contact"
+    },
+    {
+      "business_name": "Cummins Sales and Service Memphis",
+      "reason": "Located at 1784 E Brooks Rd near I-55, not at an I-40 exit 1-25.",
+      "source": "https://www.yelp.com/biz/cummins-sales-and-service-memphis"
+    },
+    {
+      "business_name": "MTS Mobile Truck Repair (Bartlett)",
+      "reason": "Mobile-dispatch truck/trailer repair service (7889 Hwy 70, Bartlett); roadside-service category requires fixed facilities only.",
+      "source": "https://www.mtsmobiletruckrepair.com/"
+    },
+    {
+      "business_name": "CAT Scale - I-40 Exit 35 (Longtown) and Pilot Travel Center #149 - I-40 Exit 42 (Stanton)",
+      "reason": "On I-40 but at exits 35 and 42, outside this segment's exit 1-25 range.",
+      "source": "https://www.truckstopsandservices.com/location_details.php?id=18106"
+    },
+    {
+      "business_name": "THP District 4 Scale House - Haywood County (I-40 W, MM 50)",
+      "reason": "Nearest official I-40 weigh station per TN Dept. of Safety is at mile marker 50 in Haywood County, outside exits 1-25. No weigh station exists within the segment.",
+      "source": "https://www.tn.gov/safety/tnhp/cvemain/cvelocations.html"
+    },
+    {
+      "business_name": "Gateway Tire & Service / Firestone Complete Auto Care (Whitten Rd)",
+      "reason": "Passenger car and light truck tire shops near Exit 14; no confirmed commercial semi-truck tire service.",
+      "source": "https://gatewaytire.com/locations/memphis-tn-2705-kirby-whitten-rd/"
+    },
+    {
+      "business_name": "Sparkle Wash Mid-South / Fleet Clean Memphis",
+      "reason": "Mobile fleet-washing services without a fixed drive-in truck wash at an I-40 exit 1-25.",
+      "source": "https://sparklewash.com/mid-south/fleet-washing-in-bartlett-tn/"
+    }
+  ]
+}

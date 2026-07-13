@@ -1,0 +1,1721 @@
+[
+ {
+  "name": "Flying J Travel Center #661",
+  "category": "Truck Stops",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "4380 Nashville Road",
+  "zip": "42134",
+  "phone": "270-586-3343",
+  "website": "https://locations.pilotflyingj.com/us/ky/franklin/4380-nashville-road",
+  "exit_number": "2",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Fuel",
+   "Diesel",
+   "DEF",
+   "Showers",
+   "CAT Scale",
+   "Food",
+   "Convenience Store",
+   "ATM",
+   "Propane",
+   "Laundry",
+   "RV Parking",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/franklin/4380-nashville-road",
+   "https://locations.pilotflyingj.com/us/ky/franklin",
+   "https://www.truckstopsandservices.com/location_details.php?id=17365",
+   "https://truckmap.com/place/01b14ede-7e1f-489f-9e26-1ad1f9ab4b54",
+   "https://www.yelp.com/biz/flying-j-travel-center-franklin-2",
+   "https://www.allstays.com/truckstops-details/90228.php"
+  ],
+  "corroboration": "Official Pilot Flying J locator page (egress-blocked to fetcher, confirmed via search snippet), TruckStopsAndServices, TruckMap, Yelp and Allstays agree on Flying J #661 at 4380 Nashville Rd, Franklin 42134, I-65 Exit 2, phone 270-586-3343, 24-hour, with CAT Scale and ~172 truck spaces.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Flying J Travel Center #661",
+  "category": "CAT Scales",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "4380 Nashville Road",
+  "zip": "42134",
+  "phone": "877-228-7225",
+  "website": "https://catscale.com",
+  "exit_number": "2",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "Certified Scale"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/franklin/4380-nashville-road",
+   "https://www.truckstopsandservices.com/location_details.php?id=17365",
+   "https://www.allstays.com/c/cat-scales-kentucky-locations.htm"
+  ],
+  "corroboration": "Pilot Flying J official amenity list and TruckStopsAndServices both list a CAT Scale at Flying J #661; CAT Scale Kentucky locator lists a scale at I-65 Exit 2 Franklin (phone 270-586-3343 matches the Flying J). Co-located service, separate row from the host truck stop.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Keystop Truck Stop",
+  "category": "Truck Stops",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "4425 Nashville Road",
+  "zip": "42134",
+  "phone": "270-586-5922",
+  "website": "",
+  "exit_number": "2",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Fuel",
+   "Diesel",
+   "Showers",
+   "Food",
+   "Deli",
+   "Convenience Store",
+   "ATM",
+   "Dump Station",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1605",
+   "https://www.findtruckservice.com/Semi/Truck+Stops/All+Truck+Stops/KY/Franklin/",
+   "https://roadnow.com/i65/truck-stops-kentucky-2"
+  ],
+  "corroboration": "TruckStopsAndServices, FindTruckService and Roadnow agree on Keystop Truck Stop at 4425 Nashville Rd, Franklin 42134, I-65 Exit 2, phone 270-586-5922, ~79 spaces / 6 fuel lanes / 3 showers, 24-hour.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #438",
+  "category": "Truck Stops",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "2940 Scottsville Road",
+  "zip": "42134",
+  "phone": "270-586-9544",
+  "website": "https://locations.pilotflyingj.com/us/ky/franklin/2940-scottsville-rd",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Fuel",
+   "Diesel",
+   "DEF",
+   "Showers",
+   "CAT Scale",
+   "Food",
+   "Convenience Store",
+   "ATM",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/franklin/2940-scottsville-rd",
+   "https://www.truckstopsandservices.com/location_details.php?id=17349",
+   "https://www.parkadvisor.com/us/kentucky/franklin/680416/Pilot+Travel+Center+0438",
+   "https://www.yelp.com/biz/pilot-travel-center-franklin-4"
+  ],
+  "corroboration": "Official Pilot Flying J locator (egress-blocked, confirmed via snippet), TruckStopsAndServices, ParkAdvisor and Yelp agree on Pilot #438 at 2940 Scottsville Rd, Franklin 42134, I-65 Exit 6, phone 270-586-9544, 24-hour, CAT Scale, ~150 spaces / 9 showers.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Pilot Travel Center #438",
+  "category": "CAT Scales",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "2940 Scottsville Road",
+  "zip": "42134",
+  "phone": "877-228-7225",
+  "website": "https://catscale.com",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "Certified Scale"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/franklin/2940-scottsville-rd",
+   "https://www.truckstopsandservices.com/location_details.php?id=17349",
+   "https://www.allstays.com/c/cat-scales-kentucky-locations.htm"
+  ],
+  "corroboration": "Pilot #438 official amenity list and TruckStopsAndServices list a CAT Scale; CAT Scale Kentucky locator lists a scale at I-65 Exit 6 Franklin. Co-located service, separate row from the host truck stop.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Sudden Service #62 Travel Center",
+  "category": "Truck Stops",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "3303 Scottsville Road",
+  "zip": "42134",
+  "phone": "270-586-3248",
+  "website": "https://suddenserviceonline.com/locations/3303-scottsville-rd-franklin-ky/",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Fuel",
+   "Diesel",
+   "DEF",
+   "Showers",
+   "Food",
+   "Convenience Store",
+   "Laundry",
+   "Truckers Lounge",
+   "Certified Scale",
+   "Trailer Drop",
+   "Truck Wash",
+   "Truck Repair",
+   "ATM",
+   "Wi-Fi",
+   "RV Parking"
+  ],
+  "sources": [
+   "https://suddenserviceonline.com/locations/3303-scottsville-rd-franklin-ky/",
+   "https://www.truckstopsandservices.com/location_details.php?id=385",
+   "https://truckmap.com/place/am-best-sudden-service-62-travel-center-3303-scottsville-rd-franklin-ky-42134-usa",
+   "https://www.allstays.com/truckstops-details/90036.php",
+   "https://truckerpath.com/location-details/truck-stops/ky/franklin/sudden-service-62-travel-center?id=234016"
+  ],
+  "corroboration": "Sudden Service official store-locator page, TruckStopsAndServices, TruckMap, Allstays and TruckerPath agree on Sudden Service #62 Travel Center (AMBEST, Shell fuel) at 3303 Scottsville Rd, Franklin 42134, I-65 Exit 6, phone 270-586-3248, 24-hour, ~92 spaces / 6 lanes / 4 showers. Certified scales noted (not confirmed as a branded CAT Scale, so no separate CAT Scale row created).",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Speedco (Love's) Franklin",
+  "category": "Roadside Service",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "2875 Scottsville Road",
+  "zip": "42134",
+  "phone": "270-598-9521",
+  "website": "https://www.loves.com/locations/ky/franklin/loves-speedco-franklin-919",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Oil Change",
+   "Lube / PM Service",
+   "Tire Repair",
+   "DOT Inspection"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/ky/franklin/loves-speedco-franklin-919",
+   "https://www.iexitapp.com/business/Speedco%20Truck%20Lube%20and%20Tires/1179791",
+   "https://www.truckstopsandservices.com/location_details.php?id=44876",
+   "https://www.yelp.com/biz/speedco-franklin-2",
+   "https://www.4roadservice.com/franklin-kentucky/provider/speedco"
+  ],
+  "corroboration": "Love's/Speedco official location page (Franklin #919), iExit, TruckStopsAndServices, Yelp and 4RoadService agree on Speedco at 2875 Scottsville Rd, Franklin 42134, I-65 Exit 6, phone 270-598-9521, truck lube/PM/tire services.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "TA Truck Service Franklin",
+  "category": "Roadside Service",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "101 Trotter Lane",
+  "zip": "42134",
+  "phone": "",
+  "website": "https://www.ta-petro.com/location/ky/ta-truck-service-franklin/",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck Repair",
+   "Tire Repair",
+   "Diesel Repair"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/ky/ta-truck-service-franklin/",
+   "https://www.yelp.com/biz/ta-truck-service-franklin-3",
+   "https://carrieratlas.com/truckstops/ky/truck-service-franklin/ta-truck-service-franklin/",
+   "https://www.facebook.com/TATruckServiceFranklinKY/"
+  ],
+  "corroboration": "TA/Petro official location page (egress-blocked, confirmed via snippet), Yelp (101 Trotters Ln), Carrier Atlas (TA Truck Service Franklin #0347) and the facility's Facebook page agree on a standalone TA truck-service shop at 101 Trotter Lane, Franklin 42134, I-65 Exit 6. Phone left blank (not independently confirmed).",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Pride Truck Wash - Franklin",
+  "category": "Truck Washes",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "2940 Scottsville Road",
+  "zip": "42134",
+  "phone": "270-586-0116",
+  "website": "",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck Wash",
+   "Trailer Wash",
+   "Engine Wash",
+   "Undercarriage Rinse",
+   "Degrease"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/pride-truck-wash-franklin",
+   "https://truckwashratings.com/stations/pride-truck-wash-franklin-ky/",
+   "https://www.findtruckservice.com/Semi/Truck+Wash/Trailer+Wash/KY/Franklin/",
+   "https://truckerguideapp.com/truck-wash/pride-truck-wash-franklin",
+   "https://www.facebook.com/221725167930109"
+  ],
+  "corroboration": "Yelp, TruckWashRatings, FindTruckService, Trucker Guide and Facebook agree on Pride Truck Wash at 2940 Scottsville Rd, Franklin 42134, I-65 Exit 6, phone 270-586-0116, a full tractor/trailer wash. (Prior 'G Truck Wash' reference resolved to Pride Truck Wash at the same address.)",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Best One Fleet Service - Bowling Green",
+  "category": "Tire Repair",
+  "city": "Bowling Green",
+  "state": "KY",
+  "address": "200 Tobacco Road",
+  "zip": "42101",
+  "phone": "270-282-2108",
+  "website": "https://bestonebg.com/locations/bowling-green/",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Tire Repair",
+   "Commercial Tires",
+   "Truck Repair",
+   "24-Hour Roadside Assistance",
+   "Alignment",
+   "Brakes"
+  ],
+  "sources": [
+   "https://bestonebg.com/locations/bowling-green/",
+   "https://www.findtruckservice.com/page/bestone-fleet-service-bowling-green-ky-413135",
+   "https://business.michelinman.com/dealer-locator/bowling-green/best-one-tire-service-of-bowling-1093241036",
+   "https://commercial.bridgestone.com/en-us/dealer/ky/bowling-green/901742",
+   "https://www.truckerpath.com/location-details/tire-shops/ky/bowling-green/best-one-fleet-service-of-bowling-green?id=11112436"
+  ],
+  "corroboration": "Best One official site, FindTruckService, Michelin and Bridgestone commercial dealer locators and TruckerPath agree on Best One Fleet Service at 200 Tobacco Rd, Bowling Green 42101, phone 270-282-2108, commercial truck tires/repair with 24-hr roadside. Exit left blank (not confirmed). Distinct from the existing production 'Best-One Tire' listings on I-75.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Ziegler Tire - Bowling Green (Commercial)",
+  "category": "Tire Repair",
+  "city": "Bowling Green",
+  "state": "KY",
+  "address": "119 Ambassador Drive",
+  "zip": "42101",
+  "phone": "270-282-2171",
+  "website": "https://www.zieglertire.com/commercial-locations/bowling-green-ky",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Tire Repair",
+   "Commercial Tires",
+   "Retreading",
+   "Fleet Service",
+   "24/7 Roadside Assistance"
+  ],
+  "sources": [
+   "https://www.zieglertire.com/commercial-locations/bowling-green-ky",
+   "https://business.michelinman.com/dealer-locator/bowling-green/the-ziegler-tire-and-supply-company-1172320036",
+   "https://commercial.bridgestone.com/en-us/dealer/ky/bowling-green/921722",
+   "https://www.firestonetire.com/dealers/kentucky/bowling-green/119-ambassador-dr/",
+   "https://www.yellowpages.com/bowling-green-ky/mip/ziegler-tire-557522957"
+  ],
+  "corroboration": "Ziegler Tire official commercial-location page, Michelin, Bridgestone and Firestone dealer locators and Yellow Pages agree on Ziegler Tire at 119 Ambassador Dr, Bowling Green 42101, phone 270-282-2171, commercial truck tire/fleet service. Distinct facility from the existing production 'Ziegler Tire | Lexington' (I-75) listing. Exit left blank (not confirmed).",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Days Inn by Wyndham Franklin",
+  "category": "Hotels with Truck Parking",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "103 Trotter Lane",
+  "zip": "42134",
+  "phone": "270-598-0163",
+  "website": "https://www.wyndhamhotels.com/days-inn/franklin-kentucky/days-inn-franklin-ky/overview",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck Parking",
+   "Free Parking",
+   "Wi-Fi",
+   "Breakfast"
+  ],
+  "sources": [
+   "https://www.wyndhamhotels.com/days-inn/franklin-kentucky/days-inn-franklin-ky/overview",
+   "https://www.truckstopsandservices.com/location_details.php?id=50850",
+   "https://travelcoupons.com/business/Days%20Inn/257963/14776",
+   "https://hotelguides.com/hotels/kentucky/franklin/107508.html",
+   "https://www.allstays.com/hotels/26599.htm"
+  ],
+  "corroboration": "Wyndham/Days Inn official overview, TruckStopsAndServices, iExit (travelcoupons), HotelGuides and Allstays agree on Days Inn Franklin at 103 Trotter Lane, Franklin 42134, I-65 Exit 6, with free truck/RV parking. Truck-space count left blank (sources vary 5-18).",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Ramada by Wyndham Bowling Green",
+  "category": "Hotels with Truck Parking",
+  "city": "Bowling Green",
+  "state": "KY",
+  "address": "4767 Scottsville Road",
+  "zip": "42104",
+  "phone": "",
+  "website": "https://www.wyndhamhotels.com/ramada/bowling-green-kentucky/ramada-bowling-green/overview",
+  "exit_number": "22",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck Parking",
+   "Free Parking",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=50848",
+   "https://hotelguides.com/hotels/kentucky/bowling-green/112984.html",
+   "https://www.orbitz.com/Bowling-Green-Hotels-Ramada-By-Wyndham-Bowling-Green.h26125.Hotel-Information"
+  ],
+  "corroboration": "TruckStopsAndServices (I-65 Exit 22), HotelGuides and Orbitz agree on Ramada by Wyndham Bowling Green at 4767 Scottsville Rd, Bowling Green 42104, I-65 Exit 22, with free truck/bus/RV parking for guests. Phone left blank (not confirmed).",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Kentucky Weigh Station - I-65 Northbound (Simpson County)",
+  "category": "Weigh Stations",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "",
+  "zip": "42134",
+  "phone": "",
+  "website": "https://www.coopsareopen.com/kentucky-truck-scale-295.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Weigh/inspection station held pending an official KYTC/KSP source with a civic street address and confirmed direction/facility identity; corroborated via aggregated truck directories only \u2014 confirm before publishing.",
+  "amenities": [
+   "Weigh Scale",
+   "Inspection Station"
+  ],
+  "sources": [
+   "https://www.coopsareopen.com/kentucky-truck-scale-295.html",
+   "https://www.iexitapp.com/Kentucky/I-65/Weigh%20Station/14775",
+   "https://www.truckstopsandservices.com/location_details.php?id=5821"
+  ],
+  "corroboration": "CoopsAreOpen (Post 2 Franklin, I-65 northbound, located between Exit 2 Flying J and the Exit 6 truck stops), iExit and TruckStopsAndServices confirm a permanent I-65 northbound weigh station in Simpson County/Franklin. Southbound facility not independently confirmed, so only the northbound station is listed.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Simpson County (Franklin) Welcome Center - I-65 Northbound",
+  "category": "Truck Parking",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "I-65 Northbound near Mile Marker 0.3",
+  "zip": "42134",
+  "phone": "270-586-6292",
+  "website": "https://www.kentuckytourism.com/explore/simpson-county-(franklin)-welcome-center-northbound-1862",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Legal overnight-parking status not independently confirmed; welcome centers are day-use unless posted otherwise, so per conservative rest-area rules this is held pending confirmation of overnight legality. Direction (NB), existence and truck access are confirmed.",
+  "amenities": [
+   "Restrooms",
+   "Truck Parking",
+   "Vending",
+   "Picnic Area",
+   "Pet Area"
+  ],
+  "sources": [
+   "https://www.kentuckytourism.com/explore/simpson-county-(franklin)-welcome-center-northbound-1862",
+   "https://www.wbko.com/2025/10/17/simpson-county-tourism-opens-new-visitor-center/",
+   "https://www.wtvq.com/simpson-county-welcome-center-now-open-to-visitors/",
+   "https://www.restareas.org/kentucky/franklin/kentucky-welcome-center-i-65-nb-kentucky-franklin/",
+   "https://transportation.ky.gov/Documents/RestAreasMap-January%202024.pdf"
+  ],
+  "corroboration": "Kentucky Tourism, WBKO and WTVQ confirm the new Simpson County (Franklin) Welcome Center on I-65 northbound opened October 2025 with commercial truck parking; RestAreas.org confirms NB direction near the TN line. Held (published=false) because legal overnight-parking status is not confirmed.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "All Star Towing & Road Service (at Sudden Service #62)",
+  "category": "Roadside Service",
+  "city": "Franklin",
+  "state": "KY",
+  "address": "3303 Scottsville Road",
+  "zip": "42134",
+  "phone": "270-202-3331",
+  "website": "",
+  "exit_number": "6",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Operator identity, current operating status and exact affiliation confirmed only via a single truck-stop directory listing; not independently corroborated. Held pending a second independent source.",
+  "amenities": [
+   "Towing",
+   "Roadside Service",
+   "Tire Repair",
+   "DOT Inspection",
+   "Welding"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=385"
+  ],
+  "corroboration": "Single directory (TruckStopsAndServices) lists All Star Towing & Road Service (270-202-3331) as an on-site service at Sudden Service #62, 3303 Scottsville Rd, Franklin. Only one source, so held.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "TA Smiths Grove",
+  "category": "Truck Stops",
+  "city": "Smiths Grove",
+  "state": "KY",
+  "address": "605 S Main St",
+  "zip": "42171",
+  "phone": "270-563-4713",
+  "website": "https://www.ta-petro.com/location/ky/ta-smiths-grove/",
+  "exit_number": "38",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "showers",
+   "CAT Scale",
+   "restaurant",
+   "Chester's Chicken",
+   "deli",
+   "convenience store",
+   "laundry",
+   "ATM",
+   "gaming room",
+   "truck accessories"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/ky/ta-smiths-grove/",
+   "https://truckerguideapp.com/ta/ta-468",
+   "https://www.truckstopsandservices.com/location_details.php?id=24997",
+   "https://www.4roadservice.com/smiths-grove-kentucky/provider/smith-grove-bp-travel-center"
+  ],
+  "corroboration": "Official TA locator page exists but returns 403 to the agent proxy (bot protection); identity/address/exit/amenities corroborated across TruckerGuide (TA #468), TruckStopsAndServices, and 4RoadService. NOTE: An older Yelp entry 'Smiths Grove Travel Center Exxon' shows CLOSED (Mar 2026) \u2014 that is the superseded prior brand; the site now operates as TA (Yelp 'TA Smiths Grove' shows open 24h, reviews through Dec 2024) at the same 605 S Main St address.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - TA Smiths Grove",
+  "category": "CAT Scales",
+  "city": "Smiths Grove",
+  "state": "KY",
+  "address": "605 S Main St",
+  "zip": "42171",
+  "phone": "270-563-4713",
+  "website": "",
+  "exit_number": "38",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified truck scale"
+  ],
+  "sources": [
+   "https://www.chamberofcommerce.com/business-directory/kentucky/smiths-grove/weigh-station/2017606436-cat-scale",
+   "https://www.4roadservice.com/smiths-grove-kentucky/provider/cat-scale",
+   "https://www.truckstopsandservices.com/location_details.php?id=24997"
+  ],
+  "corroboration": "CAT Scale locator (catscale.com) returns 403 to the agent proxy; CAT Scale presence at 605 S Main St corroborated by ChamberOfCommerce, 4RoadService, and the travel-center directory listing. Listed as separate co-located service per the co-location model; host truck stop is the TA row above.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Park City Shell (IGA Express)",
+  "category": "Truck Stops",
+  "city": "Park City",
+  "state": "KY",
+  "address": "329 Mammoth Cave Pkwy",
+  "zip": "42160",
+  "phone": "",
+  "website": "https://find.shell.com/us/fuel/10011503-329-mammoth-cave-parkway/en_US",
+  "exit_number": "48",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "Subway",
+   "deli",
+   "restaurant",
+   "convenience store",
+   "ATM",
+   "propane"
+  ],
+  "sources": [
+   "https://find.shell.com/us/fuel/10011503-329-mammoth-cave-parkway/en_US",
+   "https://truckerpath.com/location-details/truck-stops/ky/park-city/shell-?id=248337",
+   "https://www.truckstopsandservices.com/location_details.php?id=2182",
+   "https://www.allstays.com/truckstops-details/92309.php"
+  ],
+  "corroboration": "Open/operating status confirmed via Shell official locator and Yelp (IGA Express Shell, updated Dec 2025 = active). Truck-stop amenities and ~15 truck spaces corroborated by TruckerPath, TruckStopsAndServices, and AllStays. Phone left blank (not independently confirmed).",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Higdon's Service Center",
+  "category": "Roadside Service",
+  "city": "Cave City",
+  "state": "KY",
+  "address": "1001 Doyle Ave",
+  "zip": "42127",
+  "phone": "270-773-2233",
+  "website": "",
+  "exit_number": "53",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "towing",
+   "wrecker service",
+   "tire repair",
+   "engine repair",
+   "lube service",
+   "off-road diesel"
+  ],
+  "sources": [
+   "https://www.findfuelstops.com/truck-stop-006235",
+   "https://www.yelp.com/biz/higdons-service-center-chevron-cave-city",
+   "https://m.yelp.com/biz/higdons-wrecker-service-cave-city"
+  ],
+  "corroboration": "Active status confirmed by Yelp (Higdon's Wrecker Service updated Jun 2026; Higdon's Service Center/Chevron updated Feb 2026). Address, phone, and services (towing, flat tire repair, off-road diesel) corroborated by FindFuelStops (I-65 Exit 53 listing) and Yelp. No official website confirmed; left blank.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Crossroads Towing & Truck Repair",
+  "category": "Roadside Service",
+  "city": "Cave City",
+  "state": "KY",
+  "address": "128 W Estes Rd",
+  "zip": "42127",
+  "phone": "270-773-4000",
+  "website": "https://ctstowing.com/",
+  "exit_number": "53",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "heavy-duty towing",
+   "mobile mechanic",
+   "HD tire change",
+   "recovery",
+   "24/7 roadside assistance"
+  ],
+  "sources": [
+   "https://ctstowing.com/",
+   "https://www.yelp.com/biz/crossroads-towing-and-truck-repair-cave-city-2",
+   "https://www.4roadservice.com/cave-city-kentucky/provider/crossroads-towing"
+  ],
+  "corroboration": "Active status confirmed by Yelp (updated Jan 2026) and official site ctstowing.com. Address 128 W Estes Rd / Exit 53 and phone corroborated by official site and 4RoadService. NOTE: a TruckStopsAndServices entry mislabels this as 'I-65 Exit 2' \u2014 the official site and Yelp confirm Cave City Exit 53; the Exit 2 value was treated as a directory error and not used.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Red Roof Inn & Suites Cave City",
+  "category": "Hotels with Truck Parking",
+  "city": "Cave City",
+  "state": "KY",
+  "address": "807 Mammoth Cave St",
+  "zip": "42127",
+  "phone": "",
+  "website": "https://www.redroof.com/property/ky/cave-city/rri825",
+  "exit_number": "53",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "free truck/bus parking",
+   "24-hour front desk",
+   "free WiFi",
+   "pet friendly"
+  ],
+  "sources": [
+   "https://www.redroof.com/property/ky/cave-city/rri825",
+   "https://www.yelp.com/biz/red-roof-inn-and-suites-cave-city-cave-city",
+   "https://www.tripadvisor.com/Hotel_Feature-g39265-d858069-zft12116-Red_Roof_Inn_Suites_Cave_City.html"
+  ],
+  "corroboration": "Identity/address confirmed by Red Roof official property page (rri825) and multiple booking sites. Semi-truck parking corroborated by Tripadvisor parking feature and Yelp reviews explicitly citing '18 wheelers... lots of truck' parking. Truck space count not published, left blank.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #360",
+  "category": "Truck Stops",
+  "city": "Horse Cave",
+  "state": "KY",
+  "address": "4000 L&N Turnpike Rd",
+  "zip": "42749",
+  "phone": "270-786-4000",
+  "website": "https://www.loves.com/locations/ky/horse-cave/loves-travel-stop-horse-cave-360",
+  "exit_number": "58",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "DEF lanes",
+   "showers",
+   "CAT Scale",
+   "McDonald's",
+   "Subway",
+   "dog park",
+   "laundry",
+   "RV hookups",
+   "RV dump",
+   "propane",
+   "WiFi",
+   "Love's Truck Care"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/ky/horse-cave/loves-travel-stop-horse-cave-360",
+   "https://www.truckstopsandservices.com/location_details.php?id=14913",
+   "https://www.findfuelstops.com/truck-stop-000870",
+   "https://www.findtruckservice.com/page/loves-travel-stop-360-horse-cave-ky-410384"
+  ],
+  "corroboration": "Official Love's page returns 403 to the agent proxy; identity/address (4000 L&N Turnpike), Exit 58, phone, CAT Scale, McDonald's/Subway, and amenities corroborated across TruckStopsAndServices, FindFuelStops, and FindTruckService. Truck space count left blank because sources conflict (reported 90 / 161 / 280).",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale #1174 - Love's #360 Horse Cave",
+  "category": "CAT Scales",
+  "city": "Horse Cave",
+  "state": "KY",
+  "address": "4000 L&N Turnpike Rd",
+  "zip": "42749",
+  "phone": "270-586-4149",
+  "website": "",
+  "exit_number": "58",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified truck scale"
+  ],
+  "sources": [
+   "https://truckerguideapp.com/scales/cat-scale-1174",
+   "https://www.findfuelstops.com/truck-stop-000870",
+   "https://www.4roadservice.com/horse-cave-kentucky/truck-stops"
+  ],
+  "corroboration": "CAT Scale locator returns 403 to the agent proxy; CAT Scale #1174 at Love's #360 corroborated by TruckerGuide (scale #1174), FindFuelStops, and 4RoadService. Separate co-located service row per the co-location model; host truck stop is the Love's #360 row above.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care #360",
+  "category": "Roadside Service",
+  "city": "Horse Cave",
+  "state": "KY",
+  "address": "4000 L&N Turnpike Rd",
+  "zip": "42749",
+  "phone": "270-786-4000",
+  "website": "",
+  "exit_number": "58",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "truck tire sales/repair",
+   "light mechanical",
+   "oil change",
+   "batteries",
+   "roadside assistance"
+  ],
+  "sources": [
+   "https://www.truckdown.com/search/view-detail/loves_truck_care_horse_cave_ky/48eaa680b73427072c00d3db",
+   "https://findtruckservice.com/page/loves-truck-tire-care-360-horse-cave-ky-421819",
+   "https://www.yelp.com/biz/loves-truck-care-horse-cave-2"
+  ],
+  "corroboration": "Love's Truck Care at #360 corroborated by TruckDown, FindTruckService (Love's Truck/Tire Care #360), and Yelp. Separate co-located service row per the co-location model (distinct from the host Love's truck stop). Phone set to the location's main number.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Munfordville Truck Parking (Truck Parking Club)",
+  "category": "Truck Parking",
+  "city": "Munfordville",
+  "state": "KY",
+  "address": "1786 Main St",
+  "zip": "42765",
+  "phone": "",
+  "website": "https://truckparkingclub.com/truck-parking/kentucky/munfordville/1786-main-street-42765",
+  "exit_number": "65",
+  "tpc_url": "https://truckparkingclub.com/truck-parking/kentucky/munfordville/1786-main-street-42765",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24/7 access",
+   "book by day/week/month",
+   "CB shop on site"
+  ],
+  "sources": [
+   "https://truckparkingclub.com/truck-parking/kentucky/munfordville/1786-main-street-42765",
+   "https://www.yelp.com/biz/cts-towing-munfordville"
+  ],
+  "corroboration": "Bookable lot listed on Truck Parking Club (active, Exit 65, ~6 spaces, $10/day). Address/location corroborated by CTS Towing Yelp (1786 Main St, updated Apr 2026 = active). Phone left blank (booking is through Truck Parking Club).",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Hart County Rest Area (I-65 Northbound)",
+  "category": "Truck Parking",
+  "city": "Horse Cave",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Existence, direction (northbound), mile marker (~59) and separate truck parking are confirmed via KYTC and news/directory sources, but LEGAL overnight-parking status is not independently confirmed (never assumed from truck-space presence). No street address (mile-marker facility).",
+  "amenities": [
+   "truck parking",
+   "restrooms",
+   "picnic area",
+   "vending",
+   "handicap access"
+  ],
+  "sources": [
+   "https://www.wcluradio.com/2024/05/23/hart-county-i-65-northbound-awarded-kentuckys-best-maintained-rest-area/",
+   "https://restareasnearme.com/kentucky-rest-area/",
+   "https://transportation.ky.gov/MultimodalFreight/Documents/Welcome%20Centers,%20Rest%20Areas%20and%20Weigh%20Stations.pdf"
+  ],
+  "corroboration": "Direction (NB, MM ~59, Hart County) and separate truck parking corroborated by WCLU Radio (2024 KYTC award), RestAreasNearMe, and the KYTC Welcome Centers/Rest Areas/Weigh Stations document. Held for unconfirmed legal overnight status.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Munfordville Rest Area (I-65 Southbound)",
+  "category": "Truck Parking",
+  "city": "Munfordville",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Existence, direction (southbound), mile marker (~60) and separate truck parking are confirmed via KYTC/directory sources, but LEGAL overnight-parking status is not independently confirmed. No street address (mile-marker facility).",
+  "amenities": [
+   "truck parking",
+   "restrooms",
+   "picnic area",
+   "vending",
+   "handicap access"
+  ],
+  "sources": [
+   "https://www.parkadvisor.com/us/kentucky/munfordville/640968/Munfordville+Rest+Area+Southbound",
+   "https://restareasnearme.com/kentucky-rest-area/",
+   "https://transportation.ky.gov/MultimodalFreight/Documents/Welcome%20Centers,%20Rest%20Areas%20and%20Weigh%20Stations.pdf"
+  ],
+  "corroboration": "Direction (SB, MM ~60) and truck parking corroborated by ParkAdvisor, RestAreasNearMe, and the KYTC facilities document. Held for unconfirmed legal overnight status.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Baymont by Wyndham Cave City",
+  "category": "Hotels with Truck Parking",
+  "city": "Cave City",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.wyndhamhotels.com/baymont/cave-city-kentucky/baymont-inn-and-suites-cave-city/overview",
+  "exit_number": "53",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Brand page lists free RV/bus/truck parking, but exact street address/zip could not be independently confirmed and some guest reviews cite limited parking; semi/overnight truck capacity not clearly confirmed. Held pending address and truck-parking confirmation.",
+  "amenities": [
+   "free large-vehicle parking",
+   "free breakfast",
+   "free WiFi",
+   "seasonal outdoor pool"
+  ],
+  "sources": [
+   "https://www.wyndhamhotels.com/baymont/cave-city-kentucky/baymont-inn-and-suites-cave-city/overview"
+  ],
+  "corroboration": "Only the Wyndham brand overview reliably describes truck parking; address not independently confirmed. Insufficient corroboration to publish.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Petro Stopping Center #330 (Petro Glendale)",
+  "category": "Truck Stops",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "554 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "270-369-6840",
+  "website": "https://www.ta-petro.com/location/ky/petro-glendale/",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel lanes",
+   "Truck parking",
+   "CAT Scale",
+   "TA Truck Service (repair)",
+   "Tire repair",
+   "Iron Skillet restaurant",
+   "Showers",
+   "Laundry",
+   "Bulk DEF",
+   "ATM",
+   "Open 24 hours"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/ky/petro-glendale/",
+   "https://www.truckstopsandservices.com/location_details.php?id=2227",
+   "https://www.findtruckservice.com/page/petro-truck-stop-330-glendale-ky-49987",
+   "https://truckmap.com/place/petro-glendale-554-w-glendale-hodgenville-rd-glendale-ky-42740-usa",
+   "https://www.allstays.com/truckstops-details/95952.php"
+  ],
+  "corroboration": "TA-Petro official location page (Petro Glendale, 554 W Glendale Hodgenville Rd, I-65 Exit 86) + truckstopsandservices (#330, I-65 Exit 86, 263 spaces, CAT scale, Iron Skillet, TA Truck Service, truck wash) + Find Truck Service (Petro #330, 270-369-6840) + TruckMap (zip 42740) all agree on brand, address, exit 86, 263 truck spaces, 12 diesel lanes. Official site egress-blocked; verified via directory snippets.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Petro Glendale (#330)",
+  "category": "CAT Scales",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "554 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "",
+  "website": "",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=2227",
+   "https://www.ta-petro.com/location/ky/petro-glendale/"
+  ],
+  "corroboration": "Petro/TA travel centers carry CAT Scales as standard; truckstopsandservices Petro #330 amenity list explicitly includes 'CAT scales', corroborated by the TA-Petro official Petro Glendale page listing scale services. Official CAT Scale locator egress-blocked.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "TA Truck Service - Petro Glendale",
+  "category": "Roadside Service",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "554 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "270-369-6840",
+  "website": "https://www.ta-petro.com/location/ky/petro-glendale/",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck & trailer repair",
+   "Oil & lube",
+   "DOT inspections",
+   "Alignment",
+   "Tire repair",
+   "Road service"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/ky/petro-glendale/",
+   "https://www.truckstopsandservices.com/location_details.php?id=2227"
+  ],
+  "corroboration": "TA-Petro official Petro Glendale page + truckstopsandservices both list on-site truck service/repair with ~5 bays (oil & lube, truck repairs) at Petro #330, Exit 86. Official site egress-blocked; verified via directory snippet.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Blue Beacon Truck Wash of Glendale",
+  "category": "Truck Washes",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "554 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "",
+  "website": "https://bluebeacon.com/locations/listing/glendale-ky",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck wash",
+   "Trailer wash",
+   "Trailer washout",
+   "Engine wash",
+   "Double bay"
+  ],
+  "sources": [
+   "https://bluebeacon.com/locations/listing/glendale-ky",
+   "https://www.truckstopsandservices.com/location_details.php?id=8838"
+  ],
+  "corroboration": "Blue Beacon official location listing (Glendale, KY, double bay next to Petro, Exit 86) + truckstopsandservices ('Blue Beacon Truck Wash | I-65 Exit 86') agree on brand, location and I-65 Exit 86. Official site egress-blocked; verified via directory snippet.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #48 (Glendale)",
+  "category": "Truck Stops",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "58 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "270-369-7360",
+  "website": "https://locations.pilotflyingj.com/us/ky/glendale/58-glendale-hodgenville-rd-w",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel lanes",
+   "Truck parking",
+   "CAT Scale",
+   "Wingfoot Truck Care",
+   "Tire repair",
+   "McDonald's",
+   "Showers",
+   "Laundry",
+   "Bulk DEF",
+   "ATM",
+   "Open 24 hours"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/glendale/58-glendale-hodgenville-rd-w",
+   "https://www.truckstopsandservices.com/location_details.php?id=17299",
+   "https://www.findtruckservice.com/page/pilot-travel-center-48-glendale-ky-410739",
+   "https://truckmap.com/place/pilot-flying-j-pilot-travel-centers-048-58-w-glendale-hodgenville-rd-glendale-ky-42701-usa"
+  ],
+  "corroboration": "Pilot Flying J official location page (Pilot #48, 58 Glendale Hodgenville Rd W, Exit 86) + truckstopsandservices (Pilot #48, I-65 Exit 86, 125 spaces, CAT scale, Wingfoot Truck Care, McDonald's) + Find Truck Service (270-369-7360) agree on brand, address, exit 86, 125 truck spaces, 11 diesel lanes. Official site egress-blocked; verified via directory snippets.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Pilot Travel Center #48 (Glendale)",
+  "category": "CAT Scales",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "58 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "",
+  "website": "",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=17299",
+   "https://locations.pilotflyingj.com/us/ky/glendale/58-glendale-hodgenville-rd-w"
+  ],
+  "corroboration": "Pilot Flying J official location content and truckstopsandservices both list CAT Scales among the amenities for Pilot #48 at I-65 Exit 86. Official CAT Scale locator egress-blocked.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Wingfoot Truck Care - Pilot #48 (Glendale)",
+  "category": "Tire Repair",
+  "city": "Glendale",
+  "state": "KY",
+  "address": "58 W Glendale Hodgenville Road",
+  "zip": "42740",
+  "phone": "",
+  "website": "https://locations.pilotflyingj.com/us/ky/glendale/58-glendale-hodgenville-rd-w",
+  "exit_number": "86",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Commercial tire service",
+   "Tire repair",
+   "Truck service",
+   "Road service"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/glendale/58-glendale-hodgenville-rd-w",
+   "https://www.truckstopsandservices.com/location_details.php?id=17299"
+  ],
+  "corroboration": "Pilot #48 official page and truckstopsandservices both list 'Wingfoot Truck Care' as the on-site truck service/tire facility at Exit 86. Official site egress-blocked; verified via directory snippet.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "RaceTrac #2597 (Elizabethtown)",
+  "category": "Truck Stops",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "813 E Dixie Avenue",
+  "zip": "42701",
+  "phone": "270-982-1044",
+  "website": "https://www.racetrac.com/locations/kentucky/elizabethtown/elizabethtown",
+  "exit_number": "91",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "Truck parking",
+   "Reefer plug-ins",
+   "Bulk DEF",
+   "Deli",
+   "Convenience store",
+   "RV parking",
+   "ATM",
+   "WiFi",
+   "Open 24 hours"
+  ],
+  "sources": [
+   "https://www.racetrac.com/locations/kentucky/elizabethtown/elizabethtown",
+   "https://www.truckstopsandservices.com/location_details.php?id=57061",
+   "https://www.truckstopsandservices.com/location_details.php?id=66673",
+   "https://www.iexitapp.com/business/Racetrac/1859424"
+  ],
+  "corroboration": "RaceTrac official store page (#2597, 813 E Dixie Ave, Elizabethtown) + truckstopsandservices ('RaceTrac | I-65 Exit 91', 28 truck spaces, 6 fuel lanes, reefer plugs, 270-982-1044) + iExit (RaceTrac at I-65 Exit 91) agree on identity, address, exit 91, truck accommodations. Official site egress-blocked; verified via directory snippets.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - RaceTrac #2597 (Elizabethtown)",
+  "category": "CAT Scales",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "813 E Dixie Avenue",
+  "zip": "42701",
+  "phone": "",
+  "website": "",
+  "exit_number": "91",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "CAT Scale presence at a RaceTrac is atypical and could not be confirmed via the official CAT Scale locator (egress-blocked). Directory sources (truckstopsandservices, way.com, iExit) list a 'CAT scale / truck scale CAT' at this RaceTrac, but these directories may share source data; holding pending official CAT Scale locator confirmation.",
+  "amenities": [
+   "CAT Scale",
+   "Truck scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=57061",
+   "https://www.way.com/gas-station/details/7177824/RaceTrac-in-Elizabethtown-813-E-Dixie-Ave-"
+  ],
+  "corroboration": "Multiple freight directories list a CAT/truck scale at RaceTrac #2597 (Exit 91), but not independently confirmable via the official CAT Scale locator; held.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #716 (Elizabethtown)",
+  "category": "Truck Stops",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "601 S Ring Road",
+  "zip": "42701",
+  "phone": "270-982-2600",
+  "website": "https://www.loves.com/locations/ky/elizabethtown/loves-travel-stop-elizabethtown-716",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel lanes",
+   "Truck parking",
+   "CAT Scale",
+   "Love's Truck Care",
+   "Tire repair",
+   "Truck repairs",
+   "Arby's",
+   "Showers",
+   "Laundry",
+   "Bulk DEF",
+   "Dump station",
+   "ATM",
+   "Open 24 hours"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/ky/elizabethtown/loves-travel-stop-elizabethtown-716",
+   "https://www.loves.com/en/news/2018/march/loves-travel-stops-opens-in-elizabethtown-kentucky",
+   "https://www.truckstopsandservices.com/location_details.php?id=47020",
+   "https://www.findtruckservice.com/page/loves-travel-stop-716-elizabethtown-ky-429943"
+  ],
+  "corroboration": "Love's official location page + Love's 2018 opening press release + truckstopsandservices + Find Truck Service agree on Love's #716, 601 S Ring Rd Elizabethtown 42701, 270-982-2600, 63 truck spaces, 8 diesel lanes, 5 showers, CAT Scale, Love's Truck Care. Access is via WK Parkway Exit 133 at the I-65 junction; exact I-65 exit number left blank (not independently confirmed). Facility serves the Elizabethtown/I-65 freight hub. Official site egress-blocked; verified via directory snippets.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Love's Travel Stop #716 (Elizabethtown)",
+  "category": "CAT Scales",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "601 S Ring Road",
+  "zip": "42701",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=47020",
+   "https://www.findtruckservice.com/page/loves-travel-stop-716-elizabethtown-ky-429943"
+  ],
+  "corroboration": "truckstopsandservices and Find Truck Service both explicitly list 'CAT Scales and certified scales' among amenities for Love's #716; Love's travel stops carry CAT Scales as standard. Official CAT Scale locator egress-blocked.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care - Love's #716 (Elizabethtown)",
+  "category": "Tire Repair",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "601 S Ring Road",
+  "zip": "42701",
+  "phone": "270-982-2600",
+  "website": "https://www.loves.com/locations/ky/elizabethtown/loves-travel-stop-elizabethtown-716",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Commercial tire service",
+   "Tire repair",
+   "Oil & lube / PM",
+   "Light mechanical",
+   "Road service"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/loves-truck-care-elizabethtown",
+   "https://business.michelinman.com/dealer-locator/elizabethtown/love-s-travel-stops-country-stores-1092815036",
+   "https://www.truckstopsandservices.com/location_details.php?id=47020"
+  ],
+  "corroboration": "Yelp business listing 'Love's Truck Care, 601 S Ring Rd, Elizabethtown' + Michelin/Bridgestone commercial tire dealer locators (Love's Travel Stops, 601 Ring Rd) + truckstopsandservices (tire repair, truck repairs, 3 service bays) confirm an on-site Love's Truck Care tire/service shop. Official site egress-blocked; verified via multiple independent snippets.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Plaza 94 (Elizabethtown)",
+  "category": "Truck Stops",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "2022 N Mulberry Street",
+  "zip": "42701",
+  "phone": "",
+  "website": "",
+  "exit_number": "94",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "Truck parking",
+   "Deli/restaurant",
+   "ATM",
+   "Truck wash"
+  ],
+  "sources": [
+   "https://www.allstays.com/truckstops-details/93778.php",
+   "https://www.iexitapp.com/Kentucky/I-65/Exit%2094/14997"
+  ],
+  "corroboration": "AllStays truck-stop detail (Plaza 94, I-65 Exit 94, 5 truck spaces, deli, restaurant, ATM, truck wash) + iExit Exit 94 business list both place Plaza 94 at I-65 Exit 94 (US-62), 2022 N Mulberry St, Elizabethtown. Phone not confirmed (left blank). Directory sources only; official site egress-blocked.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Plaza 94 Truck Wash (Elizabethtown)",
+  "category": "Truck Washes",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "2022 N Mulberry Street",
+  "zip": "42701",
+  "phone": "",
+  "website": "",
+  "exit_number": "94",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "A truck wash is listed as a Plaza 94 amenity by AllStays/iExit, but the wash's brand, operating hours, attended/self-serve status, and current operational status could not be independently confirmed. Holding pending confirmation.",
+  "amenities": [
+   "Truck wash"
+  ],
+  "sources": [
+   "https://www.allstays.com/truckstops-details/93778.php",
+   "https://www.iexitapp.com/Kentucky/I-65/Exit%2094/14997"
+  ],
+  "corroboration": "AllStays and iExit both mention a truck wash at Plaza 94 (Exit 94), but no independent confirmation of brand/operational status; held.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Greenfield Inn & Suites Elizabethtown (I-65 Exit 94)",
+  "category": "Hotels with Truck Parking",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "1043 Executive Drive",
+  "zip": "42701",
+  "phone": "",
+  "website": "",
+  "exit_number": "94",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Free truck parking",
+   "Free RV/bus parking",
+   "24-hour front desk",
+   "Free breakfast",
+   "Indoor pool",
+   "Free WiFi"
+  ],
+  "sources": [
+   "https://www.expedia.com/Elizabethtown-Hotels-Wingfield-Inn-And-Suites.h16350.Hotel-Information",
+   "https://www.orbitz.com/Elizabethtown-Hotels-Wingfield-Inn-And-Suites.h16350.Hotel-Information",
+   "https://www.travelocity.com/Elizabethtown-Hotels-Wingfield-Inn-And-Suites.h16350.Hotel-Information"
+  ],
+  "corroboration": "Expedia/Orbitz/Travelocity property pages (Greenfield Inn & Suites Elizabethtown, KY I-65 Exit 94; formerly Wingfield Inn) consistently state free self parking plus free RV, bus, and truck parking. Address 1043 Executive Drive per Expedia; brand/OTA renaming noted. Truck parking confirmed by multiple independent OTA sources.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Best Western Plus Elizabethtown Inn & Suites (I-65 Exit 94)",
+  "category": "Hotels with Truck Parking",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "2014 N Mulberry Street",
+  "zip": "42701",
+  "phone": "",
+  "website": "https://www.bestwestern.com/en_US/book/hotels-in-elizabethtown/best-western-plus-elizabethtown-inn-suites/propertyCode.18116.html",
+  "exit_number": "94",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck parking",
+   "Bus/large-vehicle parking",
+   "Free parking",
+   "Free hot breakfast",
+   "Indoor pool",
+   "Fitness center",
+   "Free WiFi"
+  ],
+  "sources": [
+   "https://www.bestwestern.com/en_US/book/hotels-in-elizabethtown/best-western-plus-elizabethtown-inn-suites/propertyCode.18116.html",
+   "https://hotelguides.com/hotels/kentucky/elizabethtown/222692.html",
+   "https://www.hotelplanner.com/Hotels/292813/Reservations-Best-Western-Plus-Elizabethtown-Inn-Suites-Elizabethtown-2014-North-Mulberry-St-42701"
+  ],
+  "corroboration": "Best Western brand page + HotelGuides (I-65 Exit 94, truck parking) + HotelPlanner (2014 N Mulberry St, Elizabethtown 42701) confirm identity, Exit 94 location, and truck/large-vehicle parking (outside uncovered parking for buses/boats/large vehicles). Phone left blank (not confirmed).",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Kentucky Weigh Station - I-65 Southbound (Elizabethtown, KSP Post 3)",
+  "category": "Weigh Stations",
+  "city": "Elizabethtown",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Weigh/inspection station held pending an official KYTC/KSP source with a civic street address and confirmed direction/facility identity; corroborated via aggregated truck directories only \u2014 confirm before publishing.",
+  "amenities": [
+   "Fixed truck scale",
+   "NORPASS/PrePass bypass"
+  ],
+  "sources": [
+   "https://truckmap.com/place/weigh-station-elizabethtown-sb-i-65-s-elizabethtown-ky-42701-usa",
+   "https://www.coopsareopen.com/kentucky-truck-scale-297.html"
+  ],
+  "corroboration": "TruckMap explicitly names 'Weigh Station Elizabethtown SB I-65 S' (southbound direction confirmed); coopsareopen 'Post 3 (Elizabethtown)' confirms an I-65 weigh station between Exit 86 (Pilot/Petro to the south) and Exit 105 (Pilot to the north), with NORPASS bypass (permanent fixed scale). Exact mile marker not independently confirmed (KYTC PDF egress-blocked); left blank. A northbound counterpart may exist but was not independently confirmed and is not listed.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #399",
+  "category": "Truck Stops",
+  "city": "Lebanon Junction",
+  "state": "KY",
+  "address": "150 Plaza Park Rd",
+  "zip": "40150",
+  "phone": "502-833-2727",
+  "website": "https://locations.pilotflyingj.com/us/ky/lebanon-junction/150-plaza-park-rd",
+  "exit_number": "105",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "showers",
+   "CAT Scale",
+   "Subway",
+   "McDonald's",
+   "convenience store",
+   "DEF",
+   "laundry",
+   "game room",
+   "truck service bays",
+   "WiFi",
+   "ATM"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/lebanon-junction/150-plaza-park-rd",
+   "https://www.truckstopsandservices.com/location_details.php?id=2583",
+   "https://www.findtruckservice.com/page/pilot-travel-center-399-lebanon-junction-ky-410741",
+   "https://kentucky.view.interstatelogos.com/I-65-N/7589/46570/",
+   "https://www.mystore411.com/store/view/4444340/Pilot-Travel-Center-Flying-J-Travel-Plaza-Lebanon-Junction"
+  ],
+  "corroboration": "Official Pilot location page (150 Plaza Park Rd, Lebanon Junction 40150), truckstopsandservices (Pilot #399, I-65 Exit 105), findtruckservice (Pilot #399, phone 502-833-2727), and Kentucky interstate logos (Pilot at I-65 Exit 105 / KY-61) all agree on identity, exit, and city. CAT Scale, Subway, McDonald's, and 8 diesel lanes reported by multiple directories. Official brand page (loves.com/pilotflyingj.com) blocked at the org egress proxy (403 CONNECT), so identity was corroborated via independent directories.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Pilot Travel Center #399, Lebanon Junction",
+  "category": "CAT Scales",
+  "city": "Lebanon Junction",
+  "state": "KY",
+  "address": "150 Plaza Park Rd",
+  "zip": "40150",
+  "phone": "502-833-2727",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "105",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=2583",
+   "https://www.findtruckservice.com/page/pilot-travel-center-399-lebanon-junction-ky-410741",
+   "https://www.mystore411.com/store/view/4444340/Pilot-Travel-Center-Flying-J-Travel-Plaza-Lebanon-Junction"
+  ],
+  "corroboration": "Multiple independent directories list CAT Scales among the amenities of Pilot #399 at I-65 Exit 105, Lebanon Junction. The official catscale.com locator was blocked at the org egress proxy (403 CONNECT); CAT Scale presence corroborated by >=2 independent directory listings.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #238",
+  "category": "Truck Stops",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "1090 Cedar Grove Rd",
+  "zip": "40165",
+  "phone": "502-543-7000",
+  "website": "https://www.loves.com/locations/ky/shepherdsville/loves-travel-stop-shepherdsville-238",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "showers",
+   "CAT Scale",
+   "Subway",
+   "Chester's Chicken",
+   "convenience store",
+   "DEF",
+   "EV charging",
+   "truck care / tire service",
+   "WiFi",
+   "ATM"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/ky/shepherdsville/loves-travel-stop-shepherdsville-238",
+   "https://www.truckstopsandservices.com/location_details.php?id=14921",
+   "https://www.yelp.com/biz/loves-travel-stop-shepherdsville-2",
+   "https://www.rvparky.com/location/loves-travel-stop-shepherdsville-ky-238"
+  ],
+  "corroboration": "Search snippets from the official Love's #238 page, truckstopsandservices (Love's #238, I-65 Exit 116), Yelp, and RV Parky all confirm 1090 Cedar Grove Rd, Shepherdsville 40165, store #238, phone 502-543-7000, Exit 116. Official loves.com page blocked at the org egress proxy (403 CONNECT); corroborated via independent directories.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Love's Travel Stop #238, Shepherdsville",
+  "category": "CAT Scales",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "1090 Cedar Grove Rd",
+  "zip": "40165",
+  "phone": "502-543-7000",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=14921",
+   "https://www.4roadservice.com/sheperdsville-kentucky/provider/cat-scale",
+   "https://www.chamberofcommerce.com/business-directory/kentucky/shepherdsville/weigh-station/2028403491-cat-scale"
+  ],
+  "corroboration": "truckstopsandservices, 4RoadService, and Chamber of Commerce directory all list a CAT Scale at the Love's #238 / I-65 Exit 116 Shepherdsville location (phone 502-543-7000). Official catscale.com locator blocked at the org egress proxy (403 CONNECT).",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care #238",
+  "category": "Roadside Service",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "1090 Cedar Grove Rd",
+  "zip": "40165",
+  "phone": "800-655-6837",
+  "website": "https://www.loves.com/loves-truck-care-and-speedco",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "truck repair",
+   "tire shop / new tires",
+   "mobile & roadside tire service",
+   "oil change / PM",
+   "light mechanical",
+   "trailer repair",
+   "computer diagnostics",
+   "24/7 service"
+  ],
+  "sources": [
+   "https://www.findtruckservice.com/page/loves-truck-care-238-shepherdsville-ky-421821",
+   "https://www.truckdown.com/search/view-detail/loves_truck_care_shepherdsville_ky/4fe1ddf0b73427072c049e8a",
+   "https://www.nttrdirectory.com/united-states/shepherdsville/top-level-category/love-s-truck-care"
+  ],
+  "corroboration": "Find Truck Service (Love's Truck Care #238, Shepherdsville, 800-655-6837), TruckDown, and NTTR Directory all confirm a Love's Truck Care heavy-duty service/tire center co-located with Love's #238 at 1090 Cedar Grove Rd, I-65 Exit 116, offering tire and mechanical services. Listed as a distinct co-located service per the co-location model.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #356",
+  "category": "Truck Stops",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "2050 E Blue Lick Rd",
+  "zip": "40165",
+  "phone": "502-955-5049",
+  "website": "https://locations.pilotflyingj.com/us/ky/shepherdsville/2050-e-blue-lick-rd",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "showers",
+   "CAT Scale",
+   "Subway",
+   "convenience store",
+   "DEF",
+   "WiFi",
+   "ATM"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/ky/shepherdsville/2050-e-blue-lick-rd",
+   "https://www.truckstopsandservices.com/location_details.php?id=17331",
+   "https://www.findtruckservice.com/page/pilot-travel-center-356-shepherdsville-ky-410749",
+   "https://truckmap.com/place/pilot-flying-j-pilot-travel-centers-356-2050-east-blue-lick-rd-shepherdsville-ky-40165-usa"
+  ],
+  "corroboration": "Official Pilot location page, truckstopsandservices (Pilot #356), Find Truck Service (Pilot #356, phone 502-955-5049), and TruckMap all confirm 2050 E Blue Lick Rd, Shepherdsville 40165, store #356, with a CAT Scale. Exit is corroborated as I-65 Exit 116 (KY-480/Blue Lick Rd) by roadnow/iExit exit lists; one directory's 'Exit 121' label is inconsistent with the KY exit sequence and was not used. Official brand page blocked at the org egress proxy (403 CONNECT).",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Pilot Travel Center #356, Shepherdsville",
+  "category": "CAT Scales",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "2050 E Blue Lick Rd",
+  "zip": "40165",
+  "phone": "502-955-5049",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=17331",
+   "https://www.findtruckservice.com/page/pilot-travel-center-356-shepherdsville-ky-410749",
+   "https://locations.pilotflyingj.com/us/ky/shepherdsville/2050-e-blue-lick-rd"
+  ],
+  "corroboration": "truckstopsandservices and Find Truck Service both list a CAT Scale at Pilot #356, 2050 E Blue Lick Rd, I-65 Exit 116, Shepherdsville. Official catscale.com locator blocked at the org egress proxy (403 CONNECT).",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "All American Truck Wash",
+  "category": "Truck Washes",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "1116 Cedar Grove Rd",
+  "zip": "40165",
+  "phone": "502-543-1911",
+  "website": "",
+  "exit_number": "116",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "truck wash",
+   "trailer wash"
+  ],
+  "sources": [
+   "https://www.yellowpages.com/shepherdsville-ky/mip/all-american-truck-wash-21884108",
+   "https://www.findtruckservice.com/Semi/Truck+Wash/Trailer+Wash/KY/Shepherdsville/",
+   "https://www.allstays.com/c/truck-wash-kentucky-locations.htm"
+  ],
+  "corroboration": "Yellowpages (All American Truck Wash, 1116 Cedar Grove Rd, Shepherdsville 40165, 502-543-1911) and Find Truck Service / Allstays truck-wash directories both list a truck/trailer wash at I-65 Exit 116, 1116 Cedar Grove Rd. Name appears as 'All American Truck Wash' (yellowpages) / 'All American-Pride Truck Wash' (findtruckservice); primary name used from yellowpages.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Bullitt County Welcome Center (I-65 Southbound, MM 114) - truck parking",
+  "category": "Truck Parking",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "502-543-5900",
+  "website": "https://transportation.ky.gov/",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Direction (SB) and MM 114 confirmed by KYTC welcome-center documentation, and separate truck parking is present, but LEGAL overnight parking status is not independently confirmed (never assumed from truck-space presence). Exact street address/zip not confirmed. Held per conservative rest-area/welcome-center rules.",
+  "amenities": [
+   "truck parking",
+   "restrooms",
+   "vending",
+   "picnic area",
+   "visitor services"
+  ],
+  "sources": [
+   "https://www.kentuckyrestareas.com/ky-i65-kentucky-interstate-65-bullitt-county-welcome-center-southbound-mile-marker-114/",
+   "https://transportation.ky.gov/Civil-Rights-and-Small-Business-Development/Documents/ADA%20-%20KENTUCKY%20WELCOME%20CENTERS.pdf",
+   "https://www.yelp.com/biz/ky-rest-area-shepherdsville"
+  ],
+  "corroboration": "KYTC Welcome Center ADA document and kentuckyrestareas.com both confirm a Bullitt County I-65 Welcome Center, southbound, mile marker 114, with separate truck/passenger parking and phone 502-543-5900. Overnight legality unconfirmed, so held.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Bullitt County Weigh Station (KVE/KSP)",
+  "category": "Weigh Stations",
+  "city": "Shepherdsville",
+  "state": "KY",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.kentuckystatepolice.ky.gov/commercial-vehicle-enforcement",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Existence of an I-65 Bullitt County weigh/scale facility is asserted by directory sources, but direction (NB/SB), mile marker/exact location, and permanent-vs-mobile/inspection-only status could not be independently confirmed from KYTC/KSP. Note: the MM-114 facility is a KYTC Welcome Center, not a weigh station; the nearest confirmed permanent KSP scale (Post 3 / Elizabethtown, MM ~89.5, Hardin County) is south of this segment. Held per conservative weigh-station rules.",
+  "amenities": [],
+  "sources": [
+   "https://www.coopsareopen.com/kentucky-weigh-stations.html",
+   "https://www.kentuckytruckingonline.com/blog/post/understanding-kentuckys-truck-weigh-station-network",
+   "https://www.kentuckystatepolice.ky.gov/commercial-vehicle-enforcement"
+  ],
+  "corroboration": "coopsareopen and kentuckytruckingonline reference an I-65 weigh station in the Bullitt County/Shepherdsville area, but neither provided a confirmable direction, mile marker, or status; KSP CVE operates KY weigh stations. Insufficient to publish.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Days Inn by Wyndham Louisville Airport Fair & Expo Center",
+  "category": "Hotels with Truck Parking",
+  "city": "Louisville",
+  "state": "KY",
+  "address": "2905 Fern Valley Rd",
+  "zip": "40213",
+  "phone": "502-968-8124",
+  "website": "https://www.wyndhamhotels.com/days-inn/louisville-kentucky/days-inn-louisville-airport-fair-and-expo-center/overview",
+  "exit_number": "128",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Free continental breakfast",
+   "Free WiFi",
+   "Fitness center",
+   "Free large-vehicle parking"
+  ],
+  "sources": [
+   "https://www.daysinnlouisvilleairport.com/",
+   "https://www.wyndhamhotels.com/days-inn/louisville-kentucky/days-inn-louisville-airport-fair-and-expo-center/overview",
+   "https://www.gotolouisville.com/directory/days-inn-by-wyndham-louisville-airport-fair-and-expo-center/",
+   "https://www.hotels4truckers.com/SearchResults.php?Zipinner=40299"
+  ],
+  "corroboration": "Address 2905 Fern Valley Rd / Louisville 40213 confirmed by hotel's own site, Wyndham brand page, GoToLouisville (official CVB), HotelPlanner and Yelp. Free truck/bus/RV parking stated on the hotel's own marketing site and listed in the Hotels4Truckers truck-friendly directory. I-65 Exit 128 (Fern Valley Rd) confirmed via AARoads I-65 Louisville exit guide. Wyndham official page returned HTTP 403 to automated fetch; details corroborated across >=2 independent sources.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Motel 6 Louisville, KY - Airport/Fair Expo",
+  "category": "Hotels with Truck Parking",
+  "city": "Louisville",
+  "state": "KY",
+  "address": "6121 Airport Hotels Blvd",
+  "zip": "40213",
+  "phone": "502-742-4722",
+  "website": "https://www.motel6.com/property/motel-louisville-kentucky-us-294109/",
+  "exit_number": "128",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Truck/large-vehicle parking is reported only by third-party booking aggregators (ParkSleepHotels and other travel sites); the official Motel 6 property page returned HTTP 403 to automated fetch and truck-parking availability could not be independently confirmed on an official source. Identity/address (6121 Airport Hotels Blvd, Louisville 40213; phone 502-742-4722) and I-65 Exit 128 location are corroborated, but category-fit (confirmed truck parking) is not.",
+  "amenities": [
+   "Free WiFi",
+   "Laundry facility",
+   "Free coffee"
+  ],
+  "sources": [
+   "https://www.motel6.com/property/motel-louisville-kentucky-us-294109/",
+   "https://www.yelp.com/biz/motel-6-louisville-4",
+   "https://www.parksleephotels.com/motel-6-louisville-ky-airportfair-expo-ro-am-80777.html"
+  ],
+  "corroboration": "Address and phone corroborated by Motel 6 property page, Yelp and GoToLouisville. Truck-parking claim appears only on aggregator/park-sleep listings and is unverified on an official source, so held.",
+  "agent": "research-seg5",
+  "dupes": []
+ }
+]

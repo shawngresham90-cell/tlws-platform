@@ -1,0 +1,188 @@
+[
+ {
+  "name": "TA Smiths Grove",
+  "city": "Smiths Grove",
+  "reason": "I-65 Exit 38 \u2014 north of this segment's range (exits 2-30); belongs to the next I-65 KY segment.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Love's Travel Stop #360",
+  "city": "Horse Cave",
+  "reason": "I-65 Exit 58 \u2014 well north of segment range; not in exits 2-30.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Petro Stopping Center #330 / Pilot Travel Center",
+  "city": "Glendale",
+  "reason": "I-65 Exit 86 \u2014 far north of segment range.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash (Sonora / Glendale)",
+  "city": "Sonora",
+  "reason": "Nearest Blue Beacon locations are I-65 Exit 81 (Sonora) and Exit 86 (Glendale) \u2014 north of segment range; no Blue Beacon in exits 2-30.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "BG Food Mart",
+  "city": "Bowling Green",
+  "reason": "Located at 4805 Nashville Rd on I-165 (Natcher Parkway) Exit 3, not I-65 \u2014 primarily serves a different route.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Cracker Barrel Bowling Green (Exit 22)",
+  "city": "Bowling Green",
+  "reason": "Restaurant offering informal/boondock truck parking; not a listed facility category and overnight status not officially sanctioned.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Parkway Shell",
+  "city": "Bowling Green",
+  "reason": "Appears to sit on the US-31W Bypass rather than an I-65 exit; I-65 truck-stop identity/access not confirmed.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Specialized Truck Repair / Road Rescue Network / iFleet / mobile-repair aggregators",
+  "city": "Bowling Green",
+  "reason": "Lead-generation / dispatch-network pages, not verifiable fixed local businesses; identity and address could not be independently confirmed.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Buc-ee's Smiths Grove",
+  "city": "Smiths Grove",
+  "reason": "At I-65 Exit 38 but expressly bans 18-wheelers/commercial trucks (posted 'no 18-wheelers'; lots not designed for trucks, no truck parking or truck fuel lanes). Not a truck-serving facility per Buc-ee's general counsel and multiple sources.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Cracker Barrel Cave City",
+  "city": "Cave City",
+  "reason": "Restaurant at I-65 Exit 53 that allows some overnight/RV parking, but it is not a freight-service facility and does not fit any target category (not a truck stop, hotel, or truck service).",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Love's Travel Stop #716 (Ring Rd) - parkway-access consideration",
+  "city": "Elizabethtown",
+  "reason": "NOT excluded - retained and published. Documented here for transparency: this Love's is signed off WK Parkway Exit 133, but sits at the I-65 / WK Parkway junction in the Elizabethtown freight hub and genuinely serves I-65 traffic, so it is included with the I-65 exit number left blank.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Holiday Inn Express & Suites Elizabethtown North",
+  "city": "Elizabethtown",
+  "reason": "At I-65 Exit 94, but truck/semi parking could not be independently confirmed; per 'do not assume truck parking' rule, excluded from 'Hotels with Truck Parking'.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Hampton Inn Elizabethtown",
+  "city": "Elizabethtown",
+  "reason": "At I-65 Exit 94, but no confirmation of truck/semi parking; excluded from 'Hotels with Truck Parking'.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Hart County Rest Area (I-65 Southbound, MM 59/60, Horse Cave)",
+  "city": "Horse Cave",
+  "reason": "Nearest I-65 rest area to this segment, but at mile marker ~59, south of this segment's range (exits/MM 65-94). Belongs to the Cave City/Horse Cave segment, not seg3.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Pilot Travel Center (old Davis Truck Stop), I-65 Exit 105",
+  "city": "Radcliff/Sonora area (north of E-town)",
+  "reason": "Exit 105 is north of this segment's range (exits 65-94); belongs to the Radcliff/West Point segment.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Truck Parking Club - Elizabethtown/Glendale listings",
+  "city": "Elizabethtown / Glendale",
+  "reason": "TruckParkingClub shows a general Elizabethtown page and reflects the Pilot #48 and Petro #330 lots (already listed as truck stops). No distinct independently verifiable bookable drop-lot address was confirmed for a standalone 'Truck Parking' listing; omitted rather than guessed.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Truck facilities at I-65 Exits 65/71/76/81 (Bonnieville, Upton, Sonora)",
+  "city": "Bonnieville / Upton / Sonora",
+  "reason": "These rural exits (KY-728 Exit 71, KY-224 Exit 76, KY-84 Exit 81) were searched; no truck stops, tire shops, truck washes, CAT scales, or truck-parking hotels were verifiable. Nothing added.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Rooster Run General Store / Travel Plaza",
+  "city": "Coxs Creek",
+  "reason": "Located at 6515 New Shepherdsville Rd, Coxs Creek 40013 (Nelson County), roughly 9-10 miles east of I-65 Exit 112 on KY-245; primarily serves KY-245/Bardstown traffic rather than the I-65 exit itself. Off-corridor for this I-65 segment.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash (Sonora)",
+  "city": "Sonora",
+  "reason": "At I-65 Exit 81 (Sonora, Hardin County), south of this segment's exit 94-117 range.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash (Glendale)",
+  "city": "Glendale",
+  "reason": "At I-65 Exit 86 (Glendale, Hardin County), south of this segment's exit 94-117 range.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Best Western Shepherdsville",
+  "city": "Shepherdsville",
+  "reason": "At I-65 Exit 117; advertises free auto parking but truck/big-rig parking not independently confirmed. Excluded from 'Hotels with Truck Parking' to avoid unverified truck-access claim.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "105 Quick Stop",
+  "city": "Lebanon Junction",
+  "reason": "Reported small fuel/convenience stop near I-65 Exit 105 (12492 S Preston Hwy); could not independently confirm truck-stop category-fit, truck parking, or operating status. Excluded pending confirmation.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Radcliff / Vine Grove / West Point truck facilities",
+  "city": "Radcliff",
+  "reason": "Radcliff and Vine Grove sit west of I-65 near Fort Knox (served via KY-313 / Western Kentucky Parkway), and West Point is on US-31W - none are at an I-65 exit in this range with a verifiable I-65-adjacent truck/freight facility. No qualifying listings found.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Love's Travel Stop #238 (and its CAT Scale)",
+  "city": "Shepherdsville",
+  "reason": "Located at I-65 Exit 116 in Bullitt County (Shepherdsville), south of the Bullitt/Jefferson County line and ~20 mi south of downtown Louisville. Exit 116 is below this segment's stated exit-117 lower bound; belongs to the adjacent southern I-65 segment. Not one of the 99 existing (I-75 eastern KY) production listings.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Pilot Travel Center, 2050 E Blue Lick Rd (and its CAT Scale, 502-955-5049)",
+  "city": "Shepherdsville",
+  "reason": "Located at I-65 Exit 121 in Bullitt County (Shepherdsville). North of Love's but still in Bullitt County, south of the Jefferson County line; falls in the adjacent southern I-65 segment, not the Louisville/Jefferson County (seg5) segment. Excluded to avoid cross-segment overlap; genuine I-65 facility.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "RaceTrac Travel Center, 145 Alpha Way",
+  "city": "Shepherdsville",
+  "reason": "I-65 Exit 116, Bullitt County (Shepherdsville). Below segment lower bound / outside Jefferson County; belongs to adjacent southern segment.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "I-65 Weigh Station (KYTC/KSP)",
+  "city": "Shepherdsville (Bullitt County)",
+  "reason": "The I-65 weigh/inspection station in this stretch is in Bullitt County (Shepherdsville area), not Jefferson County. No I-65 weigh station exists within the Louisville/Jefferson County segment. Exact direction/mile marker not independently confirmed; out of segment.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Baymont Inn & Suites Louisville Airport South, 6515 Signature Dr",
+  "city": "Louisville",
+  "reason": "At I-65 Exit 128 (Fern Valley Rd), Jefferson County, but no truck/large-vehicle parking could be confirmed from any source. Excluded pending truck-parking verification (would otherwise fit Hotels with Truck Parking).",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Speedco / Blue Beacon / TA-Petro (nearest KY I-65 locations)",
+  "city": "Franklin / Sonora / Glendale / Elizabethtown",
+  "reason": "Nearest branded truck-service/wash facilities on I-65 in Kentucky are far south (Exit 6 Franklin, Exit 81 Sonora, Exit 86 Glendale, etc.), well outside the Louisville/Jefferson County segment. No Speedco, Blue Beacon, or TA/Petro exists on I-65 within Jefferson County.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Ken Towery / Goodyear tire & auto service (Preston Hwy)",
+  "city": "Louisville",
+  "reason": "Preston Highway tire/auto shops (e.g., 6601 & 11480 Preston Hwy) are passenger/light-truck car-care shops, not heavy-duty semi tire-repair facilities, and are not sited at an I-65 exit. Do not fit the Tire Repair (truck) category.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "CAT Scale (Louisville/Jefferson County on I-65)",
+  "city": "Louisville",
+  "reason": "No CAT Scale exists on I-65 within Jefferson County. Nearest CAT Scales are at I-65 Exit 116 and Exit 121 in Shepherdsville (Bullitt County) \u2014 see Love's/Pilot exclusions above. Nothing verifiable to list in Jefferson County.",
+  "_from": "research-seg5.json"
+ }
+]

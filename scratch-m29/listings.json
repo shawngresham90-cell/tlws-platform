@@ -1,0 +1,1812 @@
+[
+ {
+  "name": "Pilot Travel Center #441",
+  "category": "Truck Stops",
+  "city": "Priceville",
+  "state": "AL",
+  "address": "3240 Point Mallard Parkway SE",
+  "zip": "35603",
+  "phone": "256-353-5252",
+  "website": "https://locations.pilotflyingj.com/us/al/priceville/3240-point-mallard-parkway",
+  "exit_number": "334",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Laundry",
+   "Restrooms",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/al/priceville/3240-point-mallard-parkway",
+   "https://www.truckstopsandservices.com/location_details.php?id=16724",
+   "https://www.yelp.com/biz/pilot-travel-center-priceville",
+   "https://truckerguideapp.com/pilot/pilot-441-3977"
+  ],
+  "corroboration": "Official Pilot Flying J location page (Priceville slug), plus Yelp and multiple truck-stop directories agree on address 3240 Point Mallard Pkwy SE, phone 256-353-5252, Exit 334, 8 showers and CAT Scale.",
+  "agent": "research-seg1",
+  "dupes": [
+   "Pilot Travel Center #441 (Priceville)"
+  ]
+ },
+ {
+  "name": "CAT Scale at Pilot Travel Center #441",
+  "category": "CAT Scales",
+  "city": "Priceville",
+  "state": "AL",
+  "address": "3240 Point Mallard Parkway SE",
+  "zip": "35603",
+  "phone": "877-228-7225",
+  "website": "https://catscale.com",
+  "exit_number": "334",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=16724",
+   "https://www.parkadvisor.com/us/alabama/priceville/680106/Pilot+Travel+Center+0441",
+   "https://truckerguideapp.com/pilot/pilot-441-3977"
+  ],
+  "corroboration": "CAT Scale presence at Pilot #441 is listed consistently by three independent truck-stop directories (truckstopsandservices, ParkAdvisor, TruckerGuide). The official catscale.com locator could not be fetched (egress-blocked), so the national CAT Scale number/site is used for contact.",
+  "agent": "research-seg1",
+  "dupes": [
+   "CAT Scale at Pilot Travel Center #441"
+  ]
+ },
+ {
+  "name": "Truck & Trailer Parking off US-72 (Athens)",
+  "category": "Truck Parking",
+  "city": "Athens",
+  "state": "AL",
+  "address": "25845 US-72",
+  "zip": "35613",
+  "phone": "",
+  "website": "https://truckparkingclub.com/truck-parking/alabama/athens/25845-us-72-35613",
+  "exit_number": "351",
+  "tpc_url": "https://truckparkingclub.com/truck-parking/alabama/athens/25845-us-72-35613",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [],
+  "sources": [
+   "https://truckparkingclub.com/truck-parking/alabama/athens/25845-us-72-35613",
+   "https://truckparkingclub.com/us/alabama/athens"
+  ],
+  "corroboration": "Live Truck Parking Club listing page for 25845 US-72, Athens 35613; confirms 24/7 gravel lot, Exit 351 access, and paid/reservable (hourly-monthly) parking.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Clarion Pointe Athens I-65",
+  "category": "Hotels with Truck Parking",
+  "city": "Athens",
+  "state": "AL",
+  "address": "1322 US Highway 72 East",
+  "zip": "35611",
+  "phone": "256-233-7500",
+  "website": "https://www.choicehotels.com/alabama/athens/clarion-hotels/al720",
+  "exit_number": "351",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.choicehotels.com/alabama/athens/clarion-hotels/al720",
+   "https://www.tripadvisor.com/Hotel_Review-g29003-d72287-Reviews-Clarion_Pointe_Athens_I_65-Athens_Alabama.html"
+  ],
+  "corroboration": "Choice Hotels official brand page (al720) plus Tripadvisor confirm the Athens I-65 Exit 351 location and the advertised truck parking area; phone 256-233-7500.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Quality Truck & Auto Repair",
+  "category": "Roadside Service",
+  "city": "Decatur",
+  "state": "AL",
+  "address": "546 Old Trinity Road",
+  "zip": "35601",
+  "phone": "256-476-7573",
+  "website": "https://www.qualitytruckautorepair.com",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.qualitytruckautorepair.com/",
+   "https://www.yelp.com/biz/quality-truck-and-auto-repair-decatur",
+   "https://www.findtruckservice.com/page/quality-truck-repair-decatur-al-430202"
+  ],
+  "corroboration": "Business's own site, Yelp and Find Truck Service agree on 546 Old Trinity Rd, Decatur 35601, 24/7 towing 256-476-7573 and shop 256-580-5643. Exit left blank because it is a city-location shop, not at a single I-65 exit.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Athens Auto Tire & Wrecker Service",
+  "category": "Roadside Service",
+  "city": "Athens",
+  "state": "AL",
+  "address": "306 5th Avenue",
+  "zip": "35611",
+  "phone": "256-771-7537",
+  "website": "",
+  "exit_number": "351",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.bbb.org/us/al/athens/profile/towing-company/athens-auto-tire-wrecker-service-0513-900049407",
+   "https://www.chamberofcommerce.com/business-directory/alabama/athens/auto-wrecker/1002925-athens-auto-tire-wrecker-service",
+   "https://www.4roadservice.com/athens-alabama/provider/t-t-tire-wrecker-service"
+  ],
+  "corroboration": "BBB, Chamber of Commerce and 4RoadService agree on 306 5th Ave, Athens 35611, phone 256-771-7537, offering 24/7 tire repair and heavy-duty towing.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Clem Tire",
+  "category": "Tire Repair",
+  "city": "Athens",
+  "state": "AL",
+  "address": "908 E Highway 72",
+  "zip": "35611",
+  "phone": "256-232-7696",
+  "website": "https://www.clemtire.com",
+  "exit_number": "351",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.clemtire.com/Find-Us/Mode/1/908-E-Highway-72-Athens-AL-35611/details",
+   "https://www.yelp.com/biz/clem-tire-athens",
+   "https://www.findtruckservice.com/page/clem-tire-co-athens-al-415689"
+  ],
+  "corroboration": "Clem Tire official location page, Yelp and Find Truck Service agree on 908 E Hwy 72, Athens 35611, phone 256-232-7696; commercial/semi tires offered.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Direct Wash Out (Direct Inc.)",
+  "category": "Truck Washes",
+  "city": "Priceville",
+  "state": "AL",
+  "address": "3703 Mountain Valley Road",
+  "zip": "35603",
+  "phone": "256-355-1531",
+  "website": "https://directinc.co",
+  "exit_number": "334",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [],
+  "sources": [
+   "https://directinc.co/truck-washing-decatur-al/",
+   "https://truckwashratings.com/stations/direct-wash-out-priceville-al/",
+   "https://www.findtruckservice.com/Semi/Truck+Wash/Trailer+Wash/AL/Priceville"
+  ],
+  "corroboration": "Operator site (Direct Inc.), TruckWashRatings and Find Truck Service agree on 3703 Mountain Valley Rd, Priceville 35603, phone 256-355-1531, truck/trailer/tanker wash-out.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Ardmore Welcome Center (I-65 Southbound)",
+  "category": "Truck Parking",
+  "city": "Elkmont",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "256-353-8862",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "No street address (mile-marker facility) and legal overnight-parking status for trucks could not be independently confirmed; per instructions rest-area overnight parking is not assumed even though truck spaces exist.",
+  "amenities": [
+   "Restrooms"
+  ],
+  "sources": [
+   "https://www.aldotnews.com/2024/10/16/ardmore-welcome-center-on-i-65-opens/",
+   "https://www.alabamarestareas.com/al-i-65-ardmore-welcome-center-southbound-mile-marker-363-7/",
+   "https://restareasnearme.com/rest-area/al-i-65-ardmore-welcome-center-southbound/"
+  ],
+  "corroboration": "ALDOT News plus two rest-area databases confirm the southbound-only welcome center at MM 363.7 with truck parking and RV dump; direction and existence confirmed, overnight legality not confirmed.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Athens Weigh Station (Southbound)",
+  "category": "Weigh Stations",
+  "city": "Athens",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.coopsareopen.com/alabama-truck-scale-8.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Only a single non-official source (coopsareopen) describes this weigh-in-motion point; not confirmed on an ALEA/ALDOT official source and no scale-house/address to verify.",
+  "amenities": [],
+  "sources": [
+   "https://www.coopsareopen.com/alabama-truck-scale-8.html"
+  ],
+  "corroboration": "Single source (coopsareopen) gives SB weigh-in-motion at MM 355.5; held pending official ALEA/ALDOT confirmation.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Athens Weigh Station (Northbound)",
+  "category": "Weigh Stations",
+  "city": "Athens",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.coopsareopen.com/alabama-truck-scale-8.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Only a single non-official source (coopsareopen) references a northbound weigh-in-motion point; exact mile marker not given and not confirmed on an ALEA/ALDOT official source.",
+  "amenities": [],
+  "sources": [
+   "https://www.coopsareopen.com/alabama-truck-scale-8.html"
+  ],
+  "corroboration": "Single source (coopsareopen) references a NB weigh-in-motion counterpart to the SB point; held pending official confirmation.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "J Mart #1305",
+  "category": "Truck Stops",
+  "city": "Priceville",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "256-353-5980",
+  "website": "",
+  "exit_number": "334",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Only a single directory reference; no verified street address/ZIP and current operation under this name could not be independently corroborated.",
+  "amenities": [
+   "Fuel"
+  ],
+  "sources": [
+   "https://www.iexitapp.com/Alabama/I-65/Exit%20334/14716"
+  ],
+  "corroboration": "Single directory snippet (Highway 67 S, Priceville, 256-353-5980); insufficient corroboration to publish.",
+  "agent": "research-seg1",
+  "dupes": []
+ },
+ {
+  "name": "Petro Dodge City (Petro Stopping Center #397)",
+  "category": "Truck Stops",
+  "city": "Hanceville",
+  "state": "AL",
+  "address": "426 AL Highway 69 S",
+  "zip": "35077",
+  "phone": "256-287-1299",
+  "website": "https://www.ta-petro.com/location/al/petro-dodge-city/",
+  "exit_number": "299",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "TA Truck Service",
+   "tire repair",
+   "showers",
+   "laundry",
+   "dog wash",
+   "driver's lounge",
+   "Iron Skillet",
+   "Popeye's",
+   "Burger King",
+   "Papa John's"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/al/petro-dodge-city/",
+   "https://www.findfuelstops.com/truck-stop-004832",
+   "https://www.truckstopsandservices.com/location_details.php?id=44739",
+   "https://www.findtruckservice.com/page/petro-truck-stop-397-hanceville-al-421549"
+  ],
+  "corroboration": "TA/Petro official location page, findfuelstops, truckstopsandservices and findtruckservice all agree on name, 426 AL-69 S Hanceville 35077, I-65 Exit 299, phone 256-287-1299, TA Truck Service and CAT scale. Truck-space count 312 is directory-sourced (official page could not be fetched, HTTP 403).",
+  "agent": "research-seg2",
+  "dupes": [
+   "Petro Dodge City (Petro Stopping Center #397)"
+  ]
+ },
+ {
+  "name": "TA Truck Service at Petro Dodge City",
+  "category": "Roadside Service",
+  "city": "Hanceville",
+  "state": "AL",
+  "address": "426 AL Highway 69 S",
+  "zip": "35077",
+  "phone": "256-287-1299",
+  "website": "https://www.ta-petro.com/location/al/petro-dodge-city/",
+  "exit_number": "299",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "truck repair",
+   "tire repair",
+   "6 service bays"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/al/petro-dodge-city/",
+   "https://www.truckstopsandservices.com/location_details.php?id=44739",
+   "https://www.4roadservice.com/hanceville-alabama/provider/petro-dodge-city-1"
+  ],
+  "corroboration": "Multiple directories confirm TA Truck Service with 6 bays and tire repair at Petro Dodge City. Listed as a distinct co-located service per the co-location model.",
+  "agent": "research-seg2",
+  "dupes": [
+   "TA Truck Service - Petro Dodge City"
+  ]
+ },
+ {
+  "name": "CAT Scale at Petro Dodge City",
+  "category": "CAT Scales",
+  "city": "Hanceville",
+  "state": "AL",
+  "address": "426 AL Highway 69 S",
+  "zip": "35077",
+  "phone": "256-287-1299",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "299",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified truck scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.truckstopsandservices.com/location_details.php?id=44739",
+   "https://www.findtruckservice.com/page/petro-truck-stop-397-hanceville-al-421549",
+   "https://www.ta-petro.com/location/al/petro-dodge-city/",
+   "https://www.coopsareopen.com/alabama-weigh-stations.html"
+  ],
+  "corroboration": "CAT Scale listing for Cullman/Hanceville area at 256-287-1299 matches the Petro Dodge City phone; Petro amenity lists include CAT scale. Distinct co-located row per co-location model.",
+  "agent": "research-seg2",
+  "dupes": [
+   "CAT Scale - Petro Dodge City, Hanceville"
+  ]
+ },
+ {
+  "name": "Pilot Travel Center #1550 (Good Hope)",
+  "category": "Truck Stops",
+  "city": "Good Hope",
+  "state": "AL",
+  "address": "1600 County Road 437",
+  "zip": "35055",
+  "phone": "256-338-1277",
+  "website": "https://locations.pilotflyingj.com/us/al/good-hope/1600-county-road-437",
+  "exit_number": "304",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "showers",
+   "DEF lanes",
+   "cylinder propane",
+   "EV charging",
+   "premium WiFi",
+   "Wendy's",
+   "Dunkin' Donuts"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/al/good-hope/1600-county-road-437",
+   "https://www.yelp.com/biz/pilot-flying-j-cullman",
+   "https://www.iexitapp.com/Alabama/I-65/Exit%20304/15083"
+  ],
+  "corroboration": "Pilot official location page, Yelp and iExit agree on 1600 County Road 437, Good Hope/Cullman 35055, phone 256-338-1277, CAT scale, I-65 Exit 304 (AL-69 N). Truck-space count 70 is directory-sourced. Official page returned HTTP 403 to automated fetch.",
+  "agent": "research-seg2",
+  "dupes": [
+   "Pilot Travel Center #1550"
+  ]
+ },
+ {
+  "name": "CAT Scale at Pilot Travel Center (Good Hope)",
+  "category": "CAT Scales",
+  "city": "Good Hope",
+  "state": "AL",
+  "address": "1600 County Road 437",
+  "zip": "35055",
+  "phone": "256-255-5638",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "304",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified truck scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://locations.pilotflyingj.com/us/al/good-hope/1600-county-road-437",
+   "https://www.iexitapp.com/Alabama/I-65/Exit%20304/15083",
+   "https://www.allstays.com/c/cat-scales-alabama-locations.htm",
+   "https://www.truckstopsandservices.com/location_details.php?id=44640"
+  ],
+  "corroboration": "CAT Scale directory lists a scale at I-65 Exit 304 Cullman (256-255-5638); Pilot amenity list confirms CAT scale at this store. Distinct co-located row.",
+  "agent": "research-seg2",
+  "dupes": [
+   "CAT Scale - Pilot Travel Center #1550, Good Hope"
+  ]
+ },
+ {
+  "name": "Jack's Truck Stop",
+  "category": "Truck Stops",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "1639 County Road 437",
+  "zip": "35055",
+  "phone": "256-739-0220",
+  "website": "",
+  "exit_number": "304",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Independent truck stop with no official brand/business website; identity, address (1639 CR 437) and services corroborated only by third-party directories (Yelp, iExit, findfuelstops, allstays, TruckMap). Truck-space count (20), truck wash and repair services not verified by a primary source.",
+  "amenities": [
+   "showers",
+   "laundry",
+   "motel",
+   "truck repair",
+   "tire repair",
+   "truck wash",
+   "RV accessible",
+   "ATM",
+   "diner"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/jacks-truck-stop-cullman",
+   "https://www.findfuelstops.com/truck-stop-002408",
+   "https://www.iexitapp.com/business/Jack's%20Truck%20Stop/312428?esmid=14709",
+   "https://truckmap.com/place/am-best-don-morgan-jacks-truck-stop-shell-1639-hwy-437-cullman-al-35055-usa"
+  ],
+  "corroboration": "Multiple independent directories agree on 1639 CR 437, Cullman 35055, I-65 Exit 304, phone 256-739-0220, 24-hour. Held because no official/primary source confirms current operating status, truck-space count or listed services.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #877 (Good Hope)",
+  "category": "Truck Stops",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "497 County Road 222",
+  "zip": "35055",
+  "phone": "",
+  "website": "https://www.loves.com/locations/al/cullman/loves-travel-stop-cullman-877",
+  "exit_number": "305",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale",
+   "dog park",
+   "laundry",
+   "private showers",
+   "RV dump station",
+   "RV hookups",
+   "overnight parking",
+   "premium WiFi",
+   "Subway",
+   "McDonald's"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/cullman/loves-travel-stop-cullman-877",
+   "https://cullmantimes.com/2025/01/14/loves-cuts-the-ribbon-on-new-good-hope-travel-stop/",
+   "https://www.loves.com/news/2024/december/loves-expands-travel-stop-network-in-northern-alabama-northern-wyoming",
+   "https://www.exitexplorer.com/ee/hwy/us/I-65/AL/I-65-AL-305/"
+  ],
+  "corroboration": "Love's official location and news pages plus Cullman Times confirm store #877, 497 CR 222 Cullman 35055, 82 truck spaces, 8 diesel bays, CAT scale, opened Dec 2024. ExitExplorer confirms Exit 305 = CR 222 Good Hope Road. Store phone not published, left blank.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Love's Travel Stop #877",
+  "category": "CAT Scales",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "497 County Road 222",
+  "zip": "35055",
+  "phone": "",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "305",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "certified truck scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.loves.com/locations/al/cullman/loves-travel-stop-cullman-877",
+   "https://www.truckersnews.com/news/article/15710383/newest-loves-travel-stops-open-in-cullman-alabama-and-buffalo-wyoming"
+  ],
+  "corroboration": "Love's official amenity list and Truckers News both list CAT Scales at store #877. Distinct co-located row per co-location model.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Cullman County Rest Area (I-65 MM 301)",
+  "category": "Truck Parking",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "256-739-6985",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "ALDOT confirms a rest area exists near MM 301, but legal overnight parking status is not confirmed by an official source (overnight-stay claims come only from user reviews). Exact mile marker/direction split and truck-space count not officially verified.",
+  "amenities": [
+   "restrooms",
+   "truck parking",
+   "RV dump station",
+   "picnic tables",
+   "water"
+  ],
+  "sources": [
+   "https://www.dot.state.al.us/welcomeCenters.html",
+   "https://www.parkadvisor.com/us/alabama/i-65+milemarker+301/640736/Cullman+Rest+Area",
+   "https://restareasnearme.com/rest-area/al-i-65-cullman-county-rest-area-bidirectional/",
+   "https://www.alabamarestareas.com/al-i-65-cullman-county-rest-area-bidirectional-mile-marker-300/"
+  ],
+  "corroboration": "ALDOT rest-area page plus ParkAdvisor and restareasnearme confirm a bidirectional Cullman County rest area at ~MM 301 with truck parking. Held because legal overnight parking is not officially documented.",
+  "agent": "research-seg2",
+  "dupes": [
+   "Cullman County Rest Area (I-65 MM 300)"
+  ]
+ },
+ {
+  "name": "Truck Wash at Jack's Truck Stop",
+  "category": "Truck Washes",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "1639 County Road 437",
+  "zip": "35055",
+  "phone": "256-739-0220",
+  "website": "",
+  "exit_number": "304",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Truck wash listed only in a single third-party directory amenity list for Jack's; no primary source confirms an operating truck wash bay, hours or pricing.",
+  "amenities": [
+   "truck wash"
+  ],
+  "sources": [
+   "https://www.findfuelstops.com/truck-stop-002408",
+   "https://www.iexitapp.com/business/Jack's%20Truck%20Stop/312428?esmid=14709"
+  ],
+  "corroboration": "Directory amenity lists for Jack's include 'truck wash', but this is single-sourced and unverified; held.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Comfort Suites Cullman I-65 Exit 310",
+  "category": "Hotels with Truck Parking",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "2054 St Joseph Drive NW",
+  "zip": "35055",
+  "phone": "256-255-5999",
+  "website": "https://www.choicehotels.com/alabama/cullman/comfort-suites-hotels/al285",
+  "exit_number": "310",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Truck/large-vehicle parking is claimed only by third-party directories (HotelGuides, TruckerPath); the official Choice Hotels page could not be fetched (HTTP 403) to confirm truck parking, so parking availability/type is unverified.",
+  "amenities": [],
+  "sources": [
+   "https://www.truckerpath.com/location-details/hotels/al/cullman/comfort-suites-cullman-i-65-exit-310?id=11159570",
+   "https://hotelguides.com/alabama/cullman-al-hotels.html"
+  ],
+  "corroboration": "Address 2054 St Joseph Drive NW, phone 256-255-5999 and Exit 310 corroborate across directories; truck parking claim is not officially confirmed, so held.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Quality Inn Cullman I-65 Exit 310",
+  "category": "Hotels with Truck Parking",
+  "city": "Cullman",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "310",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "RV/bus/truck parking claimed by third-party listings only; official brand page not confirmed. Street address, ZIP and phone not independently verified, so left blank.",
+  "amenities": [],
+  "sources": [
+   "https://www.expedia.com/Cullman-Hotels-Quality-Inn-Cullman-I-65-Exit-310.h19133.Hotel-Information",
+   "https://hotelguides.com/alabama/cullman-al-hotels.html"
+  ],
+  "corroboration": "Multiple listings describe RV/bus/truck parking at Quality Inn Cullman Exit 310, but truck parking and full address are unverified by a primary source; held.",
+  "agent": "research-seg2",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #602",
+  "category": "Truck Stops",
+  "city": "Birmingham",
+  "state": "AL",
+  "address": "224 Daniel Payne Dr",
+  "zip": "35207",
+  "phone": "205-323-2177",
+  "website": "https://pilotflyingj.com/stores/602/",
+  "exit_number": "264",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel lanes",
+   "Showers",
+   "CAT Scale",
+   "DEF lanes",
+   "Reserved/prime parking",
+   "Laundry",
+   "Driver's lounge",
+   "ATM",
+   "EV charging",
+   "Open 24 hours"
+  ],
+  "sources": [
+   "https://pilotflyingj.com/stores/602/",
+   "https://locations.pilotflyingj.com/us/al/birmingham/224-daniel-payne-dr",
+   "https://www.truckstopsandservices.com/location_details.php?id=1104",
+   "https://truckmap.com/place/flying-j-travel-plaza-602-224-daniel-payne-dr-birmingham-al-35207"
+  ],
+  "corroboration": "Pilot official store page + locations.pilotflyingj.com + truckstopsandservices (Flying J Travel Center #602, I-65 Exit 264) + TruckMap + Yelp all agree on brand, address 224 Daniel Payne Dr Birmingham 35207, exit 264, and CAT Scale presence.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Pilot Travel Center #602, Birmingham",
+  "category": "CAT Scales",
+  "city": "Birmingham",
+  "state": "AL",
+  "address": "224 Daniel Payne Dr",
+  "zip": "35207",
+  "phone": "205-323-2177",
+  "website": "",
+  "exit_number": "264",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1104",
+   "https://locations.pilotflyingj.com/us/al/birmingham/224-daniel-payne-dr",
+   "https://www.allstays.com/c/cat-scales-alabama-locations.htm"
+  ],
+  "corroboration": "Pilot #602 amenity list (via locations.pilotflyingj.com and truckstopsandservices) explicitly includes CAT Scale; corroborated by allstays Alabama CAT Scale directory. CAT Scale official locator (catscale.com) was blocked at the egress gateway.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Comfort Inn & Suites Fultondale Gardendale I-65",
+  "category": "Hotels with Truck Parking",
+  "city": "Fultondale",
+  "state": "AL",
+  "address": "1733 Fulton Road",
+  "zip": "35068",
+  "phone": "",
+  "website": "https://www.choicehotels.com/alabama/fultondale/comfort-inn-hotels/al484",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck parking (per lodging directories)",
+   "Free breakfast"
+  ],
+  "sources": [
+   "https://www.choicehotels.com/alabama/fultondale/comfort-inn-hotels/al484",
+   "https://www.allstays.com/hotel-maps/Alabama-truck-motels.htm",
+   "https://www.truckstopsandservices.com/listcatbusinesses.php?id=73&state=1",
+   "https://www.tripadvisor.com/Hotel_Review-g30546-d223263-Reviews-Comfort_Inn_Suites_Fultondale_Gardendale_I_65-Fultondale_Alabama.html"
+  ],
+  "corroboration": "Choice Hotels brand page confirms the hotel identity/address (1733 Fulton Road, Fultondale 35068); allstays 'Alabama hotels with truck parking' map and truckstopsandservices 'Motels With Truck Parking' directory both list it as truck-parking lodging. Exact exit number and truck-space count not confirmed, so left blank.",
+  "agent": "research-seg3",
+  "dupes": []
+ },
+ {
+  "name": "Circle K (Pelham Truck Stop)",
+  "category": "Truck Stops",
+  "city": "Pelham",
+  "state": "AL",
+  "address": "715 Cahaba Valley Rd",
+  "zip": "35124",
+  "phone": "205-987-1484",
+  "website": "",
+  "exit_number": "246",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "Showers",
+   "CAT Scale",
+   "Convenience store",
+   "ATM"
+  ],
+  "sources": [
+   "https://www.circlek.com/store-locator/US/pelham/715-cahaba-valley-rd/2723682",
+   "https://www.findtruckservice.com/page/circle-k-pelham-pelham-al-423629",
+   "https://truckerpath.com/location-details/truck-stops/al/pelham/circle-k---pelham?id=199996",
+   "https://truckmap.com/place/cat-scale-715-cahaba-valley-rd-pelham-al-35124-usa"
+  ],
+  "corroboration": "Address, city, ZIP and I-65 Exit 246 location corroborated by Circle K official store locator plus multiple independent truck directories (Find Truck Service, Trucker Path, TruckMap). Truck-stop function (diesel/showers/CAT Scale) consistent across sources. Truck-space count left blank because only unverified aggregator figures were found.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Circle K, Pelham",
+  "category": "CAT Scales",
+  "city": "Pelham",
+  "state": "AL",
+  "address": "715 Cahaba Valley Rd",
+  "zip": "35124",
+  "phone": "",
+  "website": "",
+  "exit_number": "246",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [],
+  "sources": [
+   "https://truckmap.com/place/cat-scale-715-cahaba-valley-rd-pelham-al-35124-usa",
+   "https://www.4roadservice.com/pelham-alabama/provider/cat-scale",
+   "https://www.findtruckservice.com/page/circle-k-pelham-pelham-al-423629"
+  ],
+  "corroboration": "CAT Scale presence at 715 Cahaba Valley Rd, Pelham corroborated by TruckMap, 4RoadService and Find Truck Service; host truck stop is the co-located Circle K. Phone left blank (only a single unverified number was found). CAT Scale official locator (catscale.com) blocked by egress policy so could not be fetched directly.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Speed Trac Truck Stop (Calera Citgo/Speed Trac)",
+  "category": "Truck Stops",
+  "city": "Calera",
+  "state": "AL",
+  "address": "11845 Highway 25",
+  "zip": "35040",
+  "phone": "205-668-2950",
+  "website": "",
+  "exit_number": "228",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "Showers",
+   "Restaurant",
+   "Truckers lounge",
+   "Laundry",
+   "ATM"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/speed-trac-calera",
+   "https://www.facebook.com/CaleraCitgoSpeedtracTruckstop/",
+   "https://truckmap.com/places/calera-al-usa/truck-stop",
+   "https://www.loc8nearme.com/alabama/calera/chevron/9631588/"
+  ],
+  "corroboration": "Facility existence, Calera location and truck-stop function corroborated by Yelp, Facebook business page (Calera Citgo/Speedtrac Truckstop), TruckMap and Loc8NearMe. AL-25 meets I-65 at Exit 228. Address digits vary slightly between sources (11843 vs 11845 Hwy 25); 11845 used as the truck-stop entity address. Truck-space count and free/paid status left blank (only unverified aggregator figures found).",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Speedway Travel Center \u2014 Finley Blvd, Birmingham",
+  "category": "Truck Stops",
+  "city": "Birmingham",
+  "state": "AL",
+  "address": "1617 Finley Blvd",
+  "zip": "35204",
+  "phone": "205-747-3244",
+  "website": "https://www.speedway.com/locations/AL/Birmingham/1617-Finley-Blvd",
+  "exit_number": "262B",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Dedicated truck parking / truck-stop category-fit not independently confirmed \u2014 sources describe it primarily as a fuel and convenience travel center; a single aggregator mention of ~10 truck spaces is uncorroborated. Also sits at Exit 262B, just north of the nominal seg4 top (Exit 261). Hold for confirmation of truck accommodation before publishing.",
+  "amenities": [
+   "Diesel",
+   "Convenience store"
+  ],
+  "sources": [
+   "https://bhamnow.com/2024/09/25/new-speedway-travel-center-opens-on-finley-boulevard/",
+   "https://www.herebirmingham.com/birmingham-speedway-travel-center-i65-opening/",
+   "https://www.iexitapp.com/business/Speedway/1861193?esmid=15099&origin=gas_prices",
+   "https://www.speedway.com/locations/AL/Birmingham/1617-Finley-Blvd"
+  ],
+  "corroboration": "Existence, address (1617 Finley Blvd), 24/7 operation and I-65 Finley Blvd/Exit 262B location corroborated by Bham Now, Here Birmingham, iExit and Speedway's own store locator. Truck-parking capacity and truck-stop suitability not independently confirmed, so held.",
+  "agent": "research-seg4",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #368",
+  "category": "Truck Stops",
+  "city": "Clanton",
+  "state": "AL",
+  "address": "300 Arby Dr",
+  "zip": "35045",
+  "phone": "205-755-8104",
+  "website": "https://www.loves.com/locations/al/clanton/loves-travel-stop-clanton-368",
+  "exit_number": "208",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "DEF",
+   "Showers",
+   "Arby's restaurant",
+   "ATM",
+   "Wi-Fi",
+   "RV dump",
+   "Pet friendly",
+   "24 hours"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/clanton/loves-travel-stop-clanton-368",
+   "https://www.truckstopsandservices.com/location_details.php?id=14733",
+   "https://www.findtruckservice.com/page/loves-travel-stop-368-clanton-al-410322"
+  ],
+  "corroboration": "Address 300 Arby Dr, Exit 208, phone 205-755-8104 consistent across Love's official store page, truckstopsandservices, findtruckservice and mystore411. Truck-space count left blank due to source conflict (official Love's page cites ~65; other directories cite 80). ZIP cited as both 35045 (Love's/mystore411) and 35046 (Yelp/directories).",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Love's #368",
+  "category": "CAT Scales",
+  "city": "Clanton",
+  "state": "AL",
+  "address": "300 Arby Dr",
+  "zip": "35045",
+  "phone": "205-755-8104",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "208",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/listcatbusinesses.php?id=93&state=1",
+   "https://www.allstays.com/c/cat-scales-alabama-locations.htm",
+   "https://www.findtruckservice.com/page/loves-travel-stop-368-clanton-al-410322"
+  ],
+  "corroboration": "CAT Scale presence at the Clanton Love's (I-65 & CR 28, Exit 208) confirmed by CAT Scale locator references, truckstopsandservices CAT directory, allstays AL CAT list, and findtruckservice Love's #368 amenity list. catscale.com official locator returned HTTP 403 to automated fetch but the location is corroborated by >=3 independent sources.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care #368",
+  "category": "Tire Repair",
+  "city": "Clanton",
+  "state": "AL",
+  "address": "300 Arby Dr",
+  "zip": "35045",
+  "phone": "205-755-8104",
+  "website": "https://www.loves.com/loves-truck-care-and-speedco",
+  "exit_number": "208",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Tire service",
+   "Oil change / PM",
+   "Light mechanical",
+   "Roadside assistance"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/loves-truck-care-clanton",
+   "https://www.findtruckservice.com/page/loves-truck-care-368-clanton-al-421745",
+   "https://commercial.bridgestone.com/en-us/dealer/alabama/clanton/759817-300-arby-dr"
+  ],
+  "corroboration": "On-site Love's Truck Care at 300 Arby Dr confirmed by Yelp (Love's Truck Care Clanton), findtruckservice (Love's Truck Care #368), Bridgestone/BFGoodrich commercial dealer locator, and 4roadservice. Categorized as Tire Repair given confirmed commercial tire service; also performs mechanical/PM/roadside.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Jemison Exxon",
+  "category": "Truck Stops",
+  "city": "Jemison",
+  "state": "AL",
+  "address": "12820 County Road 42",
+  "zip": "35085",
+  "phone": "205-688-1022",
+  "website": "",
+  "exit_number": "219",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "24-hour diesel",
+   "Showers",
+   "Subway deli",
+   "Truckers lounge",
+   "Reefer plug-ins",
+   "ATM",
+   "Propane",
+   "Wi-Fi",
+   "Pet area"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1458",
+   "https://www.iexitapp.com/business/JEMISON%20EXXON/1256726?esmid=15118",
+   "https://www.findfuelstops.com/truck-stop-002522",
+   "https://findtruckservice.com/page/jemison-exxon-jemison-al-423589"
+  ],
+  "corroboration": "Existence, Exit 219, phone 205-688-1022, 24-hr diesel, ~50 truck spaces and showers confirmed by truckstopsandservices, iExit, findfuelstops, findtruckservice, allstays and poidirectory. Street number cited mostly as 12820 County Road 42 (iExit/truckstopsandservices/findtruckservice); findfuelstops cites 12914 County Road 42 - minor discrepancy.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Texaco / Shop N Fill (Verbena)",
+  "category": "Truck Stops",
+  "city": "Verbena",
+  "state": "AL",
+  "address": "6211 County Road 59",
+  "zip": "36091",
+  "phone": "205-755-9776",
+  "website": "",
+  "exit_number": "200",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Small independent station; existence and Exit 200 location confirmed (truckstopsandservices, iExit, Alabama interstate logos, roadnow), but truck-parking availability/overnight status, truck-space count, and truck-stop category-fit are not independently corroborated (truck-parking claim is essentially single-source).",
+  "amenities": [
+   "Fuel",
+   "Convenience store"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=54321",
+   "https://alabama.view.interstatelogos.com/I-65-N/14855/82321/",
+   "https://www.iexitapp.com/Alabama/I-65/Exit%20200/15123"
+  ],
+  "corroboration": "Location at 6211 County Road 59, Verbena, Exit 200 corroborated by truckstopsandservices, iExit and Alabama (interstatelogos) official highway-logo listing. Phone 205-755-9776 from truckstopsandservices summary. Held pending confirmation of truck access/parking.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Entec Station #105",
+  "category": "Truck Stops",
+  "city": "Millbrook",
+  "state": "AL",
+  "address": "",
+  "zip": "36054",
+  "phone": "",
+  "website": "",
+  "exit_number": "181",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Small independent fuel stop (reported ~5 truck spaces). Existence and Exit 181/Millbrook location appear in TruckMap, iExit and yellowpages, but no confirmed street address or phone, and truck-parking/overnight status and truck-stop category-fit are not independently confirmed.",
+  "amenities": [
+   "Diesel",
+   "Restrooms",
+   "ATM"
+  ],
+  "sources": [
+   "https://truckmap.com/place/entec-station-105-i-65-exit-181-millbrook-al-36054-usa",
+   "https://www.yellowpages.com/millbrook-al/mip/entec-station-9609467",
+   "https://www.iexitapp.com/Alabama/I-65/Exit%20181/14668"
+  ],
+  "corroboration": "Entec Station #105 at I-65 Exit 181, Millbrook 36054 listed in TruckMap and iExit with diesel and limited truck parking; yellowpages confirms an Entec station in Millbrook. Held pending address/phone and truck-access confirmation.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "Days Inn by Wyndham Clanton",
+  "category": "Hotels with Truck Parking",
+  "city": "Clanton",
+  "state": "AL",
+  "address": "2000 Big M Blvd",
+  "zip": "35046",
+  "phone": "205-755-2420",
+  "website": "https://www.wyndhamhotels.com/days-inn/clanton-alabama/days-inn-clanton-al/overview",
+  "exit_number": "205",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Hotel identity, address (2000 Big M Blvd) and Exit 205 confirmed via Wyndham official page, allstays and hotelplanner, but truck/large-vehicle parking availability is only reported by a single truck directory (truckstopsandservices) and cannot be independently confirmed; hotel truck parking changes frequently.",
+  "amenities": [
+   "Free breakfast",
+   "Free Wi-Fi",
+   "Pool",
+   "Pet friendly"
+  ],
+  "sources": [
+   "https://www.wyndhamhotels.com/days-inn/clanton-alabama/days-inn-clanton-al/overview",
+   "https://www.truckstopsandservices.com/location_details.php?id=48441",
+   "https://www.hotelplanner.com/Hotels/285747/Reservations-Days-Inn-by-Wyndham-Clanton-Al-Clanton-2000-Big-M-Blvd-35046"
+  ],
+  "corroboration": "Days Inn by Wyndham Clanton at 2000 Big M Blvd, Exit 205, phone 205-755-2420 confirmed by Wyndham official site, allstays and hotelplanner. Truck-parking claim (~3 spaces) is single-source; held for verification.",
+  "agent": "research-seg5",
+  "dupes": []
+ },
+ {
+  "name": "TA Montgomery #111",
+  "category": "Truck Stops",
+  "city": "Montgomery",
+  "state": "AL",
+  "address": "980 W South Blvd",
+  "zip": "36105",
+  "phone": "334-288-3700",
+  "website": "https://www.ta-petro.com/location/al/ta-montgomery/",
+  "exit_number": "168",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "DEF",
+   "CAT Scale",
+   "Showers",
+   "Truck service bays",
+   "Tire repair",
+   "DOT inspections",
+   "Restaurant (Country Pride)",
+   "Reserve-It reserved parking",
+   "Laundry",
+   "Convenience store"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/al/ta-montgomery/",
+   "https://www.truckstopsandservices.com/location_details.php?id=3395",
+   "https://truckmap.com/place/travelcenters-of-america-ta-montgomery-980-w-south-blvd-montgomery-al-36105-usa",
+   "https://www.iexitapp.com/business/TA%20Travel%20Center/703238"
+  ],
+  "corroboration": "Name, 980 W South Blvd Montgomery 36105, phone 334-288-3700, Exit 168, and amenities (CAT scale, 2 service bays, Country Pride, ~125 spaces) corroborated across the official TA-Petro page, TruckMap, iExit, and truckstopsandservices.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "Flying J Travel Center #604",
+  "category": "Truck Stops",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "900 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-613-0212",
+  "website": "https://locations.pilotflyingj.com/us/al/hope-hull/900-tyson-rd",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "DEF",
+   "CAT Scale",
+   "Showers",
+   "Restaurant (Denny's)",
+   "ATM",
+   "Laundry",
+   "Game room",
+   "Propane",
+   "EV charging",
+   "WiFi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/al/hope-hull/900-tyson-rd",
+   "https://truckmap.com/place/pilot-flying-j-flying-j-travel-plaza-604-900-tyson-rd-hope-hull-al-36047-usa",
+   "https://www.truckstopsandservices.com/location_details.php?id=16742",
+   "https://www.parkadvisor.com/us/alabama/hope+hull/680329/Flying+J+0604"
+  ],
+  "corroboration": "900 Tyson Rd, Hope Hull, Exit 158, phone 334-613-0212, CAT scale, ~145 spaces, and Denny's corroborated across the official Pilot Flying J locator, TruckMap, truckstopsandservices, and ParkAdvisor. ZIP 36043 (Hope Hull) used; one aggregator showed 36047 in error.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #718",
+  "category": "Truck Stops",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "1127 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-280-0009",
+  "website": "https://www.loves.com/locations/718",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "DEF",
+   "CAT Scale",
+   "Showers",
+   "Truck service bays",
+   "Chester's Chicken",
+   "Godfather's Pizza",
+   "Subway",
+   "Laundry",
+   "Game room"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/hope-hull/loves-travel-stop-hope-hull-718",
+   "https://www.loves.com/news/2017/december/loves-travel-stops-opens-in-hope-hull-alabama",
+   "https://www.truckstopsandservices.com/location_details.php?id=47851",
+   "https://www.findtruckservice.com/page/loves-travel-stop-718-hope-hull-al-428817"
+  ],
+  "corroboration": "1127 Tyson Rd, Hope Hull 36043, Exit 158, phone 334-280-0009, 96 spaces, 8 showers, 3 service bays, and CAT scale corroborated across Love's official store page/press release, truckstopsandservices, and Find Truck Service.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #225",
+  "category": "Truck Stops",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "16101 US Highway 84",
+  "zip": "36401",
+  "phone": "251-578-4496",
+  "website": "https://www.loves.com/locations/225",
+  "exit_number": "93",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "DEF",
+   "CAT Scale",
+   "Showers",
+   "Arby's",
+   "Godfather's Pizza",
+   "Laundry"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/evergreen/loves-travel-stop-evergreen-225",
+   "https://www.truckstopsandservices.com/location_details.php?id=22287",
+   "https://www.findtruckservice.com/page/loves-travel-stop-225-evergreen-al-422238",
+   "https://www.campgroundviews.com/listing/loves-travel-stop-225-evergreen-al/"
+  ],
+  "corroboration": "16101 US-84, Evergreen 36401, Exit 93, phone 251-578-4496, 7 showers, and CAT scale corroborated across Love's official page, truckstopsandservices, and Find Truck Service. Truck-space count left blank due to conflicting figures (159 vs 90) between sources.",
+  "agent": "research-seg6",
+  "dupes": [
+   "Love's Travel Stop #225"
+  ]
+ },
+ {
+  "name": "Yellow Hammer Travel Center",
+  "category": "Truck Stops",
+  "city": "Brewton",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "251-296-3474",
+  "website": "https://natsn.com/tsdirectory/yellow-hammer-travel-center/",
+  "exit_number": "69",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Diesel",
+   "Showers",
+   "Restaurant (Crossroad Cafe)",
+   "Convenience store",
+   "Laundry"
+  ],
+  "sources": [
+   "https://natsn.com/tsdirectory/yellow-hammer-travel-center/",
+   "https://www.findtruckservice.com/page/roadys-yellow-hammer-travel-center-brewton-al-422412",
+   "https://www.truckstopsandservices.com/location_details.php?id=18459",
+   "https://www.parkadvisor.com/us/alabama/brewton/730143/Yellow+Hammer+Travel+Center"
+  ],
+  "corroboration": "Name, Exit 69 Brewton, and phone 251-296-3474 corroborated across NATSN, Find Truck Service, truckstopsandservices, iExit, and ParkAdvisor. Street address and ZIP left blank because a directory value (13315 Hwy 13) conflicts with the AL-41 exit context and could not be independently confirmed.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 TA Montgomery, Montgomery",
+  "category": "CAT Scales",
+  "city": "Montgomery",
+  "state": "AL",
+  "address": "980 W South Blvd",
+  "zip": "36105",
+  "phone": "334-288-3700",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "168",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/al/ta-montgomery/",
+   "https://www.truckstopsandservices.com/location_details.php?id=3395"
+  ],
+  "corroboration": "CAT scale presence at TA Montgomery confirmed on the official TA-Petro location page and truckstopsandservices amenity list.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Flying J Travel Center #604, Hope Hull",
+  "category": "CAT Scales",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "900 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-613-0212",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/al/hope-hull/900-tyson-rd",
+   "https://www.allstays.com/c/cat-scales-alabama-locations.htm"
+  ],
+  "corroboration": "CAT scale at Hope Hull Exit 158 / 900 Tyson Rd (Flying J) confirmed via the Pilot Flying J amenity list and CAT Scale Alabama listing (phone 334-613-0212).",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Love's Travel Stop #718, Hope Hull",
+  "category": "CAT Scales",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "1127 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-280-0009",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/718",
+   "https://www.truckstopsandservices.com/location_details.php?id=47851"
+  ],
+  "corroboration": "CAT scale at Love's #718 (Tyson Rd, Exit 158) confirmed via Love's amenity listing and CAT Scale Alabama listing (phone 334-280-0009).",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Speedway, Hope Hull",
+  "category": "CAT Scales",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "821 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-450-2351",
+  "website": "https://catscale.com/news/3249/",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://catscale.com/news/3249/",
+   "https://www.speedway.com/locations/al/hope-hull/821-tyson-rd-43008"
+  ],
+  "corroboration": "CAT Scale official news page announces a scale at 'Speedway, I-65 & Exit 158, Hope Hull, AL'; Speedway store located at 821 Tyson Rd per speedway.com. CAT Scale Alabama listing shows matching phone 334-450-2351.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Love's Travel Stop #225, Evergreen",
+  "category": "CAT Scales",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "16101 US Highway 84",
+  "zip": "36401",
+  "phone": "251-578-4496",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "93",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Certified truck scale"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/225",
+   "https://www.truckstopsandservices.com/location_details.php?id=22287"
+  ],
+  "corroboration": "CAT scale at Love's #225 Evergreen (Exit 93 / Hwy 84) confirmed via Love's amenity listing and CAT Scale Alabama listing (phone 251-578-4496).",
+  "agent": "research-seg6",
+  "dupes": [
+   "CAT Scale \u2014 Love's Travel Stop #225, Evergreen"
+  ]
+ },
+ {
+  "name": "TA Truck Service \u2014 Montgomery",
+  "category": "Roadside Service",
+  "city": "Montgomery",
+  "state": "AL",
+  "address": "980 W South Blvd",
+  "zip": "36105",
+  "phone": "334-288-3700",
+  "website": "https://www.ta-petro.com/location/al/ta-montgomery/",
+  "exit_number": "168",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Tire repair",
+   "Truck & trailer repair",
+   "DOT inspections",
+   "Road service"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/ta-truck-service-montgomery",
+   "https://www.ta-petro.com/location/al/ta-montgomery/",
+   "https://commercial.bridgestone.com/en-us/dealer/alabama/montgomery/978296-980-w-south-blvd"
+  ],
+  "corroboration": "TA Truck Service listed as a distinct commercial truck repair business at 980 W South Blvd on Yelp and Bridgestone Commercial dealer directory; consistent with the 2 service bays / tire repair on the official TA Montgomery page.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care \u2014 Love's Travel Stop #718, Hope Hull",
+  "category": "Roadside Service",
+  "city": "Hope Hull",
+  "state": "AL",
+  "address": "1127 Tyson Rd",
+  "zip": "36043",
+  "phone": "334-280-0009",
+  "website": "https://www.loves.com/locations/718",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck service bays (3)",
+   "Road service"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/hope-hull/loves-travel-stop-hope-hull-718",
+   "https://www.truckstopsandservices.com/location_details.php?id=47851"
+  ],
+  "corroboration": "Three truck service bays at Love's #718 confirmed by Love's store description and truckstopsandservices amenity list. Specific service menu not detailed, so amenities kept to confirmed items.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "Conway Diesel Service \u2014 Evergreen",
+  "category": "Roadside Service",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "100 Conway Ln",
+  "zip": "36401",
+  "phone": "251-578-2205",
+  "website": "https://www.conwaydiesel.com/",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Truck & trailer repair",
+   "Towing & recovery",
+   "Mobile repair",
+   "Tire service",
+   "Fuel delivery"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/conway-diesel-service-evergreen-2",
+   "https://www.truckstopsandservices.com/location_details.php?id=40593",
+   "https://www.4roadservice.com/evergreen-alabama/provider/conway-diesel-service"
+  ],
+  "corroboration": "100 Conway Ln, Evergreen 36401 and phone 251-578-2205 corroborated across Yelp, truckstopsandservices, and 4RoadService. Exit number left blank (directory exit references were inconsistent).",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Butler County Rest Area (Southbound)",
+  "category": "Truck Parking",
+  "city": "Greenville",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Legal overnight-parking status not independently confirmed from an official ALDOT source; exact mile marker (SB ~133) needs official confirmation.",
+  "amenities": [
+   "Restrooms",
+   "Water",
+   "Picnic tables",
+   "RV dump station",
+   "Truck parking"
+  ],
+  "sources": [
+   "https://www.restareas.org/alabama/greenville/southbound-i65-rest-area-alabama-greenville/",
+   "https://aldotnews.com/2025/11/18/aldot-opening-updated-i-65-south-rest-area-near-greenville/",
+   "https://restareasnearme.com/i-65-alabama-rest-areas/"
+  ],
+  "corroboration": "Existence, southbound direction, Butler County/Greenville location, truck parking, and RV dump corroborated by restareas.org, ALDOT News Hub (Nov 2025 reopening), and restareasnearme. Overnight legality not stated by any official source, so held.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Butler County Rest Area (Northbound)",
+  "category": "Truck Parking",
+  "city": "Greenville",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "334-382-7301",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Legal overnight-parking status not independently confirmed from an official ALDOT source; exact mile marker (NB ~132) needs official confirmation.",
+  "amenities": [
+   "Restrooms",
+   "Water",
+   "Picnic tables",
+   "RV dump station",
+   "Truck parking"
+  ],
+  "sources": [
+   "https://www.restareas.org/alabama/greenville/butler-county-i-65-northbound-rest-area-alabama-greenville/",
+   "https://restareasnearme.com/i-65-alabama-rest-areas/"
+  ],
+  "corroboration": "Existence, northbound direction, Butler County/Greenville location, truck parking, and RV dump corroborated by restareas.org and restareasnearme (listed phone 334-382-7301). Overnight legality unconfirmed, so held.",
+  "agent": "research-seg6",
+  "dupes": []
+ },
+ {
+  "name": "I-65 Conecuh County Rest Area (Southbound)",
+  "category": "Truck Parking",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "251-578-4705",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Legal overnight-parking status not independently confirmed from an official ALDOT source; exact mile marker (SB ~89) needs official confirmation.",
+  "amenities": [
+   "Restrooms",
+   "Water",
+   "Picnic tables",
+   "RV dump station",
+   "Truck parking"
+  ],
+  "sources": [
+   "https://restareasnearme.com/rest-area/al-i-65-conecuh-county-rest-area-southbound-mm-89-1/",
+   "https://restareasnearme.com/i-65-alabama-rest-areas/",
+   "https://www.alabamarestareas.com/al-i65-conecuh-county-rest-area-southbound-mm-89-1/"
+  ],
+  "corroboration": "Existence, southbound direction, Conecuh County/Evergreen location (~MM 89.1), truck parking, and RV dump corroborated by restareasnearme (listed phone 251-578-4705). Overnight legality unconfirmed, so held.",
+  "agent": "research-seg6",
+  "dupes": [
+   "Conecuh County Rest Area (Southbound)"
+  ]
+ },
+ {
+  "name": "I-65 Conecuh County Rest Area (Northbound)",
+  "category": "Truck Parking",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "",
+  "zip": "",
+  "phone": "251-966-2505",
+  "website": "https://www.dot.state.al.us/welcomeCenters.html",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Legal overnight-parking status not independently confirmed from an official ALDOT source; exact mile marker (NB ~84) needs official confirmation.",
+  "amenities": [
+   "Restrooms",
+   "Water",
+   "Picnic tables",
+   "RV dump station",
+   "Truck parking"
+  ],
+  "sources": [
+   "https://restareasnearme.com/i-65-alabama-rest-areas/",
+   "https://www.alabamarestareas.com/alabama-interstate-i65-al-rest-area-stops/",
+   "https://restareasnearme.com/rest-area/al-i-65-conecuh-county-rest-area-northbound-mm-84-2/",
+   "https://www.alabamarestareas.com/al-i65-conecuh-county-rest-area-northbound-mm-164-7/"
+  ],
+  "corroboration": "Existence, northbound direction, Conecuh County/Evergreen location (~MM 84.2), truck parking, and RV dump corroborated by restareasnearme and alabamarestareas (listed phone 251-966-2505). Overnight legality unconfirmed, so held.",
+  "agent": "research-seg6",
+  "dupes": [
+   "Conecuh County Rest Area (Northbound)"
+  ]
+ },
+ {
+  "name": "Love's Travel Stop #624",
+  "category": "Truck Stops",
+  "city": "Prichard",
+  "state": "AL",
+  "address": "2600 W I-65 Service Rd N",
+  "zip": "36612",
+  "phone": "251-330-2991",
+  "website": "https://www.loves.com/locations/al/prichard/loves-travel-stop-prichard-624",
+  "exit_number": "8",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT scale",
+   "Love's Truck Tire Care",
+   "7 showers",
+   "Subway",
+   "Chester's Chicken",
+   "RFID cardless fueling",
+   "bulk DEF",
+   "24/7"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/prichard/loves-travel-stop-prichard-624",
+   "https://www.loves.com/News/2015/loves-travel-stops-opens-in-prichard-alabama",
+   "https://www.findtruckservice.com/page/loves-travel-stop-624-prichard-al-423313",
+   "https://www.truckstopsandservices.com/location_details.php?id=47846",
+   "https://www.yelp.com/biz/loves-travel-stop-prichard-2"
+  ],
+  "corroboration": "Address, phone, exit 8, store #624 and amenities consistent across Love's official location/news pages, FindTruckService, TruckStopsAndServices and Yelp. Official loves.com blocked by egress policy for direct fetch; corroborated via 4+ independent sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Love's Travel Stop #624, Prichard",
+  "category": "CAT Scales",
+  "city": "Prichard",
+  "state": "AL",
+  "address": "2600 W I-65 Service Rd N",
+  "zip": "36612",
+  "phone": "251-330-2991",
+  "website": "",
+  "exit_number": "8",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/al/prichard/loves-travel-stop-prichard-624",
+   "https://www.findtruckservice.com/page/loves-travel-stop-624-prichard-al-423313",
+   "https://www.truckstopsandservices.com/location_details.php?id=47846"
+  ],
+  "corroboration": "CAT scale presence at Love's #624 confirmed by Love's location listing and multiple truck-service directories. catscale.com locator blocked by egress policy; corroborated by 3 independent sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Tire Care #624, Prichard",
+  "category": "Tire Repair",
+  "city": "Prichard",
+  "state": "AL",
+  "address": "2600 W I-65 Service Rd N",
+  "zip": "36612",
+  "phone": "251-330-2991",
+  "website": "",
+  "exit_number": "8",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "tire repair",
+   "tire sales",
+   "light mechanical",
+   "oil change",
+   "roadside assistance"
+  ],
+  "sources": [
+   "https://www.4roadservice.com/prichard-alabama/provider/loves-tire-shop",
+   "https://www.findtruckservice.com/page/loves-travel-stop-624-prichard-al-423313",
+   "https://business.bfgoodrichtires.com/dealer-locator/prichard/yivgwrs-love-s-travel-stops-country-stores"
+  ],
+  "corroboration": "Love's Truck Tire Care at #624 confirmed by 4RoadService, FindTruckService and BFGoodrich dealer locator. Corroborated by 3 independent sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #75",
+  "category": "Truck Stops",
+  "city": "Satsuma",
+  "state": "AL",
+  "address": "6109 US-43 S",
+  "zip": "36572",
+  "phone": "251-679-6260",
+  "website": "https://locations.pilotflyingj.com/us/al/satsuma/6109-us-43-s",
+  "exit_number": "19",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT scale",
+   "8 showers",
+   "10 diesel lanes",
+   "Arby's",
+   "laundry",
+   "bulk DEF",
+   "truck parking"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/al/satsuma/6109-us-43-s",
+   "https://www.findtruckservice.com/page/pilot-travel-center-75-satsuma-al-410625",
+   "https://www.truckstopsandservices.com/location_details.php?id=16712",
+   "https://www.parkadvisor.com/us/alabama/satsuma/680312/Pilot+Travel+Center+0075"
+  ],
+  "corroboration": "Address (6109 US-43 S), phone, exit 19, store #75 and amenities consistent across Pilot official location page, FindTruckService, TruckStopsAndServices and ParkAdvisor. Official Pilot page blocked for direct fetch; corroborated by 4 sources. Truck-specific space count not isolated from the ~125 total, left blank.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale \u2014 Pilot Travel Center #75, Satsuma",
+  "category": "CAT Scales",
+  "city": "Satsuma",
+  "state": "AL",
+  "address": "6109 US-43 S",
+  "zip": "36572",
+  "phone": "251-679-6260",
+  "website": "",
+  "exit_number": "19",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.findtruckservice.com/page/pilot-travel-center-75-satsuma-al-410625",
+   "https://www.truckstopsandservices.com/location_details.php?id=16712",
+   "https://www.parkadvisor.com/us/alabama/satsuma/680312/Pilot+Travel+Center+0075"
+  ],
+  "corroboration": "CAT scale at Pilot #75 confirmed by FindTruckService, TruckStopsAndServices and ParkAdvisor. catscale.com locator blocked; corroborated by 3 independent sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Creek Travel Plaza (Creek Travel Stores - Poarch)",
+  "category": "Truck Stops",
+  "city": "Atmore",
+  "state": "AL",
+  "address": "4740 Jack Springs Rd",
+  "zip": "36502",
+  "phone": "251-368-0088",
+  "website": "https://creektravelplaza.com/",
+  "exit_number": "54",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "88 truck spaces",
+   "8 diesel lanes",
+   "4 showers",
+   "24hr diner",
+   "laundry",
+   "RV dump",
+   "propane",
+   "ATM",
+   "TripPak",
+   "Wind Creek Casino shuttle"
+  ],
+  "sources": [
+   "https://creektravelplaza.com/",
+   "https://www.truckstopsandservices.com/location_details.php?id=44596",
+   "https://www.parkadvisor.com/us/alabama/atmore/720001/Creek+Travel+Plaza",
+   "https://www.yelp.com/biz/creek-travel-stores-poarch-atmore-2",
+   "https://maps.roadtrippers.com/us/atmore-al/services/creek-travel-plaza-atmore"
+  ],
+  "corroboration": "Address, phone, exit 54, 24/7 status and amenities consistent across the official Creek Travel Plaza site, TruckStopsAndServices, ParkAdvisor, Yelp (updated 2026) and Roadtrippers. Operating status current (Yelp updated Mar 2026). Corroborated by 5 sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care #225, Evergreen",
+  "category": "Tire Repair",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "16101 Highway 84",
+  "zip": "36401",
+  "phone": "251-578-4496",
+  "website": "",
+  "exit_number": "93",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "tire repair",
+   "tire sales",
+   "light mechanical",
+   "oil change",
+   "24hr roadside assistance"
+  ],
+  "sources": [
+   "https://www.4roadservice.com/evergreen-alabama/provider/loves-tire-care",
+   "https://www.findtruckservice.com/page/loves-truck-care-225-evergreen-al-421746",
+   "https://truckerguideapp.com/mobile-repairs/loves-truck-care-225"
+  ],
+  "corroboration": "Love's Truck Care at #225 confirmed by 4RoadService, FindTruckService and Trucker Guide. Corroborated by 3 independent sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Spirit Travel Center",
+  "category": "Truck Stops",
+  "city": "Evergreen",
+  "state": "AL",
+  "address": "192 Highway 83",
+  "zip": "36401",
+  "phone": "251-578-3588",
+  "website": "",
+  "exit_number": "96",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "50 truck spaces",
+   "3 showers",
+   "trucker lounge",
+   "ATM",
+   "motel",
+   "truck repair",
+   "tire repair",
+   "Subway",
+   "Fuelman",
+   "TripPak"
+  ],
+  "sources": [
+   "https://www.parkadvisor.com/us/alabama/evergreen/730189/Spirit+Travel+Center",
+   "https://www.allstays.com/truckstops-details/94531.php",
+   "https://evergreen-al.findstorenearme.us/spirit-travel-center/",
+   "https://www.truckeradvisor.com/truck-stops/view/spirit-travel-center/CkN-ZwDI9TQ/"
+  ],
+  "corroboration": "Name, address (192 Hwy 83), phone, exit 96 and amenities consistent across ParkAdvisor, AllStays, FindStoreNearMe and TruckerAdvisor. Note: a nearby directory name 'McIntyre Travel Center' at 193 Hwy 83 appears to refer to the same or an immediately adjacent site (possible former name); current identity taken as Spirit Travel Center per 4 sources.",
+  "agent": "research-seg7",
+  "dupes": []
+ },
+ {
+  "name": "Qualawash / tank trailer wash, Saraland",
+  "category": "Truck Washes",
+  "city": "Saraland",
+  "state": "AL",
+  "address": "202 Commerce Dr",
+  "zip": "36571",
+  "phone": "251-679-6006",
+  "website": "",
+  "exit_number": "13",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Category-fit and current identity/operating status not independently confirmed (single directory source). Likely tank-container cleaning, not a general truck/trailer wash; name and status need corroboration.",
+  "amenities": [
+   "tank/trailer cleaning"
+  ],
+  "sources": [
+   "https://www.findtruckservice.com/Semi/Truck+Wash/Trailer+Wash/AL/Mobile/"
+  ],
+  "corroboration": "Single source (FindTruckService). Insufficient to publish.",
+  "agent": "research-seg7",
+  "dupes": []
+ }
+]

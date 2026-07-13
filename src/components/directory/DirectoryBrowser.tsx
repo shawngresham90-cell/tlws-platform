@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { filterAndSortEntries, type SortKey } from '@/lib/directory/browse';
 import { EntryCard } from './EntryCard';
@@ -44,9 +44,12 @@ export function DirectoryBrowser({
     [entries, state],
   );
 
+  // Defer the query so fast typing never blocks the input — the fuzzy
+  // scorer re-ranks up to ~1,000 entries per keystroke (perf audit).
+  const deferredQuery = useDeferredValue(query);
   const results = useMemo(
-    () => filterAndSortEntries(entries, { query, state, city, sort, origin }),
-    [entries, query, state, city, sort, origin],
+    () => filterAndSortEntries(entries, { query: deferredQuery, state, city, sort, origin }),
+    [entries, deferredQuery, state, city, sort, origin],
   );
   const shown = results.slice(0, visible);
 

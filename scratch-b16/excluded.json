@@ -1,0 +1,342 @@
+[
+ {
+  "business_name": "WNC Truck Wash",
+  "category": "truck-washes",
+  "address": "5701 Asheville Hwy",
+  "city": "Hendersonville",
+  "state": "NC",
+  "reason": "Located off I-26 Exit 44 in Hendersonville per its own website; not at an I-40 exit. No truck wash verified within I-40 exits 37-66.",
+  "sources": [
+   "https://wnctruckwash.com/"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "Piedmont Truck Tires (McCarthy Tire Service)",
+  "category": "tire-repair",
+  "address": "68 Continuum Dr",
+  "city": "Asheville (Fletcher area)",
+  "state": "NC",
+  "reason": "Commercial truck tire and truck shop located in the Cane Creek/Fletcher industrial area (zip 28732) on the I-26/US 25 corridor, not at an I-40 exit 37-66.",
+  "sources": [
+   "https://locations.mccarthytire.com/piedmont-truck-tires-inc-101b1c53d559",
+   "https://mccarthytire.com/mccarthy-tire-service-acquires-piedmont-truck-tires/"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "Speedway (former WilcoHess) - 158 Smoky Park Hwy",
+  "category": "truck-stops",
+  "address": "158 Smoky Park Hwy",
+  "city": "Asheville",
+  "state": "NC",
+  "reason": "At I-40 Exit 44 but now operates as a standard Speedway gas/convenience station; legacy WilcoHess 'truck stop' listings are outdated and historical directories note no overnight truck parking. Not a current trucker facility.",
+  "sources": [
+   "https://www.yelp.com/biz/speedway-asheville",
+   "https://www.gasbuddy.com/station/34562",
+   "https://www.allstays.com/c/truck-stops-north-carolina.htm"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "Mountain Energy Travel Center",
+  "category": "truck-stops",
+  "address": "5445 Asheville Hwy",
+  "city": "Hendersonville",
+  "state": "NC",
+  "reason": "On US 25/I-26 corridor near Hendersonville, not at an I-40 exit 37-66.",
+  "sources": [
+   "https://www.findtruckservice.com/Semi/Truck+Stops/With+Parking/NC/Asheville/"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "I-40 Truck & Trailer Repair / HD Towing",
+  "category": "roadside-service",
+  "address": "2470 Crabtree Rd",
+  "city": "Waynesville",
+  "state": "NC",
+  "reason": "Shop is in Waynesville (Haywood County), west of the segment boundary (exits 37-66); service model is primarily mobile repair/towing over a 50-mile radius.",
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=53491",
+   "https://www.4roadservice.com/waynesville-north-carolina/provider/i-40-truck-trailer-repair-hd-towing"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "Jack's Truck & Trailer Repair",
+  "category": "roadside-service",
+  "address": "587 Old Toll Rd",
+  "city": "Asheville",
+  "state": "NC",
+  "reason": "Not located at an I-40 interchange (Old Toll Rd, north/east Asheville residential area); operates largely as a mobile/on-call service rather than a fixed roadside facility at an exit.",
+  "sources": [
+   "https://www.findtruckservice.com/page/jacks-truck-trailer-repair-asheville-nc-411283",
+   "https://www.manta.com/d/mb5wyjf/jack-s-truck-trailer-repair"
+  ],
+  "_from": "seg-asheville.json"
+ },
+ {
+  "business_name": "Sandy's Auto & Truck Plaza (721 Champion Dr, Canton, Exit 31)",
+  "reason": "Listed as CLOSED on Yelp; remaining directory listings (TruckerPath, AllStays, TruckMap) appear stale. Canton's Champion Drive corridor suffered severe Pigeon River flooding. No evidence of current operation.",
+  "source": "https://www.yelp.com/biz/sandys-auto-and-truck-plaza-canton",
+  "_from": "seg-haywood.json"
+ },
+ {
+  "business_name": "NCSHP Asheville Weigh Station (I-40 E/W, Mile Marker 40.5, Buncombe County)",
+  "reason": "Verified official NC weigh station, but located at mile marker ~40.5 in Buncombe County \u2014 outside this segment (exits 0-37). No NC weigh station was verifiable via official sources within exits 0-37; the near-state-line scale complex on I-40 is on the Tennessee side.",
+  "source": "https://www.ncdps.gov/our-organization/law-enforcement/state-highway-patrol/weigh-stations",
+  "_from": "seg-haywood.json"
+ },
+ {
+  "business_name": "Love's Travel Stop 'Clyde, NC'",
+  "reason": "Referenced in a third-party parking listing as the nearest truck stop, but no Love's location exists in Clyde/Haywood County; the nearest Love's on I-40 is in Marion, NC at Exit 86. Erroneous reference.",
+  "source": "https://www.allstays.com/c/loves-north-carolina-locations.htm",
+  "_from": "seg-haywood.json"
+ },
+ {
+  "business_name": "Pilot Travel Center #7971 (Conover)",
+  "category": "truck-stops",
+  "address": "1343 Rock Barn Rd NE",
+  "city": "Conover",
+  "state": "NC",
+  "zip": "28613",
+  "phone": "828-465-2613",
+  "website": "https://locations.pilotflyingj.com/us/nc/conover/1343-rock-barn-rd-ne",
+  "description": "EXCLUDED: Full truck stop (62 truck spaces, 16 prime, 7 showers, 8 diesel lanes, CAT scale) but it sits at I-40 Exit 133 (Rock Barn Rd), one exit beyond this segment's 100-132 boundary. Belongs to the next segment.",
+  "truck_spaces": 62,
+  "free_parking": true,
+  "paid_parking": true,
+  "reserved_parking": true,
+  "overnight_parking": true,
+  "showers": true,
+  "food": true,
+  "fuel": true,
+  "laundry": true,
+  "restrooms": true,
+  "repair": false,
+  "cat_scale": true,
+  "wifi": true,
+  "security": false,
+  "tpc_url": "",
+  "interstate": "I-40",
+  "exit_number": "133",
+  "published": false,
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=3665",
+   "https://www.iexitapp.com/North%20Carolina/I-40/Exit%20133/13417",
+   "https://locations.pilotflyingj.com/us/nc/conover/1343-rock-barn-rd-ne"
+  ],
+  "_from": "seg-hickory.json"
+ },
+ {
+  "business_name": "CAT Scale at Pilot Travel Center Conover",
+  "category": "cat-scales",
+  "address": "1343 Rock Barn Rd NE",
+  "city": "Conover",
+  "state": "NC",
+  "zip": "28613",
+  "phone": "828-465-2613",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "description": "EXCLUDED: The only CAT Scale in the Hickory/Conover area is at the Pilot on Rock Barn Rd, I-40 Exit 133 \u2014 outside this segment (exits 100-132). No CAT Scale exists within exits 100-132.",
+  "truck_spaces": null,
+  "free_parking": false,
+  "paid_parking": false,
+  "reserved_parking": false,
+  "overnight_parking": false,
+  "showers": false,
+  "food": false,
+  "fuel": false,
+  "laundry": false,
+  "restrooms": false,
+  "repair": false,
+  "cat_scale": true,
+  "wifi": false,
+  "security": false,
+  "tpc_url": "",
+  "interstate": "I-40",
+  "exit_number": "133",
+  "published": false,
+  "sources": [
+   "https://www.allstays.com/c/cat-scales-north-carolina-locations.htm",
+   "https://catscale.com/cat-scale-locator/"
+  ],
+  "_from": "seg-hickory.json"
+ },
+ {
+  "business_name": "NC I-40 Catawba County Rest Areas (EB/WB)",
+  "category": "parking",
+  "address": "",
+  "city": "",
+  "state": "NC",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.ncdot.gov/travel-maps/traffic-travel/rest-areas/Documents/rest-area-locations.pdf",
+  "description": "EXCLUDED: The nearest I-40 rest areas are the Catawba County pair at mile marker 136, east of Exit 132 and therefore outside this segment. No public rest area exists within exits 100-132.",
+  "truck_spaces": null,
+  "free_parking": true,
+  "paid_parking": false,
+  "reserved_parking": false,
+  "overnight_parking": false,
+  "showers": false,
+  "food": false,
+  "fuel": false,
+  "laundry": false,
+  "restrooms": true,
+  "repair": false,
+  "cat_scale": false,
+  "wifi": false,
+  "security": false,
+  "tpc_url": "",
+  "interstate": "I-40",
+  "exit_number": "",
+  "published": false,
+  "sources": [
+   "https://www.ncdot.gov/travel-maps/traffic-travel/rest-areas/Documents/rest-area-locations.pdf",
+   "https://www.northcarolinarestareas.com/nc-i40-catawba-rest-area-eastbound-mile-marker-136/"
+  ],
+  "_from": "seg-hickory.json"
+ },
+ {
+  "business_name": "NCSHP Weigh Station - I-40 Statesville (Iredell County)",
+  "category": "weigh-stations",
+  "address": "",
+  "city": "Statesville",
+  "state": "NC",
+  "zip": "",
+  "phone": "",
+  "website": "https://www.ncdps.gov/our-organization/law-enforcement/state-highway-patrol/weigh-stations",
+  "description": "EXCLUDED: Per NC DPS/State Highway Patrol, the I-40 weigh stations nearest this segment are the paired EB/WB fixed scales about 6 miles west of Statesville (approx. MM 144), east of Exit 132. NO weigh station operates within I-40 exits 100-132.",
+  "truck_spaces": null,
+  "free_parking": false,
+  "paid_parking": false,
+  "reserved_parking": false,
+  "overnight_parking": false,
+  "showers": false,
+  "food": false,
+  "fuel": false,
+  "laundry": false,
+  "restrooms": false,
+  "repair": false,
+  "cat_scale": false,
+  "wifi": false,
+  "security": false,
+  "tpc_url": "",
+  "interstate": "I-40",
+  "exit_number": "",
+  "published": false,
+  "sources": [
+   "https://www.ncdps.gov/our-organization/law-enforcement/state-highway-patrol/weigh-stations",
+   "https://www.ncshp.gov/ncshp/commercial-vehicles/weigh-stations"
+  ],
+  "_from": "seg-hickory.json"
+ },
+ {
+  "business_name": "Vince's Diesel & Auto",
+  "category": "roadside-service",
+  "address": "2000 Chain Dr",
+  "city": "Morganton",
+  "state": "NC",
+  "zip": "28655",
+  "phone": "",
+  "website": "https://www.vincesdieselandfleet.com/",
+  "description": "EXCLUDED: Legitimate truck/trailer/diesel repair shop, but located at I-40 Exit 98 (Causby Rd area), just west of this segment's exit 100 boundary. Belongs to the previous segment.",
+  "truck_spaces": null,
+  "free_parking": false,
+  "paid_parking": false,
+  "reserved_parking": false,
+  "overnight_parking": false,
+  "showers": false,
+  "food": false,
+  "fuel": false,
+  "laundry": false,
+  "restrooms": false,
+  "repair": true,
+  "cat_scale": false,
+  "wifi": false,
+  "security": false,
+  "tpc_url": "",
+  "interstate": "I-40",
+  "exit_number": "98",
+  "published": false,
+  "sources": [
+   "https://www.vincesdieselandfleet.com/about",
+   "https://www.vincesdieselandfleet.com/"
+  ],
+  "_from": "seg-hickory.json"
+ },
+ {
+  "business_name": "Liberty Trailer Wash",
+  "category": "truck-washes",
+  "address": "3833 US-64",
+  "city": "Morganton",
+  "state": "NC",
+  "reason": "Located on US-64 in Morganton, accessed from I-40 exit 103 - outside segment exits 66-100.",
+  "sources": [
+   "https://www.findtruckservice.com/Semi/Truck+Wash/Trailer+Wash/NC/Morganton/"
+  ],
+  "_from": "seg-marion.json"
+ },
+ {
+  "business_name": "NCSHP I-40 weigh stations (Asheville and Statesville)",
+  "category": "weigh-stations",
+  "address": "",
+  "city": "",
+  "state": "NC",
+  "reason": "Per NCSHP/NCDPS, the only fixed I-40 weigh stations are ~12 mi west of Asheville (Buncombe Co.) and ~6 mi west of Statesville (Iredell Co.) - both outside exits 66-100. No weigh station exists within this segment.",
+  "sources": [
+   "https://www.ncdps.gov/our-organization/law-enforcement/state-highway-patrol/weigh-stations",
+   "https://www.ncshp.gov/ncshp/commercial-vehicles/weigh-stations"
+  ],
+  "_from": "seg-marion.json"
+ },
+ {
+  "business_name": "Hampton Inn Marion",
+  "category": "hotels-truck-parking",
+  "address": "",
+  "city": "Marion",
+  "state": "NC",
+  "reason": "Hotel at I-40 Exit 85, but no source explicitly confirms truck parking - fails hotel inclusion rule.",
+  "sources": [
+   "https://hotelguides.com/hotels/north-carolina/marion/120070.html"
+  ],
+  "_from": "seg-marion.json"
+ },
+ {
+  "business_name": "BP - 1007 Jamestown Rd (Exit 100)",
+  "category": "truck-stops",
+  "address": "1007 Jamestown Rd",
+  "city": "Morganton",
+  "state": "NC",
+  "reason": "Ordinary gas station at Exit 100 (Glen Alpine/Jamestown Rd); no verified truck diesel lanes, truck parking or other trucker amenities.",
+  "sources": [
+   "https://www.iexitapp.com/business/BP/178625?esmid=48785"
+  ],
+  "_from": "seg-marion.json"
+ },
+ {
+  "business_name": "Mobile-only roadside vendors (FYX Fleet, 24TruckLink, McCurry's Diesel Roadside, D&A Mobile Truck & Equipment Repair)",
+  "category": "roadside-service",
+  "address": "",
+  "city": "Marion",
+  "state": "NC",
+  "reason": "Mobile-only dispatch services with no verified fixed facility at an I-40 exit; segment rule allows FIXED roadside-service locations only.",
+  "sources": [
+   "https://www.findtruckservice.com/Semi/Mobile/Truck+Repair/NC/Marion/",
+   "https://24trucklink.com/truck-repair-marion-nc.html"
+  ],
+  "_from": "seg-marion.json"
+ },
+ {
+  "business_name": "Old Fort exit 72/73 gas stations",
+  "category": "truck-stops",
+  "address": "",
+  "city": "Old Fort",
+  "state": "NC",
+  "reason": "Small auto-oriented stations at exits 72/73; no source verified truck diesel/parking amenities, and post-Helene operating status of individual stations could not be confirmed from two independent sources.",
+  "sources": [
+   "https://www.iexitapp.com/North%20Carolina/I-40/Exit%2073/13386"
+  ],
+  "_from": "seg-marion.json"
+ }
+]

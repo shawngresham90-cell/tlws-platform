@@ -1,0 +1,235 @@
+{
+ "mean": 61.5,
+ "median": 72,
+ "min": 24,
+ "max": 76,
+ "dist": {
+  "Incomplete": 9,
+  "Needs work": 3,
+  "Good": 25
+ },
+ "scores": [
+  {
+   "name": "Blue Springs Chevron",
+   "city": "Cadiz",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Knights Inn Cadiz",
+   "city": "Cadiz",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Cheers Food and Fuel",
+   "city": "Grand Rivers",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Quality Inn Fort Campbell",
+   "city": "Oak Grove",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "I-24 Christian County Welcome Center (Mile Marker 92)",
+   "city": "Oak Grove",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Super 8 by Wyndham Paducah I-24 Exit 4",
+   "city": "Paducah",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Lyon County Weigh Station (I-24 EB)",
+   "city": "Kuttawa",
+   "score": 35,
+   "label": "Incomplete"
+  },
+  {
+   "name": "I-24 Weigh Station (Christian County)",
+   "city": "Hopkinsville",
+   "score": 35,
+   "label": "Incomplete"
+  },
+  {
+   "name": "I-24 Weigh Station (McCracken County)",
+   "city": "Paducah",
+   "score": 35,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Days Inn by Wyndham Paducah I-24 Exit 4",
+   "city": "Paducah",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "Days Inn by Wyndham Oak Grove/Ft. Campbell",
+   "city": "Oak Grove",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Exit 11 Exxon",
+   "city": "Paducah",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Max Fuel Xpress #9",
+   "city": "Cadiz",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Days Inn by Wyndham Kuttawa/Eddyville",
+   "city": "Kuttawa",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "I-24 Chevron Fuel Express (I-24/41A Truck Stop)",
+   "city": "Oak Grove",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Flying J #662",
+   "city": "Oak Grove",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot #439",
+   "city": "Oak Grove",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Love's #782",
+   "city": "Oak Grove",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "Flying J Truck & Trailer Wash - Oak Grove",
+   "city": "Oak Grove",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Pride Truck Wash",
+   "city": "Paducah",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #348",
+   "city": "Calvert City",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Huck's Travel Center (Pilot Travel Center #890)",
+   "city": "Kuttawa",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Flying J Travel Center #662",
+   "city": "Oak Grove",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #439",
+   "city": "Oak Grove",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #782",
+   "city": "Oak Grove",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #49",
+   "city": "Oak Grove",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #358",
+   "city": "Paducah",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Pride Auto/Truck Plaza (BP)",
+   "city": "Paducah",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Hometown Auto & Truck Repair and Towing",
+   "city": "Cadiz",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Love's Travel Stop #348",
+   "city": "Calvert City",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care #348",
+   "city": "Calvert City",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Calvert City Truck Repair",
+   "city": "Calvert City",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Huck's Travel Center (Pilot #890)",
+   "city": "Kuttawa",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care / Tire Care - Oak Grove #782",
+   "city": "Oak Grove",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale (Pilot Travel Center #49)",
+   "city": "Oak Grove",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #358",
+   "city": "Paducah",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Tire Mart at Pilot #308",
+   "city": "Paducah",
+   "score": 76,
+   "label": "Good"
+  }
+ ]
+}

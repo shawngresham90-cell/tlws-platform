@@ -15,6 +15,10 @@ import { buildMetadata } from '@/lib/seo/metadata';
 
 export const metadata = buildMetadata({ path: '/' });
 
+// The FoundersWall thermometer reads via the cookie-free static client, so
+// the homepage can be ISR'd — refresh the live number at most once a minute.
+export const revalidate = 60;
+
 export default function HomePage() {
   return (
     <>

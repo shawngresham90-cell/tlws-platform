@@ -1,0 +1,183 @@
+{
+  "segment": "il-east",
+  "included": [
+    {
+      "business_name": "Metropolis Truck Plaza",
+      "category": "truck-stops",
+      "address": "2105 E 5th St",
+      "city": "Metropolis",
+      "state": "IL",
+      "zip": "62960",
+      "phone": "618-524-4831",
+      "website": "",
+      "description": "Independent 24-hour truck stop on US-45 at I-24 Exit 37 in Metropolis with 24-hour diesel, truck parking, convenience store, and on-site truck service bays offering tire, lube, and engine repair. Directories list about 15 truck parking spaces; the former on-site Huddle House restaurant closed in 2025 but the store remains open.",
+      "truck_spaces": 15,
+      "free_parking": false,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": true,
+      "showers": false,
+      "food": true,
+      "fuel": true,
+      "laundry": false,
+      "restrooms": true,
+      "repair": true,
+      "cat_scale": false,
+      "wifi": true,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-24",
+      "exit_number": "37",
+      "published": true,
+      "sources": [
+        "https://www.findfuelstops.com/truck-stop-004949",
+        "https://www.truckstopsandservices.com/location_details.php?id=2001",
+        "https://www.allstays.com/truckstops-details/93123.php",
+        "https://www.iexitapp.com/business/Metropolis%20Truck%20Stop/897655?esmid=18685&origin=restareas",
+        "https://www.yelp.com/biz/metropolis-truck-stop-metropolis"
+      ]
+    },
+    {
+      "business_name": "Super 8 by Wyndham Metropolis",
+      "category": "hotels-truck-parking",
+      "address": "2055 E 5th St",
+      "city": "Metropolis",
+      "state": "IL",
+      "zip": "62960",
+      "phone": "618-524-8200",
+      "website": "https://www.wyndhamhotels.com/super-8/metropolis-illinois/super-8-metropolis/overview",
+      "description": "Super 8 motel on US-45 at I-24 Exit 37 in Metropolis that explicitly advertises free truck, bus, and RV parking for guests. Amenities include free continental breakfast, WiFi, and an indoor pool.",
+      "truck_spaces": null,
+      "free_parking": true,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": true,
+      "showers": false,
+      "food": true,
+      "fuel": false,
+      "laundry": false,
+      "restrooms": false,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": true,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-24",
+      "exit_number": "37",
+      "published": true,
+      "sources": [
+        "https://www.allstays.com/hotels/24641.htm",
+        "https://www.wyndhamhotels.com/super-8/metropolis-illinois/super-8-metropolis/overview",
+        "https://www.truckerpath.com/location-details/hotels/il/metropolis/super-8-by-wyndham-metropolis?id=18909"
+      ]
+    }
+  ],
+  "held": [
+    {
+      "business_name": "Fort Massac Welcome Center / Rest Area (I-24 MM 37)",
+      "category": "parking",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "IDOT confirms a Fort Massac rest area on I-24 near Metropolis (bidirectional, off-freeway on US-45 at Exit 37), but no official IDOT/illinois.gov source with a civic address was retrievable (IDOT pages 403 behind proxy). Third-party sources report the building is closed with only the parking lot open, and an IDOT blog (March 2026) says the facility is in design phase for reconstruction. Status and address need official confirmation before publishing.",
+      "sources": [
+        "https://idot.illinois.gov/about-idot/stay-connected/idot-blog/rest-area-renaissance--revitalizing-facilities-in-need-of-a-refr.html",
+        "https://www.illinoisrestareas.com/il-i24-interstate-24-illinois-fort-massac-welcome-center-bidirectional-mile-marker-37/",
+        "https://www.interstaterestareas.com/rest-areas/illinois-i-24-exit-37/"
+      ]
+    },
+    {
+      "business_name": "Truck Parking Club lot - 2409 IL-145 Metropolis",
+      "category": "parking",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Bookable paid truck/trailer parking property at the corner of US-45 and IL-145 described as right off I-24, on a site the owner bought after the State of Illinois decommissioned it. Only one source (Truck Parking Club) documents it; space count, pricing, and exact relationship to Exit 37 unverified.",
+      "sources": [
+        "https://truckparkingclub.com/truck-parking/illinois/metropolis/2409-il-145-62960"
+      ]
+    },
+    {
+      "business_name": "Truck parking only lot - 5570 S US Route 45 (former truck stop)",
+      "category": "parking",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Allstays lists a truck-parking-only site at I-24 Exit 37, 5570 S US Route 45, with 25 spaces at a former (out-of-business) truck stop. Single source; current availability and legality of parking unverified, possibly the same property as the Truck Parking Club listing.",
+      "sources": [
+        "https://www.allstays.com/truckstops-details/95093.php"
+      ]
+    },
+    {
+      "business_name": "Holiday Inn Express Metropolis",
+      "category": "hotels-truck-parking",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Hotel at 2179 E 5th St near I-24 Exit 37, but no source explicitly confirms truck/large-vehicle parking.",
+      "sources": [
+        "https://hotelguides.com/hotels/illinois/metropolis/119773.html"
+      ]
+    },
+    {
+      "business_name": "On-Site Truck and Trailer Services",
+      "category": "roadside-service",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Commercial truck/trailer repair at 3098 Old Marion Rd, Metropolis offering 24/7 road service, fleet maintenance, DOT inspections, and tire repair. Business name and offerings suggest primarily mobile/on-site dispatch; fixed-facility service and proximity to an I-24 exit not confirmed, and only one substantive source found.",
+      "sources": [
+        "https://www.yelp.com/biz/onsite-truck-and-trailer-services-metropolis"
+      ]
+    },
+    {
+      "business_name": "Keen's Truck & Trailer Repair (at Metropolis Truck Plaza)",
+      "category": "roadside-service",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Listed by one directory as truck/tire repair at I-24 Exit 37 (phone 270-251-8160, a Kentucky number), likely a mobile vendor serving the truck plaza rather than a distinct fixed facility. Single source, unverified.",
+      "sources": [
+        "https://www.truckstopsandservices.com/location_details.php?id=2001"
+      ]
+    },
+    {
+      "business_name": "Plaza Tire Service - Metropolis",
+      "category": "tire-repair",
+      "city": "Metropolis",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Tire shop at 1503 E 5th St on the US-45 corridor about a mile from I-24 Exit 37, but sources describe service for cars, SUVs, and light trucks; commercial semi-truck tire service not confirmed.",
+      "sources": [
+        "https://www.plazatireservice.com/locations/il/metropolis/auto-repair-1503-east-fifth-street"
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "business_name": "Motel 6 Metropolis",
+      "reason": "Located near I-24 Exit 37 (2119 E 5th St) but its parking is described as convenient for cars and small trucks only; no semi/large-vehicle truck parking confirmed.",
+      "source": "https://www.motel6.com/us/illinois/metropolis/"
+    },
+    {
+      "business_name": "Baymont by Wyndham Metropolis",
+      "reason": "Located at 203 E Front St on the Metropolis riverfront roughly 2.6 miles from I-24, in the casino district; not tied to the I-24 exit and no truck parking confirmed.",
+      "source": "https://www.allstays.com/hotels/24636.htm"
+    },
+    {
+      "business_name": "Harrah's Metropolis (casino riverfront area)",
+      "reason": "Riverfront casino district facilities are far from I-24 Exit 37 and not tied to the interstate corridor; explicitly out of scope.",
+      "source": "https://www.allstays.com/Campgrounds-details/19484.htm"
+    },
+    {
+      "business_name": "I-24 Illinois weigh station",
+      "reason": "No weigh station exists on I-24 in Illinois per statewide weigh station listings; the nearest state scales are on I-57 at Marion, outside this segment.",
+      "source": "https://www.coopsareopen.com/illinois-weigh-stations.html"
+    },
+    {
+      "business_name": "Exit 27 (New Columbia / Big Bay Rd) services",
+      "reason": "iExit and AARoads confirm Exit 27 is a rural diamond interchange with 0 gas stations, 0 restaurants, and 0 hotels; no trucker facilities exist there.",
+      "source": "https://www.iexitapp.com/Illinois/I-24/exit/18684"
+    }
+  ]
+}

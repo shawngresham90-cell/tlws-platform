@@ -1,0 +1,361 @@
+{
+ "mean": 63.9,
+ "median": 64,
+ "min": 36,
+ "max": 76,
+ "dist": {
+  "Incomplete": 2,
+  "Needs work": 29,
+  "Good": 27
+ },
+ "scores": [
+  {
+   "name": "Hart County Rest Area (I-65 Northbound)",
+   "city": "Horse Cave",
+   "score": 36,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Munfordville Rest Area (I-65 Southbound)",
+   "city": "Munfordville",
+   "score": 36,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Baymont by Wyndham Cave City",
+   "city": "Cave City",
+   "score": 45,
+   "label": "Needs work"
+  },
+  {
+   "name": "Kentucky Weigh Station - I-65 Southbound (Elizabethtown, KSP Post 3)",
+   "city": "Elizabethtown",
+   "score": 47,
+   "label": "Needs work"
+  },
+  {
+   "name": "I-65 Bullitt County Weigh Station (KVE/KSP)",
+   "city": "Shepherdsville",
+   "score": 47,
+   "label": "Needs work"
+  },
+  {
+   "name": "Greenfield Inn & Suites Elizabethtown (I-65 Exit 94)",
+   "city": "Elizabethtown",
+   "score": 50,
+   "label": "Needs work"
+  },
+  {
+   "name": "Bullitt County Welcome Center (I-65 Southbound, MM 114) - truck parking",
+   "city": "Shepherdsville",
+   "score": 50,
+   "label": "Needs work"
+  },
+  {
+   "name": "Kentucky Weigh Station - I-65 Northbound (Simpson County)",
+   "city": "Franklin",
+   "score": 53,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale - Love's Travel Stop #716 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 54,
+   "label": "Needs work"
+  },
+  {
+   "name": "Plaza 94 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 54,
+   "label": "Needs work"
+  },
+  {
+   "name": "Plaza 94 Truck Wash (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 56,
+   "label": "Needs work"
+  },
+  {
+   "name": "Red Roof Inn & Suites Cave City",
+   "city": "Cave City",
+   "score": 57,
+   "label": "Needs work"
+  },
+  {
+   "name": "Best Western Plus Elizabethtown Inn & Suites (I-65 Exit 94)",
+   "city": "Elizabethtown",
+   "score": 57,
+   "label": "Needs work"
+  },
+  {
+   "name": "Ramada by Wyndham Bowling Green",
+   "city": "Bowling Green",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "Park City Shell (IGA Express)",
+   "city": "Park City",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale - Petro Glendale (#330)",
+   "city": "Glendale",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #48 (Glendale)",
+   "city": "Glendale",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale - RaceTrac #2597 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "Munfordville Truck Parking (Truck Parking Club)",
+   "city": "Munfordville",
+   "score": 63,
+   "label": "Needs work"
+  },
+  {
+   "name": "TA Truck Service Franklin",
+   "city": "Franklin",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Pride Truck Wash - Franklin",
+   "city": "Franklin",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "All Star Towing & Road Service (at Sudden Service #62)",
+   "city": "Franklin",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale - TA Smiths Grove",
+   "city": "Smiths Grove",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Higdon's Service Center",
+   "city": "Cave City",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "CAT Scale #1174 - Love's #360 Horse Cave",
+   "city": "Horse Cave",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Love's Truck Care #360",
+   "city": "Horse Cave",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Blue Beacon Truck Wash of Glendale",
+   "city": "Glendale",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Wingfoot Truck Care - Pilot #48 (Glendale)",
+   "city": "Glendale",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "All American Truck Wash",
+   "city": "Shepherdsville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Days Inn by Wyndham Louisville Airport Fair & Expo Center",
+   "city": "Louisville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Motel 6 Louisville, KY - Airport/Fair Expo",
+   "city": "Louisville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Best One Fleet Service - Bowling Green",
+   "city": "Bowling Green",
+   "score": 65,
+   "label": "Good"
+  },
+  {
+   "name": "Ziegler Tire - Bowling Green (Commercial)",
+   "city": "Bowling Green",
+   "score": 65,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care - Love's #716 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 65,
+   "label": "Good"
+  },
+  {
+   "name": "Simpson County (Franklin) Welcome Center - I-65 Northbound",
+   "city": "Franklin",
+   "score": 66,
+   "label": "Good"
+  },
+  {
+   "name": "Keystop Truck Stop",
+   "city": "Franklin",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Days Inn by Wyndham Franklin",
+   "city": "Franklin",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #716 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #360",
+   "city": "Horse Cave",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #399",
+   "city": "Lebanon Junction",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #238",
+   "city": "Shepherdsville",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #356",
+   "city": "Shepherdsville",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Speedco (Love's) Franklin",
+   "city": "Franklin",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Crossroads Towing & Truck Repair",
+   "city": "Cave City",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "TA Truck Service - Petro Glendale",
+   "city": "Glendale",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "RaceTrac #2597 (Elizabethtown)",
+   "city": "Elizabethtown",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #399, Lebanon Junction",
+   "city": "Lebanon Junction",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Love's Travel Stop #238, Shepherdsville",
+   "city": "Shepherdsville",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care #238",
+   "city": "Shepherdsville",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #356, Shepherdsville",
+   "city": "Shepherdsville",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Flying J Travel Center #661",
+   "city": "Franklin",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #438",
+   "city": "Franklin",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Sudden Service #62 Travel Center",
+   "city": "Franklin",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "TA Smiths Grove",
+   "city": "Smiths Grove",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Petro Stopping Center #330 (Petro Glendale)",
+   "city": "Glendale",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #48 (Glendale)",
+   "city": "Glendale",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Flying J Travel Center #661",
+   "city": "Franklin",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Pilot Travel Center #438",
+   "city": "Franklin",
+   "score": 76,
+   "label": "Good"
+  }
+ ]
+}

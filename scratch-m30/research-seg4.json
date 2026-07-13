@@ -1,0 +1,124 @@
+{
+  "segment": "seg4",
+  "listings": [
+    {
+      "name": "Love's Travel Stop #429",
+      "category": "Truck Stops",
+      "address": "130 W Trinity Ln",
+      "city": "Nashville",
+      "state": "TN",
+      "zip": "37207",
+      "phone": "615-226-6393",
+      "website": "https://www.loves.com/locations/tn/nashville/loves-travel-stop-nashville-429",
+      "description": "24-hour Love's Travel Stop at the Trinity Lane (US-431) interchange in north Nashville, on the I-65/I-24 concurrency where I-65 exit numbers are retained (I-65 northbound exit 87B). Formerly Pilot Travel Center #292; rebranded to Love's #429 (same site/phone). Diesel, showers, Subway, convenience store, CAT Scale on site, and a Love's Truck Care tire/service center (listed separately). Reported truck parking count varies by source (49 vs 65), left blank pending confirmation.",
+      "truck_spaces": "",
+      "parking_free": "true",
+      "parking_type": "free overnight",
+      "amenities": ["24-hour diesel", "showers", "CAT Scale", "Subway restaurant", "convenience store", "ATM", "WiFi", "truck parking", "tire care / truck service", "DEF", "propane", "RV parking", "DOT inspection"],
+      "tpc_url": "",
+      "interstate": "I-65",
+      "exit_number": "87",
+      "published": true,
+      "hold_reason": "",
+      "sources": [
+        "https://www.loves.com/locations/tn/nashville/loves-travel-stop-nashville-429",
+        "https://www.truckstopsandservices.com/location_details.php?id=22312",
+        "https://www.yelp.com/biz/loves-travel-stop-nashville",
+        "https://truckmap.com/place/loves-travel-stop-429-130-w-trinity-ln-nashville-tn-37207-usa",
+        "https://wiki.aaroads.com/wiki/Interstate_65_in_Tennessee",
+        "https://www.iexitapp.com/Tennessee/I-65/Exit%2087/15034"
+      ],
+      "corroboration": "Official Love's location page + truckstopsandservices + Yelp + TruckMap all confirm 130 W Trinity Ln, Nashville 37207, phone 615-226-6393, Love's #429. AARoads confirms the Trinity Lane interchange is on the I-65/I-24 concurrency and RETAINS I-65 exit numbering (exit 87); iExit lists it as I-65 Exit 87 (US-431/Trinity Ln), ~0.25 mi from exit 87B. Yelp shows the same address was previously Pilot #292 (rebrand, not a second facility)."
+    },
+    {
+      "name": "CAT Scale — Love's Travel Stop #429, Nashville",
+      "category": "CAT Scales",
+      "address": "130 W Trinity Ln",
+      "city": "Nashville",
+      "state": "TN",
+      "zip": "37207",
+      "phone": "615-226-6393",
+      "website": "https://catscale.com/cat-scale-locator/",
+      "description": "CAT Scale certified truck scale co-located at Love's Travel Stop #429 at the Trinity Lane (US-431) interchange, I-65 exit 87 in north Nashville (I-65/I-24 concurrency, I-65 numbering retained).",
+      "truck_spaces": "",
+      "parking_free": "",
+      "parking_type": "",
+      "amenities": ["certified CAT Scale"],
+      "tpc_url": "",
+      "interstate": "I-65",
+      "exit_number": "87",
+      "published": true,
+      "hold_reason": "",
+      "sources": [
+        "https://catscale.com/cat-scale-locator/",
+        "https://www.loves.com/locations/tn/nashville/loves-travel-stop-nashville-429",
+        "https://www.truckstopsandservices.com/location_details.php?id=22312"
+      ],
+      "corroboration": "CAT Scale locator returns a CAT Scale at the I-24/I-65 Exit 87 / 130 W Trinity Ln, Nashville location (phone 615-226-6393). Love's official page and truckstopsandservices amenity list both confirm CAT Scale on site."
+    },
+    {
+      "name": "Love's Truck Care - Love's Travel Stop #429",
+      "category": "Tire Repair",
+      "address": "130 W Trinity Ln",
+      "city": "Nashville",
+      "state": "TN",
+      "zip": "37207",
+      "phone": "615-226-6393",
+      "website": "https://www.loves.com/locations/tn/nashville/loves-travel-stop-nashville-429",
+      "description": "Love's Truck Care center co-located at Love's Travel Stop #429, Trinity Lane (I-65 exit 87), Nashville. Four truck service bays offering commercial truck tire sales/service (verified Bridgestone/Firestone commercial tire dealer at this address), 24-hour emergency road service, and light mechanical/oil service.",
+      "truck_spaces": "",
+      "parking_free": "",
+      "parking_type": "",
+      "amenities": ["4 truck service bays", "commercial truck tires", "24-hour emergency road service", "DOT inspection"],
+      "tpc_url": "",
+      "interstate": "I-65",
+      "exit_number": "87",
+      "published": true,
+      "hold_reason": "",
+      "sources": [
+        "https://local.commercial.firestone.com/tennessee/nashville/130-w-trinity-ln/",
+        "https://commercial.bridgestone.com/en-us/dealer/tennessee/nashville/130-w-trinity-ln",
+        "https://www.loves.com/locations/tn/nashville/loves-travel-stop-nashville-429",
+        "https://www.truckstopsandservices.com/location_details.php?id=22312"
+      ],
+      "corroboration": "Firestone Commercial and Bridgestone Commercial dealer locators both list a Love's Travel Stop commercial truck tire dealer at exactly 130 W Trinity Ln, Nashville. Love's page and truckstopsandservices confirm 4 truck service bays, tire repair, and road service at the site."
+    }
+  ],
+  "excluded": [
+    {
+      "name": "Pilot Travel Center #292 (Trinity Lane)",
+      "city": "Nashville",
+      "reason": "Same site as 130 W Trinity Ln, now rebranded/operating as Love's Travel Stop #429 (identical address and phone 615-226-6393). Not a distinct facility; would duplicate the Love's listing."
+    },
+    {
+      "name": "Blue Beacon Truck Wash of Nashville",
+      "city": "Nashville / Antioch",
+      "reason": "Conflicting source data on location and corridor: Waze lists 611 Much Dr, Nashville 37207; but Yelp/businessyab/truckerpath list the operating site as 611 Muci Dr, Antioch 37013 served by I-24 Exit 62, and other directory entries cite I-65 Exit 86/95. I-65-vs-I-24 identity and exit could not be independently confirmed; the operating facility appears to be on I-24 (Antioch), so excluded from the I-65 segment. Also a 'Blue Beacon of Nashville opening soon' PDF exists, suggesting relocation. Recommend a dedicated I-24 pass verify it."
+    },
+    {
+      "name": "Pilot Travel Center #413",
+      "city": "Nashville",
+      "reason": "6418 Centennial Blvd (TN-155/Briley Pkwy exit 26, I-40 west side, NOT I-65). Yelp lists it as CLOSED (updated 2026). Excluded: permanently closed and not on I-65."
+    },
+    {
+      "name": "TravelCenters of America - Nashville (111 N 1st St)",
+      "city": "Nashville",
+      "reason": "Downtown TA ('Candy Store' / #034) permanently closed per Landline Media report. Excluded (closed)."
+    },
+    {
+      "name": "TA Franklin (Peytonsville Rd)",
+      "city": "Franklin",
+      "reason": "I-65 Exit 61, ~13 miles south of this segment (exits 74-90). Belongs to a southern I-65 segment, not seg4."
+    },
+    {
+      "name": "TGC Auto & Truck Repair",
+      "city": "Nashville",
+      "reason": "321 E Trinity Ln, 37207 (near I-65 exit 87) but a small Mon-Sat auto/truck repair shop; heavy-truck (semi) access and category-fit not independently confirmed. Held out pending verification."
+    },
+    {
+      "name": "Tennessee weigh / scale stations on I-65",
+      "city": "Nashville area",
+      "reason": "No THP commercial-vehicle scale house exists on I-65 within exits 74-90. Nearest I-65 scales are MM 55 (Giles County, near Ardmore, south) and MM 119 (Robertson County, near Portland, north) — both far outside this Davidson County segment."
+    }
+  ]
+}

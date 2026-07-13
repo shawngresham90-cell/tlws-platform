@@ -1,0 +1,206 @@
+[
+ {
+  "name": "Love's / Petro / TA-Petro (Ardmore-Pulaski-Cornersville)",
+  "city": "Pulaski",
+  "reason": "No Love's, Petro or TA/Petro could be confirmed on I-65 within exits 1-27; nearest confirmed Love's on I-65 TN is well north (Columbia/Exit 108 area), out of segment. No verifiable in-segment listing found.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Quik Mart (424 N Main St)",
+  "city": "Cornersville",
+  "reason": "In-town convenience store roughly 2.5 miles from I-65 Exit 27, not at the interstate and not a verified truck facility.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Nick's Grill",
+  "city": "Pulaski",
+  "reason": "On-site restaurant at Motel 6 Pulaski, not a distinct freight-service facility; captured within the Motel 6 listing.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "East Tennessee I-75 production listings",
+  "city": "n/a",
+  "reason": "No overlap; all 61 existing TN production listings are on the I-75 East Tennessee corridor, none in this Middle/South TN I-65 segment.",
+  "_from": "research-seg1.json"
+ },
+ {
+  "name": "Tennessee Weigh Station \u2014 I-65 (Giles County / Ardmore, near AL state line)",
+  "city": "Ardmore",
+  "reason": "Out of segment. THP District 7 scale complex sits at the south end of I-65 near the Alabama line (approx. exits 1-14, Giles County), well below the exit 27-53 window. Official THP CVE page (tn.gov) is egress-blocked (403), so direction/status could not be TDOT/THP-confirmed anyway.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Tennessee Weigh Station \u2014 I-65 (converted to truck parking, north of Nashville)",
+  "city": "",
+  "reason": "Out of segment. The northbound weigh station converted to truck parking (TDOT project between SR-25 and SR-109, completed Sept 2024) is north of Nashville, far above exit 53.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "I-65 Welcome Centers (Ardmore MM3 NB; Mitchellville MM121 SB)",
+  "city": "Ardmore / Mitchellville",
+  "reason": "Out of segment. The only TDOT I-65 welcome centers/rest areas are at MM3 (AL line) and MM121 (KY side of Nashville); none between exits 27-53 (Marshall/Maury/Williamson).",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Auto/glass shops in Spring Hill & Thompson's Station (Autobody Advantage, Safelite, Tire Discounters)",
+  "city": "Spring Hill",
+  "reason": "Not freight/truck facilities. Only passenger auto-body, glass, and retail tire shops found near I-65 Exit 53; no verifiable truck stop, truck-service, truck wash, or heavy-duty tire facility.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Truck Parking Club \u2014 Columbia, TN (generic listing)",
+  "city": "Columbia",
+  "reason": "Could not confirm a specific facility identity or street address for a standalone Truck Parking Club lot in this segment; no verifiable row could be built.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Alleged truck stop at I-65 Exit 32 / Exit 37 / Exit 53",
+  "city": "",
+  "reason": "No independently verifiable truck stop, CAT Scale, truck wash, or tire facility found at these exits; a vague 'Pilot near Exit 32' snippet could not be corroborated and appears to conflate the Exit 22 Pilot.",
+  "_from": "research-seg2.json"
+ },
+ {
+  "name": "Love's Travel Stop (I-65 Exit 46)",
+  "city": "Columbia",
+  "reason": "Exit 46 is south of this segment's range (exits 53-74); belongs to the Maury County / southern I-65 segment, not the Franklin/Brentwood segment.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Love's Travel Stop #629 (I-65 Exit 108)",
+  "city": "White House",
+  "reason": "Exit 108 is far north of range (Robertson/Sumner County, north Nashville metro); outside exits 53-74.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash (I-65 Exit 81 and Exit 95)",
+  "city": "Nashville/Millersville",
+  "reason": "Both Blue Beacon I-65 locations are north of range (exits 81 and 95, north Nashville metro); outside exits 53-74.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash - Antioch",
+  "city": "Antioch",
+  "reason": "611 Muci Dr serves I-24, not I-65; outside this I-65 segment.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Tennessee Weigh Station - I-65 (THP District 7 Scale House)",
+  "city": "Ardmore (Giles County)",
+  "reason": "Located at I-65 mile marker 55 near the Alabama line; outside this segment's geographic range and belongs to the southern I-65 TN segment.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Tennessee Weigh Station - I-65 (THP District 3 Scale House)",
+  "city": "Portland (Robertson County)",
+  "reason": "Located at I-65 mile marker 119 north of Nashville; outside exits 53-74. No permanent weigh/scale complex exists on I-65 in Williamson/Davidson County per TDOT/THP.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Truck Parking Club - Franklin",
+  "city": "Franklin",
+  "reason": "TruckParkingClub advertises Franklin-area listings, but specific facility name/street address, space count, and I-65 proximity could not be independently confirmed (site blocked at egress gateway; no address in search snippets). Held to avoid guessing address.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Truck Parking Club - Spring Hill",
+  "city": "Spring Hill",
+  "reason": "TruckParkingClub advertises Spring Hill listings, but no specific verifiable address/space count could be confirmed; site blocked at egress gateway. Held to avoid guessing.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Cool Springs / Brentwood hotels (Drury, Marriott, Residence Inn, Comfort Inn, etc.)",
+  "city": "Franklin/Brentwood",
+  "reason": "Upscale business/extended-stay hotels near Cool Springs; several charge for standard car parking and none could be independently confirmed to permit overnight semi/truck parking. Category-fit not confirmed; excluded rather than guess truck access.",
+  "_from": "research-seg3.json"
+ },
+ {
+  "name": "Pilot Travel Center #292 (Trinity Lane)",
+  "city": "Nashville",
+  "reason": "Same site as 130 W Trinity Ln, now rebranded/operating as Love's Travel Stop #429 (identical address and phone 615-226-6393). Not a distinct facility; would duplicate the Love's listing.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash of Nashville",
+  "city": "Nashville / Antioch",
+  "reason": "Conflicting source data on location and corridor: Waze lists 611 Much Dr, Nashville 37207; but Yelp/businessyab/truckerpath list the operating site as 611 Muci Dr, Antioch 37013 served by I-24 Exit 62, and other directory entries cite I-65 Exit 86/95. I-65-vs-I-24 identity and exit could not be independently confirmed; the operating facility appears to be on I-24 (Antioch), so excluded from the I-65 segment. Also a 'Blue Beacon of Nashville opening soon' PDF exists, suggesting relocation. Recommend a dedicated I-24 pass verify it.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Pilot Travel Center #413",
+  "city": "Nashville",
+  "reason": "6418 Centennial Blvd (TN-155/Briley Pkwy exit 26, I-40 west side, NOT I-65). Yelp lists it as CLOSED (updated 2026). Excluded: permanently closed and not on I-65.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "TravelCenters of America - Nashville (111 N 1st St)",
+  "city": "Nashville",
+  "reason": "Downtown TA ('Candy Store' / #034) permanently closed per Landline Media report. Excluded (closed).",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "TA Franklin (Peytonsville Rd)",
+  "city": "Franklin",
+  "reason": "I-65 Exit 61, ~13 miles south of this segment (exits 74-90). Belongs to a southern I-65 segment, not seg4.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "TGC Auto & Truck Repair",
+  "city": "Nashville",
+  "reason": "321 E Trinity Ln, 37207 (near I-65 exit 87) but a small Mon-Sat auto/truck repair shop; heavy-truck (semi) access and category-fit not independently confirmed. Held out pending verification.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Tennessee weigh / scale stations on I-65",
+  "city": "Nashville area",
+  "reason": "No THP commercial-vehicle scale house exists on I-65 within exits 74-90. Nearest I-65 scales are MM 55 (Giles County, near Ardmore, south) and MM 119 (Robertson County, near Portland, north) \u2014 both far outside this Davidson County segment.",
+  "_from": "research-seg4.json"
+ },
+ {
+  "name": "Blue Beacon Truck Wash of Nashville",
+  "city": "Nashville (Antioch)",
+  "reason": "Located at I-24 Exit 62 (611 Muci Dr), serves I-24 \u2014 not the I-65 northern segment; out of scope.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "CAT Scale / TA \u2014 Franklin (Exit 61)",
+  "city": "Franklin",
+  "reason": "I-65 Exit 61 is south of Nashville, outside this segment's exit 90-121 range.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "CAT Scale \u2014 Nashville (I-24/I-65 Exit 87A)",
+  "city": "Nashville",
+  "reason": "Downtown Nashville junction, south of the segment's northern range and primarily an I-24/I-65 split location.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Exxon (AM Express) / Shell \u2014 Portland Exit 117",
+  "city": "Portland",
+  "reason": "Fuel/convenience stations with diesel but no confirmed dedicated truck parking; category-fit as a truck stop not verified. Earlier 'Love's at Exit 117' references were a mix-up with I-24 and are not real.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Holiday Inn Express / Hampton Inn / Quality Inn \u2014 White House (Exit 108)",
+  "city": "White House",
+  "reason": "Hotels near Exit 108; truck/semi overnight parking not independently confirmed (brand pages do not verify truck parking, and Love's #629 truck parking is adjacent). Held out pending confirmation.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Interstate Fleet Services / West Power Services / TRUCKUP / Mobile Tractor Trailer Repair",
+  "city": "Goodlettsville / Portland / Nashville",
+  "reason": "Mobile roadside dispatch services without a confirmed fixed street address or verifiable single-facility identity in this segment; excluded per no-guess rule.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Millersville travel center (Exit 98)",
+  "city": "Millersville",
+  "reason": "No dedicated truck stop / travel center with truck parking confirmed at Exit 98 (US-31W); gas stations only.",
+  "_from": "research-seg5.json"
+ },
+ {
+  "name": "Robertson County Welcome Center (SB, ~MM 121, Mitchellville)",
+  "city": "Mitchellville",
+  "reason": "Welcome center / rest area is not one of the eight target categories; not created as its own row. (Associated weigh-station and truck-parking items handled separately as held listings.)",
+  "_from": "research-seg5.json"
+ }
+]

@@ -5,15 +5,11 @@ import { Container } from '@/components/ui';
 const NAV = [
   { label: 'Academy', href: '/academy' },
   { label: 'Knowledge Center', href: '/knowledge' },
-  { label: 'DOT Guide', href: '/dot-guide' },
-  { label: 'Practice Tests', href: '/practice-tests' },
   { label: 'Truck Parking', href: '/directory/parking' },
   { label: 'Directories', href: '/directory' },
   { label: 'Books', href: '/books' },
   { label: 'Apps', href: '/apps' },
-  { label: 'Sponsors', href: '/sponsors' },
   { label: 'Founders Wall', href: '/founders' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 /**

@@ -8,25 +8,8 @@ import { AMENITIES } from '@/lib/directory/amenities';
  * moderation table with status 'pending'; nothing here can publish content.
  */
 
-export const SUBMISSION_KINDS = [
-  'new',
-  'correction',
-  'closure',
-  'missing-info',
-  'amenity-change',
-] as const;
-export type SubmissionKind = (typeof SUBMISSION_KINDS)[number];
-
-export const TRUCK_TYPES = [
-  'Dry van',
-  'Reefer',
-  'Flatbed',
-  'Tanker',
-  'Step deck',
-  'Car hauler',
-  'Box truck',
-  'Other',
-] as const;
+export { SUBMISSION_KINDS, TRUCK_TYPES, type SubmissionKind } from './constants';
+import { SUBMISSION_KINDS, TRUCK_TYPES } from './constants';
 
 /** Empty strings from form fields count as absent. */
 const optional = <T extends z.ZodTypeAny>(schema: T) =>

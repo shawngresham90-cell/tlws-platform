@@ -1,0 +1,691 @@
+{
+ "mean": 67.9,
+ "median": 71,
+ "min": 24,
+ "max": 80,
+ "dist": {
+  "Incomplete": 3,
+  "Needs work": 29,
+  "Good": 81
+ },
+ "scores": [
+  {
+   "name": "Mapco Express #3316 (5325 Summer Ave)",
+   "city": "Memphis",
+   "score": 24,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Arlington Truck and Trailer Repair",
+   "city": "Eads",
+   "score": 27,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Days Inn by Wyndham Newport",
+   "city": "Newport",
+   "score": 32,
+   "label": "Incomplete"
+  },
+  {
+   "name": "Dickson County Rest Area - I-40 Eastbound (MM 170)",
+   "city": "Dickson",
+   "score": 43,
+   "label": "Needs work"
+  },
+  {
+   "name": "Dickson County Rest Area - I-40 Westbound (MM 170)",
+   "city": "Dickson",
+   "score": 43,
+   "label": "Needs work"
+  },
+  {
+   "name": "I-40 Cumberland County Rest Area (Eastbound, MM 324.4)",
+   "city": "Crossville",
+   "score": 43,
+   "label": "Needs work"
+  },
+  {
+   "name": "I-40 Cumberland County Rest Area (Westbound, MM 326.6)",
+   "city": "Crossville",
+   "score": 43,
+   "label": "Needs work"
+  },
+  {
+   "name": "THP Check Station - Poplar Springs (Lexington area, portable scales)",
+   "city": "Lexington",
+   "score": 47,
+   "label": "Needs work"
+  },
+  {
+   "name": "I-40 Weigh/Inspection Station - Cocke County (near NC line)",
+   "city": "Hartford",
+   "score": 47,
+   "label": "Needs work"
+  },
+  {
+   "name": "Westbound Truck Parking Area, I-40 WB near Monterey",
+   "city": "Monterey",
+   "score": 49,
+   "label": "Needs work"
+  },
+  {
+   "name": "TDOT Haywood County Welcome Center / Rest Area (I-40 Westbound, MM 44-45)",
+   "city": "Stanton",
+   "score": 51,
+   "label": "Needs work"
+  },
+  {
+   "name": "TDOT Madison County Rest Area (I-40 Eastbound, MM 73)",
+   "city": "Denmark",
+   "score": 51,
+   "label": "Needs work"
+  },
+  {
+   "name": "Speedway (Christmasville Rd)",
+   "city": "Jackson",
+   "score": 53,
+   "label": "Needs work"
+  },
+  {
+   "name": "Truck Parking Club - 799 12th Ave N (Bobtail/Box Truck Parking)",
+   "city": "Nashville",
+   "score": 53,
+   "label": "Needs work"
+  },
+  {
+   "name": "Truck Parking Club property - 1420 TN-96, Fairview",
+   "city": "Fairview",
+   "score": 55,
+   "label": "Needs work"
+  },
+  {
+   "name": "Benton County I-40 Westbound Rest Area",
+   "city": "Holladay",
+   "score": 57,
+   "label": "Needs work"
+  },
+  {
+   "name": "Highway Transport Chemical Tank Wash",
+   "city": "Knoxville",
+   "score": 57,
+   "label": "Needs work"
+  },
+  {
+   "name": "Days Inn by Wyndham Airport Nashville East",
+   "city": "Nashville",
+   "score": 57,
+   "label": "Needs work"
+  },
+  {
+   "name": "Truck Parking Club - Cookeville (Salem Rd)",
+   "city": "Cookeville",
+   "score": 59,
+   "label": "Needs work"
+  },
+  {
+   "name": "THP Commercial Vehicle Scale Complex - Haywood County (I-40 Westbound)",
+   "city": "Brownsville",
+   "score": 59,
+   "label": "Needs work"
+  },
+  {
+   "name": "101 Travel Center (101 Travel Stop)",
+   "city": "Cedar Grove",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "Tennessee Welcome Center - Memphis (I-40 Riverside Dr)",
+   "city": "Memphis",
+   "score": 61,
+   "label": "Needs work"
+  },
+  {
+   "name": "Tennessee Welcome Center - Hartford / Cocke County (I-40 Westbound)",
+   "city": "Hartford",
+   "score": 62,
+   "label": "Needs work"
+  },
+  {
+   "name": "RecNation Storage - Nashville (Truck Parking)",
+   "city": "Nashville",
+   "score": 62,
+   "label": "Needs work"
+  },
+  {
+   "name": "Truck Parking Club - Monterey (Industrial Drive)",
+   "city": "Monterey",
+   "score": 63,
+   "label": "Needs work"
+  },
+  {
+   "name": "I-Mart 108",
+   "city": "Wildersville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Knights Inn Wildersville",
+   "city": "Wildersville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "BIR Travel Plaza",
+   "city": "Dandridge",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "American Travel Center",
+   "city": "Lakeland",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Motel 6 Memphis, TN - East (Sycamore View)",
+   "city": "Memphis",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Thompson Truck Group - Cookeville (International dealer, former Landmark International)",
+   "city": "Cookeville",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Super 8 by Wyndham Jackson",
+   "city": "Jackson",
+   "score": 64,
+   "label": "Needs work"
+  },
+  {
+   "name": "Elite Trailer Sales & Service (Elite Truck and Tank Wash)",
+   "city": "Nashville",
+   "score": 65,
+   "label": "Good"
+  },
+  {
+   "name": "Newport Truck and Trailer Repair - Fleet Truck Parking",
+   "city": "Newport",
+   "score": 66,
+   "label": "Good"
+  },
+  {
+   "name": "QuikTrip #7154 Travel Center",
+   "city": "Memphis",
+   "score": 67,
+   "label": "Good"
+  },
+  {
+   "name": "I-40 Truck Park (Truck & RV Parking)",
+   "city": "Crossville",
+   "score": 67,
+   "label": "Good"
+  },
+  {
+   "name": "Benton County I-40 Eastbound Rest Area (Loretta Lynn / Hank Williams Rest Area)",
+   "city": "Holladay",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Weigel's #80",
+   "city": "Newport",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Downtown Hartford Citgo",
+   "city": "Hartford",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Smith County Welcome Center (TDOT)",
+   "city": "Buffalo Valley",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Longtown Travel Plaza (BP) & Cafe",
+   "city": "Mason",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Bells Truck Stop",
+   "city": "Brownsville",
+   "score": 68,
+   "label": "Good"
+  },
+  {
+   "name": "Specialized Truck Repair - Kingston Springs",
+   "city": "Kingston Springs",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "Impact Truck and Trailer",
+   "city": "Cookeville",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Tire Mart at Pilot - Jackson",
+   "city": "Jackson",
+   "score": 69,
+   "label": "Good"
+  },
+  {
+   "name": "Newport Truck and Trailer Repair & Heavy Duty Towing",
+   "city": "Newport",
+   "score": 70,
+   "label": "Good"
+  },
+  {
+   "name": "Cumberland International Trucks - Nashville",
+   "city": "Nashville",
+   "score": 70,
+   "label": "Good"
+  },
+  {
+   "name": "Petro Stopping Center Kingston Springs #349",
+   "city": "Kingston Springs",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Days Inn by Wyndham Hurricane Mills",
+   "city": "Hurricane Mills",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Scottish Inns Hurricane Mills",
+   "city": "Hurricane Mills",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Motel 6 Dickson",
+   "city": "Dickson",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "ONE9 Travel Center #1366",
+   "city": "Holladay",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Speedway #7159",
+   "city": "Dandridge",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Weigel's #58",
+   "city": "Kingston",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Motel 6 Nashville, TN - Airport",
+   "city": "Nashville",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Uncle Pete's Truck Stop",
+   "city": "Lebanon",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #330",
+   "city": "Baxter",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "ONE9 Travel Center (Pilot #265)",
+   "city": "Cookeville",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Best Western Thunderbird Motel",
+   "city": "Cookeville",
+   "score": 71,
+   "label": "Good"
+  },
+  {
+   "name": "Finish Line Truck Wash - Fairview",
+   "city": "Fairview",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at TA Express Cookeville",
+   "city": "Cookeville",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Uncle Pete's Truck Wash",
+   "city": "Lebanon",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Chrome Zone Trailer Washouts",
+   "city": "Jackson",
+   "score": 72,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #53",
+   "city": "Hurricane Mills",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #369",
+   "city": "Dickson",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #409",
+   "city": "Dickson",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #244",
+   "city": "Jackson",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #791",
+   "city": "Holladay",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #114",
+   "city": "Crossville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #219",
+   "city": "Knoxville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #306",
+   "city": "Dandridge",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "ONE9 Travel Center #226",
+   "city": "Dandridge",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Travel Stop #796",
+   "city": "Newport",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #411",
+   "city": "Lebanon",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #4597",
+   "city": "Gordonsville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "TA Express Cookeville",
+   "city": "Cookeville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Eco Travel Plaza (Roady's)",
+   "city": "Crossville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #149 (Flagship)",
+   "city": "Stanton",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "TA Denmark (TravelCenters of America #245)",
+   "city": "Denmark",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Pilot Travel Center #366",
+   "city": "Jackson",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "Comfort Inn Brownsville I-40",
+   "city": "Brownsville",
+   "score": 75,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #53 Hurricane Mills",
+   "city": "Hurricane Mills",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Love's Travel Stop #369 Dickson",
+   "city": "Dickson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Pilot Travel Center #409 Dickson",
+   "city": "Dickson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale - Petro Kingston Springs",
+   "city": "Kingston Springs",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "I-40 Truck Repair & Towing",
+   "city": "Dickson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Love's Travel Stop #244",
+   "city": "Jackson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Love's Travel Stop #791",
+   "city": "Holladay",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Pilot Travel Center #114",
+   "city": "Crossville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Pilot Travel Center #219",
+   "city": "Knoxville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at ONE9 Travel Center #226",
+   "city": "Dandridge",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Love's Travel Stop #796",
+   "city": "Newport",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Tire Mart at Pilot #314",
+   "city": "Dandridge",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Speedco at Love's Travel Stop #796",
+   "city": "Newport",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "MHC Kenworth - Knoxville",
+   "city": "Knoxville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care #306",
+   "city": "Dandridge",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "MHC Kenworth - Nashville",
+   "city": "Nashville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Rush Truck Centers - Nashville Central",
+   "city": "Nashville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Service Tire",
+   "city": "Nashville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Pilot Travel Center #411",
+   "city": "Lebanon",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Uncle Pete's Truck Stop",
+   "city": "Lebanon",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at ONE9 Travel Center (CAT #876)",
+   "city": "Cookeville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "CAT Scale at Love's Travel Stop #330",
+   "city": "Baxter",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Best-One Tire & Auto Care of Crossville (Commercial)",
+   "city": "Crossville",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "MHC Kenworth - Jackson",
+   "city": "Jackson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "TAG Truck Center - Jackson (Freightliner/Western Star)",
+   "city": "Jackson",
+   "score": 76,
+   "label": "Good"
+  },
+  {
+   "name": "Southern Tire Mart at Pilot #330",
+   "city": "Hurricane Mills",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care #369",
+   "city": "Dickson",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "TA Truck Service #349 (Petro Kingston Springs)",
+   "city": "Kingston Springs",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "Holladay Shell (Holiday Shell)",
+   "city": "Holladay",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "Speedco at Love's Travel Stop #791",
+   "city": "Holladay",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care #244",
+   "city": "Jackson",
+   "score": 80,
+   "label": "Good"
+  },
+  {
+   "name": "Love's Truck Care - Baxter",
+   "city": "Baxter",
+   "score": 80,
+   "label": "Good"
+  }
+ ]
+}

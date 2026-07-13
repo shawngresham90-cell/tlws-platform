@@ -6,7 +6,7 @@ import { TextField, SelectField, CheckboxField } from '@/components/apply/Fields
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { AMENITIES } from '@/lib/directory/amenities';
 import { DIRECTORY_STATES } from '@/lib/directory/states';
-import { SUBMISSION_KINDS, type SubmissionKind } from '@/lib/community/schemas';
+import { SUBMISSION_KINDS, type SubmissionKind } from '@/lib/community/constants';
 import type { ListingRef } from '@/lib/community/data';
 import { LocationPicker } from './LocationPicker';
 import {

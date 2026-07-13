@@ -1,0 +1,120 @@
+{
+  "segment": "il-west",
+  "included": [
+    {
+      "business_name": "BP Vienna (E Vine St)",
+      "category": "truck-stops",
+      "address": "612 E Vine St",
+      "city": "Vienna",
+      "state": "IL",
+      "zip": "62995",
+      "phone": "",
+      "website": "https://map.bp.com/en-US/US/gas-station/vienna/bp/61113836576126299500100000000000",
+      "description": "Independent BP fuel station and convenience store on IL-146 at I-24 Exit 16 in Vienna, IL. Sells diesel and has a large gravel lot used by truckers, with paid truck parking (about $10, reimbursed with an in-store purchase per driver reports on Trucker Path).",
+      "truck_spaces": null,
+      "free_parking": false,
+      "paid_parking": true,
+      "reserved_parking": false,
+      "overnight_parking": false,
+      "showers": false,
+      "food": false,
+      "fuel": true,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": false,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-24",
+      "exit_number": "16",
+      "published": true,
+      "sources": [
+        "https://www.truckerpath.com/location-details/truck-parking/il/vienna/bp?id=255363",
+        "https://www.iexitapp.com/business/BP/178183?esmid=18881",
+        "https://www.gasbuddy.com/station/131035",
+        "https://www.yelp.com/biz/bp-vienna-2"
+      ]
+    },
+    {
+      "business_name": "Hotel 7 Inn Vienna",
+      "category": "hotels-truck-parking",
+      "address": "709 E Vine St",
+      "city": "Vienna",
+      "state": "IL",
+      "zip": "62995",
+      "phone": "(618) 658-6300",
+      "website": "https://www.hotel7vienna.com/",
+      "description": "Budget hotel on IL-146 immediately off I-24 Exit 16 in Vienna, IL, with free self parking explicitly including RV, bus, and truck parking. Offers free WiFi, continental breakfast, and an indoor pool.",
+      "truck_spaces": null,
+      "free_parking": true,
+      "paid_parking": false,
+      "reserved_parking": false,
+      "overnight_parking": true,
+      "showers": false,
+      "food": false,
+      "fuel": false,
+      "laundry": false,
+      "restrooms": true,
+      "repair": false,
+      "cat_scale": false,
+      "wifi": true,
+      "security": false,
+      "tpc_url": "",
+      "interstate": "I-24",
+      "exit_number": "16",
+      "published": true,
+      "sources": [
+        "https://www.hotel7vienna.com/",
+        "https://www.orbitz.com/Metropolis-Hotels-Hotel-7-Vienna.h8296125.Hotel-Information",
+        "https://www.iexitapp.com/business/Hotel%207%20Vienna/1744183"
+      ]
+    }
+  ],
+  "held": [
+    {
+      "business_name": "Vienna Automotive Center",
+      "category": "tire-repair",
+      "city": "Vienna",
+      "state": "IL",
+      "published": false,
+      "hold_reason": "Real repair shop at 35 Industrial Dr near I-24 Exit 16 (tires, towing, roadside assistance), but sources (Yelp, AAA, Bumper to Bumper) describe passenger-vehicle service; no corroboration that it services commercial/semi trucks. M-F daytime hours only.",
+      "sources": [
+        "https://www.yelp.com/biz/vienna-automotive-center-vienna",
+        "https://www.aaa.com/autorepair/shop/vienna-automotive-center-llc-108174"
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "business_name": "Britton's Wrecker Service Inc",
+      "reason": "Real 24/7 heavy-duty towing/truck repair facility (6685 US Hwy 45 N, Vienna), but its own site places it 4.5 miles north of I-24 on US-45 - outside the at-exit corridor scope per segment rules.",
+      "source": "https://brittonswreckerservice.com/about-us/"
+    },
+    {
+      "business_name": "Fort Massac Rest Area",
+      "reason": "Only rest area on I-24 in Illinois; located at mile marker 37 near Metropolis - outside this segment's mile 0-20 range (belongs to the eastern segment).",
+      "source": "https://www.illinoisrestareas.com/interstate-i-24-illinois-rest-area-stops/"
+    },
+    {
+      "business_name": "Illinois weigh stations near I-24/I-57 junction (Marion NB/SB)",
+      "reason": "No weigh station exists on I-24 within mile 0-20 in Illinois; the nearby scales are on I-57 at ~MM 47 near Marion, north of the I-24 junction - a different interstate outside this corridor.",
+      "source": "https://www.coopsareopen.com/illinois-weigh-stations.html"
+    },
+    {
+      "business_name": "Big Bay / New Columbia exit businesses",
+      "reason": "Candidate list placed Big Bay/New Columbia at exit 16, but iExit shows this interchange is actually Exit 27 - beyond the mile 20 cutoff for this segment.",
+      "source": "https://www.iexitapp.com/Illinois/I-24/exit/18684"
+    },
+    {
+      "business_name": "Casey's (306 N 1st St, Vienna)",
+      "reason": "In-town convenience store with diesel roughly 2 miles from I-24 via US-45/IL-146; no source documents truck parking, truck lanes, or other truck amenities, and it is not on Casey's designated truck-stop list.",
+      "source": "https://www.gasbuddy.com/station/92965"
+    },
+    {
+      "business_name": "H & H Fuel (Goreville)",
+      "reason": "Small-town gas station about 3 miles from I-24 Exit 7 in downtown Goreville; no evidence of truck amenities and not at the exit.",
+      "source": "https://travelcoupons.com/Illinois/I-24/Exit%207/18681"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createStaticClient } from '@/lib/supabase/static';
 import type { DirectoryEntry } from './types';
 
@@ -119,32 +120,34 @@ async function selectEntries(filters: Record<string, string>): Promise<Directory
   }
 }
 
-export function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
+// The hot readers are wrapped in React cache() so generateMetadata and the
+// page body (and repeated helper calls) share ONE query per request — the
+// exit page alone was scanning the facets 3x per render (perf audit #4).
+export const getEntries = cache((categorySlug: string): Promise<DirectoryEntry[]> => {
   return selectEntries({ category_slug: categorySlug });
-}
+});
 
 /** Every published listing — sitemap + completeness checks (capped like all reads). */
-export function getAllPublishedEntries(): Promise<DirectoryEntry[]> {
+export const getAllPublishedEntries = cache((): Promise<DirectoryEntry[]> => {
   return selectEntries({});
-}
+});
 
 /** All published listings in a state (two-letter code), for state pages. */
-export function getEntriesByState(stateCode: string): Promise<DirectoryEntry[]> {
+export const getEntriesByState = cache((stateCode: string): Promise<DirectoryEntry[]> => {
   return selectEntries({ state: stateCode.toUpperCase() });
-}
+});
 
 /** All published listings on an interstate ("I-75"), for corridor pages. */
-export function getEntriesByInterstate(designation: string): Promise<DirectoryEntry[]> {
+export const getEntriesByInterstate = cache((designation: string): Promise<DirectoryEntry[]> => {
   return selectEntries({ interstate: designation });
-}
+});
 
 /** Published listings at one interstate exit, for exit pages. */
-export function getEntriesByExit(
-  designation: string,
-  exitNumber: string,
-): Promise<DirectoryEntry[]> {
-  return selectEntries({ interstate: designation, exit_number: exitNumber });
-}
+export const getEntriesByExit = cache(
+  (designation: string, exitNumber: string): Promise<DirectoryEntry[]> => {
+    return selectEntries({ interstate: designation, exit_number: exitNumber });
+  },
+);
 
 /**
  * Published listings ordered by most-recently-updated (Milestone 25). Only rows
@@ -301,7 +304,9 @@ const EMPTY_FACETS: DirectoryFacets = {
  * new states and corridors appear everywhere the moment their data lands.
  * Fails soft to empty facets (pages then render on demand instead).
  */
-export async function getDirectoryFacets(): Promise<DirectoryFacets> {
+export const getDirectoryFacets = cache(getDirectoryFacetsImpl);
+
+async function getDirectoryFacetsImpl(): Promise<DirectoryFacets> {
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase

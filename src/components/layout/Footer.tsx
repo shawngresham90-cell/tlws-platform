@@ -8,16 +8,12 @@ const COLUMNS = [
     links: [
       { label: 'Academy', href: '/academy' },
       { label: 'Founders Wall', href: '/founders' },
-      { label: 'Sponsors', href: '/sponsors' },
-      { label: 'Contact', href: '/contact' },
     ],
   },
   {
     heading: 'Resources',
     links: [
       { label: 'Knowledge Center', href: '/knowledge' },
-      { label: 'DOT Guide', href: '/dot-guide' },
-      { label: 'Practice Tests', href: '/practice-tests' },
       { label: 'Truck Parking', href: '/directory/parking' },
     ],
   },
@@ -27,7 +23,6 @@ const COLUMNS = [
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
       { label: 'Directories', href: '/directory' },
-      { label: 'Videos', href: '/videos' },
     ],
   },
 ];

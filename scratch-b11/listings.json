@@ -1,0 +1,1092 @@
+[
+ {
+  "name": "MAPCO / Circle K",
+  "category": "Truck Stops",
+  "city": "Chattanooga",
+  "state": "TN",
+  "address": "2727 Rossville Blvd",
+  "zip": "37404",
+  "phone": "423-629-4993",
+  "website": "",
+  "exit_number": "180B",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1952",
+   "https://truckmap.com/place/mapco-express-3542-2727-rossville-blvd-chattanooga-tn-37404-usa",
+   "https://www.gasbuddy.com/station/82935"
+  ],
+  "corroboration": "",
+  "agent": "seg-chattanooga",
+  "dupes": []
+ },
+ {
+  "name": "Conoco / MAPCO Favorite Market",
+  "category": "Truck Stops",
+  "city": "Chattanooga",
+  "state": "TN",
+  "address": "201 Browns Ferry Rd",
+  "zip": "37419",
+  "phone": "423-825-5515",
+  "website": "",
+  "exit_number": "175",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://truckmap.com/place/conoco-favorite-market-690-201-browns-ferry-rd-chattanooga-tn-37419-usa",
+   "https://www.truckstopsandservices.com/location_details.php?id=917",
+   "https://roadnow.com/i24/truck-stops-tennessee-2"
+  ],
+  "corroboration": "",
+  "agent": "seg-chattanooga",
+  "dupes": []
+ },
+ {
+  "name": "MAPCO Express (Cummings Hwy)",
+  "category": "Truck Stops",
+  "city": "Chattanooga",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Truck access/parking unconfirmed: sources conflict \u2014 iExit lists 'truck parking' at I-24 Exit 174 but the truckstopsandservices detail shows 0 truck/paid/reserved spaces. Likely a car-oriented convenience store; cannot confirm category-fit.",
+  "amenities": [],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1966",
+   "https://www.allstays.com/truckstops-details/93033.php"
+  ],
+  "corroboration": "",
+  "agent": "seg-chattanooga",
+  "dupes": []
+ },
+ {
+  "name": "MAPCO Express #3534 (100 W 20th)",
+  "category": "Truck Stops",
+  "city": "Chattanooga",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Truck parking unconfirmed and conflicting: one listing cites overnight/secured parking, another states 'no parking' at this downtown I-24 Exit 178 site (100 W 20th St, 37408). Cannot confirm 18-wheeler access/parking.",
+  "amenities": [],
+  "sources": [
+   "https://truckmap.com/place/mapco-100-w-20th-st-chattanooga-tn-37408-usa",
+   "https://www.findfuelstops.com/truck-stop-006074"
+  ],
+  "corroboration": "",
+  "agent": "seg-chattanooga",
+  "dupes": []
+ },
+ {
+  "name": "MAPCO Express #1007",
+  "category": "Truck Stops",
+  "city": "Pleasant View",
+  "state": "TN",
+  "address": "2732 York Rd",
+  "zip": "37146",
+  "phone": "615-746-8325",
+  "website": "",
+  "exit_number": "24",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1951",
+   "https://www.fueloyal.com/app/truck-stop/view/mapco-express-1007/",
+   "https://www.gasbuddy.com/station/110052"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "QuikTrip #7149",
+  "category": "Truck Stops",
+  "city": "Clarksville",
+  "state": "TN",
+  "address": "1265 Rossview Rd",
+  "zip": "37043",
+  "phone": "931-263-5440",
+  "website": "https://locations.quiktrip.com/tn/clarksville/1265-rossview-rd",
+  "exit_number": "11",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms"
+  ],
+  "sources": [
+   "https://locations.quiktrip.com/tn/clarksville/1265-rossview-rd",
+   "https://truckerpath.com/location-details/truck-stops/tn/clarksville/quiktrip-Number7149?id=11135151",
+   "https://www.gasbuddy.com/station/206995"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "Heritage Travel Center",
+  "category": "Truck Stops",
+  "city": "Joelton",
+  "state": "TN",
+  "address": "7201 Whites Creek Pike",
+  "zip": "37080",
+  "phone": "615-299-8829",
+  "website": "",
+  "exit_number": "35",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms"
+  ],
+  "sources": [
+   "https://www.yelp.com/biz/heritage-travel-center-joelton",
+   "https://www.yellowpages.com/joelton-tn/mip/herritage-travel-center-22129706",
+   "https://truckmap.com/place/heritage-travel-center-7201-whites-creek-pike-joelton-tn-37080-usa"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "Sudden Service #25 (Shell)",
+  "category": "Truck Stops",
+  "city": "Clarksville",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Shell-branded 24-hr convenience store at 601 Hornbuckle Rd near I-24 Exit 11 (Hwy 76). Official store page describes it only as a convenience store; truck parking/overnight/diesel claim comes from a single aggregator and is not corroborated. Truck access unconfirmed.",
+  "amenities": [],
+  "sources": [
+   "https://suddenserviceonline.com/locations/601-hornbuckle-road-clarksville-tn/",
+   "https://www.yelp.com/biz/sudden-service-clarksville-10"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "Scots Market / Chips Quik Stop",
+  "category": "Truck Stops",
+  "city": "Joelton",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Two names at the same address (1284 Jackson Felts Rd) near I-24 Exit 31; truck-parking claim from a single aggregator (Roadnow), no independent corroboration and no truck access confirmed.",
+  "amenities": [],
+  "sources": [
+   "https://roadnow.com/i24/i-24-exit-31-tennessee.html"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "I-24 Weigh Station (near KY line, Montgomery/Robertson)",
+  "category": "Weigh Stations",
+  "city": "Clarksville",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Could not confirm a civic address or an official TDOT/THP listing for an I-24 commercial-vehicle scale near the KY state line. THP CVE list shows the nearest I-24 scale at MM 115 (Manchester, far out of corridor). Holding per instructions; overnight legality never assumed.",
+  "amenities": [],
+  "sources": [
+   "https://www.tn.gov/safety/tnhp/cvemain/cvelocations.html"
+  ],
+  "corroboration": "",
+  "agent": "seg-clarksville",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #4599",
+  "category": "Truck Stops",
+  "city": "Monteagle",
+  "state": "TN",
+  "address": "640 Dixie Lee Ave",
+  "zip": "37356",
+  "phone": "931-924-5111",
+  "website": "https://locations.pilotflyingj.com/us/tn/monteagle/640-dixie-lee-ave",
+  "exit_number": "135",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/tn/monteagle/640-dixie-lee-ave",
+   "https://www.truckstopsandservices.com/location_details.php?id=2048",
+   "https://www.findtruckservice.com/page/pilot-travel-center-4599-monteagle-tn-425872"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Pilot Travel Center #4599",
+  "category": "CAT Scales",
+  "city": "Monteagle",
+  "state": "TN",
+  "address": "640 Dixie Lee Ave",
+  "zip": "37356",
+  "phone": "931-924-5111",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "135",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=2048",
+   "https://catscale.com/cat-scale-locator/"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Sam's Travel Center",
+  "category": "Truck Stops",
+  "city": "Monteagle",
+  "state": "TN",
+  "address": "414 Dixie Lee Ave",
+  "zip": "37356",
+  "phone": "931-924-3676",
+  "website": "",
+  "exit_number": "135",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=47217",
+   "https://www.findfuelstops.com/truck-stop-006255"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #490",
+  "category": "Truck Stops",
+  "city": "Jasper",
+  "state": "TN",
+  "address": "260 TVA Rd",
+  "zip": "37347",
+  "phone": "423-942-3345",
+  "website": "https://www.loves.com/locations/tn/jasper/loves-travel-stop-jasper-490",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "Repair",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/tn/jasper/loves-travel-stop-jasper-490",
+   "https://www.truckstopsandservices.com/location_details.php?id=38443",
+   "https://www.findtruckservice.com/page/loves-travel-stop-490-jasper-tn-422323"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale - Love's Travel Stop #490",
+  "category": "CAT Scales",
+  "city": "Jasper",
+  "state": "TN",
+  "address": "260 TVA Rd",
+  "zip": "37347",
+  "phone": "423-942-3345",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=38443",
+   "https://www.findtruckservice.com/page/loves-travel-stop-490-jasper-tn-422323"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Speedco at Love's Travel Stop #490",
+  "category": "Roadside Service",
+  "city": "Jasper",
+  "state": "TN",
+  "address": "260 TVA Rd",
+  "zip": "37347",
+  "phone": "800-655-6837",
+  "website": "https://www.loves.com/locations/tn/jasper/loves-travel-stop-jasper-490",
+  "exit_number": "158",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.findtruckservice.com/page/speedco-at-loves-travel-stop-490-jasper-tn-421762",
+   "https://www.loves.com/locations/tn/jasper/loves-travel-stop-jasper-490"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Truck Parking Club - Kimball (Main St.)",
+  "category": "Truck Parking",
+  "city": "Kimball",
+  "state": "TN",
+  "address": "1959 Main St",
+  "zip": "37347",
+  "phone": "",
+  "website": "https://truckparkingclub.com/truck-parking/tennessee/kimball/1959-main-st",
+  "exit_number": "152",
+  "tpc_url": "https://truckparkingclub.com/truck-parking/tennessee/kimball/1959-main-st",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [],
+  "sources": [
+   "https://truckparkingclub.com/truck-parking/tennessee/kimball/1959-main-st",
+   "https://www.truckerpath.com/location-details/truck-parking/tn/jasper/truck-parking-club---kimball,-tn-truck-and-trailer-parking-off-main-st.?id=11156169"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Monteagle Mountain Runaway Truck Ramps (I-24)",
+  "category": "Roadside Service",
+  "city": "Monteagle",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Two emergency gravel runaway ramps on the Monteagle grade (approx. 1.9 and 3 miles from the summit, left side). No civic address and no official TDOT facility page confirming a driver-usable/parking location; per rules TDOT safety features are held without a civic address + official TDOT source.",
+  "amenities": [],
+  "sources": [
+   "https://en.wikipedia.org/wiki/Monteagle_Mountain",
+   "https://newschannel9.com/news/local/why-are-i-24s-runaway-truck-ramps-on-monteagle-mountain-on-the-left-side-of-the-road"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "Monteagle Mountain Mandatory Brake Check Area (I-24)",
+  "category": "Roadside Service",
+  "city": "Monteagle",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Mandatory truck brake-check/adjustment area on the Monteagle grade (opened 1992, right side). No civic address or official TDOT source confirming exact location or any legal overnight/parking use; held per rules.",
+  "amenities": [],
+  "sources": [
+   "https://en.wikipedia.org/wiki/Monteagle_Mountain"
+  ],
+  "corroboration": "",
+  "agent": "seg-monteagle",
+  "dupes": []
+ },
+ {
+  "name": "I-24 Truck Plaza",
+  "category": "Truck Stops",
+  "city": "Manchester",
+  "state": "TN",
+  "address": "2529 Hillsboro Blvd",
+  "zip": "37355",
+  "phone": "931-728-6710",
+  "website": "",
+  "exit_number": "114",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "Repair",
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=1387",
+   "https://www.allstays.com/truckstops-details/92289.php",
+   "https://www.findfuelstops.com/truck-stop-001917",
+   "https://www.truckerstoolbox.com/united-states/manchester/cat-scale-truck-stop/i-24-truck-plaza"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at I-24 Truck Plaza",
+  "category": "CAT Scales",
+  "city": "Manchester",
+  "state": "TN",
+  "address": "2529 Hillsboro Blvd",
+  "zip": "37355",
+  "phone": "931-728-6710",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "114",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.truckstopsandservices.com/location_details.php?id=1387",
+   "https://www.allstays.com/c/cat-scales-tennessee-locations.htm"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #404",
+  "category": "Truck Stops",
+  "city": "Murfreesboro",
+  "state": "TN",
+  "address": "2441 S Church St",
+  "zip": "37127",
+  "phone": "615-907-9595",
+  "website": "https://locations.pilotflyingj.com/us/tn/murfreesboro/2441-s-church-st",
+  "exit_number": "81",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Laundry",
+   "Restrooms",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/tn/murfreesboro/2441-s-church-st",
+   "https://www.truckstopsandservices.com/location_details.php?id=18133",
+   "https://www.allstays.com/truckstops-details/96250.php",
+   "https://www.findtruckservice.com/page/pilot-travel-center-404-murfreesboro-tn-410905"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Pilot Travel Center #404",
+  "category": "CAT Scales",
+  "city": "Murfreesboro",
+  "state": "TN",
+  "address": "2441 S Church St",
+  "zip": "37127",
+  "phone": "615-907-9595",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "81",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.truckstopsandservices.com/location_details.php?id=18133",
+   "https://www.allstays.com/truckstops-details/96250.php"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #314",
+  "category": "Truck Stops",
+  "city": "Christiana",
+  "state": "TN",
+  "address": "6137 Epps Mill Rd",
+  "zip": "37037",
+  "phone": "615-904-7303",
+  "website": "https://www.loves.com/locations/tn/christiana/loves-travel-stop-christiana-314",
+  "exit_number": "89",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "Repair",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/tn/christiana/loves-travel-stop-christiana-314",
+   "https://www.truckstopsandservices.com/location_details.php?id=15252",
+   "https://www.allstays.com/truckstops-details/95839.php"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Love's Travel Stop #314",
+  "category": "CAT Scales",
+  "city": "Christiana",
+  "state": "TN",
+  "address": "6137 Epps Mill Rd",
+  "zip": "37037",
+  "phone": "615-904-7303",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "89",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.loves.com/locations/tn/christiana/loves-travel-stop-christiana-314",
+   "https://www.truckstopsandservices.com/location_details.php?id=15252"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Love's Truck Care #314",
+  "category": "Roadside Service",
+  "city": "Christiana",
+  "state": "TN",
+  "address": "6137 Epps Mill Rd",
+  "zip": "37037",
+  "phone": "615-904-7303",
+  "website": "https://www.loves.com/locations/tn/christiana/loves-travel-stop-christiana-314",
+  "exit_number": "89",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/tn/christiana/loves-travel-stop-christiana-314",
+   "https://www.truckstopsandservices.com/location_details.php?id=15252"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Love's Travel Stop #764",
+  "category": "Truck Stops",
+  "city": "Hillsboro",
+  "state": "TN",
+  "address": "1165 AEDC Rd",
+  "zip": "37342",
+  "phone": "931-253-6001",
+  "website": "https://www.loves.com/locations/tn/hillsboro/loves-travel-stop-hillsboro-764",
+  "exit_number": "117",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Laundry",
+   "Restrooms",
+   "Repair",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.loves.com/locations/tn/hillsboro/loves-travel-stop-hillsboro-764",
+   "https://www.truckstopsandservices.com/location_details.php?id=55870",
+   "https://www.findtruckservice.com/page/loves-travel-stop-764-hillsboro-tn-441549"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale at Love's Travel Stop #764",
+  "category": "CAT Scales",
+  "city": "Hillsboro",
+  "state": "TN",
+  "address": "1165 AEDC Rd",
+  "zip": "37342",
+  "phone": "931-253-6001",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "117",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.truckstopsandservices.com/location_details.php?id=55870",
+   "https://www.loves.com/locations/tn/hillsboro/loves-travel-stop-hillsboro-764"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Speedco at Love's Travel Stop #764",
+  "category": "Roadside Service",
+  "city": "Hillsboro",
+  "state": "TN",
+  "address": "1165 AEDC Rd",
+  "zip": "37342",
+  "phone": "800-655-6837",
+  "website": "https://www.loves.com/locations/tn/hillsboro/loves-travel-stop-hillsboro-764",
+  "exit_number": "117",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.findtruckservice.com/page/speedco-at-loves-travel-stop-764-hillsboro-tn-441548",
+   "https://www.loves.com/locations/tn/hillsboro/loves-travel-stop-hillsboro-764"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Speedway (Almaville Rd, Exit 70)",
+  "category": "Truck Stops",
+  "city": "Smyrna",
+  "state": "TN",
+  "address": "8281 Tridon Dr",
+  "zip": "37167",
+  "phone": "",
+  "website": "",
+  "exit_number": "70",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=707",
+   "https://www.allstays.com/truckstops-details/90046.php"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Circle K #3701 (Almaville Rd, Exit 70)",
+  "category": "Truck Stops",
+  "city": "Smyrna",
+  "state": "TN",
+  "address": "1880 Almaville Rd",
+  "zip": "37167",
+  "phone": "615-223-1236",
+  "website": "",
+  "exit_number": "70",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=47139",
+   "https://www.findfuelstops.com/truck-stop-004376",
+   "https://www.findtruckservice.com/page/circle-k-smyrna-fuel-stop-smyrna-tn-423994"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "THP/TDOT I-24 Commercial Vehicle Scales (Coffee County / Manchester)",
+  "category": "Weigh Stations",
+  "city": "Manchester",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Official THP/TDOT source references I-24 scales in Coffee County near MM 115 / just north of Exit 117, but no civic street address confirmed and overnight parking legality not established; per rules weigh stations are held without a civic address.",
+  "amenities": [],
+  "sources": [
+   "https://www.tn.gov/safety/tnhp/cvemain/cvelocations.html",
+   "https://truckmap.com/place/weigh-station-manchester-wb-i-24-w-manchester-tn-37355-usa"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "K&K Top Stop Market and Truck Stop",
+  "category": "Truck Stops",
+  "city": "Manchester",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Only a single aggregator mention at I-24 Exit 111; amenities and truck access unverified by a second independent source.",
+  "amenities": [],
+  "sources": [
+   "https://www.iexitapp.com/exits/Tennessee/I-24/West/568"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Hullets Shell",
+  "category": "Truck Stops",
+  "city": "Manchester",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Single-source mention at I-24 Exit 110; no independent corroboration of truck amenities/access.",
+  "amenities": [],
+  "sources": [
+   "https://www.iexitapp.com/exits/Tennessee/I-24/West/568"
+  ],
+  "corroboration": "",
+  "agent": "seg-murfreesboro",
+  "dupes": []
+ },
+ {
+  "name": "Pilot Travel Center #52",
+  "category": "Truck Stops",
+  "city": "La Vergne",
+  "state": "TN",
+  "address": "535 Waldron Rd",
+  "zip": "37086",
+  "phone": "615-793-9856",
+  "website": "https://locations.pilotflyingj.com/us/tn/la-vergne/535-waldron-rd",
+  "exit_number": "64",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Restrooms",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://locations.pilotflyingj.com/us/tn/la-vergne/535-waldron-rd",
+   "https://www.findtruckservice.com/page/pilot-travel-center-52-la-vergne-tn-410901",
+   "https://www.truckstopsandservices.com/location_details.php?id=18094"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale (Pilot Travel Center #52)",
+  "category": "CAT Scales",
+  "city": "La Vergne",
+  "state": "TN",
+  "address": "535 Waldron Rd",
+  "zip": "37086",
+  "phone": "615-793-9856",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "64",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://catscale.com/cat-scale-locator/",
+   "https://www.allstays.com/c/cat-scales-tennessee-locations.htm",
+   "https://locations.pilotflyingj.com/us/tn/la-vergne/535-waldron-rd"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "TA Antioch #117",
+  "category": "Truck Stops",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "13011 Old Hickory Blvd",
+  "zip": "37013",
+  "phone": "615-641-6731",
+  "website": "https://www.ta-petro.com/location/tn/ta-antioch/",
+  "exit_number": "62",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Showers",
+   "Food",
+   "Fuel",
+   "Laundry",
+   "Restrooms",
+   "Repair",
+   "CAT Scale",
+   "Wi-Fi"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/tn/ta-antioch/",
+   "https://www.truckstopsandservices.com/location_details.php?id=16497",
+   "https://www.findtruckservice.com/page/ta-truck-stop-117-antioch-tn-411077"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale (TA Antioch #117)",
+  "category": "CAT Scales",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "13011 Old Hickory Blvd",
+  "zip": "37013",
+  "phone": "615-641-6731",
+  "website": "https://catscale.com/cat-scale-locator/",
+  "exit_number": "62",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "CAT Scale"
+  ],
+  "sources": [
+   "https://poidirectory.com/find/united_states/transportation/Weigh_Scale_US/CAT-Scale-Antioch.html",
+   "https://www.truckerstoolbox.com/antioch/cat-scale-truck-stop/ta-antioch",
+   "https://www.ta-petro.com/location/tn/ta-antioch/"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "TA Truck Service (Antioch)",
+  "category": "Roadside Service",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "13011 Old Hickory Blvd",
+  "zip": "37013",
+  "phone": "615-641-6731",
+  "website": "https://www.ta-petro.com/location/tn/ta-antioch/",
+  "exit_number": "62",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Repair"
+  ],
+  "sources": [
+   "https://www.ta-petro.com/location/tn/ta-antioch/",
+   "https://www.4roadservice.com/antioch-tennessee/provider/ta-antioch",
+   "https://www.truckstopsandservices.com/location_details.php?id=16497"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "Blue Beacon Truck Wash of Nashville",
+  "category": "Truck Washes",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "611 Muci Dr",
+  "zip": "37013",
+  "phone": "615-501-0593",
+  "website": "https://bluebeacon.com/locations/categories/antioch",
+  "exit_number": "62",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [],
+  "sources": [
+   "https://bluebeacon.com/locations/categories/antioch",
+   "https://www.allstays.com/c/truck-wash-tennessee-locations.htm",
+   "https://www.truckservicez.com/Services/Truck%20Wash/2081"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "Thornton's (Antioch, Exit 62)",
+  "category": "Truck Stops",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "13010 Old Hickory Blvd",
+  "zip": "37013",
+  "phone": "615-641-2322",
+  "website": "",
+  "exit_number": "62",
+  "tpc_url": "",
+  "published": "yes",
+  "publish_reason": "",
+  "amenities": [
+   "Food",
+   "Fuel",
+   "Restrooms"
+  ],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=48392",
+   "https://www.iexitapp.com/business/Thorntons/1195021",
+   "https://www.gasbuddy.com/station/79675"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "CAT Scale (Thornton's, Exit 62)",
+  "category": "CAT Scales",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Aggregator listings note 'CAT scales' at Thornton's, but not confirmed on the official CAT Scale locator (only TA Antioch and Pilot #52 Exit-64 scales verified there); likely aggregator confusion with the adjacent TA Antioch scale. Needs catscale.com confirmation.",
+  "amenities": [],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=48392"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ },
+ {
+  "name": "Thornton's Tire/Minor Repair (Exit 62)",
+  "category": "Tire Repair",
+  "city": "Antioch",
+  "state": "TN",
+  "address": "",
+  "zip": "",
+  "phone": "",
+  "website": "",
+  "exit_number": "",
+  "tpc_url": "",
+  "published": "no",
+  "publish_reason": "Directory lists 'tire sales/repair, minor repair' at Thornton's but no distinct branded tire-service operation is confirmed as a separate facility; single-category aggregator claim only.",
+  "amenities": [],
+  "sources": [
+   "https://www.truckstopsandservices.com/location_details.php?id=48392"
+  ],
+  "corroboration": "",
+  "agent": "seg-nashville",
+  "dupes": []
+ }
+]
