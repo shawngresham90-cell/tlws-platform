@@ -7,6 +7,7 @@ import {
   FOUNDER_TIERS,
 } from '@/components/community';
 import { getCampaignProgress, getPublicFounders } from '@/lib/community/founders';
+import { tierRemaining, tierUsage } from '@/lib/community/campaign';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -48,6 +49,7 @@ const FAQS = [
 export default async function FoundersPage() {
   const [progress, founders] = await Promise.all([getCampaignProgress(), getPublicFounders()]);
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+  const usage = tierUsage(founders);
 
   return (
     <>
@@ -86,8 +88,8 @@ export default async function FoundersPage() {
         <div className="mb-10 max-w-2xl">
           <h2 className="display-section">The founders</h2>
           <p className="mt-4 text-muted">
-            The drivers and businesses building this school. Newest founders rise to the top of
-            their tier.
+            The drivers and businesses building this school, shown in founder order within each
+            tier.
           </p>
         </div>
         <FoundersWallList founders={founders} />
@@ -103,12 +105,20 @@ export default async function FoundersPage() {
           </p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FOUNDER_TIERS.map((t) => (
-            <div key={t.value} className="rounded-card border border-line bg-asphalt-800 p-6">
-              <h3 className="font-display text-xl text-signal">{t.label}</h3>
-              <p className="mt-2 text-sm text-muted">{t.blurb}</p>
-            </div>
-          ))}
+          {FOUNDER_TIERS.map((t) => {
+            const open = tierRemaining(t.capacity, usage[t.value]);
+            return (
+              <div key={t.value} className="rounded-card border border-line bg-asphalt-800 p-6">
+                <h3 className="font-display text-xl text-signal">{t.label}</h3>
+                <p className="mt-2 text-sm text-muted">{t.blurb}</p>
+                {open !== null && (
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                    {open > 0 ? `${open} of ${t.capacity} spots open` : 'Tier full'}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </Section>
 
