@@ -78,11 +78,14 @@ export function ProductCard({ product }: { product: Product }) {
     return <div className={cardClasses}>{body}</div>;
   }
 
+  // Internal routes (e.g. /cdl-pre-school) stay in-tab with no rel;
+  // storefront/affiliate links keep the new tab + sponsored rel.
+  const external = /^https?:\/\//.test(href);
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener sponsored"
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener sponsored' : undefined}
       className={`${cardClasses} hover:border-signal`}
     >
       {body}

@@ -2,7 +2,7 @@ import { Button, Container, Eyebrow } from '@/components/ui';
 
 /**
  * Hero — the thesis. Leads with the one thing that can't be faked: a driver's
- * clean record and the mission. Three CTAs in priority order: Apply, Fund, Free.
+ * clean record and the mission. Four CTAs in priority order: Apply, Pre-School, Fund, Free.
  */
 export function Hero() {
   return (
@@ -22,10 +22,13 @@ export function Hero() {
         </p>
         <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button href="/academy">Apply to the Academy</Button>
-          <Button variant="secondary" href="/founders">
+          <Button variant="secondary" href="/cdl-pre-school">
+            CDL Pre-School
+          </Button>
+          <Button variant="ghost" href="/founders">
             Fund the School
           </Button>
-          <Button variant="ghost" href="/dot-guide">
+          <Button variant="ghost" href="/knowledge">
             Free CDL Resources
           </Button>
         </div>

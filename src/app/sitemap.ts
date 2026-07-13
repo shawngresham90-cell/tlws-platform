@@ -22,6 +22,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE.url}/knowledge`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     // Founders Wall (Milestone 9).
     { url: `${SITE.url}/founders`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // CDL Pre-School (Founding Student offer).
+    {
+      url: `${SITE.url}/cdl-pre-school`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE.url}/cdl-pre-school/founding-students`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${SITE.url}/cdl-pre-school/founding-student-claim`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    },
   ];
 
   // Academy module (Milestone 7) — static routes.

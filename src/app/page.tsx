@@ -1,4 +1,5 @@
 import { Hero } from '@/components/sections/Hero';
+import { FourPaths } from '@/components/sections/FourPaths';
 import { Academy } from '@/components/sections/Academy';
 import { KnowledgeCenter } from '@/components/sections/KnowledgeCenter';
 import { FeaturedTest } from '@/components/sections/FeaturedTest';
@@ -20,6 +21,7 @@ export default function HomePage() {
     <>
       <JsonLd schema={breadcrumbSchema([{ name: 'Home', path: '/' }])} />
       <Hero />
+      <FourPaths />
       <Academy />
       <KnowledgeCenter />
       <FeaturedTest />

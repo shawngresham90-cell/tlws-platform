@@ -7,6 +7,8 @@ const COLUMNS = [
     heading: 'School',
     links: [
       { label: 'Academy', href: '/academy' },
+      { label: 'CDL Pre-School', href: '/cdl-pre-school' },
+      { label: 'Founding Students', href: '/cdl-pre-school/founding-students' },
       { label: 'Founders Wall', href: '/founders' },
       { label: 'Sponsors', href: '/sponsors' },
       { label: 'Contact', href: '/contact' },

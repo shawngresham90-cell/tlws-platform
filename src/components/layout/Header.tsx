@@ -4,6 +4,7 @@ import { Container } from '@/components/ui';
 /** Full nav map. Links are placeholders until each module ships. */
 const NAV = [
   { label: 'Academy', href: '/academy' },
+  { label: 'CDL Pre-School', href: '/cdl-pre-school' },
   { label: 'Knowledge Center', href: '/knowledge' },
   { label: 'DOT Guide', href: '/dot-guide' },
   { label: 'Practice Tests', href: '/practice-tests' },
