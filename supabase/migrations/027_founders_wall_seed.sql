@@ -28,7 +28,7 @@ from (
     ('Thomas Fields',        'iron',  2),
     -- STEEL
     ('Gary Ford',            'steel', 1),
-    ('Jose Cotto',           'steel', 2),  -- duplicate name (also Brick #8) — verify
+    ('Jose Cotto',           'steel', 2),  -- intentional 2nd spot holder (also Brick #8); keep both
     ('Greg Walker',          'steel', 3),
     ('Mario Capston',        'steel', 4),
     ('Jon Blankenship',      'steel', 5),
@@ -42,7 +42,7 @@ from (
     ('J.A. Gresham',         'brick', 5),
     ('R.A. Harper',          'brick', 6),
     ('Steve Snyder',         'brick', 7),
-    ('Jose Cotto',           'brick', 8),  -- duplicate name (also Steel #2) — verify
+    ('Jose Cotto',           'brick', 8),  -- intentional 2nd spot holder (also Steel #2); keep both
     ('Sean Conway',          'brick', 9),
     ('David Chasteen',       'brick', 10),
     ('Clint E. Ingram',      'brick', 11),
