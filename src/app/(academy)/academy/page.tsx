@@ -172,10 +172,18 @@ export default function AcademyPage() {
           <p className="mt-4 text-muted">
             You don’t have to wait for day one to get ahead. The Knowledge Center is packed with
             plain-English guides on the CDL permit, the pre-trip inspection, DOT medical cards, and
-            Hours of Service — all verified against the regs by a 17-year driver.
+            Hours of Service — all verified against the regs by a 17-year driver. Want the full
+            head start — permit knowledge plus the money, family, and lifestyle prep? That’s{' '}
+            <Link href="/cdl-pre-school" className="text-signal underline-offset-4 hover:underline">
+              CDL Pre-School
+            </Link>
+            .
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button href="/knowledge">Open the Knowledge Center</Button>
+            <Button variant="ghost" href="/cdl-pre-school">
+              CDL Pre-School
+            </Button>
             <Link
               href="/knowledge/search?q=CDL%20permit"
               className="inline-flex items-center font-semibold text-signal hover:underline"

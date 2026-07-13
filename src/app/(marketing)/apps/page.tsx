@@ -96,6 +96,7 @@ const TRAINING: Product[] = [
   {
     title: 'CDL Pre-School',
     icon: '🎓',
+    badge: 'Founding Student — $149',
     description:
       'Permit prep the driver way — what the test actually asks, without the textbook fog.',
     benefits: [
@@ -103,7 +104,8 @@ const TRAINING: Product[] = [
       'Plain talk from a CDL instructor',
       'Study from anywhere — even the passenger seat',
     ],
-    cta: 'Start studying',
+    href: '/cdl-pre-school',
+    cta: 'Start CDL Pre-School',
   },
 ];
 
