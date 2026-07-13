@@ -40,6 +40,7 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
     ['i75', ['FL', 'GA', 'TN', 'KY', 'OH', 'MI']],
     ['i65', ['AL', 'TN', 'KY', 'IN']],
     ['i24', ['IL', 'KY', 'TN', 'GA']],
+    ['i40', ['AR', 'TN']],
   ] as const) {
     const c = interstateBySlug(slug);
     check(`${slug} has registry entry`, !!c);
@@ -54,9 +55,9 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
 
 /* ---------------------- fallback corridors ---------------------- */
 {
-  const c = interstateBySlug('i40');
-  check('unknown corridor still resolves', !!c && c.designation === 'I-40');
-  check('unknown corridor gets generated copy', !!c && c.intro.includes('I-40'));
+  const c = interstateBySlug('i81');
+  check('unknown corridor still resolves', !!c && c.designation === 'I-81');
+  check('unknown corridor gets generated copy', !!c && c.intro.includes('I-81'));
   check('unknown corridor has empty state order (alphabetical fallback)', c?.stateOrder.length === 0);
   check('non-interstate slug rejected', interstateBySlug('georgia') === undefined);
   check('bare "i" rejected', interstateBySlug('i') === undefined);
