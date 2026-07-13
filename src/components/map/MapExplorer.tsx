@@ -391,7 +391,7 @@ export function MapExplorer({
       {/* Map */}
       <div className="mt-3">
         {mapFailed ? (
-          <div className="flex h-40 items-center justify-center rounded-card border border-diesel bg-diesel/10 px-4 text-sm text-diesel">
+          <div className="flex h-40 items-center justify-center rounded-card border border-diesel bg-diesel/10 px-4 text-sm text-diesel-300">
             The map failed to load. Every result is still available in the list below.
           </div>
         ) : (

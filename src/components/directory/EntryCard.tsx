@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { detailHref } from '@/lib/directory/detail-slug';
+import { TrackedCta } from './TrackedCta';
 
 /**
  * One directory listing. Renders whatever fields an entry has and skips the
@@ -8,7 +9,15 @@ import { detailHref } from '@/lib/directory/detail-slug';
  * with a detail slug (Milestone 20) link through to their own page; the
  * phone/website/TPC actions stay either way.
  */
-export function EntryCard({ entry }: { entry: DirectoryEntry }) {
+export function EntryCard({
+  entry,
+  headingLevel = 'h3',
+}: {
+  entry: DirectoryEntry;
+  /** Match the page's outline — pass 'h2' where the card grid sits directly under the h1. */
+  headingLevel?: 'h2' | 'h3';
+}) {
+  const Heading = headingLevel;
   return (
     <div className="flex flex-col rounded-card border border-line bg-asphalt-800 p-5">
       {entry.featured && (
@@ -16,7 +25,7 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
           Featured
         </span>
       )}
-      <h3 className="font-display text-lg uppercase text-ink">
+      <Heading className="font-display text-lg uppercase text-ink">
         {entry.detailSlug ? (
           <Link
             href={detailHref(entry.detailSlug)}
@@ -27,7 +36,7 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
         ) : (
           entry.name
         )}
-      </h3>
+      </Heading>
       <p className="mt-1 text-sm text-muted">
         {entry.city}, {entry.state}
         {entry.address ? ` · ${entry.address}` : ''}
@@ -82,14 +91,16 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
         </p>
       )}
       {entry.tpcUrl && (
-        <a
+        <TrackedCta
+          event="affiliate_click"
+          eventProps={{ placement: 'entry-card', listing_id: entry.id }}
           href={entry.tpcUrl}
           target="_blank"
           rel="sponsored noopener noreferrer"
           className="mt-4 inline-flex items-center justify-center rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
         >
           Reserve a spot →
-        </a>
+        </TrackedCta>
       )}
     </div>
   );

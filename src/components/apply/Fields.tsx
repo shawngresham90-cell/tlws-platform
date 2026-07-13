@@ -11,7 +11,7 @@ function Label({ id, label, required }: { id: string; label: string; required?: 
     <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
       {label}
       {required && (
-        <span className="text-diesel" aria-hidden="true">
+        <span className="text-diesel-300" aria-hidden="true">
           {' '}
           *
         </span>
@@ -23,7 +23,7 @@ function Label({ id, label, required }: { id: string; label: string; required?: 
 function ErrorText({ id, error }: { id: string; error?: string }) {
   if (!error) return null;
   return (
-    <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel">
+    <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel-300">
       {error}
     </p>
   );
@@ -153,7 +153,7 @@ export function CheckboxField({
         <label htmlFor={id} className="text-sm text-muted">
           {children ?? label}
           {required && (
-            <span className="text-diesel" aria-hidden="true">
+            <span className="text-diesel-300" aria-hidden="true">
               {' '}
               *
             </span>

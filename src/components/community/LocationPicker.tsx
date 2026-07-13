@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import type { ListingRef } from '@/lib/community/data';
 
@@ -37,6 +37,21 @@ export function LocationPicker({
   const [query, setQuery] = useState('');
   const selected = useMemo(() => listings.find((l) => l.id === value), [listings, value]);
 
+  // Choosing a result (or pressing "Change") swaps the rendered subtree, which
+  // would otherwise drop keyboard focus to <body>. After the swap, move focus
+  // to the stable control that just mounted.
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const changeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pendingFocus = useRef<'input' | 'change' | null>(null);
+  useEffect(() => {
+    if (pendingFocus.current === 'change') {
+      changeButtonRef.current?.focus();
+    } else if (pendingFocus.current === 'input') {
+      inputRef.current?.focus();
+    }
+    pendingFocus.current = null;
+  });
+
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -61,8 +76,10 @@ export function LocationPicker({
         <div className="flex items-center justify-between gap-3 rounded-card border border-signal bg-asphalt-800 px-4 py-3">
           <span className="text-sm font-semibold text-ink">{labelFor(selected)}</span>
           <button
+            ref={changeButtonRef}
             type="button"
             onClick={() => {
+              pendingFocus.current = 'input';
               onChange('');
               setQuery('');
             }}
@@ -74,6 +91,7 @@ export function LocationPicker({
       ) : (
         <>
           <input
+            ref={inputRef}
             id={id}
             type="text"
             value={query}
@@ -89,7 +107,7 @@ export function LocationPicker({
             )}
           />
           {query.trim() && (
-            <ul className="mt-2 overflow-hidden rounded-card border border-line" role="listbox">
+            <ul className="mt-2 overflow-hidden rounded-card border border-line">
               {matches.length === 0 && (
                 <li className="bg-asphalt-800 px-4 py-3 text-sm text-muted">
                   No published listing matches “{query.trim()}”. If it isn’t in the directory yet,
@@ -100,9 +118,10 @@ export function LocationPicker({
                 <li key={l.id}>
                   <button
                     type="button"
-                    role="option"
-                    aria-selected={false}
-                    onClick={() => onChange(l.id)}
+                    onClick={() => {
+                      pendingFocus.current = 'change';
+                      onChange(l.id);
+                    }}
                     className="w-full border-b border-line bg-asphalt-800 px-4 py-2.5 text-left text-sm text-ink transition-colors last:border-b-0 hover:bg-asphalt hover:text-signal"
                   >
                     {labelFor(l)}

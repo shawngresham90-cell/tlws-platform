@@ -27,6 +27,7 @@ const config: Config = {
         diesel: {
           DEFAULT: '#B91C1C', // plaid red — warnings, secondary accents
           700: '#991B1B',
+          300: '#F87171', // error text on dark surfaces (6.5:1 on asphalt-800)
         },
         line: '#333333', // hairline dividers
         ink: '#F5F5F5', // primary text on dark

@@ -1,5 +1,6 @@
 import { getSponsorsFor } from '@/lib/directory/sponsors-data';
 import { SPONSOR_REL, type SponsorContext } from '@/lib/directory/sponsors';
+import { TrackedCta } from './TrackedCta';
 
 /**
  * A reusable, admin-configurable sponsor placement (Milestone 25). Async server
@@ -27,18 +28,20 @@ export async function SponsorSlot({
       <ul className="grid gap-3 sm:grid-cols-2">
         {sponsors.map((s) => (
           <li key={s.id}>
-            <a
+            <TrackedCta
+              event="sponsor_click"
+              eventProps={{ placement: ctx.placement, sponsor: s.name }}
               href={s.url}
               target="_blank"
               rel={SPONSOR_REL}
-              className="flex items-start gap-3 rounded-card border border-line bg-asphalt-900 p-3 transition-colors hover:border-signal"
+              className="flex items-start gap-3 rounded-card border border-line bg-asphalt p-3 transition-colors hover:border-signal"
             >
               {s.logo && <span aria-hidden className="text-2xl leading-none">{s.logo}</span>}
               <span>
                 <span className="block font-display text-sm uppercase text-ink">{s.name}</span>
                 {s.tagline && <span className="mt-0.5 block text-xs text-muted">{s.tagline}</span>}
               </span>
-            </a>
+            </TrackedCta>
           </li>
         ))}
       </ul>

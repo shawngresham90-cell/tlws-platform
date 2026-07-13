@@ -10,6 +10,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  // No Supabase auth cookies → nothing to refresh. Skipping the auth
+  // round-trip here removes a blocking network call from every anonymous
+  // public page view (perf audit #2); signed-in flows are unaffected.
+  if (!request.cookies.getAll().some(({ name }) => name.startsWith('sb-'))) {
+    return response;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

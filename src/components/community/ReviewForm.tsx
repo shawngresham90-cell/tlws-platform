@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
-import { TRUCK_TYPES } from '@/lib/community/schemas';
+import { TRUCK_TYPES } from '@/lib/community/constants';
 import type { ListingRef } from '@/lib/community/data';
 import { LocationPicker } from './LocationPicker';
 import { StarRatingInput } from './StarRatingInput';

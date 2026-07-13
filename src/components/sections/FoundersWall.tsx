@@ -1,8 +1,6 @@
 import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
-import { createClient } from '@/lib/supabase/server';
-
-export const revalidate = 60; // re-fetch the thermometer at most once a minute
+import { createStaticClient } from '@/lib/supabase/static';
 
 /**
  * Founders Wall teaser with a LIVE thermometer reading from campaign_progress.
@@ -13,7 +11,7 @@ export const revalidate = 60; // re-fetch the thermometer at most once a minute
 async function getProgress() {
   const fallback = { raised: 0, goal: 1200000, pct: 0, count: 0 };
   try {
-    const supabase = createClient();
+    const supabase = createStaticClient();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
 

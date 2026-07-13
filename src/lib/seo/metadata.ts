@@ -34,6 +34,7 @@ export function buildMetadata(opts?: {
       description,
       images: opts?.image ? [opts.image] : undefined,
     },
-    robots: opts?.noindex ? { index: false, follow: false } : { index: true, follow: true },
+    // noindex pages still pass link equity into the internal mesh (SEO audit #4).
+    robots: opts?.noindex ? { index: false, follow: true } : { index: true, follow: true },
   };
 }

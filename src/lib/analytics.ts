@@ -5,6 +5,24 @@
  * available" is satisfied without pulling in a dependency or coupling to a
  * specific vendor. Client-only.
  */
+/** Revenue-event names used by TrackedCta (Search & Revenue Optimization). */
+export type AnalyticsEvent =
+  | 'affiliate_click'
+  | 'sponsor_click'
+  | 'reserve_cta_click'
+  | (string & {});
+
+export type AnalyticsProps = Record<string, unknown>;
+
+/** Hostname of an outbound link, for event context ("truckparkingclub.com"). */
+export function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
 export function trackEvent(name: string, props?: Record<string, unknown>) {
   if (typeof window === 'undefined') return;
   try {

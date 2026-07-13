@@ -1,10 +1,13 @@
 import type { DirectoryEntry } from './types';
-import { getCategory } from './categories';
+import { rankEntries } from './search';
 
 /**
  * Public directory search + sort, extracted from the browser component so it
- * is pure and testable. Search covers business name, city, state, ZIP, and
- * interstate (exit number is indexed in the haystack too — future-ready).
+ * is pure and testable. Matching lives in lib/directory/search.ts (alias
+ * normalization, fuzzy tokens, field-weighted relevance); this module keeps
+ * the state/city filters and the four sort modes. With a query present the
+ * default "featured" sort becomes relevance order; explicit A–Z / newest /
+ * distance sorts keep their order and use the matcher only as a filter.
  */
 
 export type SortKey = 'featured' | 'alpha' | 'newest' | 'distance';
@@ -32,38 +35,19 @@ export function distanceMiles(
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-function haystack(e: DirectoryEntry): string {
-  // Business name (which carries the brand: Pilot, Love's, TA…), location
-  // fields, exit/interstate, category title, and amenity labels — one string,
-  // so "showers exit 201" or "cat scale knoxville" both just work.
-  return [
-    e.name,
-    e.city,
-    e.state,
-    e.zip,
-    e.interstate,
-    e.exitNumber,
-    e.exitNumber ? `exit ${e.exitNumber}` : undefined,
-    getCategory(e.category)?.title,
-    ...(e.amenities ?? []),
-    e.description,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
 export function filterAndSortEntries(
   entries: DirectoryEntry[],
   opts: BrowseOptions,
 ): DirectoryEntry[] {
-  const q = opts.query.trim().toLowerCase();
-  const filtered = entries.filter((e) => {
+  const scoped = entries.filter((e) => {
     if (opts.state && e.state !== opts.state) return false;
     if (opts.city && e.city !== opts.city) return false;
-    if (!q) return true;
-    return haystack(e).includes(q);
+    return true;
   });
+
+  const q = opts.query.trim();
+  const ranked = rankEntries(scoped, q);
+  const filtered = ranked.map((r) => r.entry);
 
   const byName = (a: DirectoryEntry, b: DirectoryEntry) => a.name.localeCompare(b.name);
 
@@ -85,6 +69,9 @@ export function filterAndSortEntries(
     }
     case 'featured':
     default:
+      // With a query, ranked relevance order (featured already boosted);
+      // without one, the original featured-first A–Z.
+      if (q) return filtered;
       return [...filtered].sort(
         (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false) || byName(a, b),
       );

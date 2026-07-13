@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { filterAndSortEntries, type SortKey } from '@/lib/directory/browse';
 import { EntryCard } from './EntryCard';
@@ -15,16 +15,19 @@ import { DirectoryEmptyState } from './DirectoryEmptyState';
  */
 const inputClasses =
   'w-full rounded-card border border-line bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
-  'focus:border-signal focus:outline-none';
+  'focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal focus:ring-offset-2 focus:ring-offset-asphalt';
 
 const PAGE = 30;
 
 export function DirectoryBrowser({
   categoryTitle,
   entries,
+  cardHeadingLevel = 'h3',
 }: {
   categoryTitle: string;
   entries: DirectoryEntry[];
+  /** 'h2' when the browser sits directly under the page h1 (heading hierarchy). */
+  cardHeadingLevel?: 'h2' | 'h3';
 }) {
   const [query, setQuery] = useState('');
   const [state, setState] = useState('');
@@ -41,9 +44,12 @@ export function DirectoryBrowser({
     [entries, state],
   );
 
+  // Defer the query so fast typing never blocks the input — the fuzzy
+  // scorer re-ranks up to ~1,000 entries per keystroke (perf audit).
+  const deferredQuery = useDeferredValue(query);
   const results = useMemo(
-    () => filterAndSortEntries(entries, { query, state, city, sort, origin }),
-    [entries, query, state, city, sort, origin],
+    () => filterAndSortEntries(entries, { query: deferredQuery, state, city, sort, origin }),
+    [entries, deferredQuery, state, city, sort, origin],
   );
   const shown = results.slice(0, visible);
 
@@ -92,7 +98,7 @@ export function DirectoryBrowser({
               setQuery(e.target.value);
               setVisible(PAGE);
             }}
-            placeholder={`Search name, city, state, ZIP, interstate…`}
+            placeholder={`Search brand, city, exit, interstate (I-40, exit 81)…`}
             className={inputClasses}
           />
         </div>
@@ -183,7 +189,7 @@ export function DirectoryBrowser({
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {shown.map((e) => (
-                <EntryCard key={e.id} entry={e} />
+                <EntryCard key={e.id} entry={e} headingLevel={cardHeadingLevel} />
               ))}
             </div>
             {results.length > visible && (
