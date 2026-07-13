@@ -39,9 +39,15 @@ founder's contribution amount (privacy-first model — see below).
 
 ## Founder roster (from screenshots)
 
-**25 records total** — Iron 2, Steel 7, Brick 16. This resolves the earlier
-**23-vs-25 founder-count conflict**: the wall shows **25** records, but one name
-(**Jose Cotto**) appears in two tiers, so there are **24 unique names**.
+**25 founder spots sold** — Iron 2, Steel 7, Brick 16. This resolves the earlier
+**23-vs-25 founder-count conflict**: the wall shows **25 spots**, but one person
+(**Jose Cotto**) bought two of them, so there are **24 unique founder names**.
+
+Two counts, used for different things:
+
+- **Founder spots sold: 25** — the wall/occupancy count. Drives tier availability
+  and fundraising-wall occupancy.
+- **Unique founder names: 24** — informational only.
 
 ### Iron (2)
 
@@ -77,12 +83,14 @@ founder's contribution amount (privacy-first model — see below).
 15. Phil Tuts
 16. Joe Wise
 
-### Duplicates (flagged, not auto-changed)
+### Multi-spot founder (intentional — not a duplicate error)
 
-- **Jose Cotto** appears in **both Steel (#2) and Brick (#8)**. Per the owner's
-  instruction this is **preserved exactly as shown** and flagged for manual
-  verification — it is not merged or removed automatically. Verify whether these
-  are the same person (and, if so, which tier is correct) before changing the DB.
+- **Jose Cotto** holds **both Steel (#2) and Brick (#8)** on purpose — he
+  purchased two separate founder spots. Confirmed by the owner (2026-07-13):
+  keep both records, display both, **merge neither, remove neither**, and do not
+  treat it as a duplicate problem.
+- Counted as **1 Steel spot + 1 Brick spot** = 2 spots, 1 unique person. Tier
+  availability and wall occupancy count **spots**, so both count as filled.
 
 ## Privacy model (aggregate-only)
 
@@ -129,7 +137,8 @@ Display Name | Tier | Business Name | Public Website | Anonymous Yes/No
   the wall. Website links render `rel="sponsored nofollow noopener noreferrer"`.
 - **Anonymous Yes/No** — an anonymous founder still counts toward totals but
   should have `is_public = false` (kept off the public wall).
-- **Confirm** the Jose Cotto duplicate and the tier capacities above.
+- **Confirm** the tier capacities above (the Jose Cotto two-spot purchase is
+  confirmed — both spots kept).
 
 ## Applied vs. committed
 

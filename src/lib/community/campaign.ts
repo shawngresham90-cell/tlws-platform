@@ -60,15 +60,24 @@ export function founderDupKey(displayName: string, businessName?: string | null)
   return `${normalizeName(displayName)}|${normalizeName(businessName)}`;
 }
 
-/** Count of distinct founders (by dup key). */
+/**
+ * Count of unique founder NAMES (informational). This is intentionally distinct
+ * from spots sold: one person may hold multiple founder spots (e.g. a Steel and
+ * a Brick spot), which counts as 1 unique name but 2 spots. Tier availability
+ * and wall occupancy count SPOTS (i.e. records), not this.
+ */
 export function uniqueFounderCount(
   founders: Pick<PublicFounder, 'display_name' | 'business_name'>[],
 ): number {
   return new Set(founders.map((f) => founderDupKey(f.display_name, f.business_name))).size;
 }
 
-/** Dup keys that appear more than once (empty when the wall has no collisions). */
-export function findDuplicateFounders(
+/**
+ * Names that hold more than one spot (informational — NOT an error). A founder
+ * intentionally buying several spots is expected; this just surfaces which names
+ * recur so reporting can show spots-sold vs. unique-names.
+ */
+export function repeatedFounderNames(
   founders: Pick<PublicFounder, 'display_name' | 'business_name'>[],
 ): string[] {
   const seen = new Map<string, number>();

@@ -15,7 +15,7 @@ import {
   normalizeName,
   founderDupKey,
   uniqueFounderCount,
-  findDuplicateFounders,
+  repeatedFounderNames,
   tierRemaining,
   tierUsage,
 } from '@/lib/community/campaign';
@@ -120,15 +120,17 @@ const stripComments = (s: string) =>
   );
 }
 
-/* ---------------------- unique counts + duplicate detection ---------------------- */
+/* ---------------------- spots sold vs. unique names ---------------------- */
 {
-  check('total records = 25', ROSTER.length === 25);
-  check('unique founders = 24 (Jose Cotto counted once)', uniqueFounderCount(ROSTER) === 24);
-  const dups = findDuplicateFounders(ROSTER);
-  check('exactly one duplicate key', dups.length === 1, dups);
-  check('duplicate is Jose Cotto', dups[0] === founderDupKey('Jose Cotto', null), dups[0]);
+  check('founder spots sold = 25 (records)', ROSTER.length === 25);
+  check('unique founder names = 24 (Jose Cotto counted once)', uniqueFounderCount(ROSTER) === 24);
+  // Jose Cotto holds 2 spots on purpose — surfaced as a repeated name, not an error.
+  const repeats = repeatedFounderNames(ROSTER);
+  check('exactly one repeated name', repeats.length === 1, repeats);
+  check('repeated name is Jose Cotto', repeats[0] === founderDupKey('Jose Cotto', null), repeats[0]);
+  check('spots minus unique names = extra spots (1)', ROSTER.length - uniqueFounderCount(ROSTER) === 1);
   check('normalizeName is case/punctuation-insensitive', normalizeName('Jose  Cotto!') === normalizeName('jose cotto'));
-  check('distinct names are not flagged as duplicates', findDuplicateFounders([mk('A', 'iron'), mk('B', 'iron')]).length === 0);
+  check('distinct names are not flagged as repeats', repeatedFounderNames([mk('A', 'iron'), mk('B', 'iron')]).length === 0);
 }
 
 /* ---------------------- tier grouping + order ---------------------- */
