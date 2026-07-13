@@ -13,14 +13,15 @@ import {
 } from '@/lib/preschool/constants';
 import {
   CREDIBILITY,
-  CURRICULUM_CONFIRMED,
-  CURRICULUM_PLACEHOLDER,
+  CURRICULUM_GROUPS,
   FAQS,
+  LESSON_COUNT,
+  MODULE_COUNT,
   PROBLEMS,
   PRESCHOOL_TAGLINE,
-  VERIFIED_BENEFITS,
   WHAT_IT_IS_NOT,
   WHO_ITS_FOR,
+  WHATS_INCLUDED,
 } from '@/lib/preschool/content';
 import { preschoolCourseSchema } from '@/lib/preschool/preschool-schema';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
@@ -30,7 +31,7 @@ export const revalidate = 300;
 
 export const metadata = buildMetadata({
   title: 'CDL Pre-School — Prepare Before CDL School | Trucking Life with Shawn',
-  description: `Online CDL school preparation from a 17-year driver: permit knowledge, money and family planning, and what to know before CDL school. Founding Student price ${PRESCHOOL_PRICE_LABEL} — first ${FOUNDING_STUDENT_CAPACITY} verified students.`,
+  description: `Online CDL school preparation from a 17-year driver: ${MODULE_COUNT} modules and ${LESSON_COUNT} self-paced lessons on permit knowledge, choosing a school, and life on the road. Founding Student price ${PRESCHOOL_PRICE_LABEL} — first ${FOUNDING_STUDENT_CAPACITY} verified students.`,
   path: PRESCHOOL_PATH,
 });
 
@@ -111,7 +112,7 @@ export default async function PreSchoolPage() {
           fog, plus the real-life preparation classrooms skip.
         </p>
         <ul className="mt-8 grid max-w-3xl gap-4">
-          {VERIFIED_BENEFITS.map((b) => (
+          {WHATS_INCLUDED.map((b) => (
             <li key={b} className="flex items-start gap-3 text-ink">
               <span aria-hidden="true" className="mt-0.5 text-signal">
                 ✓
@@ -119,39 +120,36 @@ export default async function PreSchoolPage() {
               {b}
             </li>
           ))}
-          <li className="flex items-start gap-3 text-ink">
-            <span aria-hidden="true" className="mt-0.5 text-signal">
-              ✓
-            </span>
-            Workbooks included with the course
-          </li>
         </ul>
       </Section>
 
-      {/* 4 · Curriculum */}
+      {/* 4 · Curriculum — the real 7 modules / 33 lessons */}
       <Section className="border-b border-line bg-asphalt-800">
         <Eyebrow>Inside the course</Eyebrow>
-        <h2 className="display-section max-w-3xl">What CDL Pre-School covers</h2>
-        <div className="mt-8 max-w-3xl space-y-3">
-          <CurriculumDisclosure summary="Permit & classroom knowledge">
-            The knowledge areas the permit exam and the first classroom weeks are built on,
-            explained the way drivers talk.
-          </CurriculumDisclosure>
-          <CurriculumDisclosure summary="Money, family & lifestyle preparation">
-            Planning the training weeks, preparing your family, and understanding what the trucking
-            life actually asks — before you commit.
-          </CurriculumDisclosure>
-          <CurriculumDisclosure summary="Choosing your CDL school & career path">
-            How to compare schools and programs — contract schools, mega-carrier training,
-            independent academies — and pick the path that fits your life.
-          </CurriculumDisclosure>
+        <h2 className="display-section max-w-3xl">
+          {MODULE_COUNT} modules. {LESSON_COUNT} lessons. In the right order.
+        </h2>
+        <p className="mt-4 max-w-2xl text-muted">
+          Modules unlock one at a time — pass each module&apos;s quiz to open the next, the same
+          way a good school builds you up.
+        </p>
+        <div className="mt-8 max-w-3xl space-y-8">
+          {CURRICULUM_GROUPS.map((group) => (
+            <div key={group.heading}>
+              <h3 className="mb-3 font-display text-xl uppercase text-signal">{group.heading}</h3>
+              <div className="space-y-3">
+                {group.modules.map((m) => (
+                  <CurriculumDisclosure
+                    key={m.number}
+                    summary={`Module ${m.number} — ${m.title}`}
+                  >
+                    {m.summary} ({m.lessons} lessons, each with a workbook.)
+                  </CurriculumDisclosure>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-        {!CURRICULUM_CONFIRMED && (
-          <div className="mt-6 max-w-3xl rounded-card border border-signal/50 bg-signal/10 px-4 py-3 text-sm text-signal">
-            <strong className="font-semibold">{CURRICULUM_PLACEHOLDER.heading}.</strong>{' '}
-            <span className="text-ink">{CURRICULUM_PLACEHOLDER.body}</span>
-          </div>
-        )}
       </Section>
 
       {/* 5 · Who it's for */}

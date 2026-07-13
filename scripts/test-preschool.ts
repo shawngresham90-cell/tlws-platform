@@ -29,7 +29,14 @@ import { EMPTY_WALL } from '@/lib/preschool/data';
 import { claimSchema } from '@/lib/preschool/schema';
 import { preschoolCourseSchema } from '@/lib/preschool/preschool-schema';
 import { capacityReached, nextSpotNumber } from '@/lib/admin/preschool';
-import { FAQS } from '@/lib/preschool/content';
+import {
+  CURRICULUM_GROUPS,
+  FAQS,
+  LESSON_COUNT,
+  MODULE_COUNT,
+  QUIZ_PASS_PERCENT,
+  WHATS_INCLUDED,
+} from '@/lib/preschool/content';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 let pass = 0;
@@ -156,13 +163,56 @@ for (const must of [
   'Is this CDL school?',
   'Does this replace ELDT?',
   'How do I access the course?',
-  'Is the $149 refundable?',
   'How is my name added to the Founding Student Wall?',
   'Can I remain anonymous?',
   'What happens after the first 20 spots sell?',
   'Does buying guarantee Academy admission?',
 ]) {
   check(`FAQ present: ${must}`, FAQS.some((f) => f.question === must));
+}
+
+// --- Verified curriculum (source: cdl-preschool repo @ f6a004c + portal course tables) ---
+check('module count is 7', MODULE_COUNT === 7);
+check('lesson count is 33', LESSON_COUNT === 33);
+check('quiz pass percent is 80', QUIZ_PASS_PERCENT === 80);
+const allModules = CURRICULUM_GROUPS.flatMap((g) => [...g.modules]);
+check('groups contain all 7 modules', allModules.length === MODULE_COUNT);
+check('module lesson counts sum to 33', allModules.reduce((n, m) => n + m.lessons, 0) === LESSON_COUNT);
+check('module numbers are 1..7 in order', allModules.map((m) => m.number).join(',') === '1,2,3,4,5,6,7');
+for (const title of [
+  'Before You Ever Touch a Truck',
+  'Choosing the Right CDL School (Not a Mill)',
+  'Crushing the Permit Tests',
+  'The Pre-Trip That Passes Every Time',
+  'Backing, Turning & Truck Control',
+  'On the Road Without the Panic',
+  'Land the Job & Keep It',
+]) {
+  check(`verified module title: ${title}`, allModules.some((m) => m.title === title));
+}
+check('curriculum has 4 groups', CURRICULUM_GROUPS.length === 4);
+for (const heading of ['Get ready before day one', 'Pass the permit', 'Master the skills', 'Start the career']) {
+  check(`curriculum group heading: ${heading}`, CURRICULUM_GROUPS.some((g) => g.heading === heading));
+}
+check('whats-included mentions workbooks', WHATS_INCLUDED.some((b) => /workbook/i.test(b)));
+check('whats-included states the real quiz gate', WHATS_INCLUDED.some((b) => b.includes('80%')));
+
+// --- Verified access wording; no unsupported claims; no private URLs ---
+const contentSrc = src('src/lib/preschool/content.ts');
+const accessFaq = FAQS.find((f) => f.question === 'How do I access the course?');
+check('access FAQ says enrollment is personal, not automated', /personally enrolls|issued by hand/.test(accessFaq?.answer ?? ''));
+check('access FAQ mentions welcome email login', /welcome email/.test(accessFaq?.answer ?? ''));
+const publicCopy = JSON.stringify(FAQS) + JSON.stringify(WHATS_INCLUDED) + JSON.stringify(CURRICULUM_GROUPS);
+check('no instant-access claim', !/instant access|immediate access/i.test(publicCopy));
+check('no lifetime-access claim', !/lifetime/i.test(publicCopy));
+check('no refund FAQ / no invented refund policy', !FAQS.some((f) => /refund/i.test(f.question + f.answer)));
+check('sales page makes no refund claim', !/refund/i.test(salesSrcFull()));
+check('no success/employment guarantee wording', !/guarantee[ds]? (a |your )?(cdl|job|employment|pass)/i.test(publicCopy));
+check('content exposes no portal URL', !/netlify\.app/i.test(contentSrc));
+check('content exposes no temp-password format', !contentSrc.includes('TLA-'));
+check('sales page exposes no portal URL', !/netlify\.app/i.test(salesSrcFull()));
+function salesSrcFull() {
+  return src('src/app/(marketing)/cdl-pre-school/page.tsx');
 }
 
 // --- Source-level wiring: pages, nav, sitemap, privacy ---

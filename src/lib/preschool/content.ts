@@ -1,12 +1,17 @@
 /**
  * CDL Pre-School sales-page content.
  *
- * Every string here is either (a) owner-supplied in the integration brief,
- * (b) already published in this repo (/apps page, Academy pages), or
- * (c) an explicitly-labeled placeholder awaiting owner confirmation.
- * The old cdl-preschool.netlify.app site is egress-blocked from this build
- * environment (see docs/cdl-preschool-integration-audit.md) — nothing was
- * reconstructed from memory and no curriculum details were invented.
+ * Every string here is verified against one of: (a) the owner's integration
+ * brief, (b) this repo's already-published copy (/apps, Academy pages), or
+ * (c) the real CDL Pre-School source — the `shawngresham90-cell/cdl-preschool`
+ * repository (read-only audit, commit f6a004c = the live Netlify deploy) and
+ * the portal's production course tables (7 modules / 33 lessons, read-only).
+ * See docs/cdl-preschool-integration-audit.md for the full source map.
+ *
+ * Deliberately NOT claimed anywhere (unverified or false): instant access,
+ * lifetime access, refund terms, testimonials, guaranteed exam/job/Academy
+ * outcomes. Module summaries below paraphrase the course's own public-facing
+ * module descriptions — no paid lesson content is reproduced.
  */
 
 export const PRESCHOOL_HEADLINE = 'CDL Pre-School';
@@ -18,11 +23,93 @@ export const PRESCHOOL_TAGLINE =
 export const PRESCHOOL_APPS_BLURB =
   'Permit prep the driver way — what the test actually asks, without the textbook fog.';
 
-/** Verified benefit bullets already published on /apps. */
-export const VERIFIED_BENEFITS = [
-  'Built around what the permit test actually asks',
-  'Plain talk from a CDL instructor',
-  'Study from anywhere — even the passenger seat',
+/** Verified against the portal's production course tables. */
+export const MODULE_COUNT = 7;
+export const LESSON_COUNT = 33;
+export const QUIZ_PASS_PERCENT = 80;
+export const CURRICULUM_CONFIRMED = true;
+
+/**
+ * The real curriculum — 7 modules, 33 lessons, grouped for the sales page.
+ * Titles and one-line summaries mirror the course's own module descriptions.
+ */
+export const CURRICULUM_GROUPS = [
+  {
+    heading: 'Get ready before day one',
+    modules: [
+      {
+        number: 1,
+        title: 'Before You Ever Touch a Truck',
+        lessons: 5,
+        summary:
+          'The mindset, money, and paperwork that separate drivers who make it from the ones who wash out.',
+      },
+      {
+        number: 2,
+        title: 'Choosing the Right CDL School (Not a Mill)',
+        lessons: 5,
+        summary:
+          'How to vet schools, dodge CDL mills, and pick between company-sponsored training and paying your own way.',
+      },
+    ],
+  },
+  {
+    heading: 'Pass the permit',
+    modules: [
+      {
+        number: 3,
+        title: 'Crushing the Permit Tests',
+        lessons: 5,
+        summary:
+          'General Knowledge, Air Brakes, and Combination Vehicles — what’s actually on them and how to study so it sticks.',
+      },
+    ],
+  },
+  {
+    heading: 'Master the skills',
+    modules: [
+      {
+        number: 4,
+        title: 'The Pre-Trip That Passes Every Time',
+        lessons: 5,
+        summary: 'The inspection walk-through examiners want to see, step by step.',
+      },
+      {
+        number: 5,
+        title: 'Backing, Turning & Truck Control',
+        lessons: 5,
+        summary: 'The yard maneuvers that fail the most students and how to nail them.',
+      },
+      {
+        number: 6,
+        title: 'On the Road Without the Panic',
+        lessons: 4,
+        summary: 'Shifting, space management, and driving big without freezing up.',
+      },
+    ],
+  },
+  {
+    heading: 'Start the career',
+    modules: [
+      {
+        number: 7,
+        title: 'Land the Job & Keep It',
+        lessons: 4,
+        summary: 'Getting hired, your first weeks, and building a clean record from day one.',
+      },
+    ],
+  },
+] as const;
+
+/** Section 3 — what you get. Every line verified in the course source. */
+export const WHATS_INCLUDED = [
+  `${MODULE_COUNT} modules / ${LESSON_COUNT} self-paced lessons in a private student portal`,
+  'A workbook with every lesson, plus a printable cheat-sheet for each module',
+  `A quiz at the end of every module — score ${QUIZ_PASS_PERCENT}% to unlock the next one`,
+  'Lessons unlock in order, so you build on what you just learned',
+  'A completion certificate with its own online verification page',
+  'Works on your phone — progress saves automatically',
+  'Your own login (email + password) issued personally after purchase',
 ] as const;
 
 /** Section 2 — the problem (owner-supplied framing). */
@@ -67,19 +154,11 @@ export const WHAT_IT_IS_NOT = [
 ] as const;
 
 /**
- * Section 4 — curriculum. The module list on the original site could not be
- * verified from this environment (egress-blocked; see audit doc). The deploy
- * history confirms workbooks exist. Until the owner confirms the module
- * names/count, the page shows this placeholder and claims NO count.
+ * Section 9 — FAQs. Answers verified against the course source. There is no
+ * published refund policy anywhere in the course source, so per the content
+ * rules the refund question is intentionally ABSENT rather than answered with
+ * an invented policy — the owner can add one once terms are written.
  */
-export const CURRICULUM_CONFIRMED = false;
-export const CURRICULUM_PLACEHOLDER = {
-  heading: 'The full module list is being finalized for this page',
-  body:
-    'CDL Pre-School covers permit-exam knowledge the driver way, plus the real-life preparation — money, family, lifestyle, and choosing the right school — that classrooms skip. The complete module-by-module breakdown from the course is being moved onto this page; what you see at checkout is current.',
-} as const;
-
-/** Section 9 — FAQs (owner-required questions; answers use only verified facts). */
 export const FAQS = [
   {
     question: 'Is this CDL school?',
@@ -94,12 +173,7 @@ export const FAQS = [
   {
     question: 'How do I access the course?',
     answer:
-      'Checkout happens securely on Stan Store, and your purchase confirmation there is how course access is delivered. The exact access steps are shown at checkout.',
-  },
-  {
-    question: 'Is the $149 refundable?',
-    answer:
-      'Purchases are processed by Stan Store, so refund requests go through your Stan Store purchase. Review the terms shown at checkout before you buy — a fuller refund policy for this page is being finalized.',
+      'Checkout happens securely on Stan Store. After your purchase, Shawn verifies it and personally enrolls you in the private student portal — you’ll receive a welcome email with your own login and a temporary password. Access is issued by hand, not by an automated redirect, so give it a little time. The course is self-paced, works on your phone, and saves your progress automatically.',
   },
   {
     question: 'How is my name added to the Founding Student Wall?',

@@ -1,146 +1,136 @@
-# CDL Pre-School Integration — Source-Site Audit
+# CDL Pre-School Integration — Source Audit
 
 Milestone: Integrate CDL Pre-School Into Trucking Life With Shawn
-Branch: `feat/cdl-preschool-sales-integration`
-Date: 2026-07-13
+Branch: `feat/cdl-preschool-sales-integration` (PR #49)
+Date: 2026-07-13 (updated same day after the source repository was attached)
 
-## 1. Source site access — blocked, not circumvented
+## 1. Sources, in order of authority
 
-The audit target was the fully rendered site at **https://cdl-preschool.netlify.app**.
+1. **`shawngresham90-cell/cdl-preschool` @ `f6a004c`** — the course source
+   repository, attached read-only with owner approval. This commit is
+   byte-identical to the live Netlify production deploy, so the audit reflects
+   exactly what runs today. The repository was not modified.
+2. **The portal's production course tables** (its own separate Supabase
+   project, read-only queries against `modules`/`lessons` metadata only) — the
+   repo's seed file contains placeholder titles; the real module titles and
+   lesson counts live in the portal database and were read from there.
+3. **The owner's integration brief** — offer terms, homepage copy, CTA labels,
+   disclaimers, FAQ list.
+4. **tlws-platform's own published copy** — `/apps` blurb, Academy credibility
+   facts.
 
-This build environment's egress policy blocks `*.netlify.app` (and the CDN
-hosting Netlify's deploy screenshots). Direct fetches of the rendered site and
-the deploy screenshot both returned **HTTP 403 from the egress proxy**. The
-Stan Store product page (https://stan.store/TRUCKINGLIFEWITHSHAWN/p/cdl-preschool--founding-student)
-is also blocked (403). Per the milestone rules, no attempt was made to
-circumvent the policy.
+Earlier note, kept for the record: the *rendered* site and Stan Store are
+egress-blocked (HTTP 403) from this environment and were never fetched; the
+repository + database made that irrelevant.
 
-### What WAS verifiable through the authenticated Netlify API (owner's account)
+## 2. What the old site actually is — a student portal, not a marketing site
 
-The Netlify MCP connector (authenticated to the owner's team) exposes site and
-deploy *metadata* — not page content. Verified facts about the existing site:
+`app/page.tsx` redirects `/` straight to `/dashboard`, which sits behind
+Supabase email/password auth (middleware-protected). There are **no public
+marketing pages, no testimonials, no refund policy, no legal pages** on the
+old site — it is the paid course itself:
 
-| Fact | Value |
-| --- | --- |
-| Netlify site | `cdl-preschool` (site id `f8b60cb1-dc78-4be7-bcb9-dbb2e2f5c40d`), team plan `nf_team_pro` |
-| Framework | **Next.js** (`@netlify/plugin-nextjs@5.15.12`, one server function, one edge function) |
-| Source repository | `github.com/shawngresham90-cell/cdl-preschool`, branch `main` |
-| Latest production deploy | 2026-07-07, commit `f6a004c` titled **"add workbooks"**, 474 files scanned, state `ready` |
-| Access control | **Public** — no site password, no SSO gate |
-| Netlify Forms | Not enabled |
-| Redirect rules | 2 (contents unknown — likely framework defaults) |
-| Header rules | 1 |
+- `/login` (public) — the only public surface. Its sole marketing line points
+  un-enrolled visitors to the owner's Stan Store.
+- `/dashboard` — 7 module cards with locked/unlocked/passed states.
+- `/module/[id]`, `/lesson/[id]` — lesson player (unlisted-video embed, notes,
+  workbook download, mark-complete), sequential unlocks.
+- `/quiz/[moduleId]` — module quiz, 80% pass gate.
+- `/certificate` + `/verify/[certNumber]` — completion certificate with a
+  public verification page.
+- `/admin` — owner-only student enrollment.
 
-Implications:
+**Consequence:** the PR #49 sales page is the product's first public sales
+page, and (see §7) the old site must stay up — it IS the course.
 
-- The site is a real Next.js app with server rendering, not a static brochure.
-- The commit title "add workbooks" confirms **workbooks exist** as part of the
-  product, but their names and count are **not verifiable** from metadata.
-- The site itself is publicly reachable (to normal visitors) and has **no
-  password/login gate at the site level**. Whether course *content* is behind
-  an application-level login could not be determined (see §6).
+## 3. Verified curriculum (from the production course tables)
 
-### Source repository not used
+**7 modules · 33 lessons · a workbook on all 33 lessons · quiz per module,
+80% to pass · sequential unlocks · certificate with public verification.**
 
-The deploy metadata identifies `shawngresham90-cell/cdl-preschool` as the
-source repo. This milestone's scope is explicitly "Use only:
-shawngresham90-cell/tlws-platform", so that repository was **not** read. If
-the owner wants a higher-fidelity content migration, granting that repo to a
-future session is the single highest-value unlock.
+| # | Module | Lessons |
+| - | --- | - |
+| 1 | Before You Ever Touch a Truck | 5 |
+| 2 | Choosing the Right CDL School (Not a Mill) | 5 |
+| 3 | Crushing the Permit Tests | 5 |
+| 4 | The Pre-Trip That Passes Every Time | 5 |
+| 5 | Backing, Turning & Truck Control | 5 |
+| 6 | On the Road Without the Panic | 4 |
+| 7 | Land the Job & Keep It | 4 |
 
-## 2. Content sources actually used
+Module one-liners on the sales page are the course's own module descriptions,
+lightly paraphrased. The repo also ships 7 per-module cheat-sheet PDFs
+(`public/workbooks/module-{1..7}-cheat-sheet.pdf`).
 
-Only owner-supplied and in-repo content was used. No curriculum details were
-invented.
+**Video status (owner decision needed):** lessons in Modules 1–3 have videos
+attached in the database; Modules 4–7 do not yet (15 of 33 lessons have
+video). The sales page therefore does **not** advertise "video lessons" —
+it claims lessons + workbooks + quizzes only, all fully true today. Once the
+remaining videos are uploaded, the copy can safely add them.
 
-1. **The milestone brief itself** (owner-supplied): offer terms ($149 Founding
-   Student, first 20 verified, name on a dedicated Founding Student Wall),
-   headline/supporting copy for the homepage card, CTA labels, the
-   "what it is not" disclaimers, the who-it's-for list, and the FAQ list.
-2. **`src/app/(marketing)/apps/page.tsx`** (in-repo, pre-existing): the only
-   prior CDL Pre-School copy in the platform —
-   "Permit prep the driver way — what the test actually asks, without the
-   textbook fog", plus three benefit bullets (built around what the permit
-   test actually asks; plain talk from a CDL instructor; study from anywhere).
-3. **Academy pages** (in-repo): verified founder-credibility facts already
-   published by the platform (17 years driving, zero violations, Dalton GA,
-   ELDT-compliant CDL-A academy mission) — reused verbatim for the
-   credibility section.
-4. **Netlify deploy metadata** (above): existence of workbooks; tech facts for
-   the transition plan.
+## 4. Verified buyer-access workflow
 
-## 3. Content migrated vs. omitted vs. unresolved
+1. Buyer purchases on Stan Store (external checkout — unchanged).
+2. **Stan Store does NOT redirect or provision automatically.** There is no
+   Stan Store integration anywhere in the course source.
+3. The owner manually enrolls the student in `/admin` (name + email). This
+   creates the account with a generated temporary password and sends a
+   welcome email (Resend) with the login details; if email isn't configured,
+   the temp password is shown to the owner to deliver directly.
+4. Access is **account-based** (email + password, Supabase auth). Self-paced,
+   phone-friendly, progress saved automatically.
 
-### Migrated (verified)
-- Positioning: pre-CDL preparation before school/permit training.
-- Offer: $149 Founding Student price; capacity 20 verified students; public
-  name on the Founding Student Wall; no deadline (none advertised).
-- Purchase URL (owner-supplied, exact):
-  `https://stan.store/TRUCKINGLIFEWITHSHAWN/p/cdl-preschool--founding-student`
-- Founder credibility facts already published on this platform.
-- The three verified benefit bullets from `/apps`.
+The sales-page access FAQ now states exactly this (issued personally, not
+instant) and deliberately does not name the portal URL. Not claimed anywhere:
+instant access, lifetime access.
 
-### Omitted
-- Any section of the old site that could not be verified (testimonials,
-  specific imagery, old navigation, old legal wording). Nothing unverified was
-  copied, approximated, or reconstructed from memory.
+## 5. Refund policy, testimonials, disclaimers — findings
 
-### Unresolved — needs owner confirmation before the placeholders can be filled
-| Item | Where it appears | Current state |
-| --- | --- | --- |
-| Module/lesson names, grouping, and count | Sales page "curriculum" section | Structure built; content is a clearly-labeled "curriculum being finalized" block. **No count or names are claimed.** |
-| Workbook names/count | Sales page "what you get" | Mentioned only as "workbooks included" (verified by deploy commit); no count claimed. |
-| Refund policy for the $149 purchase | FAQ | Marked "confirm with Stan Store checkout" — no policy invented. |
-| Course access flow after purchase | FAQ + Phase 8 audit (§6) | Described only as "delivered through Stan Store after checkout" pending confirmation. |
-| Testimonials | Sales page | None shown — none verifiable. |
-| Old site's legal/privacy wording | — | Not reproduced; platform's existing pages govern. |
+- **Refund policy: none exists** anywhere in the course source. Per the
+  content rules the refund FAQ was **removed** from the sales page rather
+  than answered with an invented policy. The owner should write one; it can
+  be added to the page and to Stan Store in minutes once decided.
+- **Testimonials: none exist** in the source. None are shown.
+- **Legal disclaimers: none exist** on the old site. The sales page keeps the
+  owner-supplied "what it is not" disclaimers (no license, no ELDT
+  substitute, no employment/exam/admission guarantees).
 
-## 4. Technical differences (old site → platform rebuild)
+## 6. Privacy — what was deliberately NOT published
 
-| | Old site | Platform integration |
-| --- | --- | --- |
-| Stack | Standalone Next.js site on its own Netlify project | Routes inside tlws-platform (Next.js 14 App Router), same domain as the rest of the brand |
-| Branding | Unverified | Platform tokens: asphalt/ink/signal-yellow/diesel-red, Anton display headings |
-| Checkout | Stan Store (external) | Same — unchanged, external, no on-site payment processing |
-| Founding Student Wall | Unknown/none | New, DB-backed, moderated, capacity-enforced (20) |
-| SEO | Separate origin, splits authority | Consolidated under the platform origin; canonical pages + sitemap |
+- The portal URL and any course/lesson/quiz URLs.
+- The temporary-password format, welcome-email internals, sender mechanics.
+- Unlisted video IDs, certificate-number format, admin route or workflow
+  details, any student data (none was read — only `modules`/`lessons`
+  metadata was queried).
+- Paid lesson content: only module titles + one-line descriptions are
+  summarized publicly; no lesson bodies, notes, or workbook contents.
 
-## 5. External dependencies
+## 7. Content migrated vs. omitted
 
-- **Stan Store** — sole checkout + (presumed) course delivery. No API
-  integration exists or was added; purchase verification is manual (admin
-  compares the claim email against the Stan Store order list).
-- **Cloudflare Turnstile** — reused for the claim form (existing platform
-  pattern).
-- **Supabase** — new tables via migration 028 (committed, NOT applied).
+**Migrated:** the verified curriculum summary (§3), the what's-included list,
+the access workflow (§4), offer terms ($149 / 20 spots / wall), the /apps
+benefit framing, Academy credibility facts.
 
-## 6. Access-after-purchase audit (Phase 8)
+**Omitted:** everything that doesn't exist to migrate (testimonials, refund
+wording, legal pages) and everything private (§6).
 
-Determinable now:
-- Site-level: the old site is public; no Netlify password/SSO. Netlify Forms
-  is off, so any forms on it post elsewhere.
-- The platform never receives purchaser data from Stan Store (no webhook, no
-  API) — so the platform cannot grant access automatically, and does not try.
+**No longer unresolved:** module names/counts, workbooks, access flow — all
+verified. **Still owner-decided:** refund policy wording; whether/when to
+advertise videos (§3); the transition timing in
+`docs/cdl-preschool-transition-plan.md`.
 
-Not determinable without the rendered site or the owner:
-- Whether the old site links a login/portal, exposes course pages publicly, or
-  relies on Stan Store's own content delivery/emails.
+## 8. External dependencies
 
-Consequences applied to the build:
-- No private course URL is published anywhere in the new pages.
-- The sales page says only what is verifiable: checkout happens on Stan Store,
-  and access is delivered through Stan Store after purchase — with the exact
-  wording flagged for owner confirmation in §3.
-- No authentication was rebuilt.
+- **Stan Store** — checkout only; enrollment is manual by design.
+- **The portal's own stack** (separate Supabase project + Resend) — untouched
+  by this PR; the platform never connects to it at runtime.
+- **Cloudflare Turnstile / platform Supabase** — claim-form intake (PR #49,
+  migration 028, NOT applied).
 
-**Owner follow-ups:** confirm (a) how a buyer reaches the course today
-(Stan Store content area? emailed link? old site URL?), (b) the refund policy
-shown at checkout, (c) module list for the curriculum section.
+## 9. Old-site plan (summary — full plan in the transition doc)
 
-## 7. Recommended retirement/redirect plan (summary)
-
-Full plan in `docs/cdl-preschool-transition-plan.md`. Recommendation:
-**permanent 301 from cdl-preschool.netlify.app to
-https://truckinglifewithshawn.com/cdl-pre-school** once this PR is live and the
-owner confirms course access does not depend on old-site URLs. No change to
-the old Netlify project was made in this milestone.
+The old Netlify site is the live course portal, so **it must not be redirected
+or shut down** — students would lose access. Recommendation: keep it running
+as the portal; the marketing role it never had now lives at
+`/cdl-pre-school`. Optionally move the portal to a branded subdomain later.
+No change to the old site was made.
