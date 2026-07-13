@@ -66,6 +66,11 @@ grant select on public.campaign_settings to anon;
 -- returns exactly one row (aggregate, no GROUP BY); scalar sub-selects on the
 -- settings singleton fall back to defaults when the row is absent, so the view
 -- always yields exactly one row even before the settings row exists.
+--
+-- IMPORTANT: `CREATE OR REPLACE VIEW` can only APPEND columns to an existing
+-- view — it cannot reorder or rename them. The original view's columns are
+-- (founder_count, raised_cents, goal_cents, pct_to_goal); those keep their exact
+-- positions here and `remaining_cents` is appended LAST so the replace succeeds.
 create or replace view public.campaign_progress
   with (security_invoker = true) as
 with agg as (
@@ -85,14 +90,6 @@ select
     (select goal_cents from public.campaign_settings where id = true),
     1200000
   )::bigint as goal_cents,
-  greatest(
-    coalesce((select goal_cents from public.campaign_settings where id = true), 1200000)
-      - coalesce(
-          (select raised_cents_override from public.campaign_settings where id = true),
-          agg.amount_sum
-        ),
-    0
-  )::bigint as remaining_cents,
   round(
     coalesce(
       (select raised_cents_override from public.campaign_settings where id = true),
@@ -104,7 +101,15 @@ select
         )
       * 100,
     1
-  ) as pct_to_goal
+  ) as pct_to_goal,
+  greatest(
+    coalesce((select goal_cents from public.campaign_settings where id = true), 1200000)
+      - coalesce(
+          (select raised_cents_override from public.campaign_settings where id = true),
+          agg.amount_sum
+        ),
+    0
+  )::bigint as remaining_cents
 from agg;
 
 grant select on public.campaign_progress to anon;
