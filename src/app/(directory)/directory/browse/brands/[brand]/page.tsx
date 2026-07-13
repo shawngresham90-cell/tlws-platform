@@ -76,7 +76,7 @@ export default async function BrandPage({ params }: { params: { brand: string } 
         </div>
       </Section>
       <Section className="border-b border-line bg-asphalt-800">
-        <DirectoryBrowser categoryTitle={`${brand.name} locations`} entries={entries} />
+        <DirectoryBrowser categoryTitle={`${brand.name} locations`} entries={entries} cardHeadingLevel="h2" />
       </Section>
     </>
   );

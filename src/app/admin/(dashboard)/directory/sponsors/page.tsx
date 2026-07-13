@@ -38,7 +38,7 @@ async function load(): Promise<{ enabled: boolean; rows: Row[] }> {
   }
 }
 
-const input = 'w-full rounded-card border border-line bg-asphalt-900 px-3 py-2 text-sm text-ink';
+const input = 'w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
 
 export default async function SponsorsAdminPage() {
   const { enabled, rows } = await load();

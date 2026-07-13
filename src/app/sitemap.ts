@@ -22,6 +22,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE.url}/knowledge`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     // Founders Wall (Milestone 9).
     { url: `${SITE.url}/founders`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // Revenue pages that were missing entirely (SRO SEO audit #2).
+    { url: `${SITE.url}/apps`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE.url}/books`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    // Browse hub + statistics (Search & Revenue Optimization).
+    { url: `${SITE.url}/directory/browse`, lastModified: now, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${SITE.url}/directory/browse/brands`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    { url: `${SITE.url}/directory/browse/cities`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
+    { url: `${SITE.url}/directory/stats`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
   ];
 
   // Academy module (Milestone 7) — static routes.

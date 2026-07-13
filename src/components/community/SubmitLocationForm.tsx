@@ -243,7 +243,7 @@ export function SubmitLocationForm({
 
       <div aria-live="assertive">
         {formError && (
-          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             {formError}
           </p>
         )}
@@ -252,7 +252,7 @@ export function SubmitLocationForm({
       <fieldset>
         <legend className="mb-3 text-sm font-semibold text-ink">
           What are you reporting?
-          <span className="text-diesel" aria-hidden="true">
+          <span className="text-diesel-300" aria-hidden="true">
             {' '}
             *
           </span>

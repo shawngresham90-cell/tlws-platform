@@ -110,6 +110,7 @@ export default async function CityPage({ params }: { params: { slug: string } })
         <DirectoryBrowser
           categoryTitle={`Locations in ${group.city}, ${group.state}`}
           entries={group.entries}
+          cardHeadingLevel="h2"
         />
       </Section>
     </>

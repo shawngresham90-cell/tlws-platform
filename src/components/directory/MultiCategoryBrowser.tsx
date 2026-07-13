@@ -18,7 +18,7 @@ import { DirectoryEmptyState } from './DirectoryEmptyState';
 
 const inputClasses =
   'w-full rounded-card border border-line bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
-  'focus:border-signal focus:outline-none';
+  'focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal focus:ring-offset-2 focus:ring-offset-asphalt';
 
 const SECTION_PREVIEW = 12;
 

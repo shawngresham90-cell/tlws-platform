@@ -2,6 +2,7 @@ import { SITE } from '@/lib/seo/site';
 import { getReviewAggregates, getApprovedReviewsForSeo } from '@/lib/community/data';
 import type { ReviewAggregate, SeoReview } from '@/lib/community/data';
 import type { DirectoryEntry } from './types';
+import { isDetailIndexable } from './detail';
 
 /**
  * Structured data for public directory listings. Only published AND
@@ -117,7 +118,10 @@ export function listingListSchema(
   path: string,
   reviewSeo?: ReviewSeo,
 ): object | null {
-  const indexable = entries.filter((e) => e.indexable);
+  // Same deterministic gate the detail pages and sitemap use — the DB
+  // is_indexable flag is false on every imported row, which silenced this
+  // schema entirely (SRO SEO audit finding #1).
+  const indexable = entries.filter((e) => isDetailIndexable(e));
   if (indexable.length === 0) return null;
   return {
     '@context': 'https://schema.org',
