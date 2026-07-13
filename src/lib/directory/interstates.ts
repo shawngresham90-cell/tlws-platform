@@ -26,6 +26,27 @@ const KNOWN: DirectoryInterstate[] = [
       'The eastern freight backbone — Miami to the Canadian border through Florida, Georgia, Tennessee, Kentucky, Ohio, and Michigan.',
     stateOrder: ['FL', 'GA', 'TN', 'KY', 'OH', 'MI'],
   },
+  {
+    slug: 'i65',
+    designation: 'I-65',
+    intro:
+      'Gulf Coast to the Great Lakes — Mobile through Birmingham, Nashville, and Louisville toward Indianapolis on one of the busiest north–south freight lanes in the country.',
+    stateOrder: ['AL', 'TN', 'KY', 'IN'],
+  },
+  {
+    slug: 'i24',
+    designation: 'I-24',
+    intro:
+      'The Chattanooga–Nashville–Paducah shortcut linking I-75 to the Midwest — heavy freight over Monteagle Mountain and through western Kentucky to southern Illinois.',
+    stateOrder: ['IL', 'KY', 'TN', 'GA'],
+  },
+  {
+    slug: 'i40',
+    designation: 'I-40',
+    intro:
+      'The coast-to-coast southern freight artery — through Arkansas and Tennessee it links West Memphis, Little Rock, Nashville, and Knoxville on one continuous run.',
+    stateOrder: ['AR', 'TN'],
+  },
 ];
 
 /** "I-75" → "i75"; returns null for values that aren't interstate designations. */
