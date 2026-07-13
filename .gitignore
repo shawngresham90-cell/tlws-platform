@@ -25,3 +25,6 @@ npm-debug.log*
 !.vscode/extensions.json
 /coverage
 *.tsbuildinfo
+
+# session research tooling — never ship
+scratch-*/
