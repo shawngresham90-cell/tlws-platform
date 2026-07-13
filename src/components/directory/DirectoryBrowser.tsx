@@ -92,7 +92,7 @@ export function DirectoryBrowser({
               setQuery(e.target.value);
               setVisible(PAGE);
             }}
-            placeholder={`Search name, city, state, ZIP, interstate…`}
+            placeholder={`Search brand, city, exit, interstate (I-40, exit 81)…`}
             className={inputClasses}
           />
         </div>
