@@ -14,30 +14,36 @@ official brand locator and/or 2+ directory sources. Unverifiable fields were lef
 
 ## Totals
 
-- Total rows in CSV: **30**
-- Segments: Permian Basin (8) · Abilene (7) · DFW metroplex (7) · East Texas (8)
+- Total rows in CSV: **29**
+- Segments: Permian Basin (7) · Abilene (7) · DFW metroplex (7) · East Texas (8)
 - Published flag: all rows imported **unpublished**.
 - Featured = yes: **0**; TruckParkingClub URLs: **0**; affiliate codes: **0**.
-- Coordinates: **none supplied** — all 30 rows flagged `needs-geocoding`.
+- Coordinates: **none supplied** — all 29 rows flagged `needs-geocoding`.
+
+> **Correction (2026-07-14):** an earlier version of this batch listed "Love's Travel Stop #530"
+> in Midland, TX (Exit 147, no address). Love's store #530 is in fact in **Moody, AL** (Exit 147),
+> confirmed via loves.com/locations/530 during Batch 25 research — a directory mis-attribution to
+> Midland. That phantom row has been removed; the real #530 appears in Batch 25 (I-20 Alabama).
+> Totals below reflect the removal (30 → 29 rows; Permian Basin 8 → 7; Midland 2 → 1).
 
 ## Rows by category
 
 | Category | Rows |
 | --- | --- |
-| truck-stops | 27 |
+| truck-stops | 26 |
 | cat-scales | 2 |
 | tire-repair | 1 |
 
 ## Rows by city (west → east)
 
-Pecos (1) · Monahans (1) · Odessa (2) · Midland (2) · Stanton (1) · Big Spring (1) · Sweetwater (2) ·
+Pecos (1) · Monahans (1) · Odessa (2) · Midland (1) · Stanton (1) · Big Spring (1) · Sweetwater (2) ·
 Tye (2) · Baird (1) · Eastland (1) · Ranger (1) · Weatherford (3) · Dallas (3) · Terrell (1) ·
 Canton (1) · Van (2) · Lindale (2) · Winona (1) · Kilgore (1) · Marshall (1)
 
 ## Curation & accuracy decisions
 
 - **Permian Basin** (heavy oilfield truck traffic): Love's #492 (Pecos), Pilot #1205 (Monahans),
-  Love's #339 + Flying J #580 (Odessa), Pilot #1209 + Love's #530 (Midland), TA #230 (Big Spring).
+  Love's #339 + Flying J #580 (Odessa), Pilot #1209 (Midland), TA #230 (Big Spring).
 - **DFW freight hub**: three Weatherford stops (Pilot #206, Petro #302, Love's #273) and the south
   Dallas cluster (Love's #294, Pilot #433, TA Dallas South #150) plus TA Terrell #233.
 - **Omitted** Pilot #1108 Grand Prairie (on TX-161/Trinity Blvd, not I-20) and a Fort Worth Southern
@@ -46,7 +52,7 @@ Canton (1) · Van (2) · Lindale (2) · Winona (1) · Kilgore (1) · Marshall (1
   Zippy J's/Exxon, and Waskom only has a state welcome center; not fabricated.
 - **Omitted** Colorado City and Cisco — only generic gas stations could be confirmed there.
 - Blanks kept where sources conflict: several addresses/ZIPs/phones on independents (Stanton Stripes,
-  Love's #530, Oasis Lindale, Love's #815 phone, Flying J #738 ZIP).
+  Oasis Lindale, Love's #815 phone, Flying J #738 ZIP).
 
 ## Co-location (expected, not duplicates)
 
@@ -57,7 +63,7 @@ Canton (1) · Van (2) · Lindale (2) · Winona (1) · Kilgore (1) · Marshall (1
 
 | Part | Segment(s) | Rows |
 | --- | --- | --- |
-| part1 | Permian Basin + Abilene (Pecos → Ranger) | 15 |
+| part1 | Permian Basin + Abilene (Pecos → Ranger) | 14 |
 | part2 | DFW + East Texas (Weatherford → Marshall) | 15 |
 
 ## Honest limitations

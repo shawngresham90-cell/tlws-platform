@@ -2,7 +2,7 @@
 
 Every listing was verified against public sources during research on **2026-07-14**. No field was invented: anything a source did not state is left blank in the CSV. Coordinates are blank on every row (geocoding is a separate verified workflow). Research method: web search against official brand/store locators (Love's, Pilot/Flying J, TA/Petro, QuikTrip, CAT Scale) as primary sources, with directory sites (TruckStopsAndServices, Find Truck Service, TruckMap, Allstays) as secondary confirmation, across four segments of the I-20 Texas crossing: the Permian Basin (Pecos-Big Spring), the Abilene corridor (Sweetwater-Ranger), the DFW metroplex (Weatherford-Terrell), and East Texas (Canton-Marshall).
 
-- Records in CSV: **30**
+- Records in CSV: **29**
 - Texas / I-20 existing production listings: **0** (first coverage of the I-20 corridor)
 
 ## Truck Stops & Travel Centers
@@ -94,14 +94,6 @@ Every listing was verified against public sources during research on **2026-07-1
 - **Verified:** 2026-07-14
 - **Source:** findtruckservice.com, truckmap.com, and Yelp confirm Pony Express Travel Center at 304 I-20 E, Marshall TX 75672, Exit 617, phone 903-938-3466.
 - **Left blank (not verifiable from sources):** website, lat, lng
-
-### Love's Travel Stop #530 — Midland, TX
-
-- **Segment:** A(permian)
-- **I-20 exit:** 147
-- **Verified:** 2026-07-14
-- **Source:** truckstopsandservices.com listing (Love's #530, I-20 Exit 147); allstays.com Love's near Midland/Stanton
-- **Left blank (not verifiable from sources):** address, zip, phone, lat, lng
 
 ### Pilot Travel Center #1209 — Midland, TX
 

@@ -4,25 +4,28 @@ All checks run 2026-07-14 with the REAL production code, read-only. **Nothing im
 
 ## Import parser (`prepareImport`)
 
-- Master (`i20-texas-batch-022.csv`): total=30 imported=30 **skipped=0 duplicates=0 errors=0**.
-- part1 (15) / part2 (15): each 100% clean.
+- Master (`i20-texas-batch-022.csv`): total=29 imported=29 **skipped=0 duplicates=0 errors=0**.
+- part1 (14) / part2 (15): each 100% clean.
 - 20 columns; every row passes the same zod `listingSchema` gate the admin form and production
   import use.
+- **Correction (2026-07-14):** removed a phantom "Love's #530 (Midland, TX)" row — store #530 is
+  actually in Moody, AL (confirmed loves.com/locations/530); it now lives in Batch 25. Counts
+  reflect the removal (30 → 29 rows; part1 15 → 14).
 
 ## Expansion Readiness (`assessExpansion` vs live)
 
-- Verdicts: **ready-to-publish 22 / import-unpublished 8 / manual-review 0 / reject 0**.
+- Verdicts: **ready-to-publish 22 / import-unpublished 7 / manual-review 0 / reject 0**.
 - Slug collisions (in-file + vs live detail slugs): **0**.
 - Live duplicate hits: **0** — Texas / I-20 has **0** existing production listings, so there is
   nothing to collide with. The comparison sets were empty by construction and this was asserted in
   the generator.
-- Geocoding: all **30 rows `needs-geocoding`** (coordinates intentionally blank).
+- Geocoding: all **29 rows `needs-geocoding`** (coordinates intentionally blank).
 - Per-row verdicts: `data/imports/i20-texas-batch-022-expansion-report.csv`.
 
 ## Quality (`scoreCompleteness`)
 
-- min 52 / median 71 / mean 67.6 / max 76.
-- Labels: Good 22, Needs work 8. (The chain travel centers on this corridor are well-documented, so
+- min 52 / median 71 / mean 68.2 / max 76.
+- Labels: Good 22, Needs work 7. (The chain travel centers on this corridor are well-documented, so
   completeness runs high; "Needs work" rows are independents missing a source-confirmed address or phone.)
 
 ## Duplicate detection
