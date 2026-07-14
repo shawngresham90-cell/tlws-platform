@@ -42,7 +42,7 @@ export default function StorePage() {
           Gear that earns its spot in the cab<span className="text-signal">.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted">
-          No sponsored fluff — 100 picks of gear a 17-year driver actually reaches for, with an
+          No sponsored fluff — 100+ picks of gear a 17-year driver actually reaches for, with an
           honest reason for each. Every buy link goes to Amazon.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">

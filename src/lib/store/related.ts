@@ -48,6 +48,9 @@ const COMPLEMENTS: Record<StoreProductType, StoreProductType[]> = {
   cpap: ['power-inverter', 'health'],
   health: ['seat-cushion', 'health'],
   apparel: ['tools', 'apparel'],
+  atlas: ['gps', 'organization'],
+  securement: ['tools', 'organization'],
+  'cab-comfort': ['bedding', 'organization'],
 };
 
 export function frequentlyBoughtTogether(product: StoreProduct, limit = 3): StoreProduct[] {

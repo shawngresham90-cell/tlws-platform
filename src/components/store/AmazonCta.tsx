@@ -2,15 +2,17 @@
 
 import { trackEvent } from '@/lib/analytics';
 import { AMAZON_REL, amazonProductUrl } from '@/lib/store/amazon';
+import { productActive } from '@/lib/store/products';
 import { STORE_EVENTS } from '@/lib/store/analytics';
 import { cn } from '@/lib/utils/cn';
 import type { StoreProduct } from '@/lib/store/types';
 
 /**
  * The one Amazon button. It renders an ACTIVE affiliate link ONLY when the
- * product has a real ASIN (amazonProductUrl returns non-null); otherwise it
- * renders a disabled "Link coming soon" state. This is what enforces the rule
- * that placeholder ASINs never produce a live/dead Amazon button.
+ * product passes the activation gate (valid ASIN + verified title + licensed
+ * main image); otherwise it renders a disabled "Amazon link coming soon" state.
+ * This enforces the rule that a placeholder — or a half-filled product missing
+ * its title or image — never produces a live/dead Amazon button.
  *
  * Active links always carry rel="sponsored noopener noreferrer" and open a new
  * tab, and fire a placement-tagged analytics event (no personal data).
@@ -24,7 +26,7 @@ export function AmazonCta({
   placement: string;
   className?: string;
 }) {
-  const url = amazonProductUrl(product.asin);
+  const url = productActive(product) ? amazonProductUrl(product.asin) : null;
 
   if (!url) {
     return (
@@ -35,7 +37,7 @@ export function AmazonCta({
         )}
         aria-disabled="true"
       >
-        Link coming soon
+        Amazon link coming soon
       </span>
     );
   }

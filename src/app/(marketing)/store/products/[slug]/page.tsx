@@ -14,6 +14,7 @@ import {
   ratingLabel,
   productReadiness,
   storeProduct,
+  displayName,
 } from '@/lib/store/products';
 import { relatedProducts, frequentlyBoughtTogether } from '@/lib/store/related';
 import { storeCategory, storeCategoryHref } from '@/lib/store/categories';
@@ -33,7 +34,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const p = storeProduct(params.slug);
   if (!p) return buildMetadata({ noindex: true });
   return buildMetadata({
-    title: `${p.name} — Trucking Life Store`,
+    title: `${displayName(p)} — Trucking Life Store`,
     description: `${p.tagline} ${p.description}`.slice(0, 155),
     path: `/store/products/${p.slug}`,
     image: p.imageUrl ?? undefined,
@@ -88,7 +89,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           <ProductImage product={product} className="max-w-md" />
           <div>
             {cat && <Eyebrow>{cat.title}</Eyebrow>}
-            <h1 className="display-section">{product.name}</h1>
+            <h1 className="display-section">{displayName(product)}</h1>
             <p className="mt-4 text-lg text-muted">{product.tagline}</p>
             {rating && (
               <p className="mt-3 text-sm text-muted">

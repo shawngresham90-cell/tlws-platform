@@ -1,6 +1,6 @@
 import { SITE } from '@/lib/seo/site';
 import type { StoreProduct } from './types';
-import { productHref, productReadiness } from './products';
+import { productHref, productReadiness, displayName } from './products';
 import { amazonProductUrl } from './amazon';
 
 /**
@@ -17,16 +17,18 @@ export function productSchema(p: StoreProduct): object {
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `${SITE.url}${productHref(p.slug)}#product`,
-    name: p.name,
+    name: displayName(p),
     description: p.description,
     category: p.category,
     url: `${SITE.url}${productHref(p.slug)}`,
   };
   if (p.imageUrl) base.image = p.imageUrl;
 
+  // Offer requires an ACTIVE product (valid ASIN + verified title + image) AND a
+  // verified price — never an offer without both.
   const { live, hasRating, hasReviewCount } = productReadiness(p);
   const url = amazonProductUrl(p.asin);
-  if (live && url && typeof p.priceUsd === 'number') {
+  if (live && url && typeof p.priceUsd === 'number' && p.priceUsd > 0) {
     base.offers = {
       '@type': 'Offer',
       price: p.priceUsd.toFixed(2),
