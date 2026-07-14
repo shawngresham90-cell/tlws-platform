@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { Section, Button, Eyebrow } from '@/components/ui';
+import { CampaignThermometer } from '@/components/community/CampaignThermometer';
+import { getCampaignProgress } from '@/lib/community/founders';
 import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { courseSchema } from '@/lib/seo/academy-schema';
@@ -87,7 +89,8 @@ const FAQS: KcFaq[] = [
   },
 ];
 
-export default function AcademyPage() {
+export default async function AcademyPage() {
+  const campaign = await getCampaignProgress();
   return (
     <>
       <JsonLd
@@ -153,6 +156,24 @@ export default function AcademyPage() {
             <Button variant="ghost" href="/knowledge">
               Free CDL resources
             </Button>
+          </div>
+        </div>
+      </Section>
+
+      {/* Fundraising — live campaign thermometer (same source as /founders) */}
+      <Section className="border-b border-line bg-asphalt-800">
+        <div className="mx-auto max-w-2xl">
+          <Eyebrow>Fund the school</Eyebrow>
+          <h2 className="display-section">Built founder by founder</h2>
+          <p className="mt-4 text-muted">
+            The Academy is funded by drivers and businesses who want this school to exist. Every
+            dollar below is the real campaign total.
+          </p>
+          <div className="mt-6">
+            <CampaignThermometer progress={campaign} />
+          </div>
+          <div className="mt-6">
+            <Button href="/founders">Join the Founders Wall</Button>
           </div>
         </div>
       </Section>
