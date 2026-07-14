@@ -27,6 +27,8 @@ const COLUMNS = [
     heading: 'More',
     links: [
       { label: 'Store', href: '/store' },
+      { label: 'Buying Guides', href: '/store/guides' },
+      { label: "Shawn's Picks", href: '/store/shawns-picks' },
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
       { label: 'Directories', href: '/directory' },
