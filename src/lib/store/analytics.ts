@@ -7,6 +7,8 @@ export const STORE_EVENTS = {
   storeView: 'store_page_view',
   productView: 'store_product_view',
   categoryView: 'store_category_view',
+  guideView: 'store_guide_view',
+  picksView: 'store_picks_view',
   search: 'store_search',
   amazonCtaClick: 'store_amazon_cta_click',
 } as const;
