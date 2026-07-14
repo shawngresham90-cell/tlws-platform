@@ -1,5 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
-import { remainingCents } from './campaign';
+import { pctToGoal, remainingCents } from './campaign';
 
 /**
  * Founders Wall data access (Milestone 9). Read-only, public rows only — RLS
@@ -58,15 +58,15 @@ export async function getCampaignProgress(): Promise<CampaignProgress> {
     if (!data) return PROGRESS_FALLBACK;
     const raised = Number(data.raised_cents) || 0;
     const goal = Number(data.goal_cents) || PROGRESS_FALLBACK.goal_cents;
-    // Remaining is derived here (goal − raised, floored at 0) rather than
-    // selected from the view, so this reader stays compatible with the view
-    // both before and after migration 026 is applied.
+    // Remaining and percentage are derived here from raised + goal (floored
+    // at 0 / capped at 100) rather than trusted from the view, so every
+    // surface shows the same clamped numbers regardless of view version.
     const remaining = remainingCents(goal, raised);
     return {
       raised_cents: raised,
       goal_cents: goal,
       remaining_cents: remaining,
-      pct_to_goal: Number(data.pct_to_goal) || 0,
+      pct_to_goal: pctToGoal(goal, raised),
       founder_count: Number(data.founder_count) || 0,
     };
   } catch {

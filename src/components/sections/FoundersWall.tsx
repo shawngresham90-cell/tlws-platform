@@ -1,17 +1,27 @@
 import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
 import { createClient } from '@/lib/supabase/server';
+import { CampaignThermometer } from '@/components/community/CampaignThermometer';
+import type { CampaignProgress } from '@/lib/community/founders';
 
 export const revalidate = 60; // re-fetch the thermometer at most once a minute
 
 /**
  * Founders Wall teaser with a LIVE thermometer reading from campaign_progress.
- * Server component — real number at request time, no client JS. A hard 3s
+ * Server component — real numbers at request time, no client JS. A hard 3s
  * timeout guarantees the homepage never hangs on a slow/unreachable DB; it
- * falls back to zeros and renders instantly. Full wall + join is a later milestone.
+ * falls back to zeros and renders instantly. Renders the SAME
+ * CampaignThermometer as the Founders Wall page and the admin preview, so the
+ * homepage total can never disagree with the wall.
  */
-async function getProgress() {
-  const fallback = { raised: 0, goal: 1200000, pct: 0, count: 0 };
+async function getProgress(): Promise<CampaignProgress> {
+  const fallback: CampaignProgress = {
+    raised_cents: 0,
+    goal_cents: 1_200_000,
+    remaining_cents: 1_200_000,
+    pct_to_goal: 0,
+    founder_count: 0,
+  };
   try {
     const supabase = createClient();
     const controller = new AbortController();
@@ -26,10 +36,11 @@ async function getProgress() {
     clearTimeout(timer);
     if (!data) return fallback;
     return {
-      raised: Number(data.raised_cents) || 0,
-      goal: Number(data.goal_cents) || 1200000,
-      pct: Number(data.pct_to_goal) || 0,
-      count: Number(data.founder_count) || 0,
+      raised_cents: Number(data.raised_cents) || 0,
+      goal_cents: Number(data.goal_cents) || fallback.goal_cents,
+      remaining_cents: 0, // derived inside the thermometer from raised + goal
+      pct_to_goal: 0, // derived inside the thermometer from raised + goal
+      founder_count: Number(data.founder_count) || 0,
     };
   } catch {
     return fallback;
@@ -37,8 +48,7 @@ async function getProgress() {
 }
 
 export async function FoundersWall() {
-  const { raised, goal, pct, count } = await getProgress();
-  const dollars = (cents: number) => `$${Math.round(cents / 100).toLocaleString('en-US')}`;
+  const progress = await getProgress();
 
   return (
     <Section id="founders" className="border-b border-line bg-asphalt-800">
@@ -47,29 +57,8 @@ export async function FoundersWall() {
         title="Help build the school"
         intro="Every founder who backs Trucking Life Academy gets their name on the wall. This funds real drivers getting a real shot behind the wheel."
       />
-      <div className="rounded-card border border-line bg-asphalt p-8">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="font-display text-3xl text-signal sm:text-4xl">{dollars(raised)}</p>
-            <p className="text-sm text-muted">
-              raised of {dollars(goal)} · {count} founder{count === 1 ? '' : 's'}
-            </p>
-          </div>
-          <p className="font-display text-2xl text-ink">{pct}%</p>
-        </div>
-        <div
-          className="mt-4 h-4 w-full overflow-hidden rounded-full bg-asphalt-700"
-          role="progressbar"
-          aria-valuenow={pct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="Fundraising progress"
-        >
-          <div
-            className="h-full rounded-full bg-signal transition-all"
-            style={{ width: `${Math.min(pct, 100)}%` }}
-          />
-        </div>
+      <div className="mx-auto max-w-2xl">
+        <CampaignThermometer progress={progress} />
         <div className="mt-6">
           <Button href="/founders">Become a founder</Button>
         </div>

@@ -178,5 +178,93 @@ const stripComments = (s: string) =>
   check('percent renders 59.2 (project 1-decimal convention)', pctToGoal(GOAL, RAISED) === 59.2);
 }
 
+/* ---- Thermometer edge states + single-source wiring (Founders admin milestone) ---- */
+{
+  const GOAL = 1_200_000;
+  // $0 raised
+  check('$0 raised → 0%', pctToGoal(GOAL, 0) === 0);
+  check('$0 raised → full goal remaining', remainingCents(GOAL, 0) === GOAL);
+  // goal reached exactly
+  check('goal reached → 100%', pctToGoal(GOAL, GOAL) === 100);
+  check('goal reached → $0 remaining', remainingCents(GOAL, GOAL) === 0);
+  // over goal
+  check('over goal → capped at 100%', pctToGoal(GOAL, 1_500_000) === 100);
+  check('over goal → remaining never negative', remainingCents(GOAL, 1_500_000) === 0);
+  // zero goal never divides by zero
+  check('zero goal → 0%', pctToGoal(0, 500) === 0);
+
+  // dollars → cents admin parsing
+  const { dollarsToCents } = require('@/lib/admin/founders') as typeof import('@/lib/admin/founders');
+  check('dollarsToCents "7,100" = 710000', dollarsToCents('7,100') === 710_000);
+  check('dollarsToCents "$500" = 50000', dollarsToCents('$500') === 50_000);
+  check('dollarsToCents rejects negatives', dollarsToCents('-5') === null);
+  check('dollarsToCents blank = null', dollarsToCents('') === null);
+
+  // Single source of truth: one shared thermometer, no hard-coded totals
+  const thermo = readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8');
+  check('thermometer has progressbar role', thermo.includes('role="progressbar"'));
+  check('thermometer has aria-valuetext sentence', thermo.includes('aria-valuetext'));
+  check('thermometer clamps via shared math', thermo.includes('pctToGoal') && thermo.includes('remainingCents'));
+  check('thermometer has visible % text (not color alone)', thermo.includes('% funded'));
+  check('thermometer handles goal reached', thermo.includes('Goal reached'));
+  for (const [label, path] of [
+    ['founders wall page', 'src/app/(community)/founders/page.tsx'],
+    ['homepage section', 'src/components/sections/FoundersWall.tsx'],
+    ['academy page', 'src/app/(academy)/academy/page.tsx'],
+    ['admin preview', 'src/app/admin/(dashboard)/founders/page.tsx'],
+  ] as const) {
+    const src = readFileSync(path, 'utf8');
+    check(`${label} renders shared CampaignThermometer`, src.includes('CampaignThermometer'));
+    check(`${label} has no hard-coded raised total`, !/7,?100|59\.2|4,?900/.test(src));
+  }
+  const thermoNoTotals = !/7,?100|59\.2|4,?900|12,?000/.test(thermo);
+  check('thermometer component has no hard-coded totals', thermoNoTotals);
+
+  // Admin actions never touch Pre-School tables
+  const actions = readFileSync('src/app/admin/(dashboard)/founders/actions.ts', 'utf8');
+  check('founders admin never touches preschool tables', !actions.includes('preschool'));
+  check('every founders admin action gated', (actions.match(/export async function/g) ?? []).length === (actions.match(/requireAdmin\(\);/g) ?? []).length);
+  check('actions revalidate all public surfaces', actions.includes("revalidatePath('/founders')") && actions.includes("revalidatePath('/academy')") && actions.includes("revalidatePath('/')"));
+}
+
+/* ---- SSR render check: the shared thermometer with the real campaign values ---- */
+{
+  const React = require('react');
+  // esbuild's classic JSX transform expects a React global when bundling TSX.
+  (globalThis as Record<string, unknown>).React = React;
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const { CampaignThermometer } = require('@/components/community/CampaignThermometer');
+  const html = renderToStaticMarkup(
+    React.createElement(CampaignThermometer, {
+      progress: {
+        raised_cents: 710_000,
+        goal_cents: 1_200_000,
+        remaining_cents: 0, // derived internally
+        pct_to_goal: 0, // derived internally
+        founder_count: 25,
+      },
+    }),
+  );
+  check('render: $7,100 raised', html.includes('$7,100 raised'));
+  check('render: of $12,000 goal', html.includes('of $12,000 goal'));
+  check('render: $4,900 left to open the school', html.includes('$4,900 left to open the school'));
+  check('render: 59.2% funded', html.includes('59.2% funded'));
+  check('render: aria-valuenow 59.2', html.includes('aria-valuenow="59.2"'));
+  check('render: aria-valuetext sentence', html.includes('$7,100 raised of $12,000 goal'));
+  check('render: 25 founders', html.includes('25 founders on the wall'));
+  const zero = renderToStaticMarkup(
+    React.createElement(CampaignThermometer, {
+      progress: { raised_cents: 0, goal_cents: 1_200_000, remaining_cents: 0, pct_to_goal: 0, founder_count: 0 },
+    }),
+  );
+  check('render $0: 0% funded', zero.includes('0% funded') && zero.includes('$0 raised'));
+  const over = renderToStaticMarkup(
+    React.createElement(CampaignThermometer, {
+      progress: { raised_cents: 1_500_000, goal_cents: 1_200_000, remaining_cents: 0, pct_to_goal: 0, founder_count: 25 },
+    }),
+  );
+  check('render over-goal: capped 100%, goal reached', over.includes('100% funded') && over.includes('Goal reached') && over.includes('width:100%'));
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
