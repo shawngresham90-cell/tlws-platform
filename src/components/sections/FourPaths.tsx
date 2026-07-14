@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { PurchaseCta } from '@/components/preschool/PurchaseCta';
+import { SpotsMeter } from '@/components/preschool/SpotsMeter';
+import { TrackedNavLink } from '@/components/preschool/TrackedNavLink';
+import { getFoundingWall } from '@/lib/preschool/data';
 import {
   FOUNDING_STUDENT_CAPACITY,
   PRESCHOOL_PATH,
@@ -34,7 +37,8 @@ const PATHS = [
   },
 ] as const;
 
-export function FourPaths() {
+export async function FourPaths() {
+  const wall = await getFoundingWall();
   return (
     <Section id="paths" className="border-b border-line bg-asphalt-800">
       <Eyebrow>Pick your lane</Eyebrow>
@@ -50,19 +54,23 @@ export function FourPaths() {
             Prepare before CDL school. Learn the knowledge, expectations, and real-life
             preparation new drivers need before training begins.
           </p>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-signal">
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">
             Limited to the first {FOUNDING_STUDENT_CAPACITY} verified Founding Students
           </p>
+          <div className="mt-2">
+            <SpotsMeter filled={wall.filled} remaining={wall.remaining} compact />
+          </div>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <PurchaseCta placement="homepage-card" className="px-5 py-2.5 text-base">
               Start CDL Pre-School
             </PurchaseCta>
-            <Link
+            <TrackedNavLink
               href={PRESCHOOL_PATH}
+              placement="homepage-card"
               className="inline-flex items-center justify-center rounded-card border border-line px-5 py-2.5 font-display text-base uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal"
             >
               See what&apos;s included
-            </Link>
+            </TrackedNavLink>
           </div>
         </div>
 
