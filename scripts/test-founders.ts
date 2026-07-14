@@ -227,6 +227,18 @@ const stripComments = (s: string) =>
   check('actions revalidate all public surfaces', actions.includes("revalidatePath('/founders')") && actions.includes("revalidatePath('/academy')") && actions.includes("revalidatePath('/')"));
 }
 
+/* ---- Updated campaign totals: $7,600 raised (Rush, Steel #8, $500) ---- */
+{
+  const GOAL = 1_200_000;
+  const RAISED = 760_000;
+  check('$7,600 renders', dollars(RAISED) === '$7,600');
+  check('remaining = $4,400', dollars(remainingCents(GOAL, RAISED)) === '$4,400' && remainingCents(GOAL, RAISED) === 440_000);
+  check('percent renders 63.3', pctToGoal(GOAL, RAISED) === 63.3);
+  // /academy must revalidate so its thermometer follows campaign updates
+  const academy = readFileSync('src/app/(academy)/academy/page.tsx', 'utf8');
+  check('academy page has ISR revalidate', /export const revalidate = \d+/.test(academy));
+}
+
 /* ---- SSR render check: the shared thermometer with the real campaign values ---- */
 {
   const React = require('react');

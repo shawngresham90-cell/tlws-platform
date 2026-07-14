@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { Section, Button, Eyebrow } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { getCampaignProgress } from '@/lib/community/founders';
+
+// The fundraising thermometer must stay live: without ISR this page is fully
+// static and would show build-time campaign totals until the next deploy.
+export const revalidate = 60;
 import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { courseSchema } from '@/lib/seo/academy-schema';
