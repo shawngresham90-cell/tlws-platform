@@ -6,6 +6,7 @@ import { FeaturedTest } from '@/components/sections/FeaturedTest';
 import { FeaturedVideos } from '@/components/sections/FeaturedVideos';
 import { Books } from '@/components/sections/Books';
 import { Apps } from '@/components/sections/Apps';
+import { Store } from '@/components/sections/Store';
 import { TruckParking } from '@/components/sections/TruckParking';
 import { FoundersWall } from '@/components/sections/FoundersWall';
 import { Sponsors } from '@/components/sections/Sponsors';
@@ -28,6 +29,7 @@ export default function HomePage() {
       <FeaturedVideos />
       <Books />
       <Apps />
+      <Store />
       <TruckParking />
       <FoundersWall />
       <Sponsors />

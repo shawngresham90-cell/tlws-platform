@@ -261,7 +261,12 @@ export default async function PreSchoolPage() {
           <Link href="/academy" className="text-signal underline-offset-4 hover:underline">
             Trucking Life Academy
           </Link>{' '}
-          — ELDT-compliant CDL-A training in Dalton, GA — is the destination.
+          — ELDT-compliant CDL-A training in Dalton, GA — is the destination. When you&apos;re
+          ready to kit out the cab, the{' '}
+          <Link href="/store" className="text-signal underline-offset-4 hover:underline">
+            Trucking Life Store
+          </Link>{' '}
+          has the road-tested gear.
         </p>
       </Section>
 

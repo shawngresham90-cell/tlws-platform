@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Container, Section, Eyebrow } from '@/components/ui';
 import { CategoryCard } from '@/components/kc/CategoryCard';
 import { ArticleCard } from '@/components/kc/ArticleCard';
@@ -82,6 +83,19 @@ export default async function KnowledgeHome() {
           </div>
         </Section>
       )}
+
+      <Section className="border-t border-line">
+        <Container>
+          <p className="text-sm text-muted">
+            Reading up before you roll?{' '}
+            <Link href="/store" className="font-semibold text-signal hover:underline">
+              The Trucking Life Store
+            </Link>{' '}
+            rounds up the road-tested gear that goes with the guides — dash cams, bunk
+            upgrades, and cab essentials.
+          </p>
+        </Container>
+      </Section>
     </>
   );
 }

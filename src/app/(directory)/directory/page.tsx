@@ -167,6 +167,14 @@ export default async function DirectoryPage() {
             )}
           </div>
         )}
+
+        <p className="mt-14 border-t border-line pt-8 text-sm text-muted">
+          Stopped for the night?{' '}
+          <Link href="/store" className="font-semibold text-signal hover:underline">
+            The Trucking Life Store
+          </Link>{' '}
+          has the dash cams, 12V coolers, and bunk gear drivers actually recommend.
+        </p>
       </Section>
     </>
   );

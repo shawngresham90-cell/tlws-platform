@@ -7,6 +7,8 @@ import { stateByCode } from '@/lib/directory/states';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { isDetailIndexable } from '@/lib/directory/detail';
 import { detailHref } from '@/lib/directory/detail-slug';
+import { STORE_CATEGORIES, storeCategoryHref } from '@/lib/store/categories';
+import { STORE_PRODUCTS, productHref } from '@/lib/store/products';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -61,6 +63,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly',
       priority: path === '/academy' ? 0.9 : 0.7,
+    });
+  }
+
+  // Trucking Life Store — hub, every category, and every product. Placeholder
+  // products are still crawlable content pages (no active affiliate link until
+  // an ASIN is confirmed), so they belong in the sitemap.
+  entries.push({
+    url: `${SITE.url}/store`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  });
+  for (const category of STORE_CATEGORIES) {
+    entries.push({
+      url: `${SITE.url}${storeCategoryHref(category.slug)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
+  for (const product of STORE_PRODUCTS) {
+    entries.push({
+      url: `${SITE.url}${productHref(product.slug)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
     });
   }
 
