@@ -18,6 +18,9 @@ export function buildMetadata(opts?: {
   return {
     title,
     description,
+    // Resolves file-convention social images (opengraph-image.tsx) and any
+    // relative asset URLs against the production origin.
+    metadataBase: new URL(SITE.url),
     alternates: { canonical },
     openGraph: {
       type: opts?.type ?? 'website',
@@ -26,13 +29,15 @@ export function buildMetadata(opts?: {
       title,
       description,
       locale: 'en_US',
-      images: opts?.image ? [{ url: opts.image }] : undefined,
+      // Omit `images` entirely when unset so file-convention images
+      // (opengraph-image.tsx) can flow through.
+      ...(opts?.image ? { images: [{ url: opts.image }] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: opts?.image ? [opts.image] : undefined,
+      ...(opts?.image ? { images: [opts.image] } : {}),
     },
     robots: opts?.noindex ? { index: false, follow: false } : { index: true, follow: true },
   };

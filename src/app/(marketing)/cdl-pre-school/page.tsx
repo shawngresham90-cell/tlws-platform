@@ -3,6 +3,12 @@ import { Section, Eyebrow, Button } from '@/components/ui';
 import { PurchaseCta } from '@/components/preschool/PurchaseCta';
 import { PageViewEvent } from '@/components/preschool/PageViewEvent';
 import { CurriculumDisclosure } from '@/components/preschool/CurriculumDisclosure';
+import { SpotsMeter } from '@/components/preschool/SpotsMeter';
+import { TrustBadges } from '@/components/preschool/TrustBadges';
+import { StickyCta } from '@/components/preschool/StickyCta';
+import { ScrollDepth } from '@/components/preschool/ScrollDepth';
+import { FaqItem } from '@/components/preschool/FaqItem';
+import { TrackedNavLink } from '@/components/preschool/TrackedNavLink';
 import { getFoundingWall } from '@/lib/preschool/data';
 import {
   CHECKOUT_DISCLOSURE,
@@ -46,6 +52,8 @@ export default async function PreSchoolPage() {
   return (
     <>
       <PageViewEvent />
+      <ScrollDepth />
+      <StickyCta />
       <JsonLd
         schema={[
           breadcrumbSchema([
@@ -76,8 +84,10 @@ export default async function PreSchoolPage() {
         <p className="mt-6 max-w-2xl text-lg text-muted">{PRESCHOOL_TAGLINE}</p>
         <p className="mt-4 max-w-2xl text-sm font-semibold uppercase tracking-wide text-signal">
           Limited to the first {FOUNDING_STUDENT_CAPACITY} verified Founding Students
-          {wall.filled > 0 ? ` — ${wall.remaining} of ${FOUNDING_STUDENT_CAPACITY} spots remaining` : ''}
         </p>
+        <div className="mt-4">
+          <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
+        </div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <PurchaseCta placement="hero">Become a Founding Student — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
           <Button variant="ghost" href="#whats-included">
@@ -85,6 +95,7 @@ export default async function PreSchoolPage() {
           </Button>
         </div>
         <Disclosure />
+        <TrustBadges className="mt-6" />
       </Section>
 
       {/* 2 · Problem */}
@@ -150,6 +161,12 @@ export default async function PreSchoolPage() {
             </div>
           ))}
         </div>
+        <div className="mt-10">
+          <PurchaseCta placement="after-curriculum">
+            Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}
+          </PurchaseCta>
+          <Disclosure />
+        </div>
       </Section>
 
       {/* 5 · Who it's for */}
@@ -205,12 +222,19 @@ export default async function PreSchoolPage() {
             <p className="font-display text-3xl uppercase text-ink">The Wall</p>
             <p className="mt-2 text-sm text-muted">
               Your chosen public name on the{' '}
-              <Link href={FOUNDING_WALL_PATH} className="text-signal underline-offset-4 hover:underline">
+              <TrackedNavLink
+                href={FOUNDING_WALL_PATH}
+                placement="offer"
+                className="text-signal underline-offset-4 hover:underline"
+              >
                 Founding Student Wall
-              </Link>
+              </TrackedNavLink>
               {' '}— or stay anonymous. Your call.
             </p>
           </div>
+        </div>
+        <div className="mt-6">
+          <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
         </div>
         <div className="mt-8">
           <PurchaseCta placement="offer">Claim a Founding Student spot — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
@@ -245,12 +269,9 @@ export default async function PreSchoolPage() {
       <Section className="border-b border-line">
         <Eyebrow>Questions, answered straight</Eyebrow>
         <h2 className="display-section max-w-3xl">CDL Pre-School FAQ</h2>
-        <div className="mt-8 max-w-3xl space-y-6">
+        <div className="mt-8 max-w-3xl space-y-3">
           {FAQS.map((f) => (
-            <div key={f.question}>
-              <h3 className="font-display text-lg uppercase text-ink">{f.question}</h3>
-              <p className="mt-2 text-sm text-muted">{f.answer}</p>
-            </div>
+            <FaqItem key={f.question} question={f.question} answer={f.answer} />
           ))}
         </div>
       </Section>
@@ -267,17 +288,21 @@ export default async function PreSchoolPage() {
             timers, no fake counters — when the wall is full, the founding offer is gone.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3">
+            <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
             <PurchaseCta placement="final">Become a Founding Student — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
             <p className="max-w-md text-xs text-muted">{CHECKOUT_DISCLOSURE}</p>
-            <Link
+            <TrackedNavLink
               href={FOUNDING_WALL_PATH}
+              placement="final"
               className="text-sm text-signal underline-offset-4 hover:underline"
             >
               See the Founding Student Wall →
-            </Link>
+            </TrackedNavLink>
           </div>
         </div>
       </Section>
+      {/* Reserve room so the mobile sticky CTA never covers the last content. */}
+      <div aria-hidden="true" className="h-24 sm:hidden" />
     </>
   );
 }

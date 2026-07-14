@@ -260,5 +260,53 @@ check('migration caps spots 1..20', migrationSrc.includes('between 1 and 20'));
 check('migration has capacity trigger', migrationSrc.includes('preschool_enforce_capacity'));
 check('migration blocks duplicate pending emails', migrationSrc.includes('preschool_claims_pending_email_uidx'));
 
+// --- Conversion optimization (post-launch milestone) ---
+check('scroll event name', PRESCHOOL_EVENTS.scrollDepth === 'preschool_scroll_depth');
+check('faq event name', PRESCHOOL_EVENTS.faqOpen === 'preschool_faq_open');
+check('nav event name', PRESCHOOL_EVENTS.navClick === 'preschool_nav_click');
+
+const salesSrc2 = salesSrcFull();
+for (const comp of ['StickyCta', 'ScrollDepth', 'TrustBadges', 'SpotsMeter', 'FaqItem', 'TrackedNavLink']) {
+  check(`sales page renders ${comp}`, salesSrc2.includes(`<${comp}`));
+}
+for (const placement of ['"hero"', '"after-curriculum"', '"offer"', '"final"']) {
+  check(`purchase CTA placement ${placement}`, salesSrc2.includes(`placement=${placement}`));
+}
+check('sales page reserves sticky-bar space', salesSrc2.includes('h-24 sm:hidden'));
+
+const stickySrc = src('src/components/preschool/StickyCta.tsx');
+check('sticky uses exact URL constant', stickySrc.includes('PRESCHOOL_PURCHASE_URL'));
+check('sticky uses sponsored rel constant', stickySrc.includes('PRESCHOOL_PURCHASE_REL'));
+check('sticky is mobile-only', stickySrc.includes('sm:hidden'));
+check('sticky label', stickySrc.includes('Start CDL Pre-School'));
+check('sticky tracks placement only', stickySrc.includes("placement: 'sticky-mobile'"));
+
+const meterSrc = src('src/components/preschool/SpotsMeter.tsx');
+check('meter uses capacity constant', meterSrc.includes('FOUNDING_STUDENT_CAPACITY'));
+check('meter is pure (no data fetching)', !meterSrc.includes('supabase') && !meterSrc.includes("from '@/lib/preschool/data'"));
+check('meter has ARIA meter role', meterSrc.includes('role="meter"'));
+check('meter zero-state is honest', meterSrc.includes('spots are open'));
+
+const trustSrc = src('src/components/preschool/TrustBadges.tsx');
+check('trust badges mention Stan Store', trustSrc.includes('Stan Store'));
+check('trust badges mention CDL instructor', trustSrc.includes('CDL instructor'));
+check('trust badges mobile friendly', trustSrc.includes('Mobile friendly'));
+check('trust badges make no guarantees', !/guarantee/i.test(trustSrc));
+
+const fourSrc2 = src('src/components/sections/FourPaths.tsx');
+check('four paths uses real wall data', fourSrc2.includes('getFoundingWall'));
+check('four paths renders SpotsMeter', fourSrc2.includes('SpotsMeter'));
+check('four paths has no hardcoded filled count', !/filled=\{\d/.test(fourSrc2));
+check('four paths still no fake urgency', !/countdown|only today|recently purchased/i.test(fourSrc2));
+
+const heroSrc = src('src/components/sections/Hero.tsx');
+check('hero leads with Pre-School CTA', heroSrc.indexOf('/cdl-pre-school') < heroSrc.indexOf('/academy'));
+check('hero Pre-School CTA shows price', heroSrc.includes('Start CDL Pre-School — $149'));
+
+const ogSrc = src('src/app/(marketing)/cdl-pre-school/opengraph-image.tsx');
+check('og image exists and uses price constant', ogSrc.includes('PRESCHOOL_PRICE_LABEL'));
+check('og image uses capacity constant', ogSrc.includes('FOUNDING_STUDENT_CAPACITY'));
+check('og image is 1200x630', ogSrc.includes('1200') && ogSrc.includes('630'));
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

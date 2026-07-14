@@ -41,6 +41,10 @@ export const PRESCHOOL_EVENTS = {
   curriculumExpand: 'preschool_curriculum_expand',
   claimStarted: 'founding_student_claim_started',
   claimSubmitted: 'founding_student_claim_submitted',
+  /** Conversion instrumentation — payloads carry placement/percent/question only. */
+  scrollDepth: 'preschool_scroll_depth',
+  faqOpen: 'preschool_faq_open',
+  navClick: 'preschool_nav_click',
 } as const;
 
 /** External checkout disclosure shown next to every purchase CTA. */
