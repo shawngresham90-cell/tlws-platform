@@ -10,6 +10,7 @@ const NAV = [
   { label: 'Practice Tests', href: '/practice-tests' },
   { label: 'Truck Parking', href: '/directory/parking' },
   { label: 'Directories', href: '/directory' },
+  { label: 'Store', href: '/store' },
   { label: 'Books', href: '/books' },
   { label: 'Apps', href: '/apps' },
   { label: 'Sponsors', href: '/sponsors' },

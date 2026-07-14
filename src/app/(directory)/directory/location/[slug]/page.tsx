@@ -417,6 +417,10 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
           ·{' '}
           <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
             Browse all directories →
+          </Link>{' '}
+          ·{' '}
+          <Link href="/store" className="text-signal underline-offset-4 hover:underline">
+            Gear for the road →
           </Link>
         </p>
       </Section>
