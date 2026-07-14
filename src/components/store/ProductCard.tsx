@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { StoreProduct } from '@/lib/store/types';
-import { priceLabel, productHref, productReadiness } from '@/lib/store/products';
+import { priceLabel, productHref, productReadiness, ratingLabel } from '@/lib/store/products';
 import { storeCategory } from '@/lib/store/categories';
 import { ProductImage } from './ProductImage';
 import { AmazonCta } from './AmazonCta';
@@ -20,6 +20,7 @@ export function ProductCard({
   const Heading = headingLevel;
   const cat = storeCategory(product.category);
   const price = priceLabel(product);
+  const rating = ratingLabel(product);
   const { live } = productReadiness(product);
 
   return (
@@ -36,6 +37,14 @@ export function ProductCard({
         </Link>
       </Heading>
       <p className="mt-2 flex-1 text-sm text-muted">{product.tagline}</p>
+      {rating && (
+        <p className="mt-2 text-xs text-muted">
+          <span aria-hidden="true" className="text-signal">
+            ★
+          </span>{' '}
+          {rating} on Amazon
+        </p>
+      )}
       <div className="mt-4 flex items-center justify-between gap-3">
         {price ? (
           <span className="font-display text-lg text-ink">{price}</span>
