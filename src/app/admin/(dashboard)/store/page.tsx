@@ -28,10 +28,11 @@ export default function AdminStorePage() {
   const liveCount = rows.filter((x) => x.r.live).length;
   const missing = {
     asin: rows.filter((x) => !x.r.hasAsin).length,
+    title: rows.filter((x) => !x.r.hasVerifiedTitle).length,
+    image: rows.filter((x) => !x.r.hasImage).length,
     price: rows.filter((x) => !x.r.hasPrice).length,
     rating: rows.filter((x) => !x.r.hasRating).length,
     reviews: rows.filter((x) => !x.r.hasReviewCount).length,
-    image: rows.filter((x) => !x.r.hasImage).length,
   };
 
   const Chip = ({ label, n }: { label: string; n: number }) => (
@@ -55,11 +56,18 @@ export default function AdminStorePage() {
       </header>
 
       <div className="flex flex-wrap gap-2">
+        <span className="rounded-card border border-line px-3 py-1.5 text-xs uppercase tracking-wide text-muted">
+          required
+        </span>
         <Chip label="ASIN" n={missing.asin} />
+        <Chip label="Title" n={missing.title} />
+        <Chip label="Image" n={missing.image} />
+        <span className="rounded-card border border-line px-3 py-1.5 text-xs uppercase tracking-wide text-muted">
+          optional
+        </span>
         <Chip label="Price" n={missing.price} />
         <Chip label="Rating" n={missing.rating} />
         <Chip label="Reviews" n={missing.reviews} />
-        <Chip label="Image" n={missing.image} />
       </div>
 
       <div className="overflow-x-auto rounded-card border border-line">

@@ -45,7 +45,10 @@ export type StoreProductType =
   | 'cleaning'
   | 'cpap'
   | 'health'
-  | 'apparel';
+  | 'apparel'
+  | 'atlas'
+  | 'securement'
+  | 'cab-comfort';
 
 export type StoreProduct = {
   /** URL segment under /store/products/. */
@@ -67,6 +70,12 @@ export type StoreProduct = {
   cons: string[];
   /** Shawn's plain-spoken recommendation / who it's for. */
   recommendation: string;
+  /**
+   * Verified Amazon product title, ONLY when owner-supplied. Overrides the
+   * editorial name for display when set. REQUIRED (alongside a valid ASIN and a
+   * licensed main image) for a product to activate. Optional/undefined until then.
+   */
+  verifiedTitle?: string | null;
   /**
    * Real Amazon ASIN. NULL for every placeholder — the owner fills this in.
    * A null ASIN means: no active Amazon button, no Offer schema, no price.
@@ -106,11 +115,16 @@ export type StoreProduct = {
  */
 export type ProductReadiness = {
   hasAsin: boolean;
+  hasVerifiedTitle: boolean;
   hasPrice: boolean;
   hasRating: boolean;
   hasReviewCount: boolean;
   hasImage: boolean;
-  /** True once a real, clickable Amazon offer can be shown. */
+  /**
+   * True once the product may activate: it has a valid ASIN, a verified title,
+   * AND a licensed main image (price/rating/reviews are optional). This is what
+   * gates the active Amazon button.
+   */
   live: boolean;
   missing: string[];
 };

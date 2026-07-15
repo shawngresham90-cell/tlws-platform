@@ -37,8 +37,10 @@ import {
   productsOfType,
   productHref,
   productReadiness,
+  productActive,
   priceLabel,
   ratingLabel,
+  displayName,
 } from '@/lib/store/products';
 import { STORE_CATEGORIES, storeCategory, storeCategoryHref } from '@/lib/store/categories';
 import { PRODUCT_TYPES, STORE_GUIDES, storeGuide, guideHref } from '@/lib/store/product-types';
@@ -64,22 +66,32 @@ const read = (p: string) => readFileSync(p, 'utf8');
 check('associate tag is exactly truckinglif0d-20', AMAZON_ASSOCIATE_TAG === 'truckinglif0d-20', AMAZON_ASSOCIATE_TAG);
 check('rel carries sponsored + noopener + noreferrer', AMAZON_REL === 'sponsored noopener noreferrer', AMAZON_REL);
 
-// ── 2. Catalog shape: exactly 100, unique slugs ────────────────────────────
-check('exactly 100 products', STORE_PRODUCTS.length === 100, STORE_PRODUCTS.length);
-check('product slugs are unique', new Set(STORE_PRODUCTS.map((p) => p.slug)).size === 100);
+// ── 2. Catalog shape: exactly 104, unique slugs ────────────────────────────
+check('exactly 104 products', STORE_PRODUCTS.length === 104, STORE_PRODUCTS.length);
+check('product slugs are unique', new Set(STORE_PRODUCTS.map((p) => p.slug)).size === 104);
 check('slugs are kebab-case', STORE_PRODUCTS.every((p) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug)));
+
+// The 4 owner-requested "first 12" additions exist as editorial placeholders.
+for (const slug of ['rand-mcnally-road-atlas', 'bungee-ratchet-strap-set', 'windshield-sunshade', 'blood-pressure-monitor']) {
+  const p = storeProduct(slug);
+  check(`new product ${slug} exists`, Boolean(p));
+  check(`new product ${slug} is a placeholder`, !!p && p.asin === null && p.imageUrl === null);
+}
 
 // ── 3. THE COMPLIANCE CORE: every Amazon fact blank, no active link ────────
 for (const p of STORE_PRODUCTS) {
   check(`${p.slug}: asin null`, p.asin === null, p.asin);
+  check(`${p.slug}: verifiedTitle blank`, !p.verifiedTitle, p.verifiedTitle);
   check(`${p.slug}: price null`, p.priceUsd === null, p.priceUsd);
   check(`${p.slug}: rating null`, p.rating === null, p.rating);
   check(`${p.slug}: reviewCount null`, p.reviewCount === null, p.reviewCount);
   check(`${p.slug}: image null`, p.imageUrl === null, p.imageUrl);
   check(`${p.slug}: NO affiliate url`, amazonProductUrl(p.asin) === null);
   check(`${p.slug}: not live`, productReadiness(p).live === false);
+  check(`${p.slug}: not active`, productActive(p) === false);
   check(`${p.slug}: no price label`, priceLabel(p) === null);
   check(`${p.slug}: no rating label`, ratingLabel(p) === null);
+  check(`${p.slug}: displayName falls back to editorial name`, displayName(p) === p.name);
 }
 
 // ── 4. Every product has full editorial content ────────────────────────────
@@ -127,7 +139,7 @@ for (const c of STORE_CATEGORIES) {
   check(`storeCategory resolves ${c.slug}`, storeCategory(c.slug)?.title === c.title);
 }
 const typeKeys = Object.keys(PRODUCT_TYPES);
-check('19 product types', typeKeys.length === 19, typeKeys.length);
+check('22 product types', typeKeys.length === 22, typeKeys.length);
 for (const p of STORE_PRODUCTS) {
   check(`${p.slug}: productType valid`, typeKeys.includes(p.productType), p.productType);
   const meta = PRODUCT_TYPES[p.productType];
@@ -162,6 +174,7 @@ for (const p of STORE_PRODUCTS) {
 const liveProduct: StoreProduct = {
   ...STORE_PRODUCTS[0],
   asin: 'B0CZ1ABCDE',
+  verifiedTitle: 'Real Verified Amazon Title',
   priceUsd: 129.99,
   rating: 4.6,
   reviewCount: 1234,
@@ -174,9 +187,17 @@ check('live offer url tagged', String((ls.offers as Record<string, unknown>).url
 check('live schema emits aggregateRating', 'aggregateRating' in ls);
 check('aggregateRating uses verified rating', (ls.aggregateRating as Record<string, unknown>).ratingValue === '4.6');
 check('aggregateRating uses verified count', (ls.aggregateRating as Record<string, unknown>).reviewCount === 1234);
+check('live schema name uses verified title', ls.name === 'Real Verified Amazon Title');
 // rating without review count → still no rating (never half-fabricated)
 const ratingOnly = productSchema({ ...STORE_PRODUCTS[0], rating: 4.6 } as StoreProduct) as Record<string, unknown>;
 check('rating without reviewCount → no aggregateRating', !('aggregateRating' in ratingOnly));
+
+// ── 9b. Activation gate: requires ASIN + verified title + image (price optional)
+check('fully-filled product is active', productActive(liveProduct) === true);
+check('ASIN + title but NO image → NOT active', productActive({ ...STORE_PRODUCTS[0], asin: 'B0CZ1ABCDE', verifiedTitle: 'T' } as StoreProduct) === false);
+check('ASIN + image but NO title → NOT active', productActive({ ...STORE_PRODUCTS[0], asin: 'B0CZ1ABCDE', imageUrl: 'x' } as StoreProduct) === false);
+check('active WITHOUT price is allowed (price optional)', productActive({ ...STORE_PRODUCTS[0], asin: 'B0CZ1ABCDE', verifiedTitle: 'T', imageUrl: 'x' } as StoreProduct) === true);
+check('offers NOT emitted without price even when active', !('offers' in (productSchema({ ...STORE_PRODUCTS[0], asin: 'B0CZ1ABCDE', verifiedTitle: 'T', imageUrl: 'x' } as StoreProduct) as Record<string, unknown>)));
 
 // ── 10. Shawn's Picks resolve to real products ─────────────────────────────
 const picks = shawnsPicks();
@@ -197,7 +218,7 @@ check('fbt returns distinct products', new Set(fbt.map((p) => p.slug)).size === 
 check('filter by category', filterAndSortProducts(STORE_PRODUCTS, { category: 'electronics' }).every((p) => p.category === 'electronics'));
 check('query matches text', filterAndSortProducts(STORE_PRODUCTS, { query: 'dash cam' }).some((p) => p.productType === 'dash-cam'));
 check('unmatched query returns none', filterAndSortProducts(STORE_PRODUCTS, { query: 'zzzznomatch' }).length === 0);
-check('empty filter returns all 100', filterAndSortProducts(STORE_PRODUCTS, {}).length === 100);
+check('empty filter returns all 104', filterAndSortProducts(STORE_PRODUCTS, {}).length === 104);
 
 // ── 13. Analytics event names ──────────────────────────────────────────────
 check('storeView', STORE_EVENTS.storeView === 'store_page_view');
@@ -217,14 +238,16 @@ check('long disclosure names Amazon Associate', /Amazon Associate/.test(AMAZON_D
 check('short disclosure names Amazon Associate', /Amazon Associate/.test(AMAZON_DISCLOSURE_SHORT));
 check('AmazonDisclosure renders the constant', /AMAZON_DISCLOSURE/.test(read('src/components/store/AmazonDisclosure.tsx')));
 
-// ── 16. CTA components gate on a real ASIN ─────────────────────────────────
+// ── 16. CTA components gate on the full activation rule ────────────────────
 const ctaSrc = read('src/components/store/AmazonCta.tsx');
 check('AmazonCta gates on amazonProductUrl', /amazonProductUrl\(/.test(ctaSrc));
+check('AmazonCta gates on productActive', /productActive\(/.test(ctaSrc));
 check('AmazonCta applies AMAZON_REL', /AMAZON_REL/.test(ctaSrc));
 check('AmazonCta opens new tab', /target="_blank"/.test(ctaSrc));
 check('AmazonCta has coming-soon fallback', /coming soon/i.test(ctaSrc));
 const stickySrc = read('src/components/store/StickyAmazonCta.tsx');
 check('StickyAmazonCta gates on amazonProductUrl', /amazonProductUrl\(/.test(stickySrc));
+check('StickyAmazonCta gates on productActive', /productActive\(/.test(stickySrc));
 check('StickyAmazonCta can return null', /return null/.test(stickySrc));
 
 // ── 17. No scraped/hotlinked Amazon image host in store code ───────────────
@@ -252,10 +275,22 @@ check('sitemap includes /store/shawns-picks', /\/store\/shawns-picks/.test(sitem
 
 // ── 19. Owner-fill CSV template exists and is complete ─────────────────────
 const csv = read('docs/store/owner-fill-template.csv').trim().split('\n');
-check('csv has header + 100 rows', csv.length === 101, csv.length);
+check('csv has header + 104 rows', csv.length === 105, csv.length);
 for (const col of ['slug', 'asin', 'verified_title', 'price_usd', 'rating', 'review_count', 'image_path']) {
   check(`csv header has ${col}`, csv[0].includes(col));
 }
+
+// ── 20. First-12 activation artifacts: input CSV blank + validator present ─
+const first12 = read('docs/store/first-12-product-input.csv').trim().split('\n');
+check('first-12 CSV has header + 12 rows', first12.length === 13, first12.length);
+check('first-12 header has product_id + asin + verified_amazon_title', /product_id/.test(first12[0]) && /asin/.test(first12[0]) && /verified_amazon_title/.test(first12[0]));
+for (let i = 1; i < first12.length; i++) {
+  const cols = first12[i].split(',');
+  // columns after product_id(0)+product_name(1) up through notes: asin(2)..alt_image_2(10) must be blank
+  check(`first-12 row ${i}: Amazon fields blank`, cols.slice(2, 11).every((c) => c.trim() === ''));
+}
+check('validator script present', /isValidAsin/.test(read('scripts/validate-first-12.ts')));
+check('activation-rules doc present', /activate/i.test(read('docs/store/activation-rules.md')));
 
 // ── Summary ────────────────────────────────────────────────────────────────
 console.log(`\nStore tests: ${passed} passed, ${failed} failed`);

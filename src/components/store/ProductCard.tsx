@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { StoreProduct } from '@/lib/store/types';
-import { priceLabel, productHref, productReadiness, ratingLabel } from '@/lib/store/products';
+import { priceLabel, productHref, productReadiness, ratingLabel, displayName } from '@/lib/store/products';
 import { storeCategory } from '@/lib/store/categories';
 import { ProductImage } from './ProductImage';
 import { AmazonCta } from './AmazonCta';
@@ -33,7 +33,7 @@ export function ProductCard({
       )}
       <Heading className="mt-1 font-display text-lg uppercase text-ink">
         <Link href={productHref(product.slug)} className="transition-colors hover:text-signal">
-          {product.name}
+          {displayName(product)}
         </Link>
       </Heading>
       <p className="mt-2 flex-1 text-sm text-muted">{product.tagline}</p>

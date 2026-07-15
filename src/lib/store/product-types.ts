@@ -126,6 +126,24 @@ export const PRODUCT_TYPES: Record<StoreProductType, ProductTypeMeta> = {
     category: 'apparel-gear',
     blurb: 'Gloves, boots, hi-vis, and bags that hold up load after load.',
   },
+  atlas: {
+    type: 'atlas',
+    label: 'Maps & Atlases',
+    category: 'electronics',
+    blurb: 'The paper backup that never loses signal — truck routes and restrictions.',
+  },
+  securement: {
+    type: 'securement',
+    label: 'Straps & Securement',
+    category: 'tools-maintenance',
+    blurb: 'Ratchets, bungees, and tie-downs so nothing shifts on the first hard stop.',
+  },
+  'cab-comfort': {
+    type: 'cab-comfort',
+    label: 'Cab Comfort & Climate',
+    category: 'comfort-sleep',
+    blurb: 'Sunshades and cab-climate gear that keep the truck livable.',
+  },
 };
 
 export function productTypeMeta(type: StoreProductType): ProductTypeMeta {

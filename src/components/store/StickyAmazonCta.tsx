@@ -3,18 +3,19 @@
 import { useEffect, useState } from 'react';
 import { trackEvent } from '@/lib/analytics';
 import { AMAZON_REL, amazonProductUrl } from '@/lib/store/amazon';
+import { productActive } from '@/lib/store/products';
 import { STORE_EVENTS } from '@/lib/store/analytics';
 import type { StoreProduct } from '@/lib/store/types';
 
 /**
- * Mobile-only sticky Amazon bar on a product page. Renders NOTHING for a
- * placeholder product (no ASIN → no active button, matching AmazonCta), so a
- * sticky bar can never point at a product the owner hasn't confirmed. For a
- * live product it appears after the hero scrolls away and stays put; the page
- * reserves bottom space so nothing is covered (no layout shift).
+ * Mobile-only sticky Amazon bar on a product page. Renders NOTHING unless the
+ * product passes the activation gate (valid ASIN + verified title + licensed
+ * image), matching AmazonCta, so a sticky bar can never point at a product the
+ * owner hasn't fully confirmed. For an active product it appears after the hero
+ * scrolls away and stays put; the page reserves bottom space (no layout shift).
  */
 export function StickyAmazonCta({ product }: { product: StoreProduct }) {
-  const url = amazonProductUrl(product.asin);
+  const url = productActive(product) ? amazonProductUrl(product.asin) : null;
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

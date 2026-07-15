@@ -2,8 +2,9 @@ import type { ProductReadiness, StoreCategorySlug, StoreProductType, StoreProduc
 import { isValidAsin } from './amazon';
 
 /**
- * Trucking Life Store catalog — 100 curated EDITORIAL recommendation slots
- * across 19 product types and 7 categories.
+ * Trucking Life Store catalog — 104 curated EDITORIAL recommendation slots
+ * across 22 product types and 7 categories (100 M54 slots + 4 owner-requested
+ * "first 12" additions).
  *
  * EVERY entry is a PLACEHOLDER for its Amazon-specific facts: `asin`,
  * `priceUsd`, `rating`, `reviewCount`, and `imageUrl` are ALL null on purpose.
@@ -1927,11 +1928,88 @@ export const STORE_PRODUCTS: StoreProduct[] = [
     imageUrl: null,
     icon: '🎒',
   },
+  // ── Owner-requested "first 12" additions (editorial placeholders) ─────────
+  {
+    slug: 'rand-mcnally-road-atlas',
+    name: "Motor Carriers' Road Atlas",
+    category: 'electronics',
+    productType: 'atlas',
+    tagline: 'The paper backup that never loses signal or reboots.',
+    description:
+      "A trucking road atlas maps the designated truck routes, restrictions, and low clearances a GPS can miss, and it keeps working when the screen dies or the signal drops. Plenty of veteran drivers cross-check the atlas against the GPS before committing to an unfamiliar route.",
+    benefits: ['Truck-specific routes and restrictions at a glance', 'Never needs signal, power, or an update', 'A reliable backup when the GPS reroutes you wrong'],
+    pros: ['Big-picture view a small screen can\'t match', 'No batteries, no reboots, no dead zones', 'Good for planning fuel and rest stops ahead'],
+    cons: ['No live traffic or turn-by-turn voice', 'Editions age as roads change'],
+    recommendation: 'Keep one in the door pocket as the backup to your GPS — when the screen fails on a bad night, the paper still works.',
+    asin: null,
+    priceUsd: null,
+    rating: null,
+    reviewCount: null,
+    imageUrl: null,
+    icon: '🗺️',
+  },
+  {
+    slug: 'bungee-ratchet-strap-set',
+    name: 'Bungee & Ratchet Strap Set',
+    category: 'tools-maintenance',
+    productType: 'securement',
+    tagline: 'Tie it down right so nothing shifts on the first hard stop.',
+    description:
+      "A set of ratchet straps and bungees covers the everyday securement jobs around the truck — holding gear in the side box, a load on the headache rack, or the odds and ends in the sleeper. Ratchets give you real tension; bungees handle the quick, light stuff.",
+    benefits: ['Handles both heavy tie-downs and quick light jobs', 'Keeps gear from shifting on hard stops and turns', 'One set covers cab, sleeper, and side-box duty'],
+    pros: ['Ratchets hold real tension, not just a stretch', 'Assorted lengths cover most jobs', 'Cheap insurance against a shifting load'],
+    cons: ['Cheap hooks and hardware can bend or rust', 'Not a substitute for rated cargo securement on the trailer'],
+    recommendation: 'A handy everyday set for the cab and side boxes. For actual freight, always use properly rated securement that meets the cargo rules.',
+    asin: null,
+    priceUsd: null,
+    rating: null,
+    reviewCount: null,
+    imageUrl: null,
+    icon: '🪝',
+  },
+  {
+    slug: 'windshield-sunshade',
+    name: 'Truck Windshield Sunshade',
+    category: 'comfort-sleep',
+    productType: 'cab-comfort',
+    tagline: 'Keep the cab from turning into an oven while you\'re parked.',
+    description:
+      'A sized windshield sunshade blocks the sun off the dash and cab while you\'re parked, so you climb back into something cooler and your dash takes less heat damage. It folds down to stash behind the seat when you\'re rolling.',
+    benefits: ['Keeps the cab and dash cooler while parked', 'Cuts glare and sun damage on the dashboard', 'Folds flat to store behind the seat'],
+    pros: ['Real difference on a hot parked afternoon', 'Adds a little daytime privacy', 'Cheap and simple, nothing to break'],
+    cons: ['Must fit your specific windshield to work well', 'Only helps while parked, not rolling'],
+    recommendation: 'Worth it for anyone who parks in the sun and hates climbing into an oven. Match it to your windshield size for full coverage.',
+    asin: null,
+    priceUsd: null,
+    rating: null,
+    reviewCount: null,
+    imageUrl: null,
+    icon: '☀️',
+  },
+  {
+    slug: 'blood-pressure-monitor',
+    name: 'Blood Pressure Monitor',
+    category: 'health-wellness',
+    productType: 'health',
+    tagline: 'Keep an eye on your numbers between DOT physicals.',
+    description:
+      "A compact blood pressure monitor lets you check your numbers on your own schedule instead of waiting for the next physical. Keeping tabs matters in this job, where the DOT medical card depends on it. It is a personal-tracking tool, not medical advice — follow your doctor's guidance.",
+    benefits: ['Check your numbers on your own schedule', 'Compact enough to keep in the truck', 'Helps you stay ahead of your DOT physical'],
+    pros: ['Simple at-home readings between checkups', 'Cuff-and-display models are easy to use', 'Battery-powered options work in the cab'],
+    cons: ['Readings vary with cuff fit and technique', 'Not a substitute for a doctor or your DOT exam'],
+    recommendation: 'A smart tool for drivers managing their numbers between physicals. Take readings the way your doctor tells you, and bring concerns to them.',
+    asin: null,
+    priceUsd: null,
+    rating: null,
+    reviewCount: null,
+    imageUrl: null,
+    icon: '❤️',
+  },
 ];
 
-if (STORE_PRODUCTS.length !== 100) {
-  // Guardrail: the M54 catalog is spec'd at exactly 100 slots.
-  throw new Error(`Store catalog must have 100 products, found ${STORE_PRODUCTS.length}`);
+if (STORE_PRODUCTS.length !== 104) {
+  // Guardrail: 100 M54 editorial slots + 4 owner-requested "first 12" additions.
+  throw new Error(`Store catalog must have 104 products, found ${STORE_PRODUCTS.length}`);
 }
 
 const BY_SLUG = new Map(STORE_PRODUCTS.map((p) => [p.slug, p]));
@@ -1953,22 +2031,43 @@ export function productHref(slug: string): string {
 }
 
 /**
- * Sellable = valid ASIN AND a confirmed price. Rating/review-count/image are
- * tracked for the catalog audit but are not required to render a live link.
+ * Activation gate. A product may activate (active Amazon button, verified
+ * numbers shown) ONLY when it has ALL required fields: a valid ASIN, a verified
+ * Amazon title, AND a licensed main image. Price, rating, and review count are
+ * OPTIONAL — a product can be live without them. `missing` lists what's needed
+ * for activation; the admin audit also surfaces the optional gaps.
  */
 export function productReadiness(p: StoreProduct): ProductReadiness {
   const hasAsin = isValidAsin(p.asin);
+  const hasVerifiedTitle = Boolean(p.verifiedTitle && p.verifiedTitle.trim());
   const hasPrice = typeof p.priceUsd === 'number' && p.priceUsd > 0;
   const hasRating = typeof p.rating === 'number' && p.rating > 0;
   const hasReviewCount = typeof p.reviewCount === 'number' && p.reviewCount > 0;
   const hasImage = Boolean(p.imageUrl);
+  const live = hasAsin && hasVerifiedTitle && hasImage;
   const missing: string[] = [];
+  // Required-for-activation gaps first.
   if (!hasAsin) missing.push('ASIN');
+  if (!hasVerifiedTitle) missing.push('verified title');
+  if (!hasImage) missing.push('image');
+  // Optional gaps (do not block activation).
   if (!hasPrice) missing.push('price');
   if (!hasRating) missing.push('rating');
   if (!hasReviewCount) missing.push('reviews');
-  if (!hasImage) missing.push('image');
-  return { hasAsin, hasPrice, hasRating, hasReviewCount, hasImage, live: hasAsin && hasPrice, missing };
+  return { hasAsin, hasVerifiedTitle, hasPrice, hasRating, hasReviewCount, hasImage, live, missing };
+}
+
+/**
+ * True when the active Amazon button may render: valid ASIN + verified title +
+ * licensed main image. This is the single gate the CTA components check.
+ */
+export function productActive(p: StoreProduct): boolean {
+  return productReadiness(p).live;
+}
+
+/** Verified Amazon title when set, else the editorial name. */
+export function displayName(p: StoreProduct): string {
+  return p.verifiedTitle && p.verifiedTitle.trim() ? p.verifiedTitle : p.name;
 }
 
 /** Whole-dollar price string, or null when unconfirmed (never guessed). */
