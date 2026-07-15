@@ -1,0 +1,3 @@
+name,category,city,state,slug_preview,slug_collision,completeness,label,geocoding,duplicate_hits,verdict,reason,missing_fields
+TA Wheeling (TravelCenters of America),truck-stops,Valley Grove,WV,ta-wheeling-travelcenters-of-america-valley-grove-wv,,71,Good,needs-geocoding,,ready-to-publish,completeness 71 with address,Verified coordinates; Parking type; Truck-space count; TPC reservation link; Verified date; Approved reviews
+Dallas Pike Fuel Center,truck-stops,Triadelphia,WV,dallas-pike-fuel-center-triadelphia-wv,,52,Needs work,needs-geocoding,,import-unpublished,"completeness 52, no address — enrich before publishing",Street address; ZIP; Verified coordinates; Website; Parking type; Truck-space count; TPC reservation link; Verified date; Approved reviews
