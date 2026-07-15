@@ -1,10 +1,11 @@
+import Image from 'next/image';
 import { Section, Eyebrow } from '@/components/ui';
 
 /**
  * Founding Member Shirt — a limited-run merch drop that funds the school.
  * A prominent, high-contrast band placed right under the hero (above the four
  * paths). The CTA is an external link to the Stan store and opens a new tab.
- * The image is a placeholder slot until the real shirt photo is supplied.
+ * The shirt photo lives in /public and is optimized/resized by next/image.
  */
 const SHIRT_URL =
   'https://stan.store/TRUCKINGLIFEWITHSHAWN/p/founding-member-shirt--only-100-made';
@@ -17,22 +18,15 @@ export function ShirtHero() {
       className="border-b border-line bg-asphalt-800"
     >
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-8 text-center">
-        {/*
-          Placeholder image slot — swap this whole block for the real shirt photo, e.g.:
-          <Image src="/images/founding-member-shirt.jpg" alt="Founding Member shirt — only 100 made"
-                 width={480} height={600} priority className="w-full max-w-xs rounded-card" />
-        */}
-        <div
-          role="img"
-          aria-label="Founding Member shirt photo coming soon"
-          className="flex aspect-[4/5] w-full max-w-[18rem] items-center justify-center rounded-card border-2 border-dashed border-line bg-asphalt"
-        >
-          <span className="px-4 font-display text-sm uppercase leading-tight tracking-wide text-muted">
-            Shirt photo
-            <br />
-            coming soon
-          </span>
-        </div>
+        <Image
+          src="/images/store/founding-member-shirt.jpg"
+          alt="Trucking Life Founding Member shirt — limited run, only 100 made"
+          width={1086}
+          height={1448}
+          priority
+          sizes="(max-width: 640px) 80vw, 320px"
+          className="h-auto w-full max-w-[20rem] rounded-card object-contain"
+        />
 
         <div>
           <Eyebrow>Limited drop · Funds the school</Eyebrow>
