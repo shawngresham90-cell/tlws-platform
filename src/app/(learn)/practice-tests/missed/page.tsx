@@ -1,14 +1,13 @@
 import { Container, Eyebrow } from '@/components/ui';
-import { SavedBrowser, type SavedBank } from '@/components/test/SavedBrowser';
-import { publishedTests } from '@/lib/tests/catalog';
-import { getQuestionsForTest } from '@/lib/tests/queries';
+import { SavedBrowser } from '@/components/test/SavedBrowser';
+import { getPublishedBanks } from '@/lib/tests/queries';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
  * Missed-question drilling (Milestone 4). Deliberately NOINDEX: personalized,
- * device-local content. Same server-side bank fetch as the bookmarks page —
- * the client island prunes miss history against live questions and runs
- * drills through the existing Study runner.
+ * device-local content. Same server-side bank fetch as the bookmarks page
+ * (shared getPublishedBanks) — the client island prunes miss history against
+ * live questions and runs drills through the existing Study runner.
  */
 export const revalidate = 300;
 
@@ -19,14 +18,7 @@ export const metadata = buildMetadata({
 });
 
 export default async function MissedQuestionsPage() {
-  const tests = publishedTests();
-  const questionSets = await Promise.all(tests.map((t) => getQuestionsForTest(t.slug)));
-  const banks: SavedBank[] = tests
-    .map((t, i) => ({
-      test: { slug: t.slug, title: t.title, passThresholdPct: t.passThresholdPct },
-      questions: questionSets[i],
-    }))
-    .filter((b) => b.questions.length > 0);
+  const banks = await getPublishedBanks();
 
   return (
     <div className="py-10 sm:py-14">

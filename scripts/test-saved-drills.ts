@@ -6,7 +6,7 @@
  *     immutable toggles, pruning against the live bank, miss counting +
  *     recency ordering, per-test and full clearing, storage roundtrips.
  *   - Drill isolation: drill sessions use their own study-storage variant and
- *     never reach the attempt log (logAttempt gate in TestResults).
+ *     never reach the attempt log (the drill gate in TestResults).
  *   - Recording: Study Mode records a miss the moment a wrong answer lands;
  *     the Timed runner records answered-wrong questions once, at submission.
  *   - Wiring: /practice-tests/bookmarks + /missed are noindex, render empty
@@ -207,6 +207,31 @@ check(
   ) === 1,
 );
 check(
+  'NaN/Infinity stamps and counts are rejected on parse (review hardening)',
+  totalMisses(
+    deserializeMisses(
+      JSON.stringify({
+        v: 1,
+        tests: { [GK]: { q1: { n: 1, at: NaN }, q2: { n: Infinity, at: T0 } } },
+      }),
+    ),
+  ) === 0,
+);
+check(
+  'sub-1 fractional counts are dropped, not truncated to "Missed 0×"',
+  totalMisses(
+    deserializeMisses(JSON.stringify({ v: 1, tests: { [GK]: { q1: { n: 0.5, at: T0 } } } })),
+  ) === 0,
+);
+check(
+  'duplicate bookmark ids are deduped on parse (no duplicate React keys)',
+  (
+    deserializeBookmarks(JSON.stringify({ v: 1, tests: { [GK]: ['q1', 'q1', 'q2'] } })).tests[GK] ??
+    []
+  ).length === 2,
+);
+
+check(
   'fractional counts are truncated on parse',
   missEntry(
     deserializeMisses(JSON.stringify({ v: 1, tests: { [GK]: { q4: { n: 1.9, at: T0 } } } })),
@@ -229,15 +254,18 @@ check('saved.ts never imports supabase', !savedLib.includes('supabase'));
 
 // ── 5. Recording wiring — Study immediate, Timed at submission ──────────────
 const studyRunner = read('src/components/test/StudyRunner.tsx');
-check('StudyRunner records misses via the shared lib', studyRunner.includes('recordMisses('));
+check(
+  'StudyRunner records misses via the shared write-through',
+  studyRunner.includes('recordMissesToStorage('),
+);
 check('StudyRunner records ONLY wrong answers', studyRunner.includes('key !== q.correctKey'));
 check(
   'StudyRunner storage keys carry the drill variant',
-  (studyRunner.match(/studyStorageKey\(test\.slug, variant\)/g) ?? []).length >= 3,
+  (studyRunner.match(/studyStorageKey\(test\.slug, drill\)/g) ?? []).length >= 3,
 );
 check(
-  'StudyRunner passes the logAttempt gate through',
-  studyRunner.includes('logAttempt={logAttempt}'),
+  'StudyRunner passes drill-awareness to results',
+  studyRunner.includes('drill={drill !== undefined}'),
 );
 check(
   'StudyRunner miss write is guarded (storage may be blocked)',
@@ -249,10 +277,17 @@ check(
 );
 
 const timedRunner = read('src/components/test/TimedRunner.tsx');
-check('TimedRunner records misses via the shared lib', timedRunner.includes('recordMisses('));
 check(
-  'TimedRunner records misses once — behind the submission latch',
-  timedRunner.includes('session.submittedAt === undefined'),
+  'TimedRunner records misses via the shared write-through',
+  timedRunner.includes('recordMissesToStorage('),
+);
+check(
+  'TimedRunner records misses once — ref latch, race-proof before re-render',
+  timedRunner.includes('!missesRecorded.current && session.submittedAt === undefined'),
+);
+check(
+  'TimedRunner resets the miss latch on retake',
+  timedRunner.includes('missesRecorded.current = false'),
 );
 check(
   'TimedRunner only counts ANSWERED-wrong questions as misses',
@@ -266,13 +301,14 @@ check(
 );
 
 const results = read('src/components/test/TestResults.tsx');
+check('TestResults gates the attempt log on drill', results.includes('if (drill || alreadyLogged'));
 check(
-  'TestResults gates the attempt log on logAttempt',
-  results.includes('if (!logAttempt || alreadyLogged'),
+  'TestResults defaults drill to false (Study/Timed unchanged)',
+  results.includes('drill = false'),
 );
 check(
-  'TestResults defaults logAttempt to true (Study/Timed unchanged)',
-  results.includes('logAttempt = true'),
+  'drill results never claim a real-exam verdict',
+  /\{!drill && <> · \{test\.passThresholdPct\}% needed/.test(results),
 );
 check('TestResults renders a bookmark button per review row', results.includes('<BookmarkButton'));
 check(
@@ -283,11 +319,17 @@ check(
 // ── 6. Drill isolation — subset only, own bucket, never logged ──────────────
 const browser = read('src/components/test/SavedBrowser.tsx');
 check(
-  'drills filter the bank to the SELECTED ids only',
-  browser.includes('bank.questions.filter((q) => drill.ids.includes(q.id))'),
+  'drills map the SELECTED ids only, in list order (drill order)',
+  browser.includes('drill.ids') && browser.includes('.map((id) => byId.get(id))'),
 );
-check('drills run under their own storage variant', browser.includes('variant={kind}'));
-check('drill attempts NEVER reach the attempt log', browser.includes('logAttempt={false}'));
+check(
+  'drills run as their kind (one flag: storage + logging + copy)',
+  browser.includes('drill={kind}'),
+);
+check(
+  'drills always start fresh (stale sessions cleared at launch)',
+  browser.includes('window.localStorage.removeItem(studyStorageKey(slug, kind))'),
+);
 check(
   'drills reuse the existing StudyRunner (no forked quiz UI)',
   browser.includes('<StudyRunner'),
@@ -300,7 +342,26 @@ check(
   'bookmark rows are removable (toggle-off via BookmarkButton)',
   browser.includes('<BookmarkButton'),
 );
-check('miss history is clearable per test', browser.includes('clearMisses('));
+check(
+  'miss history clears against a FRESH read (never the mount snapshot)',
+  browser.includes('clearMisses(readMisses(), bank.test.slug)'),
+);
+check(
+  'returning from a drill re-reads storage (list never goes stale)',
+  /refresh\(\);\s*setDrill\(null\);/.test(browser),
+);
+check(
+  'view swaps manage focus (no drop to body)',
+  browser.includes('tabIndex={-1}') && browser.includes('.current?.focus()'),
+);
+check(
+  'removals/clears announce via a persistent status region',
+  browser.includes('role="status"') && browser.includes('setAnnounce('),
+);
+check(
+  'drill back button meets the 44px target',
+  /Back to your[\s\S]{0,400}min-h-\[44px\]|min-h-\[44px\][\s\S]{0,400}Back to your/.test(browser),
+);
 check('miss rows show count + recency', browser.includes('Missed {entry.n}'));
 check(
   'empty states exist for both kinds',
@@ -319,7 +380,15 @@ check(
   bookmarkButton.includes('aria-pressed={saved}'),
 );
 check('bookmark button meets the 44px target', bookmarkButton.includes('min-h-[44px]'));
-check('bookmark writes are guarded (storage may be blocked)', bookmarkButton.includes('} catch {'));
+check(
+  'bookmark toggles are fresh read-modify-writes via savedStorage',
+  bookmarkButton.includes('toggleBookmark(readBookmarks()') &&
+    bookmarkButton.includes('writeBookmarks(next)'),
+);
+check(
+  'bookmark accessible name is constant + disambiguated',
+  bookmarkButton.includes('aria-label={context'),
+);
 
 // ── 7. Routes — noindex, ISR, launch points ─────────────────────────────────
 const bookmarksPage = read('src/app/(learn)/practice-tests/bookmarks/page.tsx');
@@ -336,10 +405,7 @@ for (const [label, src, kind] of [
     (src.match(/process\.env\./g) ?? []).length ===
       (src.match(/process\.env\.NEXT_PUBLIC_/g) ?? []).length,
   );
-  check(
-    `${label} page fetches every published bank`,
-    src.includes('publishedTests()') && src.includes('getQuestionsForTest'),
-  );
+  check(`${label} page fetches banks via the shared loader`, src.includes('getPublishedBanks'));
 }
 
 const hub = read('src/app/(learn)/practice-tests/page.tsx');
@@ -354,9 +420,19 @@ check(
 );
 
 // ── 8. No secrets in the new client components ──────────────────────────────
+const savedStorage = read('src/lib/tests/savedStorage.ts');
+check(
+  'savedStorage centralizes the fresh read-modify-write discipline',
+  savedStorage.includes('recordMissesToStorage') &&
+    savedStorage.includes('readBookmarks') &&
+    savedStorage.includes('writeMisses'),
+);
+check('savedStorage never imports supabase', !savedStorage.includes('supabase'));
+
 for (const [label, src] of [
   ['SavedBrowser', browser],
   ['BookmarkButton', bookmarkButton],
+  ['savedStorage', savedStorage],
 ] as const) {
   check(`${label} never reads process.env`, !src.includes('process.env'));
   check(`${label} never references service-role`, !src.toLowerCase().includes('service_role'));

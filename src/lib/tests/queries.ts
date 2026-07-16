@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { publishedTests } from './catalog';
 import type { Question, QuestionChoice } from './types';
 
 /**
@@ -97,6 +98,24 @@ export function normalizeChoices(raw: unknown): QuestionChoice[] {
  * runner (Milestone 2) consumes this; Milestone 1 only needs it to exist and
  * to prove the read path is correct.
  */
+/**
+ * Every published test with a seeded bank, in runner shape — the saved pages
+ * (bookmarks/missed, Milestone 4) render all of them from one call so the
+ * client can prune device-local saved ids against live questions.
+ */
+export async function getPublishedBanks(): Promise<
+  { test: { slug: string; title: string; passThresholdPct: number }; questions: Question[] }[]
+> {
+  const tests = publishedTests();
+  const questionSets = await Promise.all(tests.map((t) => getQuestionsForTest(t.slug)));
+  return tests
+    .map((t, i) => ({
+      test: { slug: t.slug, title: t.title, passThresholdPct: t.passThresholdPct },
+      questions: questionSets[i],
+    }))
+    .filter((b) => b.questions.length > 0);
+}
+
 export async function getQuestionsForTest(slug: string): Promise<Question[]> {
   try {
     const meta = await getPublishedTestMeta(slug);

@@ -19,6 +19,15 @@ export const CHOICE_BUTTON_BASE =
   'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt';
 
+/** Pre-hydration placeholder panel — identical chrome across all three runners. */
+export function LoadingPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-card border border-line bg-asphalt-800 p-8 text-muted" role="status">
+      {children}
+    </div>
+  );
+}
+
 /** "Question X of N" header + answered-count progressbar — identical in both modes. */
 export function QuizProgress({
   currentIndex,

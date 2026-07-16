@@ -1,14 +1,14 @@
 import { Container, Eyebrow } from '@/components/ui';
-import { SavedBrowser, type SavedBank } from '@/components/test/SavedBrowser';
-import { publishedTests } from '@/lib/tests/catalog';
-import { getQuestionsForTest } from '@/lib/tests/queries';
+import { SavedBrowser } from '@/components/test/SavedBrowser';
+import { getPublishedBanks } from '@/lib/tests/queries';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
  * Bookmarked questions (Milestone 4). Deliberately NOINDEX: the content is
  * personalized (device-local localStorage) and thin from a crawler's view.
- * Every published bank is fetched server-side so the client island can prune
- * saved ids against live questions and start drills with zero extra requests.
+ * Every published bank is fetched server-side (shared getPublishedBanks) so
+ * the client island can prune saved ids against live questions and start
+ * drills with zero extra requests.
  */
 export const revalidate = 300;
 
@@ -19,14 +19,7 @@ export const metadata = buildMetadata({
 });
 
 export default async function BookmarksPage() {
-  const tests = publishedTests();
-  const questionSets = await Promise.all(tests.map((t) => getQuestionsForTest(t.slug)));
-  const banks: SavedBank[] = tests
-    .map((t, i) => ({
-      test: { slug: t.slug, title: t.title, passThresholdPct: t.passThresholdPct },
-      questions: questionSets[i],
-    }))
-    .filter((b) => b.questions.length > 0);
+  const banks = await getPublishedBanks();
 
   return (
     <div className="py-10 sm:py-14">

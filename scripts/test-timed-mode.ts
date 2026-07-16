@@ -249,15 +249,28 @@ check(
   !/q\.explanation/.test(runner) && !/q\.cfrCite/.test(runner),
 );
 // The answer key may be READ at submission (Milestone 4 miss recording) but
-// must never reach the exam view — the rendered UI stays verdict-free.
-check(
-  'NO answer key is even referenced in the exam view',
-  !/correctKey/.test(runner.slice(runner.indexOf('function TimedExam'))),
-);
-check(
-  'answer-key reads happen only inside the submit handler (miss recording)',
-  /onSubmit=\{\(reason\) => \{[\s\S]*?correctKey[\s\S]*?submitTimedSession/.test(runner),
-);
+// must never reach the exam view — the rendered UI stays verdict-free. The
+// guard is containment, not existence: every correctKey reference in the file
+// must sit inside the onSubmit handler, and the anchors must actually match
+// (a renamed anchor fails loudly instead of passing vacuously).
+{
+  const examViewStart = runner.indexOf('function TimedExam');
+  const handlerStart = runner.indexOf('onSubmit={(reason) => {');
+  const handlerEnd = runner.indexOf('setSession', handlerStart);
+  check(
+    'exam-view + submit-handler anchors present (guard has teeth)',
+    examViewStart > 0 && handlerStart > 0 && handlerEnd > handlerStart,
+  );
+  check(
+    'NO answer key is referenced in the exam view',
+    examViewStart > 0 && !/correctKey/.test(runner.slice(examViewStart)),
+  );
+  check(
+    'answer-key reads are CONFINED to the submit handler (miss recording)',
+    handlerStart > 0 &&
+      !/correctKey/.test(runner.slice(0, handlerStart) + runner.slice(handlerEnd, examViewStart)),
+  );
+}
 check(
   'expiry auto-submits via the one-way latch',
   /remaining === 0/.test(runner) && /submitTimedSession/.test(runner),
@@ -295,7 +308,7 @@ check(
 check('TestResults grades with the shared gradeAttempt', /gradeAttempt\(/.test(results));
 check(
   'TestResults logs the attempt once (guard actually enforced)',
-  /if \(!logAttempt \|\| alreadyLogged \|\| posting\.current\) return;/.test(results),
+  /if \(drill \|\| alreadyLogged \|\| posting\.current\) return;/.test(results),
 );
 check(
   'zero-answer sittings latch locally instead of posting a doomed 422',
@@ -317,7 +330,7 @@ check(
 const studyRunner = read('src/components/test/StudyRunner.tsx');
 check(
   'StudyRunner renders results via the SAME shared TestResults',
-  /<TestResults/.test(studyRunner) && /modeLabel="Study Mode"/.test(studyRunner),
+  /<TestResults/.test(studyRunner) && /: 'Study Mode'/.test(studyRunner),
 );
 check(
   'Study Mode immediate-feedback behavior unchanged',

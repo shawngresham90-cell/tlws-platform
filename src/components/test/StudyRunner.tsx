@@ -18,13 +18,9 @@ import {
 } from '@/lib/tests/study';
 import { TestResults, type RunnerTest } from './TestResults';
 import { BookmarkButton } from './BookmarkButton';
-import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
-import {
-  MISSES_STORAGE_KEY,
-  deserializeMisses,
-  recordMisses,
-  serializeMisses,
-} from '@/lib/tests/saved';
+import { CHOICE_BUTTON_BASE, LoadingPanel, QuizProgress } from './shared';
+import type { SavedKind } from '@/lib/tests/saved';
+import { recordMissesToStorage } from '@/lib/tests/savedStorage';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -54,16 +50,18 @@ export function StudyRunner({
   test,
   questions,
   turnstileSiteKey,
-  variant,
-  logAttempt = true,
+  drill,
 }: {
   test: RunnerTest;
   questions: Question[];
   turnstileSiteKey: string;
-  /** Drill sessions (bookmarks/misses) get their own storage bucket. */
-  variant?: string;
-  /** Drills run on partial banks — their scores must never reach the attempt log. */
-  logAttempt?: boolean;
+  /**
+   * Set when this run is a saved-work drill (Milestone 4). ONE flag drives
+   * everything drill-specific — its own storage bucket, no attempt logging,
+   * and drill-appropriate results copy — so the pieces can never be launched
+   * out of sync.
+   */
+  drill?: SavedKind;
 }) {
   const [session, setSession] = useState<StudySession | null>(null);
   const [view, setView] = useState<'quiz' | 'results'>('quiz');
@@ -77,34 +75,30 @@ export function StudyRunner({
     hydrated.current = true;
     const ids = questions.map((q) => q.id);
     const restored = deserializeSession(
-      window.localStorage.getItem(studyStorageKey(test.slug, variant)),
+      window.localStorage.getItem(studyStorageKey(test.slug, drill)),
       test.slug,
       ids,
     );
     setSession(restored ?? newSession(test.slug, Date.now()));
-  }, [test.slug, questions, variant]);
+  }, [test.slug, questions, drill]);
 
   // Persist every change.
   useEffect(() => {
     if (!session) return;
     try {
-      window.localStorage.setItem(studyStorageKey(test.slug, variant), serializeSession(session));
+      window.localStorage.setItem(studyStorageKey(test.slug, drill), serializeSession(session));
     } catch {
       // Storage full/blocked — the session still works for this page view.
     }
-  }, [session, test.slug, variant]);
+  }, [session, test.slug, drill]);
 
   if (!session) {
-    return (
-      <div className="rounded-card border border-line bg-asphalt-800 p-8 text-muted" role="status">
-        Loading your session…
-      </div>
-    );
+    return <LoadingPanel>Loading your session…</LoadingPanel>;
   }
 
   const restart = () => {
     try {
-      window.localStorage.removeItem(studyStorageKey(test.slug, variant));
+      window.localStorage.removeItem(studyStorageKey(test.slug, drill));
     } catch {
       // ignore
     }
@@ -128,10 +122,16 @@ export function StudyRunner({
         test={test}
         questions={questions}
         answers={session.answers}
-        modeLabel="Study Mode"
+        modeLabel={
+          drill === 'bookmarks'
+            ? 'Bookmark drill'
+            : drill === 'misses'
+              ? 'Missed-question drill'
+              : 'Study Mode'
+        }
         mode="study"
         elapsed={Math.max(0, Math.round((Date.now() - session.startedAt) / 1000))}
-        logAttempt={logAttempt}
+        drill={drill !== undefined}
         alreadyLogged={session.loggedAt !== undefined}
         onLogged={() => setSession((s) => (s ? markLogged(s, Date.now()) : s))}
         onRetake={restart}
@@ -145,20 +145,16 @@ export function StudyRunner({
       test={test}
       questions={questions}
       session={session}
+      drill={drill !== undefined}
       onAnswer={(qid, key) => {
         // A wrong first answer is a MISS — recorded immediately (study shows
         // the verdict instantly), feeding the "Practice my misses" drill.
+        // Deliberately unconditional in drills too: missing a question again
+        // while drilling is real signal, and the history is what keeps hard
+        // questions at the top until they stick.
         const q = questions.find((x) => x.id === qid);
         if (q && key !== q.correctKey) {
-          try {
-            const misses = deserializeMisses(window.localStorage.getItem(MISSES_STORAGE_KEY));
-            window.localStorage.setItem(
-              MISSES_STORAGE_KEY,
-              serializeMisses(recordMisses(misses, test.slug, [qid], Date.now())),
-            );
-          } catch {
-            // Storage blocked — drilling just won't have this one.
-          }
+          recordMissesToStorage(test.slug, [qid], Date.now());
         }
         setSession((s) => (s ? answerQuestion(s, qid, key, Date.now()) : s));
       }}
@@ -180,6 +176,7 @@ function StudyQuestion({
   test,
   questions,
   session,
+  drill,
   onAnswer,
   onNavigate,
   onFinish,
@@ -187,6 +184,7 @@ function StudyQuestion({
   test: RunnerTest;
   questions: Question[];
   session: StudySession;
+  drill: boolean;
   onAnswer: (questionId: string, choiceKey: string) => void;
   onNavigate: (index: number) => void;
   onFinish: () => void;
@@ -282,12 +280,20 @@ function StudyQuestion({
                   {q.verifiedDate && <> · verified {q.verifiedDate}</>}
                 </p>
               )}
-              <div className="mt-4">
-                <BookmarkButton slug={test.slug} questionId={q.id} />
-              </div>
             </div>
           )}
         </div>
+        {/* OUTSIDE the live region: the button's saved-state flip must never
+            re-announce the whole feedback panel to screen readers. */}
+        {answered && (
+          <div className="mt-3">
+            <BookmarkButton
+              slug={test.slug}
+              questionId={q.id}
+              context={`question ${session.currentIndex + 1}`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Navigation — thumb-reachable; Next never disappears (review-in-place). */}
@@ -315,11 +321,15 @@ function StudyQuestion({
       <p className="mt-3 text-center text-xs text-muted">
         Progress saves automatically on this device — leave and pick up where you stopped.
       </p>
-      <p className="mt-6 text-center text-sm">
-        <Link href={testHref(test.slug)} className="text-muted hover:text-signal">
-          ← Back to {test.title} overview
-        </Link>
-      </p>
+      {/* Drills navigate via the saved page's own Back control — a second
+          exit to the test landing would compete with it. */}
+      {!drill && (
+        <p className="mt-6 text-center text-sm">
+          <Link href={testHref(test.slug)} className="text-muted hover:text-signal">
+            ← Back to {test.title} overview
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

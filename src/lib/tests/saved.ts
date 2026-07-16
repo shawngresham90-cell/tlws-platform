@@ -20,6 +20,13 @@ export const SAVED_STORAGE_VERSION = 1;
 export const BOOKMARKS_STORAGE_KEY = `tlws:bookmarks:v${SAVED_STORAGE_VERSION}`;
 export const MISSES_STORAGE_KEY = `tlws:misses:v${SAVED_STORAGE_VERSION}`;
 
+/**
+ * The two saved-work kinds. Doubles as the Study-runner drill discriminator
+ * and the drill session's storage variant, so a drill can never be launched
+ * with mismatched storage/logging flags.
+ */
+export type SavedKind = 'bookmarks' | 'misses';
+
 export type BookmarkState = {
   tests: Record<string, string[]>;
 };
@@ -59,7 +66,8 @@ export function deserializeBookmarks(raw: string | null): BookmarkState {
     const tests: Record<string, string[]> = {};
     for (const [slug, ids] of Object.entries(parsed.tests)) {
       if (Array.isArray(ids)) {
-        const clean = ids.filter((id): id is string => typeof id === 'string');
+        // Dedupe: corrupted storage must never yield duplicate React keys.
+        const clean = [...new Set(ids.filter((id): id is string => typeof id === 'string'))];
         if (clean.length > 0) tests[slug] = clean;
       }
     }
@@ -131,7 +139,16 @@ export function deserializeMisses(raw: string | null): MissState {
       const clean: Record<string, MissEntry> = {};
       for (const [qid, entry] of Object.entries(entries as Record<string, unknown>)) {
         const e = entry as { n?: unknown; at?: unknown };
-        if (typeof e?.n === 'number' && e.n > 0 && typeof e?.at === 'number') {
+        // Finite-only, and truncate BEFORE the >0 gate: NaN/Infinity stamps
+        // would poison the recency sort ("Invalid Date"), and n in (0,1)
+        // would round-trip inconsistently as "Missed 0×".
+        if (
+          typeof e?.n === 'number' &&
+          Number.isFinite(e.n) &&
+          Math.trunc(e.n) > 0 &&
+          typeof e?.at === 'number' &&
+          Number.isFinite(e.at)
+        ) {
           clean[qid] = { n: Math.trunc(e.n), at: e.at };
         }
       }
