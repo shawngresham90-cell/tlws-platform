@@ -88,11 +88,17 @@ check('GK is published', gk?.isPublished === true);
 check('GK target is 50 questions', gk?.questionCountTarget === 50, gk?.questionCountTarget);
 check('GK pass threshold is 80 (CDL standard)', gk?.passThresholdPct === 80, gk?.passThresholdPct);
 check('GK default matches PASS_THRESHOLD_DEFAULT', PASS_THRESHOLD_DEFAULT === 80);
+// Only shipped modes are advertised: Study now; 'timed' joins when its
+// milestone lands (the config it needs is already reserved in the catalog).
 check(
-  'GK offers both modes',
-  gk?.modes.includes('study') === true && gk?.modes.includes('timed') === true,
+  'GK offers Study Mode (Timed deferred to its own milestone)',
+  gk?.modes.includes('study') === true && gk?.modes.includes('timed') === false,
 );
-check('GK timed limit is 50 min', gk?.timeLimitSeconds === 50 * 60, gk?.timeLimitSeconds);
+check(
+  'GK timed limit (50 min) stays reserved for the Timed milestone',
+  gk?.timeLimitSeconds === 50 * 60,
+  gk?.timeLimitSeconds,
+);
 check('GK is the base permit (no endorsement code)', gk?.endorsementCode === null);
 check('KC integration deferred (no related category yet)', gk?.relatedKcCategorySlug === null);
 
@@ -315,10 +321,10 @@ const sitemap = read('src/app/sitemap.ts');
 check('sitemap imports publishedTests', /publishedTests/.test(sitemap));
 check('sitemap includes /practice-tests', /\/practice-tests/.test(sitemap));
 
-// ── 12. Homepage + footer CTA resolve to the hub ────────────────────────────
+// ── 12. Homepage + footer CTA resolve to live practice-test pages ───────────
 check(
-  'homepage FeaturedTest CTA points to /practice-tests',
-  /href="\/practice-tests"/.test(read('src/components/sections/FeaturedTest.tsx')),
+  'homepage FeaturedTest CTA derives from the catalog (testHref) — no hardcoded slug path',
+  /testHref\('general-knowledge'\)/.test(read('src/components/sections/FeaturedTest.tsx')),
 );
 check(
   'footer links to /practice-tests',

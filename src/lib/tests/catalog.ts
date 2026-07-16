@@ -30,8 +30,11 @@ export const TEST_CATALOG: TestDefinition[] = [
     icon: '📖',
     questionCountTarget: 50,
     passThresholdPct: PASS_THRESHOLD_DEFAULT,
-    timeLimitSeconds: 50 * 60, // 50 minutes in Timed mode
-    modes: ['study', 'timed'],
+    // Reserved for the Timed-Mode milestone; not displayed until 'timed' joins modes.
+    timeLimitSeconds: 50 * 60,
+    // Only modes a student can actually take today — 'timed' is added when the
+    // Timed-Mode milestone ships, so no page ever advertises an unbuilt mode.
+    modes: ['study'],
     relatedKcCategorySlug: null, // Knowledge Center integration is a later milestone
     seoTitle: 'Free CDL General Knowledge Practice Test (2026) | Trucking Life with Shawn',
     seoDescription:
@@ -59,4 +62,9 @@ export function getTestByCategory(category: string): TestDefinition | undefined 
 /** Canonical path for a test landing page. */
 export function testHref(slug: string): string {
   return `/practice-tests/${slug}`;
+}
+
+/** Canonical path for a test's Study Mode runner. */
+export function studyHref(slug: string): string {
+  return `${testHref(slug)}/study`;
 }

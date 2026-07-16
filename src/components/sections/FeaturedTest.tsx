@@ -1,5 +1,6 @@
 import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
+import { testHref } from '@/lib/tests/catalog';
 
 /** Featured practice test — single focal CTA into the free test funnel. */
 export function FeaturedTest() {
@@ -10,14 +11,14 @@ export function FeaturedTest() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
             <h3 className="font-display text-2xl uppercase text-signal">
-              General Knowledge — 50 questions
+              General Knowledge — free Study Mode
             </h3>
             <p className="mt-3 text-muted">
               Every question is written against the current CDL manual and 49 CFR, with the citation
-              attached. Miss one, see exactly why. Free to take.
+              attached. Miss one, see exactly why — the moment you answer. No account needed.
             </p>
           </div>
-          <Button href="/practice-tests">Start the test</Button>
+          <Button href={testHref('general-knowledge')}>Start studying</Button>
         </div>
       </div>
     </Section>
