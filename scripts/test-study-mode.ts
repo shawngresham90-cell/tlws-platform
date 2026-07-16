@@ -408,7 +408,7 @@ check(
 );
 check(
   'StudyRunner actually renders the shared TestResults (results branch intact)',
-  /<TestResults/.test(runner) && /modeLabel="Study Mode"/.test(runner),
+  /<TestResults/.test(runner) && /: 'Study Mode'/.test(runner),
 );
 check(
   'answered choices stay focusable (aria-disabled, never disabled)',

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField } from '@/components/apply/Fields';
@@ -7,6 +8,7 @@ import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
 import { gradeAttempt } from '@/lib/tests/scoring';
 import { testHref } from '@/lib/tests/catalog';
+import { BookmarkButton } from './BookmarkButton';
 import { PRESCHOOL_PATH, PRESCHOOL_PRICE_LABEL } from '@/lib/preschool/constants';
 import type { Question } from '@/lib/tests/types';
 
@@ -32,6 +34,7 @@ export function TestResults({
   modeLabel,
   mode,
   elapsed,
+  drill = false,
   notice,
   alreadyLogged,
   onLogged,
@@ -47,6 +50,12 @@ export function TestResults({
   mode: 'study' | 'timed';
   /** Attempt analytics: seconds from session start to completion. */
   elapsed?: number;
+  /**
+   * Saved-work drills run partial banks: no attempt logging (their scores
+   * would poison the analytics) and no real-exam pass/fail verdict (an 80%
+   * threshold over a 3-question subset is meaningless).
+   */
+  drill?: boolean;
   /** Optional banner above the score (e.g. "Time expired — submitted automatically"). */
   notice?: string;
   alreadyLogged: boolean;
@@ -74,7 +83,7 @@ export function TestResults({
   // this one-shot within a mount (a failed POST retries only via refresh,
   // where loggedAt is still unset — refs can't re-trigger effects).
   useEffect(() => {
-    if (alreadyLogged || posting.current) return;
+    if (drill || alreadyLogged || posting.current) return;
     posting.current = true;
     trackEvent('practice_test_completed', {
       test: test.slug,
@@ -134,15 +143,19 @@ export function TestResults({
         >
           {result.scorePct}%
         </p>
-        <p className="mt-2 font-display text-2xl uppercase text-ink">
-          {result.passed ? 'Pass' : 'Keep studying'}
-        </p>
+        {/* Drills grade a hand-picked subset — a real-exam Pass/Fail verdict
+            against the 80% threshold would be meaningless there. */}
+        {!drill && (
+          <p className="mt-2 font-display text-2xl uppercase text-ink">
+            {result.passed ? 'Pass' : 'Keep studying'}
+          </p>
+        )}
         <p className="mt-3 text-muted">
-          {result.correct} of {result.total} correct · {test.passThresholdPct}% needed to pass the
-          real exam
+          {result.correct} of {result.total} correct
+          {!drill && <> · {test.passThresholdPct}% needed to pass the real exam</>}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Button onClick={onRetake}>Retake the test</Button>
+          <Button onClick={onRetake}>{drill ? 'Drill these again' : 'Retake the test'}</Button>
           <Button variant="ghost" href={testHref(test.slug)}>
             Test overview
           </Button>
@@ -182,6 +195,23 @@ export function TestResults({
 
       {/* Full review — correct answers, explanations, and citations revealed */}
       <h2 className="mt-10 font-display text-2xl uppercase text-ink">Review every question</h2>
+      {/* Circular from a drill (the user just came from a saved page). */}
+      {!drill && (
+        <p className="mt-2 text-sm text-muted">
+          Bookmark any question below, then drill your saved set from{' '}
+          <Link
+            href="/practice-tests/bookmarks"
+            className="font-semibold text-signal hover:underline"
+          >
+            your bookmarks
+          </Link>{' '}
+          — or work through{' '}
+          <Link href="/practice-tests/missed" className="font-semibold text-signal hover:underline">
+            the questions you&apos;ve missed
+          </Link>
+          .
+        </p>
+      )}
       <ol className="mt-4 space-y-4">
         {questions.map((q, i) => {
           const selected = answers[q.id];
@@ -209,6 +239,9 @@ export function TestResults({
                   Source: <span className="text-ink">{q.cfrCite}</span>
                 </p>
               )}
+              <div className="mt-3">
+                <BookmarkButton slug={test.slug} questionId={q.id} context={`question ${i + 1}`} />
+              </div>
             </li>
           );
         })}

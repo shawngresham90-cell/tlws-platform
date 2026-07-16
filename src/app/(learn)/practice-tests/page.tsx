@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Container, Section, Eyebrow } from '@/components/ui';
 import { TestCard } from '@/components/test';
 import { CtaBand } from '@/components/academy/CtaBand';
@@ -56,6 +57,35 @@ export default async function PracticeTestsHubPage() {
             ))}
           </div>
         )}
+        {/* Saved-work launch points (Milestone 4) — device-local, so always shown. */}
+        <div className="mt-8 grid max-w-4xl gap-5 sm:grid-cols-2">
+          {/* h3 + hover treatment match the sibling TestCards — these are
+              peer cards in the same grid family, not section headings. */}
+          <Link
+            href="/practice-tests/bookmarks"
+            className="group rounded-card border border-line bg-asphalt-800 p-6 transition-colors hover:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
+          >
+            <h3 className="font-display text-xl uppercase text-ink transition-colors group-hover:text-signal">
+              Your bookmarks →
+            </h3>
+            <p className="mt-2 text-sm text-muted">
+              Questions you saved while studying, ready to drill anytime. Stored on this device — no
+              account needed.
+            </p>
+          </Link>
+          <Link
+            href="/practice-tests/missed"
+            className="group rounded-card border border-line bg-asphalt-800 p-6 transition-colors hover:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
+          >
+            <h3 className="font-display text-xl uppercase text-ink transition-colors group-hover:text-signal">
+              Your missed questions →
+            </h3>
+            <p className="mt-2 text-sm text-muted">
+              Every question you have gotten wrong, tracked automatically. Practice your misses
+              until they stick.
+            </p>
+          </Link>
+        </div>
       </Section>
 
       {/* How it works — trust band. Mirrors the platform's CFR-verified posture. */}

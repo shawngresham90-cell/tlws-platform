@@ -19,7 +19,8 @@ import {
   type TimedSession,
 } from '@/lib/tests/timed';
 import { TestResults, type RunnerTest } from './TestResults';
-import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
+import { CHOICE_BUTTON_BASE, LoadingPanel, QuizProgress } from './shared';
+import { recordMissesToStorage } from '@/lib/tests/savedStorage';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -73,6 +74,10 @@ export function TimedRunner({
   // Copy honesty: when storage is blocked we cannot promise refresh-proofing.
   const [persistBlocked, setPersistBlocked] = useState(false);
   const hydrated = useRef(false);
+  // One-shot guard for the miss write: the session latch lives in state, so a
+  // double onSubmit before the next render (StrictMode's doubled expiry
+  // effect) would pass the closure check twice and double-count misses.
+  const missesRecorded = useRef(false);
 
   // Hydrate from localStorage after mount (SSR renders the placeholder).
   // Once-only: an RSC refresh must never re-run this over a live exam whose
@@ -102,11 +107,7 @@ export function TimedRunner({
   }, [session, test.slug]);
 
   if (session === null) {
-    return (
-      <div className="rounded-card border border-line bg-asphalt-800 p-8 text-muted" role="status">
-        Loading…
-      </div>
-    );
+    return <LoadingPanel>Loading…</LoadingPanel>;
   }
 
   const restart = () => {
@@ -115,6 +116,7 @@ export function TimedRunner({
     } catch {
       // ignore
     }
+    missesRecorded.current = false;
     setSession('idle');
     window.scrollTo({ top: 0 });
   };
@@ -165,6 +167,18 @@ export function TimedRunner({
         window.scrollTo({ top: 0 });
       }}
       onSubmit={(reason) => {
+        // Record answered-wrong questions ONCE, at the moment of the single
+        // submission. The ref (not the render-closure session) is the guard:
+        // it can't be raced by a second call landing before the next render.
+        if (!missesRecorded.current && session.submittedAt === undefined) {
+          missesRecorded.current = true;
+          const missed = questions
+            .filter(
+              (q) => session.answers[q.id] !== undefined && session.answers[q.id] !== q.correctKey,
+            )
+            .map((q) => q.id);
+          recordMissesToStorage(test.slug, missed, Date.now());
+        }
         setSession((s) => (s && s !== 'idle' ? submitTimedSession(s, Date.now(), reason) : s));
         window.scrollTo({ top: 0 });
       }}

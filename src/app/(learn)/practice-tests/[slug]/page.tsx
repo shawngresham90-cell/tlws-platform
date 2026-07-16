@@ -116,39 +116,60 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
 
       <Section>
         {live ? (
-          // Mode chooser — pick how to take the test. Only shipped modes render.
-          <div className="grid max-w-4xl gap-5 sm:grid-cols-2">
-            <div className="rounded-card border border-signal/40 bg-asphalt-800 p-8">
-              <h2 className="font-display text-2xl uppercase text-signal">Study Mode</h2>
-              <p className="mt-3 text-muted">
-                Learn as you go — one question at a time. Answer, and the correct choice, a
-                plain-English explanation, and the exact 49 CFR / CDL-manual citation appear
-                immediately. Progress saves on this device.
-              </p>
-              <div className="mt-6">
-                <Button href={studyHref(test.slug)}>Start Study Mode</Button>
-              </div>
-              <p className="mt-4 text-xs text-muted">Untimed · instant feedback · free</p>
-            </div>
-            {timedAvailable(test) && (
-              <div className="rounded-card border border-line bg-asphalt-800 p-8">
-                <h2 className="font-display text-2xl uppercase text-ink">Timed Test</h2>
+          <>
+            {/* Mode chooser — pick how to take the test. Only shipped modes render. */}
+            <div className="grid max-w-4xl gap-5 sm:grid-cols-2">
+              <div className="rounded-card border border-signal/40 bg-asphalt-800 p-8">
+                <h2 className="font-display text-2xl uppercase text-signal">Study Mode</h2>
                 <p className="mt-3 text-muted">
-                  Exam conditions — {timedMinutes} minutes on the clock, no feedback until you
-                  submit, answers changeable until the end. Explanations and citations are revealed
-                  with your score.
+                  Learn as you go — one question at a time. Answer, and the correct choice, a
+                  plain-English explanation, and the exact 49 CFR / CDL-manual citation appear
+                  immediately. Progress saves on this device.
                 </p>
                 <div className="mt-6">
-                  <Button variant="secondary" href={timedHref(test.slug)}>
-                    Start Timed Test
-                  </Button>
+                  <Button href={studyHref(test.slug)}>Start Study Mode</Button>
                 </div>
-                <p className="mt-4 text-xs text-muted">
-                  {timedMinutes} min · auto-submits at zero · {test.passThresholdPct}% to pass
-                </p>
+                <p className="mt-4 text-xs text-muted">Untimed · instant feedback · free</p>
               </div>
-            )}
-          </div>
+              {timedAvailable(test) && (
+                <div className="rounded-card border border-line bg-asphalt-800 p-8">
+                  <h2 className="font-display text-2xl uppercase text-ink">Timed Test</h2>
+                  <p className="mt-3 text-muted">
+                    Exam conditions — {timedMinutes} minutes on the clock, no feedback until you
+                    submit, answers changeable until the end. Explanations and citations are
+                    revealed with your score.
+                  </p>
+                  <div className="mt-6">
+                    <Button variant="secondary" href={timedHref(test.slug)}>
+                      Start Timed Test
+                    </Button>
+                  </div>
+                  <p className="mt-4 text-xs text-muted">
+                    {timedMinutes} min · auto-submits at zero · {test.passThresholdPct}% to pass
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Saved-work launch points (Milestone 4) — device-local drills. */}
+            <p className="mt-6 max-w-4xl text-sm text-muted">
+              Been here before? Drill{' '}
+              <Link
+                href="/practice-tests/bookmarks"
+                className="font-semibold text-signal hover:underline"
+              >
+                your bookmarks
+              </Link>{' '}
+              or{' '}
+              <Link
+                href="/practice-tests/missed"
+                className="font-semibold text-signal hover:underline"
+              >
+                your missed questions
+              </Link>{' '}
+              — saved on this device, no account needed.
+            </p>
+          </>
         ) : (
           <div className="max-w-2xl rounded-card border border-line bg-asphalt-800 p-8">
             <h2 className="font-display text-2xl uppercase text-signal">
