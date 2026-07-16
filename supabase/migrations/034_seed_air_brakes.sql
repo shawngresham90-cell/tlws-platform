@@ -2,8 +2,8 @@
 -- CDL Practice Tests — Milestone 5: Air Brakes question bank (31 items).
 --
 -- ⚠️ COMMITTED; apply AFTER 029 (the questions columns this seed writes).
--- IDEMPOTENT: the tests row upserts by slug, and the question insert runs only
--- when the bank is empty — re-running the migration never duplicates rows.
+-- IDEMPOTENT: the tests row inserts-if-absent by slug, and the question insert
+-- runs only when the bank is empty — re-running never duplicates or mutates.
 --
 -- Content rules (hard, from the Practice Tests blueprint — same as 032):
 --   * Every question is ORIGINAL wording — written fresh against 49 CFR and
