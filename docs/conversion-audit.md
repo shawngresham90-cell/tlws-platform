@@ -1,5 +1,7 @@
 # CDL Pre-School — Conversion Optimization Audit & Report
 
+> **Price update (2026-07-16):** the Founding Student price is now **$199** (changed from $149 in `src/lib/preschool/constants.ts`, the single source of truth). The $149 figures below are historical — they describe the offer as it stood when this audit was written.
+
 Milestone: Conversion Optimization (post-launch). Branch
 `feat/conversion-optimization`. Baseline: production `main` @ `e2ac34d`
 (PR #49 live). Constraints honored: $149 unchanged, 20-spot limit unchanged,

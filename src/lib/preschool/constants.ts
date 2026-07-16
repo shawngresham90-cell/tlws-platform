@@ -8,10 +8,10 @@
  */
 
 /** Founding Student price in whole US dollars. */
-export const PRESCHOOL_PRICE_USD = 149;
+export const PRESCHOOL_PRICE_USD = 199;
 
 /** Human formatting used everywhere the price renders. */
-export const PRESCHOOL_PRICE_LABEL = '$149';
+export const PRESCHOOL_PRICE_LABEL = '$199';
 
 /** Total Founding Student spots. Hard cap — enforced in admin + DB, never exceeded publicly. */
 export const FOUNDING_STUDENT_CAPACITY = 20;
