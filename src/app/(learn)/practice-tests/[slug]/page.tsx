@@ -2,7 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Section, Eyebrow, Button } from '@/components/ui';
 import { Breadcrumbs } from '@/components/kc/Breadcrumbs';
-import { getTest, publishedTests, testHref, studyHref, timedHref } from '@/lib/tests/catalog';
+import {
+  getTest,
+  publishedTests,
+  testHref,
+  studyHref,
+  timedHref,
+  timedAvailable,
+} from '@/lib/tests/catalog';
 import { getSeededQuestionCount } from '@/lib/tests/queries';
 import { testSchema } from '@/lib/tests/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -12,8 +19,8 @@ import { buildMetadata } from '@/lib/seo/metadata';
  * Practice test landing page. One indexable page per test — the SEO surface for
  * "free CDL [test] practice test" queries. The start area is live-state aware:
  * a seeded bank gets the Start Study Mode CTA; an unseeded one keeps the honest
- * coming-soon panel. Stats only advertise modes a student can take TODAY
- * (catalog.modes) — Timed appears when its milestone ships.
+ * coming-soon panel. Stats and the chooser gate on the same
+ * timedAvailable() condition, so an advertised mode always has an entry point.
  */
 export const revalidate = 300;
 
@@ -49,6 +56,7 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
 
   const seededQuestionCount = await getSeededQuestionCount(test.slug);
   const live = seededQuestionCount > 0;
+  const timedMinutes = Math.round((test.timeLimitSeconds ?? 0) / 60);
 
   const stats: { label: string; value: string }[] = [
     {
@@ -58,11 +66,13 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
     { label: 'To pass', value: `${test.passThresholdPct}%` },
     {
       label: 'Modes',
-      value: test.modes.map((m) => (m === 'study' ? 'Study' : 'Timed')).join(' · '),
+      value: (timedAvailable(test) ? test.modes : test.modes.filter((m) => m !== 'timed'))
+        .map((m) => (m === 'study' ? 'Study' : 'Timed'))
+        .join(' · '),
     },
-    // The time-limit tile only renders when Timed Mode actually exists —
-    // never advertise a mode a student can't take.
-    ...(test.modes.includes('timed')
+    // Tiles gate on the SAME condition as the chooser (timedAvailable) —
+    // never advertise a mode without an entry point.
+    ...(timedAvailable(test)
       ? [{ label: 'Time limit', value: formatTimeLimit(test.timeLimitSeconds) }]
       : []),
   ];
@@ -120,13 +130,13 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
               </div>
               <p className="mt-4 text-xs text-muted">Untimed · instant feedback · free</p>
             </div>
-            {test.modes.includes('timed') && test.timeLimitSeconds && (
+            {timedAvailable(test) && (
               <div className="rounded-card border border-line bg-asphalt-800 p-8">
                 <h2 className="font-display text-2xl uppercase text-ink">Timed Test</h2>
                 <p className="mt-3 text-muted">
-                  Exam conditions — {Math.round(test.timeLimitSeconds / 60)} minutes on the clock,
-                  no feedback until you submit, answers changeable until the end. Explanations and
-                  citations are revealed with your score.
+                  Exam conditions — {timedMinutes} minutes on the clock, no feedback until you
+                  submit, answers changeable until the end. Explanations and citations are revealed
+                  with your score.
                 </p>
                 <div className="mt-6">
                   <Button variant="secondary" href={timedHref(test.slug)}>
@@ -134,8 +144,7 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
                   </Button>
                 </div>
                 <p className="mt-4 text-xs text-muted">
-                  {Math.round(test.timeLimitSeconds / 60)} min · auto-submits at zero ·{' '}
-                  {test.passThresholdPct}% to pass
+                  {timedMinutes} min · auto-submits at zero · {test.passThresholdPct}% to pass
                 </p>
               </div>
             )}

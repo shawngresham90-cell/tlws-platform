@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Eyebrow } from '@/components/ui';
 import { StudyRunner } from '@/components/test';
-import { getTest, publishedTests, testHref } from '@/lib/tests/catalog';
+import { TestNotOpenPanel } from '@/components/test/shared';
+import { getTest, publishedTests } from '@/lib/tests/catalog';
 import { getQuestionsForTest } from '@/lib/tests/queries';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -44,23 +44,7 @@ export default async function StudyModePage({ params }: { params: { slug: string
         <h1 className="font-display text-3xl uppercase text-ink sm:text-4xl">{test.title}</h1>
 
         {questions.length === 0 ? (
-          <div className="mt-8 rounded-card border border-line bg-asphalt-800 p-8">
-            <h2 className="font-display text-xl uppercase text-signal">
-              This test isn&apos;t open yet
-            </h2>
-            <p className="mt-3 text-muted">
-              The {test.title} question bank is being finalized. Check the test page for the latest
-              — it goes live the moment the bank does.
-            </p>
-            <p className="mt-4">
-              <Link
-                href={testHref(test.slug)}
-                className="font-semibold text-signal hover:underline"
-              >
-                ← Back to {test.title}
-              </Link>
-            </p>
-          </div>
+          <TestNotOpenPanel slug={test.slug} title={test.title} />
         ) : (
           <div className="mt-8">
             <StudyRunner

@@ -185,6 +185,31 @@ check(
     answers: { [uuid(1)]: 'x'.repeat(9) },
   }).success,
 );
+check(
+  'mode + elapsed analytics fields accepted',
+  testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    mode: 'timed',
+    elapsed_seconds: 1200,
+  }).success,
+);
+check(
+  'negative elapsed rejected',
+  !testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    elapsed_seconds: -5,
+  }).success,
+);
+check(
+  'unknown mode rejected',
+  !testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    mode: 'zen',
+  }).success,
+);
 const big: Record<string, string> = {};
 for (let i = 0; i < 201; i++) big[uuid(i)] = 'a';
 check(
@@ -354,8 +379,15 @@ check(
   /deserializeSession\(/.test(runner) && /serializeSession\(/.test(runner),
 );
 check('runner announces feedback (aria-live)', /aria-live="polite"/.test(runner));
-check('runner exposes progress semantics', /role="progressbar"/.test(runner));
-check('runner touch targets are ≥44px', /min-h-\[44px\]/.test(runner));
+check(
+  'runner exposes progress semantics (shared QuizProgress)',
+  /QuizProgress/.test(runner) && /role="progressbar"/.test(read('src/components/test/shared.tsx')),
+);
+check(
+  'runner touch targets are ≥44px (shared choice base)',
+  /CHOICE_BUTTON_BASE/.test(runner) &&
+    /min-h-\[44px\]/.test(read('src/components/test/shared.tsx')),
+);
 check(
   'runner reveals explanation + citation on answer',
   /q\.explanation/.test(runner) && /q\.cfrCite/.test(runner),
@@ -375,6 +407,10 @@ check(
   /markLogged/.test(runner) && /session\.loggedAt/.test(runner),
 );
 check(
+  'StudyRunner actually renders the shared TestResults (results branch intact)',
+  /<TestResults/.test(runner) && /modeLabel="Study Mode"/.test(runner),
+);
+check(
   'answered choices stay focusable (aria-disabled, never disabled)',
   /aria-disabled=\{answered\}/.test(runner) && !/[^-]disabled=\{answered\}/.test(runner),
 );
@@ -383,8 +419,8 @@ check(
   /\(correct answer\)/.test(runner) && /your answer — incorrect/.test(runner),
 );
 check(
-  'no diesel-as-text on dark (contrast): red state uses border/bg with ink text',
-  !/text-diesel/.test(runner),
+  'no diesel-as-text on dark (contrast) in the runner OR the shared results',
+  !/text-diesel/.test(runner) && !/text-diesel/.test(resultsShared),
 );
 check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(resultsShared));
 check(
@@ -417,8 +453,8 @@ check(
   /Question bank coming soon/.test(landing),
 );
 check(
-  'landing never advertises Timed before it ships (tile gated on modes)',
-  /modes\.includes\('timed'\)/.test(landing),
+  'landing gates every Timed surface on the single timedAvailable condition',
+  /timedAvailable\(test\)/.test(landing) && !/modes\.includes\('timed'\)/.test(landing),
 );
 check('landing derives the runner link from the catalog (studyHref)', /studyHref\(/.test(landing));
 const featured = read('src/components/sections/FeaturedTest.tsx');
@@ -429,7 +465,12 @@ check(
 check('homepage CTA no longer promises an unbuilt count', !/50 questions/.test(featured));
 
 // ── 10. No secrets in client code ───────────────────────────────────────────
-for (const f of ['src/components/test/StudyRunner.tsx', 'src/components/test/TestCard.tsx']) {
+for (const f of [
+  'src/components/test/StudyRunner.tsx',
+  'src/components/test/TestCard.tsx',
+  'src/components/test/TestResults.tsx',
+  'src/components/test/TimedRunner.tsx',
+]) {
   const src = read(f);
   check(`${f}: no service-role import`, !/supabase\/admin/.test(src));
   check(`${f}: no service-role key reference`, !/SERVICE_ROLE/.test(src));

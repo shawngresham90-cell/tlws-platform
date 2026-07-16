@@ -73,3 +73,23 @@ export function studyHref(slug: string): string {
 export function timedHref(slug: string): string {
   return `${testHref(slug)}/timed`;
 }
+
+/**
+ * A takeable Timed Test needs BOTH the mode flag and a time limit. This is
+ * the one condition the landing chooser, the stats tiles, and the /timed
+ * route all gate on — never re-derive it inline.
+ */
+export function timedAvailable(test: TestDefinition): boolean {
+  return test.modes.includes('timed') && (test.timeLimitSeconds ?? 0) > 0;
+}
+
+// Build-time config guard: a test declaring the timed mode without a time
+// limit is a misconfiguration that would otherwise fail silently (hidden
+// chooser card, 404ing route). Fail the build loudly instead.
+for (const t of TEST_CATALOG) {
+  if (t.modes.includes('timed') && !((t.timeLimitSeconds ?? 0) > 0)) {
+    throw new Error(
+      `Test catalog misconfiguration: "${t.slug}" declares the 'timed' mode without a positive timeLimitSeconds.`,
+    );
+  }
+}

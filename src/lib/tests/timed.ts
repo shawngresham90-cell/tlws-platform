@@ -4,18 +4,25 @@
  *
  *   * The countdown anchors on the PERSISTED startedAt, so a refresh resumes
  *     the ORIGINAL clock — reloading can never reset or extend the timer.
+ *     A startedAt from the future (device clock skew, storage edits) is
+ *     clamped to "now" on restore, so remaining time can never exceed the
+ *     configured limit.
  *   * Answers may be CHANGED until submission (no feedback is shown during
  *     the exam, exactly like the real test), unlike Study Mode's answer-once.
  *   * Submission happens exactly once: submittedAt is a persisted one-way
  *     latch, guarding both the manual submit and the expiry auto-submit
- *     across re-renders and refreshes.
+ *     across re-renders and refreshes. WHY it submitted is recorded
+ *     explicitly (submittedReason) — never inferred from timing, so a manual
+ *     submit in the final second is never mislabeled as an auto-submit.
  *
  * The client runner (src/components/test/TimedRunner.tsx) owns localStorage;
  * everything here is deterministic and unit-tested in
  * scripts/test-timed-mode.ts.
  */
 
-import { clampIndex } from './study';
+import { clampIndex, sanitizeAnswers } from './study';
+
+export type SubmitReason = 'manual' | 'expired';
 
 export type TimedSession = {
   /** Catalog slug this session belongs to. */
@@ -28,6 +35,8 @@ export type TimedSession = {
   startedAt: number;
   /** One-way latch: set on the single submission (manual or expiry). */
   submittedAt?: number;
+  /** The recorded, explicit cause of submission — never inferred from timing. */
+  submittedReason?: SubmitReason;
   /** Set once the graded attempt has been logged to the API (never twice). */
   loggedAt?: number;
 };
@@ -44,14 +53,20 @@ export function newTimedSession(slug: string, now: number): TimedSession {
   return { slug, answers: {}, currentIndex: 0, startedAt: now };
 }
 
-/** Milliseconds left on the original clock. Never negative. */
+/** Milliseconds left on the original clock. Never negative, never above the limit. */
 export function remainingMs(session: TimedSession, timeLimitSeconds: number, now: number): number {
-  return Math.max(0, session.startedAt + timeLimitSeconds * 1000 - now);
+  const limitMs = timeLimitSeconds * 1000;
+  return Math.max(0, Math.min(limitMs, session.startedAt + limitMs - now));
 }
 
 /** True once the original clock has run out. */
 export function isExpired(session: TimedSession, timeLimitSeconds: number, now: number): boolean {
   return remainingMs(session, timeLimitSeconds, now) === 0;
+}
+
+/** Seconds elapsed on the exam clock (for attempt analytics). Never negative. */
+export function elapsedSeconds(session: TimedSession, now: number): number {
+  return Math.max(0, Math.round((now - session.startedAt) / 1000));
 }
 
 /** mm:ss for the visible countdown. */
@@ -88,10 +103,17 @@ export function goToTimedQuestion(
   return { ...session, currentIndex: clamped };
 }
 
-/** One-way submission latch — the first call wins, every later call is a no-op. */
-export function submitTimedSession(session: TimedSession, now: number): TimedSession {
+/**
+ * One-way submission latch — the first call wins, every later call is a
+ * no-op. The reason is recorded at the moment of submission.
+ */
+export function submitTimedSession(
+  session: TimedSession,
+  now: number,
+  reason: SubmitReason,
+): TimedSession {
   if (session.submittedAt !== undefined) return session;
-  return { ...session, submittedAt: now };
+  return { ...session, submittedAt: now, submittedReason: reason };
 }
 
 /** Mark the graded attempt as logged so it is never posted twice. */
@@ -108,13 +130,16 @@ export function serializeTimedSession(session: TimedSession): string {
 /**
  * Parse a stored session. Returns null (never throws) on junk, a version
  * mismatch, a slug mismatch, or a corrupt/absent startedAt — the clock anchor
- * must be trustworthy or the session is discarded. Answers for question ids
- * that no longer exist are dropped; currentIndex is re-clamped.
+ * must be trustworthy or the session is discarded. A future startedAt is
+ * clamped to `now` so skewed device clocks (or edited storage) can never
+ * grant more than the configured time. Answers for question ids that no
+ * longer exist are dropped; currentIndex is re-clamped.
  */
 export function deserializeTimedSession(
   raw: string | null,
   slug: string,
   questionIds: string[],
+  now: number,
 ): TimedSession | null {
   if (!raw) return null;
   try {
@@ -125,6 +150,7 @@ export function deserializeTimedSession(
       currentIndex?: number;
       startedAt?: number;
       submittedAt?: number;
+      submittedReason?: string;
       loggedAt?: number;
     };
     if (parsed.v !== TIMED_STORAGE_VERSION || parsed.slug !== slug) return null;
@@ -133,20 +159,19 @@ export function deserializeTimedSession(
     // would let a refresh reset the timer.)
     if (typeof parsed.startedAt !== 'number' || !Number.isFinite(parsed.startedAt)) return null;
 
-    const known = new Set(questionIds);
-    const answers: Record<string, string> = {};
-    for (const [id, key] of Object.entries(parsed.answers)) {
-      if (known.has(id) && typeof key === 'string') answers[id] = key;
-    }
     return {
       slug,
-      answers,
+      answers: sanitizeAnswers(parsed.answers, questionIds),
       currentIndex:
         typeof parsed.currentIndex === 'number' && Number.isFinite(parsed.currentIndex)
           ? clampIndex(parsed.currentIndex, questionIds.length)
           : 0,
-      startedAt: parsed.startedAt,
+      // Clamp future anchors: skew can shorten a session's past, never extend it.
+      startedAt: Math.min(parsed.startedAt, now),
       ...(typeof parsed.submittedAt === 'number' ? { submittedAt: parsed.submittedAt } : {}),
+      ...(parsed.submittedReason === 'manual' || parsed.submittedReason === 'expired'
+        ? { submittedReason: parsed.submittedReason }
+        : {}),
       ...(typeof parsed.loggedAt === 'number' ? { loggedAt: parsed.loggedAt } : {}),
     };
   } catch {

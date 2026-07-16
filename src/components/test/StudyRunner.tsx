@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { testHref } from '@/lib/tests/catalog';
@@ -17,6 +17,7 @@ import {
   type StudySession,
 } from '@/lib/tests/study';
 import { TestResults, type RunnerTest } from './TestResults';
+import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -53,9 +54,14 @@ export function StudyRunner({
 }) {
   const [session, setSession] = useState<StudySession | null>(null);
   const [view, setView] = useState<'quiz' | 'results'>('quiz');
+  const hydrated = useRef(false);
 
   // Hydrate from localStorage after mount (SSR renders the placeholder).
+  // Once-only: an RSC refresh must never re-run this over a live session
+  // whose storage writes are failing.
   useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
     const ids = questions.map((q) => q.id);
     const restored = deserializeSession(
       window.localStorage.getItem(studyStorageKey(test.slug)),
@@ -110,6 +116,8 @@ export function StudyRunner({
         questions={questions}
         answers={session.answers}
         modeLabel="Study Mode"
+        mode="study"
+        elapsed={Math.max(0, Math.round((Date.now() - session.startedAt) / 1000))}
         alreadyLogged={session.loggedAt !== undefined}
         onLogged={() => setSession((s) => (s ? markLogged(s, Date.now()) : s))}
         onRetake={restart}
@@ -170,28 +178,7 @@ function StudyQuestion({
 
   return (
     <div>
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex items-baseline justify-between gap-4 text-sm text-muted">
-          <p className="font-semibold uppercase tracking-wide">
-            Question {session.currentIndex + 1} of {total}
-          </p>
-          <p>{done} answered</p>
-        </div>
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={done}
-          aria-label="Questions answered"
-          className="mt-2 h-1.5 w-full overflow-hidden rounded-card bg-asphalt-700"
-        >
-          <div
-            className="h-full bg-signal transition-all"
-            style={{ width: `${total === 0 ? 0 : Math.round((done / total) * 100)}%` }}
-          />
-        </div>
-      </div>
+      <QuizProgress currentIndex={session.currentIndex} total={total} answered={done} />
 
       {/* Question */}
       <div className="rounded-card border border-line bg-asphalt-800 p-6 sm:p-8">
@@ -222,7 +209,7 @@ function StudyQuestion({
                 onClick={() => {
                   if (!answered) onAnswer(q.id, choice.key);
                 }}
-                className={`flex min-h-[44px] w-full items-start gap-3 rounded-card border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt ${answered ? 'cursor-default' : ''} ${styles}`}
+                className={`${CHOICE_BUTTON_BASE} ${answered ? 'cursor-default' : ''} ${styles}`}
               >
                 <span className="font-display uppercase" aria-hidden="true">
                   {choice.key}.

@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Eyebrow } from '@/components/ui';
 import { TimedRunner } from '@/components/test';
-import { getTest, publishedTests, testHref } from '@/lib/tests/catalog';
+import { TestNotOpenPanel } from '@/components/test/shared';
+import { getTest, publishedTests, timedAvailable } from '@/lib/tests/catalog';
 import { getQuestionsForTest } from '@/lib/tests/queries';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -20,7 +20,7 @@ export const revalidate = 300;
 
 export function generateStaticParams() {
   return publishedTests()
-    .filter((t) => t.modes.includes('timed'))
+    .filter((t) => timedAvailable(t))
     .map((t) => ({ slug: t.slug }));
 }
 
@@ -35,7 +35,7 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
 
 export default async function TimedTestPage({ params }: { params: { slug: string } }) {
   const test = getTest(params.slug);
-  if (!test || !test.isPublished || !test.modes.includes('timed') || !test.timeLimitSeconds) {
+  if (!test || !test.isPublished || !timedAvailable(test) || !test.timeLimitSeconds) {
     notFound();
   }
 
@@ -48,23 +48,7 @@ export default async function TimedTestPage({ params }: { params: { slug: string
         <h1 className="font-display text-3xl uppercase text-ink sm:text-4xl">{test.title}</h1>
 
         {questions.length === 0 ? (
-          <div className="mt-8 rounded-card border border-line bg-asphalt-800 p-8">
-            <h2 className="font-display text-xl uppercase text-signal">
-              This test isn&apos;t open yet
-            </h2>
-            <p className="mt-3 text-muted">
-              The {test.title} question bank is being finalized. Check the test page for the latest
-              — it goes live the moment the bank does.
-            </p>
-            <p className="mt-4">
-              <Link
-                href={testHref(test.slug)}
-                className="font-semibold text-signal hover:underline"
-              >
-                ← Back to {test.title}
-              </Link>
-            </p>
-          </div>
+          <TestNotOpenPanel slug={test.slug} title={test.title} />
         ) : (
           <div className="mt-8">
             <TimedRunner

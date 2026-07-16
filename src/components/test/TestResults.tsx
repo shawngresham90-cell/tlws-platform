@@ -30,6 +30,8 @@ export function TestResults({
   questions,
   answers,
   modeLabel,
+  mode,
+  elapsed,
   notice,
   alreadyLogged,
   onLogged,
@@ -41,6 +43,10 @@ export function TestResults({
   answers: Record<string, string>;
   /** "Study Mode" | "Timed Test" — labels the score panel. */
   modeLabel: string;
+  /** Attempt analytics: which runner produced this attempt. */
+  mode: 'study' | 'timed';
+  /** Attempt analytics: seconds from session start to completion. */
+  elapsed?: number;
   /** Optional banner above the score (e.g. "Time expired — submitted automatically"). */
   notice?: string;
   alreadyLogged: boolean;
@@ -50,48 +56,73 @@ export function TestResults({
 }) {
   const result = gradeAttempt(questions, answers, test.passThresholdPct);
   const posting = useRef(false);
+  const headingRef = useRef<HTMLDivElement>(null);
+  // The notice text is set AFTER mount so the live region reliably announces
+  // it (a region that mounts pre-filled is skipped by most screen readers).
+  const [liveNotice, setLiveNotice] = useState('');
+
+  // Results replace the quiz/exam view, which unmounts the focused element —
+  // move focus to the score panel so keyboard/SR users land on the outcome
+  // (and hear the expiry notice) instead of being dropped to <body>.
+  useEffect(() => {
+    headingRef.current?.focus();
+    if (notice) setLiveNotice(notice);
+  }, [notice]);
 
   // Log the attempt exactly once per sitting: the persisted loggedAt guard
-  // (via alreadyLogged) covers refreshes and results re-entry; the ref guards
-  // double-effects within a mount.
+  // (via alreadyLogged) covers refreshes and results re-entry; the ref makes
+  // this one-shot within a mount (a failed POST retries only via refresh,
+  // where loggedAt is still unset — refs can't re-trigger effects).
   useEffect(() => {
     if (alreadyLogged || posting.current) return;
     posting.current = true;
     trackEvent('practice_test_completed', {
       test: test.slug,
+      mode,
       scorePct: result.scorePct,
       passed: result.passed,
     });
+    // A zero-answer sitting (a timed exam that expired untouched) has nothing
+    // to grade server-side — latch locally so nothing re-fires on re-entry.
+    if (Object.keys(answers).length === 0) {
+      onLogged();
+      return;
+    }
     fetch('/api/tests/attempt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_slug: test.slug, answers }),
+      body: JSON.stringify({
+        test_slug: test.slug,
+        answers,
+        mode,
+        ...(elapsed !== undefined ? { elapsed_seconds: elapsed } : {}),
+      }),
     })
       .then((res) => {
         if (res.ok) onLogged();
-        else posting.current = false;
       })
       .catch(() => {
         // Analytics only — never disturb the student over it.
-        posting.current = false;
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alreadyLogged]);
 
   return (
     <div>
-      {notice && (
-        <p
-          role="status"
-          className="mb-4 rounded-card border border-signal/50 bg-signal/10 px-4 py-3 text-sm font-medium text-signal"
-        >
-          {notice}
-        </p>
-      )}
+      {/* Persistent live region — text arrives after mount so it announces. */}
+      <p aria-live="polite" role="status" className={notice ? 'mb-4' : 'sr-only'}>
+        {liveNotice && (
+          <span className="block rounded-card border border-signal/50 bg-signal/10 px-4 py-3 text-sm font-medium text-signal">
+            {liveNotice}
+          </span>
+        )}
+      </p>
 
-      {/* Score */}
+      {/* Score — focus target when the runner swaps to results */}
       <div
-        className={`rounded-card border p-8 text-center sm:p-10 ${
+        ref={headingRef}
+        tabIndex={-1}
+        className={`rounded-card border p-8 text-center focus-visible:outline-none sm:p-10 ${
           result.passed ? 'border-signal/60 bg-signal/5' : 'border-diesel bg-diesel/10'
         }`}
       >

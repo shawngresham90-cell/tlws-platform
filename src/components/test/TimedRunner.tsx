@@ -7,9 +7,9 @@ import { testHref } from '@/lib/tests/catalog';
 import {
   answerTimedQuestion,
   deserializeTimedSession,
+  elapsedSeconds,
   formatRemaining,
   goToTimedQuestion,
-  isExpired,
   markTimedLogged,
   newTimedSession,
   remainingMs,
@@ -19,6 +19,7 @@ import {
   type TimedSession,
 } from '@/lib/tests/timed';
 import { TestResults, type RunnerTest } from './TestResults';
+import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -29,23 +30,34 @@ import type { Question } from '@/lib/tests/types';
  *     everything is revealed on the results screen (shared TestResults).
  *   * Answers may be CHANGED until submission, like the real test.
  *   * The countdown anchors on the PERSISTED start time: refreshing resumes
- *     the original clock and can never reset or extend it.
- *   * Submission fires exactly once — a persisted one-way latch guards the
- *     manual submit, the expiry auto-submit, and any refresh in between.
+ *     the original clock and can never reset or extend it (future anchors
+ *     are clamped on restore).
+ *   * Submission fires exactly once — a persisted one-way latch records the
+ *     moment AND the reason ('manual' | 'expired'), so the results screen
+ *     never misattributes why the exam ended.
  *
  * The clock starts on an explicit "Begin" click (never on page load), so
  * opening the page to read the rules costs no exam time.
  *
- * Accessibility: the visible countdown is a `role="timer"`; announcements
- * fire through a polite live region only at meaningful thresholds
- * (10 min / 5 min / 1 min) — a per-second announcement would drown a screen
- * reader. Touch targets stay ≥44px; brand tokens only.
+ * Accessibility: the visible countdown is a `role="timer"` (deliberately NOT
+ * aria-live — a per-second announcement would drown a screen reader);
+ * threshold announcements (10/5/1 min) derive purely from the remaining time
+ * against a mount-time baseline, so resuming below a threshold never replays
+ * an overstated one. Low time gains a visible text label, not just a color
+ * shift. Arming "Submit test" disarms on any navigation or answer change.
  */
 
 type TimedTest = RunnerTest & { timeLimitSeconds: number };
 
 /** Thresholds (ms remaining) that trigger a screen-reader announcement. */
 const ANNOUNCE_AT_MS = [10 * 60_000, 5 * 60_000, 60_000];
+
+/** The active announcement threshold for a remaining time (smallest match). */
+function activeThreshold(remaining: number): number | null {
+  if (remaining <= 0) return null;
+  const matches = ANNOUNCE_AT_MS.filter((at) => remaining <= at);
+  return matches.length > 0 ? Math.min(...matches) : null;
+}
 
 export function TimedRunner({
   test,
@@ -58,25 +70,34 @@ export function TimedRunner({
 }) {
   // null = hydrating; 'idle' = start gate (no session yet); TimedSession = live.
   const [session, setSession] = useState<TimedSession | null | 'idle'>(null);
+  // Copy honesty: when storage is blocked we cannot promise refresh-proofing.
+  const [persistBlocked, setPersistBlocked] = useState(false);
+  const hydrated = useRef(false);
 
   // Hydrate from localStorage after mount (SSR renders the placeholder).
+  // Once-only: an RSC refresh must never re-run this over a live exam whose
+  // storage writes are failing (that would silently reset it to the gate).
   useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
     const ids = questions.map((q) => q.id);
     const restored = deserializeTimedSession(
       window.localStorage.getItem(timedStorageKey(test.slug)),
       test.slug,
       ids,
+      Date.now(),
     );
     setSession(restored ?? 'idle');
   }, [test.slug, questions]);
 
-  // Persist every change.
+  // Persist every change; surface (don't swallow) a blocked store so the UI
+  // can stop promising refresh-safety it cannot deliver.
   useEffect(() => {
     if (!session || session === 'idle') return;
     try {
       window.localStorage.setItem(timedStorageKey(test.slug), serializeTimedSession(session));
     } catch {
-      // Storage full/blocked — the session still works for this page view.
+      setPersistBlocked(true);
     }
   }, [session, test.slug]);
 
@@ -109,14 +130,19 @@ export function TimedRunner({
   }
 
   if (session.submittedAt !== undefined) {
-    const expiredOut = isExpired(session, test.timeLimitSeconds, session.submittedAt);
     return (
       <TestResults
         test={test}
         questions={questions}
         answers={session.answers}
         modeLabel="Timed Test"
-        notice={expiredOut ? 'Time expired — your test was submitted automatically.' : undefined}
+        mode="timed"
+        elapsed={elapsedSeconds(session, session.submittedAt)}
+        notice={
+          session.submittedReason === 'expired'
+            ? 'Time expired — your test was submitted automatically.'
+            : undefined
+        }
         alreadyLogged={session.loggedAt !== undefined}
         onLogged={() => setSession((s) => (s && s !== 'idle' ? markTimedLogged(s, Date.now()) : s))}
         onRetake={restart}
@@ -130,14 +156,16 @@ export function TimedRunner({
       test={test}
       questions={questions}
       session={session}
+      persistBlocked={persistBlocked}
       onAnswer={(qid, key) =>
         setSession((s) => (s && s !== 'idle' ? answerTimedQuestion(s, qid, key) : s))
       }
-      onNavigate={(index) =>
-        setSession((s) => (s && s !== 'idle' ? goToTimedQuestion(s, index, questions.length) : s))
-      }
-      onSubmit={() => {
-        setSession((s) => (s && s !== 'idle' ? submitTimedSession(s, Date.now()) : s));
+      onNavigate={(index) => {
+        setSession((s) => (s && s !== 'idle' ? goToTimedQuestion(s, index, questions.length) : s));
+        window.scrollTo({ top: 0 });
+      }}
+      onSubmit={(reason) => {
+        setSession((s) => (s && s !== 'idle' ? submitTimedSession(s, Date.now(), reason) : s));
         window.scrollTo({ top: 0 });
       }}
     />
@@ -187,6 +215,7 @@ function TimedExam({
   test,
   questions,
   session,
+  persistBlocked,
   onAnswer,
   onNavigate,
   onSubmit,
@@ -194,43 +223,42 @@ function TimedExam({
   test: TimedTest;
   questions: Question[];
   session: TimedSession;
+  persistBlocked: boolean;
   onAnswer: (questionId: string, choiceKey: string) => void;
   onNavigate: (index: number) => void;
-  onSubmit: () => void;
+  onSubmit: (reason: 'manual' | 'expired') => void;
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [confirmSubmit, setConfirmSubmit] = useState(false);
-  const [announcement, setAnnouncement] = useState('');
-  const announcedRef = useRef<Set<number>>(new Set());
-  const autoSubmitted = useRef(false);
 
   const remaining = remainingMs(session, test.timeLimitSeconds, now);
+  const expired = remaining === 0;
 
-  // 1-second tick while the exam runs.
+  // Announcements derive purely from remaining time. The mount-time baseline
+  // means resuming with 3:50 left never replays the stale "5 minutes" —
+  // only thresholds crossed AFTER resume are announced.
+  const baselineThreshold = useRef<number | null | undefined>(undefined);
+  if (baselineThreshold.current === undefined) {
+    baselineThreshold.current = activeThreshold(remaining);
+  }
+  const threshold = activeThreshold(remaining);
+  const announcement =
+    threshold !== null && threshold !== baselineThreshold.current && !expired
+      ? `${Math.round(threshold / 60_000)} minute${threshold === 60_000 ? '' : 's'} remaining`
+      : '';
+
+  // 1-second tick while the exam runs (cleaned up when this view unmounts).
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
-  // Expiry → automatic submission, exactly once (the session latch is the
-  // real guard; the ref just stops repeat calls between renders).
+  // Expiry → automatic submission. Fires once on the false→true transition;
+  // the session's one-way latch makes any repeat a no-op regardless.
   useEffect(() => {
-    if (remaining === 0 && !autoSubmitted.current) {
-      autoSubmitted.current = true;
-      onSubmit();
-    }
+    if (expired) onSubmit('expired');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining]);
-
-  // Threshold announcements for screen readers (not every second).
-  useEffect(() => {
-    for (const at of ANNOUNCE_AT_MS) {
-      if (remaining <= at && remaining > 0 && !announcedRef.current.has(at)) {
-        announcedRef.current.add(at);
-        setAnnouncement(`${Math.round(at / 60_000)} minute${at === 60_000 ? '' : 's'} remaining`);
-      }
-    }
-  }, [remaining]);
+  }, [expired]);
 
   const q = questions[session.currentIndex];
   const selected = session.answers[q.id];
@@ -240,41 +268,41 @@ function TimedExam({
   const isLast = session.currentIndex === total - 1;
   const lowTime = remaining <= 5 * 60_000;
 
+  // Any interaction other than confirming disarms an armed submit.
+  const navigate = (index: number) => {
+    setConfirmSubmit(false);
+    onNavigate(index);
+  };
+  const answer = (qid: string, key: string) => {
+    setConfirmSubmit(false);
+    onAnswer(qid, key);
+  };
+
   return (
     <div>
-      {/* Countdown + progress */}
-      <div className="mb-6">
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted">
-            Question {session.currentIndex + 1} of {total}
+      <QuizProgress
+        currentIndex={session.currentIndex}
+        total={total}
+        answered={done}
+        right={
+          <p role="timer" aria-label="Time remaining" className="text-right">
+            {lowTime && (
+              <span className="mr-2 align-middle text-xs font-semibold uppercase tracking-wide text-signal">
+                Low time
+              </span>
+            )}
+            <span
+              className={`font-display text-2xl tabular-nums ${lowTime ? 'text-signal' : 'text-ink'}`}
+            >
+              {formatRemaining(remaining)}
+            </span>
           </p>
-          <p
-            role="timer"
-            aria-label="Time remaining"
-            className={`font-display text-2xl tabular-nums ${lowTime ? 'text-signal' : 'text-ink'}`}
-          >
-            {formatRemaining(remaining)}
-          </p>
-        </div>
-        <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={done}
-          aria-label="Questions answered"
-          className="mt-2 h-1.5 w-full overflow-hidden rounded-card bg-asphalt-700"
-        >
-          <div
-            className="h-full bg-signal transition-all"
-            style={{ width: `${total === 0 ? 0 : Math.round((done / total) * 100)}%` }}
-          />
-        </div>
-        <p className="mt-1 text-right text-xs text-muted">{done} answered</p>
-        {/* Screen-reader time announcements at meaningful thresholds only. */}
-        <p aria-live="polite" className="sr-only">
-          {announcement}
-        </p>
-      </div>
+        }
+      />
+      {/* Screen-reader time announcements at crossed thresholds only. */}
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
       {/* Question — NO feedback, NO explanation until submission */}
       <div className="rounded-card border border-line bg-asphalt-800 p-6 sm:p-8">
@@ -292,8 +320,8 @@ function TimedExam({
                 key={choice.key}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => onAnswer(q.id, choice.key)}
-                className={`flex min-h-[44px] w-full items-start gap-3 rounded-card border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt ${
+                onClick={() => answer(q.id, choice.key)}
+                className={`${CHOICE_BUTTON_BASE} ${
                   isSelected
                     ? 'border-signal bg-signal/10 text-signal'
                     : 'border-line bg-asphalt text-ink hover:border-signal'
@@ -322,7 +350,7 @@ function TimedExam({
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Button
           variant="ghost"
-          onClick={() => onNavigate(session.currentIndex - 1)}
+          onClick={() => navigate(session.currentIndex - 1)}
           disabled={session.currentIndex === 0}
           className="disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -331,14 +359,14 @@ function TimedExam({
         <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="ghost"
-            onClick={() => onNavigate(session.currentIndex + 1)}
+            onClick={() => navigate(session.currentIndex + 1)}
             disabled={isLast}
             className="disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next →
           </Button>
           {confirmSubmit ? (
-            <Button onClick={onSubmit}>
+            <Button onClick={() => onSubmit('manual')}>
               {unanswered > 0 ? `Submit with ${unanswered} unanswered` : 'Confirm submit'}
             </Button>
           ) : (
@@ -356,14 +384,16 @@ function TimedExam({
           <button
             type="button"
             onClick={() => setConfirmSubmit(false)}
-            className="font-semibold text-signal underline-offset-2 hover:underline"
+            className="rounded-card font-semibold text-signal underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
           >
             Keep working
           </button>
         </p>
       )}
       <p className="mt-3 text-center text-xs text-muted">
-        The clock keeps running if you leave — refreshing never resets it.
+        {persistBlocked
+          ? 'Heads up: this browser is blocking storage, so progress can’t be saved — don’t refresh or leave until you submit.'
+          : 'The clock keeps running if you leave — refreshing never resets it.'}
       </p>
     </div>
   );

@@ -22,6 +22,7 @@ import {
   TIMED_STORAGE_VERSION,
   answerTimedQuestion,
   deserializeTimedSession,
+  elapsedSeconds,
   formatRemaining,
   goToTimedQuestion,
   isExpired,
@@ -32,7 +33,7 @@ import {
   submitTimedSession,
   timedStorageKey,
 } from '@/lib/tests/timed';
-import { TEST_CATALOG, getTest, studyHref, timedHref } from '@/lib/tests/catalog';
+import { TEST_CATALOG, getTest, studyHref, timedHref, timedAvailable } from '@/lib/tests/catalog';
 
 let passed = 0;
 let failed = 0;
@@ -60,7 +61,7 @@ check('expired exactly at the limit', isExpired(s, LIMIT, T0 + 50 * 60_000) === 
 
 // THE core Milestone-3 guarantee: a refresh restores the ORIGINAL clock.
 const stored = serializeTimedSession(s);
-const restored = deserializeTimedSession(stored, 'general-knowledge', ids);
+const restored = deserializeTimedSession(stored, 'general-knowledge', ids, T0 + 5 * 60_000);
 check('refresh keeps the original startedAt (timer cannot reset)', restored?.startedAt === T0);
 check(
   'remaining time after refresh reflects the ORIGINAL anchor',
@@ -72,7 +73,26 @@ check(
     stored.replace(`"startedAt":${T0}`, '"startedAt":"soon"'),
     'general-knowledge',
     ids,
+    T0,
   ) === null,
+);
+
+// Clock skew can never EXTEND the exam: a future anchor is clamped on restore,
+// and remainingMs is capped at the limit either way.
+const skewed = deserializeTimedSession(
+  serializeTimedSession(newTimedSession('general-knowledge', T0 + 99 * 60_000)),
+  'general-knowledge',
+  ids,
+  T0,
+);
+check('future startedAt clamped to now on restore', skewed?.startedAt === T0);
+check(
+  'remainingMs never exceeds the limit even unclamped',
+  remainingMs(newTimedSession('x', T0 + 99 * 60_000), LIMIT, T0) === LIMIT * 1000,
+);
+check(
+  'elapsedSeconds counts up and never negative',
+  elapsedSeconds(s, T0 + 90_000) === 90 && elapsedSeconds(s, T0 - 5) === 0,
 );
 
 check('formatRemaining 50:00', formatRemaining(50 * 60 * 1000) === '50:00');
@@ -91,11 +111,19 @@ check('goTo clamps below 0', goToTimedQuestion(s, -3, 3).currentIndex === 0);
 check('goTo clamps above max', goToTimedQuestion(s, 42, 3).currentIndex === 2);
 
 // ── 3. Submission — a one-way latch, exactly once ───────────────────────────
-const submitted = submitTimedSession(s, T0 + 1000);
+const submitted = submitTimedSession(s, T0 + 1000, 'manual');
 check('submit stamps submittedAt', submitted.submittedAt === T0 + 1000);
 check(
+  'submit RECORDS its reason (never inferred from timing)',
+  submitted.submittedReason === 'manual',
+);
+check(
+  'expiry submissions record the expired reason',
+  submitTimedSession(s, T0 + 9, 'expired').submittedReason === 'expired',
+);
+check(
   'second submit is a no-op (duplicate protection)',
-  submitTimedSession(submitted, T0 + 9999) === submitted,
+  submitTimedSession(submitted, T0 + 9999, 'expired') === submitted,
 );
 check('answers are frozen after submit', answerTimedQuestion(submitted, 'q2', 'b') === submitted);
 const loggedOnce = markTimedLogged(submitted, T0 + 2000);
@@ -109,22 +137,24 @@ const roundtrip = deserializeTimedSession(
   serializeTimedSession(loggedOnce),
   'general-knowledge',
   ids,
+  T0 + 3000,
 );
 check(
   'submittedAt survives refresh (no resubmission window)',
   roundtrip?.submittedAt === T0 + 1000,
 );
 check('loggedAt survives refresh (no duplicate attempt rows)', roundtrip?.loggedAt === T0 + 2000);
+check('submittedReason survives refresh', roundtrip?.submittedReason === 'manual');
 
 // ── 4. Storage hygiene (mirrors the Study rules) ────────────────────────────
 check(
   'storage key is versioned + slug-scoped + distinct from study',
   timedStorageKey('general-knowledge') === `tlws:timed:v${TIMED_STORAGE_VERSION}:general-knowledge`,
 );
-check('slug mismatch → null', deserializeTimedSession(stored, 'air-brakes', ids) === null);
+check('slug mismatch → null', deserializeTimedSession(stored, 'air-brakes', ids, T0) === null);
 check(
   'junk → null, never throws',
-  deserializeTimedSession('{nope', 'general-knowledge', ids) === null,
+  deserializeTimedSession('{nope', 'general-knowledge', ids, T0) === null,
 );
 check(
   'version mismatch → null',
@@ -132,9 +162,10 @@ check(
     stored.replace(`"v":${TIMED_STORAGE_VERSION}`, '"v":99'),
     'general-knowledge',
     ids,
+    T0,
   ) === null,
 );
-const shrunk = deserializeTimedSession(serializeTimedSession(s), 'general-knowledge', ['q1']);
+const shrunk = deserializeTimedSession(serializeTimedSession(s), 'general-knowledge', ['q1'], T0);
 check('unknown answer ids dropped', shrunk !== null && Object.keys(shrunk.answers).length === 1);
 
 // ── 5. Catalog — both modes shipped, hrefs derived ──────────────────────────
@@ -153,22 +184,21 @@ check(
   timedHref('general-knowledge') === '/practice-tests/general-knowledge/timed',
 );
 check(
-  'study + timed routes are distinct',
-  studyHref('general-knowledge') !== timedHref('general-knowledge'),
+  'timedAvailable is the single gating condition (mode + limit)',
+  timedAvailable(gk!) === true &&
+    timedAvailable({ ...gk!, timeLimitSeconds: null }) === false &&
+    timedAvailable({ ...gk!, modes: ['study'] }) === false,
 );
 
 // ── 6. Timed route guards ───────────────────────────────────────────────────
 const timedPage = read('src/app/(learn)/practice-tests/[slug]/timed/page.tsx');
 check('timed route is noindex', /noindex: true/.test(timedPage));
 check('timed route 404s unknown tests', /notFound\(\)/.test(timedPage));
-check(
-  'timed route 404s tests without the timed mode',
-  /modes\.includes\('timed'\)/.test(timedPage),
-);
+check('timed route 404s tests without the timed mode', /timedAvailable\(test\)/.test(timedPage));
 check('timed route guards zero questions', /questions\.length === 0/.test(timedPage));
 check(
   'timed route only prerenders timed-capable tests',
-  /filter\(\(t\) => t\.modes\.includes\('timed'\)\)/.test(timedPage),
+  /filter\(\(t\) => timedAvailable\(t\)\)/.test(timedPage),
 );
 check(
   'timed route passes the Turnstile site key',
@@ -181,6 +211,32 @@ check('runner is a client island', /^'use client';/.test(runner));
 check(
   'clock starts on the Begin click, never on page load',
   /onBegin=\{\(\) => setSession\(newTimedSession\(test\.slug, Date\.now\(\)\)\)\}/.test(runner),
+);
+// Review fixes locked in:
+check(
+  'arming submit disarms on navigation AND answering',
+  /const navigate = \(index: number\) => \{\s*setConfirmSubmit\(false\)/.test(runner) &&
+    /const answer = \(qid: string, key: string\) => \{\s*setConfirmSubmit\(false\)/.test(runner),
+);
+check('expiry notice keyed on the RECORDED reason', /submittedReason === 'expired'/.test(runner));
+check('manual submits record their reason', /onSubmit\('manual'\)/.test(runner));
+check('resume never replays a passed announcement threshold', /baselineThreshold/.test(runner));
+check('low time has a visible non-color cue', /Low time/.test(runner));
+check(
+  'blocked storage stops the refresh-safety promise',
+  /persistBlocked/.test(runner) && /blocking storage/.test(runner),
+);
+check(
+  'hydration is once-only (RSC refresh cannot reset a live exam)',
+  /hydrated\.current/.test(runner),
+);
+check(
+  'navigation scrolls back to the top (mobile)',
+  /onNavigate=\{\(index\) => \{\s*setSession[\s\S]*?window\.scrollTo/.test(runner),
+);
+check(
+  'shared QuizProgress + choice base reused',
+  /QuizProgress/.test(runner) && /CHOICE_BUTTON_BASE/.test(runner),
 );
 check('start gate names the exam conditions', /Exam conditions/.test(runner));
 check('visible countdown is role="timer"', /role="timer"/.test(runner));
@@ -210,7 +266,11 @@ check(
   'resume + persistence via the pure timed helpers',
   /deserializeTimedSession\(/.test(runner) && /serializeTimedSession\(/.test(runner),
 );
-check('touch targets ≥44px', /min-h-\[44px\]/.test(runner));
+check(
+  'touch targets ≥44px via the shared choice base',
+  /CHOICE_BUTTON_BASE/.test(runner) &&
+    /min-h-\[44px\]/.test(read('src/components/test/shared.tsx')),
+);
 check('refresh warning shown to the student', /refreshing never resets it/i.test(runner));
 check(
   'exam choices expose selection state (aria-pressed)',
@@ -224,7 +284,23 @@ check(
   /q\.explanation/.test(results) && /q\.cfrCite/.test(results),
 );
 check('TestResults grades with the shared gradeAttempt', /gradeAttempt\(/.test(results));
-check('TestResults logs the attempt once (persisted guard)', /alreadyLogged/.test(results));
+check(
+  'TestResults logs the attempt once (guard actually enforced)',
+  /if \(alreadyLogged \|\| posting\.current\) return;/.test(results),
+);
+check(
+  'zero-answer sittings latch locally instead of posting a doomed 422',
+  /Object\.keys\(answers\)\.length === 0/.test(results) && /onLogged\(\);\s*return;/.test(results),
+);
+check(
+  'results take focus on entry (auto-submit never drops focus to body)',
+  /headingRef\.current\?\.focus\(\)/.test(results) && /tabIndex=\{-1\}/.test(results),
+);
+check('expiry notice announces via a post-mount live region', /setLiveNotice/.test(results));
+check(
+  'attempts carry mode + elapsed analytics',
+  /mode,/.test(results) && /elapsed_seconds: elapsed/.test(results),
+);
 check(
   'TimedRunner renders results via the shared TestResults',
   /<TestResults/.test(runner) && /modeLabel="Timed Test"/.test(runner),
@@ -243,11 +319,11 @@ check(
 const landing = read('src/app/(learn)/practice-tests/[slug]/page.tsx');
 check('landing offers Start Study Mode', /Start Study Mode/.test(landing));
 check(
-  'landing offers Start Timed Test (gated on modes)',
-  /Start Timed Test/.test(landing) && /modes\.includes\('timed'\)/.test(landing),
+  'landing offers Start Timed Test (gated on timedAvailable)',
+  /Start Timed Test/.test(landing) && /timedAvailable\(test\)/.test(landing),
 );
 check('landing derives the timed link from the catalog', /timedHref\(/.test(landing));
-check('landing states exam conditions honestly', /no feedback until you submit/i.test(landing));
+check('landing states exam conditions honestly', /no feedback until you\s+submit/i.test(landing));
 
 // ── 10. No secrets in the new client code ────────────────────────────────────
 for (const f of ['src/components/test/TimedRunner.tsx', 'src/components/test/TestResults.tsx']) {
