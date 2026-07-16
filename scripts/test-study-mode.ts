@@ -185,6 +185,31 @@ check(
     answers: { [uuid(1)]: 'x'.repeat(9) },
   }).success,
 );
+check(
+  'mode + elapsed analytics fields accepted',
+  testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    mode: 'timed',
+    elapsed_seconds: 1200,
+  }).success,
+);
+check(
+  'negative elapsed rejected',
+  !testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    elapsed_seconds: -5,
+  }).success,
+);
+check(
+  'unknown mode rejected',
+  !testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    answers: { [uuid(1)]: 'a' },
+    mode: 'zen',
+  }).success,
+);
 const big: Record<string, string> = {};
 for (let i = 0; i < 201; i++) big[uuid(i)] = 'a';
 check(
@@ -344,28 +369,46 @@ check(
 );
 
 const runner = read('src/components/test/StudyRunner.tsx');
+// The results experience (score, review, email save, CTAs) moved to the shared
+// TestResults in Milestone 3 — same behavior, one home for both runners.
+const resultsShared = read('src/components/test/TestResults.tsx');
+const runnerAll = runner + resultsShared;
 check('runner is a client island', /^'use client';/.test(runner));
 check(
   'runner resumes from localStorage via the pure helpers',
   /deserializeSession\(/.test(runner) && /serializeSession\(/.test(runner),
 );
 check('runner announces feedback (aria-live)', /aria-live="polite"/.test(runner));
-check('runner exposes progress semantics', /role="progressbar"/.test(runner));
-check('runner touch targets are ≥44px', /min-h-\[44px\]/.test(runner));
+check(
+  'runner exposes progress semantics (shared QuizProgress)',
+  /QuizProgress/.test(runner) && /role="progressbar"/.test(read('src/components/test/shared.tsx')),
+);
+check(
+  'runner touch targets are ≥44px (shared choice base)',
+  /CHOICE_BUTTON_BASE/.test(runner) &&
+    /min-h-\[44px\]/.test(read('src/components/test/shared.tsx')),
+);
 check(
   'runner reveals explanation + citation on answer',
   /q\.explanation/.test(runner) && /q\.cfrCite/.test(runner),
 );
-check('runner posts the attempt to the API', /\/api\/tests\/attempt/.test(runner));
-check('runner has retake', /Retake the test/.test(runner));
+check(
+  'runner posts the attempt to the API (via shared TestResults)',
+  /\/api\/tests\/attempt/.test(runnerAll),
+);
+check('runner has retake', /Retake the test/.test(runnerAll));
 check(
   'runner links Academy + Pre-School CTAs',
-  /academy\/apply/.test(runner) && /PRESCHOOL_PATH/.test(runner),
+  /academy\/apply/.test(runnerAll) && /PRESCHOOL_PATH/.test(runnerAll),
 );
 // Review fixes locked in:
 check(
   'attempt is logged once per sitting (persisted loggedAt guard)',
   /markLogged/.test(runner) && /session\.loggedAt/.test(runner),
+);
+check(
+  'StudyRunner actually renders the shared TestResults (results branch intact)',
+  /<TestResults/.test(runner) && /modeLabel="Study Mode"/.test(runner),
 );
 check(
   'answered choices stay focusable (aria-disabled, never disabled)',
@@ -376,19 +419,28 @@ check(
   /\(correct answer\)/.test(runner) && /your answer — incorrect/.test(runner),
 );
 check(
-  'no diesel-as-text on dark (contrast): red state uses border/bg with ink text',
-  !/text-diesel/.test(runner),
+  'no diesel-as-text on dark (contrast) in the runner OR the shared results',
+  !/text-diesel/.test(runner) && !/text-diesel/.test(resultsShared),
 );
-check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(runner));
-check('email form parses the ok-envelope and surfaces server errors', /body\?\.ok/.test(runner));
-check('failed submits remount Turnstile for a fresh single-use token', /setWidgetKey/.test(runner));
-check('Turnstile loads lazily on email-field intent', /setEngaged\(true\)/.test(runner));
+check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(resultsShared));
+check(
+  'email form parses the ok-envelope and surfaces server errors',
+  /body\?\.ok/.test(resultsShared),
+);
+check(
+  'failed submits remount Turnstile for a fresh single-use token',
+  /setWidgetKey/.test(resultsShared),
+);
+check('Turnstile loads lazily on email-field intent', /setEngaged\(true\)/.test(resultsShared));
 check(
   'forward navigation survives completion (Next never replaced away)',
   /Next →/.test(runner) && /allAnswered && <Button onClick=\{onFinish\}/.test(runner),
 );
 check('nav/CTA buttons reuse the design-system Button (focus rings)', /<Button/.test(runner));
-check('shared TextField powers the email input (label + error wiring)', /TextField/.test(runner));
+check(
+  'shared TextField powers the email input (label + error wiring)',
+  /TextField/.test(resultsShared),
+);
 
 // ── 9. Go-live wiring ───────────────────────────────────────────────────────
 const landing = read('src/app/(learn)/practice-tests/[slug]/page.tsx');
@@ -401,8 +453,8 @@ check(
   /Question bank coming soon/.test(landing),
 );
 check(
-  'landing never advertises Timed before it ships (tile gated on modes)',
-  /modes\.includes\('timed'\)/.test(landing),
+  'landing gates every Timed surface on the single timedAvailable condition',
+  /timedAvailable\(test\)/.test(landing) && !/modes\.includes\('timed'\)/.test(landing),
 );
 check('landing derives the runner link from the catalog (studyHref)', /studyHref\(/.test(landing));
 const featured = read('src/components/sections/FeaturedTest.tsx');
@@ -413,7 +465,12 @@ check(
 check('homepage CTA no longer promises an unbuilt count', !/50 questions/.test(featured));
 
 // ── 10. No secrets in client code ───────────────────────────────────────────
-for (const f of ['src/components/test/StudyRunner.tsx', 'src/components/test/TestCard.tsx']) {
+for (const f of [
+  'src/components/test/StudyRunner.tsx',
+  'src/components/test/TestCard.tsx',
+  'src/components/test/TestResults.tsx',
+  'src/components/test/TimedRunner.tsx',
+]) {
   const src = read(f);
   check(`${f}: no service-role import`, !/supabase\/admin/.test(src));
   check(`${f}: no service-role key reference`, !/SERVICE_ROLE/.test(src));

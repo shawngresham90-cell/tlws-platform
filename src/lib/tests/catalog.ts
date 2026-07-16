@@ -30,11 +30,11 @@ export const TEST_CATALOG: TestDefinition[] = [
     icon: '📖',
     questionCountTarget: 50,
     passThresholdPct: PASS_THRESHOLD_DEFAULT,
-    // Reserved for the Timed-Mode milestone; not displayed until 'timed' joins modes.
+    /** Timed Test length — the countdown anchor for the exam simulation. */
     timeLimitSeconds: 50 * 60,
-    // Only modes a student can actually take today — 'timed' is added when the
-    // Timed-Mode milestone ships, so no page ever advertises an unbuilt mode.
-    modes: ['study'],
+    // Both modes are shipped: Study (instant feedback) and Timed (exam
+    // simulation, Milestone 3). Only list a mode a student can take today.
+    modes: ['study', 'timed'],
     relatedKcCategorySlug: null, // Knowledge Center integration is a later milestone
     seoTitle: 'Free CDL General Knowledge Practice Test (2026) | Trucking Life with Shawn',
     seoDescription:
@@ -67,4 +67,29 @@ export function testHref(slug: string): string {
 /** Canonical path for a test's Study Mode runner. */
 export function studyHref(slug: string): string {
   return `${testHref(slug)}/study`;
+}
+
+/** Canonical path for a test's Timed Test runner. */
+export function timedHref(slug: string): string {
+  return `${testHref(slug)}/timed`;
+}
+
+/**
+ * A takeable Timed Test needs BOTH the mode flag and a time limit. This is
+ * the one condition the landing chooser, the stats tiles, and the /timed
+ * route all gate on — never re-derive it inline.
+ */
+export function timedAvailable(test: TestDefinition): boolean {
+  return test.modes.includes('timed') && (test.timeLimitSeconds ?? 0) > 0;
+}
+
+// Build-time config guard: a test declaring the timed mode without a time
+// limit is a misconfiguration that would otherwise fail silently (hidden
+// chooser card, 404ing route). Fail the build loudly instead.
+for (const t of TEST_CATALOG) {
+  if (t.modes.includes('timed') && !((t.timeLimitSeconds ?? 0) > 0)) {
+    throw new Error(
+      `Test catalog misconfiguration: "${t.slug}" declares the 'timed' mode without a positive timeLimitSeconds.`,
+    );
+  }
 }

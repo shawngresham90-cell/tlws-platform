@@ -35,6 +35,23 @@ export function clampIndex(index: number, total: number): number {
   return Math.max(0, Math.min(Math.trunc(index), Math.max(0, total - 1)));
 }
 
+/**
+ * Keep only string answers for question ids that exist in the live bank —
+ * the ONE restoration rule both runners share, so a hardening fix here
+ * applies to Study and Timed sessions alike.
+ */
+export function sanitizeAnswers(
+  raw: Record<string, unknown>,
+  questionIds: string[],
+): Record<string, string> {
+  const known = new Set(questionIds);
+  const answers: Record<string, string> = {};
+  for (const [id, key] of Object.entries(raw)) {
+    if (known.has(id) && typeof key === 'string') answers[id] = key;
+  }
+  return answers;
+}
+
 export function newSession(slug: string, now: number): StudySession {
   return { slug, answers: {}, currentIndex: 0, startedAt: now, updatedAt: now };
 }
@@ -107,11 +124,7 @@ export function deserializeSession(
     if (parsed.v !== STUDY_STORAGE_VERSION || parsed.slug !== slug) return null;
     if (typeof parsed.answers !== 'object' || parsed.answers === null) return null;
 
-    const known = new Set(questionIds);
-    const answers: Record<string, string> = {};
-    for (const [id, key] of Object.entries(parsed.answers)) {
-      if (known.has(id) && typeof key === 'string') answers[id] = key;
-    }
+    const answers = sanitizeAnswers(parsed.answers, questionIds);
     const index =
       typeof parsed.currentIndex === 'number' && Number.isFinite(parsed.currentIndex)
         ? clampIndex(parsed.currentIndex, questionIds.length)

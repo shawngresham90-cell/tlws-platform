@@ -28,7 +28,9 @@ export const runtime = 'nodejs';
  */
 export const POST = guardedPost(
   testAttemptSchema,
-  { routeKey: 'test-attempt', rateLimitMax: 10 },
+  // Serves BOTH runners' completion logs plus email saves — sized so a study
+  // and a timed completion with an email save in one window never collide.
+  { routeKey: 'test-attempt', rateLimitMax: 15 },
   async ({ data, req }) => {
     // Same-origin only — this endpoint serves the site's own quiz runner.
     const secFetchSite = req.headers.get('sec-fetch-site');
@@ -92,12 +94,21 @@ export const POST = guardedPost(
     // exactly like the real exam.
     const result = gradeAttempt(questions, answers, catalogTest.passThresholdPct);
 
+    // Analytics fields: clamp elapsed to the test's limit (timed) or a day
+    // (study) so a tampered client clock can't poison duration analytics.
+    const elapsedCap =
+      data.mode === 'timed' && catalogTest.timeLimitSeconds ? catalogTest.timeLimitSeconds : 86_400;
+    const elapsed =
+      data.elapsed_seconds !== undefined ? Math.min(data.elapsed_seconds, elapsedCap) : null;
+
     const { error: insertError } = await supabase.from('test_attempts').insert({
       test_id: testRow.id,
       lead_email: data.email ?? null,
       score: result.correct,
       total: result.total,
       answers,
+      mode: data.mode ?? null,
+      elapsed_seconds: elapsed,
       completed_at: new Date().toISOString(),
     });
     if (insertError) {

@@ -88,17 +88,12 @@ check('GK is published', gk?.isPublished === true);
 check('GK target is 50 questions', gk?.questionCountTarget === 50, gk?.questionCountTarget);
 check('GK pass threshold is 80 (CDL standard)', gk?.passThresholdPct === 80, gk?.passThresholdPct);
 check('GK default matches PASS_THRESHOLD_DEFAULT', PASS_THRESHOLD_DEFAULT === 80);
-// Only shipped modes are advertised: Study now; 'timed' joins when its
-// milestone lands (the config it needs is already reserved in the catalog).
+// Both modes shipped: Study (M2) + Timed (M3). Only list a takeable mode.
 check(
-  'GK offers Study Mode (Timed deferred to its own milestone)',
-  gk?.modes.includes('study') === true && gk?.modes.includes('timed') === false,
+  'GK offers Study AND Timed (both shipped)',
+  gk?.modes.includes('study') === true && gk?.modes.includes('timed') === true,
 );
-check(
-  'GK timed limit (50 min) stays reserved for the Timed milestone',
-  gk?.timeLimitSeconds === 50 * 60,
-  gk?.timeLimitSeconds,
-);
+check('GK timed limit is 50 min', gk?.timeLimitSeconds === 50 * 60, gk?.timeLimitSeconds);
 check('GK is the base permit (no endorsement code)', gk?.endorsementCode === null);
 check('KC integration deferred (no related category yet)', gk?.relatedKcCategorySlug === null);
 
