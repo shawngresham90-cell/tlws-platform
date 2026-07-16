@@ -10,6 +10,7 @@ import { detailHref } from '@/lib/directory/detail-slug';
 import { STORE_CATEGORIES, storeCategoryHref } from '@/lib/store/categories';
 import { STORE_PRODUCTS, productHref } from '@/lib/store/products';
 import { STORE_GUIDES, guideHref } from '@/lib/store/product-types';
+import { publishedTests, testHref } from '@/lib/tests/catalog';
 
 /**
  * Sitemap. Static routes + every Knowledge Center category and published article,
@@ -94,7 +95,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
   // Buying guides (M54) + Shawn's Picks.
   entries.push(
-    { url: `${SITE.url}/store/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    {
+      url: `${SITE.url}/store/guides`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
     {
       url: `${SITE.url}/store/shawns-picks`,
       lastModified: now,
@@ -105,6 +111,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const guide of STORE_GUIDES) {
     entries.push({
       url: `${SITE.url}${guideHref(guide.slug)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
+
+  // Practice Tests (Milestone 1) — hub + every published test landing. Tests
+  // render from the TS catalog, so their URLs ship even before a bank is seeded.
+  entries.push({
+    url: `${SITE.url}/practice-tests`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  });
+  for (const test of publishedTests()) {
+    entries.push({
+      url: `${SITE.url}${testHref(test.slug)}`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
