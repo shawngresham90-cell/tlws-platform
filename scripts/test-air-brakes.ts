@@ -84,6 +84,10 @@ check(
     getTest('general-knowledge')?.timeLimitSeconds === 50 * 60,
 );
 check('unknown slugs still resolve to undefined (404 path)', getTest('no-such-test') === undefined);
+check(
+  'questionCountTarget matches the seeded bank (full bank is served per attempt)',
+  ab?.questionCountTarget === 31,
+);
 
 // ── 2. Seed bank sanity (parse the SQL — mirrors the 032 checks) ────────────
 const seed = read('supabase/migrations/034_seed_air_brakes.sql');
@@ -96,7 +100,10 @@ check(
   /on conflict \(slug\) do nothing/.test(seed),
 );
 check('seed test slug matches the catalog join key', /'air-brakes'/.test(seed));
-check('seed never edits shipped migrations (additive file only)', /034_seed_air_brakes/.test(seed));
+check(
+  'seed contains no destructive statements (purely additive)',
+  !/drop table|drop column|truncate|delete from public\./i.test(seed),
+);
 
 const blocks = seed.split('(v_test,').slice(1);
 check('seed contains at least 25 questions', blocks.length >= 25, blocks.length);
@@ -174,6 +181,21 @@ check(
 );
 check('seed keeps question_count in sync', /set question_count = \(select count\(\*\)/.test(seed));
 
+// Answer-key distribution: a lopsided bank (e.g. d never correct) lets a
+// test-wise student game the choices without knowledge.
+{
+  const keyCounts: Record<string, number> = { a: 0, b: 0, c: 0, d: 0 };
+  for (const block of blocks) {
+    const k = block.match(/::jsonb,\s*'([a-d])'/)?.[1];
+    if (k) keyCounts[k]++;
+  }
+  check(
+    'every answer position (a–d) is correct at least 3 times',
+    Object.values(keyCounts).every((n) => n >= 3),
+    JSON.stringify(keyCounts),
+  );
+}
+
 // ── 3. Topic coverage — every core air-brakes topic from the scope ──────────
 const seedLower = seed.toLowerCase();
 const topics: [string, boolean][] = [
@@ -214,7 +236,7 @@ check(
   'hub renders from publishedTests() (auto-includes Air Brakes)',
   hub.includes('publishedTests()'),
 );
-check('hub has no hardcoded GK-only assumptions', !hub.includes("'general-knowledge'"));
+check('hub has no hardcoded GK-only assumptions', !/general-knowledge/.test(hub));
 
 const landing = read('src/app/(learn)/practice-tests/[slug]/page.tsx');
 check('landing statics generate from publishedTests()', landing.includes('publishedTests()'));

@@ -54,7 +54,7 @@ export const TEST_CATALOG: TestDefinition[] = [
     // passing it removes the L/Z restriction rather than adding a code.
     endorsementCode: null,
     icon: '🛑',
-    questionCountTarget: 25,
+    questionCountTarget: 31,
     passThresholdPct: PASS_THRESHOLD_DEFAULT,
     /** Timed Test length — the countdown anchor for the exam simulation. */
     timeLimitSeconds: 25 * 60,
