@@ -20,6 +20,12 @@ import {
 } from '@/lib/tests/timed';
 import { TestResults, type RunnerTest } from './TestResults';
 import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
+import {
+  MISSES_STORAGE_KEY,
+  deserializeMisses,
+  recordMisses,
+  serializeMisses,
+} from '@/lib/tests/saved';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -165,6 +171,26 @@ export function TimedRunner({
         window.scrollTo({ top: 0 });
       }}
       onSubmit={(reason) => {
+        // Record answered-wrong questions ONCE, at the moment of the single
+        // submission (the latch makes any repeat call a no-op before this).
+        if (session.submittedAt === undefined) {
+          const missed = questions
+            .filter(
+              (q) => session.answers[q.id] !== undefined && session.answers[q.id] !== q.correctKey,
+            )
+            .map((q) => q.id);
+          if (missed.length > 0) {
+            try {
+              const misses = deserializeMisses(window.localStorage.getItem(MISSES_STORAGE_KEY));
+              window.localStorage.setItem(
+                MISSES_STORAGE_KEY,
+                serializeMisses(recordMisses(misses, test.slug, missed, Date.now())),
+              );
+            } catch {
+              // Storage blocked — drilling just won't have these.
+            }
+          }
+        }
         setSession((s) => (s && s !== 'idle' ? submitTimedSession(s, Date.now(), reason) : s));
         window.scrollTo({ top: 0 });
       }}

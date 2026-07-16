@@ -17,7 +17,14 @@ import {
   type StudySession,
 } from '@/lib/tests/study';
 import { TestResults, type RunnerTest } from './TestResults';
+import { BookmarkButton } from './BookmarkButton';
 import { CHOICE_BUTTON_BASE, QuizProgress } from './shared';
+import {
+  MISSES_STORAGE_KEY,
+  deserializeMisses,
+  recordMisses,
+  serializeMisses,
+} from '@/lib/tests/saved';
 import type { Question } from '@/lib/tests/types';
 
 /**
@@ -47,10 +54,16 @@ export function StudyRunner({
   test,
   questions,
   turnstileSiteKey,
+  variant,
+  logAttempt = true,
 }: {
   test: RunnerTest;
   questions: Question[];
   turnstileSiteKey: string;
+  /** Drill sessions (bookmarks/misses) get their own storage bucket. */
+  variant?: string;
+  /** Drills run on partial banks — their scores must never reach the attempt log. */
+  logAttempt?: boolean;
 }) {
   const [session, setSession] = useState<StudySession | null>(null);
   const [view, setView] = useState<'quiz' | 'results'>('quiz');
@@ -64,22 +77,22 @@ export function StudyRunner({
     hydrated.current = true;
     const ids = questions.map((q) => q.id);
     const restored = deserializeSession(
-      window.localStorage.getItem(studyStorageKey(test.slug)),
+      window.localStorage.getItem(studyStorageKey(test.slug, variant)),
       test.slug,
       ids,
     );
     setSession(restored ?? newSession(test.slug, Date.now()));
-  }, [test.slug, questions]);
+  }, [test.slug, questions, variant]);
 
   // Persist every change.
   useEffect(() => {
     if (!session) return;
     try {
-      window.localStorage.setItem(studyStorageKey(test.slug), serializeSession(session));
+      window.localStorage.setItem(studyStorageKey(test.slug, variant), serializeSession(session));
     } catch {
       // Storage full/blocked — the session still works for this page view.
     }
-  }, [session, test.slug]);
+  }, [session, test.slug, variant]);
 
   if (!session) {
     return (
@@ -91,7 +104,7 @@ export function StudyRunner({
 
   const restart = () => {
     try {
-      window.localStorage.removeItem(studyStorageKey(test.slug));
+      window.localStorage.removeItem(studyStorageKey(test.slug, variant));
     } catch {
       // ignore
     }
@@ -118,6 +131,7 @@ export function StudyRunner({
         modeLabel="Study Mode"
         mode="study"
         elapsed={Math.max(0, Math.round((Date.now() - session.startedAt) / 1000))}
+        logAttempt={logAttempt}
         alreadyLogged={session.loggedAt !== undefined}
         onLogged={() => setSession((s) => (s ? markLogged(s, Date.now()) : s))}
         onRetake={restart}
@@ -131,7 +145,23 @@ export function StudyRunner({
       test={test}
       questions={questions}
       session={session}
-      onAnswer={(qid, key) => setSession((s) => (s ? answerQuestion(s, qid, key, Date.now()) : s))}
+      onAnswer={(qid, key) => {
+        // A wrong first answer is a MISS — recorded immediately (study shows
+        // the verdict instantly), feeding the "Practice my misses" drill.
+        const q = questions.find((x) => x.id === qid);
+        if (q && key !== q.correctKey) {
+          try {
+            const misses = deserializeMisses(window.localStorage.getItem(MISSES_STORAGE_KEY));
+            window.localStorage.setItem(
+              MISSES_STORAGE_KEY,
+              serializeMisses(recordMisses(misses, test.slug, [qid], Date.now())),
+            );
+          } catch {
+            // Storage blocked — drilling just won't have this one.
+          }
+        }
+        setSession((s) => (s ? answerQuestion(s, qid, key, Date.now()) : s));
+      }}
       onNavigate={(index) => {
         setSession((s) => (s ? goToQuestion(s, index, questions.length) : s));
         window.scrollTo({ top: 0 });
@@ -252,6 +282,9 @@ function StudyQuestion({
                   {q.verifiedDate && <> · verified {q.verifiedDate}</>}
                 </p>
               )}
+              <div className="mt-4">
+                <BookmarkButton slug={test.slug} questionId={q.id} />
+              </div>
             </div>
           )}
         </div>

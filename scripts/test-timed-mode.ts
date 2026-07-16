@@ -248,7 +248,16 @@ check(
   'NO explanations render during the exam',
   !/q\.explanation/.test(runner) && !/q\.cfrCite/.test(runner),
 );
-check('NO answer key is even referenced in the exam view', !/correctKey/.test(runner));
+// The answer key may be READ at submission (Milestone 4 miss recording) but
+// must never reach the exam view — the rendered UI stays verdict-free.
+check(
+  'NO answer key is even referenced in the exam view',
+  !/correctKey/.test(runner.slice(runner.indexOf('function TimedExam'))),
+);
+check(
+  'answer-key reads happen only inside the submit handler (miss recording)',
+  /onSubmit=\{\(reason\) => \{[\s\S]*?correctKey[\s\S]*?submitTimedSession/.test(runner),
+);
 check(
   'expiry auto-submits via the one-way latch',
   /remaining === 0/.test(runner) && /submitTimedSession/.test(runner),
@@ -286,7 +295,7 @@ check(
 check('TestResults grades with the shared gradeAttempt', /gradeAttempt\(/.test(results));
 check(
   'TestResults logs the attempt once (guard actually enforced)',
-  /if \(alreadyLogged \|\| posting\.current\) return;/.test(results),
+  /if \(!logAttempt \|\| alreadyLogged \|\| posting\.current\) return;/.test(results),
 );
 check(
   'zero-answer sittings latch locally instead of posting a doomed 422',

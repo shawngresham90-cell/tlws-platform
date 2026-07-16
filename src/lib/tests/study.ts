@@ -25,9 +25,14 @@ export type StudySession = {
 /** Bump when the stored shape changes — old sessions are discarded, not migrated. */
 export const STUDY_STORAGE_VERSION = 1;
 
-/** localStorage key for a test's in-progress Study session. */
-export function studyStorageKey(slug: string): string {
-  return `tlws:study:v${STUDY_STORAGE_VERSION}:${slug}`;
+/**
+ * localStorage key for a test's in-progress Study session. Drill sessions
+ * (bookmarks / misses, Milestone 4) pass a variant so they never clobber the
+ * full-bank session.
+ */
+export function studyStorageKey(slug: string, variant?: string): string {
+  const base = `tlws:study:v${STUDY_STORAGE_VERSION}:${slug}`;
+  return variant ? `${base}:${variant}` : base;
 }
 
 /** Clamp an index into [0, total-1] (0 when the bank is empty). */

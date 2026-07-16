@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField } from '@/components/apply/Fields';
@@ -7,6 +8,7 @@ import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
 import { gradeAttempt } from '@/lib/tests/scoring';
 import { testHref } from '@/lib/tests/catalog';
+import { BookmarkButton } from './BookmarkButton';
 import { PRESCHOOL_PATH, PRESCHOOL_PRICE_LABEL } from '@/lib/preschool/constants';
 import type { Question } from '@/lib/tests/types';
 
@@ -32,6 +34,7 @@ export function TestResults({
   modeLabel,
   mode,
   elapsed,
+  logAttempt = true,
   notice,
   alreadyLogged,
   onLogged,
@@ -47,6 +50,8 @@ export function TestResults({
   mode: 'study' | 'timed';
   /** Attempt analytics: seconds from session start to completion. */
   elapsed?: number;
+  /** Drill sessions run partial banks — they must never reach the attempt log. */
+  logAttempt?: boolean;
   /** Optional banner above the score (e.g. "Time expired — submitted automatically"). */
   notice?: string;
   alreadyLogged: boolean;
@@ -74,7 +79,7 @@ export function TestResults({
   // this one-shot within a mount (a failed POST retries only via refresh,
   // where loggedAt is still unset — refs can't re-trigger effects).
   useEffect(() => {
-    if (alreadyLogged || posting.current) return;
+    if (!logAttempt || alreadyLogged || posting.current) return;
     posting.current = true;
     trackEvent('practice_test_completed', {
       test: test.slug,
@@ -182,6 +187,20 @@ export function TestResults({
 
       {/* Full review — correct answers, explanations, and citations revealed */}
       <h2 className="mt-10 font-display text-2xl uppercase text-ink">Review every question</h2>
+      <p className="mt-2 text-sm text-muted">
+        Bookmark any question below, then drill your saved set from{' '}
+        <Link
+          href="/practice-tests/bookmarks"
+          className="font-semibold text-signal hover:underline"
+        >
+          your bookmarks
+        </Link>{' '}
+        — or work through{' '}
+        <Link href="/practice-tests/missed" className="font-semibold text-signal hover:underline">
+          the questions you&apos;ve missed
+        </Link>
+        .
+      </p>
       <ol className="mt-4 space-y-4">
         {questions.map((q, i) => {
           const selected = answers[q.id];
@@ -209,6 +228,9 @@ export function TestResults({
                   Source: <span className="text-ink">{q.cfrCite}</span>
                 </p>
               )}
+              <div className="mt-3">
+                <BookmarkButton slug={test.slug} questionId={q.id} />
+              </div>
             </li>
           );
         })}
