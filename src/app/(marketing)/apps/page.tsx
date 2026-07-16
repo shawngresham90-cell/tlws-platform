@@ -3,6 +3,7 @@ import { ProductGrid, type Product } from '@/components/shop/ProductCard';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
+import { PRESCHOOL_PRICE_LABEL } from '@/lib/preschool/constants';
 
 export const metadata = buildMetadata({
   title: 'Apps & PDFs — DOT System, Free CDL Guides & Driver Training | Trucking Life with Shawn',
@@ -96,7 +97,7 @@ const TRAINING: Product[] = [
   {
     title: 'CDL Pre-School',
     icon: '🎓',
-    badge: 'Founding Student — $149',
+    badge: `Founding Student — ${PRESCHOOL_PRICE_LABEL}`,
     description:
       'Permit prep the driver way — what the test actually asks, without the textbook fog.',
     benefits: [

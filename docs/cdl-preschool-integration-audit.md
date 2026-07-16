@@ -1,5 +1,7 @@
 # CDL Pre-School Integration — Source Audit
 
+> **Price update (2026-07-16):** the Founding Student price is now **$199** (changed from $149 in `src/lib/preschool/constants.ts`, the single source of truth). The $149 figures below are historical — they describe the offer as it stood when this audit was written.
+
 Milestone: Integrate CDL Pre-School Into Trucking Life With Shawn
 Branch: `feat/cdl-preschool-sales-integration` (PR #49)
 Date: 2026-07-13 (updated same day after the source repository was attached)

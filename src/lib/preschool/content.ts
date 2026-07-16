@@ -14,6 +14,8 @@
  * module descriptions — no paid lesson content is reproduced.
  */
 
+import { PRESCHOOL_PRICE_LABEL } from './constants';
+
 export const PRESCHOOL_HEADLINE = 'CDL Pre-School';
 
 export const PRESCHOOL_TAGLINE =
@@ -187,8 +189,7 @@ export const FAQS = [
   },
   {
     question: 'What happens after the first 20 spots sell?',
-    answer:
-      'The Founding Student offer — the $149 founding price and a permanent spot on the wall — is limited to the first 20 verified students. When the twentieth spot is verified, the founding offer closes.',
+    answer: `The Founding Student offer — the ${PRESCHOOL_PRICE_LABEL} founding price and a permanent spot on the wall — is limited to the first 20 verified students. When the twentieth spot is verified, the founding offer closes.`,
   },
   {
     question: 'Does buying guarantee Academy admission?',
