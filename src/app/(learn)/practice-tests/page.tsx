@@ -1,5 +1,6 @@
-import { Container, Section, Eyebrow, Button } from '@/components/ui';
-import { TestCard } from '@/components/tests';
+import { Container, Section, Eyebrow } from '@/components/ui';
+import { TestCard } from '@/components/test';
+import { CtaBand } from '@/components/academy/CtaBand';
 import { publishedTests } from '@/lib/tests/catalog';
 import { getSeededQuestionCount } from '@/lib/tests/queries';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -22,7 +23,7 @@ export const metadata = buildMetadata({
 
 export default async function PracticeTestsHubPage() {
   const tests = publishedTests();
-  const counts = await Promise.all(tests.map((t) => getSeededQuestionCount(t.category)));
+  const counts = await Promise.all(tests.map((t) => getSeededQuestionCount(t.slug)));
 
   return (
     <>
@@ -85,23 +86,11 @@ export default async function PracticeTestsHubPage() {
         </div>
       </Section>
 
-      {/* Academy CTA. */}
-      <Section className="border-t border-line">
-        <div className="rounded-card border border-line bg-asphalt-800 p-8 sm:p-10">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl">
-              <h2 className="font-display text-2xl uppercase text-ink">
-                Ready for the real thing?
-              </h2>
-              <p className="mt-3 text-muted">
-                Trucking Life Academy trains CDL-A drivers in Dalton, GA — off I-75. Drivers helping
-                drivers, the way it should be.
-              </p>
-            </div>
-            <Button href="/academy/apply">Enroll at the Academy</Button>
-          </div>
-        </div>
-      </Section>
+      {/* Academy conversion band — the shared component, so the CTA never drifts. */}
+      <CtaBand
+        heading="Ready for the real thing?"
+        intro="Trucking Life Academy trains CDL-A drivers in Dalton, GA — off I-75. Drivers helping drivers, the way it should be."
+      />
     </>
   );
 }

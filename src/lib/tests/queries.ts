@@ -1,5 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
-import type { Question, QuestionChoice, TestCategory } from './types';
+import type { Question, QuestionChoice } from './types';
 
 /**
  * Practice Tests data layer — reads published tests and their questions from
@@ -8,12 +8,18 @@ import type { Question, QuestionChoice, TestCategory } from './types';
  * an unseeded or unreachable DB yields null / empty and the pages render their
  * honest "question bank coming soon" state, never a 500.
  *
+ * Join key is the SLUG: tests.slug is unique (migration 007) and the TS
+ * catalog owns it, so a lookup can never hit the multiple-rows trap that a
+ * category filter would once state variants share a category. Seeded DB rows
+ * MUST use the catalog's slug verbatim — that is the contract between the
+ * catalog and the bank.
+ *
  * Answer keys (correct_key + explanation) are intentionally exposed to the
  * client. This is a free study tool; usability beats bank protection. No RPC,
  * no hidden keys — decided and finalized in the Practice Tests blueprint.
  */
 
-type TestMetaRow = { id: string; question_count: number };
+type TestMetaRow = { id: string };
 
 type QuestionRow = {
   id: string;
@@ -29,14 +35,14 @@ type QuestionRow = {
   sort_order: number | null;
 };
 
-/** Published test row (id + seeded count) for a category, or null. */
-export async function getPublishedTestMeta(category: TestCategory): Promise<TestMetaRow | null> {
+/** Published test row id for a catalog slug, or null. */
+export async function getPublishedTestMeta(slug: string): Promise<TestMetaRow | null> {
   try {
     const supabase = createStaticClient();
     const { data } = await supabase
       .from('tests')
-      .select('id, question_count')
-      .eq('category', category)
+      .select('id')
+      .eq('slug', slug)
       .eq('is_published', true)
       .maybeSingle();
     return (data as TestMetaRow) ?? null;
@@ -45,26 +51,45 @@ export async function getPublishedTestMeta(category: TestCategory): Promise<Test
   }
 }
 
-/** How many questions are actually seeded for a category. 0 when unseeded. */
-export async function getSeededQuestionCount(category: TestCategory): Promise<number> {
-  const meta = await getPublishedTestMeta(category);
-  return meta?.question_count ?? 0;
+/**
+ * How many questions are actually seeded for a test. 0 when unseeded. Counts
+ * the real questions rows (head-only count) rather than trusting the manually
+ * maintained tests.question_count, so the "live" signal and the rendered count
+ * can never disagree with the bank itself.
+ */
+export async function getSeededQuestionCount(slug: string): Promise<number> {
+  try {
+    const meta = await getPublishedTestMeta(slug);
+    if (!meta) return 0;
+    const supabase = createStaticClient();
+    const { count } = await supabase
+      .from('questions')
+      .select('id', { count: 'exact', head: true })
+      .eq('test_id', meta.id);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
-/** Normalize the DB `choices` jsonb into an ordered [{key,text}] list. */
-function normalizeChoices(raw: unknown): QuestionChoice[] {
-  if (Array.isArray(raw)) {
-    return raw
-      .filter((c): c is { key: string; text: string } => Boolean(c) && typeof c === 'object')
-      .map((c) => ({ key: String(c.key), text: String(c.text) }));
-  }
-  if (raw && typeof raw === 'object') {
-    return Object.entries(raw as Record<string, unknown>).map(([key, text]) => ({
-      key,
-      text: String(text),
-    }));
-  }
-  return [];
+/**
+ * Normalize the DB `choices` jsonb into an ordered [{key,text}] list.
+ * Canonical stored shape is an ARRAY of {key, text} objects — order-explicit
+ * (jsonb objects don't preserve key order). Elements missing string key/text
+ * are dropped rather than surfacing "undefined" choices.
+ */
+export function normalizeChoices(raw: unknown): QuestionChoice[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (c): c is { key: string; text: string } =>
+        Boolean(c) &&
+        typeof c === 'object' &&
+        !Array.isArray(c) &&
+        typeof (c as { key?: unknown }).key === 'string' &&
+        typeof (c as { text?: unknown }).text === 'string',
+    )
+    .map((c) => ({ key: c.key, text: c.text }));
 }
 
 /**
@@ -72,9 +97,9 @@ function normalizeChoices(raw: unknown): QuestionChoice[] {
  * runner (Milestone 2) consumes this; Milestone 1 only needs it to exist and
  * to prove the read path is correct.
  */
-export async function getQuestionsForCategory(category: TestCategory): Promise<Question[]> {
+export async function getQuestionsForTest(slug: string): Promise<Question[]> {
   try {
-    const meta = await getPublishedTestMeta(category);
+    const meta = await getPublishedTestMeta(slug);
     if (!meta) return [];
     const supabase = createStaticClient();
     const { data } = await supabase

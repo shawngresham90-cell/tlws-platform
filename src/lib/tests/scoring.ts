@@ -30,7 +30,9 @@ export function gradeAttempt(
     total,
     correct,
     scorePct,
-    passed: total > 0 && scorePct >= passThresholdPct,
+    // Integer comparison — never judge pass/fail on the rounded display value.
+    // (43/54 rounds to 80% but is 79.6%: display says 80, verdict says fail.)
+    passed: total > 0 && correct * 100 >= passThresholdPct * total,
     answers,
   };
 }

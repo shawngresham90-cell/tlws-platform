@@ -43,12 +43,7 @@ export const TEST_CATALOG: TestDefinition[] = [
 const BY_SLUG = new Map(TEST_CATALOG.map((t) => [t.slug, t]));
 const BY_CATEGORY = new Map(TEST_CATALOG.map((t) => [t.category, t]));
 
-/** Every catalog entry, in registry order. */
-export function allTests(): TestDefinition[] {
-  return TEST_CATALOG;
-}
-
-/** Published tests only, in display order (sort_order = registry order for now). */
+/** Published tests only, in display order (registry order). */
 export function publishedTests(): TestDefinition[] {
   return TEST_CATALOG.filter((t) => t.isPublished);
 }

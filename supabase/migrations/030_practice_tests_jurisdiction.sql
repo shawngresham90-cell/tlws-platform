@@ -1,4 +1,4 @@
--- 031_practice_tests_jurisdiction.sql
+-- 030_practice_tests_jurisdiction.sql
 -- CDL Practice Tests foundation (Milestone 1) — future-facing stub.
 --
 -- ⚠️ COMMITTED BUT NOT APPLIED. Additive only. Lets a federal test later be
@@ -6,7 +6,12 @@
 -- WITHOUT another schema change when that milestone arrives. No UI consumes
 -- these columns in Milestone 1 — state-specific tests are deliberately out of
 -- scope here. The column ships now purely so the future work is a data change,
--- not a migration.
+-- not a migration. State variants get their own unique slug (tests.slug is
+-- the data layer's join key), so adding one can never shadow the federal test.
+--
+-- No index: tests is a catalog-sized table (single-digit rows per the roadmap)
+-- and jurisdiction has two values — the planner would never use one. Add a
+-- partial index (where jurisdiction = 'state') only if a real query needs it.
 --
 -- Rollback (manual):
 --   alter table public.tests
@@ -22,5 +27,3 @@ comment on column public.tests.jurisdiction is
   'federal | state. All Milestone 1 tests are federal. State variants are a later milestone.';
 comment on column public.tests.states is
   'Two-letter state codes this variant targets; empty for a federal test.';
-
-create index if not exists tests_jurisdiction on public.tests (jurisdiction);

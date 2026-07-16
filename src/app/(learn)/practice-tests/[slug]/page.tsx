@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Section, Eyebrow } from '@/components/ui';
+import { Breadcrumbs } from '@/components/kc/Breadcrumbs';
 import { getTest, publishedTests, testHref } from '@/lib/tests/catalog';
 import { getSeededQuestionCount } from '@/lib/tests/queries';
 import { testSchema } from '@/lib/tests/schema';
@@ -16,15 +17,15 @@ import { buildMetadata } from '@/lib/seo/metadata';
 export const revalidate = 300;
 
 export function generateStaticParams() {
-  return publishedTests().map((t) => ({ category: t.slug }));
+  return publishedTests().map((t) => ({ slug: t.slug }));
 }
 
-export function generateMetadata({ params }: { params: { category: string } }) {
-  const test = getTest(params.category);
+export function generateMetadata({ params }: { params: { slug: string } }) {
+  const test = getTest(params.slug);
   if (!test || !test.isPublished) {
     return buildMetadata({
       title: 'Practice test not found',
-      path: `/practice-tests/${params.category}`,
+      path: `/practice-tests/${params.slug}`,
       noindex: true,
     });
   }
@@ -41,15 +42,11 @@ function formatTimeLimit(seconds: number | null): string {
   return `${minutes} min (Timed mode)`;
 }
 
-export default async function PracticeTestLandingPage({
-  params,
-}: {
-  params: { category: string };
-}) {
-  const test = getTest(params.category);
+export default async function PracticeTestLandingPage({ params }: { params: { slug: string } }) {
+  const test = getTest(params.slug);
   if (!test || !test.isPublished) notFound();
 
-  const seededQuestionCount = await getSeededQuestionCount(test.category);
+  const seededQuestionCount = await getSeededQuestionCount(test.slug);
   const live = seededQuestionCount > 0;
 
   const stats: { label: string; value: string }[] = [
@@ -74,28 +71,19 @@ export default async function PracticeTestLandingPage({
             { name: 'Practice Tests', path: '/practice-tests' },
             { name: test.title, path: testHref(test.slug) },
           ]),
-          testSchema(test, seededQuestionCount),
+          testSchema(test),
         ]}
       />
 
       <div className="border-b border-line bg-asphalt py-14 sm:py-16">
         <Container>
-          <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted">
-            <Link href="/" className="hover:text-signal">
-              Home
-            </Link>
-            <span className="px-2" aria-hidden="true">
-              /
-            </span>
-            <Link href="/practice-tests" className="hover:text-signal">
-              Practice Tests
-            </Link>
-            <span className="px-2" aria-hidden="true">
-              /
-            </span>
-            <span className="text-ink">{test.title}</span>
-          </nav>
-
+          <Breadcrumbs
+            crumbs={[
+              { name: 'Home', href: '/' },
+              { name: 'Practice Tests', href: '/practice-tests' },
+              { name: test.title },
+            ]}
+          />
           <Eyebrow>CDL Practice Test</Eyebrow>
           <h1 className="display-hero max-w-3xl text-4xl sm:text-5xl">{test.heroTitle}</h1>
           <p className="mt-4 max-w-2xl text-lg text-muted">{test.heroIntro}</p>

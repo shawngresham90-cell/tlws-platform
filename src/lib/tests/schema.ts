@@ -4,12 +4,13 @@ import type { TestDefinition } from './types';
 
 /**
  * JSON-LD for a practice-test landing page. A `Quiz` typed as a free
- * educational resource — gives Google a rich-result hook and states plainly to
- * AI answer engines that this is a free CDL prep quiz. `numberOfQuestions` is
- * emitted only once the bank is actually seeded, so the count is never
- * fabricated (same honesty rule the store schema follows).
+ * educational resource — states plainly to Google and AI answer engines that
+ * this is a free CDL prep quiz. Only schema.org-recognized properties are
+ * emitted (there is no numberOfQuestions in the vocabulary); when the runner
+ * ships, per-question `hasPart` Question entities become the count signal —
+ * the shape Google's practice-problems rich result actually reads.
  */
-export function testSchema(test: TestDefinition, seededQuestionCount: number): object {
+export function testSchema(test: TestDefinition): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'Quiz',
@@ -21,6 +22,5 @@ export function testSchema(test: TestDefinition, seededQuestionCount: number): o
     about: { '@type': 'Thing', name: `CDL ${test.title}` },
     provider: { '@id': `${SITE.url}/#organization` },
     isAccessibleForFree: true,
-    ...(seededQuestionCount > 0 ? { numberOfQuestions: seededQuestionCount } : {}),
   };
 }

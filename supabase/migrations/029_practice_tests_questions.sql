@@ -1,16 +1,30 @@
--- 030_practice_tests_questions.sql
+-- 029_practice_tests_questions.sql
 -- CDL Practice Tests foundation (Milestone 1).
 --
 -- ⚠️ COMMITTED BUT NOT APPLIED. Additive only — enriches public.questions so a
 -- study item can carry an optional diagram/road-sign image, a difficulty band,
 -- and topic tags. Touches no existing row and drops nothing. The base columns
 -- from migration 007 (prompt, choices, correct_key, explanation, cfr_cite,
--- verified_date) are untouched.
+-- verified_date) are untouched. Apply BEFORE seeding a question bank — the
+-- reader (src/lib/tests/queries.ts) selects these columns.
+--
+-- Test identity, SEO copy, and mode config (pass threshold, time limit) live
+-- in the TS catalog (src/lib/tests/catalog.ts) — ONE source of truth, the
+-- store/directory registry pattern. The DB deliberately holds only what it
+-- owns: the question bank, publication state, and attempt logs. If a later
+-- admin milestone makes test config DB-editable, that milestone adds its
+-- columns together with the reads, so authority visibly transfers.
+--
+-- The seeded tests row's slug MUST equal the catalog slug verbatim (e.g.
+-- 'general-knowledge') — the data layer joins on tests.slug (unique, 007).
 --
 -- Answer-key exposure is intentional: this is a free study tool, so questions
 -- (including correct_key + explanation) are served to the anon client under the
 -- existing anon_read_questions policy. Usability over bank protection — decided
 -- and finalized in the Practice Tests blueprint.
+--
+-- Canonical `choices` jsonb shape: an ARRAY of {"key": "...", "text": "..."}
+-- objects (order-explicit; jsonb objects do not preserve key order).
 --
 -- Rollback (manual, only if abandoned):
 --   alter table public.questions

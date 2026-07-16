@@ -61,7 +61,10 @@ export type TestDefinition = {
   isPublished: boolean;
 };
 
-/** One answer option. `choices` jsonb in the DB is stored as { key: text }. */
+/**
+ * One answer option. The DB `choices` jsonb is stored as an ARRAY of these
+ * objects — order-explicit, because jsonb objects do not preserve key order.
+ */
 export type QuestionChoice = { key: string; text: string };
 
 /** A question as read from public.questions and normalized for the client. */
