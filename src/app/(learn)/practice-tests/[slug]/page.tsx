@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Section, Eyebrow, Button } from '@/components/ui';
 import { Breadcrumbs } from '@/components/kc/Breadcrumbs';
-import { getTest, publishedTests, testHref } from '@/lib/tests/catalog';
+import { getTest, publishedTests, testHref, studyHref } from '@/lib/tests/catalog';
 import { getSeededQuestionCount } from '@/lib/tests/queries';
 import { testSchema } from '@/lib/tests/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -10,9 +10,10 @@ import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
  * Practice test landing page. One indexable page per test — the SEO surface for
- * "free CDL [test] practice test" queries. Milestone 1 renders the test's
- * identity, config, and what it covers; the interactive runner (Study / Timed)
- * lands in Milestone 2, so the "start" area shows an honest coming-soon state.
+ * "free CDL [test] practice test" queries. The start area is live-state aware:
+ * a seeded bank gets the Start Study Mode CTA; an unseeded one keeps the honest
+ * coming-soon panel. Stats only advertise modes a student can take TODAY
+ * (catalog.modes) — Timed appears when its milestone ships.
  */
 export const revalidate = 300;
 
@@ -59,7 +60,11 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
       label: 'Modes',
       value: test.modes.map((m) => (m === 'study' ? 'Study' : 'Timed')).join(' · '),
     },
-    { label: 'Time limit', value: formatTimeLimit(test.timeLimitSeconds) },
+    // The time-limit tile only renders when Timed Mode actually exists —
+    // never advertise a mode a student can't take.
+    ...(test.modes.includes('timed')
+      ? [{ label: 'Time limit', value: formatTimeLimit(test.timeLimitSeconds) }]
+      : []),
   ];
 
   return (
@@ -109,7 +114,7 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
               this device, so you can stop and pick right back up.
             </p>
             <div className="mt-6">
-              <Button href={`${testHref(test.slug)}/study`}>Start Study Mode</Button>
+              <Button href={studyHref(test.slug)}>Start Study Mode</Button>
             </div>
             <p className="mt-4 text-xs text-muted">
               Timed exam simulation is coming next. No account needed — just study.

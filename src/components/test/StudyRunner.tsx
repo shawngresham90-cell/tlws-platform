@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
+import { TextField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
 import { gradeAttempt } from '@/lib/tests/scoring';
+import { testHref } from '@/lib/tests/catalog';
 import {
   answerQuestion,
   answeredCount,
   deserializeSession,
   goToQuestion,
   isComplete,
+  markLogged,
   newSession,
   serializeSession,
   studyStorageKey,
@@ -29,10 +32,15 @@ import type { Question } from '@/lib/tests/types';
  *
  * State lives in localStorage (per test slug) so a refresh or a lost signal
  * resumes exactly where the student left off. All session logic is pure
- * (src/lib/tests/study.ts) — this component only owns DOM concerns.
+ * (src/lib/tests/study.ts) — this component only owns DOM concerns. The
+ * completed attempt is logged to the API exactly once per sitting
+ * (session.loggedAt guards it across refreshes and results re-entry).
  *
- * Mobile-first: full-width answer buttons with ≥44px touch targets, sticky
- * bottom navigation, no horizontal scroll.
+ * Accessibility: answered choices stay focusable (aria-disabled, not
+ * disabled) so keyboard focus is never dropped; per-choice correctness
+ * carries screen-reader text, not just color; feedback announces via a
+ * polite live region; red state uses border/background with readable ink
+ * text (diesel-as-text fails contrast on the dark theme).
  */
 
 type RunnerTest = {
@@ -52,18 +60,17 @@ export function StudyRunner({
 }) {
   const [session, setSession] = useState<StudySession | null>(null);
   const [view, setView] = useState<'quiz' | 'results'>('quiz');
-  const questionIds = questions.map((q) => q.id);
 
   // Hydrate from localStorage after mount (SSR renders the placeholder).
   useEffect(() => {
+    const ids = questions.map((q) => q.id);
     const restored = deserializeSession(
       window.localStorage.getItem(studyStorageKey(test.slug)),
       test.slug,
-      questionIds,
+      ids,
     );
     setSession(restored ?? newSession(test.slug, Date.now()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [test.slug]);
+  }, [test.slug, questions]);
 
   // Persist every change.
   useEffect(() => {
@@ -94,10 +101,7 @@ export function StudyRunner({
     window.scrollTo({ top: 0 });
   };
 
-  // Results render only on the explicit "See results" click — auto-jumping on
-  // the last answer would hide that question's explanation mid-read. A resumed
-  // complete session lands back on the quiz with the button available.
-  if (view === 'results' && isComplete(session, questionIds)) {
+  if (view === 'results') {
     return (
       <StudyResults
         test={test}
@@ -105,6 +109,7 @@ export function StudyRunner({
         session={session}
         turnstileSiteKey={turnstileSiteKey}
         onRetake={restart}
+        onLogged={() => setSession((s) => (s ? markLogged(s, Date.now()) : s))}
       />
     );
   }
@@ -153,7 +158,10 @@ function StudyQuestion({
     session,
     questions.map((x) => x.id),
   );
-  const allAnswered = done === total;
+  const allAnswered = isComplete(
+    session,
+    questions.map((x) => x.id),
+  );
   const isLast = session.currentIndex === total - 1;
 
   return (
@@ -196,24 +204,38 @@ function StudyQuestion({
             let styles = 'border-line bg-asphalt text-ink hover:border-signal';
             if (answered) {
               if (isAnswerKey) styles = 'border-signal bg-signal/10 text-signal';
-              else if (isSelected) styles = 'border-diesel bg-diesel/10 text-diesel';
+              else if (isSelected) styles = 'border-diesel bg-diesel/10 text-ink';
               else styles = 'border-line bg-asphalt text-muted';
             }
             return (
+              // aria-disabled (not disabled) keeps answered choices focusable,
+              // so keyboard focus is never dropped mid-quiz and the review
+              // remains tabbable; the click handler enforces answer-once.
               <button
                 key={choice.key}
                 type="button"
-                disabled={answered}
-                onClick={() => onAnswer(q.id, choice.key)}
-                aria-pressed={isSelected}
-                className={`flex min-h-[44px] w-full items-start gap-3 rounded-card border px-4 py-3 text-left transition-colors disabled:cursor-default ${styles}`}
+                aria-disabled={answered}
+                onClick={() => {
+                  if (!answered) onAnswer(q.id, choice.key);
+                }}
+                className={`flex min-h-[44px] w-full items-start gap-3 rounded-card border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt ${answered ? 'cursor-default' : ''} ${styles}`}
               >
                 <span className="font-display uppercase" aria-hidden="true">
                   {choice.key}.
                 </span>
                 <span className="flex-1">{choice.text}</span>
-                {answered && isAnswerKey && <span aria-hidden="true">✓</span>}
-                {answered && isSelected && !isAnswerKey && <span aria-hidden="true">✗</span>}
+                {answered && isAnswerKey && (
+                  <>
+                    <span aria-hidden="true">✓</span>
+                    <span className="sr-only">(correct answer)</span>
+                  </>
+                )}
+                {answered && isSelected && !isAnswerKey && (
+                  <>
+                    <span aria-hidden="true">✗</span>
+                    <span className="sr-only">(your answer — incorrect)</span>
+                  </>
+                )}
               </button>
             );
           })}
@@ -224,11 +246,11 @@ function StudyQuestion({
           {answered && (
             <div
               className={`mt-6 rounded-card border p-5 ${
-                isCorrect ? 'border-signal/50 bg-signal/5' : 'border-diesel/60 bg-diesel/5'
+                isCorrect ? 'border-signal/50 bg-signal/5' : 'border-diesel bg-diesel/10'
               }`}
             >
               <p
-                className={`font-display text-lg uppercase ${isCorrect ? 'text-signal' : 'text-diesel'}`}
+                className={`font-display text-lg uppercase ${isCorrect ? 'text-signal' : 'text-ink'}`}
               >
                 {isCorrect ? 'Correct' : `Not quite — the answer is ${q.correctKey.toUpperCase()}`}
               </p>
@@ -244,44 +266,33 @@ function StudyQuestion({
         </div>
       </div>
 
-      {/* Navigation — thumb-reachable, ≥44px targets */}
+      {/* Navigation — thumb-reachable; Next never disappears (review-in-place). */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={() => onNavigate(session.currentIndex - 1)}
           disabled={session.currentIndex === 0}
-          className="min-h-[44px] rounded-card border border-line px-5 py-2.5 font-display uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal disabled:cursor-not-allowed disabled:opacity-40"
+          className="disabled:cursor-not-allowed disabled:opacity-40"
         >
           ← Previous
-        </button>
-        {allAnswered ? (
-          <button
-            type="button"
-            onClick={onFinish}
-            className="min-h-[44px] rounded-card bg-signal px-6 py-2.5 font-display uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
-          >
-            See results
-          </button>
-        ) : (
-          <button
-            type="button"
+        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant={answered && !allAnswered ? 'primary' : 'ghost'}
             onClick={() => onNavigate(session.currentIndex + 1)}
             disabled={isLast}
-            className={`min-h-[44px] rounded-card px-6 py-2.5 font-display uppercase tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-              answered
-                ? 'bg-signal text-asphalt hover:bg-signal-600'
-                : 'border border-line text-ink hover:border-signal hover:text-signal'
-            }`}
+            className="disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next →
-          </button>
-        )}
+          </Button>
+          {allAnswered && <Button onClick={onFinish}>See results</Button>}
+        </div>
       </div>
       <p className="mt-3 text-center text-xs text-muted">
         Progress saves automatically on this device — leave and pick up where you stopped.
       </p>
       <p className="mt-6 text-center text-sm">
-        <Link href={`/practice-tests/${test.slug}`} className="text-muted hover:text-signal">
+        <Link href={testHref(test.slug)} className="text-muted hover:text-signal">
           ← Back to {test.title} overview
         </Link>
       </p>
@@ -297,21 +308,24 @@ function StudyResults({
   session,
   turnstileSiteKey,
   onRetake,
+  onLogged,
 }: {
   test: RunnerTest;
   questions: Question[];
   session: StudySession;
   turnstileSiteKey: string;
   onRetake: () => void;
+  onLogged: () => void;
 }) {
   const result = gradeAttempt(questions, session.answers, test.passThresholdPct);
-  const posted = useRef(false);
+  const posting = useRef(false);
 
-  // Log the attempt once (anonymous — no PII). Fire-and-forget; the results
-  // render regardless of whether the log lands.
+  // Log the attempt exactly once per sitting: session.loggedAt (persisted)
+  // guards refreshes and results re-entry; the ref guards double-effects.
+  const alreadyLogged = session.loggedAt !== undefined;
   useEffect(() => {
-    if (posted.current) return;
-    posted.current = true;
+    if (alreadyLogged || posting.current) return;
+    posting.current = true;
     trackEvent('practice_test_completed', {
       test: test.slug,
       scorePct: result.scorePct,
@@ -321,23 +335,29 @@ function StudyResults({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ test_slug: test.slug, answers: session.answers }),
-    }).catch(() => {
-      // Analytics only — never disturb the student over it.
-    });
+    })
+      .then((res) => {
+        if (res.ok) onLogged();
+        else posting.current = false;
+      })
+      .catch(() => {
+        // Analytics only — never disturb the student over it.
+        posting.current = false;
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [alreadyLogged]);
 
   return (
     <div>
       {/* Score */}
       <div
         className={`rounded-card border p-8 text-center sm:p-10 ${
-          result.passed ? 'border-signal/60 bg-signal/5' : 'border-diesel/60 bg-diesel/5'
+          result.passed ? 'border-signal/60 bg-signal/5' : 'border-diesel bg-diesel/10'
         }`}
       >
         <p className="eyebrow">{test.title} — Study Mode results</p>
         <p
-          className={`mt-2 font-display text-6xl uppercase ${result.passed ? 'text-signal' : 'text-diesel'}`}
+          className={`mt-2 font-display text-6xl uppercase ${result.passed ? 'text-signal' : 'text-ink'}`}
         >
           {result.scorePct}%
         </p>
@@ -349,31 +369,22 @@ function StudyResults({
           real exam
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button
-            type="button"
-            onClick={onRetake}
-            className="min-h-[44px] rounded-card bg-signal px-6 py-2.5 font-display uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
-          >
-            Retake the test
-          </button>
-          <Link
-            href={`/practice-tests/${test.slug}`}
-            className="inline-flex min-h-[44px] items-center rounded-card border border-line px-6 py-2.5 font-display uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal"
-          >
+          <Button onClick={onRetake}>Retake the test</Button>
+          <Button variant="ghost" href={testHref(test.slug)}>
             Test overview
-          </Link>
+          </Button>
         </div>
       </div>
 
       {/* Email results */}
-      <EmailResults test={test} answers={session.answers} turnstileSiteKey={turnstileSiteKey} />
+      <EmailResults test={test} turnstileSiteKey={turnstileSiteKey} />
 
       {/* Next-step CTAs */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-card border border-line bg-asphalt-800 p-6">
-          <h3 className="font-display text-lg uppercase text-signal">
+          <h2 className="font-display text-lg uppercase text-signal">
             {result.passed ? 'Ready for the real thing?' : 'Want hands-on help?'}
-          </h3>
+          </h2>
           <p className="mt-2 text-sm text-muted">
             Trucking Life Academy trains CDL-A drivers in Dalton, GA — off I-75. Drivers helping
             drivers.
@@ -383,7 +394,7 @@ function StudyResults({
           </div>
         </div>
         <div className="rounded-card border border-line bg-asphalt-800 p-6">
-          <h3 className="font-display text-lg uppercase text-signal">Still before the permit?</h3>
+          <h2 className="font-display text-lg uppercase text-signal">Still before the permit?</h2>
           <p className="mt-2 text-sm text-muted">
             CDL Pre-School walks you from zero to permit-ready — the full course for{' '}
             {PRESCHOOL_PRICE_LABEL}.
@@ -409,8 +420,9 @@ function StudyResults({
               <p className="text-sm font-semibold text-ink">
                 {i + 1}. {q.prompt}
               </p>
-              <p className={`mt-2 text-sm ${correct ? 'text-signal' : 'text-diesel'}`}>
-                {correct ? '✓' : '✗'} Your answer:{' '}
+              <p className={`mt-2 text-sm ${correct ? 'text-signal' : 'text-ink'}`}>
+                <span aria-hidden="true">{correct ? '✓' : '✗'}</span>
+                <span className="sr-only">{correct ? 'Correct.' : 'Incorrect.'}</span> Your answer:{' '}
                 {selected ? `${selected.toUpperCase()}. ${selectedText ?? ''}` : 'Not answered'}
               </p>
               {!correct && (
@@ -432,19 +444,17 @@ function StudyResults({
   );
 }
 
-/* ── Optional email capture (results → leads, Turnstile-verified) ──────── */
+/* ── Optional email capture (email-only save — never re-logs the attempt) ─ */
 
-function EmailResults({
-  test,
-  answers,
-  turnstileSiteKey,
-}: {
-  test: RunnerTest;
-  answers: Record<string, string>;
-  turnstileSiteKey: string;
-}) {
+function EmailResults({ test, turnstileSiteKey }: { test: RunnerTest; turnstileSiteKey: string }) {
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
+  // Remounting the widget (key bump) forces a FRESH token — Turnstile tokens
+  // are single-use, so a failed submit must never retry a consumed token.
+  const [widgetKey, setWidgetKey] = useState(0);
+  // The third-party Turnstile script loads only once the student shows intent
+  // (focuses the email field) — the non-emailing majority never pays for it.
+  const [engaged, setEngaged] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -456,7 +466,8 @@ function EmailResults({
     );
   }
 
-  const submit = async () => {
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!email || !token) {
       setMessage('Enter your email and complete the verification.');
       setStatus('error');
@@ -464,62 +475,68 @@ function EmailResults({
     }
     setStatus('sending');
     try {
+      // Email-only payload: saves the lead WITHOUT re-logging the attempt
+      // (the attempt was already recorded once when results opened).
       const res = await fetch('/api/tests/attempt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // The same selections the student just finished with, so the emailed
-          // attempt is the attempt they saw graded.
-          test_slug: test.slug,
-          answers,
-          email,
-          turnstileToken: token,
-        }),
+        body: JSON.stringify({ test_slug: test.slug, email, turnstileToken: token }),
       });
-      if (!res.ok) throw new Error('failed');
+      const body = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+      if (!res.ok || !body?.ok) {
+        throw new Error(body?.error || 'Could not save your email. Try again in a minute.');
+      }
       setStatus('done');
-    } catch {
+    } catch (err) {
       setStatus('error');
-      setMessage('Could not save your email. Try again in a minute.');
+      setMessage((err as Error).message || 'Could not save your email. Try again in a minute.');
+      // Spent token — get a fresh one before the next try.
+      setToken('');
+      setWidgetKey((k) => k + 1);
     }
   };
 
   return (
-    <div className="mt-8 rounded-card border border-line bg-asphalt-800 p-6">
-      <h3 className="font-display text-lg uppercase text-ink">Track your progress</h3>
+    <form onSubmit={submit} className="mt-8 rounded-card border border-line bg-asphalt-800 p-6">
+      <h2 className="font-display text-lg uppercase text-ink">Track your progress</h2>
       <p className="mt-1 text-sm text-muted">
-        Drop your email and we&apos;ll tie this score to you — plus study tips and new tests as they
-        launch. No spam, unsubscribe anytime.
+        Drop your email and we&apos;ll send study tips and new tests as they launch. No spam,
+        unsubscribe anytime.
       </p>
-      <div className="mt-4 flex max-w-md flex-col gap-3 sm:flex-row">
-        <label htmlFor="results-email" className="sr-only">
-          Email address
-        </label>
-        <input
-          id="results-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
-          className="min-h-[44px] flex-1 rounded-card border border-line bg-asphalt px-4 py-3 text-ink outline-none focus:border-signal"
-        />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={status === 'sending'}
-          className="min-h-[44px] rounded-card bg-signal px-6 py-3 font-display uppercase text-asphalt transition-colors hover:bg-signal-600 disabled:opacity-50"
-        >
-          {status === 'sending' ? 'Saving…' : 'Save my score'}
-        </button>
+      <div className="mt-4 flex max-w-md flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1" onFocus={() => setEngaged(true)}>
+          <TextField
+            id="results-email"
+            label="Email address"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@email.com"
+            value={email}
+            onChange={setEmail}
+            error={status === 'error' ? message : undefined}
+          />
+        </div>
+        <Button type="submit" disabled={status === 'sending'} className="disabled:opacity-50">
+          {status === 'sending' ? 'Saving…' : 'Save my email'}
+        </Button>
       </div>
-      <div className="mt-3">
-        <TurnstileWidget siteKey={turnstileSiteKey} onToken={setToken} onError={setMessage} />
-      </div>
-      {status === 'error' && message && (
-        <p className="mt-2 text-sm text-diesel" role="alert">
-          {message}
-        </p>
+      {engaged && (
+        <div className="mt-3">
+          <TurnstileWidget
+            key={widgetKey}
+            siteKey={turnstileSiteKey}
+            onToken={setToken}
+            onError={(m) => {
+              setStatus('error');
+              setMessage(m);
+            }}
+          />
+        </div>
       )}
-    </div>
+    </form>
   );
 }

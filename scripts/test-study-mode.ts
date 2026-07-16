@@ -23,9 +23,11 @@ import {
   STUDY_STORAGE_VERSION,
   answerQuestion,
   answeredCount,
+  clampIndex,
   deserializeSession,
   goToQuestion,
   isComplete,
+  markLogged,
   newSession,
   serializeSession,
   studyStorageKey,
@@ -66,6 +68,13 @@ check('re-answer returns the same object (no phantom update)', sAgain === s);
 check('goTo clamps below 0', goToQuestion(s, -5, 3).currentIndex === 0);
 check('goTo clamps above max', goToQuestion(s, 99, 3).currentIndex === 2);
 check('goTo moves normally', goToQuestion(s, 1, 3).currentIndex === 1);
+check(
+  'clampIndex is the one shared clamp (nav + resume agree)',
+  clampIndex(-1, 3) === 0 &&
+    clampIndex(9, 3) === 2 &&
+    clampIndex(1.9, 3) === 1 &&
+    clampIndex(0, 0) === 0,
+);
 
 check('answeredCount counts only known ids', answeredCount(s, ids) === 1);
 check('not complete with 1/3', isComplete(s, ids) === false);
@@ -105,6 +114,15 @@ check(
 );
 check('resume index clamped to live bank', (shrunk?.currentIndex ?? 99) <= 0);
 
+// Attempt-logged guard: set once, survives serialize/deserialize — this is
+// what keeps one sitting from ever producing two attempt rows.
+check('new session is not logged', s.loggedAt === undefined);
+const logged = markLogged(s, T0 + 10);
+check('markLogged stamps loggedAt', logged.loggedAt === T0 + 10);
+check('markLogged is idempotent (first stamp wins)', markLogged(logged, T0 + 99) === logged);
+const loggedRoundtrip = deserializeSession(serializeSession(logged), 'general-knowledge', ids);
+check('loggedAt survives the storage roundtrip', loggedRoundtrip?.loggedAt === T0 + 10);
+
 // ── 3. Attempt schema ───────────────────────────────────────────────────────
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const anon = testAttemptSchema.safeParse({
@@ -131,8 +149,25 @@ check(
   }).success,
 );
 check(
-  'empty answers rejected',
+  'empty answers (and no email) rejected',
   !testAttemptSchema.safeParse({ test_slug: 'general-knowledge', answers: {} }).success,
+);
+check(
+  'neither answers nor email rejected',
+  !testAttemptSchema.safeParse({ test_slug: 'general-knowledge' }).success,
+);
+// The email-only shape: saves the lead WITHOUT re-logging the attempt.
+check(
+  'email-only save (with token, no answers) is valid',
+  testAttemptSchema.safeParse({
+    test_slug: 'general-knowledge',
+    email: 'x@y.com',
+    turnstileToken: 'tok',
+  }).success,
+);
+check(
+  'email-only save without token is rejected',
+  !testAttemptSchema.safeParse({ test_slug: 'general-knowledge', email: 'x@y.com' }).success,
 );
 check(
   'non-uuid question id rejected',
@@ -268,6 +303,25 @@ check(
   'route upserts leads only with a verified email path',
   /from\('leads'\)/.test(route) && /onConflict: 'email'/.test(route),
 );
+// Review fixes locked in:
+check(
+  'lead writes are insert-if-absent (never clobber recorded consent/source)',
+  (route.match(/ignoreDuplicates: true/g) ?? []).length >= 2,
+);
+check('route enforces same-origin (sec-fetch-site)', /sec-fetch-site/.test(route));
+check(
+  'email-only saves never insert a second attempt row',
+  /data\.email && \(!data\.answers/.test(route),
+);
+check(
+  'RPC errors are observed, not swallowed (supabase-js never throws)',
+  /test_attempt_miss_rpc_failed/.test(route) && /rpcError/.test(route),
+);
+check(
+  'read failures return retryable 500, never fake not_live',
+  /test_attempt_read_failed/.test(route),
+);
+check('test + answer key fetched in one round trip', /questions\(id, correct_key\)/.test(route));
 
 // ── 7. Migration 031 (RPC) posture ──────────────────────────────────────────
 const m031 = read('supabase/migrations/031_practice_tests_attempts.sql');
@@ -308,6 +362,33 @@ check(
   'runner links Academy + Pre-School CTAs',
   /academy\/apply/.test(runner) && /PRESCHOOL_PATH/.test(runner),
 );
+// Review fixes locked in:
+check(
+  'attempt is logged once per sitting (persisted loggedAt guard)',
+  /markLogged/.test(runner) && /session\.loggedAt/.test(runner),
+);
+check(
+  'answered choices stay focusable (aria-disabled, never disabled)',
+  /aria-disabled=\{answered\}/.test(runner) && !/[^-]disabled=\{answered\}/.test(runner),
+);
+check(
+  'per-choice correctness carries screen-reader text, not just color',
+  /\(correct answer\)/.test(runner) && /your answer — incorrect/.test(runner),
+);
+check(
+  'no diesel-as-text on dark (contrast): red state uses border/bg with ink text',
+  !/text-diesel/.test(runner),
+);
+check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(runner));
+check('email form parses the ok-envelope and surfaces server errors', /body\?\.ok/.test(runner));
+check('failed submits remount Turnstile for a fresh single-use token', /setWidgetKey/.test(runner));
+check('Turnstile loads lazily on email-field intent', /setEngaged\(true\)/.test(runner));
+check(
+  'forward navigation survives completion (Next never replaced away)',
+  /Next →/.test(runner) && /allAnswered && <Button onClick=\{onFinish\}/.test(runner),
+);
+check('nav/CTA buttons reuse the design-system Button (focus rings)', /<Button/.test(runner));
+check('shared TextField powers the email input (label + error wiring)', /TextField/.test(runner));
 
 // ── 9. Go-live wiring ───────────────────────────────────────────────────────
 const landing = read('src/app/(learn)/practice-tests/[slug]/page.tsx');
@@ -315,11 +396,19 @@ check(
   'landing gates Start Study Mode on a live bank',
   /live \?/.test(landing) && /Start Study Mode/.test(landing),
 );
-check('landing keeps the honest coming-soon fallback', /coming soon/i.test(landing));
+check(
+  'landing keeps the honest coming-soon fallback panel',
+  /Question bank coming soon/.test(landing),
+);
+check(
+  'landing never advertises Timed before it ships (tile gated on modes)',
+  /modes\.includes\('timed'\)/.test(landing),
+);
+check('landing derives the runner link from the catalog (studyHref)', /studyHref\(/.test(landing));
 const featured = read('src/components/sections/FeaturedTest.tsx');
 check(
-  'homepage CTA goes straight to the GK landing',
-  /href="\/practice-tests\/general-knowledge"/.test(featured),
+  'homepage CTA derives from the catalog (testHref), pointing at GK',
+  /testHref\('general-knowledge'\)/.test(featured),
 );
 check('homepage CTA no longer promises an unbuilt count', !/50 questions/.test(featured));
 

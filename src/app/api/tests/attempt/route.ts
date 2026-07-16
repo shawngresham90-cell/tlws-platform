@@ -9,24 +9,33 @@ import { gradeAttempt } from '@/lib/tests/scoring';
 export const runtime = 'nodejs';
 
 /**
- * Practice-test attempt log (Milestone 2 — Study Mode).
+ * Practice-test attempt log + optional email save (Milestone 2 — Study Mode).
  *
- * Grades SERVER-SIDE against the real question bank (the client's local
- * grading is display-only), then:
- *   1. inserts a test_attempts row (service role — the table has zero anon
- *      policies, so this route is the only write path),
- *   2. bumps miss_count for answered-wrong questions via the 031 RPC
- *      (fail-soft if the migration isn't applied yet),
- *   3. optionally upserts a lead when a Turnstile-verified email came along
- *      (schema enforces email ⇒ token; the guard stack verifies the token).
+ * Two payload shapes (schema-enforced) so one study session never produces
+ * two attempt rows:
+ *   * answers (no email)  → grade SERVER-side, insert ONE test_attempts row,
+ *     bump miss_count for answered-wrong questions.
+ *   * email (no answers)  → Turnstile-verified lead save only — no second
+ *     attempt row, no second miss_count pass.
+ *   * both                → one attempt row carrying lead_email.
  *
- * Privacy: the anonymous path stores answers + score only — no IP, no UA, no
- * email. Rate limiting uses the transient request IP and persists nothing.
+ * Lead writes are INSERT-IF-ABSENT (ignoreDuplicates): an existing lead's
+ * recorded sms_consent and source are never overwritten — consent records are
+ * compliance artifacts, not fields to clobber.
+ *
+ * Abuse posture (mirrors /api/directory/view): same-origin check + IP rate
+ * limit. Privacy: the anonymous path stores answers + score only.
  */
 export const POST = guardedPost(
   testAttemptSchema,
   { routeKey: 'test-attempt', rateLimitMax: 10 },
-  async ({ data }) => {
+  async ({ data, req }) => {
+    // Same-origin only — this endpoint serves the site's own quiz runner.
+    const secFetchSite = req.headers.get('sec-fetch-site');
+    if (secFetchSite && secFetchSite !== 'same-origin') {
+      return fail('Forbidden.', 403, 'cross_site');
+    }
+
     const catalogTest = getTest(data.test_slug);
     if (!catalogTest || !catalogTest.isPublished) {
       return fail('Unknown test.', 404, 'unknown_test');
@@ -34,28 +43,45 @@ export const POST = guardedPost(
 
     const supabase = createAdminClient();
 
-    const { data: testRow } = await supabase
+    // Email-only save: attach the student to the funnel, never re-log the attempt.
+    if (data.email && (!data.answers || Object.keys(data.answers).length === 0)) {
+      const { error: leadError } = await supabase
+        .from('leads')
+        .upsert(
+          { email: data.email, source: 'practice-test', sms_consent: false },
+          { onConflict: 'email', ignoreDuplicates: true },
+        );
+      if (leadError) {
+        log.error('test_attempt_lead_upsert_failed', { code: leadError.code });
+        return fail('Could not save your email. Try again.', 500, 'db_error');
+      }
+      log.info('test_attempt_email_saved', { test: catalogTest.slug });
+      return ok({ saved: true }, 201);
+    }
+
+    // One round trip: the published test row with its full answer key.
+    const { data: testRow, error: readError } = await supabase
       .from('tests')
-      .select('id')
+      .select('id, questions(id, correct_key)')
       .eq('slug', catalogTest.slug)
       .eq('is_published', true)
       .maybeSingle();
-    if (!testRow) return fail('This test is not open yet.', 409, 'not_live');
-
-    const { data: questionRows } = await supabase
-      .from('questions')
-      .select('id, correct_key')
-      .eq('test_id', testRow.id);
-    const questions = (questionRows ?? []).map((q) => ({
-      id: q.id as string,
-      correctKey: q.correct_key as string,
-    }));
-    if (questions.length === 0) return fail('This test is not open yet.', 409, 'not_live');
+    // A read failure is retryable — never conflate it with "not seeded".
+    if (readError) {
+      log.error('test_attempt_read_failed', { code: readError.code });
+      return fail('Could not load the test. Try again.', 500, 'db_error');
+    }
+    const questions = ((testRow?.questions as { id: string; correct_key: string }[]) ?? []).map(
+      (q) => ({ id: q.id, correctKey: q.correct_key }),
+    );
+    if (!testRow || questions.length === 0) {
+      return fail('This test is not open yet.', 409, 'not_live');
+    }
 
     // Keep only answers to questions that actually belong to this test.
     const known = new Set(questions.map((q) => q.id));
     const answers: Record<string, string> = {};
-    for (const [id, key] of Object.entries(data.answers)) {
+    for (const [id, key] of Object.entries(data.answers ?? {})) {
       if (known.has(id)) answers[id] = key;
     }
     if (Object.keys(answers).length === 0) {
@@ -80,14 +106,18 @@ export const POST = guardedPost(
     }
 
     // Miss analytics: only questions the student answered AND got wrong.
+    // supabase-js resolves { error } (it never throws) — check it explicitly
+    // so a missing RPC/migration is visible in logs instead of silent.
     const missedIds = result.answers
       .filter((a) => a.selectedKey !== null && !a.isCorrect)
       .map((a) => a.questionId);
     if (missedIds.length > 0) {
-      try {
-        await supabase.rpc('tlws_increment_question_misses', { p_question_ids: missedIds });
-      } catch {
-        // Migration 031 unapplied or DB hiccup — analytics only, never fail the attempt.
+      const { error: rpcError } = await supabase.rpc('tlws_increment_question_misses', {
+        p_question_ids: missedIds,
+      });
+      if (rpcError) {
+        // Analytics only — never fail the attempt over it, but never hide it.
+        log.warn('test_attempt_miss_rpc_failed', { code: rpcError.code });
       }
     }
 
@@ -96,7 +126,7 @@ export const POST = guardedPost(
         .from('leads')
         .upsert(
           { email: data.email, source: 'practice-test', sms_consent: false },
-          { onConflict: 'email' },
+          { onConflict: 'email', ignoreDuplicates: true },
         );
       if (leadError) log.warn('test_attempt_lead_upsert_failed', { code: leadError.code });
     }

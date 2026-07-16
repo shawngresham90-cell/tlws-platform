@@ -66,7 +66,11 @@ export const sponsorInquirySchema = z.object({
   turnstileToken,
 });
 
-// --- Practice-test attempt: anonymous log, optional verified email capture ---
+// --- Practice-test attempt: anonymous completion log OR verified email save ---
+// Two payload shapes through one route (so the attempt is never double-logged):
+//   * answers only  → anonymous attempt log (graded server-side)
+//   * email only    → Turnstile-verified lead save, NO second attempt row
+//   * both          → one attempt row carrying lead_email
 export const testAttemptSchema = z
   .object({
     test_slug: z
@@ -76,14 +80,20 @@ export const testAttemptSchema = z
       .max(60),
     // Selected choice key per question id. Bounded hard so junk can't balloon
     // the jsonb column; the handler additionally drops unknown question ids.
-    answers: z.record(z.string().uuid('Invalid question id.'), z.string().trim().min(1).max(8)),
+    answers: z
+      .record(z.string().uuid('Invalid question id.'), z.string().trim().min(1).max(8))
+      .optional(),
     email: email.optional(),
     // Optional for the anonymous completion log; REQUIRED (and verified by the
     // guard stack) whenever an email is being saved.
     turnstileToken: z.string().min(1).optional(),
   })
-  .refine((d) => Object.keys(d.answers).length >= 1, { message: 'No answers submitted.' })
-  .refine((d) => Object.keys(d.answers).length <= 200, { message: 'Too many answers.' })
+  .refine((d) => (d.answers && Object.keys(d.answers).length >= 1) || Boolean(d.email), {
+    message: 'No answers submitted.',
+  })
+  .refine((d) => !d.answers || Object.keys(d.answers).length <= 200, {
+    message: 'Too many answers.',
+  })
   .refine((d) => !d.email || Boolean(d.turnstileToken), {
     message: 'Verification failed. Reload and try again.',
   });

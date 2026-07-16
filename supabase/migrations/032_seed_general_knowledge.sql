@@ -14,9 +14,16 @@
 --   * `choices` is the canonical ARRAY shape: [{"key","text"}, ...] (029).
 --   * The tests row slug MUST stay 'general-knowledge' — it is the data
 --     layer's join key to the TS catalog.
+--
+-- Content fixes BEFORE the admin Tests module ships: run a targeted UPDATE
+-- keyed on sort_order (e.g. `update public.questions set correct_key = 'b'
+-- where test_id = ... and sort_order = 17`). NEVER delete + reseed — that
+-- mints new question UUIDs, zeroing miss_count history, orphaning the ids
+-- inside test_attempts.answers, and wiping every student's saved progress.
 
 -- ---------------------------------------------------------------------------
--- 1. The test row (upsert by unique slug; safe to re-run)
+-- 1. The test row (insert-if-absent; a re-run never mutates existing state,
+--    so a deliberately unpublished test can't be silently re-published)
 -- ---------------------------------------------------------------------------
 insert into public.tests (slug, title, description, category, is_published, question_count)
 values (
@@ -27,7 +34,7 @@ values (
   true,
   0
 )
-on conflict (slug) do update set is_published = true;
+on conflict (slug) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- 2. The question bank (only when empty)

@@ -14,6 +14,12 @@ export type StudySession = {
   currentIndex: number;
   startedAt: number;
   updatedAt: number;
+  /**
+   * Set once the completed attempt has been logged to the API — the guard that
+   * keeps one sitting from ever producing two attempt rows (it survives
+   * refreshes and results re-entry via localStorage).
+   */
+  loggedAt?: number;
 };
 
 /** Bump when the stored shape changes — old sessions are discarded, not migrated. */
@@ -22,6 +28,11 @@ export const STUDY_STORAGE_VERSION = 1;
 /** localStorage key for a test's in-progress Study session. */
 export function studyStorageKey(slug: string): string {
   return `tlws:study:v${STUDY_STORAGE_VERSION}:${slug}`;
+}
+
+/** Clamp an index into [0, total-1] (0 when the bank is empty). */
+export function clampIndex(index: number, total: number): number {
+  return Math.max(0, Math.min(Math.trunc(index), Math.max(0, total - 1)));
 }
 
 export function newSession(slug: string, now: number): StudySession {
@@ -46,11 +57,17 @@ export function answerQuestion(
   };
 }
 
-/** Move to an absolute question index, clamped to [0, total-1]. */
+/** Move to an absolute question index, clamped to the bank. */
 export function goToQuestion(session: StudySession, index: number, total: number): StudySession {
-  const clamped = Math.max(0, Math.min(index, Math.max(0, total - 1)));
+  const clamped = clampIndex(index, total);
   if (clamped === session.currentIndex) return session;
   return { ...session, currentIndex: clamped };
+}
+
+/** Mark the completed attempt as logged so it is never posted twice. */
+export function markLogged(session: StudySession, now: number): StudySession {
+  if (session.loggedAt !== undefined) return session;
+  return { ...session, loggedAt: now, updatedAt: now };
 }
 
 export function answeredCount(session: StudySession, questionIds: string[]): number {
@@ -85,6 +102,7 @@ export function deserializeSession(
       currentIndex?: number;
       startedAt?: number;
       updatedAt?: number;
+      loggedAt?: number;
     };
     if (parsed.v !== STUDY_STORAGE_VERSION || parsed.slug !== slug) return null;
     if (typeof parsed.answers !== 'object' || parsed.answers === null) return null;
@@ -96,10 +114,7 @@ export function deserializeSession(
     }
     const index =
       typeof parsed.currentIndex === 'number' && Number.isFinite(parsed.currentIndex)
-        ? Math.max(
-            0,
-            Math.min(Math.trunc(parsed.currentIndex), Math.max(0, questionIds.length - 1)),
-          )
+        ? clampIndex(parsed.currentIndex, questionIds.length)
         : 0;
     return {
       slug,
@@ -107,6 +122,7 @@ export function deserializeSession(
       currentIndex: index,
       startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
       updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
+      ...(typeof parsed.loggedAt === 'number' ? { loggedAt: parsed.loggedAt } : {}),
     };
   } catch {
     return null;

@@ -1,5 +1,6 @@
 import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
+import { testHref } from '@/lib/tests/catalog';
 
 /** Featured practice test — single focal CTA into the free test funnel. */
 export function FeaturedTest() {
@@ -17,7 +18,7 @@ export function FeaturedTest() {
               attached. Miss one, see exactly why — the moment you answer. No account needed.
             </p>
           </div>
-          <Button href="/practice-tests/general-knowledge">Start studying</Button>
+          <Button href={testHref('general-knowledge')}>Start studying</Button>
         </div>
       </div>
     </Section>
