@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Container, Section, Eyebrow, Button } from '@/components/ui';
 import { Breadcrumbs } from '@/components/kc/Breadcrumbs';
-import { getTest, publishedTests, testHref, studyHref } from '@/lib/tests/catalog';
+import { getTest, publishedTests, testHref, studyHref, timedHref } from '@/lib/tests/catalog';
 import { getSeededQuestionCount } from '@/lib/tests/queries';
 import { testSchema } from '@/lib/tests/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -106,19 +106,39 @@ export default async function PracticeTestLandingPage({ params }: { params: { sl
 
       <Section>
         {live ? (
-          <div className="max-w-2xl rounded-card border border-signal/40 bg-asphalt-800 p-8">
-            <h2 className="font-display text-2xl uppercase text-signal">Start studying — free</h2>
-            <p className="mt-3 text-muted">
-              One question at a time. Answer, and the correct choice, a plain-English explanation,
-              and the exact 49 CFR / CDL-manual citation appear immediately. Your progress saves on
-              this device, so you can stop and pick right back up.
-            </p>
-            <div className="mt-6">
-              <Button href={studyHref(test.slug)}>Start Study Mode</Button>
+          // Mode chooser — pick how to take the test. Only shipped modes render.
+          <div className="grid max-w-4xl gap-5 sm:grid-cols-2">
+            <div className="rounded-card border border-signal/40 bg-asphalt-800 p-8">
+              <h2 className="font-display text-2xl uppercase text-signal">Study Mode</h2>
+              <p className="mt-3 text-muted">
+                Learn as you go — one question at a time. Answer, and the correct choice, a
+                plain-English explanation, and the exact 49 CFR / CDL-manual citation appear
+                immediately. Progress saves on this device.
+              </p>
+              <div className="mt-6">
+                <Button href={studyHref(test.slug)}>Start Study Mode</Button>
+              </div>
+              <p className="mt-4 text-xs text-muted">Untimed · instant feedback · free</p>
             </div>
-            <p className="mt-4 text-xs text-muted">
-              Timed exam simulation is coming next. No account needed — just study.
-            </p>
+            {test.modes.includes('timed') && test.timeLimitSeconds && (
+              <div className="rounded-card border border-line bg-asphalt-800 p-8">
+                <h2 className="font-display text-2xl uppercase text-ink">Timed Test</h2>
+                <p className="mt-3 text-muted">
+                  Exam conditions — {Math.round(test.timeLimitSeconds / 60)} minutes on the clock,
+                  no feedback until you submit, answers changeable until the end. Explanations and
+                  citations are revealed with your score.
+                </p>
+                <div className="mt-6">
+                  <Button variant="secondary" href={timedHref(test.slug)}>
+                    Start Timed Test
+                  </Button>
+                </div>
+                <p className="mt-4 text-xs text-muted">
+                  {Math.round(test.timeLimitSeconds / 60)} min · auto-submits at zero ·{' '}
+                  {test.passThresholdPct}% to pass
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="max-w-2xl rounded-card border border-line bg-asphalt-800 p-8">

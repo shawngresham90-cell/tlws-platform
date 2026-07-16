@@ -344,6 +344,10 @@ check(
 );
 
 const runner = read('src/components/test/StudyRunner.tsx');
+// The results experience (score, review, email save, CTAs) moved to the shared
+// TestResults in Milestone 3 — same behavior, one home for both runners.
+const resultsShared = read('src/components/test/TestResults.tsx');
+const runnerAll = runner + resultsShared;
 check('runner is a client island', /^'use client';/.test(runner));
 check(
   'runner resumes from localStorage via the pure helpers',
@@ -356,11 +360,14 @@ check(
   'runner reveals explanation + citation on answer',
   /q\.explanation/.test(runner) && /q\.cfrCite/.test(runner),
 );
-check('runner posts the attempt to the API', /\/api\/tests\/attempt/.test(runner));
-check('runner has retake', /Retake the test/.test(runner));
+check(
+  'runner posts the attempt to the API (via shared TestResults)',
+  /\/api\/tests\/attempt/.test(runnerAll),
+);
+check('runner has retake', /Retake the test/.test(runnerAll));
 check(
   'runner links Academy + Pre-School CTAs',
-  /academy\/apply/.test(runner) && /PRESCHOOL_PATH/.test(runner),
+  /academy\/apply/.test(runnerAll) && /PRESCHOOL_PATH/.test(runnerAll),
 );
 // Review fixes locked in:
 check(
@@ -379,16 +386,25 @@ check(
   'no diesel-as-text on dark (contrast): red state uses border/bg with ink text',
   !/text-diesel/.test(runner),
 );
-check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(runner));
-check('email form parses the ok-envelope and surfaces server errors', /body\?\.ok/.test(runner));
-check('failed submits remount Turnstile for a fresh single-use token', /setWidgetKey/.test(runner));
-check('Turnstile loads lazily on email-field intent', /setEngaged\(true\)/.test(runner));
+check('email capture is a real form (Enter submits)', /<form onSubmit=/.test(resultsShared));
+check(
+  'email form parses the ok-envelope and surfaces server errors',
+  /body\?\.ok/.test(resultsShared),
+);
+check(
+  'failed submits remount Turnstile for a fresh single-use token',
+  /setWidgetKey/.test(resultsShared),
+);
+check('Turnstile loads lazily on email-field intent', /setEngaged\(true\)/.test(resultsShared));
 check(
   'forward navigation survives completion (Next never replaced away)',
   /Next →/.test(runner) && /allAnswered && <Button onClick=\{onFinish\}/.test(runner),
 );
 check('nav/CTA buttons reuse the design-system Button (focus rings)', /<Button/.test(runner));
-check('shared TextField powers the email input (label + error wiring)', /TextField/.test(runner));
+check(
+  'shared TextField powers the email input (label + error wiring)',
+  /TextField/.test(resultsShared),
+);
 
 // ── 9. Go-live wiring ───────────────────────────────────────────────────────
 const landing = read('src/app/(learn)/practice-tests/[slug]/page.tsx');
