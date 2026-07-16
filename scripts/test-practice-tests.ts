@@ -315,10 +315,12 @@ const sitemap = read('src/app/sitemap.ts');
 check('sitemap imports publishedTests', /publishedTests/.test(sitemap));
 check('sitemap includes /practice-tests', /\/practice-tests/.test(sitemap));
 
-// ── 12. Homepage + footer CTA resolve to the hub ────────────────────────────
+// ── 12. Homepage + footer CTA resolve to live practice-test pages ───────────
 check(
-  'homepage FeaturedTest CTA points to /practice-tests',
-  /href="\/practice-tests"/.test(read('src/components/sections/FeaturedTest.tsx')),
+  'homepage FeaturedTest CTA points into /practice-tests (M2: straight to GK)',
+  /href="\/practice-tests(\/general-knowledge)?"/.test(
+    read('src/components/sections/FeaturedTest.tsx'),
+  ),
 );
 check(
   'footer links to /practice-tests',
