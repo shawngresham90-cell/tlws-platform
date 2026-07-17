@@ -80,7 +80,10 @@ check(
   'timed href',
   timedHref('combination-vehicles') === '/practice-tests/combination-vehicles/timed',
 );
-check('published tests now number 3 (GK + AB + Combination)', publishedTests().length === 3);
+check(
+  'combination-vehicles is published, listed after GK and Air Brakes',
+  publishedTests().findIndex((t) => t.slug === 'combination-vehicles') === 2,
+);
 check(
   'existing tests untouched and ordered (GK first, then Air Brakes)',
   publishedTests()[0]?.slug === 'general-knowledge' &&
