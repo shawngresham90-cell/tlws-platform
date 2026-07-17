@@ -62,7 +62,7 @@ Knowing the level tells you what is about to happen, how long it will take, and 
 
 ## Who gets inspected
 
-Any CMV operator can be selected at any level — fixed facilities, roadside, or targeted stops. Carrier safety history feeds screening systems, and visible defects invite attention; beyond that, do not assume any particular frequency or trigger. (**Not in the standard:** claims like "you're due every 90 days" are lot lore, not CVSA procedure.)
+Any CMV operator can be selected at any level — fixed facilities, roadside, or targeted stops. Carrier safety history feeds screening systems, and visible defects invite attention; beyond that, do not assume any particular frequency or trigger. (**Not in the standard:** claims like "you're due every 90 days" have no basis in the published procedure.)
 
 ## The eight levels, one by one
 
@@ -233,7 +233,7 @@ OOS violations carry heavy weight in the [Safety Measurement System](/knowledge/
 - Where violations land: [CSA Scores and the SMS](/knowledge/dot-compliance/csa-scores-sms-explained) · disputes via [DataQs](/knowledge/dot-compliance/dataqs-disputes)
 - Free drills: [General Knowledge practice test](/practice-tests/general-knowledge) · [Air Brakes](/practice-tests/air-brakes)
 - **Build OOS-proof habits:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'CVSA Out-of-Service Criteria Explained — Driver vs Vehicle OOS | Trucking Life with Shawn',
+      'CVSA Out-of-Service Criteria — What Parks a Driver or Truck | Trucking Life with Shawn',
       'How CVSA out-of-service criteria work: driver OOS vs vehicle OOS, the 392.5 alcohol rule, what an OOS order means, and the habits that keep trucks rolling.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -273,7 +273,7 @@ OOS violations carry heavy weight in the [Safety Measurement System](/knowledge/
 
 ## What a DVIR is
 
-The DVIR is the written record that connects what a driver found to what the carrier fixed. It covers at least the parts and accessories the regulation lists — service brakes, parking brake, steering mechanism, lighting devices and reflectors, tires, horn, windshield wipers, rear vision mirrors, coupling devices, wheels and rims, emergency equipment — and it must identify the vehicle and list any defect or deficiency the driver discovered or had reported to them.
+The DVIR is the written record that connects what a driver found to what the carrier fixed. It covers at least the parts and accessories the regulation lists — service brakes, parking brake, steering mechanism, [lighting devices and reflectors](/knowledge/dot-compliance/truck-lighting-requirements), tires, horn, windshield wipers, rear vision mirrors, coupling devices, wheels and rims, emergency equipment — and it must identify the vehicle and list any defect or deficiency the driver discovered or had reported to them.
 
 Three documents drivers routinely blur together, separated:
 
@@ -290,11 +290,11 @@ A defect found by a driver at 18:00 is worthless if the next driver leaves at 06
 - **Step 1 — the driver at day's end.** Defect discovered (or reported to you)? Write the DVIR: vehicle identified, defect listed, signature. Multiple vehicles operated that day means the duty applies for each. No defect? For property carriers, **no report is required** — that is the 2014 change, in the regulation's own text.
 - **Step 2 — the carrier before the next dispatch.** When a reported defect would affect safe operation, the carrier must repair it — or certify that repair is unnecessary — **before the vehicle is operated again**, and certify that on the DVIR ([396.11(a)(3)](https://www.ecfr.gov/current/title-49/part-396/section-396.11)).
 - **Step 3 — the next driver.** Under 396.13, review the last DVIR and, **if defects were noted**, sign to acknowledge you reviewed it and that the required repair certification is there. No defects noted, nothing to countersign — your review duty and your own satisfaction that the vehicle is safe remain.
-- **Step 4 — retention.** **Federal requirement:** the carrier keeps the DVIR, the repair certification, and the reviewing driver's acknowledgment for **three months** from the report date (396.11(c)(2)).
+- **Step 4 — retention.** **Federal requirement:** the carrier keeps the DVIR, the repair certification, and the reviewing driver's acknowledgment for **three months** from the report date (396.11(a)(4)).
 
 ## Real-world example
 
-**Example (illustration, not legal advice):** Tuesday night you write up a inoperative left-turn signal on tractor 4412. Wednesday morning another driver picks up 4412: the shop swapped the bulb overnight and certified the repair on your DVIR. The Wednesday driver reads it, sees the certification, signs the acknowledgment, does their own pre-trip — signal works — and rolls. Every signature in that chain answers a specific regulatory question: what was wrong, who fixed it, who verified the loop closed.
+**Example (illustration, not legal advice):** Tuesday night you write up an inoperative left-turn signal on tractor 4412. Wednesday morning another driver picks up 4412: the shop swapped the bulb overnight and certified the repair on your DVIR. The Wednesday driver reads it, sees the certification, signs the acknowledgment, does their own pre-trip — signal works — and rolls. Every signature in that chain answers a specific regulatory question: what was wrong, who fixed it, who verified the loop closed.
 
 ## Common mistakes
 
@@ -321,9 +321,9 @@ Missing or false DVIRs, missing repair certifications, and operating with a know
 - The looking half of the loop: [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide)
 - The other inspections: [Annual DOT Inspections](/knowledge/dot-compliance/annual-dot-inspection) · [DOT Inspection Levels 1–8 Compared](/knowledge/dot-compliance/dot-inspection-levels-compared)
 - Where maintenance violations land: [CSA Scores and the SMS](/knowledge/dot-compliance/csa-scores-sms-explained)
-- Free drills: [General Knowledge practice test](/practice-tests/general-knowledge) covers inspection duties.
+- Quiz yourself free: the [General Knowledge practice test](/practice-tests/general-knowledge) covers inspection duties.
 - **Learn the whole discipline:** [TLWS Academy](/academy) · free [CDL Pre-School](/cdl-pre-school) · [email list](/#newsletter).$mdx$,
-      'DVIR Rules Explained — 49 CFR 396.11 After the 2014 Change | Trucking Life with Shawn',
+      'DVIR Rules — 49 CFR 396.11 After the 2014 Change | Trucking Life with Shawn',
       'When a DVIR is required: the defect-only rule for property carriers since 2014, the 396.11 repair-certification loop, and who signs what.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -335,7 +335,7 @@ Missing or false DVIRs, missing repair certifications, and operating with a know
       $j$[
         {"q":"Is a daily no-defect DVIR still required at property carriers?","a":"No. Since the December 2014 rule change, 49 CFR 396.11 requires a written DVIR from property-carrying drivers only when a defect or deficiency is discovered or reported. Passenger-carrying operations still prepare reports regardless. Your carrier may require daily reports as company policy."},
         {"q":"Who signs a DVIR?","a":"The driver who prepares it signs it; the carrier certifies on it that listed defects were repaired or that repair was unnecessary; and the next driver signs an acknowledgment of having reviewed it when defects were noted (49 CFR 396.11 and 396.13)."},
-        {"q":"How long must DVIRs be kept?","a":"The motor carrier must retain the DVIR, the certification of repairs, and the reviewing driver's acknowledgment for three months from the date the report was prepared, under 49 CFR 396.11(c)(2)."},
+        {"q":"How long must DVIRs be kept?","a":"The motor carrier must retain the DVIR, the certification of repairs, and the reviewing driver's acknowledgment for three months from the date the report was prepared, under 49 CFR 396.11(a)(4)."},
         {"q":"Is the pre-trip inspection the same as the DVIR?","a":"No. The pre-trip is the driver's duty before driving — being satisfied the vehicle is safe and reviewing the last report (49 CFR 396.13, 392.7). The DVIR is the written end-of-day report required when defects are found (396.11)."}
       ]$j$::jsonb,
       '{dvir,inspection,396-11,maintenance,compliance}',
@@ -404,7 +404,7 @@ Per the published methodology (state the mechanics, then check the current docum
 
 ## Real-world example
 
-**Example (illustration, not legal advice):** A driver takes a Level II with one violation: a lamp inoperative. The carrier's Vehicle Maintenance BASIC absorbs a small, time-weighted hit that fades over 24 months. The same event appears in that driver's PSP history for three years, where a future recruiter will see it — one lamp, documented forever-ish. Multiply by a fleet and you understand why carriers chase clean inspections; multiply by a career and you understand why drivers should too.
+**Example (illustration, not legal advice):** A driver takes a Level II with one violation: a lamp inoperative. The carrier's Vehicle Maintenance BASIC absorbs a small, time-weighted hit that fades over 24 months. The same event appears in that driver's PSP history for three years, where a future recruiter will see it — one lamp, on the record for the next three years. Multiply by a fleet and you understand why carriers chase clean inspections; multiply by a career and you understand why drivers should too.
 
 ## Common mistakes
 
@@ -430,10 +430,10 @@ For carriers: intervention exposure, insurance and shipper scrutiny of public BA
 - The inspections that feed the data: [DOT Inspection Levels 1–8 Compared](/knowledge/dot-compliance/dot-inspection-levels-compared) · [CVSA Out-of-Service Criteria](/knowledge/dot-compliance/cvsa-out-of-service-criteria)
 - Fixing bad records: [DataQs: How to Dispute an Inspection Report](/knowledge/dot-compliance/dataqs-disputes)
 - The biggest BASIC inputs: [CDL Hours of Service Rules](/knowledge/hours-of-service/cdl-hours-of-service-rules) · [The DVIR Explained](/knowledge/dot-compliance/dvir-explained)
-- Free drills: [General Knowledge practice test](/practice-tests/general-knowledge)
+- Test the rules free: the [General Knowledge practice test](/practice-tests/general-knowledge)
 - **A zero-violation career is teachable:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'CSA Scores and the SMS Explained — BASICs, Weighting, PSP | Trucking Life with Shawn',
-      'What FMCSA''s CSA/SMS really scores: the seven BASICs, severity and time weighting, the 24-month window, why drivers have no public CSA score, and how PSP records follow them.',
+      'CSA Scores and the SMS — BASICs, Weighting, and PSP Records | Trucking Life with Shawn',
+      'What FMCSA''s CSA/SMS really scores: the seven BASICs, severity and time weighting, why drivers have no public CSA score, and how PSP records follow them.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"FMCSA — CSA / Safety Measurement System methodology","url":"https://csa.fmcsa.dot.gov/"},
@@ -528,9 +528,9 @@ Nothing about filing an RDR harms your record — the risk is in *not* filing wh
 - What the records feed: [CSA Scores and the SMS](/knowledge/dot-compliance/csa-scores-sms-explained)
 - Where the records come from: [DOT Inspection Levels 1–8 Compared](/knowledge/dot-compliance/dot-inspection-levels-compared) · [Level 1 DOT Inspection Explained](/knowledge/dot-compliance/level-1-dot-inspection)
 - Avoiding the dispute entirely: [CVSA Out-of-Service Criteria](/knowledge/dot-compliance/cvsa-out-of-service-criteria) · [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide)
-- Free drills: [General Knowledge practice test](/practice-tests/general-knowledge)
+- Stay sharp free: the [General Knowledge practice test](/practice-tests/general-knowledge)
 - **Drive a record worth defending:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'DataQs Explained — Disputing Inspection and Crash Records | Trucking Life with Shawn',
+      'DataQs: How to Dispute Inspection and Crash Records | Trucking Life with Shawn',
       'How to use FMCSA''s DataQs: who can file a Request for Data Review, what it can and cannot change, and how to document a dispute properly.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -562,7 +562,7 @@ Nothing about filing an RDR harms your record — the risk is in *not* filing wh
       'dot-medical-card',
       'The DOT Medical Card: Requirements, Renewals, and Disqualifiers',
       'How DOT medical certification works under 49 CFR 391.41–391.45: what the certified medical examiner evaluates, how long certificates last, the CDL self-certification step, and how regulatory paths handle conditions like insulin-treated diabetes.',
-      $mdx$**Quick answer:** Interstate CMV drivers must be **medically certified** under [49 CFR 391.41](https://www.ecfr.gov/current/title-49/part-391/section-391.41). The exam is performed by a **certified medical examiner** listed on FMCSA's National Registry ([49 CFR 391.42–391.43](https://www.ecfr.gov/current/title-49/part-391/section-391.43)), who issues a **Medical Examiner's Certificate (MEC, Form MCSA-5876)** valid for **up to 24 months** — the examiner may certify for less when a condition warrants monitoring. CDL holders must also **self-certify** their operation type with their state licensing agency so the medical status attaches to the license. **The examiner, applying the federal standards, decides qualification — no article can.**
+      $mdx$**Quick answer:** Interstate CMV drivers must be **medically certified** under [49 CFR 391.41](https://www.ecfr.gov/current/title-49/part-391/section-391.41). The exam is performed by a **certified medical examiner** listed on FMCSA's National Registry ([49 CFR 391.43(a)](https://www.ecfr.gov/current/title-49/part-391/section-391.43) and [Part 390, Subpart D](https://www.ecfr.gov/current/title-49/part-390)), who issues a **Medical Examiner's Certificate (MEC, Form MCSA-5876)** valid for **up to 24 months** — the examiner may certify for less when a condition warrants monitoring. CDL holders must also **self-certify** their operation type with their state licensing agency so the medical status attaches to the license. **The examiner, applying the federal standards, decides qualification — no article can.**
 
 **Regulatory-change disclaimer:** Last reviewed **July 17, 2026** against the eCFR. Medical qualification rules change — insulin-treated diabetes gained a regulatory path in 2018 ([391.46](https://www.ecfr.gov/current/title-49/part-391/section-391.46)) and vision gained an alternative standard in 2022 ([391.44](https://www.ecfr.gov/current/title-49/part-391/section-391.44)) — so confirm the current [Part 391, Subpart E](https://www.ecfr.gov/current/title-49/part-391) and [FMCSA's medical program pages](https://www.fmcsa.dot.gov/) before relying on this. This page is education, **not medical advice, and it cannot tell you whether you qualify.**
 
@@ -580,10 +580,10 @@ An 80,000-pound vehicle amplifies any medical event. The standards target condit
 
 ## How certification works, step by step
 
-- **Step 1 — find a certified examiner.** Only examiners on FMCSA's National Registry can issue a valid MEC (391.42). Doctors, DOs, PAs, APNs, and chiropractors can all be registry-certified, varying by state scope.
+- **Step 1 — find a certified examiner.** Only examiners on FMCSA's National Registry can issue a valid MEC (391.43(a); the Registry itself lives in Part 390, Subpart D). Doctors, DOs, PAs, APNs, and chiropractors can all be registry-certified, varying by state scope.
 - **Step 2 — the exam.** Health history plus examination against the 391.41(b) standards: vision (including the distant-acuity and field-of-vision standards in the regulation), hearing (the whisper-test or audiometric standard), blood pressure and cardiovascular status, and the rest of the listed categories.
 - **Step 3 — the determination.** The examiner certifies, certifies for a shorter period, or does not certify — their determination, applying the federal standards and FMCSA's examiner guidance. Periodic monitoring (a one-year or shorter card) is common where a condition needs watching; the specific interval is the examiner's call within the regulation's 24-month maximum.
-- **Step 4 — regulatory paths for specific conditions.** Some conditions have their own defined routes rather than a flat bar: **insulin-treated diabetes** through the 391.46 process (treating-clinician form, then examiner evaluation), **vision** in one eye through the 391.44 alternative standard, and certain conditions through FMCSA **exemption programs**. What these paths require is exactly what the cited sections say — not what a forum remembers.
+- **Step 4 — regulatory paths for specific conditions.** Some conditions have their own defined routes rather than a flat bar: **insulin-treated diabetes** through the 391.46 process (treating-clinician form, then examiner evaluation), **vision** in one eye through the 391.44 alternative standard, and certain conditions through FMCSA **exemption programs**. What these paths require is exactly what the cited sections say — read them, not secondhand summaries.
 - **Step 5 — self-certify and carry.** CDL holders submit the operation category (and MEC where required) to the state licensing agency; the medical status rides on the CDL record checked at [roadside inspections](/knowledge/dot-compliance/dot-inspection-levels-compared). An expired MEC is a [driver out-of-service and disqualification problem](/knowledge/dot-compliance/cvsa-out-of-service-criteria), not paperwork trivia.
 
 ## Real-world example
@@ -628,7 +628,7 @@ Driving without valid medical certification when required violates Part 391, app
       ]$j$::jsonb,
       $j$[
         {"q":"How long is a DOT medical card good for?","a":"Up to 24 months under 49 CFR 391.45, but the certified medical examiner may issue a shorter certificate when a condition warrants monitoring — one-year and shorter cards are common outcomes of that discretion."},
-        {"q":"Who can perform a DOT physical?","a":"Only a medical examiner certified and listed on FMCSA's National Registry of Certified Medical Examiners (49 CFR 391.42–391.43). Depending on state scope of practice, that can include MDs, DOs, physician assistants, advanced practice nurses, and chiropractors."},
+        {"q":"Who can perform a DOT physical?","a":"Only a medical examiner certified and listed on FMCSA's National Registry of Certified Medical Examiners (49 CFR 391.43(a); the Registry is established in Part 390, Subpart D). Depending on state scope of practice, that can include MDs, DOs, physician assistants, advanced practice nurses, and chiropractors."},
         {"q":"Can a diabetic on insulin get a DOT medical card?","a":"There is a defined regulatory path: 49 CFR 391.46 allows insulin-treated drivers to be certified when the treating clinician completes the required assessment and the certified medical examiner determines the standards are met. The examiner makes the individual determination — no article can."},
         {"q":"What happens if my medical card expires?","a":"Without valid medical certification where required, you are not qualified to drive under Part 391 — a driver out-of-service condition — and state licensing agencies can downgrade a CDL over a lapsed medical status. Renew before expiration, not after."}
       ]$j$::jsonb,
@@ -686,7 +686,7 @@ The [Clearinghouse](https://clearinghouse.fmcsa.dot.gov/) is FMCSA's database of
 - **Drivers can and should register** to view their own record and provide the consents queries require.
 - **Prohibited status has teeth:** under the Clearinghouse-II rules effective 2024, state licensing agencies must **downgrade the CDL** of a driver in prohibited status until the RTD process restores them.
 
-## Return-to-duty, honestly described
+## The return-to-duty process, step by step
 
 A violation is not automatically a career ending — it is a defined, supervised road back, and both halves of that sentence are true:
 
@@ -822,7 +822,7 @@ Securement violations feed the Vehicle Maintenance area of the [SMS](/knowledge/
 - The daily discipline it belongs to: [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide)
 - Drill it free: cargo questions live in the [General Knowledge practice test](/practice-tests/general-knowledge).
 - **Learn load securement hands-on:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'Cargo Securement Rules — Tie-Downs and Working Load Limits (Part 393) | Trucking Life with Shawn',
+      'Cargo Securement Rules — Tie-Downs and WLL (49 CFR 393) | Trucking Life with Shawn',
       'Federal cargo securement: the 393.102 performance standard, aggregate WLL at half the cargo weight, 393.110 tie-down minimums, and en-route checks.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -836,7 +836,7 @@ Securement violations feed the Vehicle Maintenance area of the [SMS](/knowledge/
         {"q":"How many tie-downs does a load legally need?","a":"For general freight not blocked forward, 49 CFR 393.110 sets the minimums: one tie-down for articles up to 5 ft and 1,100 lbs; two for heavier short articles or articles 5–10 ft; and one more for each additional 10 ft or fraction beyond that. Listed commodities (coils, logs, equipment) follow their own sections instead — and the aggregate working load limit must separately reach half the cargo weight."},
         {"q":"What is aggregate working load limit?","a":"The sum of the tie-downs' working load limits counted per 49 CFR 393.106(d), which must be at least 50 percent of the cargo's weight. Each device's WLL comes from its marking or the default tables in 393.108, rated by its weakest component."},
         {"q":"How often must a driver check cargo securement during a trip?","a":"Under 49 CFR 392.9(b): within the first 50 miles, then at each duty-status change and at intervals of 3 hours or 150 miles, whichever comes first — with stated exceptions such as sealed loads the driver is ordered not to open."},
-        {"q":"Do cargo securement rules apply to dry vans?","a":"Yes. 49 CFR 392.9 prohibits driving unless cargo is secured against shifting on or within the vehicle, and Subpart I's general rules apply to enclosed freight as well — walls contain a load; they do not secure it against the forces 393.102 specifies."}
+        {"q":"Do cargo securement rules apply to dry vans?","a":"Yes. 49 CFR 392.9 prohibits driving unless cargo is secured against shifting on or within the vehicle. Containment in a sided vehicle can itself satisfy 393.102 — but only when the walls are of adequate strength and each article is in contact with, or sufficiently close to, a wall or other cargo so it cannot shift or tip (393.102(c)(2)). Loose pallets with room to move are not secured."}
       ]$j$::jsonb,
       '{cargo-securement,tie-downs,wll,part-393,flatbed}',
       9, false, 'published', true, '2026-07-17', v_pub
@@ -909,7 +909,7 @@ The colors and placements below follow Table 1's pattern for typical tractor-tra
 - Treating daytime as a defense. Operability of required lamps is required "at all times" (393.9).
 - Mixing up the color logic. Amber faces forward and mid-body; red faces rearward — a red lamp facing forward is its own violation class.
 - Ignoring reflectors and conspicuity tape because "the lights work." The table requires reflex reflectors, and degraded conspicuity sheeting on trailers is inspectable equipment.
-- Assuming every truck needs every device. Table 1 keys requirements to type and dimensions — learn your vehicle's row instead of over- or under-equipping from folklore.
+- Assuming every truck needs every device. Table 1 keys requirements to type and dimensions — learn your vehicle's row in the current table instead of over- or under-equipping.
 - Skipping the [DVIR](/knowledge/dot-compliance/dvir-explained) on a lamp defect. Lighting defects found at day's end are exactly what the report exists for.
 
 ## Compliance risks
@@ -964,7 +964,7 @@ Lighting violations are frequent inspection findings that accumulate in the Vehi
       'annual-dot-inspection',
       'Annual DOT Inspections: What 396.17 Requires Every 12 Months',
       'The periodic inspection rule in 49 CFR 396.17–396.25: every CMV inspected at least every 12 months against Appendix A, by a qualified inspector, with documentation kept — and how it differs from roadside inspections and the daily pre-trip.',
-      $mdx$**Quick answer:** Under [49 CFR 396.17](https://www.ecfr.gov/current/title-49/part-396/section-396.17), every CMV must pass a **periodic inspection at least once every 12 months** covering, at minimum, the items in **[Appendix A to Part 396](https://www.ecfr.gov/current/title-49/part-396)** — brakes, steering, suspension, frame, wheels, coupling, lighting, and more. The inspection must be performed by a **qualified inspector** ([396.19](https://www.ecfr.gov/current/title-49/part-396/section-396.19); brake work under [396.25](https://www.ecfr.gov/current/title-49/part-396/section-396.25)), documented, and the proof (report and/or decal) kept with the vehicle and carrier per [396.21](https://www.ecfr.gov/current/title-49/part-396/section-396.21). It is a different obligation from roadside inspections and from your daily pre-trip.
+      $mdx$**Quick answer:** Under [49 CFR 396.17](https://www.ecfr.gov/current/title-49/part-396/section-396.17), every CMV must pass a **periodic inspection at least once every 12 months** covering, at minimum, the items in **[Appendix A to Part 396](https://www.ecfr.gov/current/title-49/part-396)** — brakes, steering, suspension, frame, wheels, coupling, lighting, and more. The inspection must be performed by a **qualified inspector** ([396.19](https://www.ecfr.gov/current/title-49/part-396/section-396.19); brake work under [396.25](https://www.ecfr.gov/current/title-49/part-396/section-396.25)) and documented: proof of the passed inspection rides **on the vehicle** per 396.17(c), and the carrier retains the report per [396.21](https://www.ecfr.gov/current/title-49/part-396/section-396.21). It is a different obligation from roadside inspections and from your daily pre-trip.
 
 **Regulatory-change disclaimer:** Last reviewed **July 17, 2026** against the eCFR. Confirm the current [49 CFR 396.17–396.25 and Appendix A](https://www.ecfr.gov/current/title-49/part-396), and any state program details, before relying on this. Not legal advice.
 
@@ -984,14 +984,14 @@ Daily checks catch what a driver can see; roadside catches what enforcement find
 
 ## Who is responsible
 
-**Federal requirement:** the **motor carrier** (and for their vehicles, intermodal equipment providers) must ensure the inspection happens and the records exist — but [396.17(g)](https://www.ecfr.gov/current/title-49/part-396/section-396.17) also makes clear a motor carrier must not use a vehicle that hasn't passed, which is why drivers should know what proof rides in the truck. Owner-operators wear both hats.
+**Federal requirement:** the **motor carrier** (and for their vehicles, intermodal equipment providers) must ensure the inspection happens and the records exist — and [396.17(c)](https://www.ecfr.gov/current/title-49/part-396/section-396.17) makes clear a motor carrier must not use a vehicle unless it has passed and **documentation of the inspection is on the vehicle**, which is why drivers should know what proof rides in the truck. Owner-operators wear both hats.
 
 ## How it works, step by step
 
 - **Step 1 — who may inspect ([396.19](https://www.ecfr.gov/current/title-49/part-396/section-396.19)).** The inspector must be qualified by training/experience as the section specifies — a carrier's own technician can qualify; so can a commercial garage's. **Brake inspections** have their own qualification rule in [396.25](https://www.ecfr.gov/current/title-49/part-396/section-396.25). Carriers keep evidence of inspector qualification ([396.19(b)](https://www.ecfr.gov/current/title-49/part-396/section-396.19)).
-- **Step 2 — what gets inspected.** At minimum, every applicable item in **Appendix A**: brake systems, coupling devices, exhaust and fuel systems, lighting, securement of cargo equipment, steering, suspension, frame, tires, wheels and rims, windshield glazing and wipers, and the rest of the appendix's list for the vehicle type.
+- **Step 2 — what gets inspected.** At minimum, every applicable item in **Appendix A**: brake systems, coupling devices, exhaust and fuel systems, [lighting](/knowledge/dot-compliance/truck-lighting-requirements), [securement of cargo equipment](/knowledge/dot-compliance/cargo-securement-basics), steering, suspension, frame, tires, wheels and rims, windshield glazing and wipers, and the rest of the appendix's list for the vehicle type.
 - **Step 3 — pass or fix.** Vehicles failing any Appendix A item must be repaired before use; the standard is the appendix's minimums, not shop opinion.
-- **Step 4 — document and carry ([396.21](https://www.ecfr.gov/current/title-49/part-396/section-396.21)).** The original or a copy of the inspection report is retained **for 14 months from the report date**, and proof of the passed inspection — the report copy or a decal/sticker referencing it — must be on or in the vehicle where it can be produced.
+- **Step 4 — document and carry.** Two distinct duties: proof of the passed inspection — a report copy or a decal/sticker referencing it — must be **on the vehicle** (396.17(c)), and the original or a copy of the report is retained **for 14 months from the report date** by the carrier under [396.21(b)](https://www.ecfr.gov/current/title-49/part-396/section-396.21).
 - **Step 5 — state programs ([396.23](https://www.ecfr.gov/current/title-49/part-396/section-396.23)).** Mandatory state inspection programs FMCSA has determined equivalent can satisfy the requirement — the compliance calendar is still the carrier's to keep.
 
 ## Real-world example
@@ -1022,7 +1022,7 @@ Operating beyond the 12-month interval, missing documentation, or unqualified in
 
 - The other inspection regimes: [DOT Inspection Levels 1–8 Compared](/knowledge/dot-compliance/dot-inspection-levels-compared) · [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide) · [The DVIR Explained](/knowledge/dot-compliance/dvir-explained)
 - What failure costs: [CVSA Out-of-Service Criteria](/knowledge/dot-compliance/cvsa-out-of-service-criteria) · [CSA Scores and the SMS](/knowledge/dot-compliance/csa-scores-sms-explained)
-- Free drills: [General Knowledge](/practice-tests/general-knowledge) and [Air Brakes](/practice-tests/air-brakes) practice tests.
+- Drill the standards free: [General Knowledge](/practice-tests/general-knowledge) and [Air Brakes](/practice-tests/air-brakes) practice tests.
 - **Run equipment like a pro from day one:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
       'Annual DOT Inspection Requirements (49 CFR 396.17 + Appendix A) | Trucking Life with Shawn',
       'The periodic inspection rule: every CMV inspected every 12 months against Part 396 Appendix A by a qualified inspector, with 14-month records.',
@@ -1037,7 +1037,7 @@ Operating beyond the 12-month interval, missing documentation, or unqualified in
       $j$[
         {"q":"How often is a DOT annual inspection required?","a":"At least once every 12 months for every CMV, under 49 CFR 396.17, covering at minimum the items in Appendix A to Part 396. State inspection programs FMCSA recognizes as equivalent under 396.23 can satisfy it."},
         {"q":"Who can perform a DOT annual inspection?","a":"An inspector qualified under 49 CFR 396.19 — which can include a carrier's own qualified technician or a commercial facility — with brake inspections additionally governed by the brake-inspector qualifications of 396.25. Carriers must retain evidence of the inspector's qualifications."},
-        {"q":"How long are annual inspection records kept?","a":"The report (original or copy) is retained for 14 months from the report date under 49 CFR 396.21, and proof of the passed inspection — a report copy or decal referencing it — must be available on or in the vehicle."},
+        {"q":"How long are annual inspection records kept?","a":"The report (original or copy) is retained by the carrier for 14 months from the report date under 49 CFR 396.21(b), while 396.17(c) separately requires documentation of the passed inspection — a report copy or decal referencing it — to be on the vehicle itself."},
         {"q":"Is the annual inspection the same as a roadside DOT inspection?","a":"No. The periodic inspection is a scheduled maintenance-standard inspection the carrier arranges under 396.17; roadside inspections are enforcement events under the CVSA program, and passing one never exempts you from the other — or from the daily pre-trip."}
       ]$j$::jsonb,
       '{annual-inspection,periodic-inspection,396-17,appendix-a,maintenance}',
@@ -1070,9 +1070,9 @@ Operating beyond the 12-month interval, missing documentation, or unqualified in
     select id into eld     from public.kc_articles where category_id = v_hos and slug = 'eld-malfunctions';
 
     insert into public.kc_related (article_id, related_id, sort_order) values
-      (b1, b2, 1),  (b1, b10, 2),
+      (b1, b2, 1),  (b1, b10, 2), (b1, b8, 3),
       (b2, b1, 1),  (b2, b4, 2),
-      (b3, b10, 2), (b3, b4, 3),
+      (b3, b10, 2), (b3, b9, 3),
       (b4, b5, 1),  (b4, b2, 2),  (b4, b1, 3),
       (b5, b4, 1),  (b5, b1, 2),
       (b6, b7, 1),  (b6, b2, 2),  (b6, b1, 3),
@@ -1084,7 +1084,7 @@ Operating beyond the 12-month interval, missing documentation, or unqualified in
 
     if l1 is not null then
       insert into public.kc_related (article_id, related_id, sort_order) values
-        (b1, l1, 3), (b5, l1, 3), (b9, l1, 3)
+        (b5, l1, 3), (b9, l1, 3)
       on conflict (article_id, related_id) do nothing;
     end if;
     if pretrip is not null then

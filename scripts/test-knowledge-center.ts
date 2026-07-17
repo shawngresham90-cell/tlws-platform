@@ -14,8 +14,8 @@
  *   - no duplicated substantial paragraphs anywhere
  *   - HOS/compliance number consistency; no unsupported claim patterns
  *   - migration mechanics: guarded inserts, conflict-safe kc_related,
- *     038's two Batch-1 cross-link UPDATEs guarded + idempotent, nothing
- *     destructive anywhere
+ *     038's three Batch-1 UPDATEs (two cross-links + one de-link) guarded
+ *     and idempotent, nothing destructive anywhere
  *   - the rendering stack still wires schema/SEO correctly
  *
  * Run:
