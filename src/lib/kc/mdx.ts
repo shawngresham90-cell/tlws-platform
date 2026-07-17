@@ -21,8 +21,12 @@ function escapeHtml(s: string): string {
 function inline(s: string): string {
   let out = escapeHtml(s);
   out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, t, href) => {
-    const safe = /^https?:\/\//.test(href) ? href : '#';
-    const ext = /^https?:\/\//.test(href) ? ' rel="noopener" target="_blank"' : '';
+    // External links open in a new tab; root-relative links stay same-tab
+    // internal navigation (the internal-linking backbone between articles).
+    const isExternal = /^https?:\/\//.test(href);
+    const isInternal = /^\/[\w\-/#?=&.]*$/.test(href);
+    const safe = isExternal || isInternal ? href : '#';
+    const ext = isExternal ? ' rel="noopener" target="_blank"' : '';
     return `<a class="text-signal underline hover:no-underline"${ext} href="${safe}">${t}</a>`;
   });
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
