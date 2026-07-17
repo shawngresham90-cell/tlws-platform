@@ -8,10 +8,10 @@ import type { TestCategory, TestDefinition } from './types';
  * question bank is seeded.
  *
  * Milestone 1 shipped ONLY General Knowledge; Milestone 5 added Air Brakes;
- * Milestone 6 adds Combination Vehicles. The remaining knowledge tests
- * (Hazmat, Tanker, Doubles & Triples, Passenger, School Bus) are deliberately
- * deferred — each is a later milestone. Lighting one up is adding an entry
- * here, then seeding its bank.
+ * Milestone 6 added Combination Vehicles; Milestone 8 adds Hazmat. The
+ * remaining knowledge tests (Tanker, Doubles & Triples, Passenger, School
+ * Bus) are deliberately deferred — each is a later milestone. Lighting one
+ * up is adding an entry here, then seeding its bank.
  */
 
 /** CDL passing standard, reused as the default threshold. */
@@ -88,6 +88,28 @@ export const TEST_CATALOG: TestDefinition[] = [
     seoTitle: 'Free CDL Combination Vehicles Practice Test (2026) | Trucking Life with Shawn',
     seoDescription:
       'Free CDL Combination Vehicles practice test for the Class A exam. Questions on coupling, air lines, glad hands, the tractor protection valve, and rollover prevention — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
+    isPublished: true,
+  },
+  {
+    slug: 'hazmat',
+    category: 'hazmat',
+    title: 'Hazmat',
+    shortDescription:
+      'The H-endorsement knowledge test — hazard classes, placards, shipping papers, and the loading, parking, and emergency rules that keep dangerous cargo legal.',
+    heroTitle: 'Pass the Hazmat knowledge test and earn your H endorsement',
+    heroIntro:
+      'Hazmat freight pays better for a reason: the endorsement takes a TSA background check plus this knowledge exam. Every question here is written against the CDL manual hazardous-materials section and 49 CFR Parts 171–180, with the citation attached — placard tables to shipping-paper format, attendance rules to the ERG.',
+    endorsementCode: 'H',
+    icon: '☣️',
+    questionCountTarget: 35,
+    passThresholdPct: PASS_THRESHOLD_DEFAULT,
+    /** Timed Test length — the countdown anchor for the exam simulation. */
+    timeLimitSeconds: 25 * 60,
+    modes: ['study', 'timed'],
+    relatedKcCategorySlug: null,
+    seoTitle: 'Free CDL Hazmat Practice Test — H Endorsement (2026) | Trucking Life with Shawn',
+    seoDescription:
+      'Free CDL Hazmat practice test for the H endorsement. Permit-style questions on hazard classes, placards, shipping papers, loading rules, parking, and emergencies — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
     isPublished: true,
   },
 ];
