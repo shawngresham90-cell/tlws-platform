@@ -9,10 +9,10 @@ import type { TestCategory, TestDefinition } from './types';
  *
  * Milestone 1 shipped ONLY General Knowledge; Milestone 5 added Air Brakes;
  * Milestone 6 added Combination Vehicles; Milestone 8 added Hazmat; the
- * Tanker milestone adds Tanker (N). The remaining knowledge tests
- * (Doubles & Triples, Passenger, School Bus) are deliberately deferred —
- * each is a later milestone. Lighting one up is adding an entry here, then
- * seeding its bank.
+ * Tanker milestone adds Tanker (N); the Doubles & Triples milestone adds
+ * Doubles & Triples (T). The remaining knowledge tests (Passenger, School
+ * Bus) are deliberately deferred — each is a later milestone. Lighting one
+ * up is adding an entry here, then seeding its bank.
  */
 
 /** CDL passing standard, reused as the default threshold. */
@@ -133,6 +133,29 @@ export const TEST_CATALOG: TestDefinition[] = [
     seoTitle: 'Free CDL Tanker Practice Test — N Endorsement (2026) | Trucking Life with Shawn',
     seoDescription:
       'Free CDL Tanker practice test for the N endorsement. Permit-style questions on liquid surge, baffled and smooth-bore tanks, outage, tank inspection, and safe tanker driving — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
+    isPublished: true,
+  },
+  {
+    slug: 'doubles-triples',
+    category: 'doubles_triples',
+    title: 'Doubles & Triples',
+    shortDescription:
+      'The T-endorsement knowledge test — rearward amplification, coupling and uncoupling converter dollies, air-line hookup, and keeping two or three trailers upright and tracking.',
+    heroTitle: 'Pass the Doubles & Triples knowledge test and earn your T endorsement',
+    heroIntro:
+      'Adding a second or third trailer multiplies everything that can go wrong: the crack-the-whip effect throws the rear trailer, off-tracking widens every turn, and each coupling is one more failure point. The T endorsement takes this knowledge exam. Every question here is written against the CDL manual doubles-and-triples section and 49 CFR Parts 383 and 393, with the citation attached — converter dollies to shutoff valves, coupling order to rollover prevention.',
+    endorsementCode: 'T',
+    icon: '🚛',
+    questionCountTarget: 32,
+    passThresholdPct: PASS_THRESHOLD_DEFAULT,
+    /** Timed Test length — the countdown anchor for the exam simulation. */
+    timeLimitSeconds: 25 * 60,
+    modes: ['study', 'timed'],
+    relatedKcCategorySlug: null,
+    seoTitle:
+      'Free CDL Doubles & Triples Practice Test — T Endorsement (2026) | Trucking Life with Shawn',
+    seoDescription:
+      'Free CDL Doubles and Triples practice test for the T endorsement. Permit-style questions on rearward amplification, converter dollies, coupling and uncoupling, air lines, and shutoff valves — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
     isPublished: true,
   },
 ];

@@ -76,12 +76,12 @@ check(
 );
 
 // ── 2. Published scope: GK (M1) + Air Brakes (M5) + Combination (M6) +
-// Hazmat (M8) + Tanker. Every published test must be a DELIBERATE milestone
-// addition — this count is bumped once per shipped test so an accidental
-// isPublished flip fails.
+// Hazmat (M8) + Tanker + Doubles & Triples. Every published test must be a
+// DELIBERATE milestone addition — this count is bumped once per shipped test
+// so an accidental isPublished flip fails.
 check(
-  'published tests match the shipped milestones (GK + AB + Combination + Hazmat + Tanker)',
-  publishedTests().length === 5,
+  'published tests match the shipped milestones (GK + AB + Combination + Hazmat + Tanker + Doubles & Triples)',
+  publishedTests().length === 6,
   publishedTests().length,
 );
 check(
