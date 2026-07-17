@@ -1,9 +1,14 @@
 /**
  * Knowledge Center validation suite — Batch 1 (037, HOS + inspections),
- * Batch 2 (038, DOT Compliance cluster), and Batch 3 (040, Getting Your CDL
- * cluster): 30 authority pages.
+ * Batch 2 (038, DOT Compliance cluster), Batch 3 (040, Getting Your CDL
+ * cluster), and Batch 4 (042, Careers & Money cluster): 40 authority pages.
  *
- * Checks per batch and across all three:
+ * Batch 4 seeds into the pre-existing (empty) 'trucking-careers' category and
+ * carries extra money discipline: no invented pay/CPM/salary/dollar figures,
+ * an information-not-financial-advice disclaimer, and pay described
+ * structurally with live wage data pointed to on BLS.
+ *
+ * Checks per batch and across all four:
  *   - exact slug sets; unique titles / SEO titles / meta descriptions
  *   - official-domain-only sources in canonical eCFR/FMCSA/CVSA/TPR formats
  *   - required structure per batch (quick answer, disclaimer + review date,
@@ -11,13 +16,15 @@
  *     checklist, keep-learning, CTAs, practice-test links)
  *   - every internal link resolves; cross-cluster bridges exist; ≤2 in-body
  *     links per target per article
- *   - FAQ uniqueness across all 30 pages; FAQ answers substantial
+ *   - FAQ uniqueness across all 40 pages; FAQ answers substantial
  *   - no duplicated substantial paragraphs anywhere
  *   - number consistency; no unsupported claim patterns; no invented money
+ *     (Batch 4: no dollar/CPM/salary figures; pay described structurally)
  *   - migration mechanics: guarded inserts, guarded category creation (040
- *     only), conflict-safe kc_related, guarded replace-based cross-link
- *     UPDATEs (038: three into Batch 1; 040: three into Batches 1–2),
- *     nothing destructive anywhere
+ *     only; 042 seeds into a pre-existing category and never creates one),
+ *     conflict-safe kc_related, guarded replace-based cross-link UPDATEs
+ *     (038: three into Batch 1; 040: four into Batches 1–2; 042: three into
+ *     Batch 3), nothing destructive anywhere
  *   - the rendering stack still wires schema/SEO correctly
  *
  * Run:
@@ -40,6 +47,7 @@ const read = (p: string) => readFileSync(p, 'utf8');
 const seed1 = read('supabase/migrations/037_seed_kc_authority_articles.sql');
 const seed2 = read('supabase/migrations/038_seed_kc_dot_compliance_articles.sql');
 const seed3 = read('supabase/migrations/040_seed_kc_getting_your_cdl_articles.sql');
+const seed4 = read('supabase/migrations/042_seed_kc_careers_money_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
 const guardRe =
@@ -47,10 +55,12 @@ const guardRe =
 check('037: ten guarded inserts', (seed1.match(guardRe) ?? []).length === 10);
 check('038: ten guarded inserts', (seed2.match(guardRe) ?? []).length === 10);
 check('040: ten guarded inserts', (seed3.match(guardRe) ?? []).length === 10);
+check('042: ten guarded inserts', (seed4.match(guardRe) ?? []).length === 10);
 for (const [name, s] of [
   ['037', seed1],
   ['038', seed2],
   ['040', seed3],
+  ['042', seed4],
 ] as const) {
   check(
     `${name}: kc_related inserts are conflict-safe`,
@@ -112,8 +122,40 @@ check(
   '040: all ten article inserts use the getting-your-cdl category variable',
   (seed3.match(/values \(\s*v_gyc,/g) ?? []).length === 10,
 );
+// Batch 4 (042) seeds into the PRE-EXISTING trucking-careers category and must
+// never create or alter a category.
+check('042: never creates categories', !/insert into public\.kc_categories/.test(seed4));
+check('042: never alters categories', !/update public\.kc_categories/.test(seed4));
+check(
+  '042: all ten article inserts use the trucking-careers category variable',
+  (seed4.match(/values \(\s*v_car,/g) ?? []).length === 10,
+);
+check(
+  '042: looks up trucking-careers and raises if the category is missing',
+  /select id into v_car from public\.kc_categories where slug = 'trucking-careers'/.test(seed4) &&
+    /raise exception 'Knowledge Center categories missing/.test(seed4),
+);
+const crossLinkUpdates4 =
+  seed4.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('042: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates4.length === 3);
+check(
+  '042: no other UPDATE statements of any kind',
+  (seed4.match(/update public\./g) ?? []).length === 3,
+);
+check(
+  '042: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
+  (seed4.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed4.match(/and a\.body_mdx not like '%\/knowledge\/trucking-careers\//g) ?? []).length === 3,
+);
+check(
+  '042: UPDATEs are slug-scoped to the three Batch 3 targets, all in getting-your-cdl',
+  /a\.slug = 'how-to-get-your-cdl'/.test(seed4) &&
+    /a\.slug = 'cdl-cost'/.test(seed4) &&
+    /a\.slug = 'sponsored-vs-private-cdl-school'/.test(seed4) &&
+    (seed4.match(/and c\.slug = 'getting-your-cdl'/g) ?? []).length === 3,
+);
 
-// ── 2. Parse all 30 article records ─────────────────────────────────────────
+// ── 2. Parse all 40 article records ─────────────────────────────────────────
 const BATCH1 = [
   'cdl-hours-of-service-rules',
   '11-hour-driving-limit',
@@ -150,6 +192,18 @@ const BATCH3 = [
   'sponsored-vs-private-cdl-school',
   'cdl-study-plan',
 ];
+const BATCH4 = [
+  'cdl-truck-driver-pay',
+  'otr-vs-regional-vs-local',
+  'company-driver-pay',
+  'owner-operator-vs-company-driver',
+  'what-is-a-good-cpm-rate',
+  'trucking-benefits-and-per-diem',
+  'how-to-read-a-settlement-statement',
+  'lease-purchase-programs-explained',
+  'home-time-and-quality-of-life',
+  'trucking-career-paths',
+];
 const CAT_OF: Record<string, string> = {};
 for (const s of BATCH1)
   CAT_OF[s] =
@@ -160,10 +214,11 @@ for (const s of BATCH1)
         : 'hours-of-service';
 for (const s of BATCH2) CAT_OF[s] = 'dot-compliance';
 for (const s of BATCH3) CAT_OF[s] = 'getting-your-cdl';
+for (const s of BATCH4) CAT_OF[s] = 'trucking-careers';
 
 type Article = {
   slug: string;
-  batch: 1 | 2 | 3;
+  batch: 1 | 2 | 3 | 4;
   title: string;
   body: string;
   metaTitle: string;
@@ -172,12 +227,13 @@ type Article = {
   faqs: { q: string; a: string }[];
 };
 const blockRe =
-  /values \(\s*v_(?:hos|dot|cdl|gyc),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
+  /values \(\s*v_(?:hos|dot|cdl|gyc|car),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
 const articles: Article[] = [];
 for (const [batch, s] of [
   [1, seed1],
   [2, seed2],
   [3, seed3],
+  [4, seed4],
 ] as const) {
   let m: RegExpExecArray | null;
   blockRe.lastIndex = 0;
@@ -244,7 +300,32 @@ for (const { search, replacement, slug } of extracted) {
     replacement.length > search.length && /\]\(\/knowledge\//.test(replacement),
   );
 }
-check('all 30 articles parse (10 per batch)', articles.length === 30, articles.length);
+// 042's three inbound cross-links point INTO the new trucking-careers cluster
+// from three Batch 3 pages — extracted from the migration and applied to the
+// already-parsed Batch 3 bodies so downstream link checks see effective text.
+const extracted4: { search: string; replacement: string; slug: string }[] = [];
+updateRe.lastIndex = 0;
+while ((um = updateRe.exec(seed4)) !== null) {
+  extracted4.push({
+    search: um[1].replace(/''/g, "'"),
+    replacement: um[2].replace(/''/g, "'"),
+    slug: um[3],
+  });
+}
+check('042: all three replacement pairs parse from the migration', extracted4.length === 3);
+for (const { search, replacement, slug } of extracted4) {
+  const target = articles.find((a) => a.slug === slug);
+  check(
+    `042 replacement target text exists exactly once in ${slug}`,
+    !!target && target.body.split(search).length === 2,
+  );
+  if (target) target.body = target.body.replace(search, replacement);
+  check(
+    `042 replacement for ${slug} grows the text and links into trucking-careers`,
+    replacement.length > search.length && /\]\(\/knowledge\/trucking-careers\//.test(replacement),
+  );
+}
+check('all 40 articles parse (10 per batch)', articles.length === 40, articles.length);
 check(
   "038's and 040's replacements all matched real seeded text (effective content differs)",
   articles
@@ -270,13 +351,14 @@ check(
   'slug sets match the plan exactly',
   BATCH1.every((s) => articles.some((a) => a.slug === s && a.batch === 1)) &&
     BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)) &&
-    BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)),
+    BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)) &&
+    BATCH4.every((s) => articles.some((a) => a.slug === s && a.batch === 4)),
 );
-check('titles unique across 30', new Set(articles.map((a) => a.title)).size === 30);
-check('meta titles unique across 30', new Set(articles.map((a) => a.metaTitle)).size === 30);
+check('titles unique across 40', new Set(articles.map((a) => a.title)).size === 40);
+check('meta titles unique across 40', new Set(articles.map((a) => a.metaTitle)).size === 40);
 check(
-  'meta descriptions unique across 30',
-  new Set(articles.map((a) => a.metaDescription)).size === 30,
+  'meta descriptions unique across 40',
+  new Set(articles.map((a) => a.metaDescription)).size === 40,
 );
 check(
   'meta descriptions sane length (70–175 chars)',
@@ -296,7 +378,8 @@ check(
   'every article published + reg-verified with review date',
   (seed1.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
-    (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
+    (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
+    (seed4.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
 );
 
 // ── 3. Official sources only, canonical formats ─────────────────────────────
@@ -309,6 +392,11 @@ const OFFICIAL = [
   'clearinghouse.fmcsa.dot.gov',
   'tpr.fmcsa.dot.gov',
   'www.cvsa.org',
+  // Batch 4 (Careers & Money) primary sources — BLS wage data, IRS tax rules,
+  // DOL wage-and-hour. Government-published, neutral, and citable.
+  'www.bls.gov',
+  'www.irs.gov',
+  'www.dol.gov',
 ];
 check(
   'every source URL is an official domain',
@@ -331,30 +419,30 @@ check(
   ),
 );
 
-// ── 4. FAQs unique across all 30 pages ──────────────────────────────────────
+// ── 4. FAQs unique across all 40 pages ──────────────────────────────────────
 check(
   'every article has 4+ FAQs',
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question reused across the 30 pages', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 40 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
   'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
 );
 
 // ── 5. Required structure in every body (per batch) ─────────────────────────
-const b12 = articles.filter((a) => a.batch !== 3);
+const b12 = articles.filter((a) => a.batch === 1 || a.batch === 2);
 const b3 = articles.filter((a) => a.batch === 3);
+const b4 = articles.filter((a) => a.batch === 4);
+const b123 = articles.filter((a) => a.batch !== 4);
+// Universal across all 40 pages.
 const shared: [string, RegExp][] = [
   ['direct answer at the top', /^\*\*Quick answer:\*\*/],
-  ['disclaimer with review date', /\*\*Regulatory-change disclaimer:\*\*[\s\S]*July 17, 2026/],
-  ['definition section', /## What |## The (requirements|two numbers|CDL process)/],
   ['common mistakes section', /## Common mistakes/],
   ['keep-learning block', /## Keep learning/],
   ['academy CTA', /\/academy\)/],
   ['email-list CTA', /\/#newsletter\)/],
-  ['practice-test link', /\/practice-tests/],
 ];
 for (const [name, re] of shared) {
   check(
@@ -363,6 +451,107 @@ for (const [name, re] of shared) {
     articles.filter((a) => !re.test(a.body)).map((a) => a.slug),
   );
 }
+// Batch 1–3 (regulatory content): the regulatory-change disclaimer, a
+// definition section, and a practice-test link on every page.
+const b123Shared: [string, RegExp][] = [
+  [
+    'regulatory-change disclaimer with review date',
+    /\*\*Regulatory-change disclaimer:\*\*[\s\S]*July 17, 2026/,
+  ],
+  ['definition section', /## What |## The (requirements|two numbers|CDL process)/],
+  ['practice-test link', /\/practice-tests/],
+];
+for (const [name, re] of b123Shared) {
+  check(
+    `every Batch 1–3 body has: ${name}`,
+    b123.every((a) => re.test(a.body)),
+    b123.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+// Batch 4 (Careers & Money): information-not-financial-advice disclaimer with
+// review date, an orienting definition/why section, a labeled illustration,
+// a checklist or decision-guide, and the CDL Pre-School CTA.
+const b4Structure: [string, RegExp][] = [
+  [
+    'information disclaimer with review date',
+    /\*\*Information disclaimer:\*\* Last reviewed \*\*July 17, 2026\*\*/,
+  ],
+  ['not financial/tax/legal advice language', /\*\*not [^*]{0,60}advice\*\*/i],
+  ['orienting definition or why/what section', /## (What|Why|The|Two|A CDL|Home time|Benefits) /],
+  ['labeled illustration (not a claim)', /\([Ii]llustration[^)]{0,120}not /],
+  ['checklist or decision-guide section', /## [^\n]*checklist|## Which |## Who should/i],
+  ['pre-school CTA', /\/cdl-pre-school\)/],
+];
+for (const [name, re] of b4Structure) {
+  check(
+    `every Batch 4 body has: ${name}`,
+    b4.every((a) => re.test(a.body)),
+    b4.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+// Money discipline: Batch 4 invents no pay figures anywhere (body or FAQs).
+check(
+  'Batch 4 quotes no dollar amounts (no invented pay/salary/fees)',
+  b4.every((a) => !/\$\d/.test(a.body) && !/\$\d/.test(JSON.stringify(a.faqs))),
+  b4.filter((a) => /\$\d/.test(a.body) || /\$\d/.test(JSON.stringify(a.faqs))).map((a) => a.slug),
+);
+check(
+  'Batch 4 quotes no CPM rate numbers',
+  b4.every(
+    (a) =>
+      !/\d+\s?(cpm|cents per mile|¢ per mile|¢\/mile)/i.test(a.body) &&
+      !/\d+\s?(cpm|cents per mile)/i.test(JSON.stringify(a.faqs)),
+  ),
+  b4
+    .filter((a) => /\d+\s?(cpm|cents per mile)/i.test(a.body + JSON.stringify(a.faqs)))
+    .map((a) => a.slug),
+);
+check(
+  'Batch 4 invents no salary or annual-pay figures',
+  b4.every(
+    (a) =>
+      !/\d[\d,]*\s*(per year|a year|annually|\/yr|per week|per mile)/i.test(a.body) &&
+      !/(salary|earns?|makes?|pays?)[^.]{0,20}\d[\d,]{2,}/i.test(a.body),
+  ),
+  b4
+    .filter((a) => /\d[\d,]*\s*(per year|a year|annually|\/yr|per week|per mile)/i.test(a.body))
+    .map((a) => a.slug),
+);
+check(
+  'Batch 4 points to live BLS wage data rather than hardcoding it',
+  b4
+    .filter((a) => a.slug === 'cdl-truck-driver-pay' || a.slug === 'what-is-a-good-cpm-rate')
+    .every((a) => /bls\.gov/.test(a.body)),
+);
+check(
+  'Batch 4 every spoke links the cluster pillar (cdl-truck-driver-pay)',
+  b4
+    .filter((a) => a.slug !== 'cdl-truck-driver-pay')
+    .every((a) => a.body.includes('/knowledge/trucking-careers/cdl-truck-driver-pay')),
+  b4
+    .filter(
+      (a) =>
+        a.slug !== 'cdl-truck-driver-pay' &&
+        !a.body.includes('/knowledge/trucking-careers/cdl-truck-driver-pay'),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'Batch 4 cross-cluster bridge: career-paths links into getting-your-cdl',
+  b4.find((a) => a.slug === 'trucking-career-paths')!.body.includes('/knowledge/getting-your-cdl/'),
+);
+check(
+  'Batch 3 → Batch 4 inbound cross-links landed (pillar, cost, sponsored)',
+  b3
+    .find((a) => a.slug === 'how-to-get-your-cdl')!
+    .body.includes('/knowledge/trucking-careers/trucking-career-paths') &&
+    b3
+      .find((a) => a.slug === 'cdl-cost')!
+      .body.includes('/knowledge/trucking-careers/cdl-truck-driver-pay') &&
+    b3
+      .find((a) => a.slug === 'sponsored-vs-private-cdl-school')!
+      .body.includes('/knowledge/trucking-careers/owner-operator-vs-company-driver'),
+);
 const b12Structure: [string, RegExp][] = [
   ['why section', /## Why /],
   ['who section', /## Who /],
