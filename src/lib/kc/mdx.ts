@@ -15,7 +15,11 @@ function slugify(text: string): string {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function inline(s: string): string {
@@ -23,13 +27,17 @@ function inline(s: string): string {
   out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, t, href) => {
     // External links open in a new tab; root-relative links stay same-tab
     // internal navigation (the internal-linking backbone between articles).
+    // A leading double slash would be protocol-relative (external in
+    // disguise), so it is rejected; escapeHtml already ran, so test the
+    // pre-escape form of & when checking query strings.
     const isExternal = /^https?:\/\//.test(href);
-    const isInternal = /^\/[\w\-/#?=&.]*$/.test(href);
+    const isInternal = /^\/(?!\/)[\w\-/#?=&.]*$/.test(href.replace(/&amp;/g, '&'));
     const safe = isExternal || isInternal ? href : '#';
     const ext = isExternal ? ' rel="noopener" target="_blank"' : '';
     return `<a class="text-signal underline hover:no-underline"${ext} href="${safe}">${t}</a>`;
   });
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
   return out;
 }
 

@@ -61,7 +61,13 @@ Part 395 is a fatigue rule. Driving performance degrades with time behind the wh
 
 ## Who must follow these rules
 
-**Federal requirement:** The property-carrier HOS rules apply to drivers of CMVs in interstate commerce as defined in [49 CFR 390.5](https://www.ecfr.gov/current/title-49/part-390/section-390.5) — generally vehicles with a gross vehicle weight rating or gross combination weight rating of 10,001 pounds or more, vehicles placarded for hazardous materials, and certain passenger configurations (passenger carriers follow a different set of limits in 395.5). Intrastate-only drivers follow their state's version of the rules, which is often similar but not identical — check your state.
+**Federal requirement:** The property-carrier HOS rules apply to drivers of CMVs in interstate commerce, as defined in [49 CFR 390.5](https://www.ecfr.gov/current/title-49/part-390/section-390.5). That generally means:
+
+- vehicles with a gross vehicle weight rating or gross combination weight rating of 10,001 pounds or more
+- vehicles placarded for hazardous materials
+- certain passenger configurations (passenger carriers follow their own limits in 395.5)
+
+Intrastate-only drivers follow their state's version of the rules — often similar, never guaranteed identical. Check your state.
 
 ## The four core limits, step by step
 
@@ -126,7 +132,7 @@ HOS compliance is checked at roadside inspections and during carrier investigati
 - Deep dives: [11-hour limit](/knowledge/hours-of-service/11-hour-driving-limit) · [14-hour window](/knowledge/hours-of-service/14-hour-driving-window) · [30-minute break](/knowledge/hours-of-service/30-minute-break-rule) · [split sleeper](/knowledge/hours-of-service/split-sleeper-berth-rules) · [personal conveyance](/knowledge/hours-of-service/personal-conveyance) · [yard moves](/knowledge/hours-of-service/yard-move) · [ELD malfunctions](/knowledge/hours-of-service/eld-malfunctions)
 - Getting inspected: [Level 1 DOT Inspection Explained](/knowledge/dot-compliance/level-1-dot-inspection)
 - Test yourself free: the [CDL General Knowledge practice test](/practice-tests/general-knowledge) covers hours-of-service questions, and the [practice test hub](/practice-tests) has every bank.
-- Watch: [FMCSA Just Changed DOT Inspections](https://youtu.be/UlW-GlLugUg?si=2Nhr_Tc_Rs8DhZ1w) on the Trucking Life with Shawn YouTube channel.
+- Watch: [FMCSA Just Changed DOT Inspections](https://youtu.be/UlW-GlLugUg) on the Trucking Life with Shawn YouTube channel.
 - **Want a career built on doing this right?** [Train with us at the TLWS Academy](/academy), start free with [CDL Pre-School](/cdl-pre-school), or [join the email list](/#newsletter) for new guides as they publish.$mdx$,
       'CDL Hours of Service Rules Explained (49 CFR 395) | Trucking Life with Shawn',
       'The CDL hours-of-service rules in plain English: 11-hour limit, 14-hour window, 30-minute break, 60/70-hour caps — with eCFR citations and worked examples.',
@@ -140,7 +146,7 @@ HOS compliance is checked at roadside inspections and during carrier investigati
       ]$j$::jsonb,
       $j$[
         {"q":"How many hours can a CDL driver legally drive in one day?","a":"A property-carrying driver may drive up to 11 hours after 10 consecutive hours off duty, and only within 14 consecutive hours of coming on duty (49 CFR 395.3). Weekly 60/70-hour limits apply on top of the daily clocks."},
-        {"q":"Does the 14-hour window pause for breaks or lunch?","a":"No. The 14-hour window runs continuously from when you come on duty after 10 hours off. The only time excluded from it is a qualifying sleeper-berth period under the split-berth rule in 49 CFR 395.1(g)."},
+        {"q":"Does the 14-hour window pause for breaks or lunch?","a":"No. The 14-hour window runs continuously from when you come on duty after 10 hours off. The only time excluded from it is a qualifying split-berth pairing under 49 CFR 395.1(g) — neither the 7+ hour sleeper period nor its paired 2+ hour period counts against the window."},
         {"q":"What is the difference between the 60-hour and 70-hour rule?","a":"They are the same rule with two schedules: 60 on-duty hours in 7 days applies at carriers that do not operate vehicles every day of the week; 70 hours in 8 days applies at carriers that do. Your carrier tells you which schedule it runs under."},
         {"q":"Is the 34-hour restart mandatory?","a":"No. The restart in 49 CFR 395.3(c) is an optional way to reset the 60/70-hour calculation by taking 34 or more consecutive hours off duty. Without it, hours simply roll off on the normal 7/8-day window."},
         {"q":"Do local and intrastate drivers follow these same rules?","a":"Interstate CMV drivers follow 49 CFR Part 395, and short-haul drivers may use the 150 air-mile exception in 395.1(e). Drivers operating only within one state follow that state's adopted rules, which are often similar but set by state law — verify with your state agency."}
@@ -214,7 +220,7 @@ At 18:00 you are done driving. Your window (06:00 + 14 = 20:00) still has 2 hour
 
 ## Violations and compliance risks
 
-Driving past the 11th hour is an hours-of-service violation recorded from your ELD data at roadside inspections and in carrier audits. It affects the FMCSA Safety Measurement System record of both driver and carrier and can lead to an out-of-service order under the CVSA criteria until sufficient off-duty time passes. Details of current enforcement belong to [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations) — treat anything else as rumor.
+Driving past the 11th hour is an hours-of-service violation, documented from your ELD data like any other. The record-keeping, safety-score, and out-of-service consequences work as described in [our HOS guide's violations section](/knowledge/hours-of-service/cdl-hours-of-service-rules); for current enforcement specifics, go to [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations), not the driver's lounge.
 
 ## Driver checklist
 
@@ -230,7 +236,7 @@ Driving past the 11th hour is an hours-of-service violation recorded from your E
 - Drill it: the free [General Knowledge practice test](/practice-tests/general-knowledge) includes hours-of-service questions with citations.
 - **Building your CDL career?** [Apply to the TLWS Academy](/academy) or start free with [CDL Pre-School](/cdl-pre-school) — and [get new guides by email](/#newsletter).$mdx$,
       'The 11-Hour Driving Limit Explained (49 CFR 395.3) | Trucking Life with Shawn',
-      'The CDL 11-hour driving limit: what counts as driving time, how it meets the 14-hour window and 30-minute break, worked examples, eCFR citations.',
+      'The CDL 11-hour driving limit: what counts as driving time, how it interacts with the 14-hour window and 30-minute break, plus worked examples.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"49 CFR 395.3 — Maximum driving time for property-carrying vehicles (eCFR)","url":"https://www.ecfr.gov/current/title-49/part-395/section-395.3"},
@@ -241,7 +247,7 @@ Driving past the 11th hour is an hours-of-service violation recorded from your E
       $j$[
         {"q":"Does the 11-hour limit include loading and unloading time?","a":"No. Loading, unloading, fueling, and inspections are on-duty (not driving) time. They count against the 14-hour window and the 60/70-hour limits, but not against the 11 hours of driving time defined in 49 CFR 395.2 and capped by 395.3."},
         {"q":"Can I split my 11 hours of driving across the day?","a":"Yes. The 11 hours can be used in any number of separate driving blocks, as long as all driving fits inside the 14-hour window and you honor the 30-minute break rule after 8 cumulative driving hours."},
-        {"q":"What happens to my driving hours after a 2-hour nap?","a":"Nothing changes. Rest periods shorter than 10 consecutive hours do not restore driving time unless they qualify under the sleeper-berth split in 49 CFR 395.1(g) — at least 7 hours in the sleeper paired with a second period of at least 2 hours."},
+        {"q":"What happens to my driving hours after a 2-hour nap?","a":"Nothing changes. Rest periods shorter than 10 consecutive hours do not restore driving time unless they qualify under the sleeper-berth split in 49 CFR 395.1(g) — at least 7 hours in the sleeper paired with a second period of at least 2 hours, the two periods totaling at least 10 hours."},
         {"q":"Can I drive 11 hours every single day?","a":"Only until the weekly limit stops you: you may not drive after 60 hours on duty in 7 days or 70 in 8 days under 49 CFR 395.3(b). Daily maximum driving usually hits the weekly ceiling before the week ends."}
       ]$j$::jsonb,
       '{hours-of-service,11-hour,driving-time,fmcsa}',
@@ -262,7 +268,7 @@ Driving past the 11th hour is an hours-of-service violation recorded from your E
       '14-hour-driving-window',
       'The 14-Hour Driving Window: The Clock That Never Pauses',
       'The 14-hour rule in 49 CFR 395.3(a)(2) explained for CDL drivers: when the window starts, why breaks don''t stop it, what you can still do after it closes, and the sleeper-berth exception that pauses it.',
-      $mdx$**Quick answer:** When you come on duty after 10 or more consecutive hours off, a **14-consecutive-hour window** opens. You may not drive a CMV after it closes — and it does **not pause** for breaks, meals, or dock time. Only a qualifying sleeper-berth period under the split rule is excluded. Non-driving work after the 14th hour is allowed. Citation: [49 CFR 395.3(a)(2)](https://www.ecfr.gov/current/title-49/part-395/section-395.3).
+      $mdx$**Quick answer:** When you come on duty after 10 or more consecutive hours off, a **14-consecutive-hour window** opens. You may not drive a CMV after it closes — and it does **not pause** for breaks, meals, or dock time. Only the qualifying periods of a sleeper-berth split are excluded — both of them, the 7+ hour sleeper period and its 2+ hour partner. Non-driving work after the 14th hour is allowed. Citation: [49 CFR 395.3(a)(2)](https://www.ecfr.gov/current/title-49/part-395/section-395.3).
 
 **Regulatory-change disclaimer:** Last reviewed **July 17, 2026** against the eCFR. Confirm the current [49 CFR 395.3](https://www.ecfr.gov/current/title-49/part-395/section-395.3) and the [FMCSA HOS summary](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations) before relying on it. Not legal advice.
 
@@ -285,7 +291,7 @@ Fatigue tracks time-since-rest, not just time-at-the-wheel. A driver who started
 - **Step 1 — the trigger.** The window starts the first time you go on duty (any on-duty status) after at least 10 consecutive hours off. A 04:45 pre-trip starts the window at 04:45 — not when the wheels first roll.
 - **Step 2 — simple arithmetic.** Start time + 14 hours = the last moment you may legally be driving. On duty at 05:30 means no driving after 19:30.
 - **Step 3 — nothing ordinary stops it.** Off-duty lunch, waiting at a shipper, a nap in the bunk shorter than a qualifying split period — the window keeps running through all of it.
-- **Step 4 — one real exception.** A sleeper-berth period of at least 7 hours (paired later under [49 CFR 395.1(g)](https://www.ecfr.gov/current/title-49/part-395/section-395.1)) is **excluded** from the window calculation — the split-berth rule's whole power. Details: [Split Sleeper-Berth Rules](/knowledge/hours-of-service/split-sleeper-berth-rules).
+- **Step 4 — one real exception.** Under the split-berth rule of [49 CFR 395.1(g)](https://www.ecfr.gov/current/title-49/part-395/section-395.1), **both qualifying periods** — the 7+ hour sleeper-berth period and its paired 2+ hour period (off duty, sleeper, or both) — are **excluded** from the window calculation. That exclusion is the split's whole power. Details: [Split Sleeper-Berth Rules](/knowledge/hours-of-service/split-sleeper-berth-rules).
 - **Step 5 — after the window.** You may not drive, but you may legally perform on-duty (not driving) work — paperwork, supervising loading. That time still feeds the 60/70-hour totals.
 - **Step 6 — adverse conditions.** Weather or road conditions unknowable at dispatch allow up to 2 extra hours of driving time, and the window extends with it, under [49 CFR 395.1(b)(1)](https://www.ecfr.gov/current/title-49/part-395/section-395.1).
 
@@ -303,7 +309,7 @@ At 18:30 you have 2 driving hours left on the 11 — but only 30 minutes of wind
 
 ## Common mistakes
 
-- Logging a long lunch off duty and assuming it extended the day. It never does — only a 7-hour-plus sleeper period paired under the split rule is excluded.
+- Logging a long lunch off duty and assuming it extended the day. It never does — only the qualifying periods of a split-berth pairing are excluded, and an ordinary lunch is neither of them.
 - Starting the window with a "quick" yard task at 04:00, then wondering where the afternoon went. The first on-duty minute opens the window, however trivial the task.
 - Confusing "can't drive" with "can't work." Driving past hour 14 is the violation; finishing paperwork is not.
 - Using the adverse-conditions extension for ordinary rush hour. The condition must have been unknowable when you were dispatched.
@@ -311,7 +317,7 @@ At 18:30 you have 2 driving hours left on the 11 — but only 30 minutes of wind
 
 ## Violations and compliance risks
 
-Driving after the 14th hour is recorded as an HOS violation from ELD data during roadside inspections and compliance reviews, feeds driver and carrier Safety Measurement System records, and can bring an out-of-service order under CVSA criteria until the required off-duty time passes. Verify enforcement specifics with [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations) rather than driver-lounge folklore.
+Driving after the 14th hour is an HOS violation with the same recording, scoring, and out-of-service consequences covered in [our HOS guide's violations section](/knowledge/hours-of-service/cdl-hours-of-service-rules). One wrinkle unique to this rule: because the window is unforgiving of detention, it is the violation drivers most often talk themselves into "just this once" — verify enforcement specifics with [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations), and plan the day instead.
 
 ## Driver checklist
 
@@ -335,10 +341,10 @@ Driving after the 14th hour is recorded as an HOS violation from ELD data during
         {"label":"FMCSA — Summary of Hours of Service Regulations","url":"https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations"}
       ]$j$::jsonb,
       $j$[
-        {"q":"Does off-duty time stop the 14-hour clock?","a":"No. Ordinary off-duty time — meals, waiting, short naps — counts against the 14-hour window. The only time excluded is a qualifying sleeper-berth period used in a split under 49 CFR 395.1(g)."},
+        {"q":"Does off-duty time stop the 14-hour clock?","a":"No. Ordinary off-duty time — meals, waiting, short naps — counts against the 14-hour window. The only time excluded is a qualifying split-berth pairing under 49 CFR 395.1(g), where both the 7+ hour sleeper period and the paired 2+ hour period stay out of the window math."},
         {"q":"Can I keep working after my 14 hours are up?","a":"Yes, as long as you do not drive a CMV. On-duty (not driving) work after the window closes is legal under 49 CFR 395.3, but it still counts toward your 60/70-hour limit and delays your next 10-hour break."},
         {"q":"When exactly does the 14-hour window start?","a":"At your first on-duty activity after 10 or more consecutive hours off duty — a pre-trip inspection, paperwork, anything on duty. It does not wait for the first mile driven."},
-        {"q":"Can the 14-hour window ever be extended?","a":"Two ways: the adverse driving conditions exception in 49 CFR 395.1(b)(1) allows up to 2 additional hours when conditions could not have been known at dispatch, and a qualifying sleeper-berth period of 7+ hours is excluded from the window under the split-berth rule."}
+        {"q":"Can the 14-hour window ever be extended?","a":"Two ways: the adverse driving conditions exception in 49 CFR 395.1(b)(1) allows up to 2 additional hours when conditions could not have been known at dispatch, and the two qualifying periods of a sleeper-berth split are excluded from the window under 49 CFR 395.1(g)."}
       ]$j$::jsonb,
       '{hours-of-service,14-hour,driving-window,fmcsa}',
       7, false, 'published', true, '2026-07-17', v_pub
@@ -395,12 +401,12 @@ Sustained continuous driving degrades attention even when total daily hours are 
 - Thinking only off-duty time can satisfy the break. Since 2020, on-duty (not driving) time qualifies — the pre-2020 version was stricter, and old advice still circulates.
 - Splitting it: 20 minutes now, 10 later. Only a single 30-consecutive-minute period counts.
 - Confusing the trigger: it is 8 **cumulative driving** hours, not 8 hours on duty and not 8 hours since your last break of any kind.
-- Wasting a dock stop: 30+ minutes at a shipper already satisfied the rule — taking an extra "required" break afterward burns your [14-hour window](/knowledge/hours-of-service/14-hour-driving-window) for nothing.
+- Wasting a dock stop: 30+ minutes at a shipper already satisfied the rule — taking an extra "required" break afterward burns your 14-hour window for nothing.
 - Short-haul drivers adopting it unnecessarily — if you genuinely qualify under 395.1(e)(1), the break rule does not apply to you. (**Company policy note:** your carrier may still require breaks as policy; that is their call to make, and stricter-than-federal is allowed.)
 
 ## Violations and compliance risks
 
-Driving past 8 cumulative hours without the interruption is an HOS violation, documented from ELD data at inspections, and it lands on driver and carrier Safety Measurement System records like any other Part 395 violation. Enforcement specifics belong to [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations).
+Driving past 8 cumulative hours without the interruption is a Part 395 violation with the standard consequences covered in [our HOS guide's violations section](/knowledge/hours-of-service/cdl-hours-of-service-rules). It is also among the most avoidable — one well-placed dock stop satisfies it. Enforcement specifics belong to [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-service/summary-hours-service-regulations).
 
 ## Driver checklist
 
@@ -513,7 +519,7 @@ A failed split is not a special violation category — it simply means the exclu
 - The clocks the split manipulates: [The 11-Hour Driving Limit](/knowledge/hours-of-service/11-hour-driving-limit) · [The 14-Hour Driving Window](/knowledge/hours-of-service/14-hour-driving-window) · [The 30-Minute Break Rule](/knowledge/hours-of-service/30-minute-break-rule) · [full HOS guide](/knowledge/hours-of-service/cdl-hours-of-service-rules)
 - Test the concepts free: [General Knowledge practice test](/practice-tests/general-knowledge) and the whole [practice-test hub](/practice-tests).
 - **Learn trip planning from a 17-year zero-violation driver:** [TLWS Academy](/academy) · [email list](/#newsletter) for new deep dives.$mdx$,
-      'Split Sleeper-Berth Rules Explained — 7/3 and 8/2 (49 CFR 395.1(g)) | Trucking Life with Shawn',
+      'Split Sleeper-Berth Rules: 7/3 and 8/2 Explained | Trucking Life with Shawn',
       'The CDL split sleeper-berth rule: qualifying 7/3 and 8/2 pairings, the 14-hour window exclusion, the recalculation point, and a fully worked example.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -618,7 +624,7 @@ Misused PC is reclassified as driving time during inspections or audits, which u
 - The clocks PC protects: [CDL Hours of Service Rules Explained](/knowledge/hours-of-service/cdl-hours-of-service-rules) · [The 14-Hour Driving Window](/knowledge/hours-of-service/14-hour-driving-window) · [ELD Malfunctions and What Drivers Must Do](/knowledge/hours-of-service/eld-malfunctions)
 - Free prep: [General Knowledge practice test](/practice-tests/general-knowledge).
 - **Drive for a living, the right way:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'Personal Conveyance Rules Explained (FMCSA Guidance) | Trucking Life with Shawn',
+      'Personal Conveyance Rules (FMCSA Guidance) | Trucking Life with Shawn',
       'Personal conveyance under FMCSA guidance: what qualifies as off-duty CMV movement, what never does, laden-vehicle rules, and carrier policy limits.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -713,7 +719,7 @@ A movement mis-logged as a yard move that was actually public-road driving gets 
 - The clocks in play: [CDL Hours of Service Rules Explained](/knowledge/hours-of-service/cdl-hours-of-service-rules) · [The 30-Minute Break Rule](/knowledge/hours-of-service/30-minute-break-rule) · [ELD Malfunctions and What Drivers Must Do](/knowledge/hours-of-service/eld-malfunctions)
 - Free drills: [General Knowledge practice test](/practice-tests/general-knowledge).
 - **Train with people who log it right:** [TLWS Academy](/academy) · [email list](/#newsletter).$mdx$,
-      'Yard Move Rules Explained — ELD Special Driving Category | Trucking Life with Shawn',
+      'Yard Move Rules — ELD Special Driving Category | Trucking Life with Shawn',
       'Yard moves: what counts as a yard per FMCSA guidance, why they log as on-duty (not driving), and what they do to the 11-hour, 14-hour, and break clocks.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -765,7 +771,7 @@ Your ELD record is the compliance record. When the recorder fails, the rule brid
 ## Who does what
 
 - **Driver ([49 CFR 395.34(a)](https://www.ecfr.gov/current/title-49/part-395/section-395.34)):** written notice to the carrier within 24 hours; reconstruct the current 24-hour period and prior 7 days on paper graph-grid logs (unless the records are retrievable from the ELD); continue paper logs until the device is compliant again.
-- **Carrier ([49 CFR 395.34(d)](https://www.ecfr.gov/current/title-49/part-395/section-395.34)):** correct, repair, replace, or service the ELD within **8 days** of discovery or driver notification — whichever comes first. Carriers may request an extension from the FMCSA Division Administrator for their state.
+- **Carrier ([49 CFR 395.34(d)](https://www.ecfr.gov/current/title-49/part-395/section-395.34)):** correct, repair, replace, or service the ELD within **8 days** of discovery or driver notification — whichever comes first. Under [49 CFR 395.34(e)](https://www.ecfr.gov/current/title-49/part-395/section-395.34), carriers may request an extension from the FMCSA Division Administrator for the state of their principal place of business.
 
 ## What to do, step by step
 
@@ -820,7 +826,7 @@ Operating without records — electronic or paper — during a malfunction is a 
       $j$[
         {"q":"How long do I have to report an ELD malfunction?","a":"Written notice to your motor carrier within 24 hours of discovering the malfunction, under 49 CFR 395.34(a)(1). Keep a copy of the notice — it is also what you show an inspector."},
         {"q":"How many days of paper logs must I reconstruct?","a":"The current 24-hour period and the previous 7 consecutive days, on graph-grid paper, unless those records are still retrievable from the ELD itself (49 CFR 395.34(a)(2))."},
-        {"q":"How long does the carrier have to fix a broken ELD?","a":"Eight days from discovering the malfunction or being notified by the driver, whichever comes first, under 49 CFR 395.34(d). Carriers can request an extension from the FMCSA Division Administrator."},
+        {"q":"How long does the carrier have to fix a broken ELD?","a":"Eight days from discovering the malfunction or being notified by the driver, whichever comes first, under 49 CFR 395.34(d). Carriers can request an extension from the FMCSA Division Administrator under 49 CFR 395.34(e)."},
         {"q":"Do hours-of-service limits still apply while my ELD is broken?","a":"Completely. A malfunction changes how you record duty status, not the limits themselves — you track the 11-hour, 14-hour, break, and weekly limits on paper until the device is repaired."},
         {"q":"Is a data diagnostic event the same as a malfunction?","a":"No. Data diagnostic events are data-quality flags you resolve or annotate while the ELD keeps working. Malfunctions mean the device can no longer reliably record or transfer data, and they trigger the 395.34 driver and carrier duties."}
       ]$j$::jsonb,
@@ -844,7 +850,7 @@ Operating without records — electronic or paper — during a malfunction is a 
       'The CVSA North American Standard Level I inspection — the most thorough roadside inspection — explained for drivers: the driver-side checks, the vehicle-side checks, the CVSA decal, and how to be ready before you''re ever waved in.',
       $mdx$**Quick answer:** A Level 1 inspection is the **most thorough roadside inspection**: a certified inspector examines both the **driver** (license, medical certificate, hours-of-service records, seat belt, signs of alcohol or drugs) and the **vehicle** (brakes, coupling, lights, steering, suspension, tires, wheels, cargo securement, and more) under the CVSA **North American Standard Level I** procedure — a 37-step process defined by the [Commercial Vehicle Safety Alliance](https://www.cvsa.org/inspections/all-inspection-levels/). A clean vehicle inspection can earn a CVSA decal.
 
-**Regulatory-change disclaimer:** Last reviewed **July 17, 2026**. Inspection procedures and out-of-service criteria are maintained by CVSA and updated regularly; the underlying vehicle and driver rules live in the FMCSRs ([49 CFR Parts 390–396](https://www.ecfr.gov/current/title-49/part-396)). Confirm current details with [CVSA](https://www.cvsa.org/inspections/all-inspection-levels/) and [FMCSA](https://www.fmcsa.dot.gov/) before relying on this. Not legal advice.
+**Regulatory-change disclaimer:** Last reviewed **July 17, 2026**. Inspection procedures and out-of-service criteria are maintained by CVSA and updated regularly; the underlying vehicle and driver rules live in the FMCSRs — see [49 CFR Part 396](https://www.ecfr.gov/current/title-49/part-396) for inspection and maintenance and [49 CFR Part 395](https://www.ecfr.gov/current/title-49/part-395) for hours of service. Confirm current details with [CVSA](https://www.cvsa.org/inspections/all-inspection-levels/) and [FMCSA](https://www.fmcsa.dot.gov/) before relying on this. Not legal advice.
 
 ## What a Level 1 inspection is
 
@@ -891,7 +897,7 @@ Any CMV driver can be selected — at fixed scales, roadside checkpoints, or tar
 - Not knowing how to put the ELD in inspection/transfer mode — learn it before you need it.
 - Talking too much. Answer what is asked, honestly and briefly.
 - Skipping the pre-trip and letting the officer be the first person to look under the truck that day.
-- Arguing at roadside. The dispute process exists (through the carrier via FMCSA's DataQs system); the shoulder of the highway is not it.
+- Arguing at roadside. The dispute process exists — FMCSA's DataQs system, which drivers as well as carriers can use; the shoulder of the highway is not it.
 
 ## Violations and compliance risks
 
@@ -902,14 +908,14 @@ Everything found goes on the inspection report, which follows both driver and ca
 - Documents in one place: CDL, med card, registration, permits, load papers.
 - ELD inspection-transfer mode: practiced, not theoretical.
 - Logs current before you hit the scale line, not after.
-- Pre-trip done like it matters — see the [complete guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide).
+- Pre-trip done like it matters, every day it matters.
 - Lights, tires, and leaks checked at every stop; those are the visible triggers.
 - Stay belted. Seat-belt use is a driver check item.
 
 ## Keep learning
 
 - Companion guides: [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide) · [What Is a DOT Inspection?](/knowledge/dot-compliance/what-is-a-dot-inspection) · [ELD Malfunctions](/knowledge/hours-of-service/eld-malfunctions) · [CDL Hours of Service Rules](/knowledge/hours-of-service/cdl-hours-of-service-rules)
-- Watch: [FMCSA Just Changed DOT Inspections](https://youtu.be/UlW-GlLugUg?si=2Nhr_Tc_Rs8DhZ1w) and [DOT Officers Are Quietly Doing This](https://youtu.be/vXtKQs6we_s?si=HvdaE6GNqRGDVb21) on the Trucking Life with Shawn channel.
+- Watch: [FMCSA Just Changed DOT Inspections](https://youtu.be/UlW-GlLugUg) and [DOT Officers Are Quietly Doing This](https://youtu.be/vXtKQs6we_s) on the Trucking Life with Shawn channel.
 - Free prep: the [General Knowledge practice test](/practice-tests/general-knowledge) and the [Hazmat test](/practice-tests/hazmat) both carry inspection-related questions.
 - **Learn inspection readiness from a driver with 17 years and zero violations:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [email list](/#newsletter).$mdx$,
       'Level 1 DOT Inspection Explained — CVSA North American Standard | Trucking Life with Shawn',
@@ -1033,9 +1039,9 @@ Driving a vehicle that fails 392.7's equipment list is itself a violation, and d
 - What the officer will check against your work: [Level 1 DOT Inspection Explained](/knowledge/dot-compliance/level-1-dot-inspection) · [What Is a DOT Inspection?](/knowledge/dot-compliance/what-is-a-dot-inspection)
 - The other daily disciplines: [CDL Hours of Service Rules Explained](/knowledge/hours-of-service/cdl-hours-of-service-rules)
 - Drill the knowledge free: [General Knowledge](/practice-tests/general-knowledge) · [Air Brakes](/practice-tests/air-brakes) · [Combination Vehicles](/practice-tests/combination-vehicles) practice tests.
-- Watch: [17 Years, Zero Violations — Here's How](https://youtu.be/PDeJF0CMoUw?si=Kjo1o2Z0D9XVIAW5) on the Trucking Life with Shawn channel.
+- Watch: [17 Years, Zero Violations — Here's How](https://youtu.be/PDeJF0CMoUw) on the Trucking Life with Shawn channel.
 - **Learning the pre-trip for your CDL exam?** Start free with [CDL Pre-School](/cdl-pre-school), then [train hands-on at the TLWS Academy](/academy). New guides hit the [email list](/#newsletter) first.$mdx$,
-      'Complete CDL Pre-Trip Inspection Guide (7-Step Method + 49 CFR 396.13) | Trucking Life with Shawn',
+      'CDL Pre-Trip Inspection Guide: The 7-Step Method | Trucking Life with Shawn',
       'CDL pre-trip inspection guide: the federal duty in 49 CFR 396.13 and 392.7, the seven-step exam method, DVIR review, and the daily defect-finding routine.',
       'Shawn Gresham', v_bio,
       $j$[
