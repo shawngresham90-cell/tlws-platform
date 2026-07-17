@@ -107,6 +107,10 @@ check(
 check('seed inserts the test row if absent', /on conflict \(slug\) do nothing/.test(seed));
 check('seed test slug matches the catalog join key', /values \(\s*'doubles-triples',/.test(seed));
 check(
+  'seed row uses the doubles_triples DB category (matches the catalog + constraint)',
+  /values \(\s*'doubles-triples',[\s\S]*?'doubles_triples',\s*\n?\s*true,/.test(seed),
+);
+check(
   'seed contains no destructive statements (purely additive)',
   !/drop table|drop column|truncate|delete from public\./i.test(seed),
 );
@@ -165,7 +169,7 @@ for (const block of blocks) {
   const explanationMatch = afterKey.match(/'((?:[^']|'')+)'/);
   if (!explanationMatch || explanationMatch[1].length < 40) allExplained = false;
 
-  if (!/'(49 CFR 3(83|93)\.[0-9]+|CDL Manual §7\.[0-9]+)'/.test(block)) allCited = false;
+  if (!/'(49 CFR 3(83|93)\.[0-9]+|CDL Manual §[67]\.[0-9]+)'/.test(block)) allCited = false;
   if (!/'2026-07-17'/.test(block)) allVerified = false;
 
   const diffMatch = block.match(/'2026-07-17',\s*([0-9]+),/);
@@ -183,7 +187,7 @@ check('every question has exactly four choices', allFourChoices);
 check('every correct_key exists among its choices (no orphans)', allKeysValid);
 check('every question has a real explanation (40+ chars)', allExplained);
 check(
-  'every question cites the CDL Manual doubles section (§7) or 49 CFR Part 383/393 (zero uncited)',
+  'every question cites the CDL Manual doubles section (§7), the combination §6, or 49 CFR Part 383/393 (zero uncited)',
   allCited,
 );
 check('every question is verified 2026-07-17', allVerified);
@@ -210,9 +214,10 @@ check(
 );
 check('seed keeps question_count in sync', /set question_count = \(select count\(\*\)/.test(seed));
 check(
-  'seed cites only Section 7 manual references and Part 383/393 CFR references',
-  (seed.match(/'CDL Manual §([0-9.]+)'/g) ?? []).every((c) => c.includes('§7.')) &&
-    (seed.match(/'49 CFR ([0-9]+)\./g) ?? []).every((c) => /'49 CFR 3(83|93)\./.test(c)),
+  'seed cites only real Section 7 (7.1–7.4) or the combination §6.2 manual references, and Part 383/393 CFR',
+  (seed.match(/'CDL Manual §([0-9.]+)'/g) ?? []).every(
+    (c) => /§7\.[1-4]/.test(c) || c.includes('§6.2'),
+  ) && (seed.match(/'49 CFR ([0-9]+)\./g) ?? []).every((c) => /'49 CFR 3(83|93)\./.test(c)),
 );
 
 // ── 3. Topic coverage — every topic the milestone requires ──────────────────
