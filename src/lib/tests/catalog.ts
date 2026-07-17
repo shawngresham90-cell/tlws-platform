@@ -8,10 +8,11 @@ import type { TestCategory, TestDefinition } from './types';
  * question bank is seeded.
  *
  * Milestone 1 shipped ONLY General Knowledge; Milestone 5 added Air Brakes;
- * Milestone 6 added Combination Vehicles; Milestone 8 adds Hazmat. The
- * remaining knowledge tests (Tanker, Doubles & Triples, Passenger, School
- * Bus) are deliberately deferred — each is a later milestone. Lighting one
- * up is adding an entry here, then seeding its bank.
+ * Milestone 6 added Combination Vehicles; Milestone 8 added Hazmat; the
+ * Tanker milestone adds Tanker (N). The remaining knowledge tests
+ * (Doubles & Triples, Passenger, School Bus) are deliberately deferred —
+ * each is a later milestone. Lighting one up is adding an entry here, then
+ * seeding its bank.
  */
 
 /** CDL passing standard, reused as the default threshold. */
@@ -110,6 +111,28 @@ export const TEST_CATALOG: TestDefinition[] = [
     seoTitle: 'Free CDL Hazmat Practice Test — H Endorsement (2026) | Trucking Life with Shawn',
     seoDescription:
       'Free CDL Hazmat practice test for the H endorsement. Permit-style questions on hazard classes, placards, shipping papers, loading rules, parking, and emergencies — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
+    isPublished: true,
+  },
+  {
+    slug: 'tanker',
+    category: 'tanker',
+    title: 'Tanker',
+    shortDescription:
+      'The N-endorsement knowledge test — liquid surge, baffles and bulkheads, outage, tank inspection, and the driving that keeps a high-center-of-gravity load upright.',
+    heroTitle: 'Pass the Tanker knowledge test and earn your N endorsement',
+    heroIntro:
+      'Bulk liquid is its own discipline: the weight rides high and the cargo moves on its own. Any rig hauling tanks over 119 gallons apiece that total 1,000 gallons or more needs the N endorsement — and this exam. Every question here is written against the CDL manual tank-vehicles section and 49 CFR Part 383, with the citation attached: surge and baffles to outage, tank inspection to skid recovery.',
+    endorsementCode: 'N',
+    icon: '🛢️',
+    questionCountTarget: 32,
+    passThresholdPct: PASS_THRESHOLD_DEFAULT,
+    /** Timed Test length — the countdown anchor for the exam simulation. */
+    timeLimitSeconds: 25 * 60,
+    modes: ['study', 'timed'],
+    relatedKcCategorySlug: null,
+    seoTitle: 'Free CDL Tanker Practice Test — N Endorsement (2026) | Trucking Life with Shawn',
+    seoDescription:
+      'Free CDL Tanker practice test for the N endorsement. Permit-style questions on liquid surge, baffled and smooth-bore tanks, outage, tank inspection, and safe tanker driving — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
     isPublished: true,
   },
 ];

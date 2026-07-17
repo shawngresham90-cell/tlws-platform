@@ -75,12 +75,13 @@ check(
   TEST_CATALOG.every((t) => t.passThresholdPct >= 1 && t.passThresholdPct <= 100),
 );
 
-// ── 2. Published scope: GK (M1) + Air Brakes (M5) + Combination (M6) + Hazmat (M8)
-// Every published test must be a DELIBERATE milestone addition — this count
-// is bumped once per shipped test so an accidental isPublished flip fails.
+// ── 2. Published scope: GK (M1) + Air Brakes (M5) + Combination (M6) +
+// Hazmat (M8) + Tanker. Every published test must be a DELIBERATE milestone
+// addition — this count is bumped once per shipped test so an accidental
+// isPublished flip fails.
 check(
-  'published tests match the shipped milestones (GK + AB + Combination + Hazmat)',
-  publishedTests().length === 4,
+  'published tests match the shipped milestones (GK + AB + Combination + Hazmat + Tanker)',
+  publishedTests().length === 5,
   publishedTests().length,
 );
 check(
