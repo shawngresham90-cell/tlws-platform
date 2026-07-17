@@ -1,21 +1,23 @@
 /**
- * Knowledge Center validation suite — Batch 1 (037, HOS + inspections) and
- * Batch 2 (038, DOT Compliance cluster): 20 authority pages.
+ * Knowledge Center validation suite — Batch 1 (037, HOS + inspections),
+ * Batch 2 (038, DOT Compliance cluster), and Batch 3 (040, Getting Your CDL
+ * cluster): 30 authority pages.
  *
- * Checks per batch and across both:
+ * Checks per batch and across all three:
  *   - exact slug sets; unique titles / SEO titles / meta descriptions
- *   - official-domain-only sources in canonical eCFR/FMCSA/CVSA formats
- *   - required structure (quick answer, disclaimer + review date, definition,
- *     why/who, steps, labeled examples, mistakes, risks, checklist,
- *     keep-learning, CTAs, practice-test links)
+ *   - official-domain-only sources in canonical eCFR/FMCSA/CVSA/TPR formats
+ *   - required structure per batch (quick answer, disclaimer + review date,
+ *     definition, who, steps, labeled examples, mistakes, risks/trade-offs,
+ *     checklist, keep-learning, CTAs, practice-test links)
  *   - every internal link resolves; cross-cluster bridges exist; ≤2 in-body
  *     links per target per article
- *   - FAQ uniqueness across all 20 pages; FAQ answers substantial
+ *   - FAQ uniqueness across all 30 pages; FAQ answers substantial
  *   - no duplicated substantial paragraphs anywhere
- *   - HOS/compliance number consistency; no unsupported claim patterns
- *   - migration mechanics: guarded inserts, conflict-safe kc_related,
- *     038's three Batch-1 UPDATEs (two cross-links + one de-link) guarded
- *     and idempotent, nothing destructive anywhere
+ *   - number consistency; no unsupported claim patterns; no invented money
+ *   - migration mechanics: guarded inserts, guarded category creation (040
+ *     only), conflict-safe kc_related, guarded replace-based cross-link
+ *     UPDATEs (038: three into Batch 1; 040: three into Batches 1–2),
+ *     nothing destructive anywhere
  *   - the rendering stack still wires schema/SEO correctly
  *
  * Run:
@@ -37,15 +39,18 @@ const read = (p: string) => readFileSync(p, 'utf8');
 
 const seed1 = read('supabase/migrations/037_seed_kc_authority_articles.sql');
 const seed2 = read('supabase/migrations/038_seed_kc_dot_compliance_articles.sql');
+const seed3 = read('supabase/migrations/040_seed_kc_getting_your_cdl_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
 const guardRe =
   /if not exists \(select 1 from public\.kc_articles where category_id = v_\w+ and slug = '/g;
 check('037: ten guarded inserts', (seed1.match(guardRe) ?? []).length === 10);
 check('038: ten guarded inserts', (seed2.match(guardRe) ?? []).length === 10);
+check('040: ten guarded inserts', (seed3.match(guardRe) ?? []).length === 10);
 for (const [name, s] of [
   ['037', seed1],
   ['038', seed2],
+  ['040', seed3],
 ] as const) {
   check(
     `${name}: kc_related inserts are conflict-safe`,
@@ -55,12 +60,24 @@ for (const [name, s] of [
     `${name}: nothing destructive (no drop/truncate/delete)`,
     !/drop table|drop column|truncate|delete from/i.test(s),
   );
-  check(`${name}: never creates categories`, !/insert into public\.kc_categories/.test(s));
 }
+check('037: never creates categories', !/insert into public\.kc_categories/.test(seed1));
+check('038: never creates categories', !/insert into public\.kc_categories/.test(seed2));
+check(
+  '040: creates exactly one category, guarded by not-exists on the slug',
+  (seed3.match(/insert into public\.kc_categories/g) ?? []).length === 1 &&
+    /where not exists \(select 1 from public\.kc_categories where slug = 'getting-your-cdl'\)/.test(
+      seed3,
+    ),
+);
+check(
+  '040: category is additive only (no category updates)',
+  !/update public\.kc_categories/.test(seed3),
+);
 check('037: never updates existing articles', !/update public\.kc_articles/.test(seed1));
-const crossLinkUpdates =
+const crossLinkUpdates2 =
   seed2.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
-check('038: exactly three Batch 1 UPDATEs, all replace-based', crossLinkUpdates.length === 3);
+check('038: exactly three Batch 1 UPDATEs, all replace-based', crossLinkUpdates2.length === 3);
 check(
   '038: every Batch 1 UPDATE is presence-guarded (idempotent by construction)',
   (seed2.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
@@ -72,8 +89,22 @@ check(
     /a\.slug = 'level-1-dot-inspection'/.test(seed2) &&
     /a\.slug = '11-hour-driving-limit'/.test(seed2),
 );
+const crossLinkUpdates3 =
+  seed3.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('040: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates3.length === 3);
+check(
+  '040: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
+  (seed3.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed3.match(/and a\.body_mdx not like '%\/knowledge\/getting-your-cdl\//g) ?? []).length === 3,
+);
+check(
+  '040: UPDATEs are slug-scoped to the three intended articles',
+  /a\.slug = 'dot-medical-card'/.test(seed3) &&
+    /a\.slug = 'drug-alcohol-testing-clearinghouse'/.test(seed3) &&
+    /a\.slug = 'cdl-pre-trip-inspection-guide'/.test(seed3),
+);
 
-// ── 2. Parse all 20 article records ─────────────────────────────────────────
+// ── 2. Parse all 30 article records ─────────────────────────────────────────
 const BATCH1 = [
   'cdl-hours-of-service-rules',
   '11-hour-driving-limit',
@@ -98,6 +129,18 @@ const BATCH2 = [
   'truck-lighting-requirements',
   'annual-dot-inspection',
 ];
+const BATCH3 = [
+  'how-to-get-your-cdl',
+  'cdl-requirements',
+  'cdl-permit-explained',
+  'eldt-requirements',
+  'cdl-classes-compared',
+  'cdl-endorsements-restrictions',
+  'cdl-skills-test',
+  'cdl-cost',
+  'sponsored-vs-private-cdl-school',
+  'cdl-study-plan',
+];
 const CAT_OF: Record<string, string> = {};
 for (const s of BATCH1)
   CAT_OF[s] =
@@ -107,10 +150,11 @@ for (const s of BATCH1)
         ? 'cdl-training'
         : 'hours-of-service';
 for (const s of BATCH2) CAT_OF[s] = 'dot-compliance';
+for (const s of BATCH3) CAT_OF[s] = 'getting-your-cdl';
 
 type Article = {
   slug: string;
-  batch: 1 | 2;
+  batch: 1 | 2 | 3;
   title: string;
   body: string;
   metaTitle: string;
@@ -119,11 +163,12 @@ type Article = {
   faqs: { q: string; a: string }[];
 };
 const blockRe =
-  /values \(\s*v_(?:hos|dot|cdl),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
+  /values \(\s*v_(?:hos|dot|cdl|gyc),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
 const articles: Article[] = [];
 for (const [batch, s] of [
   [1, seed1],
   [2, seed2],
+  [3, seed3],
 ] as const) {
   let m: RegExpExecArray | null;
   blockRe.lastIndex = 0;
@@ -140,8 +185,9 @@ for (const [batch, s] of [
     });
   }
 }
-// Apply 038's three Batch 1 body replacements so every content check below
-// evaluates the EFFECTIVE post-migration text (what production serves).
+// Apply 038's three Batch-1 replacements and 040's three inbound-link
+// replacements so every content check below evaluates the EFFECTIVE
+// post-migration text (what production serves).
 for (const a of articles) {
   if (a.slug === 'cdl-hours-of-service-rules') {
     a.body = a.body.replace(
@@ -161,10 +207,28 @@ for (const a of articles) {
       'burn the window and the 60/70-hour totals instead',
     );
   }
+  if (a.slug === 'dot-medical-card') {
+    a.body = a.body.replace(
+      "Intrastate-only rules are the state's, often parallel.",
+      "Intrastate-only rules are the state's, often parallel. Applying for your first CDL? The full eligibility picture — age, residency, record — is in [CDL Requirements](/knowledge/getting-your-cdl/cdl-requirements).",
+    );
+  }
+  if (a.slug === 'drug-alcohol-testing-clearinghouse') {
+    a.body = a.body.replace(
+      'safety-sensitive functions for an employer (382.301).',
+      'safety-sensitive functions for an employer (382.301) — for brand-new drivers this lands right after licensing, alongside the rest of the [CDL eligibility requirements](/knowledge/getting-your-cdl/cdl-requirements).',
+    );
+  }
+  if (a.slug === 'cdl-pre-trip-inspection-guide') {
+    a.body = a.body.replace(
+      'as the seven-step method.',
+      'as the seven-step method. Where it fits in the exam: [The CDL Skills Test](/knowledge/getting-your-cdl/cdl-skills-test).',
+    );
+  }
 }
-check('all 20 articles parse (10 per batch)', articles.length === 20, articles.length);
+check('all 30 articles parse (10 per batch)', articles.length === 30, articles.length);
 check(
-  "038's Batch 1 replacements all matched real 037 text (effective content differs)",
+  "038's and 040's replacements all matched real seeded text (effective content differs)",
   articles
     .find((a) => a.slug === 'cdl-hours-of-service-rules')!
     .body.includes('/knowledge/dot-compliance/csa-scores-sms-explained') &&
@@ -173,18 +237,28 @@ check(
       .body.includes('/knowledge/dot-compliance/dataqs-disputes') &&
     !articles
       .find((a) => a.slug === '11-hour-driving-limit')!
-      .body.includes('[60/70-hour totals]('),
+      .body.includes('[60/70-hour totals](') &&
+    articles
+      .find((a) => a.slug === 'dot-medical-card')!
+      .body.includes('/knowledge/getting-your-cdl/cdl-requirements') &&
+    articles
+      .find((a) => a.slug === 'drug-alcohol-testing-clearinghouse')!
+      .body.includes('/knowledge/getting-your-cdl/cdl-requirements') &&
+    articles
+      .find((a) => a.slug === 'cdl-pre-trip-inspection-guide')!
+      .body.includes('/knowledge/getting-your-cdl/cdl-skills-test'),
 );
 check(
   'slug sets match the plan exactly',
   BATCH1.every((s) => articles.some((a) => a.slug === s && a.batch === 1)) &&
-    BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)),
+    BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)) &&
+    BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)),
 );
-check('titles unique across 20', new Set(articles.map((a) => a.title)).size === 20);
-check('meta titles unique across 20', new Set(articles.map((a) => a.metaTitle)).size === 20);
+check('titles unique across 30', new Set(articles.map((a) => a.title)).size === 30);
+check('meta titles unique across 30', new Set(articles.map((a) => a.metaTitle)).size === 30);
 check(
-  'meta descriptions unique across 20',
-  new Set(articles.map((a) => a.metaDescription)).size === 20,
+  'meta descriptions unique across 30',
+  new Set(articles.map((a) => a.metaDescription)).size === 30,
 );
 check(
   'meta descriptions sane length (70–175 chars)',
@@ -203,7 +277,8 @@ check(
 check(
   'every article published + reg-verified with review date',
   (seed1.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
-    (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
+    (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
+    (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
 );
 
 // ── 3. Official sources only, canonical formats ─────────────────────────────
@@ -214,6 +289,7 @@ const OFFICIAL = [
   'csa.fmcsa.dot.gov',
   'dataqs.fmcsa.dot.gov',
   'clearinghouse.fmcsa.dot.gov',
+  'tpr.fmcsa.dot.gov',
   'www.cvsa.org',
 ];
 check(
@@ -237,43 +313,68 @@ check(
   ),
 );
 
-// ── 4. FAQs unique across all 20 pages ──────────────────────────────────────
+// ── 4. FAQs unique across all 30 pages ──────────────────────────────────────
 check(
   'every article has 4+ FAQs',
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question reused across the 20 pages', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 30 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
   'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
 );
 
-// ── 5. Required structure in every body ─────────────────────────────────────
-const structure: [string, RegExp][] = [
+// ── 5. Required structure in every body (per batch) ─────────────────────────
+const b12 = articles.filter((a) => a.batch !== 3);
+const b3 = articles.filter((a) => a.batch === 3);
+const shared: [string, RegExp][] = [
   ['direct answer at the top', /^\*\*Quick answer:\*\*/],
   ['disclaimer with review date', /\*\*Regulatory-change disclaimer:\*\*[\s\S]*July 17, 2026/],
-  ['definition section', /## What /],
-  ['why section', /## Why /],
-  ['who section', /## Who /],
-  [
-    'step-by-step or walkthrough section',
-    /step by step|walked through|walked around|one by one|- \*\*Step 1|### Step 1|## The .* (levels|test types|lighting map)/i,
-  ],
-  ['labeled real-world example', /\(illustration, not legal advice\)/],
+  ['definition section', /## What |## The (requirements|two numbers|CDL process)/],
   ['common mistakes section', /## Common mistakes/],
-  ['risks section', /## (Violations and compliance risks|Compliance risks)/],
-  ['driver checklist section', /## Driver checklist/],
   ['keep-learning block', /## Keep learning/],
   ['academy CTA', /\/academy\)/],
   ['email-list CTA', /\/#newsletter\)/],
   ['practice-test link', /\/practice-tests/],
 ];
-for (const [name, re] of structure) {
+for (const [name, re] of shared) {
   check(
     `every body has: ${name}`,
     articles.every((a) => re.test(a.body)),
     articles.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+const b12Structure: [string, RegExp][] = [
+  ['why section', /## Why /],
+  ['who section', /## Who /],
+  ['labeled real-world example', /\(illustration, not legal advice\)/],
+  ['risks section', /## (Violations and compliance risks|Compliance risks)/],
+  ['driver checklist section', /## Driver checklist/],
+];
+for (const [name, re] of b12Structure) {
+  check(
+    `every Batch 1–2 body has: ${name}`,
+    b12.every((a) => re.test(a.body)),
+    b12.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+const b3Structure: [string, RegExp][] = [
+  ['who-it-applies section', /## Who /],
+  ['pre-school CTA', /\/cdl-pre-school\)/],
+  [
+    'step-by-step or ordered walkthrough',
+    /## The steps|## Week by week|## Part 1|step by step|in the order|## Gate 1|## The (six endorsements|fee categories|two models|tests that earn it|two numbers)/i,
+  ],
+  ['labeled real-world example', /\(illustration[^)]*\)/],
+  ['costs, risks, or trade-offs treated', /cost|trade-off|risk|restrict|repayment|fee/i],
+  ['checklist section', /## [^\n]*checklist/i],
+];
+for (const [name, re] of b3Structure) {
+  check(
+    `every Batch 3 body has: ${name}`,
+    b3.every((a) => re.test(a.body)),
+    b3.filter((a) => !re.test(a.body)).map((a) => a.slug),
   );
 }
 check(
@@ -289,8 +390,8 @@ check(
   articles.every((a) => !/^#{4,}/m.test(a.body)),
 );
 check(
-  'authority labeling present where rules could blur',
-  articles.every(
+  'authority labeling present where rules could blur (Batches 1–2)',
+  b12.every(
     (a) =>
       /\*\*(Federal requirement|Federal regulation|Federal framework|Federal:|FMCSA process fact|Good practice|Company policy note|State-variation note|Whose rule is what|Not in the standard|One regulatory OOS)/.test(
         a.body,
@@ -302,14 +403,19 @@ check(
         'dataqs-disputes',
       ].includes(a.slug),
   ),
-  articles
-    .filter(
-      (a) =>
-        !/\*\*(Federal requirement|Federal regulation|Federal framework|Federal:|FMCSA process fact|Good practice|Company policy note|State-variation note|Whose rule is what|Not in the standard|One regulatory OOS)/.test(
-          a.body,
-        ),
-    )
-    .map((a) => a.slug),
+);
+check(
+  'Batch 3 bodies distinguish federal rules from state variation',
+  b3.every((a) => /[Ff]ederal/.test(a.body) && /state/i.test(a.body)),
+  b3.filter((a) => !(/[Ff]ederal/.test(a.body) && /state/i.test(a.body))).map((a) => a.slug),
+);
+check(
+  'Batch 3 recommendation labeling where prep advice is given',
+  ['cdl-study-plan'].every((s) =>
+    /recommendation[^.]*not a (federal )?(requirement|rule)/i.test(
+      b3.find((a) => a.slug === s)!.body,
+    ),
+  ),
 );
 check(
   'no unsupported-claim patterns (invented fines/statistics)',
@@ -318,11 +424,35 @@ check(
   ),
 );
 check(
+  'Batch 3 quotes no dollar amounts anywhere (no invented tuition/fees)',
+  b3.every((a) => !/\$\d/.test(a.body) && !/\$\d/.test(JSON.stringify(a.faqs))),
+  b3.filter((a) => /\$\d/.test(a.body)).map((a) => a.slug),
+);
+check(
+  'Batch 3 never invents federal minimum training hours',
+  b3.every((a) => !/federal(ly)?[^.]{0,40}(minimum|required)[^.]{0,20}\d+\s*hours/i.test(a.body)),
+);
+check(
+  'no salary or pass-rate claims in Batch 3',
+  b3.every((a) => !/average (salary|pay)|\d+% pass rate|placement rate of \d+/i.test(a.body)),
+);
+check(
   'medical/testing articles avoid outcome-promising language',
   ['dot-medical-card', 'drug-alcohol-testing-clearinghouse'].every((s) => {
     const b = articles.find((a) => a.slug === s)!.body;
     return !/you will qualify|you are disqualified|guaranteed to pass/i.test(b);
   }),
+);
+check(
+  'sponsored-school article avoids one-sided characterization and guarantees',
+  (() => {
+    const b = b3.find((a) => a.slug === 'sponsored-vs-private-cdl-school')!.body;
+    return (
+      /[Nn]either is "better"|fit different/.test(b) &&
+      /have no standard definition|not job offers/.test(b) &&
+      /Neither generalization survives/.test(b)
+    );
+  })(),
 );
 
 // ── 6. Internal links resolve; density and restraint ────────────────────────
@@ -334,6 +464,7 @@ const KNOWN_ROUTES = new Set([
   '/practice-tests/air-brakes',
   '/practice-tests/combination-vehicles',
   '/practice-tests/hazmat',
+  '/practice-tests/tanker',
   '/#newsletter',
 ]);
 const KNOWN_KC = new Set([
@@ -357,6 +488,11 @@ check(
   articles.every(
     (a) => new Set([...a.body.matchAll(/\]\((\/knowledge\/[^)]+)\)/g)].map((x) => x[1])).size >= 3,
   ),
+  articles
+    .filter(
+      (a) => new Set([...a.body.matchAll(/\]\((\/knowledge\/[^)]+)\)/g)].map((x) => x[1])).size < 3,
+    )
+    .map((a) => a.slug),
 );
 check(
   'no article links the same KC target more than twice in-body',
@@ -376,25 +512,45 @@ check(
     })
     .filter(Boolean),
 );
-const b2 = (slug: string) => articles.find((a) => a.slug === slug && a.batch === 2)!.body;
+const b2body = (slug: string) => articles.find((a) => a.slug === slug && a.batch === 2)!.body;
+const b3body = (slug: string) => articles.find((a) => a.slug === slug && a.batch === 3)!.body;
 check(
   'every Batch 2 spoke links the cluster pillar',
   BATCH2.filter((s) => s !== 'dot-inspection-levels-compared').every((s) =>
-    b2(s).includes('/knowledge/dot-compliance/dot-inspection-levels-compared'),
+    b2body(s).includes('/knowledge/dot-compliance/dot-inspection-levels-compared'),
   ),
-  BATCH2.filter(
+);
+check(
+  'every Batch 3 spoke links the cluster pillar',
+  BATCH3.filter((s) => s !== 'how-to-get-your-cdl').every((s) =>
+    b3body(s).includes('/knowledge/getting-your-cdl/how-to-get-your-cdl'),
+  ),
+  BATCH3.filter(
     (s) =>
-      s !== 'dot-inspection-levels-compared' &&
-      !b2(s).includes('/knowledge/dot-compliance/dot-inspection-levels-compared'),
+      s !== 'how-to-get-your-cdl' &&
+      !b3body(s).includes('/knowledge/getting-your-cdl/how-to-get-your-cdl'),
   ),
 );
 check(
   'cross-cluster bridges exist (OOS↔HOS, DVIR↔pre-trip, CSA↔DataQs, annual↔pre-trip, securement↔GK test)',
-  b2('cvsa-out-of-service-criteria').includes('/knowledge/hours-of-service/') &&
-    b2('dvir-explained').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
-    b2('csa-scores-sms-explained').includes('/knowledge/dot-compliance/dataqs-disputes') &&
-    b2('annual-dot-inspection').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
-    b2('cargo-securement-basics').includes('/practice-tests/general-knowledge'),
+  b2body('cvsa-out-of-service-criteria').includes('/knowledge/hours-of-service/') &&
+    b2body('dvir-explained').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
+    b2body('csa-scores-sms-explained').includes('/knowledge/dot-compliance/dataqs-disputes') &&
+    b2body('annual-dot-inspection').includes(
+      '/knowledge/cdl-training/cdl-pre-trip-inspection-guide',
+    ) &&
+    b2body('cargo-securement-basics').includes('/practice-tests/general-knowledge'),
+);
+check(
+  'Batch 3 bridges exist (requirements↔medical+clearinghouse, skills↔pre-trip, study-plan↔all five tests)',
+  b3body('cdl-requirements').includes('/knowledge/dot-compliance/dot-medical-card') &&
+    b3body('cdl-requirements').includes(
+      '/knowledge/dot-compliance/drug-alcohol-testing-clearinghouse',
+    ) &&
+    b3body('cdl-skills-test').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
+    ['general-knowledge', 'air-brakes', 'combination-vehicles', 'hazmat', 'tanker'].every((t) =>
+      b3body('cdl-study-plan').includes(`/practice-tests/${t}`),
+    ),
 );
 check(
   'external body links are official domains or the TLWS YouTube channel',
@@ -406,7 +562,7 @@ check(
   ),
 );
 
-// ── 7. No duplicated substance across the 20 articles ───────────────────────
+// ── 7. No duplicated substance across the 30 articles ───────────────────────
 const paragraphs = new Map<string, string>();
 let dupParagraph: string | null = null;
 for (const a of articles) {
@@ -422,7 +578,7 @@ check('no substantial paragraph duplicated across articles', dupParagraph === nu
 // ── 8. Number/claim consistency ─────────────────────────────────────────────
 const bodyOf = (slug: string) => articles.find((a) => a.slug === slug)!.body;
 check(
-  'Batch 1 HOS spine intact after Batch 2 (11/14/8h/7-hour split)',
+  'Batch 1 HOS spine intact after later batches (11/14/8h/7-hour split)',
   /11 hours/.test(bodyOf('11-hour-driving-limit')) &&
     /14-consecutive-hour/.test(bodyOf('14-hour-driving-window')) &&
     /8 cumulative hours|8 hours of driving/.test(bodyOf('30-minute-break-rule')) &&
@@ -480,6 +636,48 @@ check(
   /at all times/.test(bodyOf('truck-lighting-requirements')) &&
     /amber/i.test(bodyOf('truck-lighting-requirements')) &&
     /red/i.test(bodyOf('truck-lighting-requirements')),
+);
+check(
+  'Batch 3 spine: 14-day CLP floor stated consistently (pillar + permit + skills)',
+  /14 days/.test(bodyOf('how-to-get-your-cdl')) &&
+    /14 days/.test(bodyOf('cdl-permit-explained')) &&
+    /14 days|14\+ days/.test(bodyOf('cdl-skills-test')),
+);
+check(
+  'requirements article: 21 interstate / 18–20 intrastate + one-license rule',
+  /21/.test(bodyOf('cdl-requirements')) &&
+    /18–20|18-20/.test(bodyOf('cdl-requirements')) &&
+    /one license|one single license|one-driver\/one-license/i.test(bodyOf('cdl-requirements')),
+);
+check(
+  'classes article: 26,001 and 10,000 thresholds + 16-occupant Class C line',
+  /26,001/.test(bodyOf('cdl-classes-compared')) &&
+    /10,000/.test(bodyOf('cdl-classes-compared')) &&
+    /16 or more occupants|16 occupants|16\+ people/.test(bodyOf('cdl-classes-compared')),
+);
+check(
+  'ELDT article: Feb 7 2022 date + 80% theory assessment + no-minimum-hours statement',
+  /February 7, 2022/.test(bodyOf('eldt-requirements')) &&
+    /80%/.test(bodyOf('eldt-requirements')) &&
+    /no minimum number of training hours|no federal minimum hour count|no minimum hour count/i.test(
+      bodyOf('eldt-requirements'),
+    ),
+);
+check(
+  'permit article: one-year federal cap + P/S/N-only endorsements',
+  /one year/.test(bodyOf('cdl-permit-explained')) &&
+    /P, S, or N|P, S, and N|only P, S, or N/.test(bodyOf('cdl-permit-explained')),
+);
+check(
+  'endorsements article: tanker thresholds match the tanker test/catalog (119 / 1,000)',
+  /119 gallons/.test(bodyOf('cdl-endorsements-restrictions')) &&
+    /1,000\+? gallons|1,000 gallons/.test(bodyOf('cdl-endorsements-restrictions')),
+);
+check(
+  'skills-test article: three parts named',
+  /vehicle inspection/i.test(bodyOf('cdl-skills-test')) &&
+    /basic vehicle control|basic control/i.test(bodyOf('cdl-skills-test')) &&
+    /road test/i.test(bodyOf('cdl-skills-test')),
 );
 
 // ── 9. Rendering stack still wired ──────────────────────────────────────────
