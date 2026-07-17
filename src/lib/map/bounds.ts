@@ -28,6 +28,12 @@ export const STATE_BOUNDS: Record<string, LatLngBounds> = {
   AL: { north: 35.01, south: 30.14, east: -84.89, west: -88.48 },
   IN: { north: 41.77, south: 37.77, east: -84.78, west: -88.1 },
   IL: { north: 42.51, south: 36.97, east: -87.02, west: -91.52 },
+  AR: { north: 36.5, south: 33.0, east: -89.64, west: -94.62 },
+  NC: { north: 36.59, south: 33.84, east: -75.46, west: -84.32 },
+  SC: { north: 35.22, south: 32.03, east: -78.54, west: -83.36 },
+  VA: { north: 39.47, south: 36.54, east: -75.24, west: -83.68 },
+  MD: { north: 39.73, south: 37.89, east: -75.05, west: -79.49 },
+  DE: { north: 39.84, south: 38.45, east: -75.05, west: -75.79 },
 };
 
 /** Coarse corridor framing bounds per interstate (extend per corridor). */
@@ -38,6 +44,10 @@ export const INTERSTATE_BOUNDS: Record<string, LatLngBounds> = {
   'I-65': { north: 41.8, south: 30.4, east: -85.4, west: -88.2 },
   // Pulley's Mill (I-57) → Chattanooga.
   'I-24': { north: 37.8, south: 34.8, east: -84.9, west: -89.2 },
+  // Barstow → Wilmington.
+  'I-40': { north: 36.7, south: 34.2, east: -77.8, west: -117.2 },
+  // Miami → Houlton.
+  'I-95': { north: 47.5, south: 25.7, east: -66.9, west: -81.8 },
 };
 
 export function boundsCenter(b: LatLngBounds): LatLng {
