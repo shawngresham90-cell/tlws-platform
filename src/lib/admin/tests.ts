@@ -1,6 +1,8 @@
+import 'server-only';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { TEST_CATALOG, getTest } from '@/lib/tests/catalog';
+import { CHOICE_KEYS, type AdminQuestionRow } from '@/lib/admin/tests-shared';
 import type { TestDefinition } from '@/lib/tests/types';
 
 /**
@@ -26,19 +28,7 @@ export type AdminTestRow = {
   seededCount: number;
 };
 
-export type AdminQuestionRow = {
-  id: string;
-  prompt: string;
-  choices: { key: string; text: string }[];
-  correct_key: string;
-  explanation: string | null;
-  cfr_cite: string | null;
-  verified_date: string | null;
-  difficulty: number;
-  tags: string[];
-  sort_order: number;
-  miss_count: number;
-};
+export type { AdminQuestionRow } from '@/lib/admin/tests-shared';
 
 /** Every catalog test joined with its live DB row (id, published, count). */
 export async function getAdminTests(): Promise<{ rows: AdminTestRow[]; error: string | null }> {
@@ -58,10 +48,13 @@ export async function getAdminTests(): Promise<{ rows: AdminTestRow[]; error: st
       const db = bySlug.get(def.slug);
       let seededCount = 0;
       if (db) {
-        const { count } = await supabase
+        const { count, error: countError } = await supabase
           .from('questions')
           .select('id', { count: 'exact', head: true })
           .eq('test_id', db.id);
+        // A failed count must surface — silently rendering "0 questions"
+        // reads as "the seed never ran", which is worse than an error.
+        if (countError) return { rows: [], error: countError.message };
         seededCount = count ?? 0;
       }
       rows.push({
@@ -77,7 +70,7 @@ export async function getAdminTests(): Promise<{ rows: AdminTestRow[]; error: st
   }
 }
 
-/** The full bank for one test, most-missed first within sort order intact. */
+/** The full bank for one test, in sort order (misses shown as a column). */
 export async function getAdminQuestions(
   slug: string,
 ): Promise<{ test: AdminTestRow | null; questions: AdminQuestionRow[]; error: string | null }> {
@@ -135,11 +128,12 @@ export async function getAdminQuestion(
   if (!def) return { question: null, error: null };
   try {
     const supabase = createAdminClient();
-    const { data: testRow } = await supabase
+    const { data: testRow, error: testError } = await supabase
       .from('tests')
       .select('id')
       .eq('slug', slug)
       .maybeSingle();
+    if (testError) return { question: null, error: testError.message };
     if (!testRow) return { question: null, error: null };
     const { data, error } = await supabase
       .from('questions')
@@ -160,7 +154,19 @@ export async function getAdminQuestion(
 
 /* ── Edit validation — the blueprint's hard content rules, enforced ───────── */
 
-export const CHOICE_KEYS = ['a', 'b', 'c', 'd'] as const;
+/** Stray commas are formatting noise, not invalid tags — validate real tokens. */
+function tagTokens(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Bound server-action args are CLIENT-TAMPERABLE plaintext in Next 14 —
+ * validate them like any other input (M7 security review).
+ */
+export const uuidSchema = z.string().uuid();
 
 /** Citation must be a real source reference: 49 CFR or the CDL manual. */
 const CITE_PATTERN = /^(49 CFR \S.*|CDL Manual §\S.*)$/;
@@ -190,9 +196,9 @@ const questionEditSchema = z
     tags: z
       .string()
       .trim()
-      .min(1, 'At least one tag is required')
+      .refine((raw) => tagTokens(raw).length > 0, 'At least one tag is required')
       .refine(
-        (raw) => raw.split(',').every((t) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(t.trim())),
+        (raw) => tagTokens(raw).every((t) => /^[a-z0-9]+(-[a-z0-9]+)*$/.test(t)),
         'Tags must be comma-separated kebab-case words',
       ),
   })
@@ -253,7 +259,7 @@ export function parseQuestionForm(
       cfr_cite: d.cfr_cite,
       verified_date: d.verified_date,
       difficulty: d.difficulty,
-      tags: d.tags.split(',').map((t) => t.trim()),
+      tags: tagTokens(d.tags),
     },
   };
 }

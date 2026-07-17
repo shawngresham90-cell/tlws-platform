@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormState, useFormStatus } from 'react-dom';
-import { CHOICE_KEYS, type AdminQuestionRow } from '@/lib/admin/tests';
+import { CHOICE_KEYS, type AdminQuestionRow } from '@/lib/admin/tests-shared';
 import type { QuestionFormState } from '@/app/admin/(dashboard)/tests/actions';
 
 /**
@@ -79,11 +79,15 @@ export function QuestionForm({
         </legend>
         {CHOICE_KEYS.map((key) => (
           <div key={key} className="flex items-start gap-3">
-            <span className="mt-2 w-5 font-display uppercase text-signal">{key}.</span>
+            <label
+              htmlFor={`choice_${key}`}
+              className="mt-2 w-5 font-display uppercase text-signal"
+            >
+              {key}.<span className="sr-only"> Choice {key.toUpperCase()}</span>
+            </label>
             <textarea
               id={`choice_${key}`}
               name={`choice_${key}`}
-              aria-label={`Choice ${key.toUpperCase()}`}
               rows={2}
               required
               defaultValue={choiceText(key)}

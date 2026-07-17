@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Test Bank', robots: { index: false, follow: false } };
 
 const OK_MESSAGES: Record<string, string> = {
-  saved: 'Question saved. Public pages revalidate within a few minutes.',
+  saved: 'Question saved. Public pages pick up the change on their next request.',
   published: 'Test published — the bank is live for students again.',
   unpublished:
     'Test unpublished — anon reads are blocked by RLS, so the public pages now show their "coming soon" state.',
@@ -33,7 +33,10 @@ export default async function AdminTestBankPage({
   const { test, questions, error } = await getAdminQuestions(params.slug);
   if (!test && !error) notFound();
 
-  const okMessage = searchParams.ok ? OK_MESSAGES[searchParams.ok] : null;
+  const okMessage =
+    searchParams.ok && Object.hasOwn(OK_MESSAGES, searchParams.ok)
+      ? OK_MESSAGES[searchParams.ok]
+      : null;
   const errMessage =
     searchParams.error === 'publish' ? 'Could not change the publish state — try again.' : null;
 
@@ -59,7 +62,6 @@ export default async function AdminTestBankPage({
               <form
                 action={setTestPublishedAction.bind(
                   null,
-                  test.dbId,
                   test.def.slug,
                   !(test.dbPublished ?? false),
                 )}
@@ -129,12 +131,14 @@ export default async function AdminTestBankPage({
                     <th className="px-3 py-3">Diff</th>
                     <th className="px-3 py-3">Tags</th>
                     <th className="px-3 py-3">Misses</th>
-                    <th className="px-3 py-3" />
+                    <th className="px-3 py-3">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {questions.map((q) => {
-                    const answerText = q.choices.find((c) => c.key === q.correct_key)?.text ?? '';
+                    const answerText = q.choices.find((c) => c.key === q.correct_key)?.text;
                     return (
                       <tr key={q.id} className="border-t border-line align-top">
                         <td className="px-3 py-3 text-muted">{q.sort_order}</td>
@@ -143,7 +147,11 @@ export default async function AdminTestBankPage({
                           <span className="font-display uppercase text-signal">
                             {q.correct_key}.
                           </span>{' '}
-                          {answerText}
+                          {answerText ?? (
+                            <span className="font-semibold text-diesel">
+                              ⚠ key matches no choice
+                            </span>
+                          )}
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-muted">{q.cfr_cite}</td>
                         <td className="whitespace-nowrap px-3 py-3 text-muted">

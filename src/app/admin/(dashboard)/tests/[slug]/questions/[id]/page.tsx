@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin/auth';
 import { getAdminQuestion } from '@/lib/admin/tests';
+import { hasCanonicalChoices } from '@/lib/admin/tests-shared';
 import { getTest } from '@/lib/tests/catalog';
 import { QuestionForm } from '@/components/admin/tests/QuestionForm';
 import { saveQuestionAction } from '../../../actions';
@@ -51,7 +52,18 @@ export default async function AdminEditQuestionPage({
         </p>
       </div>
       <div className="mt-6">
-        <QuestionForm action={editAction} question={question} />
+        {hasCanonicalChoices(question) ? (
+          <QuestionForm action={editAction} question={question} />
+        ) : (
+          // The form can only round-trip the canonical a–d shape. Rendering
+          // it for anything else would silently rewrite the row (and could
+          // silently move the answer key) — refuse instead.
+          <p className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+            This question&apos;s choices are not in the canonical a–d shape, so the form can&apos;t
+            edit it without rewriting the choices. Fix it with a targeted SQL UPDATE (keyed on this
+            UUID) instead.
+          </p>
+        )}
       </div>
     </div>
   );

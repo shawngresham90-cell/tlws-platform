@@ -11,10 +11,18 @@ import { getAdminTests } from '@/lib/admin/tests';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Tests', robots: { index: false, follow: false } };
 
-export default async function AdminTestsPage() {
+export default async function AdminTestsPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
   requireAdmin();
 
   const { rows, error } = await getAdminTests();
+  const actionError =
+    searchParams.error === 'unknown'
+      ? 'That test is not in the catalog — nothing was changed.'
+      : null;
 
   return (
     <div>
@@ -25,9 +33,9 @@ export default async function AdminTestsPage() {
         </p>
       </div>
 
-      {error && (
+      {(error || actionError) && (
         <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
-          Couldn&apos;t load the test banks: {error}
+          {actionError ?? `Couldn't load the test banks: ${error}`}
         </p>
       )}
 
@@ -41,7 +49,9 @@ export default async function AdminTestsPage() {
               <th className="px-4 py-3">Questions</th>
               <th className="px-4 py-3">Pass</th>
               <th className="px-4 py-3">Timed limit</th>
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>

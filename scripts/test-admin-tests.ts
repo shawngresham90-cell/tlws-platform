@@ -16,10 +16,12 @@
  *
  * Run:
  *   npx esbuild scripts/test-admin-tests.ts --bundle --platform=node --format=cjs \
- *     --alias:@=./src --outfile=/tmp/test-admin-tests.cjs && node /tmp/test-admin-tests.cjs
+ *     --alias:@=./src --alias:server-only=./scripts/shims/server-only.ts \
+ *     --outfile=/tmp/test-admin-tests.cjs && node /tmp/test-admin-tests.cjs
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { parseQuestionForm } from '@/lib/admin/tests';
+import { hasCanonicalChoices } from '@/lib/admin/tests-shared';
 
 let passed = 0;
 let failed = 0;
@@ -95,6 +97,51 @@ blocked('difficulty out of range', { difficulty: '5' }, 'difficulty');
 blocked('difficulty non-numeric', { difficulty: 'hard' });
 blocked('empty tags', { tags: '' }, 'tags');
 blocked('non-kebab tags', { tags: 'Air Brakes!!' });
+check(
+  'trailing comma in tags is tolerated (formatting noise, not invalid)',
+  JSON.stringify(parseQuestionForm(form({ tags: 'air-brakes, governor,' })).data?.tags) ===
+    '["air-brakes","governor"]',
+);
+
+/* ── 2b. Canonical-choices guard — the form must refuse foreign shapes ──── */
+const canonical = [
+  { key: 'a', text: '1' },
+  { key: 'b', text: '2' },
+  { key: 'c', text: '3' },
+  { key: 'd', text: '4' },
+];
+check(
+  'canonical a–d rows are editable',
+  hasCanonicalChoices({ choices: canonical, correct_key: 'b' }),
+);
+check(
+  'a fifth choice makes the row non-editable (would be silently deleted)',
+  !hasCanonicalChoices({
+    choices: [...canonical, { key: 'e', text: '5' }],
+    correct_key: 'e',
+  }),
+);
+check(
+  'non a–d keys make the row non-editable',
+  !hasCanonicalChoices({
+    choices: canonical.map((c, i) => ({ ...c, key: String(i + 1) })),
+    correct_key: '1',
+  }),
+);
+check(
+  'an orphan correct_key makes the row non-editable',
+  !hasCanonicalChoices({ choices: canonical, correct_key: 'e' }),
+);
+check(
+  'the edit page enforces the guard before rendering the form',
+  read('src/app/admin/(dashboard)/tests/[slug]/questions/[id]/page.tsx').includes(
+    'hasCanonicalChoices(question)',
+  ),
+);
+check(
+  'the bank table flags orphan keys instead of a blank cell',
+  read('src/app/admin/(dashboard)/tests/[slug]/page.tsx').includes('key matches no choice'),
+);
 
 /* ── 3. Admin gate + noindex on every new surface ───────────────────────── */
 const pages: [string, string][] = [
@@ -126,31 +173,64 @@ check('writes use the service-role client', actions.includes('createAdminClient(
 
 /* ── 4. Update-only doctrine — UUIDs survive every edit ─────────────────── */
 const adminLib = read('src/lib/admin/tests.ts');
-check('actions never INSERT questions', !actions.includes('.insert('));
-check('actions never DELETE questions', !actions.includes('.delete('));
+check(
+  'actions never INSERT/DELETE/UPSERT questions or call RPCs',
+  !actions.includes('.insert(') &&
+    !actions.includes('.delete(') &&
+    !actions.includes('.upsert(') &&
+    !actions.includes('.rpc('),
+);
 check(
   'lib never writes at all',
   !adminLib.includes('.insert(') &&
     !adminLib.includes('.update(') &&
-    !adminLib.includes('.delete('),
+    !adminLib.includes('.delete(') &&
+    !adminLib.includes('.upsert(') &&
+    !adminLib.includes('.rpc('),
 );
 check('question update is keyed by UUID', actions.includes(".eq('id', questionId)"));
+check(
+  'bound args are validated (client-tamperable in Next 14)',
+  actions.includes('uuidSchema.safeParse(questionId)'),
+);
+check(
+  'question update is ALSO scoped to the slug-derived test row',
+  /\.eq\('id', questionId\)\s*\.eq\('test_id',/.test(actions),
+);
+check(
+  'server data layer is server-only (cannot bundle into the client)',
+  adminLib.startsWith("import 'server-only';") &&
+    read('src/lib/supabase/admin.ts').startsWith("import 'server-only';"),
+);
+check(
+  'the client form imports only the client-safe shared module',
+  read('src/components/admin/tests/QuestionForm.tsx').includes("from '@/lib/admin/tests-shared'") &&
+    !read('src/components/admin/tests/QuestionForm.tsx').includes("from '@/lib/admin/tests'"),
+);
 check(
   'a missed UUID surfaces an error instead of silently no-opping',
   actions.includes('Question not found'),
 );
 check(
-  'publish toggle updates ONLY is_published, keyed by id',
-  /update\(\{ is_published: publish \}\)\s*\.eq\('id', testId\)/.test(actions),
+  'publish toggle updates ONLY is_published, keyed by the catalog-validated slug',
+  /update\(\{ is_published: publish === true \}\)\s*\.eq\('slug', slug\)/.test(actions),
 );
 
 /* ── 5. Feedback, confirmation, revalidation ────────────────────────────── */
 check('saves redirect with success feedback', actions.includes('?ok=saved'));
 check(
   'publish/unpublish redirect with success feedback',
-  actions.includes("?ok=${publish ? 'published' : 'unpublished'}"),
+  actions.includes("?ok=${publish === true ? 'published' : 'unpublished'}"),
 );
 check('failures return an error message state', actions.includes('Could not save the question'));
+check(
+  'raw DB error text is logged, never shown to the UI',
+  actions.includes('console.error') && !actions.includes('${error.message}'),
+);
+check(
+  'the tests index renders action-error feedback',
+  read('src/app/admin/(dashboard)/tests/page.tsx').includes("searchParams.error === 'unknown'"),
+);
 check(
   'public test pages revalidate after a write',
   actions.includes('revalidatePath(testHref(slug))') &&
@@ -185,10 +265,21 @@ check(
 
 /* ── 6. Hygiene — anon untouched, no student-facing leakage ─────────────── */
 const migrations = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql'));
+// Durable invariant (not a filename pin): no migration may grant anon or
+// authenticated any write on the tests/questions tables — the admin module
+// must never be "fixed" by widening RLS.
+const anonWriteGrant =
+  /grant\s+[^;]*(insert|update|delete|all)[^;]*to\s+[^;]*(anon|authenticated)/i;
+const offending = migrations.filter((f) => {
+  const sql = read(`supabase/migrations/${f}`);
+  return (
+    anonWriteGrant.test(sql) && /\b(questions|tests)\b/.test(sql.match(anonWriteGrant)?.[0] ?? '')
+  );
+});
 check(
-  'no new migration in this milestone (anon permissions unchanged)',
-  migrations.sort().at(-1) === '035_seed_combination_vehicles.sql',
-  migrations.at(-1),
+  'no migration grants anon/authenticated writes on tests or questions',
+  offending.length === 0,
+  offending,
 );
 check(
   'admin nav links the Tests section',
