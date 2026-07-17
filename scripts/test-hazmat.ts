@@ -91,7 +91,7 @@ check(
   /if exists \(select 1 from public\.questions where test_id = v_test\)/.test(seed),
 );
 check('seed inserts the test row if absent', /on conflict \(slug\) do nothing/.test(seed));
-check('seed test slug matches the catalog join key', /'hazmat'/.test(seed));
+check('seed test slug matches the catalog join key', /values \(\s*'hazmat',/.test(seed));
 check(
   'seed contains no destructive statements (purely additive)',
   !/drop table|drop column|truncate|delete from public\./i.test(seed),
