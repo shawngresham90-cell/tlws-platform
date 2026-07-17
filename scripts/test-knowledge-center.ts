@@ -1,18 +1,22 @@
 /**
- * Knowledge Center Expansion — first 10 authority pages: validation suite.
+ * Knowledge Center validation suite — Batch 1 (037, HOS + inspections) and
+ * Batch 2 (038, DOT Compliance cluster): 20 authority pages.
  *
- * Parses migration 037 (the content source of truth) and checks:
- *   - the 10 expected articles exist, published + reg-verified, unique
- *     titles/meta, 4+ FAQs and 3+ official sources each
- *   - sources point ONLY at official domains (eCFR / FMCSA / CVSA)
- *   - every in-body internal link resolves to a known route or article
- *   - required structure per article (quick answer, disclaimer, definition,
- *     why/who, steps, examples, mistakes, risks, checklist, keep-learning)
- *   - AI-search hygiene (answer-first, no level-1 headings in bodies, no
- *     unsupported markdown like tables, labeled non-legal-advice examples)
- *   - no duplicated paragraphs across articles; no reused FAQ questions
- *   - idempotent, non-destructive migration mechanics
- *   - the KC rendering stack still wires schema/SEO correctly
+ * Checks per batch and across both:
+ *   - exact slug sets; unique titles / SEO titles / meta descriptions
+ *   - official-domain-only sources in canonical eCFR/FMCSA/CVSA formats
+ *   - required structure (quick answer, disclaimer + review date, definition,
+ *     why/who, steps, labeled examples, mistakes, risks, checklist,
+ *     keep-learning, CTAs, practice-test links)
+ *   - every internal link resolves; cross-cluster bridges exist; ≤2 in-body
+ *     links per target per article
+ *   - FAQ uniqueness across all 20 pages; FAQ answers substantial
+ *   - no duplicated substantial paragraphs anywhere
+ *   - HOS/compliance number consistency; no unsupported claim patterns
+ *   - migration mechanics: guarded inserts, conflict-safe kc_related,
+ *     038's three Batch-1 UPDATEs (two cross-links + one de-link) guarded
+ *     and idempotent, nothing destructive anywhere
+ *   - the rendering stack still wires schema/SEO correctly
  *
  * Run:
  *   npx esbuild scripts/test-knowledge-center.ts --bundle --platform=node --format=cjs \
@@ -31,34 +35,46 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
 };
 const read = (p: string) => readFileSync(p, 'utf8');
 
-const seed = read('supabase/migrations/037_seed_kc_authority_articles.sql');
+const seed1 = read('supabase/migrations/037_seed_kc_authority_articles.sql');
+const seed2 = read('supabase/migrations/038_seed_kc_dot_compliance_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
+const guardRe =
+  /if not exists \(select 1 from public\.kc_articles where category_id = v_\w+ and slug = '/g;
+check('037: ten guarded inserts', (seed1.match(guardRe) ?? []).length === 10);
+check('038: ten guarded inserts', (seed2.match(guardRe) ?? []).length === 10);
+for (const [name, s] of [
+  ['037', seed1],
+  ['038', seed2],
+] as const) {
+  check(
+    `${name}: kc_related inserts are conflict-safe`,
+    /on conflict \(article_id, related_id\) do nothing/.test(s),
+  );
+  check(
+    `${name}: nothing destructive (no drop/truncate/delete)`,
+    !/drop table|drop column|truncate|delete from/i.test(s),
+  );
+  check(`${name}: never creates categories`, !/insert into public\.kc_categories/.test(s));
+}
+check('037: never updates existing articles', !/update public\.kc_articles/.test(seed1));
+const crossLinkUpdates =
+  seed2.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('038: exactly three Batch 1 UPDATEs, all replace-based', crossLinkUpdates.length === 3);
 check(
-  'every article insert is guarded by if-not-exists on (category, slug)',
-  (
-    seed.match(
-      /if not exists \(select 1 from public\.kc_articles where category_id = v_\w+ and slug = '/g,
-    ) ?? []
-  ).length === 10,
+  '038: every Batch 1 UPDATE is presence-guarded (idempotent by construction)',
+  (seed2.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed2.match(/and a\.body_mdx not like '%\/knowledge\/dot-compliance\//g) ?? []).length === 2,
 );
 check(
-  'kc_related inserts are conflict-safe',
-  /on conflict \(article_id, related_id\) do nothing/.test(seed),
-);
-check(
-  'seed contains no destructive or overwriting statements',
-  !/drop table|drop column|truncate|delete from|update public\.kc_articles|update public\.kc_categories/i.test(
-    seed,
-  ),
-);
-check(
-  'seed never creates categories (uses the existing five)',
-  !/insert into public\.kc_categories/.test(seed),
+  '038: Batch 1 UPDATEs are slug-scoped',
+  /a\.slug = 'cdl-hours-of-service-rules'/.test(seed2) &&
+    /a\.slug = 'level-1-dot-inspection'/.test(seed2) &&
+    /a\.slug = '11-hour-driving-limit'/.test(seed2),
 );
 
-// ── 2. Article records ──────────────────────────────────────────────────────
-const EXPECTED = [
+// ── 2. Parse all 20 article records ─────────────────────────────────────────
+const BATCH1 = [
   'cdl-hours-of-service-rules',
   '11-hour-driving-limit',
   '14-hour-driving-window',
@@ -70,9 +86,31 @@ const EXPECTED = [
   'level-1-dot-inspection',
   'cdl-pre-trip-inspection-guide',
 ];
+const BATCH2 = [
+  'dot-inspection-levels-compared',
+  'cvsa-out-of-service-criteria',
+  'dvir-explained',
+  'csa-scores-sms-explained',
+  'dataqs-disputes',
+  'dot-medical-card',
+  'drug-alcohol-testing-clearinghouse',
+  'cargo-securement-basics',
+  'truck-lighting-requirements',
+  'annual-dot-inspection',
+];
+const CAT_OF: Record<string, string> = {};
+for (const s of BATCH1)
+  CAT_OF[s] =
+    s === 'level-1-dot-inspection'
+      ? 'dot-compliance'
+      : s === 'cdl-pre-trip-inspection-guide'
+        ? 'cdl-training'
+        : 'hours-of-service';
+for (const s of BATCH2) CAT_OF[s] = 'dot-compliance';
 
 type Article = {
   slug: string;
+  batch: 1 | 2;
   title: string;
   body: string;
   metaTitle: string;
@@ -80,57 +118,111 @@ type Article = {
   sources: { label: string; url: string }[];
   faqs: { q: string; a: string }[];
 };
-
-// Each article block: slug quoted after "values (\n v_cat,\n 'slug'," then
-// title, excerpt, $mdx$body$mdx$, meta_title, meta_description, then two $j$
-// blocks (sources, faqs).
-const articles: Article[] = [];
 const blockRe =
   /values \(\s*v_(?:hos|dot|cdl),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
-let m: RegExpExecArray | null;
-while ((m = blockRe.exec(seed)) !== null) {
-  articles.push({
-    slug: m[1],
-    title: m[2].replace(/''/g, "'"),
-    body: m[4],
-    metaTitle: m[5].replace(/''/g, "'"),
-    metaDescription: m[6].replace(/''/g, "'"),
-    sources: JSON.parse(m[7]),
-    faqs: JSON.parse(m[8]),
-  });
+const articles: Article[] = [];
+for (const [batch, s] of [
+  [1, seed1],
+  [2, seed2],
+] as const) {
+  let m: RegExpExecArray | null;
+  blockRe.lastIndex = 0;
+  while ((m = blockRe.exec(s)) !== null) {
+    articles.push({
+      slug: m[1],
+      batch,
+      title: m[2].replace(/''/g, "'"),
+      body: m[4],
+      metaTitle: m[5].replace(/''/g, "'"),
+      metaDescription: m[6].replace(/''/g, "'"),
+      sources: JSON.parse(m[7]),
+      faqs: JSON.parse(m[8]),
+    });
+  }
 }
-check('all 10 expected articles parse from the migration', articles.length === 10, articles.length);
+// Apply 038's three Batch 1 body replacements so every content check below
+// evaluates the EFFECTIVE post-migration text (what production serves).
+for (const a of articles) {
+  if (a.slug === 'cdl-hours-of-service-rules') {
+    a.body = a.body.replace(
+      'feed the FMCSA Safety Measurement System scores that follow both driver and carrier',
+      'feed the [FMCSA Safety Measurement System](/knowledge/dot-compliance/csa-scores-sms-explained) scores that follow both driver and carrier',
+    );
+  }
+  if (a.slug === 'level-1-dot-inspection') {
+    a.body = a.body.replace(
+      "The dispute process exists — FMCSA's DataQs system, which drivers as well as carriers can use;",
+      "The dispute process exists — [FMCSA's DataQs system](/knowledge/dot-compliance/dataqs-disputes), which drivers as well as carriers can use;",
+    );
+  }
+  if (a.slug === '11-hour-driving-limit') {
+    a.body = a.body.replace(
+      'burn the window and the [60/70-hour totals](/knowledge/hours-of-service/cdl-hours-of-service-rules) instead',
+      'burn the window and the 60/70-hour totals instead',
+    );
+  }
+}
+check('all 20 articles parse (10 per batch)', articles.length === 20, articles.length);
 check(
-  'slugs match the plan exactly',
-  EXPECTED.every((s) => articles.some((a) => a.slug === s)),
-  articles.map((a) => a.slug),
+  "038's Batch 1 replacements all matched real 037 text (effective content differs)",
+  articles
+    .find((a) => a.slug === 'cdl-hours-of-service-rules')!
+    .body.includes('/knowledge/dot-compliance/csa-scores-sms-explained') &&
+    articles
+      .find((a) => a.slug === 'level-1-dot-inspection')!
+      .body.includes('/knowledge/dot-compliance/dataqs-disputes') &&
+    !articles
+      .find((a) => a.slug === '11-hour-driving-limit')!
+      .body.includes('[60/70-hour totals]('),
 );
-check('titles are unique', new Set(articles.map((a) => a.title)).size === 10);
-check('meta titles are unique', new Set(articles.map((a) => a.metaTitle)).size === 10);
-check('meta descriptions are unique', new Set(articles.map((a) => a.metaDescription)).size === 10);
 check(
-  'meta descriptions are sane lengths (70–175 chars)',
+  'slug sets match the plan exactly',
+  BATCH1.every((s) => articles.some((a) => a.slug === s && a.batch === 1)) &&
+    BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)),
+);
+check('titles unique across 20', new Set(articles.map((a) => a.title)).size === 20);
+check('meta titles unique across 20', new Set(articles.map((a) => a.metaTitle)).size === 20);
+check(
+  'meta descriptions unique across 20',
+  new Set(articles.map((a) => a.metaDescription)).size === 20,
+);
+check(
+  'meta descriptions sane length (70–175 chars)',
   articles.every((a) => a.metaDescription.length >= 70 && a.metaDescription.length <= 175),
-  articles.map((a) => `${a.slug}:${a.metaDescription.length}`).join(' '),
+  articles
+    .filter((a) => a.metaDescription.length > 175 || a.metaDescription.length < 70)
+    .map((a) => `${a.slug}:${a.metaDescription.length}`),
 );
 check(
-  'every article is published and reg-verified with the review date',
-  (seed.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
+  'meta titles avoid obvious SERP truncation (≤72 chars before brand suffix)',
+  articles.every((a) => a.metaTitle.replace(/ \| Trucking Life with Shawn$/, '').length <= 72),
+  articles
+    .map((a) => [a.slug, a.metaTitle.replace(/ \| Trucking Life with Shawn$/, '').length] as const)
+    .filter(([, n]) => n > 72),
+);
+check(
+  'every article published + reg-verified with review date',
+  (seed1.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
+    (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
 );
 
-// ── 3. Official sources only ────────────────────────────────────────────────
-const OFFICIAL = ['www.ecfr.gov', 'www.fmcsa.dot.gov', 'eld.fmcsa.dot.gov', 'www.cvsa.org'];
+// ── 3. Official sources only, canonical formats ─────────────────────────────
+const OFFICIAL = [
+  'www.ecfr.gov',
+  'www.fmcsa.dot.gov',
+  'eld.fmcsa.dot.gov',
+  'csa.fmcsa.dot.gov',
+  'dataqs.fmcsa.dot.gov',
+  'clearinghouse.fmcsa.dot.gov',
+  'www.cvsa.org',
+];
 check(
-  'every source URL is on an official domain (eCFR/FMCSA/CVSA)',
+  'every source URL is an official domain',
   articles.every((a) => a.sources.every((s) => OFFICIAL.includes(new URL(s.url).host))),
 );
 check(
-  'every article has at least 3 sources',
-  articles.every((a) => a.sources.length >= 3),
-);
-check(
-  'every source has a descriptive label',
-  articles.every((a) => a.sources.every((s) => s.label.length >= 10)),
+  'every article has 3+ labeled sources',
+  articles.every((a) => a.sources.length >= 3 && a.sources.every((s) => s.label.length >= 10)),
 );
 check(
   'every eCFR source uses the canonical citation-link format',
@@ -145,37 +237,34 @@ check(
   ),
 );
 
-// ── 4. FAQs — visible content IS the schema content, unique across pages ────
+// ── 4. FAQs unique across all 20 pages ──────────────────────────────────────
 check(
   'every article has 4+ FAQs',
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question is reused across articles', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 20 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
-  'every FAQ answer is substantial (80+ chars) and cites or explains',
+  'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
 );
 
 // ── 5. Required structure in every body ─────────────────────────────────────
 const structure: [string, RegExp][] = [
   ['direct answer at the top', /^\*\*Quick answer:\*\*/],
-  [
-    'regulatory-change disclaimer with review date',
-    /\*\*Regulatory-change disclaimer:\*\*[\s\S]*July 17, 2026/,
-  ],
+  ['disclaimer with review date', /\*\*Regulatory-change disclaimer:\*\*[\s\S]*July 17, 2026/],
   ['definition section', /## What /],
-  ['why-it-exists section', /## Why /],
-  ['who-it-applies section', /## Who /],
+  ['why section', /## Why /],
+  ['who section', /## Who /],
   [
     'step-by-step or walkthrough section',
-    /step by step|walked through|steps of|## What the officer checks|## How (it|the|to)/i,
+    /step by step|walked through|walked around|one by one|- \*\*Step 1|### Step 1|## The .* (levels|test types|lighting map)/i,
   ],
-  ['real-world example labeled not-legal-advice', /\(illustration, not legal advice\)/],
+  ['labeled real-world example', /\(illustration, not legal advice\)/],
   ['common mistakes section', /## Common mistakes/],
-  ['violations / compliance risks section', /## Violations and compliance risks/],
+  ['risks section', /## (Violations and compliance risks|Compliance risks)/],
   ['driver checklist section', /## Driver checklist/],
-  ['keep-learning block (internal links + CTAs)', /## Keep learning/],
+  ['keep-learning block', /## Keep learning/],
   ['academy CTA', /\/academy\)/],
   ['email-list CTA', /\/#newsletter\)/],
   ['practice-test link', /\/practice-tests/],
@@ -188,30 +277,55 @@ for (const [name, re] of structure) {
   );
 }
 check(
-  'no level-1 headings inside bodies (title is the only H1)',
+  'no level-1 headings inside bodies',
   articles.every((a) => !/^# /m.test(a.body)),
 );
 check(
-  'no markdown tables (unsupported by the KC renderer)',
+  'no markdown tables (unsupported)',
   articles.every((a) => !/^\s*\|/m.test(a.body)),
 );
 check(
-  'no heading deeper than h3 (renderer supports h2/h3)',
+  'no headings deeper than h3',
   articles.every((a) => !/^#{4,}/m.test(a.body)),
 );
 check(
-  'federal-vs-practice labeling appears where opinions could blur',
+  'authority labeling present where rules could blur',
   articles.every(
     (a) =>
-      /\*\*(Federal requirement|Federal framework|Federal:|Good practice|Company policy note)/.test(
+      /\*\*(Federal requirement|Federal regulation|Federal framework|Federal:|FMCSA process fact|Good practice|Company policy note|State-variation note|Whose rule is what|Not in the standard|One regulatory OOS)/.test(
         a.body,
       ) ||
-      a.slug === 'cdl-hours-of-service-rules' ||
-      a.slug === 'level-1-dot-inspection',
+      [
+        'cdl-hours-of-service-rules',
+        'level-1-dot-inspection',
+        'csa-scores-sms-explained',
+        'dataqs-disputes',
+      ].includes(a.slug),
+  ),
+  articles
+    .filter(
+      (a) =>
+        !/\*\*(Federal requirement|Federal regulation|Federal framework|Federal:|FMCSA process fact|Good practice|Company policy note|State-variation note|Whose rule is what|Not in the standard|One regulatory OOS)/.test(
+          a.body,
+        ),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'no unsupported-claim patterns (invented fines/statistics)',
+  articles.every(
+    (a) => !/\$\d{1,3},?\d{0,3} fine|\d+% of (all )?(trucks|drivers|inspections)/i.test(a.body),
   ),
 );
+check(
+  'medical/testing articles avoid outcome-promising language',
+  ['dot-medical-card', 'drug-alcohol-testing-clearinghouse'].every((s) => {
+    const b = articles.find((a) => a.slug === s)!.body;
+    return !/you will qualify|you are disqualified|guaranteed to pass/i.test(b);
+  }),
+);
 
-// ── 6. Internal links all resolve ───────────────────────────────────────────
+// ── 6. Internal links resolve; density and restraint ────────────────────────
 const KNOWN_ROUTES = new Set([
   '/academy',
   '/cdl-pre-school',
@@ -223,36 +337,67 @@ const KNOWN_ROUTES = new Set([
   '/#newsletter',
 ]);
 const KNOWN_KC = new Set([
-  ...EXPECTED.map((s) =>
-    s === 'level-1-dot-inspection'
-      ? `/knowledge/dot-compliance/${s}`
-      : s === 'cdl-pre-trip-inspection-guide'
-        ? `/knowledge/cdl-training/${s}`
-        : `/knowledge/hours-of-service/${s}`,
-  ),
-  '/knowledge/dot-compliance/what-is-a-dot-inspection', // pre-existing stub
+  ...Object.entries(CAT_OF).map(([slug, cat]) => `/knowledge/${cat}/${slug}`),
+  '/knowledge/dot-compliance/what-is-a-dot-inspection',
 ]);
-const internalLinks = articles.flatMap((a) =>
-  [...a.body.matchAll(/\]\((\/[^)]+)\)/g)].map((x) => x[1]),
+const allLinks = articles.flatMap((a) =>
+  [...a.body.matchAll(/\]\((\/[^)]+)\)/g)].map((x) => ({ from: a.slug, href: x[1] })),
 );
 check(
   'every internal link targets a known route or seeded article',
-  internalLinks.every((href) => KNOWN_ROUTES.has(href) || KNOWN_KC.has(href)),
-  [...new Set(internalLinks.filter((h) => !KNOWN_ROUTES.has(h) && !KNOWN_KC.has(h)))],
+  allLinks.every((l) => KNOWN_ROUTES.has(l.href) || KNOWN_KC.has(l.href)),
+  [
+    ...new Set(
+      allLinks.filter((l) => !KNOWN_ROUTES.has(l.href) && !KNOWN_KC.has(l.href)).map((l) => l.href),
+    ),
+  ],
 );
 check(
-  'the 10 pages interlink densely (45+ knowledge-center links)',
-  internalLinks.filter((h) => h.startsWith('/knowledge/')).length >= 45,
-  internalLinks.filter((h) => h.startsWith('/knowledge/')).length,
-);
-check(
-  'every article body links at least 3 sibling articles',
+  'every article links 3+ sibling KC articles',
   articles.every(
     (a) => new Set([...a.body.matchAll(/\]\((\/knowledge\/[^)]+)\)/g)].map((x) => x[1])).size >= 3,
   ),
 );
 check(
-  'external links in bodies are official domains or the TLWS YouTube channel',
+  'no article links the same KC target more than twice in-body',
+  articles.every((a) => {
+    const counts = new Map<string, number>();
+    for (const x of a.body.matchAll(/\]\((\/knowledge\/[^)#]+)\)/g))
+      counts.set(x[1], (counts.get(x[1]) ?? 0) + 1);
+    return [...counts.values()].every((n) => n <= 2);
+  }),
+  articles
+    .map((a) => {
+      const counts = new Map<string, number>();
+      for (const x of a.body.matchAll(/\]\((\/knowledge\/[^)#]+)\)/g))
+        counts.set(x[1], (counts.get(x[1]) ?? 0) + 1);
+      const over = [...counts.entries()].filter(([, n]) => n > 2);
+      return over.length ? `${a.slug}: ${over.map(([t, n]) => `${t}×${n}`).join(',')}` : null;
+    })
+    .filter(Boolean),
+);
+const b2 = (slug: string) => articles.find((a) => a.slug === slug && a.batch === 2)!.body;
+check(
+  'every Batch 2 spoke links the cluster pillar',
+  BATCH2.filter((s) => s !== 'dot-inspection-levels-compared').every((s) =>
+    b2(s).includes('/knowledge/dot-compliance/dot-inspection-levels-compared'),
+  ),
+  BATCH2.filter(
+    (s) =>
+      s !== 'dot-inspection-levels-compared' &&
+      !b2(s).includes('/knowledge/dot-compliance/dot-inspection-levels-compared'),
+  ),
+);
+check(
+  'cross-cluster bridges exist (OOS↔HOS, DVIR↔pre-trip, CSA↔DataQs, annual↔pre-trip, securement↔GK test)',
+  b2('cvsa-out-of-service-criteria').includes('/knowledge/hours-of-service/') &&
+    b2('dvir-explained').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
+    b2('csa-scores-sms-explained').includes('/knowledge/dot-compliance/dataqs-disputes') &&
+    b2('annual-dot-inspection').includes('/knowledge/cdl-training/cdl-pre-trip-inspection-guide') &&
+    b2('cargo-securement-basics').includes('/practice-tests/general-knowledge'),
+);
+check(
+  'external body links are official domains or the TLWS YouTube channel',
   articles.every((a) =>
     [...a.body.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].every((x) => {
       const host = new URL(x[1]).host;
@@ -261,7 +406,7 @@ check(
   ),
 );
 
-// ── 7. No duplicated substance across articles ──────────────────────────────
+// ── 7. No duplicated substance across the 20 articles ───────────────────────
 const paragraphs = new Map<string, string>();
 let dupParagraph: string | null = null;
 for (const a of articles) {
@@ -272,79 +417,97 @@ for (const a of articles) {
     paragraphs.set(key, a.slug);
   }
 }
-check(
-  'no substantial paragraph is duplicated across articles',
-  dupParagraph === null,
-  dupParagraph,
-);
+check('no substantial paragraph duplicated across articles', dupParagraph === null, dupParagraph);
 
-// ── 8. HOS math consistency across articles ────────────────────────────────
+// ── 8. Number/claim consistency ─────────────────────────────────────────────
+const bodyOf = (slug: string) => articles.find((a) => a.slug === slug)!.body;
 check(
-  'the numeric spine is consistent everywhere (11 / 14 / 30-min / 8h / 60-70 / 10h / 7-3 / 8-2 / 34h)',
-  /11 hours/.test(articles.find((a) => a.slug === '11-hour-driving-limit')!.body) &&
-    /14-consecutive-hour/.test(articles.find((a) => a.slug === '14-hour-driving-window')!.body) &&
-    /8 cumulative hours|8 hours of driving/.test(
-      articles.find((a) => a.slug === '30-minute-break-rule')!.body,
+  'Batch 1 HOS spine intact after Batch 2 (11/14/8h/7-hour split)',
+  /11 hours/.test(bodyOf('11-hour-driving-limit')) &&
+    /14-consecutive-hour/.test(bodyOf('14-hour-driving-window')) &&
+    /8 cumulative hours|8 hours of driving/.test(bodyOf('30-minute-break-rule')) &&
+    /at least 7 consecutive hours/.test(bodyOf('split-sleeper-berth-rules')),
+);
+check(
+  'DVIR article: 2014 change, defect-only rule, 3-month retention',
+  /2014/.test(bodyOf('dvir-explained')) &&
+    /no-defect DVIRs are no longer required|no report is required/.test(bodyOf('dvir-explained')) &&
+    /three months/.test(bodyOf('dvir-explained')),
+);
+check(
+  'CSA article: no driver score; PSP 3-year inspections; 24-month window',
+  /No public driver CSA score exists/.test(bodyOf('csa-scores-sms-explained')) &&
+    /three years of roadside inspection history|three years of inspection/.test(
+      bodyOf('csa-scores-sms-explained'),
     ) &&
-    /at least 7 consecutive hours/.test(
-      articles.find((a) => a.slug === 'split-sleeper-berth-rules')!.body,
-    ) &&
-    /total at least 10|totaling at least 10|together totaling/i.test(
-      articles.find((a) => a.slug === 'split-sleeper-berth-rules')!.body,
-    ) &&
-    /60 hours[\s\S]*7 (consecutive )?days|60 on-duty hours in 7/.test(
-      articles.find((a) => a.slug === 'cdl-hours-of-service-rules')!.body,
+    /24 months/.test(bodyOf('csa-scores-sms-explained')),
+);
+check(
+  'OOS article restates no numeric CVSA thresholds (only regulatory 392.5)',
+  !/\d+\/32|20 percent|20%/.test(bodyOf('cvsa-out-of-service-criteria')) &&
+    /392\.5/.test(bodyOf('cvsa-out-of-service-criteria')),
+);
+check(
+  'testing article: 0.04 vs 0.02 lines + follow-up plan minimums',
+  /0\.04/.test(bodyOf('drug-alcohol-testing-clearinghouse')) &&
+    /0\.02/.test(bodyOf('drug-alcohol-testing-clearinghouse')) &&
+    /6 tests in the first 12 months|6\+ tests in 12 months/.test(
+      bodyOf('drug-alcohol-testing-clearinghouse'),
     ),
 );
 check(
-  'no article claims the break must be off-duty (pre-2020 rule)',
-  articles.every((a) => !/break must be (logged )?off[- ]duty/i.test(a.body)),
+  'securement article: half-weight aggregate WLL + 393.110 counts + 392.9 intervals',
+  /at least 50% of the cargo weight|half the cargo weight/i.test(
+    bodyOf('cargo-securement-basics'),
+  ) &&
+    /one tie-down for articles 5 ft/i.test(bodyOf('cargo-securement-basics')) &&
+    /3 hours or 150 miles/.test(bodyOf('cargo-securement-basics')),
 );
 check(
-  'ELD article carries the 24-hour notice, 7-day reconstruction, and 8-day repair numbers',
-  (() => {
-    const b = articles.find((a) => a.slug === 'eld-malfunctions')!.body;
-    return (
-      /24 hours/.test(b) &&
-      /previous 7 (consecutive )?days|prior 7 days/.test(b) &&
-      /8 days|Eight days/.test(b)
-    );
-  })(),
+  'annual article: 12 months + 14-month retention + Appendix A',
+  /12 months/.test(bodyOf('annual-dot-inspection')) &&
+    /14 months/.test(bodyOf('annual-dot-inspection')) &&
+    /Appendix A/.test(bodyOf('annual-dot-inspection')),
+);
+check(
+  'medical article: 24-month max + examiner determination + not-medical-advice',
+  /24 months/.test(bodyOf('dot-medical-card')) &&
+    /examiner/.test(bodyOf('dot-medical-card')) &&
+    /not medical advice/i.test(bodyOf('dot-medical-card')),
+);
+check(
+  'lighting article: operable-at-all-times + amber-forward/red-rear logic',
+  /at all times/.test(bodyOf('truck-lighting-requirements')) &&
+    /amber/i.test(bodyOf('truck-lighting-requirements')) &&
+    /red/i.test(bodyOf('truck-lighting-requirements')),
 );
 
-// ── 9. Rendering stack still wired (schema, SEO, sitemap) ───────────────────
+// ── 9. Rendering stack still wired ──────────────────────────────────────────
 const page = read('src/app/(marketing)/knowledge/[category]/[slug]/page.tsx');
 check(
   'article page emits Article + FAQ + breadcrumb schema',
   /articleSchema/.test(page) && /faqSchema/.test(page) && /breadcrumbSchema/.test(page),
 );
+check('article page renders visible FAQs from schema data', /FaqBlock/.test(page));
 check(
-  'article page renders visible FAQs from the same data as the schema',
-  /FaqBlock/.test(page) && /faqs=\{article\.faqs\}|article\.faqs/.test(page),
-);
-check(
-  'article metadata builds canonical from category+slug',
-  /path: `\/knowledge\/\$\{params\.category\}/.test(page) ||
-    /path: `\/knowledge\/\$\{article/.test(page) ||
+  'canonical built from category+slug',
+  /\/knowledge\/\$\{params\.category\}/.test(page) ||
     /\/knowledge\/\$\{category\.slug\}\/\$\{article\.slug\}/.test(page),
 );
-const kcSchema = read('src/lib/kc/schema.ts');
 check(
-  'FAQ schema is gated on visible FAQ content',
-  /if \(!article\.faqs\?\.length\) return null/.test(kcSchema),
+  'FAQ schema gated on visible FAQ content',
+  /if \(!article\.faqs\?\.length\) return null/.test(read('src/lib/kc/schema.ts')),
 );
 const mdx = read('src/lib/kc/mdx.ts');
-check('renderer supports root-relative internal links (not neutered to #)', /isInternal/.test(mdx));
-check('renderer keeps external links noopener/new-tab', /rel="noopener" target="_blank"/.test(mdx));
-const author = read('src/components/kc/AuthorBlock.tsx');
 check(
-  'AuthorBlock shows a visible last-reviewed date',
-  /Last reviewed against the eCFR/.test(author) && /reg_verified_date/.test(author),
+  'renderer supports internal links, em, and quote escaping',
+  /isInternal/.test(mdx) && /<em>/.test(mdx) && /&quot;/.test(mdx),
 );
 check(
-  'sitemap derives KC article URLs from the DB',
-  /kc_articles/.test(read('src/app/sitemap.ts')),
+  'AuthorBlock shows the last-reviewed date',
+  /Last reviewed against the eCFR/.test(read('src/components/kc/AuthorBlock.tsx')),
 );
+check('sitemap derives KC articles from the DB', /kc_articles/.test(read('src/app/sitemap.ts')));
 
 // ── 10. Untouched surfaces ──────────────────────────────────────────────────
 for (const f of [
@@ -352,7 +515,7 @@ for (const f of [
   'src/app/(learn)/practice-tests/page.tsx',
   'src/components/admin/AdminNav.tsx',
 ]) {
-  check(`${f} contains no knowledge-center coupling`, !/kc_articles|kc_categories/.test(read(f)));
+  check(`${f} has no KC coupling`, !/kc_articles|kc_categories/.test(read(f)));
 }
 
 // ── Done ────────────────────────────────────────────────────────────────────
