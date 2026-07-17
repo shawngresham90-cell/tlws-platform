@@ -75,11 +75,17 @@ check(
   TEST_CATALOG.every((t) => t.passThresholdPct >= 1 && t.passThresholdPct <= 100),
 );
 
-// ── 2. Milestone-1 scope: ONLY General Knowledge is published ───────────────
+// ── 2. Published scope: GK (M1) + Air Brakes (M5), General Knowledge first ──
+// Every published test must be a DELIBERATE milestone addition — this count
+// is bumped once per shipped test so an accidental isPublished flip fails.
 check(
-  'exactly one published test (General Knowledge only this milestone)',
-  publishedTests().length === 1,
+  'published tests match the shipped milestones (GK + Air Brakes)',
+  publishedTests().length === 2,
   publishedTests().length,
+);
+check(
+  'General Knowledge stays first in display order',
+  publishedTests()[0]?.slug === 'general-knowledge',
 );
 const gk = getTest('general-knowledge');
 check('General Knowledge exists', Boolean(gk));

@@ -7,10 +7,10 @@ import type { TestCategory, TestDefinition } from './types';
  * and landing pages render, so a test's page is live and crawlable before its
  * question bank is seeded.
  *
- * Milestone 1 ships ONLY General Knowledge. The other seven endorsements
- * (Air Brakes, Combination, Hazmat, Tanker, Doubles & Triples, Passenger,
- * School Bus) are deliberately deferred — each is a later milestone. Lighting
- * one up is adding an entry here, then seeding its bank.
+ * Milestone 1 shipped ONLY General Knowledge; Milestone 5 adds Air Brakes.
+ * The remaining knowledge tests (Combination, Hazmat, Tanker, Doubles &
+ * Triples, Passenger, School Bus) are deliberately deferred — each is a later
+ * milestone. Lighting one up is adding an entry here, then seeding its bank.
  */
 
 /** CDL passing standard, reused as the default threshold. */
@@ -39,6 +39,30 @@ export const TEST_CATALOG: TestDefinition[] = [
     seoTitle: 'Free CDL General Knowledge Practice Test (2026) | Trucking Life with Shawn',
     seoDescription:
       'Free CDL General Knowledge practice test. Real permit-style questions written against the CDL manual and 49 CFR — each with the citation and a plain-English explanation. Study at your own pace.',
+    isPublished: true,
+  },
+  {
+    slug: 'air-brakes',
+    category: 'air_brakes',
+    title: 'Air Brakes',
+    shortDescription:
+      'The knowledge test that keeps the air-brake restriction off your CDL — components, gauges, warning signals, and the braking techniques that matter on grade.',
+    heroTitle: 'Pass the Air Brakes knowledge test and skip the L restriction',
+    heroIntro:
+      'Fail this test (or skip it) and your CDL carries a restriction barring air-braked vehicles — which is nearly every truck worth driving. Every question here is written against the CDL manual air-brakes section and 49 CFR, with the citation attached: compressor to spring brakes, pump-down checks to stab braking.',
+    // Air brakes is a restriction-removal knowledge test, not an endorsement —
+    // passing it removes the L/Z restriction rather than adding a code.
+    endorsementCode: null,
+    icon: '🛑',
+    questionCountTarget: 31,
+    passThresholdPct: PASS_THRESHOLD_DEFAULT,
+    /** Timed Test length — the countdown anchor for the exam simulation. */
+    timeLimitSeconds: 25 * 60,
+    modes: ['study', 'timed'],
+    relatedKcCategorySlug: null,
+    seoTitle: 'Free CDL Air Brakes Practice Test (2026) | Trucking Life with Shawn',
+    seoDescription:
+      'Free CDL Air Brakes practice test. Permit-style questions on compressors, governors, spring brakes, leakage checks, and mountain braking — each with the CDL manual or 49 CFR citation and a plain-English explanation.',
     isPublished: true,
   },
 ];

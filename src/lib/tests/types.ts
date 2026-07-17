@@ -47,7 +47,11 @@ export type TestDefinition = {
   /** CDL endorsement letter (H, N, T, P, S) or null for the base permit. */
   endorsementCode: string | null;
   icon: string;
-  /** Questions served per attempt once the bank is seeded. */
+  /**
+   * The bank size shown on a coming-soon landing before the bank is seeded.
+   * Every attempt serves the FULL seeded bank (there is no per-attempt
+   * sampling), so keep this equal to the seed's question count.
+   */
   questionCountTarget: number;
   /** Passing score percent (CDL standard is 80). */
   passThresholdPct: number;

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui';
 import { StudyRunner } from './StudyRunner';
 import { BookmarkButton } from './BookmarkButton';
 import { LoadingPanel } from './shared';
-import { testHref } from '@/lib/tests/catalog';
 import { studyStorageKey } from '@/lib/tests/study';
 import {
   bookmarkedIds,
@@ -173,7 +172,9 @@ export function SavedBrowser({
             : 'Miss a question in Study Mode or a Timed Test and it lands here, ready to practice until it sticks.'}
         </p>
         <div className="mt-6">
-          <Button href={testHref('general-knowledge')}>Take the General Knowledge test</Button>
+          {/* Catalog-derived: the hub lists every live test — never assume
+              which single test a student should start with. */}
+          <Button href="/practice-tests">Browse the practice tests</Button>
         </div>
       </div>
     );
