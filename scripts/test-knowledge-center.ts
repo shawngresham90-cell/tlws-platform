@@ -91,17 +91,26 @@ check(
 );
 const crossLinkUpdates3 =
   seed3.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
-check('040: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates3.length === 3);
+check('040: exactly four inbound-link UPDATEs, all replace-based', crossLinkUpdates3.length === 4);
+check(
+  '040: no other UPDATE statements of any kind (038 likewise)',
+  (seed3.match(/update public\./g) ?? []).length === 4 &&
+    (seed2.match(/update public\./g) ?? []).length === 3,
+);
 check(
   '040: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
-  (seed3.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
-    (seed3.match(/and a\.body_mdx not like '%\/knowledge\/getting-your-cdl\//g) ?? []).length === 3,
+  (seed3.match(/and a\.body_mdx like '%/g) ?? []).length === 4 &&
+    (seed3.match(/and a\.body_mdx not like '%\/knowledge\/getting-your-cdl\//g) ?? []).length === 4,
 );
 check(
   '040: UPDATEs are slug-scoped to the three intended articles',
   /a\.slug = 'dot-medical-card'/.test(seed3) &&
     /a\.slug = 'drug-alcohol-testing-clearinghouse'/.test(seed3) &&
     /a\.slug = 'cdl-pre-trip-inspection-guide'/.test(seed3),
+);
+check(
+  '040: all ten article inserts use the getting-your-cdl category variable',
+  (seed3.match(/values \(\s*v_gyc,/g) ?? []).length === 10,
 );
 
 // ── 2. Parse all 30 article records ─────────────────────────────────────────
@@ -207,24 +216,33 @@ for (const a of articles) {
       'burn the window and the 60/70-hour totals instead',
     );
   }
-  if (a.slug === 'dot-medical-card') {
-    a.body = a.body.replace(
-      "Intrastate-only rules are the state's, often parallel.",
-      "Intrastate-only rules are the state's, often parallel. Applying for your first CDL? The full eligibility picture — age, residency, record — is in [CDL Requirements](/knowledge/getting-your-cdl/cdl-requirements).",
-    );
-  }
-  if (a.slug === 'drug-alcohol-testing-clearinghouse') {
-    a.body = a.body.replace(
-      'safety-sensitive functions for an employer (382.301).',
-      'safety-sensitive functions for an employer (382.301) — for brand-new drivers this lands right after licensing, alongside the rest of the [CDL eligibility requirements](/knowledge/getting-your-cdl/cdl-requirements).',
-    );
-  }
-  if (a.slug === 'cdl-pre-trip-inspection-guide') {
-    a.body = a.body.replace(
-      'as the seven-step method.',
-      'as the seven-step method. Where it fits in the exam: [The CDL Skills Test](/knowledge/getting-your-cdl/cdl-skills-test).',
-    );
-  }
+}
+// 040's replacements are EXTRACTED from the migration itself (not hardcoded)
+// so a drifted search string that would silently no-op in Postgres fails here.
+const updateRe =
+  /replace\(\s*a\.body_mdx,\s*'((?:[^']|'')*)',\s*'((?:[^']|'')*)'\)[\s\S]*?a\.slug = '([a-z0-9-]+)'/g;
+const extracted: { search: string; replacement: string; slug: string }[] = [];
+let um: RegExpExecArray | null;
+updateRe.lastIndex = 0;
+while ((um = updateRe.exec(seed3)) !== null) {
+  extracted.push({
+    search: um[1].replace(/''/g, "'"),
+    replacement: um[2].replace(/''/g, "'"),
+    slug: um[3],
+  });
+}
+check('040: all four replacement pairs parse from the migration', extracted.length === 4);
+for (const { search, replacement, slug } of extracted) {
+  const target = articles.find((a) => a.slug === slug);
+  check(
+    `040 replacement target text exists exactly once in ${slug}`,
+    !!target && target.body.split(search).length === 2,
+  );
+  if (target) target.body = target.body.replace(search, replacement);
+  check(
+    `040 replacement for ${slug} grows the text and adds an internal link`,
+    replacement.length > search.length && /\]\(\/knowledge\//.test(replacement),
+  );
 }
 check('all 30 articles parse (10 per batch)', articles.length === 30, articles.length);
 check(
@@ -551,6 +569,12 @@ check(
     ['general-knowledge', 'air-brakes', 'combination-vehicles', 'hazmat', 'tanker'].every((t) =>
       b3body('cdl-study-plan').includes(`/practice-tests/${t}`),
     ),
+);
+check(
+  'the Batch 3 pillar receives an inbound link from Batch 1 (pre-trip guide)',
+  articles
+    .find((a) => a.slug === 'cdl-pre-trip-inspection-guide')!
+    .body.includes('/knowledge/getting-your-cdl/how-to-get-your-cdl'),
 );
 check(
   'external body links are official domains or the TLWS YouTube channel',

@@ -33,7 +33,7 @@ select
   'map',
   6,
   true,
-  'How to get your CDL step by step: federal requirements, the permit, ELDT, the skills test, school choices, and cost categories.'
+  'Guides for every stage of earning a CDL — requirements, the permit, ELDT training, the skills test, school choices, and costs.'
 where not exists (select 1 from public.kc_categories where slug = 'getting-your-cdl');
 
 do $kc$
@@ -100,7 +100,7 @@ A 24-year-old warehouse worker in Georgia decides to drive. Week one: DOT physic
 
 ## Costs and trade-offs
 
-Every step has a fee attached somewhere — physical, permit tests, training, skills test, issuance — and states set most of them. Rather than quote numbers that go stale, the [cost breakdown](/knowledge/getting-your-cdl/cdl-cost) walks the categories and how drivers actually pay for them (self-pay, private financing, or a carrier contract).
+Every step has a fee attached somewhere — physical, permit tests, training, skills test, issuance — and states set most of them. Rather than quote numbers that go stale, the [cost breakdown](/knowledge/getting-your-cdl/cdl-cost) walks the categories and how drivers actually pay for them (self-pay, private financing, or a carrier contract). And expect **state texture** at every step even though the sequence never changes: testing backlogs, third-party tester availability, intrastate age rules, and fee schedules are all set in your state capital, not Washington — which is why the honest answer to "how long does it take" always starts with your state's calendar, not a national average.
 
 ## Your step-by-step checklist
 
@@ -118,8 +118,8 @@ Every step has a fee attached somewhere — physical, permit tests, training, sk
 - The spokes of this guide: [CDL Requirements](/knowledge/getting-your-cdl/cdl-requirements) · [The CDL Permit](/knowledge/getting-your-cdl/cdl-permit-explained) · [ELDT](/knowledge/getting-your-cdl/eldt-requirements) · [Classes A/B/C](/knowledge/getting-your-cdl/cdl-classes-compared) · [The Skills Test](/knowledge/getting-your-cdl/cdl-skills-test) · [A Study Plan That Works](/knowledge/getting-your-cdl/cdl-study-plan)
 - Drill free: [General Knowledge practice test](/practice-tests/general-knowledge) · [the full test hub](/practice-tests)
 - Watch: [17 Years, Zero Violations — Here's How](https://youtu.be/PDeJF0CMoUw) on the Trucking Life with Shawn channel.
-- **Learn it hands-on:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
-      'How to Get Your CDL: Step-by-Step Guide (2026) | Trucking Life with Shawn',
+- **Learn it hands-on:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [new guides by email as they ship](/#newsletter).$mdx$,
+      'How to Get Your CDL: The Complete Step-by-Step Guide | Trucking Life with Shawn',
       'Every step to a CDL: requirements, DOT physical, permit tests, ELDT, the 14-day wait, the three-part skills test, and endorsements — with the federal rule behind each.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -192,9 +192,9 @@ These attach to the *person*, not the job — a DUI in your personal car counts 
 
 Since drug-and-alcohol testing went digital, your **Clearinghouse status** is effectively an eligibility requirement: carriers must query it before putting you in a truck, and a prohibited status stops employment until return-to-duty is complete. How the database, the tests, and the RTD process work: [CDL Drug and Alcohol Testing Rules and the Clearinghouse](/knowledge/dot-compliance/drug-alcohol-testing-clearinghouse).
 
-## A realistic example (illustration, not legal advice)
+## Two applicants, two clocks (illustration, not legal advice)
 
-A 20-year-old applicant in Tennessee qualifies medically, proves residency, and earns a Class A CDL — valid for intrastate work only. On their 21st birthday nothing new is filed with FMCSA; the federal interstate age bar simply lifts, and the OTR applications go out. Meanwhile a 35-year-old with a five-year-old DUI in a personal vehicle is *not* barred from applying — the one-year disqualification ran long ago — but should expect carriers to see the record and underwrite accordingly. Individual situations differ; when a record is complicated, the state licensing agency is the authority on what it will issue.
+A 20-year-old applicant in Tennessee qualifies medically, proves residency, and earns a Class A CDL — valid for intrastate work only. On their 21st birthday the federal age bar lifts — one state errand remains, updating the self-certification (and dropping the intrastate-only restriction) with the licensing agency — and then the OTR applications go out. Meanwhile a 35-year-old with a five-year-old DUI from before ever holding a CDL is *not* federally barred from applying — 383.51's tables govern CLP and CDL holders — but state licensing rules and carrier hiring standards both see the record, and each gets its own vote. Individual situations differ; when a record is complicated, the state licensing agency is the authority on what it will issue.
 
 ## Common mistakes
 
@@ -218,8 +218,8 @@ A 20-year-old applicant in Tennessee qualifies medically, proves residency, and 
 - Next step in the journey: [The CDL Permit Explained](/knowledge/getting-your-cdl/cdl-permit-explained) — and the [full step-by-step guide](/knowledge/getting-your-cdl/how-to-get-your-cdl)
 - The medical deep dive: [The DOT Medical Card](/knowledge/dot-compliance/dot-medical-card)
 - Start studying now, free: [General Knowledge practice test](/practice-tests/general-knowledge)
-- **Get exam-ready with structure:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
-      'CDL Requirements 2026: Age, Medical, and Eligibility | Trucking Life with Shawn',
+- **Get exam-ready with structure:** [TLWS Academy](/academy) · free fundamentals at [CDL Pre-School](/cdl-pre-school) · [new guides by email](/#newsletter).$mdx$,
+      'CDL Requirements: Age, Medical, and Eligibility | Trucking Life with Shawn',
       'Who qualifies for a CDL: 21 for interstate (18–20 intrastate), DOT medical standards, residency proof, the one-license rule, and 383.51 disqualifications.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -254,7 +254,7 @@ A 20-year-old applicant in Tennessee qualifies medically, proves residency, and 
       'cdl-permit-explained',
       'The CDL Permit Explained: CLP Rules, Tests, and the 14-Day Wait',
       'Everything the commercial learner''s permit really allows — the knowledge tests that earn it, who must ride with you, the endorsements a CLP can and cannot carry, how long it lasts, and the federal 14-day rule before the skills test.',
-      $mdx$**Quick answer:** The **commercial learner's permit (CLP)** is earned by passing your state's CDL **knowledge tests** and lets you practice driving a commercial vehicle **only with a qualified CDL holder seated beside you** ([49 CFR 383.25(a)](https://www.ecfr.gov/current/title-49/part-383/section-383.25)). It can carry only the **P, S, or N** endorsements (each restricted while learning), it is **valid for no more than one year** from issuance under federal rule, and you must hold it a minimum of **14 days** before you may take the skills test ([383.25(e)](https://www.ecfr.gov/current/title-49/part-383/section-383.25)).
+      $mdx$**Quick answer:** The **commercial learner's permit (CLP)** is earned by passing your state's CDL **knowledge tests** and lets you practice driving a commercial vehicle **only with a qualified CDL holder seated beside you** ([49 CFR 383.25(a)](https://www.ecfr.gov/current/title-49/part-383/section-383.25)). It can carry only the **P, S, or N** endorsements (each restricted while learning), it is **valid for no more than one year** from issuance under federal rule, and you must hold it a minimum of **14 days** before you may take the skills test (383.25(e)).
 
 **Regulatory-change disclaimer:** Last reviewed **July 17, 2026**. CLP rules are federal ([49 CFR 383.25](https://www.ecfr.gov/current/title-49/part-383/section-383.25) and [383.71](https://www.ecfr.gov/current/title-49/part-383/section-383.71)); states set fees, issuance terms within the federal cap, and renewal mechanics. Confirm with [FMCSA](https://www.fmcsa.dot.gov/) and your state licensing agency. Not legal advice.
 
@@ -271,7 +271,7 @@ Everyone pursuing a first CDL or a class upgrade. Even experienced Class B drive
 The CLP comes from knowledge tests only — no driving:
 
 - **General knowledge** — required for every applicant. Drill it free: [General Knowledge practice test](/practice-tests/general-knowledge).
-- **Air brakes** — required if your vehicle has them (skip it and the license is restricted to vehicles without full air brakes): [Air Brakes practice test](/practice-tests/air-brakes).
+- **Air brakes** — required if your vehicle has them (skip it and the license carries the **L** restriction — no air-brake-equipped CMV of any kind): [Air Brakes practice test](/practice-tests/air-brakes).
 - **Combination vehicles** — required for Class A: [Combination practice test](/practice-tests/combination-vehicles).
 - **Endorsement knowledge tests** you want to pre-load, within the CLP limits below.
 
@@ -279,17 +279,17 @@ States score against the federal minimums in [49 CFR 383.135](https://www.ecfr.g
 
 ## The supervision rule
 
-A CLP holder may drive a CMV **only when accompanied by the holder of a valid CDL** for the same class and type of vehicle, and that supervisor must be **physically seated beside you** in the front seat — not in the sleeper, not following in another truck. That is 383.25(a)(1), and schools build their trucks and schedules around it.
+A CLP holder may drive a CMV **only when accompanied by the holder of a valid CDL** for the same class and type of vehicle, and that supervisor must be **physically seated beside you** in the front seat — not in the sleeper, not following in another truck. (One carve-out: in a passenger vehicle, the rule lets the supervisor sit directly behind or in the first row behind the driver.) That is 383.25(a)(1), and schools build their trucks and schedules around it.
 
 ## Endorsements on a CLP — only three, all limited
 
 Federal rule allows a CLP to carry only:
 
-- **P (passenger)** — but you may not carry passengers other than trainers, examiners, and fellow trainees;
+- **P (passenger)** — but you may not carry passengers other than trainers, test examiners or auditors, and fellow trainees;
 - **S (school bus)** — same no-passengers limitation;
 - **N (tank)** — but only with an **empty** tank, purged if it last held hazardous material.
 
-Everything else — hazmat above all — waits for the full CDL. That's [383.25(b)](https://www.ecfr.gov/current/title-49/part-383/section-383.25).
+Everything else — hazmat above all — waits for the full CDL. That's 383.25(b).
 
 ## How long it lasts — and the 14-day floor
 
@@ -300,7 +300,7 @@ Two clocks run on every CLP:
 
 Used well, the 14 days are an asset: that's two weeks of supervised practice, [pre-trip drilling](/knowledge/cdl-training/cdl-pre-trip-inspection-guide), and [missed-question review](/practice-tests) before test day. A structured way to use the window: [A CDL Study Plan That Works](/knowledge/getting-your-cdl/cdl-study-plan).
 
-## A realistic example (illustration only)
+## One student's permit window (illustration only)
 
 A student passes general knowledge and combination on a Tuesday but fails air brakes by one question. He returns Thursday, passes, and the CLP prints with no air-brake restriction problem ahead. His school schedules the skills test for the sixteenth day — the fourteenth falls on a Sunday and the testing site is closed. Had he booked day twelve "to save time," the state would have turned him away at the counter.
 
@@ -324,7 +324,7 @@ A student passes general knowledge and combination on a Tuesday but fails air br
 
 - Next: [Entry-Level Driver Training](/knowledge/getting-your-cdl/eldt-requirements), then [The CDL Skills Test](/knowledge/getting-your-cdl/cdl-skills-test) — or zoom out to the [full guide](/knowledge/getting-your-cdl/how-to-get-your-cdl)
 - Pass the knowledge tests the first time: [practice-test hub](/practice-tests)
-- **Structured prep:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Structured prep:** the [TLWS Academy](/academy) program · [CDL Pre-School](/cdl-pre-school) to start free · [email list for new deep dives](/#newsletter).$mdx$,
       'CDL Permit (CLP) Rules and the 14-Day Wait | Trucking Life with Shawn',
       'The CLP explained: the knowledge tests, front-seat supervision rule, P/S/N-only endorsements, the one-year federal cap, and the 14-day wait before the skills test.',
       'Shawn Gresham', v_bio,
@@ -336,10 +336,10 @@ A student passes general knowledge and combination on a Tuesday but fails air br
       ]$j$::jsonb,
       $j$[
         {"q":"How long do I have to hold my CLP before the skills test?","a":"A federal minimum of 14 days under 49 CFR 383.25(e). The clock starts at issuance, and states cannot test you earlier — schedule the skills test for day 15 or later to be safe."},
-        {"q":"Who has to ride with a CLP holder?","a":"The holder of a valid CDL with the proper class and endorsements for the vehicle being driven, physically seated beside the CLP holder in the front seat. Practicing without that supervisor is unlawful CMV operation."},
-        {"q":"Which endorsements can go on a CLP?","a":"Only passenger (P), school bus (S), and tank (N) — and each is limited during training: no passengers beyond trainers, examiners, and fellow trainees for P and S, and only an empty (purged, if it held hazmat) tank for N. Hazmat cannot be added to a CLP."},
+        {"q":"Who has to ride with a CLP holder?","a":"The holder of a valid CDL with the proper class and endorsements for the vehicle being driven, physically seated beside the CLP holder in the front seat — or, in a passenger vehicle, directly behind or in the first row behind the driver. Practicing without that supervisor is unlawful CMV operation."},
+        {"q":"Which endorsements can go on a CLP?","a":"Only passenger (P), school bus (S), and tank (N) — and each is limited during training: no passengers beyond trainers, examiners and auditors, and fellow trainees for P and S, and only an empty (purged, if it held hazmat) tank for N. Hazmat cannot be added to a CLP."},
         {"q":"How long is a CLP valid?","a":"Federal rule caps CLP validity at one year from the date of issuance. States set the actual issued term within that cap and their own renewal or retest mechanics, so check your state before letting a permit run down."},
-        {"q":"Do I need the air brakes test for my CLP?","a":"You need it if you plan to test and drive in a vehicle with full air brakes. Skip or fail it and your eventual CDL carries a restriction barring vehicles with full air brakes — which covers most highway tractors."}
+        {"q":"Do I need the air brakes test for my CLP?","a":"You need it if you plan to test and drive in a vehicle with full air brakes. Skip or fail it and your eventual CDL carries the L restriction, barring CMVs equipped with air brakes of any kind — which covers nearly every highway tractor."}
       ]$j$::jsonb,
       '{getting-your-cdl,clp,permit,knowledge-tests,14-day-rule}',
       8, false, 'published', true, '2026-07-17', v_pub
@@ -394,7 +394,7 @@ The only list that counts is the [Training Provider Registry](https://tpr.fmcsa.
 
 ## A realistic example (illustration only)
 
-A Class B box-truck driver wants a Class A. He assumed years of experience would exempt him — but a B-to-A upgrade is squarely inside ELDT. He picks a TPR-listed school, clears the theory assessment in a weekend of study (his experience helps), and the school certifies his BTW proficiency after the instructor signs off element by element. The school transmits the certification Tuesday night; Wednesday the state sees it and his [skills test](/knowledge/getting-your-cdl/cdl-skills-test) stays on the calendar.
+A Class B box-truck driver wants a Class A. He assumed years of experience would exempt him — but a B-to-A upgrade is squarely inside ELDT. He picks a TPR-listed school, clears the theory assessment in a weekend of study (his experience helps), and the school certifies his BTW proficiency after the instructor signs off element by element. The school transmits the certification Tuesday night; Wednesday the state sees it and his skills test stays on the calendar.
 
 ## Common mistakes
 
@@ -416,14 +416,14 @@ A Class B box-truck driver wants a Class A. He assumed years of experience would
 
 - Where this sits in the sequence: [the step-by-step guide](/knowledge/getting-your-cdl/how-to-get-your-cdl) · then [The CDL Skills Test](/knowledge/getting-your-cdl/cdl-skills-test)
 - Theory prep that mirrors the real tests: [General Knowledge](/practice-tests/general-knowledge) · [Hazmat](/practice-tests/hazmat) · [the full hub](/practice-tests)
-- **Train with us:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Train with us:** [TLWS Academy](/academy) in Dalton · warm up free in [CDL Pre-School](/cdl-pre-school) · [get updates by email](/#newsletter).$mdx$,
       'ELDT Requirements: Who Needs It and How It Works | Trucking Life with Shawn',
       'ELDT explained: who must complete it, the theory and behind-the-wheel rules, the 80% assessment, the Training Provider Registry, and how certification reaches your state.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"49 CFR Part 380 — Special Training Requirements, incl. Subpart F ELDT (eCFR)","url":"https://www.ecfr.gov/current/title-49/part-380"},
         {"label":"FMCSA Training Provider Registry","url":"https://tpr.fmcsa.dot.gov/"},
-        {"label":"49 CFR 383.77 — Substitute for driving skills tests (military) (eCFR)","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.77"},
+        {"label":"49 CFR 383.77 — Substitute for knowledge and driving skills tests (military) (eCFR)","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.77"},
         {"label":"FMCSA — Federal Motor Carrier Safety Administration","url":"https://www.fmcsa.dot.gov/"}
       ]$j$::jsonb,
       $j$[
@@ -494,7 +494,7 @@ Every new applicant, once — the class you test in is the class you hold — pl
 
 The **class** says how big and what configuration; **endorsements** say what's inside or how many trailers. A Class A license doesn't authorize hazmat, and an H endorsement doesn't authorize a combination. The full overlay — H, N, P, S, T, X, and the restriction codes — is in [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions). And because the class controls the **test vehicle**, it also controls restrictions: test in an automatic and you'll carry the no-manual restriction; test without full air brakes and air-braked trucks are off the table.
 
-## A realistic example (illustration only)
+## Two friends, two classes (illustration only)
 
 Two friends start the same week. One tests in a Class A sleeper tractor pulling a 53-foot trailer; the other tests in a Class B dump truck because a paving company is hiring. Three years later the dump-truck driver wants OTR money: back to a CLP, an ELDT upgrade course, and a combination skills test — none of the Class B seat time substitutes for the Class A test. Choosing the bigger class first isn't always right (the paving job was real money sooner), but it's a choice you make **once at the start**, so make it looking at the whole map: [the step-by-step guide](/knowledge/getting-your-cdl/how-to-get-your-cdl).
 
@@ -518,7 +518,7 @@ Two friends start the same week. One tests in a Class A sleeper tractor pulling 
 
 - The tests your class requires: [General Knowledge](/practice-tests/general-knowledge) · [Air Brakes](/practice-tests/air-brakes) · [Combination Vehicles](/practice-tests/combination-vehicles)
 - What stacks on top: [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions)
-- **Plan the whole journey:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Plan the whole journey:** [TLWS Academy](/academy) · try [CDL Pre-School](/cdl-pre-school) first, free · the [newsletter](/#newsletter) covers what ships next.$mdx$,
       'CDL Classes A, B, C Compared: What Each Covers | Trucking Life with Shawn',
       'Class A vs B vs C in plain English: the 26,001- and 10,000-pound lines, what each class lets you drive, upgrade costs, and how endorsements stack on top.',
       'Shawn Gresham', v_bio,
@@ -579,17 +579,17 @@ Every applicant planning a career lane (the endorsement list IS the job list), a
 From the federal table in 383.153(a)(10) — your state prints these (display conventions can differ slightly):
 
 - **E — no manual transmission.** Earned by taking the [skills test](/knowledge/getting-your-cdl/cdl-skills-test) in an automatic.
-- **K — intrastate only.** Usually age- or medical-certification-driven; it fences you inside your state.
+- **K — intrastate only.** Usually age- or medical-certification-driven; it fences you inside your state until you qualify for interstate driving and update your self-certification with the licensing agency.
 - **L — no air-brake CMV.** From skipping/failing the air-brakes knowledge test or testing in a vehicle without air brakes. Avoid it: [Air Brakes practice test](/practice-tests/air-brakes).
 - **M — Class B/C passenger vehicles only.** A Class A holder who took the P skills test in a Class B bus.
 - **N — Class C passenger vehicles only.** Same idea, one class down. (Yes — the letter N does double duty: endorsement N is tank; restriction N is passenger-class.)
 - **O — no tractor-trailer.** From testing in a Class A combination that wasn't a fifth-wheel connection (e.g., pintle hook).
-- **V — medical variance.** Flags that you drive under a federal vision, diabetes, or similar variance — paperwork travels with you.
+- **V — medical variance.** Flags that you drive under a federal medical variance — an exemption (hearing or seizure, for example) or a Skill Performance Evaluation certificate — and the paperwork travels with you.
 - **Z — no full air brakes.** From testing in an air-over-hydraulic vehicle.
 
 ## Why restrictions matter more than they look
 
-Restrictions follow the license, and dispatch reads them. An **E** restriction quietly removes every manual truck from your job market; an **L** removes nearly every highway tractor. Clearing one means **retesting in the right vehicle** — a scheduling and rental problem that costs far more after licensing than avoiding it would have cost during training. Choose the test vehicle like it's a career decision, because it is.
+Restrictions follow the license, and dispatch reads them. An **E** restriction quietly removes every manual truck from your job market; an **L** removes nearly every highway tractor. Clearing one means **retesting in the right vehicle** — a scheduling and rental problem that costs far more after licensing than avoiding it would have cost during training. Choose the test vehicle deliberately — its equipment list writes itself onto your license.
 
 ## A realistic example (illustration only)
 
@@ -615,7 +615,7 @@ A student tests in her school's automatic day-cab with full air brakes: no L, no
 
 - The tests behind the letters: [Hazmat](/practice-tests/hazmat) · [Tanker](/practice-tests/tanker) · [Air Brakes](/practice-tests/air-brakes) · [full hub](/practice-tests)
 - Zoom out: [the step-by-step guide](/knowledge/getting-your-cdl/how-to-get-your-cdl) · [CDL Classes Compared](/knowledge/getting-your-cdl/cdl-classes-compared)
-- **Build the endorsement plan with us:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Build the endorsement plan with us:** [TLWS Academy](/academy) · the free on-ramp is [CDL Pre-School](/cdl-pre-school) · [email list](/#newsletter) for new tests and guides.$mdx$,
       'CDL Endorsements and Restriction Codes Explained | Trucking Life with Shawn',
       'H, N, P, S, T, X endorsements and the E, K, L, M, N, O, V, Z restriction codes: what each allows or blocks, the tests required, and how test choices become restrictions.',
       'Shawn Gresham', v_bio,
@@ -683,7 +683,7 @@ Two rules collide here: the test must be in a vehicle **representative of your c
 
 Some states test at agency sites, many authorize **third-party testers** (schools among them), and backlogs range from days to months. Three state-specific questions to ask early: How far out is the calendar? What does a retest cost and how long is the wait after a failed segment? Does my school's third-party tester have requirements beyond the state's? None of those answers are federal; all of them shape your timeline more than the 14-day rule does.
 
-## A realistic example (illustration only)
+## Test day, minute by minute (illustration only)
 
 Test day, 7 a.m. The inspection takes forty minutes — she narrates brakes, steering, coupling without touching her notes. Basic control: one pull-up on the offset, well inside tolerance. On the road, the examiner marks nothing until a yellow light — she's already braking, stopped square behind the line. Passed on the first attempt *because the pre-trip was automatic*; the classmate who treated inspection as memorization theater failed part 1 and never got to show his excellent backing.
 
@@ -709,7 +709,7 @@ Test day, 7 a.m. The inspection takes forty minutes — she narrates brakes, ste
 - Build the inspection habit: [Complete CDL Pre-Trip Inspection Guide](/knowledge/cdl-training/cdl-pre-trip-inspection-guide)
 - The knowledge behind the wheel: [General Knowledge](/practice-tests/general-knowledge) · [Combination Vehicles](/practice-tests/combination-vehicles) · [Air Brakes](/practice-tests/air-brakes)
 - The full journey: [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl) · then [A Study Plan That Works](/knowledge/getting-your-cdl/cdl-study-plan)
-- **Practice with instructors:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Practice with instructors:** [TLWS Academy](/academy) trucks and range time · begin free with [CDL Pre-School](/cdl-pre-school) · [updates by email](/#newsletter).$mdx$,
       'CDL Skills Test: The 3 Parts Explained | Trucking Life with Shawn',
       'The CDL skills test: vehicle inspection, basic-control maneuvers, and the road test — plus how your test vehicle decides restrictions and how state scheduling works.',
       'Shawn Gresham', v_bio,
@@ -797,7 +797,7 @@ A career-changer builds a spreadsheet with one row per category above, then call
 - The decision this budget feeds: [Sponsored vs. Private CDL School](/knowledge/getting-your-cdl/sponsored-vs-private-cdl-school)
 - Cut the retake risk to zero, free: [practice-test hub](/practice-tests) · [General Knowledge](/practice-tests/general-knowledge)
 - The whole journey in order: [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl)
-- **Train without the guesswork:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
+- **Train without the guesswork:** bring your cost questions to the [TLWS Academy](/academy) · free start at [CDL Pre-School](/cdl-pre-school) · [get the newsletter](/#newsletter).$mdx$,
       'What a CDL Costs: Every Fee Category Explained | Trucking Life with Shawn',
       'CDL cost categories explained: the physical, permit and test fees, tuition, the skills test, licensing, endorsements and the TSA hazmat fee, plus lodging and lost wages.',
       'Shawn Gresham', v_bio,
@@ -886,7 +886,7 @@ Two neighbors start the same month. One has savings, pays a community college, a
 - The training the law requires either way: [ELDT Requirements](/knowledge/getting-your-cdl/eldt-requirements)
 - Sharpen the knowledge side free while you decide: [the practice-test hub](/practice-tests)
 - The whole road: [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl)
-- **A third option — learn the fundamentals free first:** [CDL Pre-School](/cdl-pre-school) · then [TLWS Academy](/academy) · [join the email list](/#newsletter).$mdx$,
+- **A third option — learn the fundamentals free first:** [CDL Pre-School](/cdl-pre-school) · then the [TLWS Academy](/academy) · the [newsletter](/#newsletter) carries honest school-picking guides.$mdx$,
       'Company-Sponsored CDL Training vs. Private School | Trucking Life with Shawn',
       'Sponsored CDL training or private school? Contracts, repayment clauses, placement claims, and hybrids — with a checklist for choosing what fits your money and risk.',
       'Shawn Gresham', v_bio,
@@ -936,7 +936,7 @@ Anyone starting the knowledge tests — first-time applicants above all, but the
 
 **Week 1 — General knowledge.** Read the manual's general-knowledge chapters in two or three sittings; after each, run the [General Knowledge practice test](/practice-tests/general-knowledge) in Study Mode, where every answer explains itself with its citation. **Bookmark** any question that surprised you, right or wrong.
 
-**Week 2 — Your vehicle's tests.** Class A means [Air Brakes](/practice-tests/air-brakes) and [Combination Vehicles](/practice-tests/combination-vehicles) — read each manual section, then drill the matching test the same day. Air brakes especially punishes skimming: the sequences (pump-down checks, warning thresholds) only stick with repetition, and skipping this test puts an L restriction on your license.
+**Week 2 — Your vehicle's tests.** Class A means [Air Brakes](/practice-tests/air-brakes) and [Combination Vehicles](/practice-tests/combination-vehicles) — read each manual section, then drill the matching test the same day. (Not sure which class you're aiming at? [Classes A, B, and C compared](/knowledge/getting-your-cdl/cdl-classes-compared).) Air brakes especially punishes skimming: the sequences (pump-down checks, warning thresholds) only stick with repetition, and skipping this test puts an L restriction on your license.
 
 **Week 3 — Timed runs and the weak-spot purge.** Switch to Timed Mode to rehearse exam pressure, and work the **missed-questions drill** until it's empty: every question you've ever missed, grouped by test, re-asked until you clear it. Reread only the manual sections your misses point to — that's the efficiency the loop buys.
 
@@ -951,7 +951,7 @@ Anyone starting the knowledge tests — first-time applicants above all, but the
 - **Missed-question drills** are the highest-value minutes in the plan — they are, by construction, exactly what you don't know.
 - Short daily sessions beat weekend marathons; twenty focused minutes with drills outteaches two glazed hours with the manual.
 
-## A realistic example (illustration only)
+## A real week on the plan (illustration only)
 
 A working parent studies 25 minutes a night. Manual chapter Monday and Tuesday, drills Wednesday, misses Thursday, a timed run Friday. General knowledge passes in week two, air brakes and combination in week four — every test on the first attempt, so the [per-attempt fees](/knowledge/getting-your-cdl/cdl-cost) got paid exactly once. Slower than a bootcamp, cheaper than a retake.
 
@@ -977,7 +977,7 @@ A working parent studies 25 minutes a night. Manual chapter Monday and Tuesday, 
 
 - The tests, all free: [General Knowledge](/practice-tests/general-knowledge) · [Air Brakes](/practice-tests/air-brakes) · [Combination Vehicles](/practice-tests/combination-vehicles) · [Hazmat](/practice-tests/hazmat) · [Tanker](/practice-tests/tanker) — or the [whole hub](/practice-tests)
 - Where the plan fits: [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl) · [The Skills Test](/knowledge/getting-your-cdl/cdl-skills-test)
-- **Want the structure built for you?** [CDL Pre-School](/cdl-pre-school) is the free start · [TLWS Academy](/academy) is the full program · [join the email list](/#newsletter).$mdx$,
+- **Want the structure built for you?** [CDL Pre-School](/cdl-pre-school) is the free start · [TLWS Academy](/academy) is the full program · [weekly study help by email](/#newsletter).$mdx$,
       'CDL Study Plan: Pass Every Test the First Time | Trucking Life with Shawn',
       'A week-by-week CDL study plan: manual reading paired with free practice tests, missed-question drilling, bookmarks, timed rehearsal, and skills-test prep.',
       'Shawn Gresham', v_bio,
@@ -1095,3 +1095,15 @@ where c.id = a.category_id and c.slug = 'cdl-training'
   and a.slug = 'cdl-pre-trip-inspection-guide'
   and a.body_mdx like '%as the seven-step method.%'
   and a.body_mdx not like '%/knowledge/getting-your-cdl/cdl-skills-test%';
+
+-- 4. CDL Pre-Trip Inspection Guide (Batch 1) → the Batch 3 pillar: the
+--    exam-prep CTA now routes new drivers to the full licensing path.
+update public.kc_articles a set body_mdx = replace(
+    a.body_mdx,
+    'for your CDL exam?** Start free with',
+    'for your CDL exam?** The whole licensing road is mapped in [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl); start free with')
+from public.kc_categories c
+where c.id = a.category_id and c.slug = 'cdl-training'
+  and a.slug = 'cdl-pre-trip-inspection-guide'
+  and a.body_mdx like '%for your CDL exam?** Start free with%'
+  and a.body_mdx not like '%/knowledge/getting-your-cdl/how-to-get-your-cdl%';
