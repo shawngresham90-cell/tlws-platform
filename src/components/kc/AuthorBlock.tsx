@@ -20,7 +20,16 @@ export function AuthorBlock({ article }: { article: KcArticle }) {
           Last updated <span className="text-ink">{updated}</span>
         </p>
         {article.reg_verified && article.reg_verified_date && (
-          <p className="mt-1 text-signal">✓ Verified against the eCFR</p>
+          <p className="mt-1 text-signal">
+            ✓ Last reviewed against the eCFR{' '}
+            <span className="whitespace-nowrap">
+              {new Date(`${article.reg_verified_date}T00:00:00`).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </p>
         )}
       </div>
     </div>
