@@ -121,7 +121,7 @@ More miles usually means less home time; the highest CPM can sit on the worst la
 - Watch: [17 Years, Zero Violations — Here's How](https://youtu.be/PDeJF0CMoUw) on the Trucking Life with Shawn channel.
 - **Build the career with us:** [TLWS Academy](/academy) · start free with [CDL Pre-School](/cdl-pre-school) · [join the email list](/#newsletter).$mdx$,
       'How Truck Driver Pay Works: CPM, Percentage, Hourly | Trucking Life with Shawn',
-      'How CDL truck driver pay works: cents per mile vs percentage vs hourly, plus accessorials, per diem, and how to compare two offers on real take-home instead of the headline.',
+      'How CDL truck driver pay works: cents per mile vs percentage vs hourly, plus accessorials and per diem, and how to compare two offers on real take-home.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"U.S. Bureau of Labor Statistics — Heavy and Tractor-Trailer Truck Drivers","url":"https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm"},
@@ -339,7 +339,7 @@ Company driving trades **ceiling for floor**: lower risk, predictable costs, ben
       'owner-operator-vs-company-driver',
       'Owner-Operator vs Company Driver: The Real Trade-off',
       'A company driver rents stability; an owner-operator buys a business. The honest comparison — gross versus net, who carries the truck''s costs and risk, and the questions to answer before you sign either way.',
-      $mdx$**Quick answer:** A **company driver** is a W-2 employee who drives the carrier''s truck; the carrier owns the equipment, pays for fuel and maintenance, and issues a predictable paycheck. An **owner-operator** owns or leases the truck and runs a **business** — either leased to a carrier''s authority or under their own — keeping the load revenue but paying every cost out of it. The difference is not "who earns more." It is **gross versus net and stability versus risk**: an owner-operator''s gross is far larger and often meaningless until fuel, truck payment, insurance, maintenance, and taxes come out. Compare the two only on **realistic net take-home**, not headline numbers.
+      $mdx$**Quick answer:** A **company driver** is a W-2 employee who drives the carrier's truck; the carrier owns the equipment, pays for fuel and maintenance, and issues a predictable paycheck. An **owner-operator** owns or leases the truck and runs a **business** — either leased to a carrier's authority or under their own — keeping the load revenue but paying every cost out of it. The difference is not "who earns more." It is **gross versus net and stability versus risk**: an owner-operator's gross is far larger and often meaningless until fuel, truck payment, insurance, maintenance, and taxes come out. Compare the two only on **realistic net take-home**, not headline numbers.
 
 **Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial, tax, or legal advice**. Costs, freight rates, and lease terms **vary enormously and change with the market** — run your own numbers on your own contract, and take business-structure and tax questions to a professional. Confirm wage data with [BLS](https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm). Not affiliated with any carrier.
 
@@ -350,7 +350,7 @@ A company seat is a **job**. An owner-operator is a **small business** that happ
 ## Who carries the costs
 
 - **Company driver.** The carrier owns the truck and pays for fuel, maintenance, insurance on the equipment, tolls, and permits. Your deductions are typically taxes and benefit premiums. Your income is your pay, close to whole. Background: [How Company Driver Pay Works](/knowledge/trucking-careers/company-driver-pay).
-- **Owner-operator.** You pay for the truck (purchase or lease), fuel, all maintenance and repair, insurance, permits and licensing, tolls, and often trailer and administrative costs. Whatever the load pays, those come out **first** — what''s left is your income and your taxes come from that. *(How you''re taxed depends on your business structure; the [IRS self-employed guidance](https://www.irs.gov/businesses/small-businesses-self-employed) is the starting point.)*
+- **Owner-operator.** You pay for the truck (purchase or lease), fuel, all maintenance and repair, insurance, permits and licensing, tolls, and often trailer and administrative costs. Whatever the load pays, those come out **first** — what's left is your income and your taxes come from that. *(How you're taxed depends on your business structure; the [IRS self-employed guidance](https://www.irs.gov/businesses/small-businesses-self-employed) is the starting point.)*
 
 ## Gross is a trap
 
@@ -358,11 +358,11 @@ The number that sinks new owner-operators is **gross revenue**. A truck that bil
 
 ## The self-employment tax reality
 
-An owner-operator generally pays **self-employment tax** (the full Social Security and Medicare share an employer would otherwise split) and makes **quarterly estimated payments** — there''s no withholding. Legitimate business expenses reduce taxable income, but the record-keeping and the discipline to set money aside are the job now, too. This is federal tax mechanics, not carrier policy; the [IRS self-employed pages](https://www.irs.gov/businesses/small-businesses-self-employed) explain the obligations, and a trucking-literate tax professional is worth the fee.
+An owner-operator generally pays **self-employment tax** (the full Social Security and Medicare share an employer would otherwise split) and makes **quarterly estimated payments** — there's no withholding. Legitimate business expenses reduce taxable income, but the record-keeping and the discipline to set money aside are the job now, too. This is federal tax mechanics, not carrier policy; the [IRS self-employed pages](https://www.irs.gov/businesses/small-businesses-self-employed) explain the obligations, and a trucking-literate tax professional is worth the fee.
 
 ## Leased-to-carrier vs your own authority
 
-Most owner-operators start **leased to a carrier**: you own the truck but run under the carrier''s operating authority, dispatch, and insurance, trading some margin for less administrative load. Running under **your own authority** means being the whole business — finding freight, carrying your own insurance, handling compliance — for a larger share of the revenue and a larger share of the risk. Both are legitimate; they demand different amounts of business appetite.
+Most owner-operators start **leased to a carrier**: you own the truck but run under the carrier's operating authority, dispatch, and insurance, trading some margin for less administrative load. Running under **your own authority** means being the whole business — finding freight, carrying your own insurance, handling compliance — for a larger share of the revenue and a larger share of the risk. Both are legitimate; they demand different amounts of business appetite.
 
 ## A worked illustration (not a promise)
 
@@ -370,17 +370,17 @@ Two drivers run identical lanes. The company driver is paid a mileage rate, sees
 
 ## Common mistakes
 
-- **Comparing gross to net.** An owner-operator''s gross against a company driver''s take-home is not a comparison — it''s a mirage.
+- **Comparing gross to net.** An owner-operator's gross against a company driver's take-home is not a comparison — it's a mirage.
 - **Forgetting the tax reserve.** No withholding means you owe it later. Not setting it aside is the classic first-year failure.
-- **No maintenance fund.** Trucks break. A cost-per-mile maintenance reserve is not optional; it''s the difference between a repair and a crisis.
-- **Skipping the paper exercise.** If you can''t build a break-even cost-per-mile before you buy, you aren''t ready to buy.
-- **Confusing lease-purchase with ownership.** A [lease-purchase program](/knowledge/trucking-careers/lease-purchase-programs-explained) is its own animal — read that before assuming it''s a shortcut to ownership.
+- **No maintenance fund.** Trucks break. A cost-per-mile maintenance reserve is not optional; it's the difference between a repair and a crisis.
+- **Skipping the paper exercise.** If you can't build a break-even cost-per-mile before you buy, you aren't ready to buy.
+- **Confusing lease-purchase with ownership.** A [lease-purchase program](/knowledge/trucking-careers/lease-purchase-programs-explained) is its own animal — read that before assuming it's a shortcut to ownership.
 
 ## Which fits you
 
-- Want a **predictable paycheck**, benefits, and none of the truck''s risk? The company seat is the honest answer for most drivers, especially early on.
+- Want a **predictable paycheck**, benefits, and none of the truck's risk? The company seat is the honest answer for most drivers, especially early on.
 - Genuinely want to **run a business**, have a cash cushion, and understand the tax and maintenance discipline? Ownership can pay off in strong markets — for those who treat it as a business.
-- Unsure? Drive as a company driver first. You''ll learn the freight network and the real costs before betting your own money on them.
+- Unsure? Drive as a company driver first. You'll learn the freight network and the real costs before betting your own money on them.
 
 ## Keep learning
 
@@ -421,30 +421,30 @@ Two drivers run identical lanes. The company driver is paid a mileage rate, sees
       'what-is-a-good-cpm-rate',
       'What Is a Good CPM Rate? How to Judge a Mileage Offer',
       'There is no single "good" cents-per-mile number — a high CPM on short, badly counted miles can pay less than a lower CPM on steady, honestly counted ones. The factors that make a mileage offer good or bad, and how to compare two of them.',
-      $mdx$**Quick answer:** There is **no universal "good" CPM**, because a cents-per-mile rate only means something alongside the **miles you''ll actually run**, **how those miles are counted**, and the **accessorial pay and deductions** around it. A higher rate on short, HHG-counted, sit-heavy miles can pay less than a lower rate on steady practical miles with good detention pay. Judge a mileage offer by estimated **annual take-home for your realistic weekly miles**, not by the headline number. For current wage benchmarks, use the [BLS wage data for heavy and tractor-trailer truck drivers](https://www.bls.gov/oes/current/oes533032.htm), which reports by state and metro area.
+      $mdx$**Quick answer:** There is **no universal "good" CPM**, because a cents-per-mile rate only means something alongside the **miles you'll actually run**, **how those miles are counted**, and the **accessorial pay and deductions** around it. A higher rate on short, HHG-counted, sit-heavy miles can pay less than a lower rate on steady practical miles with good detention pay. Judge a mileage offer by estimated **annual take-home for your realistic weekly miles**, not by the headline number. For current wage benchmarks, use the [BLS wage data for heavy and tractor-trailer truck drivers](https://www.bls.gov/oes/current/oes533032.htm), which reports by state and metro area.
 
 **Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial advice**. This guide deliberately quotes **no CPM numbers**: rates vary by carrier, freight type, experience, region, and market, and any figure would be stale and misleading. Use it to evaluate the offer in front of you and confirm benchmarks with [BLS](https://www.bls.gov/oes/current/oes533032.htm). Not affiliated with any carrier.
 
-## Why "what''s a good CPM?" has no number answer
+## Why "what's a good CPM?" has no number answer
 
-A CPM rate is a **multiplier**, and the thing it multiplies — miles — is where offers really differ. Two drivers on the same rate can earn very differently because one runs steady long lanes and the other sits waiting for freight. So the useful question isn''t "is this rate good?" It''s "what does this rate, on the miles I can actually run here, pay me over a year after everything?"
+A CPM rate is a **multiplier**, and the thing it multiplies — miles — is where offers really differ. Two drivers on the same rate can earn very differently because one runs steady long lanes and the other sits waiting for freight. So the useful question isn't "is this rate good?" It's "what does this rate, on the miles I can actually run here, pay me over a year after everything?"
 
 ## The factors that decide whether a rate is good
 
-- **How many miles you''ll run.** Consistent weekly miles matter more than the rate. Ask about **average miles per week** for drivers in the seat you''re offered — and whether that''s a floor or a hope.
+- **How many miles you'll run.** Consistent weekly miles matter more than the rate. Ask about **average miles per week** for drivers in the seat you're offered — and whether that's a floor or a hope.
 - **How miles are counted.** **Practical miles** (real route) pay more honestly than **HHG / short miles** (zip-to-zip straight-line). Same rate, different paycheck. Always ask which the carrier uses.
-- **Accessorial pay.** Detention, stop pay, layover, and tarp pay fill the gaps when you''re not rolling. A slightly lower CPM with real accessorial pay can beat a higher bare rate.
+- **Accessorial pay.** Detention, stop pay, layover, and tarp pay fill the gaps when you're not rolling. A slightly lower CPM with real accessorial pay can beat a higher bare rate.
 - **Home-time and freight consistency.** More home time and inconsistent freight both cut miles. Weigh them honestly — see [Home Time and Quality of Life](/knowledge/trucking-careers/home-time-and-quality-of-life).
 - **Deductions.** Benefit premiums, per-diem administration, and any equipment fees change take-home. Get the full list. Details: [How Company Driver Pay Works](/knowledge/trucking-careers/company-driver-pay).
 - **Experience and freight type.** Rates generally rise with verified experience and with harder-to-staff freight (flatbed, specialized, hazmat). *(Industry practice; it varies.)*
 
 ## Where to find honest benchmarks
 
-Instead of a recruiter''s number or a forum rumor, anchor on **published wage data**. BLS reports earnings for heavy and tractor-trailer truck drivers **by state and metropolitan area** in its [Occupational Employment and Wage Statistics](https://www.bls.gov/oes/current/oes533032.htm), and describes the occupation in the [Occupational Outlook Handbook](https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm). Those are the neutral yardsticks; a specific carrier''s CPM is good or bad relative to what the work nets, not relative to a national headline.
+Instead of a recruiter's number or a forum rumor, anchor on **published wage data**. BLS reports earnings for heavy and tractor-trailer truck drivers **by state and metropolitan area** in its [Occupational Employment and Wage Statistics](https://www.bls.gov/oes/current/oes533032.htm), and describes the occupation in the [Occupational Outlook Handbook](https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm). Those are the neutral yardsticks; a specific carrier's CPM is good or bad relative to what the work nets, not relative to a national headline.
 
 ## How to compare two mileage offers
 
-1. Get each offer''s **rate, mile basis** (practical vs HHG), and **realistic weekly miles**.
+1. Get each offer's **rate, mile basis** (practical vs HHG), and **realistic weekly miles**.
 2. List every **accessorial** and every **deduction** for each.
 3. Estimate **annual take-home** for *your* likely miles, not the best case.
 4. Add the non-cash factors — home time, freight consistency, equipment — and decide on the whole picture.
@@ -457,8 +457,8 @@ Offer A advertises a higher cents-per-mile rate but counts HHG miles, runs an in
 
 - **Chasing the headline rate.** The biggest number on the flyer is marketing, not a paycheck.
 - **Not asking how miles are counted.** Practical vs HHG can swing pay meaningfully at the same rate.
-- **Ignoring accessorials.** Detention and layover pay are where sit-heavy freight either hurts or doesn''t.
-- **Believing "up to" miles.** "Up to 3,000 miles a week" is a ceiling, not an average. Ask for the average.
+- **Ignoring accessorials.** Detention and layover pay are where sit-heavy freight either hurts or doesn't.
+- **Believing "up to" miles.** An "up to X miles a week" number is a ceiling, not an average. Ask for the average.
 - **Skipping the deduction list.** A high rate with heavy deductions can net less than a modest one.
 
 ## A quick rate-evaluation checklist
@@ -485,7 +485,7 @@ Offer A advertises a higher cents-per-mile rate but counts HHG miles, runs an in
       ]$j$::jsonb,
       $j$[
         {"q":"What is a good cents-per-mile rate for truck driving?","a":"There isn't a single good number. A CPM rate only matters alongside how many miles you'll actually run, how those miles are counted (practical vs HHG), the accessorial pay, and the deductions. A higher rate on short, badly counted, sit-heavy miles can pay less than a lower rate on steady practical miles. Judge it by estimated annual take-home for your realistic weekly miles."},
-        {"q":"What's the difference between practical miles and HHG miles?","a":"Practical miles follow the actual truck-legal route and reflect the distance you really drive. HHG (household goods) or short miles use a zip-code-to-zip-code straight-line calculation that undercounts real distance. At the same CPM rate, practical miles pay more, so always ask which basis a carrier uses before comparing offers."},
+        {"q":"Can a higher CPM on HHG miles pay less than a lower CPM on practical miles?","a":"Yes, and often does. Household-goods (HHG) or short miles use a zip-to-zip straight-line count that undercounts the distance you actually drive, while practical miles reflect the real route. Because you are paid per counted mile, a higher rate on undercounted HHG miles can take home less than a lower rate on practical miles — so compare the rate and the mile basis together, never the rate alone."},
         {"q":"Where can I find honest trucking pay benchmarks?","a":"The U.S. Bureau of Labor Statistics publishes earnings for heavy and tractor-trailer truck drivers by state and metro area in its Occupational Employment and Wage Statistics, and describes the occupation in the Occupational Outlook Handbook. Those neutral, government-published figures are better benchmarks than a recruiter's headline rate or a forum rumor."},
         {"q":"Is a higher CPM always better?","a":"No. A higher rate on HHG miles, an inconsistent lane with lots of unpaid sitting, and no detention pay can take home less than a lower rate on practical miles with steady freight and real accessorial pay. Compare offers on realistic annual take-home and factor in home time and freight consistency, not the headline rate."},
         {"q":"Does CPM go up with experience?","a":"Generally carriers pay more for verified experience and for harder-to-staff freight such as flatbed, specialized, and hazmat, but this is industry practice that varies by company and market, not a federal rule. Ask each carrier about its pay progression in writing rather than assuming a standard raise schedule."}
@@ -508,19 +508,19 @@ Offer A advertises a higher cents-per-mile rate but counts HHG miles, runs an in
       'trucking-benefits-and-per-diem',
       'Trucking Benefits and Per Diem: What They Really Do to Your Pay',
       'Health insurance, retirement, PTO — and per diem, the most misunderstood line on a driver''s pay. What per diem actually is (a tax reclassification, not extra money), what it costs you, and how to value a benefits package.',
-      $mdx$**Quick answer:** A trucking job''s **benefits** — health, dental, and vision insurance, retirement plans like a 401(k), paid time off, and sometimes life or disability coverage — are real compensation beyond the mileage rate, and their premiums and terms **vary by carrier**. **Per diem** is the most misunderstood piece: it is **not extra money**. It reclassifies part of your pay as a **non-taxable reimbursement** for on-the-road expenses, lowering your taxable wages. That can raise take-home now but can also lower the income figure used for **loans, Social Security, and unemployment**. Understand both before you enroll. The tax rules live with the [IRS](https://www.irs.gov/publications/p463); everything else is carrier policy.
+      $mdx$**Quick answer:** A trucking job's **benefits** — health, dental, and vision insurance, retirement plans like a 401(k), paid time off, and sometimes life or disability coverage — are real compensation beyond the mileage rate, and their premiums and terms **vary by carrier**. **Per diem** is the most misunderstood piece: it is **not extra money**. It reclassifies part of your pay as a **non-taxable reimbursement** for on-the-road expenses, lowering your taxable wages. That can raise take-home now but can also lower the income figure used for **loans, Social Security, and unemployment**. Understand both before you enroll. The tax rules live with the [IRS](https://www.irs.gov/publications/p463); everything else is carrier policy.
 
 **Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not tax, financial, or legal advice**. Benefit terms and premiums vary by carrier; per-diem tax treatment depends on your situation and can change. Confirm the tax mechanics with the [IRS](https://www.irs.gov/publications/p463) and, ideally, a tax professional. Not affiliated with any carrier.
 
 ## Benefits are part of the pay, so price them
 
-Two offers with the same mileage rate aren''t equal if one has strong, affordable benefits and the other doesn''t. A benefits package has a **cash value** — the premiums you don''t pay, the match you do get — so treat it as compensation and compare it line by line, not as an afterthought.
+Two offers with the same mileage rate aren't equal if one has strong, affordable benefits and the other doesn't. A benefits package has a **cash value** — the premiums you don't pay, the match you do get — so treat it as compensation and compare it line by line, not as an afterthought.
 
 ## The common benefit lines
 
 - **Health, dental, vision.** The carrier usually shares the premium; your share is a **deduction** from pay. Ask the premium, the deductible, and when coverage **starts** (waiting periods are common).
 - **Retirement (401(k) and similar).** The value is largely in the **match** — free money if you contribute enough to earn it. Ask the match formula and the **vesting** schedule.
-- **Paid time off.** How it accrues and whether it''s realistic to take it, given how PTO interacts with miles, matters more than the headline number of days.
+- **Paid time off.** How it accrues and whether it's realistic to take it, given how PTO interacts with miles, matters more than the headline number of days.
 - **Life and disability, other perks.** Sometimes included, sometimes optional. Worth knowing, rarely the deciding factor.
 
 *(All of the above are carrier policy and vary — get specifics in writing.)*
@@ -538,11 +538,11 @@ Because per diem **lowers your reported taxable income**, it can quietly lower o
 - **Unemployment and workers'-comp** calculations, which also use reported wages.
 - **Retirement contributions** tied to a percentage of taxable wages.
 
-None of that makes per diem bad — for some drivers it''s a net win. It makes it a **trade-off to run the numbers on**, ideally with a tax professional, rather than a free raise.
+None of that makes per diem bad — for some drivers it's a net win. It makes it a **trade-off to run the numbers on**, ideally with a tax professional, rather than a free raise.
 
 ## The self-employed / owner-operator angle
 
-For **owner-operators**, per diem works differently — it''s a **deduction** taken on the business return under IRS rules, subject to the statutory percentage limit on meal expenses, not a carrier reimbursement. The mechanics and current percentage are in [IRS Publication 463](https://www.irs.gov/publications/p463). If you''re weighing ownership, see [Owner-Operator vs Company Driver](/knowledge/trucking-careers/owner-operator-vs-company-driver).
+For **owner-operators**, per diem works differently — it's a **deduction** taken on the business return under IRS rules, subject to the statutory percentage limit on meal expenses, not a carrier reimbursement. The mechanics and current percentage are in [IRS Publication 463](https://www.irs.gov/publications/p463). If you're weighing ownership, see [Owner-Operator vs Company Driver](/knowledge/trucking-careers/owner-operator-vs-company-driver).
 
 ## A worked illustration (not tax advice)
 
@@ -550,7 +550,7 @@ A driver is offered a company per-diem program. Enrolling lowers weekly withhold
 
 ## Common mistakes
 
-- **Treating per diem as extra pay.** It isn''t. It''s the same money, taxed differently.
+- **Treating per diem as extra pay.** It isn't. It's the same money, taxed differently.
 - **Ignoring the loan-qualification hit.** If a mortgage is on the horizon, lower taxable income can work against you.
 - **Skipping the benefits math.** A strong 401(k) match and affordable premiums can outweigh a slightly higher rate elsewhere.
 - **Missing waiting periods.** Coverage that starts after 60 or 90 days changes the first months materially.
@@ -561,7 +561,7 @@ A driver is offered a company per-diem program. Enrolling lowers weekly withhold
 - Health/dental/vision **premiums, deductibles, and start dates** confirmed
 - 401(k) **match formula and vesting** understood
 - PTO **accrual** and how realistic it is to use it
-- Per-diem program: whether it''s **optional**, and its effect on taxable wages
+- Per-diem program: whether it's **optional**, and its effect on taxable wages
 - Near-term goals (home loan, Social Security) weighed against per diem
 - A **tax professional** consulted if per diem or ownership is on the table
 
@@ -575,7 +575,7 @@ A driver is offered a company per-diem program. Enrolling lowers weekly withhold
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"IRS — Publication 463, Travel, Gift, and Car Expenses","url":"https://www.irs.gov/publications/p463"},
-        {"label":"IRS — Meal and Incidental Per Diem Guidance","url":"https://www.irs.gov/newsroom/per-diem-rates"},
+        {"label":"IRS — Tax Topic 511, Business Travel Expenses","url":"https://www.irs.gov/taxtopics/tc511"},
         {"label":"U.S. Department of Labor — Health Plans and Benefits","url":"https://www.dol.gov/general/topic/health-plans"},
         {"label":"U.S. Bureau of Labor Statistics — Heavy and Tractor-Trailer Truck Drivers","url":"https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm"}
       ]$j$::jsonb,
@@ -604,13 +604,13 @@ A driver is offered a company per-diem program. Enrolling lowers weekly withhold
       'how-to-read-a-settlement-statement',
       'How to Read a Trucking Settlement Statement',
       'Your settlement is the record of what you earned and what was taken out. A line-by-line guide to earnings, accessorials, deductions, reimbursements, and per diem — and the checks that catch a mistake before it costs you.',
-      $mdx$**Quick answer:** A **settlement statement** (or driver pay statement) is the itemized record of a pay period: **earnings** at the top (line-haul miles or percentage, plus accessorials like detention and stop pay), then **reimbursements** and **per diem**, then **deductions** (taxes and benefits for a company driver; also fuel, truck, insurance, and other costs for an owner-operator or lease-purchase driver), ending in **net pay**. Reading it well means checking that the **miles and rate are right**, every **deduction is one you agreed to**, and the math reconciles. Keep every statement — it''s your income record for taxes and loans. Recordkeeping expectations for the self-employed are on the [IRS](https://www.irs.gov/businesses/small-businesses-self-employed).
+      $mdx$**Quick answer:** A **settlement statement** (or driver pay statement) is the itemized record of a pay period: **earnings** at the top (line-haul miles or percentage, plus accessorials like detention and stop pay), then **reimbursements** and **per diem**, then **deductions** (taxes and benefits for a company driver; also fuel, truck, insurance, and other costs for an owner-operator or lease-purchase driver), ending in **net pay**. Reading it well means checking that the **miles and rate are right**, every **deduction is one you agreed to**, and the math reconciles. Keep every statement — it's your income record for taxes and loans. Recordkeeping expectations for the self-employed are on the [IRS](https://www.irs.gov/businesses/small-businesses-self-employed).
 
-**Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial, tax, or legal advice**. Statement layouts, line-item names, and deductions **vary by carrier and by whether you''re a company driver, lease-purchase driver, or owner-operator**. Read your own contract, and take tax questions to a professional. Not affiliated with any carrier.
+**Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial, tax, or legal advice**. Statement layouts, line-item names, and deductions **vary by carrier and by whether you're a company driver, lease-purchase driver, or owner-operator**. Read your own contract, and take tax questions to a professional. Not affiliated with any carrier.
 
 ## Why the settlement matters
 
-The recruiter''s pitch is a promise; the settlement is what actually happened. It''s where a miscounted trip, a deduction you never agreed to, or missing detention pay shows up — and where an owner-operator sees whether the week was profitable. Learning to read it is how you make sure you were paid what you earned.
+The recruiter's pitch is a promise; the settlement is what actually happened. It's where a miscounted trip, a deduction you never agreed to, or missing detention pay shows up — and where an owner-operator sees whether the week was profitable. Learning to read it is how you make sure you were paid what you earned.
 
 ## The top: earnings
 
@@ -620,28 +620,28 @@ The recruiter''s pitch is a promise; the settlement is what actually happened. I
 
 ## The middle: reimbursements and per diem
 
-- **Reimbursements** (tolls, scale tickets, approved expenses) return money you fronted — not income, so they shouldn''t be taxed. Confirm they''re labeled as reimbursements.
-- **Per diem**, if you''re enrolled, appears as a **non-taxable** portion, reducing taxable wages. What it is and its trade-offs: [Trucking Benefits and Per Diem](/knowledge/trucking-careers/trucking-benefits-and-per-diem).
+- **Reimbursements** (tolls, scale tickets, approved expenses) return money you fronted — not income, so they shouldn't be taxed. Confirm they're labeled as reimbursements.
+- **Per diem**, if you're enrolled, appears as a **non-taxable** portion, reducing taxable wages. What it is and its trade-offs: [Trucking Benefits and Per Diem](/knowledge/trucking-careers/trucking-benefits-and-per-diem).
 
 ## The bottom: deductions
 
-For a **company driver**, deductions are typically **taxes withheld** and **benefit premiums** (health, dental, retirement). For an **owner-operator or lease-purchase driver**, this section is much longer — **fuel, truck or lease payment, insurance, maintenance escrow, ELD/administrative fees, and more** — and it''s where profit is made or lost. A rule of thumb: on a **true company-driver** statement you should **not** see truck payments, fuel, or maintenance; if you do, you may actually be in a [lease-purchase](/knowledge/trucking-careers/lease-purchase-programs-explained) arrangement.
+For a **company driver**, deductions are typically **taxes withheld** and **benefit premiums** (health, dental, retirement). For an **owner-operator or lease-purchase driver**, this section is much longer — **fuel, truck or lease payment, insurance, maintenance escrow, ELD/administrative fees, and more** — and it's where profit is made or lost. A rule of thumb: on a **true company-driver** statement you should **not** see truck payments, fuel, or maintenance; if you do, you may actually be in a [lease-purchase](/knowledge/trucking-careers/lease-purchase-programs-explained) arrangement.
 
 ## Escrow, holdbacks, and reserves
 
-Lease and owner-operator settlements often include a **maintenance escrow** or **reserve** — money held back for future repairs or as security. It''s your money held in trust; know **how much is held, why, and how you get it back** when the arrangement ends. Unclear escrow terms are a common source of disputes.
+Lease and owner-operator settlements often include a **maintenance escrow** or **reserve** — money held back for future repairs or as security. It's your money held in trust; know **how much is held, why, and how you get it back** when the arrangement ends. Unclear escrow terms are a common source of disputes.
 
 ## A worked illustration (not a promise)
 
-A company driver''s statement shows line-haul miles that look about right — but a two-stop load only paid for one stop, and a three-hour detention isn''t listed. Both are ordinary office oversights, and both are recoverable **because the driver kept trip records and noticed within the pay period**. A quick, documented note to payroll fixes it. The habit — reconcile every settlement against your own log — is what turns a vague "that seems low" into a specific, fixable correction. *(Illustration of the review habit, not financial advice.)*
+A company driver's statement shows line-haul miles that look about right — but a two-stop load only paid for one stop, and a three-hour detention isn't listed. Both are ordinary office oversights, and both are recoverable **because the driver kept trip records and noticed within the pay period**. A quick, documented note to payroll fixes it. The habit — reconcile every settlement against your own log — is what turns a vague "that seems low" into a specific, fixable correction. *(Illustration of the review habit, not financial advice.)*
 
 ## Common mistakes
 
-- **Not reconciling miles.** If you don''t check the miles and rate against your trips, no one else will.
+- **Not reconciling miles.** If you don't check the miles and rate against your trips, no one else will.
 - **Assuming accessorials auto-post.** Detention and stop pay are frequently missed; verify each one.
-- **Ignoring new deductions.** A line that wasn''t there last month deserves a question before it becomes routine.
-- **Discarding statements.** They''re your income record for taxes, loans, and disputes — keep them all.
-- **Confusing reimbursements with income.** Reimbursed expenses aren''t pay and shouldn''t be taxed as such.
+- **Ignoring new deductions.** A line that wasn't there last month deserves a question before it becomes routine.
+- **Discarding statements.** They're your income record for taxes, loans, and disputes — keep them all.
+- **Confusing reimbursements with income.** Reimbursed expenses aren't pay and shouldn't be taxed as such.
 
 ## A settlement-review checklist
 
@@ -692,23 +692,23 @@ A company driver''s statement shows line-haul miles that look about right — bu
       'lease-purchase-programs-explained',
       'Lease-Purchase Programs Explained: The Questions to Ask First',
       'A lease-purchase promises a path to owning a truck. It also puts the truck''s costs on your settlement while tying you to one carrier''s freight. What these programs are, where the risk sits, and the contract questions that separate a fair one from a trap.',
-      $mdx$**Quick answer:** A **lease-purchase program** is an arrangement in which a carrier leases a truck to a driver — usually with an option to buy at the end — while the driver hauls that carrier''s freight and the truck payment plus operating costs come **out of the settlement**. It sits **between** company driving and true ownership: you take on a business''s costs and risk (fuel, maintenance, the payment) but often with **less control** than an independent owner-operator, because your income depends on the same carrier that holds the lease. Some are fair on-ramps to ownership; others transfer risk to the driver on hard terms. The difference is entirely in the **contract** — read it, and get legal advice before signing.
+      $mdx$**Quick answer:** A **lease-purchase program** is an arrangement in which a carrier leases a truck to a driver — usually with an option to buy at the end — while the driver hauls that carrier's freight and the truck payment plus operating costs come **out of the settlement**. It sits **between** company driving and true ownership: you take on a business's costs and risk (fuel, maintenance, the payment) but often with **less control** than an independent owner-operator, because your income depends on the same carrier that holds the lease. Some are fair on-ramps to ownership; others transfer risk to the driver on hard terms. The difference is entirely in the **contract** — read it, and get legal advice before signing.
 
 **Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial or legal advice**. Lease-purchase terms **vary enormously by carrier and change** — nothing here describes *your* contract. Have any lease reviewed by someone qualified before signing, and run the numbers yourself. Not affiliated with any carrier.
 
 ## What a lease-purchase actually is
 
-You drive a truck you don''t yet own, under a lease from a carrier, hauling that carrier''s loads. Each settlement, the **truck payment and operating costs** (often fuel, insurance, maintenance escrow, and fees) come out before you''re paid. At the lease''s end there''s typically a **purchase option**. In effect you''re running a small business whose single customer and single lender are the **same company** — which is the crux of both the appeal and the risk.
+You drive a truck you don't yet own, under a lease from a carrier, hauling that carrier's loads. Each settlement, the **truck payment and operating costs** (often fuel, insurance, maintenance escrow, and fees) come out before you're paid. At the lease's end there's typically a **purchase option**. In effect you're running a small business whose single customer and single lender are the **same company** — which is the crux of both the appeal and the risk.
 
 ## Why it can be attractive
 
 - A path toward **owning a truck** without the upfront capital a purchase demands.
-- A way to **try the owner-operator side** of the business while still inside a carrier''s dispatch and support.
+- A way to **try the owner-operator side** of the business while still inside a carrier's dispatch and support.
 - In a **strong freight market** with steady miles, a program with fair terms can work out.
 
 ## Where the risk sits
 
-- **Your income and your lease are tied to one carrier.** If their freight slows, your miles — and your ability to cover the payment — slow with it, and the payment doesn''t.
+- **Your income and your lease are tied to one carrier.** If their freight slows, your miles — and your ability to cover the payment — slow with it, and the payment doesn't.
 - **The costs are now yours.** Fuel, maintenance, and repairs come off your settlement. A major repair in a slow month is the classic failure point.
 - **The math can be thin.** After the payment and costs, net can fall **below** what the same driver would clear as a company driver — sometimes to zero in a bad week.
 - **Walking away can be costly.** Terms for ending the lease early — remaining payments, lost escrow, giving back the truck — vary and can be punishing.
@@ -729,7 +729,7 @@ A program that answers all of these clearly in writing is one you can evaluate. 
 
 ## A worked illustration (not a promise)
 
-A driver enters a lease-purchase in a strong market, covers the payment comfortably for months, and feels ahead. Then freight softens, weekly miles drop, and a transmission fails. The payment and escrow keep coming out; the repair lands on the driver; two lean weeks net near nothing. The same driver as a **company employee** would have drawn a steady check through the same stretch with no repair exposure. Nothing here was hidden — it''s the structure doing exactly what it does when the market turns. *(Illustration of the risk structure, not financial advice.)*
+A driver enters a lease-purchase in a strong market, covers the payment comfortably for months, and feels ahead. Then freight softens, weekly miles drop, and a transmission fails. The payment and escrow keep coming out; the repair lands on the driver; two lean weeks net near nothing. The same driver as a **company employee** would have drawn a steady check through the same stretch with no repair exposure. Nothing here was hidden — it's the structure doing exactly what it does when the market turns. *(Illustration of the risk structure, not financial advice.)*
 
 ## Common mistakes
 
@@ -743,7 +743,7 @@ A driver enters a lease-purchase in a strong market, covers the payment comforta
 
 - **New drivers.** Learn the freight network and real costs as a [company driver](/knowledge/trucking-careers/company-driver-pay) first; a lease is a lot of risk to take on before you know the business.
 - **Anyone without a cash cushion.** No reserve for a slow stretch or a repair makes the downside severe.
-- **Drivers who want true independence.** A lease tied to one carrier isn''t the same as independent ownership — know which you actually want.
+- **Drivers who want true independence.** A lease tied to one carrier isn't the same as independent ownership — know which you actually want.
 
 ## Keep learning
 
@@ -783,17 +783,17 @@ A driver enters a lease-purchase in a strong market, covers the payment comforta
       'home-time-and-quality-of-life',
       'Home Time and Quality of Life in Trucking',
       'Pay is only half of a trucking job. Home time, the type of freight, and how hours-of-service limits shape your days decide whether the work fits your life — and the trade-off between miles and time home is real. How to weigh it honestly.',
-      $mdx$**Quick answer:** **Home time** — how often and how predictably you''re home — is as important as pay, and it **trades against miles**: the lanes that maximize earning (long over-the-road runs) minimize home time, while local and regional work bring you home more often, often for fewer miles. Quality of life in trucking is set by that trade, by the **type of freight** you haul, and by the federal **hours-of-service** limits that structure every day ([49 CFR Part 395](https://www.ecfr.gov/current/title-49/part-395)). There''s no universally right answer — only the one that fits **your** life. Decide what home time you need *before* you compare pay.
+      $mdx$**Quick answer:** **Home time** — how often and how predictably you're home — is as important as pay, and it **trades against miles**: the lanes that maximize earning (long over-the-road runs) minimize home time, while local and regional work bring you home more often, often for fewer miles. Quality of life in trucking is set by that trade, by the **type of freight** you haul, and by the federal **hours-of-service** limits that structure every day ([49 CFR Part 395](https://www.ecfr.gov/current/title-49/part-395)). There's no universally right answer — only the one that fits **your** life. Decide what home time you need *before* you compare pay.
 
 **Information disclaimer:** Last reviewed **July 17, 2026**. This is general career information, **not financial or legal advice**. Home-time policies, freight types, and schedules **vary by carrier**; hours-of-service rules are federal and can change. Confirm current HOS rules with [FMCSA](https://www.fmcsa.dot.gov/regulations/hours-of-service). Not affiliated with any carrier.
 
 ## Home time is compensation too
 
-A job that pays a little more but keeps you out three weeks at a stretch isn''t obviously "better" than one that pays a little less and gets you home weekly. Home time has real value — to your relationships, health, and sanity — so weigh it like the compensation it is. The driver who ignores it and chases the highest miles often burns out; the one who names the home time they need first tends to last.
+A job that pays a little more but keeps you out three weeks at a stretch isn't obviously "better" than one that pays a little less and gets you home weekly. Home time has real value — to your relationships, health, and sanity — so weigh it like the compensation it is. The driver who ignores it and chases the highest miles often burns out; the one who names the home time they need first tends to last.
 
 ## The miles-versus-home-time trade
 
-More time home generally means fewer miles, and fewer miles generally means less mileage pay. That''s the core trade, and it maps onto lane type:
+More time home generally means fewer miles, and fewer miles generally means less mileage pay. That's the core trade, and it maps onto lane type:
 
 - **Over-the-road (OTR).** The most miles and typically the highest mileage earning — and the least, least-predictable home time. Best when earning is the priority and being out suits your life now.
 - **Regional.** A middle ground: more home time, often home weekly or more, for somewhat fewer miles. A common balance point.
@@ -803,7 +803,7 @@ The full lane breakdown: [OTR vs Regional vs Local](/knowledge/trucking-careers/
 
 ## How hours-of-service shapes your day
 
-Federal **hours-of-service** rules cap driving and on-duty time and require rest — the **11-hour** driving limit inside a **14-hour** window, the **30-minute** break, and the **10-hour** off-duty reset among them ([49 CFR Part 395](https://www.ecfr.gov/current/title-49/part-395)). They exist for safety, and they define the rhythm of the job: when you can drive, when you must stop, and how a delayed shipper or a bad parking situation can eat the day. Understanding them helps you read whether a schedule a recruiter describes is even legal or realistic.
+Federal **hours-of-service** rules cap driving and on-duty time and require rest — the **11-hour** driving limit inside a **14-hour** window, the **30-minute** break, and the **10-hour** off-duty period among them ([49 CFR Part 395](https://www.ecfr.gov/current/title-49/part-395)). They exist for safety, and they define the rhythm of the job: when you can drive, when you must stop, and how a delayed shipper or a bad parking situation can eat the day. Understanding them helps you read whether a schedule a recruiter describes is even legal or realistic.
 
 ## Freight type changes the lifestyle
 
@@ -814,15 +814,15 @@ Two OTR jobs can feel completely different depending on freight:
 - **Flatbed** — physical work (tarping, strapping) and weather exposure, often paired with different pay structure.
 - **Dedicated** — the same customer and lanes, which brings **predictability** many drivers value highly.
 
-Predictability, physical demand, and waiting time are quality-of-life factors that don''t show up in a pay rate at all. *(Freight-specific conditions are industry practice and vary by account.)*
+Predictability, physical demand, and waiting time are quality-of-life factors that don't show up in a pay rate at all. *(Freight-specific conditions are industry practice and vary by account.)*
 
 ## Health and the road
 
-Long stretches out affect **sleep, eating, and exercise** in ways that add up over a career. The best drivers treat routine — parking early enough to rest, keeping food simple and decent, moving daily — as part of the job, not an afterthought. A schedule that never lets you rest properly isn''t sustainable no matter what it pays.
+Long stretches out affect **sleep, eating, and exercise** in ways that add up over a career. The best drivers treat routine — parking early enough to rest, keeping food simple and decent, moving daily — as part of the job, not an afterthought. A schedule that never lets you rest properly isn't sustainable no matter what it pays.
 
 ## A worked illustration (not a promise)
 
-A driver takes a high-mileage OTR job and earns well for a year, but being out for weeks strains things at home. Switching to a regional seat, weekly miles and pay drop somewhat — but home most weekends, the driver is steadier, healthier, and stays in the job for years instead of quitting in eighteen months. Total earning **over five years** ends up higher, because the sustainable seat was the one they didn''t leave. *(Illustration of the trade-off, not a pay promise; individual results vary.)*
+A driver takes a high-mileage OTR job and earns well for a year, but being out for weeks strains things at home. Switching to a regional seat, weekly miles and pay drop somewhat — but home most weekends, the driver is steadier, healthier, and stays in the job for years instead of quitting in eighteen months. Total earning **over five years** ends up higher, because the sustainable seat was the one they didn't leave. *(Illustration of the trade-off, not a pay promise; individual results vary.)*
 
 ## Common mistakes
 
@@ -830,7 +830,7 @@ A driver takes a high-mileage OTR job and earns well for a year, but being out f
 - **Not defining home time first.** Decide what you need at home *before* comparing offers, or pay will pull you into the wrong one.
 - **Believing vague home-time promises.** "Home weekly" can mean many things. Ask exactly how often, how long, and how reliably.
 - **Ignoring freight type.** Two OTR jobs can differ enormously in physical demand and waiting time.
-- **Neglecting health on the road.** Sleep and routine aren''t optional for a long career.
+- **Neglecting health on the road.** Sleep and routine aren't optional for a long career.
 
 ## A quality-of-life checklist
 
@@ -857,7 +857,7 @@ A driver takes a high-mileage OTR job and earns well for a year, but being out f
       $j$[
         {"q":"Why does home time matter as much as pay in trucking?","a":"Because home time is compensation too. A seat that pays slightly more but keeps you out for weeks isn't obviously better than one that pays slightly less and gets you home weekly. Ignoring home time is a leading cause of burnout and early quitting, so the sustainable seat — the one you don't leave — often earns more over a career even at lower miles."},
         {"q":"What's the trade-off between miles and home time?","a":"More home time generally means fewer miles, and fewer miles usually means less mileage pay. Over-the-road maximizes miles and earning but minimizes home time; local work maximizes home time (home most nights) for the fewest miles, often paid hourly; regional sits in between. Decide what home time you need before you compare pay."},
-        {"q":"How do hours-of-service rules affect a driver's day?","a":"Federal hours-of-service rules in 49 CFR Part 395 cap driving and on-duty time and require rest — including an 11-hour driving limit within a 14-hour window, a 30-minute break, and a 10-hour off-duty reset. They set the rhythm of every day and determine whether a schedule a recruiter describes is even legal. Confirm current rules with FMCSA."},
+        {"q":"How do hours-of-service rules affect a driver's day?","a":"Federal hours-of-service rules in 49 CFR Part 395 cap driving and on-duty time and require rest — including an 11-hour driving limit within a 14-hour window, a 30-minute break, and a 10-hour off-duty period. They set the rhythm of every day and determine whether a schedule a recruiter describes is even legal. Confirm current rules with FMCSA."},
         {"q":"Does the type of freight change quality of life?","a":"Yes. Dry van is often the lowest physical demand; reefer brings tighter appointment windows and waiting; flatbed adds physical work like tarping and strapping plus weather exposure; dedicated freight brings valued predictability. Two over-the-road jobs can feel completely different based on freight, so weigh physical demand and waiting time, not just the pay rate."},
         {"q":"How do I evaluate a carrier's home-time promise?","a":"Get exact terms in writing: how often you'll be home, for how long, and how reliably. 'Home weekly' can mean many things. Match the lane type (OTR, regional, or local) to the home time you actually need, and treat vague promises as a warning sign rather than a detail to sort out later."}
       ]$j$::jsonb,
@@ -885,11 +885,11 @@ A driver takes a high-mileage OTR job and earns well for a year, but being out f
 
 ## A CDL is a platform, not a destination
 
-New drivers often picture "truck driver" as one fixed job. It''s really a **license to move in several directions**, and the choice of direction shapes pay and life far more than any single carrier does. Knowing the map early helps you make the first few years count toward wherever you want to end up.
+New drivers often picture "truck driver" as one fixed job. It's really a **license to move in several directions**, and the choice of direction shapes pay and life far more than any single carrier does. Knowing the map early helps you make the first few years count toward wherever you want to end up.
 
 ## Direction 1: specialize with endorsements
 
-Adding endorsements moves you toward freight that''s harder to staff and often pays better:
+Adding endorsements moves you toward freight that's harder to staff and often pays better:
 
 - **[Hazmat](/practice-tests/hazmat)** — hazardous materials; requires a knowledge test **and** a TSA security threat assessment.
 - **[Tanker](/practice-tests/tanker)** — liquids in bulk, with the handling skills that surge and baffles demand.
@@ -904,7 +904,7 @@ The same license runs very different schedules. Moving from OTR to **regional, l
 
 ## Direction 3: run your own business
 
-With experience, some drivers become **owner-operators** — leased to a carrier or under their own authority — trading a steady paycheck for the larger upside and real risk of running a truck as a business. It''s a genuine path, not a shortcut, and it rewards business discipline. Weigh it honestly: [Owner-Operator vs Company Driver](/knowledge/trucking-careers/owner-operator-vs-company-driver), and be cautious with [lease-purchase](/knowledge/trucking-careers/lease-purchase-programs-explained) on the way there.
+With experience, some drivers become **owner-operators** — leased to a carrier or under their own authority — trading a steady paycheck for the larger upside and real risk of running a truck as a business. It's a genuine path, not a shortcut, and it rewards business discipline. Weigh it honestly: [Owner-Operator vs Company Driver](/knowledge/trucking-careers/owner-operator-vs-company-driver), and be cautious with [lease-purchase](/knowledge/trucking-careers/lease-purchase-programs-explained) on the way there.
 
 ## Direction 4: move off the road
 
@@ -913,9 +913,9 @@ A CDL and road experience are a foundation for roles that get you **home every n
 - **Driver trainer / instructor** — teach new drivers; experience and a clean record are the qualification.
 - **Dispatcher / driver manager** — coordinate freight and drivers; knowing the road firsthand is a real advantage.
 - **Safety and compliance** — help a fleet meet FMCSA rules; a natural fit for drivers who understand [compliance](/knowledge/dot-compliance/dot-medical-card) from the seat.
-- **Operations and management** — terminal, fleet, and logistics roles that value people who''ve done the driving.
+- **Operations and management** — terminal, fleet, and logistics roles that value people who've done the driving.
 
-These usually trade the road''s earning ceiling for stability and a home-every-night life. *(Availability and pay vary by employer.)*
+These usually trade the road's earning ceiling for stability and a home-every-night life. *(Availability and pay vary by employer.)*
 
 ## What opens doors on every path
 
@@ -930,7 +930,7 @@ A driver starts OTR dry van, spends two years building a clean record, then adds
 
 ## Common mistakes
 
-- **Treating the first job as the whole career.** It''s the on-ramp. Plan past it.
+- **Treating the first job as the whole career.** It's the on-ramp. Plan past it.
 - **Neglecting the record early.** A clean record is the asset that opens every later door — protect it from day one.
 - **Adding endorsements without a reason.** Add them toward a **direction** you want, not to collect them.
 - **Assuming off-road means a pay cut only.** Many drivers happily trade the earning ceiling for home-every-night stability.
@@ -950,7 +950,7 @@ A driver starts OTR dry van, spends two years building a clean record, then adds
 - Life on each path: [Home Time and Quality of Life](/knowledge/trucking-careers/home-time-and-quality-of-life) · the business route, [Owner-Operator vs Company Driver](/knowledge/trucking-careers/owner-operator-vs-company-driver)
 - **Get licensed first:** [How to Get Your CDL](/knowledge/getting-your-cdl/how-to-get-your-cdl) · free [CDL Pre-School](/cdl-pre-school) · [TLWS Academy](/academy) · [join the email list](/#newsletter).$mdx$,
       'Trucking Career Paths: Where a CDL Can Take You | Trucking Life with Shawn',
-      'Trucking career paths a CDL opens: specialized freight, regional and local seats, owner-operator, and off-road roles like trainer and dispatcher — and how each changes life.',
+      'Trucking career paths a CDL opens: specialized freight, regional and local seats, owner-operator, and off-road roles like trainer and dispatcher.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"U.S. Bureau of Labor Statistics — Heavy and Tractor-Trailer Truck Drivers","url":"https://www.bls.gov/ooh/transportation-and-material-moving/heavy-and-tractor-trailer-truck-drivers.htm"},

@@ -489,11 +489,23 @@ for (const [name, re] of b4Structure) {
     b4.filter((a) => !re.test(a.body)).map((a) => a.slug),
   );
 }
+// Dollar-quoted ($mdx$) bodies do NO escape processing, so a doubled
+// apostrophe would render literally (it''s). Bodies must use single
+// apostrophes; only plain-SQL literals (title/excerpt/meta) double them, and
+// those are un-doubled by the parser before this point.
+check(
+  'no article body contains a literal doubled apostrophe',
+  articles.every((a) => !a.body.includes("''")),
+  articles.filter((a) => a.body.includes("''")).map((a) => a.slug),
+);
 // Money discipline: Batch 4 invents no pay figures anywhere (body or FAQs).
+// Matches $5, $.55, and $ 5 so a dollar-decimal can't slip past.
 check(
   'Batch 4 quotes no dollar amounts (no invented pay/salary/fees)',
-  b4.every((a) => !/\$\d/.test(a.body) && !/\$\d/.test(JSON.stringify(a.faqs))),
-  b4.filter((a) => /\$\d/.test(a.body) || /\$\d/.test(JSON.stringify(a.faqs))).map((a) => a.slug),
+  b4.every((a) => !/\$\s?\.?\d/.test(a.body) && !/\$\s?\.?\d/.test(JSON.stringify(a.faqs))),
+  b4
+    .filter((a) => /\$\s?\.?\d/.test(a.body) || /\$\s?\.?\d/.test(JSON.stringify(a.faqs)))
+    .map((a) => a.slug),
 );
 check(
   'Batch 4 quotes no CPM rate numbers',
