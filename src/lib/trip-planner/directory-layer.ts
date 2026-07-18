@@ -20,6 +20,7 @@ export type DirectoryListing = {
   categorySlug: string | null;
   lat: number | null;
   lng: number | null;
+  city: string | null;
   state: string | null;
   interstate: string | null;
   exitNumber: string | null;
