@@ -14,6 +14,7 @@ import {
   type InterpolationFailure,
   type InterpolationResult,
 } from './interpolation';
+import { resolveCorridor } from './concurrency';
 import { haversineMiles } from '@/lib/map/geo';
 
 /**
@@ -144,10 +145,16 @@ export function runGeocodePipeline(
     const notes: string[] = [];
     const hasCoords = listing.lat != null && listing.lng != null;
 
+    // Interpolate against the corridor that OWNS this exit's mileposts
+    // (concurrency normalization); the listing's own tag is never modified.
+    const corridor = resolveCorridor(listing.state, listing.interstate, listing.exitNumber);
+    if (corridor.rule) {
+      notes.push(`corridor normalized ${corridor.tagged}→${corridor.canonical} (concurrency)`);
+    }
     const interpolation = interpolateAlongCorridor(
       calIndex,
       listing.state,
-      listing.interstate,
+      corridor.canonical,
       listing.exitNumber,
     );
 

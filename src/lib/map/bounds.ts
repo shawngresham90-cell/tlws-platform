@@ -32,7 +32,7 @@ export const STATE_BOUNDS: Record<string, LatLngBounds> = {
   NC: { north: 36.59, south: 33.84, east: -75.46, west: -84.32 },
   SC: { north: 35.22, south: 32.03, east: -78.54, west: -83.36 },
   VA: { north: 39.47, south: 36.54, east: -75.24, west: -83.68 },
-  MD: { north: 39.73, south: 37.89, east: -75.05, west: -79.49 },
+  MD: { north: 39.73, south: 37.88, east: -75.05, west: -79.49 },
   DE: { north: 39.84, south: 38.45, east: -75.05, west: -75.79 },
 };
 
