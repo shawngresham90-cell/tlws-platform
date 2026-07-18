@@ -327,6 +327,8 @@ export function validateClockState(state: ClockState): string[] {
     problems.push('onDutyByDayMin entries must be within one day');
   if (state.drivingUsedMin > 0 && state.windowElapsedMin < 0)
     problems.push('driving time used but no 14-hour window open');
+  if (state.windowElapsedMin >= 0 && state.windowElapsedMin < state.drivingUsedMin)
+    problems.push('windowElapsedMin cannot be less than drivingUsedMin');
   if (state.drivingSinceBreakMin > state.drivingUsedMin)
     problems.push('drivingSinceBreakMin cannot exceed drivingUsedMin');
   return problems;

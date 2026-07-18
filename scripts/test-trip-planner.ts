@@ -396,6 +396,7 @@ const mkListing = (over: Partial<DirectoryListing>): DirectoryListing => ({
   categorySlug: 'truck-stops',
   lat: 32,
   lng: -84,
+  city: null,
   state: 'GA',
   interstate: 'I-75',
   exitNumber: null,
