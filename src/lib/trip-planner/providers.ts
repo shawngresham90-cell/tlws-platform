@@ -38,6 +38,8 @@ export type RoutingResult = {
   tollCents: number | null;
   /** Provider attribution for display. */
   provider: string;
+  /** Turn-by-turn instruction texts when the provider returns them. */
+  instructions?: string[];
 };
 
 export type RoutingPort = {

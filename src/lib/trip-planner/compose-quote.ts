@@ -13,9 +13,10 @@ import {
   type RemainingClocks,
   type TripCostEstimate,
 } from './types';
-import type { WeatherAlert, WeatherBand, WeatherPort } from './providers';
+import type { RoutingPort, WeatherAlert, WeatherBand, WeatherPort } from './providers';
 import type { FuelPriceResult } from './eia-fuel';
 import { latLngSchema } from './api-contracts';
+import { TRUCK_LIMITS } from './here-routing';
 
 /**
  * Composite trip quote (Phase 4) — the one call the mobile UI makes. Pure
@@ -50,6 +51,42 @@ export const simpleClocksSchema = z.object({
 });
 export type SimpleClocks = z.infer<typeof simpleClocksSchema>;
 
+/** Optional truck attributes for live truck routing (bounded, all default). */
+export const truckParamsSchema = z.object({
+  heightFt: z
+    .number()
+    .min(TRUCK_LIMITS.heightFt.min)
+    .max(TRUCK_LIMITS.heightFt.max)
+    .default(DEFAULT_TRUCK_PROFILE.heightFt),
+  widthFt: z
+    .number()
+    .min(TRUCK_LIMITS.widthFt.min)
+    .max(TRUCK_LIMITS.widthFt.max)
+    .default(DEFAULT_TRUCK_PROFILE.widthFt),
+  lengthFt: z
+    .number()
+    .min(TRUCK_LIMITS.lengthFt.min)
+    .max(TRUCK_LIMITS.lengthFt.max)
+    .default(DEFAULT_TRUCK_PROFILE.lengthFt),
+  grossWeightLbs: z
+    .number()
+    .min(TRUCK_LIMITS.grossWeightLbs.min)
+    .max(TRUCK_LIMITS.grossWeightLbs.max)
+    .default(DEFAULT_TRUCK_PROFILE.grossWeightLbs),
+  axles: z
+    .number()
+    .int()
+    .min(TRUCK_LIMITS.axles.min)
+    .max(TRUCK_LIMITS.axles.max)
+    .default(DEFAULT_TRUCK_PROFILE.axles),
+  /** US hazmat class placarded ("1".."9", optional subclass), or null. */
+  hazmatClass: z
+    .string()
+    .regex(/^[1-9](\.\d)?$/)
+    .nullable()
+    .default(null),
+});
+
 export const quoteRequestSchema = z.object({
   origin: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
   destination: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
@@ -58,6 +95,7 @@ export const quoteRequestSchema = z.object({
   fuelLevelFraction: z.number().min(0).max(1).default(1),
   mpg: z.number().positive().max(15).default(DEFAULT_TRUCK_PROFILE.mpg),
   tankGallons: z.number().positive().max(500).default(DEFAULT_TRUCK_PROFILE.tankGallons),
+  truck: truckParamsSchema.default({}),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
@@ -106,9 +144,12 @@ export type QuoteDeps = {
   loadListings: () => Promise<DirectoryListing[]>;
   weather: WeatherPort;
   fuelPrice: (state: string) => Promise<FuelPriceResult | null>;
-  /** Hard budgets (ms) for provider calls; defaults 8000 / 4000. */
+  /** Live truck routing (HERE). Omitted/null result → labeled estimate. */
+  routing?: RoutingPort;
+  /** Hard budgets (ms) for provider calls; defaults 8000 / 4000 / 6000. */
   weatherBudgetMs?: number;
   fuelBudgetMs?: number;
+  routingBudgetMs?: number;
 };
 
 /** Race a promise against a budget; timer is always cleared. */
@@ -137,8 +178,11 @@ export type QuoteResult = {
   routeSummary: {
     miles: number;
     driveMinutes: number;
-    isEstimate: true;
+    /** false = live provider route; true = labeled estimate. */
+    isEstimate: boolean;
     method: string;
+    /** Turn-by-turn instruction texts (live routes only, capped). */
+    instructions?: string[];
   };
   remainingAtDeparture: RemainingClocks;
   itinerary: Itinerary;
@@ -148,12 +192,19 @@ export type QuoteResult = {
   candidatesAvailable: number;
   warnings: string[];
   disclaimer: string;
+  /** Driver-responsibility routing disclaimer (always present). */
+  routingDisclaimer: string;
 };
 
 export const HOS_DISCLAIMER =
   'Planning estimate only — this tool is NOT an ELD and produces no record of duty status. ' +
   'Route distance and times are pre-routing estimates. Verify your own clocks, posted ' +
   'restrictions, and parking availability before relying on any plan.';
+
+export const ROUTING_DISCLAIMER =
+  'Routing data can be incomplete or out of date. The driver remains responsible for ' +
+  'checking posted restrictions, bridge clearances, weight limits, hazmat rules, and road ' +
+  'signage — always obey what is posted over what is planned.';
 
 export async function composeQuote(
   input: QuoteRequest,
@@ -163,11 +214,58 @@ export async function composeQuote(
 > {
   const warnings: string[] = [];
 
+  const truck = {
+    ...DEFAULT_TRUCK_PROFILE,
+    ...input.truck,
+    mpg: input.mpg,
+    tankGallons: input.tankGallons,
+  };
+
   let estimated;
   try {
     estimated = estimateRoute(input.origin, input.destination);
   } catch (e) {
     return { ok: false, error: { code: 'bad-route', message: (e as Error).message } };
+  }
+
+  // Live truck routing first (HERE behind the RoutingPort seam) — it feeds
+  // real geometry to everything downstream: HOS planning, weather bands,
+  // stop/parking candidates, and fuel math. Any failure (no key, outage,
+  // over budget, over the free-tier cap) falls back to the labeled estimate.
+  let routeData: {
+    route: typeof estimated.route;
+    routePoints: typeof estimated.routePoints;
+    isEstimate: boolean;
+    method: string;
+    instructions?: string[];
+  } = {
+    route: estimated.route,
+    routePoints: estimated.routePoints,
+    isEstimate: true,
+    method: estimated.method,
+  };
+  if (deps.routing) {
+    const routingOutcome = await withTimeout(
+      deps.routing.route({
+        origin: input.origin.position,
+        destination: input.destination.position,
+        waypoints: [],
+        truck,
+        departAtMs: input.departAtMs,
+      }),
+      deps.routingBudgetMs ?? 6000,
+    );
+    if (routingOutcome.ok && routingOutcome.value) {
+      routeData = {
+        route: routingOutcome.value.route,
+        routePoints: routingOutcome.value.routePoints,
+        isEstimate: false,
+        method: routingOutcome.value.provider,
+        instructions: routingOutcome.value.instructions,
+      };
+    } else {
+      warnings.push('live truck routing unavailable — distances and times are estimates');
+    }
   }
 
   const clocks = clockStateFromSimple(input.clocks, input.departAtMs);
@@ -186,25 +284,19 @@ export async function composeQuote(
   } catch {
     listings = [];
   }
-  const candidates = toStopCandidates(listings, estimated.routePoints, 5);
+  const candidates = toStopCandidates(listings, routeData.routePoints, 5);
   if (candidates.length === 0) {
     warnings.push(
       'no verified directory locations found along this corridor yet — stop recommendations are unassigned',
     );
   }
 
-  const truck = {
-    ...DEFAULT_TRUCK_PROFILE,
-    mpg: input.mpg,
-    tankGallons: input.tankGallons,
-  };
-
   const itinerary = planTrip({
     title: `${input.origin.label} → ${input.destination.label}`,
     departAtMs: input.departAtMs,
     truck,
     clocks,
-    route: estimated.route,
+    route: routeData.route,
     candidates,
     fuelLevelFraction: input.fuelLevelFraction,
     options: DEFAULT_PLANNER_OPTIONS,
@@ -216,7 +308,7 @@ export async function composeQuote(
   const fuelBudgetMs = deps.fuelBudgetMs ?? 4000;
   const originState = candidates[0]?.state ?? '';
   const [weatherOutcome, fuelOutcome] = await Promise.all([
-    withTimeout(deps.weather.alongRoute(estimated.routePoints, input.departAtMs), weatherBudgetMs),
+    withTimeout(deps.weather.alongRoute(routeData.routePoints, input.departAtMs), weatherBudgetMs),
     withTimeout(deps.fuelPrice(originState), fuelBudgetMs),
   ]);
 
@@ -233,7 +325,7 @@ export async function composeQuote(
   const fuelPrice: FuelPriceResult | null = fuelOutcome.ok ? fuelOutcome.value : null;
   if (!fuelPrice) warnings.push('fuel price unavailable — cost shown without fuel');
 
-  const cost = estimateTripCost(estimated.route, itinerary, truck, {
+  const cost = estimateTripCost(routeData.route, itinerary, truck, {
     fuelPricePerGallonCents: fuelPrice?.centsPerGallon ?? null,
     tollTotalCents: null,
     tollPerMileCents: 0,
@@ -245,10 +337,11 @@ export async function composeQuote(
   return {
     ok: true,
     routeSummary: {
-      miles: estimated.route.totalMiles,
-      driveMinutes: estimated.route.driveMinutes,
-      isEstimate: true,
-      method: estimated.method,
+      miles: routeData.route.totalMiles,
+      driveMinutes: routeData.route.driveMinutes,
+      isEstimate: routeData.isEstimate,
+      method: routeData.method,
+      instructions: routeData.instructions,
     },
     remainingAtDeparture: remainingClocks(clocks),
     itinerary,
@@ -258,5 +351,6 @@ export async function composeQuote(
     candidatesAvailable: candidates.length,
     warnings: [...itinerary.warnings, ...warnings],
     disclaimer: HOS_DISCLAIMER,
+    routingDisclaimer: ROUTING_DISCLAIMER,
   };
 }
