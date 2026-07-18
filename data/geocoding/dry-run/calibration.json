@@ -1,5 +1,18 @@
 [
   {
+    "interstate": "I-40",
+    "state": "TN",
+    "anchors": [
+      {
+        "milepost": 369,
+        "lat": 35.8731,
+        "lng": -84.2379,
+        "listingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
+        "source": "directory-verified (normalized I-75→I-40)"
+      }
+    ]
+  },
+  {
     "interstate": "I-75",
     "state": "GA",
     "anchors": [
@@ -239,13 +252,6 @@
         "lng": -84.248712,
         "listingId": "03c57077-85f1-4fea-8838-348d2f8a3b5f",
         "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
-      },
-      {
-        "milepost": 369,
-        "lat": 35.8731,
-        "lng": -84.2379,
-        "listingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
-        "source": "directory-verified"
       }
     ]
   }

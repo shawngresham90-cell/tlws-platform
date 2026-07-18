@@ -12,10 +12,10 @@
     "needsExternalGeocode": 956,
     "unresolved": 199,
     "unresolvedReasons": {
-      "no-calibration": 785,
+      "no-calibration": 696,
       "no-exit-number": 360,
-      "anchor-gap-too-large": 6,
-      "outside-anchor-range": 4
+      "outside-anchor-range": 94,
+      "anchor-gap-too-large": 5
     },
     "statesWithoutBounds": []
   },
@@ -284,7 +284,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -297,7 +297,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -1073,7 +1073,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -1086,7 +1086,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -1251,7 +1251,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -1264,7 +1264,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -1307,7 +1307,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -1320,7 +1320,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -2210,7 +2210,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -2223,7 +2223,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -3337,7 +3337,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -3350,7 +3350,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -3449,7 +3449,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -3462,7 +3462,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -4547,7 +4547,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -4560,7 +4560,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -5196,7 +5196,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -5209,7 +5209,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -5308,7 +5308,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -5321,7 +5321,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -5672,7 +5672,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -5685,7 +5685,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -6736,7 +6736,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -6749,7 +6749,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -6937,7 +6937,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -6950,7 +6950,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -7196,7 +7196,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -7209,7 +7209,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -7560,7 +7560,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -7573,7 +7573,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -7644,7 +7644,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -7657,7 +7657,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -8455,7 +8455,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -8468,7 +8468,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -8923,7 +8923,9 @@
       },
       "conflictMiles": null,
       "nearListingId": null,
-      "notes": []
+      "notes": [
+        "corridor normalized I-75→I-40 (concurrency)"
+      ]
     },
     {
       "id": "471132d2-2361-4f71-a7c8-23c836f28f02",
@@ -9133,7 +9135,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -9146,7 +9148,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -9779,7 +9781,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -9792,7 +9794,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -9891,7 +9893,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -9904,7 +9906,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -10077,7 +10079,9 @@
       },
       "conflictMiles": null,
       "nearListingId": null,
-      "notes": []
+      "notes": [
+        "corridor normalized I-75→I-40 (concurrency)"
+      ]
     },
     {
       "id": "4ee402f8-abbf-471f-a9f7-620234b2b192",
@@ -10175,7 +10179,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -10188,7 +10192,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -10203,7 +10207,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -10216,7 +10220,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -10371,7 +10375,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -10384,7 +10388,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -10574,7 +10578,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -10587,7 +10591,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -10650,6 +10654,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -10945,7 +10950,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -10958,7 +10963,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -11029,7 +11034,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -11042,7 +11047,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -11118,7 +11123,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -11131,7 +11136,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12402,7 +12407,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "anchor-gap-too-large"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12415,7 +12420,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: anchor-gap-too-large"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12430,7 +12435,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12443,7 +12448,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12534,6 +12539,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -12605,7 +12611,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12618,7 +12624,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12745,7 +12751,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12758,7 +12764,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12773,7 +12779,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12786,7 +12792,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12801,7 +12807,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12814,7 +12820,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -12829,7 +12835,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -12842,7 +12848,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -13933,7 +13939,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -13946,7 +13952,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -13961,7 +13967,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -13974,7 +13980,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -14442,7 +14448,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -14455,7 +14461,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -14815,7 +14821,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -14828,7 +14834,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -14871,7 +14877,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -14884,7 +14890,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -14899,7 +14905,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -14912,7 +14918,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -15151,7 +15157,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -15164,7 +15170,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -15347,7 +15353,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -15360,7 +15366,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -15431,7 +15437,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -15444,7 +15450,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -15543,7 +15549,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -15556,7 +15562,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -16095,6 +16101,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -16550,7 +16557,9 @@
       },
       "conflictMiles": null,
       "nearListingId": null,
-      "notes": []
+      "notes": [
+        "corridor normalized I-75→I-40 (concurrency)"
+      ]
     },
     {
       "id": "7ad5c4a4-d850-4901-8542-72497a2d0e47",
@@ -17381,7 +17390,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -17394,7 +17403,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -17465,7 +17474,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -17478,7 +17487,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -17493,7 +17502,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -17506,7 +17515,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -17773,7 +17782,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -17786,7 +17795,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -18137,7 +18146,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -18150,7 +18159,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -18305,7 +18314,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -18318,7 +18327,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -18361,7 +18370,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -18374,7 +18383,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -18781,7 +18790,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -18794,7 +18803,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -19986,6 +19995,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -20113,7 +20123,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -20126,7 +20136,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -20565,7 +20575,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -20578,7 +20588,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -20621,7 +20631,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -20634,7 +20644,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -21241,7 +21251,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -21254,7 +21264,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -21997,7 +22007,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22010,7 +22020,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -22221,7 +22231,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22234,7 +22244,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -22391,7 +22401,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22404,7 +22414,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -22757,7 +22767,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22770,7 +22780,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -22953,7 +22963,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22966,7 +22976,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -22981,7 +22991,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -22994,7 +23004,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -23009,7 +23019,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -23022,7 +23032,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -23065,7 +23075,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -23078,7 +23088,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -24413,7 +24423,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -24426,7 +24436,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -24525,7 +24535,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -24538,7 +24548,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -24657,6 +24667,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -24812,7 +24823,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -24825,7 +24836,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -25204,7 +25215,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -25217,7 +25228,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -25993,7 +26004,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26006,7 +26017,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -26166,7 +26177,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26179,7 +26190,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -26306,7 +26317,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26319,7 +26330,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -26504,7 +26515,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26517,7 +26528,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -26700,7 +26711,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26713,7 +26724,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -26784,7 +26795,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -26797,7 +26808,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -27068,7 +27079,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -27081,7 +27092,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -27404,7 +27415,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -27417,7 +27428,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -27488,7 +27499,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -27501,7 +27512,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -27836,7 +27847,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -27849,7 +27860,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -28517,7 +28528,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -28530,7 +28541,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -28654,6 +28665,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -28669,7 +28681,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -28682,7 +28694,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -29878,7 +29890,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -29891,7 +29903,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -31352,7 +31364,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -31365,7 +31377,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -31604,7 +31616,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -31617,7 +31629,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -31660,7 +31672,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -31673,7 +31685,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -31746,7 +31758,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -31759,7 +31771,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -32074,6 +32086,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -32501,6 +32514,7 @@
       "conflictMiles": null,
       "nearListingId": "46c70f80-8582-44d1-a7b6-ea9423392fea",
       "notes": [
+        "corridor normalized I-75→I-40 (concurrency)",
         "interpolated point is within 0.05 mi of listing 46c70f80-8582-44d1-a7b6-ea9423392fea"
       ]
     },
@@ -33201,7 +33215,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -33214,7 +33228,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -33732,7 +33746,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -33745,7 +33759,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -34185,7 +34199,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -34198,7 +34212,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -34757,7 +34771,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -34770,7 +34784,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {
@@ -34897,7 +34911,7 @@
       "existing": null,
       "proposed": null,
       "interpolation": {
-        "failed": "no-calibration"
+        "failed": "outside-anchor-range"
       },
       "verification": {
         "severity": "no-coordinates",
@@ -34910,7 +34924,7 @@
       "conflictMiles": null,
       "nearListingId": null,
       "notes": [
-        "interpolation: no-calibration"
+        "interpolation: outside-anchor-range"
       ]
     },
     {

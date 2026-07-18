@@ -1,5 +1,6 @@
 import { haversineMiles } from '@/lib/map/geo';
 import { normalizeInterstate } from './coordinate-verification';
+import { resolveCorridor } from './concurrency';
 import {
   EXIT_NUMBERING,
   parseExitNumber,
@@ -52,9 +53,9 @@ export function buildCalibrations(rows: AnchorSourceRow[]): CalibrationBuildResu
 
   for (const row of rows) {
     const state = row.state.trim().toUpperCase();
-    const interstate = normalizeInterstate(row.interstate);
+    const tagged = normalizeInterstate(row.interstate);
     const milepost = parseExitNumber(row.exitNumber);
-    if (!interstate) {
+    if (!tagged) {
       skipped.push({ listingId: row.listingId, reason: 'no-interstate' });
       continue;
     }
@@ -70,6 +71,10 @@ export function buildCalibrations(rows: AnchorSourceRow[]): CalibrationBuildResu
       });
       continue;
     }
+    // Concurrency normalization: anchor the corridor that OWNS this exit's
+    // milepost scheme (the original tag stays on the listing untouched).
+    const resolved = resolveCorridor(state, tagged, row.exitNumber);
+    const interstate = resolved.canonical;
     const key = calibrationKey(interstate, state);
     let corridor = byCorridor.get(key);
     if (!corridor) {
@@ -85,7 +90,9 @@ export function buildCalibrations(rows: AnchorSourceRow[]): CalibrationBuildResu
       lat: row.lat,
       lng: row.lng,
       listingId: row.listingId,
-      source: row.source,
+      source: resolved.rule
+        ? `${row.source} (normalized ${resolved.tagged}→${interstate})`
+        : row.source,
     });
   }
 
@@ -96,7 +103,7 @@ export function buildCalibrations(rows: AnchorSourceRow[]): CalibrationBuildResu
   // (plus slack for short gaps where exit ramps dominate).
   const pairImplausibility = (a: MilepostAnchor, n: MilepostAnchor): number => {
     const gap = Math.abs(n.milepost - a.milepost);
-    return Math.max(0, haversineMiles(a, n) - (gap * 1.5 + 2));
+    return Math.max(0, haversineMiles(a, n) - (gap + 2));
   };
   for (const [key, corridor] of byCorridor) {
     // One bad anchor makes its innocent neighbors look bad too, so reject
@@ -118,7 +125,9 @@ export function buildCalibrations(rows: AnchorSourceRow[]): CalibrationBuildResu
       rejected.push({ anchor: keep[worstIdx], corridor: key, reason: 'implausible-vs-neighbors' });
       keep.splice(worstIdx, 1);
     }
-    if (keep.length >= 2) {
+    // A single anchor cannot interpolate but CAN place exact exit matches
+    // (same-exit listings snap to the verified point), so keep it.
+    if (keep.length >= 1) {
       calibrations.push({ interstate: corridor.interstate, state: corridor.state, anchors: keep });
     }
   }

@@ -83,7 +83,7 @@ const GA_CAL: CalibrationSet = [
     anchors: [
       { milepost: 100, lat: 32.0, lng: -83.7, source: 'test' },
       { milepost: 110, lat: 32.15, lng: -83.75, source: 'test' },
-      { milepost: 140, lat: 32.6, lng: -83.9, source: 'test' },
+      { milepost: 140, lat: 32.55, lng: -83.85, source: 'test' },
     ],
   },
 ];
@@ -248,7 +248,11 @@ const anchorRows: AnchorSourceRow[] = [
   }, // lone anchor → corridor dropped
 ];
 const built = buildCalibrations(anchorRows);
-check('calib: one usable corridor', built.calibrations.length === 1, built.calibrations);
+check(
+  'calib: corridors kept (multi-anchor GA + single-anchor TN I-40)',
+  built.calibrations.length === 2,
+  built.calibrations,
+);
 check(
   'calib: outlier anchor rejected',
   built.rejected.length === 1 && built.rejected[0].anchor.listingId === 'c',
@@ -267,7 +271,10 @@ check(
 );
 check(
   'calib: surviving corridor anchors sorted and clean',
-  built.calibrations[0]?.anchors.map((a) => a.milepost).join(',') === '100,110',
+  built.calibrations
+    .find((c) => c.interstate === 'I-75' && c.state === 'GA')
+    ?.anchors.map((a) => a.milepost)
+    .join(',') === '100,110',
 );
 
 /* ------------------------------------------------ pipeline classification */

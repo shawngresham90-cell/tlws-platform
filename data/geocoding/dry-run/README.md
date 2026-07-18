@@ -26,7 +26,10 @@ history-before-mutation.
 2. **Interpolation**: a listing with only `interstate + exit` is placed by
    linear interpolation between the two anchors bracketing its milepost —
    only in states whose exits ARE mileposts (Delaware's sequential exits are
-   refused, never guessed). No extrapolation beyond the anchor range.
+   refused, never guessed). No extrapolation beyond the anchor range. The
+   ±1–2 mi placement expectation applies to the `medium` tier (anchor gaps
+   ≤ 10 mi); `low`-tier results over wider gaps can drift further on curving
+   corridors, which is why `low` always needs closer review.
 3. **Confidence**: anchor gap ≤ 10 mi → `medium`; ≤ 30 mi → `low`; larger →
    unresolved. An exact exit match to a verified anchor is `medium`. Never
    `high` — the console auto-applies only `high`, so pipeline output always
@@ -54,14 +57,14 @@ npx esbuild scripts/geocode-dry-run.ts --bundle --platform=node --format=cjs \
 
 Tests: `scripts/test-geocoding-pipeline.ts` (same esbuild runner).
 
-## Results of the 2026-07-17 run
+## Results of the 2026-07-17 run (updated by Phase 2B)
 
 1,252 active listings — 45 already geocoded (all pass validation; zero
 suspect, zero invalid, zero conflicts), **52 interpolation candidates**
-(48 medium / 4 low; corridors calibrated so far: I-75 GA with 22 anchors,
-I-75 TN with 12), **956 need external geocoding** (street address present,
-no usable corridor calibration yet), **199 unresolved** (no exit number and
-no address-based path). Known data quirk: the Knoxville Watt Road cluster is
-tagged `I-75` with exit `369` — an I-40/I-75 concurrency exit number; exact
-anchor matching places these correctly, but corridor normalization is a
-Phase 2B item.
+(48 medium / 4 low), **956 need external geocoding** (street address
+present, no usable corridor calibration yet), **199 unresolved** (no exit
+number and no address-based path). Corridors calibrated: I-75 GA (22
+anchors), I-75 TN (11), and — via Phase 2B concurrency normalization — I-40
+TN (1 anchor at the Watt Road exit, serving exact-exit matches only). The
+Knoxville Watt Road cluster (tagged `I-75`, exit `369`) is now normalized to
+I-40's milepost scheme; see `phase2b/` for the staged backfill plan.

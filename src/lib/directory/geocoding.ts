@@ -56,7 +56,13 @@ export const GEOCODING_EVIDENCE_COLUMNS = [
   'status',
 ] as const;
 
-export const CANDIDATE_STATUS_VALUES = ['ready', 'manual-review', 'skipped', 'rejected', 'applied'] as const;
+export const CANDIDATE_STATUS_VALUES = [
+  'ready',
+  'manual-review',
+  'skipped',
+  'rejected',
+  'applied',
+] as const;
 export const PRIORITY_VALUES = ['high', 'normal', 'low'] as const;
 
 export type GeocodingEvidence = {
@@ -175,9 +181,7 @@ export function parseGeocodingCsv(text: string): ParsedBatch {
   for (let i = 1; i < table.length; i++) {
     const raw = table[i];
     if (raw.every((cell) => cell.trim() === '')) continue;
-    const record = Object.fromEntries(
-      GEOCODING_COLUMNS.map((c) => [c, raw[idx[c]] ?? '']),
-    );
+    const record = Object.fromEntries(GEOCODING_COLUMNS.map((c) => [c, raw[idx[c]] ?? '']));
     const parsed = rowSchema.safeParse(record);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
@@ -189,7 +193,10 @@ export function parseGeocodingCsv(text: string): ParsedBatch {
     );
     rows.push({
       ...parsed.data,
-      evidence: Object.keys(evidenceRecord).length > 0 ? parseEvidence(evidenceRecord) : { ...EMPTY_EVIDENCE },
+      evidence:
+        Object.keys(evidenceRecord).length > 0
+          ? parseEvidence(evidenceRecord)
+          : { ...EMPTY_EVIDENCE },
     });
   }
   return { rows, errors };
@@ -204,6 +211,8 @@ export type LiveListingRef = {
   state: string;
   lat: number | null;
   lng: number | null;
+  /** Optional corridor tag — rides into review enrichment when provided. */
+  interstate?: string | null;
 };
 
 export type RowProblem =
@@ -223,11 +232,19 @@ export type ValidatedRow = GeocodingRow & {
   problemDetails: string[];
   /** Live row already has different coordinates — needs explicit confirm. */
   wouldOverwrite: boolean;
-  live: { name: string; lat: number | null; lng: number | null } | null;
+  live: {
+    name: string;
+    lat: number | null;
+    lng: number | null;
+    interstate?: string | null;
+  } | null;
 };
 
 const norm = (s: string | null | undefined) =>
-  (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  (s ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 /**
  * Cross-check parsed rows against the live listings. A row is applicable
@@ -307,7 +324,14 @@ export function validateBatch(
       problems,
       problemDetails,
       wouldOverwrite,
-      live: liveRow ? { name: liveRow.name, lat: liveRow.lat, lng: liveRow.lng } : null,
+      live: liveRow
+        ? {
+            name: liveRow.name,
+            lat: liveRow.lat,
+            lng: liveRow.lng,
+            interstate: liveRow.interstate ?? null,
+          }
+        : null,
     };
   });
 }

@@ -56,7 +56,7 @@ export type CorridorCalibration = {
   interstate: string;
   /** Two-letter state abbreviation. */
   state: string;
-  /** Sorted ascending by milepost; at least two anchors to interpolate. */
+  /** Sorted ascending by milepost; one anchor serves exact-exit matches, two or more enable interpolation. */
   anchors: MilepostAnchor[];
 };
 
@@ -88,7 +88,6 @@ export type InterpolationFailure =
   | 'sequential-exit-state'
   | 'unknown-exit-numbering'
   | 'no-calibration'
-  | 'too-few-anchors'
   | 'outside-anchor-range'
   | 'anchor-gap-too-large'
   | 'implausible-result';
@@ -141,13 +140,13 @@ export function interpolateAlongCorridor(
   if (numbering === 'sequential') return { ok: false, reason: 'sequential-exit-state' };
   const cal = calibrations.get(calibrationKey(interstate ?? '', st));
   if (!cal) return { ok: false, reason: 'no-calibration' };
-  if (cal.anchors.length < 2) return { ok: false, reason: 'too-few-anchors' };
 
   const anchors = cal.anchors;
 
   // Exact exit match: a verified anchor AT this exit places the listing at
-  // that exit regardless of how sparse the rest of the corridor is. Medium,
-  // not high — same exit does not mean same driveway.
+  // that exit regardless of how sparse the rest of the corridor is (a
+  // single-anchor corridor still serves exact matches). Medium, not high —
+  // same exit does not mean same driveway.
   const exact = anchors.find((a) => a.milepost === milepost);
   if (exact) {
     return {
@@ -193,7 +192,9 @@ export function interpolateAlongCorridor(
     { lat: lower.lat, lng: lower.lng },
     { lat: upper.lat, lng: upper.lng },
   );
-  const spanPlausible = gapMiles === 0 || anchorSpanMiles <= gapMiles * 1.5 + 2;
+  // Straight-line distance can never exceed road distance (≈ milepost gap);
+  // 2 mi slack covers exit-number truncation and ramp offsets.
+  const spanPlausible = gapMiles === 0 || anchorSpanMiles <= gapMiles + 2;
   const insideState = !stateBounds || milesOutsideBounds(stateBounds, p) <= 5;
   const insideCorridor = !corridor || milesOutsideBounds(corridor, p) <= 5;
   if (!spanPlausible || !insideState || !insideCorridor) {

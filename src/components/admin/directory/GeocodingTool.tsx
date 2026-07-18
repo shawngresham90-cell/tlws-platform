@@ -5,8 +5,12 @@ import { useFormState, useFormStatus } from 'react-dom';
 import {
   previewGeocodingAction,
   applyGeocodingAction,
+  listGeocodingHistoryAction,
+  rollbackGeocodingAction,
   type GeocodingPreviewState,
   type GeocodingApplyState,
+  type GeocodingRollbackState,
+  type GeocodingHistoryItem,
 } from '@/app/admin/(dashboard)/directory/geocoding/actions';
 import {
   rejectedRowsCsv,
@@ -16,6 +20,7 @@ import {
   osmUrl,
   type ValidatedRow,
 } from '@/lib/directory/geocoding';
+import { enrichReviewRow } from '@/lib/directory/review-enrichment';
 
 /**
  * Admin geocoding apply tool (Milestone 17). Flow: upload CSV → server
@@ -43,6 +48,125 @@ function PendingButton({ label, pendingLabel }: { label: string; pendingLabel: s
 
 const fmtCoord = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(6));
 
+const METHOD_LABEL: Record<string, string> = {
+  'verified-existing': 'Verified existing',
+  'corridor-interpolation': 'Corridor interpolation',
+  'census-geocoder': 'Census geocoder',
+  manual: 'Manual',
+};
+
+/** Phase 2B: method, distance-from-corridor, and warning flags per row. */
+function MethodCell({ row }: { row: ValidatedRow }) {
+  const e = enrichReviewRow(row, row.live?.interstate ?? null);
+  return (
+    <td className="px-3 py-2.5 align-top text-xs">
+      <span className="font-semibold text-ink">{METHOD_LABEL[e.method]}</span>
+      {e.corridorDistanceMiles != null && (
+        <span className="block text-muted">
+          {e.corridorDistanceMiles === 0
+            ? 'on corridor'
+            : `${e.corridorDistanceMiles} mi off corridor`}
+        </span>
+      )}
+      {e.warnings.length > 0 && (
+        <span className="mt-1 flex flex-wrap gap-1">
+          {e.warnings.map((w) => (
+            <span
+              key={w}
+              className="rounded-card border border-diesel/60 px-1.5 py-0.5 font-semibold text-diesel"
+            >
+              {w}
+            </span>
+          ))}
+        </span>
+      )}
+    </td>
+  );
+}
+
+/**
+ * Phase 2B rollback surface: recent geocoding applies with per-entry
+ * rollback. The server refuses stale rollbacks (row changed since).
+ */
+function RollbackPanel() {
+  const [items, setItems] = useState<GeocodingHistoryItem[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [rollbackState, rollbackAction] = useFormState<GeocodingRollbackState, FormData>(
+    rollbackGeocodingAction,
+    { error: null, done: false },
+  );
+
+  const load = async () => {
+    const res = await listGeocodingHistoryAction();
+    setLoadError(res.error);
+    setItems(res.items);
+  };
+
+  useEffect(() => {
+    // Depend on the state OBJECT (new identity per dispatch) so consecutive
+    // successful rollbacks each refresh the list.
+    if (rollbackState.done) void load();
+  }, [rollbackState]);
+
+  return (
+    <div className="mt-6 rounded-card border border-line bg-asphalt-800 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-display text-lg uppercase text-ink">Recent applies &amp; rollback</h3>
+          <p className="text-xs text-muted">
+            Every apply wrote history first; roll one back to restore the previous coordinates.
+            Rollback itself is recorded as history too.
+          </p>
+        </div>
+        <button type="button" onClick={() => void load()} className={smallBtn}>
+          {items === null ? 'Load recent applies' : 'Refresh'}
+        </button>
+      </div>
+      {loadError && (
+        <p role="alert" className="mt-3 text-sm font-medium text-diesel">
+          {loadError}
+        </p>
+      )}
+      {rollbackState.error && (
+        <p role="alert" className="mt-3 text-sm font-medium text-diesel">
+          {rollbackState.error}
+        </p>
+      )}
+      {rollbackState.done && !rollbackState.error && (
+        <p className="mt-3 text-sm font-medium text-signal">Rolled back.</p>
+      )}
+      {items !== null && items.length === 0 && (
+        <p className="mt-3 text-sm text-muted">No geocoding applies recorded yet.</p>
+      )}
+      {items !== null && items.length > 0 && (
+        <ul className="mt-3 space-y-2 text-xs text-muted">
+          {items.map((h) => (
+            <li
+              key={h.id}
+              className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2"
+            >
+              <span>
+                <span className="font-semibold text-ink">{h.location_name}</span>{' '}
+                {fmtCoord(h.from.lat)}, {fmtCoord(h.from.lng)} → {fmtCoord(h.to.lat)},{' '}
+                {fmtCoord(h.to.lng)}
+                <span className="block">
+                  {new Date(h.created_at).toLocaleString()} · {h.admin}
+                </span>
+              </span>
+              <form action={rollbackAction}>
+                <input type="hidden" name="history_id" value={h.id} />
+                <button type="submit" className={smallBtn}>
+                  Roll back
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const CONFIDENCE_FILTERS = ['all', 'high', 'medium', 'low', 'unresolved'] as const;
 const ACTION_FILTERS = ['all', 'ready', 'manual-review', 'skip'] as const;
 
@@ -59,15 +183,24 @@ function downloadCsv(csv: string, filename: string) {
 function EvidenceDrawer({ row }: { row: ValidatedRow }) {
   const e = row.evidence;
   const hasEvidence =
-    e.confidenceReason || e.sourceCount != null || e.sourceUrls.length > 0 || e.lastResearched ||
-    e.reviewerNotes || e.sideOfRoadConfirmed != null || e.propertyConfirmed != null ||
-    e.cityStateValidated != null || e.priority || e.concernFlag || e.status;
+    e.confidenceReason ||
+    e.sourceCount != null ||
+    e.sourceUrls.length > 0 ||
+    e.lastResearched ||
+    e.reviewerNotes ||
+    e.sideOfRoadConfirmed != null ||
+    e.propertyConfirmed != null ||
+    e.cityStateValidated != null ||
+    e.priority ||
+    e.concernFlag ||
+    e.status;
   if (!hasEvidence) return null;
   const yn = (v: boolean | null) => (v == null ? '—' : v ? 'yes' : 'no');
   return (
     <details className="mt-1">
       <summary className="cursor-pointer text-xs font-semibold text-signal">
-        Evidence{e.concernFlag ? ' · ⚠ concern' : ''}{e.priority ? ` · ${e.priority} priority` : ''}
+        Evidence{e.concernFlag ? ' · ⚠ concern' : ''}
+        {e.priority ? ` · ${e.priority} priority` : ''}
       </summary>
       <dl className="mt-1 grid gap-0.5 text-xs text-muted">
         {e.status && (
@@ -83,7 +216,8 @@ function EvidenceDrawer({ row }: { row: ValidatedRow }) {
         )}
         {e.sourceCount != null && (
           <div>
-            <dt className="inline font-semibold">Sources:</dt> <dd className="inline">{e.sourceCount}</dd>
+            <dt className="inline font-semibold">Sources:</dt>{' '}
+            <dd className="inline">{e.sourceCount}</dd>
           </div>
         )}
         {e.sourceUrls.length > 0 && (
@@ -91,7 +225,13 @@ function EvidenceDrawer({ row }: { row: ValidatedRow }) {
             <dt className="inline font-semibold">Source URLs:</dt>{' '}
             <dd className="inline">
               {e.sourceUrls.map((u, i) => (
-                <a key={u} href={u} target="_blank" rel="noreferrer" className="mr-2 break-all text-signal hover:underline">
+                <a
+                  key={u}
+                  href={u}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mr-2 break-all text-signal hover:underline"
+                >
                   [{i + 1}]
                 </a>
               ))}
@@ -105,7 +245,8 @@ function EvidenceDrawer({ row }: { row: ValidatedRow }) {
           </div>
         )}
         <div>
-          <dt className="inline font-semibold">Side of road:</dt> <dd className="inline">{yn(e.sideOfRoadConfirmed)}</dd>
+          <dt className="inline font-semibold">Side of road:</dt>{' '}
+          <dd className="inline">{yn(e.sideOfRoadConfirmed)}</dd>
         </div>
         <div>
           <dt className="inline font-semibold">On business property:</dt>{' '}
@@ -153,7 +294,9 @@ export function GeocodingTool() {
   // Default selection: every applicable row that does NOT overwrite.
   useEffect(() => {
     if (!rows) return;
-    setSelected(new Set(rows.filter((r) => r.applicable && !r.wouldOverwrite).map((r) => r.listing_id)));
+    setSelected(
+      new Set(rows.filter((r) => r.applicable && !r.wouldOverwrite).map((r) => r.listing_id)),
+    );
     setOverwriteOk(new Set());
     setConfirming(false);
   }, [rows]);
@@ -238,7 +381,10 @@ export function GeocodingTool() {
   return (
     <div className="grid gap-6">
       {/* Step 1: choose file + preview */}
-      <form action={previewAction} className="max-w-2xl rounded-card border border-line bg-asphalt-800 p-6">
+      <form
+        action={previewAction}
+        className="max-w-2xl rounded-card border border-line bg-asphalt-800 p-6"
+      >
         <label htmlFor="geocoding-file" className="mb-1.5 block text-sm font-semibold text-ink">
           Geocoding batch CSV
         </label>
@@ -257,18 +403,26 @@ export function GeocodingTool() {
           stays untouched and is downloadable for manual review.
         </p>
         <div className="mt-5">
-          <PendingButton label={fileName ? `Preview ${fileName}` : 'Preview'} pendingLabel="Validating…" />
+          <PendingButton
+            label={fileName ? `Preview ${fileName}` : 'Preview'}
+            pendingLabel="Validating…"
+          />
         </div>
       </form>
 
       {preview.error && (
-        <p role="alert" className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p
+          role="alert"
+          className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+        >
           {preview.error}
         </p>
       )}
       {preview.fileErrors.length > 0 && (
         <div className="max-w-2xl rounded-card border border-diesel/60 bg-diesel/5 px-4 py-3 text-sm text-muted">
-          <p className="font-semibold text-diesel">Row-level file problems ({preview.fileErrors.length}):</p>
+          <p className="font-semibold text-diesel">
+            Row-level file problems ({preview.fileErrors.length}):
+          </p>
           <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto">
             {preview.fileErrors.slice(0, 50).map((e, i) => (
               <li key={i}>{e}</li>
@@ -292,8 +446,13 @@ export function GeocodingTool() {
                   ['Concern flags', summary.concerns],
                 ] as const
               ).map(([label, n]) => (
-                <div key={label} className="rounded-card border border-line bg-asphalt-800 p-3 text-center">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</dt>
+                <div
+                  key={label}
+                  className="rounded-card border border-line bg-asphalt-800 p-3 text-center"
+                >
+                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                    {label}
+                  </dt>
                   <dd className="mt-0.5 font-display text-2xl text-ink">{n}</dd>
                 </div>
               ))}
@@ -301,10 +460,14 @@ export function GeocodingTool() {
           )}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted">
-              {rows.length} rows · <span className="font-semibold text-signal">{applicable.length} applicable</span> ·{' '}
+              {rows.length} rows ·{' '}
+              <span className="font-semibold text-signal">{applicable.length} applicable</span> ·{' '}
               {rows.length - applicable.length} manual-review/skip · {selected.size} selected
               {selectedOverwrites.length > 0 && (
-                <span className="font-semibold text-diesel"> · {selectedOverwrites.length} overwrite existing</span>
+                <span className="font-semibold text-diesel">
+                  {' '}
+                  · {selectedOverwrites.length} overwrite existing
+                </span>
               )}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -353,7 +516,12 @@ export function GeocodingTool() {
               <button type="button" onClick={downloadReviewQueue} className={smallBtn}>
                 Review queue (priority)
               </button>
-              <button type="button" onClick={downloadStaging} disabled={selected.size === 0} className={smallBtn}>
+              <button
+                type="button"
+                onClick={downloadStaging}
+                disabled={selected.size === 0}
+                className={smallBtn}
+              >
                 Export selected as staging CSV
               </button>
             </div>
@@ -370,13 +538,17 @@ export function GeocodingTool() {
                   <th className="px-3 py-2.5 font-semibold">Existing</th>
                   <th className="px-3 py-2.5 font-semibold">Proposed</th>
                   <th className="px-3 py-2.5 font-semibold">Confidence</th>
+                  <th className="px-3 py-2.5 font-semibold">Method / checks</th>
                   <th className="px-3 py-2.5 font-semibold">Source</th>
                   <th className="px-3 py-2.5 font-semibold">Status / notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {visible.map((r) => (
-                  <tr key={`${r.listing_id}-${r.business_name}`} className={r.applicable ? '' : 'opacity-70'}>
+                  <tr
+                    key={`${r.listing_id}-${r.business_name}`}
+                    className={r.applicable ? '' : 'opacity-70'}
+                  >
                     <td className="px-3 py-2.5 align-top">
                       {r.applicable && (
                         <input
@@ -454,9 +626,15 @@ export function GeocodingTool() {
                       </span>
                       <span className="block text-xs text-muted">{r.action}</span>
                     </td>
+                    <MethodCell row={r} />
                     <td className="max-w-52 px-3 py-2.5 align-top text-xs text-muted">
                       {r.source_url ? (
-                        <a href={r.source_url} target="_blank" rel="noreferrer" className="break-all text-signal hover:underline">
+                        <a
+                          href={r.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="break-all text-signal hover:underline"
+                        >
                           {r.source_url.replace(/^https?:\/\//, '').slice(0, 60)}
                         </a>
                       ) : (
@@ -465,7 +643,9 @@ export function GeocodingTool() {
                     </td>
                     <td className="max-w-72 px-3 py-2.5 align-top text-xs text-muted">
                       {r.problems.length > 0 && (
-                        <span className="block font-semibold text-diesel">{r.problemDetails.join('; ')}</span>
+                        <span className="block font-semibold text-diesel">
+                          {r.problemDetails.join('; ')}
+                        </span>
                       )}
                       {r.verification_notes}
                       <EvidenceDrawer row={r} />
@@ -481,7 +661,8 @@ export function GeocodingTool() {
             {!confirming ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted">
-                  Applying updates <span className="font-semibold text-ink">{selectedRows.length}</span> listing
+                  Applying updates{' '}
+                  <span className="font-semibold text-ink">{selectedRows.length}</span> listing
                   {selectedRows.length === 1 ? '' : 's'} (high confidence, ready only).
                   {unconfirmedOverwrites.length > 0 &&
                     ` ${unconfirmedOverwrites.length} selected overwrite(s) still need the per-row confirmation.`}
@@ -499,12 +680,13 @@ export function GeocodingTool() {
               <div>
                 <h3 className="font-display text-lg uppercase text-ink">Confirm apply</h3>
                 <p className="mt-1 text-sm text-muted">
-                  {selectedRows.length} listing{selectedRows.length === 1 ? '' : 's'} will get coordinates
+                  {selectedRows.length} listing{selectedRows.length === 1 ? '' : 's'} will get
+                  coordinates
                   {selectedOverwrites.length > 0
                     ? `, including ${selectedOverwrites.length} explicit overwrite(s) of existing coordinates`
                     : ''}
-                  . A location_history record is written before each update; medium/low/unresolved rows are
-                  never touched.
+                  . A location_history record is written before each update; medium/low/unresolved
+                  rows are never touched.
                 </p>
                 <ul className="mt-3 max-h-44 space-y-1 overflow-y-auto text-xs text-muted">
                   {selectedRows.map((r) => (
@@ -518,14 +700,24 @@ export function GeocodingTool() {
                 <form action={applyAction} className="mt-4 flex flex-wrap items-center gap-3">
                   <input type="hidden" name="csv_text" value={csvText} />
                   <input type="hidden" name="selected" value={JSON.stringify([...selected])} />
-                  <input type="hidden" name="overwrite_confirmed" value={JSON.stringify([...overwriteOk])} />
-                  <PendingButton label={`Apply ${selectedRows.length} update${selectedRows.length === 1 ? '' : 's'}`} pendingLabel="Applying…" />
+                  <input
+                    type="hidden"
+                    name="overwrite_confirmed"
+                    value={JSON.stringify([...overwriteOk])}
+                  />
+                  <PendingButton
+                    label={`Apply ${selectedRows.length} update${selectedRows.length === 1 ? '' : 's'}`}
+                    pendingLabel="Applying…"
+                  />
                   <button type="button" onClick={() => setConfirming(false)} className={smallBtn}>
                     Back
                   </button>
                 </form>
                 {applyState.error && (
-                  <p role="alert" className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+                  <p
+                    role="alert"
+                    className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+                  >
                     {applyState.error}
                   </p>
                 )}
@@ -534,6 +726,7 @@ export function GeocodingTool() {
           </div>
         </div>
       )}
+      <RollbackPanel />
     </div>
   );
 }
