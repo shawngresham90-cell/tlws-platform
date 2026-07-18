@@ -3,7 +3,25 @@
 import { useEffect, useState } from 'react';
 import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 import type { PlaceResult } from '@/lib/trip-planner/place-search';
+import type { FavoriteRoute, PlaceRef, TruckPreset } from '@/lib/trip-planner/saved-trips-store';
 import { PlaceCombobox } from './PlaceCombobox';
+import { SavedTripsPanel } from './SavedTripsPanel';
+import { useSavedTrips } from './useSavedTrips';
+
+/** A saved PlaceRef → the PlaceResult shape the form and combobox expect. */
+function refToPlace(ref: PlaceRef): PlaceResult {
+  const source = ref.source === 'directory' ? 'directory' : 'here';
+  return {
+    id: `saved-${ref.lat.toFixed(4)},${ref.lng.toFixed(4)}`,
+    label: ref.label,
+    lat: ref.lat,
+    lng: ref.lng,
+    source,
+    // Preserve the original badge kind when the recent/favorite recorded it.
+    kind: (ref.kind as PlaceResult['kind']) ?? (source === 'directory' ? 'directory' : 'other'),
+    stateCode: null,
+  };
+}
 
 /**
  * Trip Planner client UI (Phase 4). Mobile-first, single column, big touch
@@ -130,6 +148,32 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [hazmatClass, setHazmatClass] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<QuoteResponse | null>(null);
+  const [presetName, setPresetName] = useState('');
+  const [savedNote, setSavedNote] = useState('');
+
+  const saved = useSavedTrips();
+  const currentTruck = () => ({
+    heightFt,
+    lengthFt,
+    grossWeightLbs,
+    axles,
+    hazmatClass: hazmatClass || null,
+  });
+  const applyPreset = (p: TruckPreset) => {
+    setHeightFt(p.heightFt);
+    setLengthFt(p.lengthFt);
+    setGrossWeightLbs(p.grossWeightLbs);
+    setAxles(p.axles);
+    setHazmatClass(p.hazmatClass ?? '');
+  };
+  const pickOrigin = (p: PlaceResult | null) => {
+    setOrigin(p);
+    if (p) saved.recordRecentPlace(p);
+  };
+  const pickDestination = (p: PlaceResult | null) => {
+    setDestination(p);
+    if (p) saved.recordRecentPlace(p);
+  };
 
   // Same-point guard: reject an origin/destination that resolve to the same
   // spot (rounded) — the router rejects a zero-length route anyway.
@@ -140,10 +184,17 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
     origin.lng.toFixed(3) === destination.lng.toFixed(3);
   const canSubmit = !!origin && !!destination && !samePoint && !busy;
 
-  const submit = async () => {
-    if (!origin || !destination) return;
+  // `submit` accepts explicit origin/destination/truck so "re-plan" can drive
+  // it from a saved favorite without waiting on React state to settle.
+  const submit = async (
+    o: PlaceResult | null = origin,
+    d: PlaceResult | null = destination,
+    truck: ReturnType<typeof currentTruck> = currentTruck(),
+  ) => {
+    if (!o || !d) return;
     setBusy(true);
     setResult(null);
+    setSavedNote('');
     try {
       // Fall back to "now" when the field is empty OR unparseable — a NaN
       // here would fail schema validation server-side for no user benefit.
@@ -153,11 +204,8 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          origin: { label: origin.label, position: { lat: origin.lat, lng: origin.lng } },
-          destination: {
-            label: destination.label,
-            position: { lat: destination.lat, lng: destination.lng },
-          },
+          origin: { label: o.label, position: { lat: o.lat, lng: o.lng } },
+          destination: { label: d.label, position: { lat: d.lat, lng: d.lng } },
           departAtMs,
           clocks: {
             cycleRule: '70/8',
@@ -167,21 +215,56 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
             cycleUsedMin: Math.max(cycleUsed, drivingUsed) * 60,
           },
           fuelLevelFraction: fuelLevel / 100,
-          truck: {
-            heightFt,
-            lengthFt,
-            grossWeightLbs,
-            axles,
-            hazmatClass: hazmatClass || null,
-          },
+          truck,
         }),
       });
-      setResult((await res.json()) as QuoteResponse);
+      const quote = (await res.json()) as QuoteResponse;
+      setResult(quote);
+      // Record device-local history on a successful plan (never uploaded).
+      if (quote.ok) {
+        saved.recordRecentPlace(o);
+        saved.recordRecentPlace(d);
+        saved.recordPlannedTrip({
+          origin: { label: o.label, lat: o.lat, lng: o.lng, source: o.source, kind: o.kind },
+          destination: { label: d.label, lat: d.lat, lng: d.lng, source: d.source, kind: d.kind },
+          truck,
+          miles: quote.routeSummary?.miles ?? null,
+          driveMinutes: quote.routeSummary?.driveMinutes ?? null,
+          provider: quote.routeSummary?.method ?? null,
+        });
+      }
     } catch {
       setResult({ ok: false, error: { code: 'network', message: 'Could not reach the planner.' } });
     } finally {
       setBusy(false);
     }
+  };
+
+  // Load a saved favorite into the form and re-plan it in one tap.
+  const replanFavorite = (f: FavoriteRoute) => {
+    const o = refToPlace(f.origin);
+    const d = refToPlace(f.destination);
+    setOrigin(o);
+    setDestination(d);
+    applyPreset({ id: f.id, name: f.name, ...f.truck });
+    saved.markPlanned(f.id);
+    void submit(o, d, f.truck);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveThisTrip = () => {
+    if (!origin || !destination) return;
+    saved.saveFavorite({
+      origin: { label: origin.label, lat: origin.lat, lng: origin.lng, source: origin.source },
+      destination: {
+        label: destination.label,
+        lat: destination.lat,
+        lng: destination.lng,
+        source: destination.source,
+      },
+      truck: currentTruck(),
+    });
+    setSavedNote('Saved to this device.');
   };
 
   return (
@@ -192,16 +275,18 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
         label="Origin — city, address, ZIP, or directory stop"
         placeholder="e.g. Nashville, TN or a truck stop"
         anchors={anchors}
+        recents={saved.store.recentPlaces.map(refToPlace)}
         selected={origin}
-        onSelect={setOrigin}
+        onSelect={pickOrigin}
       />
       <PlaceCombobox
         id="tp-destination"
         label="Destination — city, address, ZIP, or directory stop"
         placeholder="e.g. 123 Main St, Knoxville, TN"
         anchors={anchors}
+        recents={saved.store.recentPlaces.map(refToPlace)}
         selected={destination}
-        onSelect={setDestination}
+        onSelect={pickDestination}
       />
       {samePoint && (
         <p className="mt-2 text-xs text-diesel">
@@ -333,6 +418,29 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
             ))}
           </select>
         </label>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="flex-1 text-sm text-ink">
+            Save this profile as…
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="e.g. Reefer, Flatbed"
+              className={input}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={!presetName.trim()}
+            onClick={() => {
+              saved.saveTruckPreset(presetName.trim(), currentTruck());
+              setPresetName('');
+            }}
+            className="rounded-card border border-line px-3 py-3 text-xs font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-asphalt-700 disabled:opacity-50"
+          >
+            Save preset
+          </button>
+        </div>
       </details>
 
       <button
@@ -362,6 +470,20 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
 
       {result?.ok && result.routeSummary && result.itinerary && result.remainingAtDeparture && (
         <section className="mt-6 space-y-4">
+          {/* Save this trip (explicit — never auto-saved) */}
+          <div className="flex items-center justify-between gap-2 rounded-card border border-line bg-asphalt-800 p-3">
+            <span className="text-xs text-muted">
+              {savedNote || 'Keep this route for one-tap re-planning.'}
+            </span>
+            <button
+              type="button"
+              onClick={saveThisTrip}
+              className="shrink-0 rounded-card bg-signal px-3 py-2 text-xs font-semibold uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
+            >
+              ★ Save this trip
+            </button>
+          </div>
+
           {/* Route summary */}
           <div className="rounded-card border border-line bg-asphalt-800 p-4">
             <h2 className="font-display text-lg uppercase text-ink">Route summary</h2>
@@ -540,6 +662,20 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
           )}
         </section>
       )}
+
+      {/* ------------------------------------------------ saved trips */}
+      <SavedTripsPanel
+        store={saved.store}
+        status={saved.status}
+        storageAvailable={saved.storageAvailable}
+        onReplan={replanFavorite}
+        onRename={saved.renameFavorite}
+        onDelete={saved.deleteFavorite}
+        onApplyPreset={applyPreset}
+        onDeletePreset={saved.deleteTruckPreset}
+        onClearRecents={saved.clearRecents}
+        onClearAll={saved.clearAll}
+      />
     </div>
   );
 }

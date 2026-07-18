@@ -188,3 +188,36 @@ truck routing, HOS, weather, cost, parking, and stop planning are untouched.
 Selection is explicit (editing clears a prior pick), same-point and empty
 submissions are rejected, and directory-to-directory trips still work when
 geocoding is unavailable. Split sleeper remains deferred.
+
+## Saved Trips & Recent Searches (local-device MVP)
+
+DECISION GATE: tlws-platform has no end-user account system — Supabase Auth is
+admin-only ("No public sign-up — admins are provisioned by the owner"), there
+is no public driver sign-up and no stable per-driver user ID, and the Trip
+Planner is a public/anonymous tool. Per the milestone spec, saved trips are
+therefore a LOCAL-DEVICE MVP (versioned localStorage), not an account feature.
+No second auth system was introduced; no server persistence exists.
+
+`saved-trips-store.ts` is a PURE, versioned store (`tlws:trip-planner:v1`):
+recent place selections (10), planned-trip history (10), favorite routes (20),
+and truck presets (10). It handles fail-soft parsing, schema versioning +
+migration (v0 → v1; corrupt/unknown → empty), stale cleanup (recents/planned
+older than 90 days dropped; favorites/presets kept as explicit user data),
+de-duplication (recents by coord, favorites/planned by route, presets by name),
+and caps — all offline-testable (`scripts/test-saved-trips.ts`). Objects are
+rebuilt field-by-field on load, so a hostile localStorage blob cannot pollute
+prototypes or inject fields.
+
+`useSavedTrips` is an SSR-safe hook (first render matches server; localStorage
+touched only in an effect) that fail-softs when storage is blocked (private
+mode) to in-memory state. `SavedTripsPanel` renders favorites (re-plan /
+rename / delete-with-confirm), truck presets (apply / delete), recent-search
+controls (clear), an explicit private-device notice, and empty/loading/
+unavailable states — all keyboard-accessible. "Save this trip" is explicit
+(never auto-saved); recent selections and planned-trip history are recorded
+device-locally and never uploaded. The quote pipeline (HERE routing, HOS,
+weather, cost, parking, fuel, fallback) is unchanged — re-plan simply feeds
+saved coordinates + truck back through the same POST /api/trip-planner/quote.
+
+A cloud-sync layer can adopt these same shapes once end-user auth exists (see
+the milestone's cloud-sync planning report).
