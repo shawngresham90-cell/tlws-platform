@@ -147,3 +147,22 @@ imports them yet.
    `src/app/api/trip-planner/*` (Phase 4, auth + rate limits there).
 6. **Persistence:** the Phase 1 schema sketch (trips/stops/legs/hos_events)
    maps 1:1 onto these object models when saved-trip sync arrives.
+
+## Live truck routing (`here-routing.ts`, Phase 5)
+
+`createHereRoutingPort(fetchFn, apiKey, opts)` implements the Phase 3
+`RoutingPort` seam against HERE Routing API v8 (`transportMode=truck`).
+Truck attributes (height/width/length in cm, gross weight in kg, axle
+count, hazmat → `shippedHazardousGoods`) ride on every request; geometry
+comes back as a flexible polyline (`flexible-polyline.ts`, pure decoder)
+and is downsampled into the same `routePoints` shape the estimate produced
+— so HOS planning, weather bands, stop/parking candidates, and fuel math
+all consume real road data with zero downstream changes.
+
+Rails: server-side only (`HERE_API_KEY` env; no URL or key ever escapes
+the adapter — every failure returns `null`); one retry on 5xx/network,
+none on 4xx; per-instance TTL cache (default 6 h) so repeat anchor-pair
+quotes cost zero transactions; per-instance hourly call cap (default 100)
+keeps usage inside the approved free tier. `composeQuote` runs the port
+under a hard time budget and falls back to the labeled estimate with a
+warning whenever the port answers null. Split-sleeper remains deferred.

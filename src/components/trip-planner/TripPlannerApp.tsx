@@ -14,7 +14,13 @@ import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 type QuoteResponse = {
   ok: boolean;
   error?: { code: string; message: string; problems?: string[] };
-  routeSummary?: { miles: number; driveMinutes: number; isEstimate: boolean; method: string };
+  routeSummary?: {
+    miles: number;
+    driveMinutes: number;
+    isEstimate: boolean;
+    method: string;
+    instructions?: string[];
+  };
   remainingAtDeparture?: {
     drivingMin: number;
     windowMin: number;
@@ -54,7 +60,21 @@ type QuoteResponse = {
   candidatesAvailable?: number;
   warnings?: string[];
   disclaimer?: string;
+  routingDisclaimer?: string;
 };
+
+const HAZMAT_OPTIONS: [string, string][] = [
+  ['', 'None'],
+  ['1', 'Class 1 — Explosives'],
+  ['2', 'Class 2 — Gases'],
+  ['3', 'Class 3 — Flammable liquids'],
+  ['4', 'Class 4 — Flammable solids'],
+  ['5', 'Class 5 — Oxidizers'],
+  ['6', 'Class 6 — Poison'],
+  ['7', 'Class 7 — Radioactive'],
+  ['8', 'Class 8 — Corrosives'],
+  ['9', 'Class 9 — Miscellaneous'],
+];
 
 const input =
   'w-full rounded-card border border-line bg-asphalt-800 px-4 py-3 text-base text-ink ' +
@@ -100,6 +120,12 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [sinceBreak, setSinceBreak] = useState(0);
   const [cycleUsed, setCycleUsed] = useState(0);
   const [fuelLevel, setFuelLevel] = useState(100);
+  // Truck profile (defaults = standard 5-axle, 13'6" dry van at 80k GVW).
+  const [heightFt, setHeightFt] = useState(13.5);
+  const [lengthFt, setLengthFt] = useState(70);
+  const [grossWeightLbs, setGrossWeightLbs] = useState(80000);
+  const [axles, setAxles] = useState(5);
+  const [hazmatClass, setHazmatClass] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<QuoteResponse | null>(null);
 
@@ -135,6 +161,13 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
             cycleUsedMin: Math.max(cycleUsed, drivingUsed) * 60,
           },
           fuelLevelFraction: fuelLevel / 100,
+          truck: {
+            heightFt,
+            lengthFt,
+            grossWeightLbs,
+            axles,
+            hazmatClass: hazmatClass || null,
+          },
         }),
       });
       setResult((await res.json()) as QuoteResponse);
@@ -238,6 +271,76 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
         </label>
       </fieldset>
 
+      <details className="mt-4 rounded-card border border-line p-4">
+        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
+          Truck profile (13&#39;6&quot; · 70 ft · 80,000 lb · 5 axles by default)
+        </summary>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <label className="block text-sm text-ink">
+            Height (ft)
+            <input
+              type="number"
+              min={8}
+              max={15}
+              step={0.1}
+              value={heightFt}
+              onChange={(e) => setHeightFt(Number(e.target.value))}
+              className={input}
+            />
+          </label>
+          <label className="block text-sm text-ink">
+            Length (ft)
+            <input
+              type="number"
+              min={20}
+              max={120}
+              step={1}
+              value={lengthFt}
+              onChange={(e) => setLengthFt(Number(e.target.value))}
+              className={input}
+            />
+          </label>
+          <label className="block text-sm text-ink">
+            Gross weight (lb)
+            <input
+              type="number"
+              min={10000}
+              max={164000}
+              step={1000}
+              value={grossWeightLbs}
+              onChange={(e) => setGrossWeightLbs(Number(e.target.value))}
+              className={input}
+            />
+          </label>
+          <label className="block text-sm text-ink">
+            Axles
+            <input
+              type="number"
+              min={2}
+              max={9}
+              step={1}
+              value={axles}
+              onChange={(e) => setAxles(Number(e.target.value))}
+              className={input}
+            />
+          </label>
+        </div>
+        <label className="mt-3 block text-sm text-ink">
+          Hazmat placard
+          <select
+            value={hazmatClass}
+            onChange={(e) => setHazmatClass(e.target.value)}
+            className={input}
+          >
+            {HAZMAT_OPTIONS.map(([v, lbl]) => (
+              <option key={v} value={v}>
+                {lbl}
+              </option>
+            ))}
+          </select>
+        </label>
+      </details>
+
       <button
         type="button"
         disabled={!canSubmit}
@@ -280,9 +383,28 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
               · {fmtHours(result.itinerary.totalMinutes)} total (
               {fmtHours(result.itinerary.restMinutes)} rest)
             </p>
-            <p className="mt-1 text-xs text-muted">
-              Distance is an estimate ({result.routeSummary.method}).
-            </p>
+            {result.routeSummary.isEstimate ? (
+              <p className="mt-1 text-xs text-muted">
+                Distance is an estimate ({result.routeSummary.method}).
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-muted">
+                <span className="font-semibold text-signal">Truck-legal route</span> ·{' '}
+                {result.routeSummary.method}
+              </p>
+            )}
+            {result.routeSummary.instructions && result.routeSummary.instructions.length > 0 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
+                  Turn-by-turn ({result.routeSummary.instructions.length} steps)
+                </summary>
+                <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-muted">
+                  {result.routeSummary.instructions.map((ins, i) => (
+                    <li key={i}>{ins}</li>
+                  ))}
+                </ol>
+              </details>
+            )}
           </div>
 
           {/* Legal driving window */}
@@ -416,6 +538,12 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
           <p className="rounded-card border border-diesel/50 bg-diesel/5 p-4 text-xs text-muted">
             <span className="font-semibold text-diesel">HOS disclaimer:</span> {result.disclaimer}
           </p>
+          {result.routingDisclaimer && (
+            <p className="rounded-card border border-diesel/50 bg-diesel/5 p-4 text-xs text-muted">
+              <span className="font-semibold text-diesel">Routing disclaimer:</span>{' '}
+              {result.routingDisclaimer}
+            </p>
+          )}
         </section>
       )}
     </div>
