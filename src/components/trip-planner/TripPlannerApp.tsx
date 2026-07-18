@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
+import type { PlaceResult } from '@/lib/trip-planner/place-search';
+import { PlaceCombobox } from './PlaceCombobox';
 
 /**
  * Trip Planner client UI (Phase 4). Mobile-first, single column, big touch
@@ -112,8 +114,8 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       })
       .catch(() => {});
   }, [initialAnchors]);
-  const [originId, setOriginId] = useState('');
-  const [destinationId, setDestinationId] = useState('');
+  const [origin, setOrigin] = useState<PlaceResult | null>(null);
+  const [destination, setDestination] = useState<PlaceResult | null>(null);
   const [departLocal, setDepartLocal] = useState('');
   const [drivingUsed, setDrivingUsed] = useState(0);
   const [windowUsed, setWindowUsed] = useState(0);
@@ -129,12 +131,16 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<QuoteResponse | null>(null);
 
-  const byId = useMemo(() => new Map(anchors.map((a) => [a.id, a])), [anchors]);
-  const canSubmit = originId && destinationId && originId !== destinationId && !busy;
+  // Same-point guard: reject an origin/destination that resolve to the same
+  // spot (rounded) — the router rejects a zero-length route anyway.
+  const samePoint =
+    !!origin &&
+    !!destination &&
+    origin.lat.toFixed(3) === destination.lat.toFixed(3) &&
+    origin.lng.toFixed(3) === destination.lng.toFixed(3);
+  const canSubmit = !!origin && !!destination && !samePoint && !busy;
 
   const submit = async () => {
-    const origin = byId.get(originId);
-    const destination = byId.get(destinationId);
     if (!origin || !destination) return;
     setBusy(true);
     setResult(null);
@@ -181,39 +187,27 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   return (
     <div>
       {/* ------------------------------------------------ inputs */}
-      <label className={labelCls} htmlFor="tp-origin">
-        Origin (directory location)
-      </label>
-      <select
+      <PlaceCombobox
         id="tp-origin"
-        className={input}
-        value={originId}
-        onChange={(e) => setOriginId(e.target.value)}
-      >
-        <option value="">Choose a starting point…</option>
-        {anchors.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.label}
-          </option>
-        ))}
-      </select>
-
-      <label className={labelCls} htmlFor="tp-destination">
-        Destination
-      </label>
-      <select
+        label="Origin — city, address, ZIP, or directory stop"
+        placeholder="e.g. Nashville, TN or a truck stop"
+        anchors={anchors}
+        selected={origin}
+        onSelect={setOrigin}
+      />
+      <PlaceCombobox
         id="tp-destination"
-        className={input}
-        value={destinationId}
-        onChange={(e) => setDestinationId(e.target.value)}
-      >
-        <option value="">Choose a destination…</option>
-        {anchors.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.label}
-          </option>
-        ))}
-      </select>
+        label="Destination — city, address, ZIP, or directory stop"
+        placeholder="e.g. 123 Main St, Knoxville, TN"
+        anchors={anchors}
+        selected={destination}
+        onSelect={setDestination}
+      />
+      {samePoint && (
+        <p className="mt-2 text-xs text-diesel">
+          Origin and destination are the same place — pick two different locations.
+        </p>
+      )}
 
       <label className={labelCls} htmlFor="tp-depart">
         Departure (blank = now)
@@ -349,9 +343,9 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       >
         {busy ? 'Planning…' : 'Plan my trip'}
       </button>
-      {anchors.length === 0 && (
-        <p className="mt-3 text-sm text-diesel">
-          No geocoded directory locations available yet — check back soon.
+      {!canSubmit && !busy && !samePoint && (
+        <p className="mt-3 text-sm text-muted">
+          Search and select an origin and destination to plan your trip.
         </p>
       )}
 

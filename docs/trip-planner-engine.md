@@ -166,3 +166,25 @@ quotes cost zero transactions; per-instance hourly call cap (default 100)
 keeps usage inside the approved free tier. `composeQuote` runs the port
 under a hard time budget and falls back to the labeled estimate with a
 warning whenever the port answers null. Split-sleeper remains deferred.
+
+## Free-text origin/destination search (`here-geocode.ts`, `place-search.ts`)
+
+Drivers can enter any city+state, street address, ZIP, or directory location
+for origin and destination — not only directory stops. `createHereGeocodePort`
+implements a `GeocodePort` seam against HERE Geocoding & Search v7
+(`/geocode`, US-constrained), returning validated coordinate matches; items
+with missing or out-of-range coordinates are dropped so malformed coordinates
+never reach the router. `place-search.ts` merges two suggestion sources into
+one labeled list: directory anchors (filtered offline/instantly, badged
+"Directory") and HERE matches (badged City/Address/ZIP/Place/Region),
+de-duplicated by rounded coordinate.
+
+`GET /api/trip-planner/places?q=` serves HERE matches server-side (key never
+leaves the server), rate-limited (30/min/IP) with the same cost rails as
+routing: per-instance hourly cap, TTL cache, one retry on 5xx (never 4xx),
+fail-soft to `[]`. The `PlaceCombobox` UI resolves a free-text pick to
+coordinates, which flow through the **unchanged** quote endpoint — so HERE
+truck routing, HOS, weather, cost, parking, and stop planning are untouched.
+Selection is explicit (editing clears a prior pick), same-point and empty
+submissions are rejected, and directory-to-directory trips still work when
+geocoding is unavailable. Split sleeper remains deferred.
