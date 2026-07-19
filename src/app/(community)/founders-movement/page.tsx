@@ -5,7 +5,9 @@ import { WallScene } from '@/components/founders-movement/WallScene';
 import { SoundToggle } from '@/components/founders-movement/SoundToggle';
 import { ChapterReveal } from '@/components/founders-movement/ChapterReveal';
 import { YearOdometer } from '@/components/founders-movement/YearOdometer';
-import { getCampaignProgress } from '@/lib/community/founders';
+import { getCampaignProgress, getPublicFounders } from '@/lib/community/founders';
+import { LegacySignature } from '@/components/founders-movement/LegacySignature';
+import type { WallFounder } from '@/components/founders-movement/WallScene';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 /**
@@ -52,7 +54,28 @@ const FUTURE: { name: string; note: string }[] = [
 ];
 
 export default async function FoundersMovementPage() {
-  const progress = await getCampaignProgress();
+  const [progress, publicFounders] = await Promise.all([
+    getCampaignProgress(),
+    getPublicFounders(),
+  ]);
+  // Canonical founder numbering (owner ruling): chronological across ALL
+  // tiers by earliest paid_at — №N is the Nth person who said yes, ever.
+  // Ties break by wall position, then name, for determinism.
+  const wallFounders: WallFounder[] = [...publicFounders]
+    .sort(
+      (a, b) =>
+        new Date(a.paid_at).getTime() - new Date(b.paid_at).getTime() ||
+        (a.position ?? 1e9) - (b.position ?? 1e9) ||
+        a.display_name.localeCompare(b.display_name),
+    )
+    .map((f, i) => ({
+      name: f.business_name ?? f.display_name,
+      tier: f.tier,
+      number: i + 1,
+      year: new Date(f.paid_at).getFullYear(),
+      message: f.message,
+    }));
+  const nextNumber = Math.max(wallFounders.length, progress.founder_count) + 1;
 
   return (
     <>
@@ -157,7 +180,10 @@ export default async function FoundersMovementPage() {
               &quot;build it.&quot;
             </p>
           </div>
-          <WallScene founderCount={progress.founder_count} />
+          <WallScene founders={wallFounders} nextNumber={nextNumber} />
+          <p className="mt-8 text-sm italic text-muted">
+            Read the names slowly. Someday, somebody will be looking for yours.
+          </p>
         </ChapterReveal>
       </Section>
 
@@ -169,8 +195,9 @@ export default async function FoundersMovementPage() {
             <p className="mt-4 text-muted">
               Trucking Life Academy — Dalton, Georgia. A physical CDL school with real trucks, a
               real range, and instructors who drove first. The truck you followed down this road
-              pulls into that lot. Founded not by investors, but by the wall of names beside its
-              front door.
+              pulls into that lot. Founded not by investors, but by the founding generation — and
+              the wall you just read is designed to be built into the school&apos;s entrance. Bricks
+              and mortar, not just pixels.
             </p>
           </div>
         </ChapterReveal>
@@ -186,9 +213,15 @@ export default async function FoundersMovementPage() {
               born yet will back out of that lot with a CDL and a career — and the wall will say who
               made it possible.
             </p>
+            <p className="mt-4 text-muted">
+              This is not a donation. It is a place in the founding generation of Trucking Life —
+              the people who built the future of trucking education for the drivers coming after
+              them.
+            </p>
             <p className="mt-6 text-xs font-semibold uppercase tracking-[0.35em] text-signal">
               I was here when it began.
             </p>
+            <LegacySignature />
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 href="/founders#join"

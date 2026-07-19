@@ -328,7 +328,11 @@ export default function SpineCanvas({ onFail }: { onFail: () => void }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
-    <div aria-hidden="true" data-chunk="fm-spine" className="pointer-events-none fixed inset-0 -z-10">
+    <div
+      aria-hidden="true"
+      data-chunk="fm-spine"
+      className="pointer-events-none fixed inset-0 -z-10"
+    >
       <Canvas
         dpr={[1, Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
         gl={{ antialias: true, powerPreference: 'low-power' }}
