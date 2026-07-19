@@ -2,8 +2,15 @@
  * Knowledge Center validation suite — Batch 1 (037, HOS + inspections),
  * Batch 2 (038, DOT Compliance cluster), Batch 3 (040, Getting Your CDL
  * cluster), Batch 4 (042, Careers & Money cluster), Batch 5 (045,
- * DOT Medical cluster), and Batch 6 (046, Hazmat Knowledge cluster):
- * 60 authority pages.
+ * DOT Medical cluster), Batch 6 (046, Hazmat Knowledge cluster), and Batch 7
+ * (047, Owner-Operator & Business cluster): 70 authority pages.
+ *
+ * Batch 7 CREATES the 'owner-operator-business' category (guarded, like
+ * 040/046) and carries business discipline: official primary sources only
+ * (FMCSA, eCFR Parts 365/366/387/390, IRS, SBA, IRP Inc., IFTA Inc., Federal
+ * Register), no invented fees/taxes/rate figures (pointed to at source), and
+ * no income or profit guarantees. Three inbound cross-links point in from the
+ * Batch 4 careers cluster.
  *
  * Batch 6 CREATES the 'hazmat-knowledge' category (guarded, like 040) and
  * carries hazmat discipline: official primary sources only (49 CFR Parts
@@ -66,6 +73,7 @@ const seed3 = read('supabase/migrations/040_seed_kc_getting_your_cdl_articles.sq
 const seed4 = read('supabase/migrations/042_seed_kc_careers_money_articles.sql');
 const seed5 = read('supabase/migrations/045_seed_kc_dot_medical_articles.sql');
 const seed6 = read('supabase/migrations/046_seed_kc_hazmat_articles.sql');
+const seed7 = read('supabase/migrations/047_seed_kc_owner_operator_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
 const guardRe =
@@ -82,6 +90,7 @@ for (const [name, s] of [
   ['042', seed4],
   ['045', seed5],
   ['046', seed6],
+  ['047', seed7],
 ] as const) {
   check(
     `${name}: kc_related inserts are conflict-safe`,
@@ -251,6 +260,49 @@ check(
     /a\.slug = 'eldt-requirements'/.test(seed6) &&
     (seed6.match(/and c\.slug = 'getting-your-cdl'/g) ?? []).length === 3,
 );
+// Batch 7 (047) CREATES the owner-operator-business category (guarded), like 040/046.
+check('047: ten guarded inserts', (seed7.match(guardRe) ?? []).length === 10);
+check(
+  '047: creates exactly one category, guarded by not-exists on the slug',
+  (seed7.match(/insert into public\.kc_categories/g) ?? []).length === 1 &&
+    /where not exists \(select 1 from public\.kc_categories where slug = 'owner-operator-business'\)/.test(
+      seed7,
+    ),
+);
+check(
+  '047: category is additive only (no category updates)',
+  !/update public\.kc_categories/.test(seed7),
+);
+check(
+  '047: all ten article inserts use the owner-operator-business category variable',
+  (seed7.match(/values \(\s*v_own,/g) ?? []).length === 10,
+);
+check(
+  '047: looks up owner-operator-business and raises if it is missing after insert',
+  /select id into v_own from public\.kc_categories where slug = 'owner-operator-business'/.test(
+    seed7,
+  ) && /raise exception 'Knowledge Center category owner-operator-business missing/.test(seed7),
+);
+const crossLinkUpdates7 =
+  seed7.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('047: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates7.length === 3);
+check(
+  '047: no other UPDATE statements of any kind',
+  (seed7.match(/update public\./g) ?? []).length === 3,
+);
+check(
+  '047: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
+  (seed7.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed7.match(/and a\.body_mdx not like '%\/knowledge\/owner-operator-business\//g) ?? [])
+      .length === 3,
+);
+check(
+  '047: all three UPDATEs are slug-scoped Batch 4 targets in trucking-careers',
+  /a\.slug = 'owner-operator-vs-company-driver'/.test(seed7) &&
+    /a\.slug = 'lease-purchase-programs-explained'/.test(seed7) &&
+    /a\.slug = 'trucking-career-paths'/.test(seed7) &&
+    (seed7.match(/and c\.slug = 'trucking-careers'/g) ?? []).length === 3,
+);
 
 // ── 2. Parse all 40 article records ─────────────────────────────────────────
 const BATCH1 = [
@@ -325,6 +377,18 @@ const BATCH6 = [
   'hazmat-security-plans',
   'hazmat-registration-requirements',
 ];
+const BATCH7 = [
+  'how-to-become-an-owner-operator',
+  'dot-number-vs-mc-number-explained',
+  'boc-3-process-agent-requirements',
+  'unified-registration-system-urs-explained',
+  'ifta-explained-for-truck-drivers',
+  'irp-registration-explained',
+  'trucking-business-insurance-explained',
+  'factoring-companies-explained',
+  'cost-per-mile-for-owner-operators',
+  'llc-vs-sole-proprietor-for-trucking-businesses',
+];
 const CAT_OF: Record<string, string> = {};
 for (const s of BATCH1)
   CAT_OF[s] =
@@ -338,10 +402,11 @@ for (const s of BATCH3) CAT_OF[s] = 'getting-your-cdl';
 for (const s of BATCH4) CAT_OF[s] = 'trucking-careers';
 for (const s of BATCH5) CAT_OF[s] = 'health-on-the-road';
 for (const s of BATCH6) CAT_OF[s] = 'hazmat-knowledge';
+for (const s of BATCH7) CAT_OF[s] = 'owner-operator-business';
 
 type Article = {
   slug: string;
-  batch: 1 | 2 | 3 | 4 | 5 | 6;
+  batch: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   title: string;
   excerpt: string;
   body: string;
@@ -351,7 +416,7 @@ type Article = {
   faqs: { q: string; a: string }[];
 };
 const blockRe =
-  /values \(\s*v_(?:hos|dot|cdl|gyc|car|med|haz),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
+  /values \(\s*v_(?:hos|dot|cdl|gyc|car|med|haz|own),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
 const articles: Article[] = [];
 for (const [batch, s] of [
   [1, seed1],
@@ -360,6 +425,7 @@ for (const [batch, s] of [
   [4, seed4],
   [5, seed5],
   [6, seed6],
+  [7, seed7],
 ] as const) {
   let m: RegExpExecArray | null;
   blockRe.lastIndex = 0;
@@ -503,7 +569,33 @@ for (const { search, replacement, slug } of extracted6) {
     replacement.length > search.length && /\]\(\/knowledge\/hazmat-knowledge\//.test(replacement),
   );
 }
-check('all 60 articles parse (10 per batch)', articles.length === 60, articles.length);
+// 047's three inbound cross-links point INTO the new owner-operator-business
+// cluster from three Batch 4 pages — extracted from the migration and applied
+// to the already-parsed bodies so downstream link checks see effective text.
+const extracted7: { search: string; replacement: string; slug: string }[] = [];
+updateRe.lastIndex = 0;
+while ((um = updateRe.exec(seed7)) !== null) {
+  extracted7.push({
+    search: um[1].replace(/''/g, "'"),
+    replacement: um[2].replace(/''/g, "'"),
+    slug: um[3],
+  });
+}
+check('047: all three replacement pairs parse from the migration', extracted7.length === 3);
+for (const { search, replacement, slug } of extracted7) {
+  const target = articles.find((a) => a.slug === slug);
+  check(
+    `047 replacement target text exists exactly once in ${slug}`,
+    !!target && target.body.split(search).length === 2,
+  );
+  if (target) target.body = target.body.replace(search, replacement);
+  check(
+    `047 replacement for ${slug} grows the text and links into owner-operator-business`,
+    replacement.length > search.length &&
+      /\]\(\/knowledge\/owner-operator-business\//.test(replacement),
+  );
+}
+check('all 70 articles parse (10 per batch)', articles.length === 70, articles.length);
 check(
   "038's and 040's replacements all matched real seeded text (effective content differs)",
   articles
@@ -532,11 +624,12 @@ check(
     BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)) &&
     BATCH4.every((s) => articles.some((a) => a.slug === s && a.batch === 4)) &&
     BATCH5.every((s) => articles.some((a) => a.slug === s && a.batch === 5)) &&
-    BATCH6.every((s) => articles.some((a) => a.slug === s && a.batch === 6)),
+    BATCH6.every((s) => articles.some((a) => a.slug === s && a.batch === 6)) &&
+    BATCH7.every((s) => articles.some((a) => a.slug === s && a.batch === 7)),
 );
-check('titles unique across 60', new Set(articles.map((a) => a.title)).size === 60);
-check('meta titles unique across 60', new Set(articles.map((a) => a.metaTitle)).size === 60);
-check('excerpts unique across 60', new Set(articles.map((a) => a.excerpt)).size === 60);
+check('titles unique across 70', new Set(articles.map((a) => a.title)).size === 70);
+check('meta titles unique across 70', new Set(articles.map((a) => a.metaTitle)).size === 70);
+check('excerpts unique across 70', new Set(articles.map((a) => a.excerpt)).size === 70);
 check(
   'excerpts are substantial (80–320 chars) and carry no literal doubled apostrophe',
   articles.every(
@@ -547,8 +640,8 @@ check(
     .map((a) => `${a.slug}:${a.excerpt.length}`),
 );
 check(
-  'meta descriptions unique across 60',
-  new Set(articles.map((a) => a.metaDescription)).size === 60,
+  'meta descriptions unique across 70',
+  new Set(articles.map((a) => a.metaDescription)).size === 70,
 );
 check(
   'meta descriptions sane length (70–175 chars)',
@@ -571,7 +664,8 @@ check(
     (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed4.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed5.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10 &&
-    (seed6.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10,
+    (seed6.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10 &&
+    (seed7.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10,
 );
 
 // ── 3. Official sources only, canonical formats ─────────────────────────────
@@ -598,6 +692,13 @@ const OFFICIAL = [
   // registration) and TSA (the security threat assessment program).
   'www.phmsa.dot.gov',
   'www.tsa.gov',
+  // Batch 7 (Owner-Operator & Business) primary sources — the SBA (business
+  // structure and finance guidance), IRP, Inc. and IFTA, Inc. (the official
+  // administrators of the two interstate agreements). FMCSA, eCFR, the IRS,
+  // and the Federal Register are already listed above.
+  'www.sba.gov',
+  'www.irponline.org',
+  'www.iftach.org',
 ];
 check(
   'every source URL is an official domain',
@@ -638,6 +739,7 @@ const b3 = articles.filter((a) => a.batch === 3);
 const b4 = articles.filter((a) => a.batch === 4);
 const b5 = articles.filter((a) => a.batch === 5);
 const b6 = articles.filter((a) => a.batch === 6);
+const b7 = articles.filter((a) => a.batch === 7);
 const b123 = articles.filter((a) => a.batch === 1 || a.batch === 2 || a.batch === 3);
 // Universal across all 40 pages.
 const shared: [string, RegExp][] = [
@@ -771,6 +873,90 @@ check(
     b3
       .find((a) => a.slug === 'eldt-requirements')!
       .body.includes('/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test'),
+);
+// ── Batch 7 (Owner-Operator & Business): structure + business discipline ─────
+const b7Structure: [string, RegExp][] = [
+  [
+    'business & compliance disclaimer with review date',
+    /\*\*Business & compliance disclaimer:\*\* Last reviewed \*\*July 19, 2026\*\*/,
+  ],
+  ['not legal/tax/financial advice language', /\*\*not [^*]{0,60}advice\*\*/i],
+  ['orienting definition or how/what section', /## (What|Why|The|How|Who|Reading|Where) /],
+  ['labeled illustration (not a claim)', /\([Ii]llustration[^)]{0,160}not /],
+  ['checklist section', /## Your [^\n]*checklist/i],
+  ['pre-school CTA', /\/cdl-pre-school\)/],
+];
+for (const [name, re] of b7Structure) {
+  check(
+    `every Batch 7 body has: ${name}`,
+    b7.every((a) => re.test(a.body)),
+    b7.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+// Business discipline: no invented dollar figures (fees, taxes, and rates are
+// pointed to at their official source, never hardcoded), and no income or
+// profit promises. Registration and money content stays structural.
+check(
+  'Batch 7 quotes no dollar amounts (fees/taxes/rates pointed to, never hardcoded)',
+  b7.every((a) => !/\$\s?\.?\d/.test(a.body) && !/\$\s?\.?\d/.test(JSON.stringify(a.faqs))),
+  b7
+    .filter((a) => /\$\s?\.?\d/.test(a.body) || /\$\s?\.?\d/.test(JSON.stringify(a.faqs)))
+    .map((a) => a.slug),
+);
+check(
+  'Batch 7 makes no income or profit guarantees',
+  b7.every(
+    (a) =>
+      !/you will (profit|earn|make money|be profitable|succeed)/i.test(
+        a.body + JSON.stringify(a.faqs),
+      ) && !/guaranteed (income|profit|to succeed)/i.test(a.body + JSON.stringify(a.faqs)),
+  ),
+  b7
+    .filter((a) =>
+      /you will (profit|earn|make money|be profitable|succeed)|guaranteed (income|profit|to succeed)/i.test(
+        a.body + JSON.stringify(a.faqs),
+      ),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'Batch 7 every spoke links the cluster pillar (how-to-become-an-owner-operator)',
+  b7
+    .filter((a) => a.slug !== 'how-to-become-an-owner-operator')
+    .every((a) =>
+      a.body.includes('/knowledge/owner-operator-business/how-to-become-an-owner-operator'),
+    ),
+  b7
+    .filter(
+      (a) =>
+        a.slug !== 'how-to-become-an-owner-operator' &&
+        !a.body.includes('/knowledge/owner-operator-business/how-to-become-an-owner-operator'),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'Batch 7 cross-cluster bridge: pillar links into trucking-careers',
+  b7
+    .find((a) => a.slug === 'how-to-become-an-owner-operator')!
+    .body.includes('/knowledge/trucking-careers/'),
+);
+check(
+  'Batch 4 → Batch 7 inbound cross-links landed (owner-op-vs-company, lease-purchase, career-paths)',
+  b4
+    .find((a) => a.slug === 'owner-operator-vs-company-driver')!
+    .body.includes('/knowledge/owner-operator-business/cost-per-mile-for-owner-operators') &&
+    b4
+      .find((a) => a.slug === 'lease-purchase-programs-explained')!
+      .body.includes('/knowledge/owner-operator-business/how-to-become-an-owner-operator') &&
+    b4
+      .find((a) => a.slug === 'trucking-career-paths')!
+      .body.includes('/knowledge/owner-operator-business/how-to-become-an-owner-operator'),
+);
+// IRP/IFTA distinction stated correctly (a common point of confusion).
+check(
+  'Batch 7 IRP page frames IRP as apportioned registration, IFTA page as fuel tax',
+  /apportioned/i.test(b7.find((a) => a.slug === 'irp-registration-explained')!.body) &&
+    /fuel tax/i.test(b7.find((a) => a.slug === 'ifta-explained-for-truck-drivers')!.body),
 );
 // Dollar-quoted ($mdx$) bodies do NO escape processing, so a doubled
 // apostrophe would render literally (it''s). Bodies must use single
