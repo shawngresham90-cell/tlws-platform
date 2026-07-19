@@ -162,8 +162,15 @@ export function advance(
     restStreakMin: 0,
     windowElapsedMin: Math.min(HOS.MAX_WINDOW_MIN, windowElapsedAfter),
     drivingUsedMin: status === 'driving' ? s.drivingUsedMin + minutes : s.drivingUsedMin,
+    // 2020 rule (§395.3(a)(3)(ii)): ANY ≥30-min non-driving period satisfies
+    // the break — including on-duty-not-driving (fueling, loading). A shorter
+    // on-duty period leaves the break clock untouched.
     drivingSinceBreakMin:
-      status === 'driving' ? s.drivingSinceBreakMin + minutes : s.drivingSinceBreakMin,
+      status === 'driving'
+        ? s.drivingSinceBreakMin + minutes
+        : minutes >= HOS.MIN_BREAK_MIN
+          ? 0
+          : s.drivingSinceBreakMin,
   };
   return { state: next, violations };
 }

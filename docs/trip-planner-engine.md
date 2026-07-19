@@ -254,3 +254,25 @@ OWNER ACTIVATION (two steps, both owner actions — not done here):
    sign-ups enabled) so the sign-in code emails send.
 Until both are done, sign-in/sync fail-soft and the planner + local store work
 exactly as today.
+
+## HOS exception architecture (`hos-exceptions.ts`)
+
+`HOS_CAPABILITIES` is the auditable regulatory surface: every implemented rule
+(11-hour §395.3(a)(3)(i); 14-hour wall-clock window §395.3(a)(2); 30-minute
+break §395.3(a)(3)(ii); 10-hour reset §395.3(a)(1); 60/70-hour cycles
+§395.3(b); 34-hour restart §395.3(c)) and every unsupported provision with the
+conservative assumption the planner makes instead. Unsupported provisions are
+typed assessments, never silence: `assessSplitSleeper` (§395.1(g)(1)),
+`assessAdverseDriving` (§395.1(b)(1)), and `assessShortHaul` (§395.1(e)(1))
+return discriminated unions carrying the citation, the reason, and the
+conservative guidance — a future implementation replaces the body without
+changing call sites. `recapProjection` IS implemented (pure §395.3(b)
+arithmetic): minutes rolling off the cycle window and projected availability
+for each coming day, verified against the engine's own day-bucket roll.
+Planning mode only — not an ELD, no record of duty status.
+
+Hardening suite (`scripts/test-hos-hardening.ts`): exact boundary minutes for
+every clock (660/661, 840/841, 480/481, 599/600, 2039/2040), DST
+spring-forward/fall-back and midnight-rollover invariance (epoch-ms math),
+invalid-sequence and clock-skew rejection, stale multi-day gaps, and 300
+seeded random duty sequences holding all clock invariants.
