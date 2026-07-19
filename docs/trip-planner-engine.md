@@ -221,3 +221,36 @@ saved coordinates + truck back through the same POST /api/trip-planner/quote.
 
 A cloud-sync layer can adopt these same shapes once end-user auth exists (see
 the milestone's cloud-sync planning report).
+
+## Cloud sync for saved trips (End-User Accounts milestone)
+
+Signed-in drivers sync their **saved trips + truck presets** across devices;
+**recent searches never leave the device**. Signed-out users keep the exact
+local-only behavior with zero cloud requests. Cloud sync never blocks route
+planning — any failure degrades to a visible status and the local store.
+
+- **Auth**: public email-OTP via Supabase (`useCloudSync`), a plain Supabase
+  session entirely separate from the admin password/HMAC/admin-routes system.
+  No account is required to use the planner.
+- **Migration 044** (`saved_trips`, `truck_presets`): additive, idempotent,
+  owner-scoped RLS (`auth.uid() = user_id` on SELECT/INSERT/UPDATE/DELETE),
+  `user_id` → `auth.users`, `unique(user_id, client_id)` for idempotent
+  upsert, indexes on `user_id` and `(user_id, updated_at)`. Anon revoked.
+- **API** (`/api/trip-planner/cloud/{saved-trips,truck-presets}`): session-
+  bound (RLS + explicit session user_id, never from the body), Zod-validated,
+  item-capped, rate-limited; the service role is never used.
+- **Sync** (`cloud-sync.ts`, pure + tested): client `id` = cross-device
+  `client_id`; first sign-in UNION-merges (client-id dedup, name+coord
+  fallback, newest-updatedAt wins for a clearly-same item, distinct records
+  both preserved, never deletes local); an offline op-queue (per-user key)
+  retries on reconnect, dedupes (delete supersedes upsert), and survives
+  partial sync. Sign-out clears local cloud-backed data for cross-user
+  isolation. Server `updated_at` (trigger) is the sync authority, sidestepping
+  client clock skew.
+
+OWNER ACTIVATION (two steps, both owner actions — not done here):
+1. Apply migration 044 to production (creates the two tables + RLS).
+2. Ensure Supabase Auth email/OTP delivery is configured (SMTP + email
+   sign-ups enabled) so the sign-in code emails send.
+Until both are done, sign-in/sync fail-soft and the planner + local store work
+exactly as today.
