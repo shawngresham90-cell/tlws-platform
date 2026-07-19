@@ -75,6 +75,18 @@ export function hazmatToHereGoods(hazmatClass: string | null): string | null {
   }
 }
 
+/**
+ * Whitelisted HERE v8 `avoid[features]` values. Anything not in this set is
+ * DROPPED (never forwarded) so arbitrary strings can't reach the provider.
+ */
+export const HERE_AVOID_FEATURES = new Set(['tollRoad', 'ferry', 'tunnel', 'dirtRoad', 'uTurns']);
+
+/** Filter avoidances to the provider-supported whitelist (pure, testable). */
+export function sanitizeAvoidances(avoid: readonly string[] | undefined): string[] {
+  if (!avoid) return [];
+  return [...new Set(avoid.filter((a) => HERE_AVOID_FEATURES.has(a)))];
+}
+
 /** Build the v8 request URL. Exported pure for tests; the key is a param. */
 export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
   const p = new URLSearchParams();
@@ -92,8 +104,37 @@ export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
   p.set('truck[axleCount]', String(t.axles));
   const goods = hazmatToHereGoods(t.hazmatClass);
   if (goods) p.set('truck[shippedHazardousGoods]', goods);
+  const avoid = sanitizeAvoidances(req.avoid);
+  if (avoid.length > 0) p.set('avoid[features]', avoid.join(','));
   p.set('apiKey', apiKey);
   return `${HERE_BASE}?${p.toString()}`;
+}
+
+/**
+ * Adapter-level impossible-profile guard: a request whose truck dimensions
+ * are outside physical/legal plausibility returns problems and is never sent
+ * to the provider (no wasted transaction, no garbage route).
+ */
+export function validateTruckProfileForRouting(t: TruckProfile): string[] {
+  const problems: string[] = [];
+  const bounds: [string, number, number, number][] = [
+    ['heightFt', t.heightFt, TRUCK_LIMITS.heightFt.min, TRUCK_LIMITS.heightFt.max],
+    ['widthFt', t.widthFt, TRUCK_LIMITS.widthFt.min, TRUCK_LIMITS.widthFt.max],
+    ['lengthFt', t.lengthFt, TRUCK_LIMITS.lengthFt.min, TRUCK_LIMITS.lengthFt.max],
+    [
+      'grossWeightLbs',
+      t.grossWeightLbs,
+      TRUCK_LIMITS.grossWeightLbs.min,
+      TRUCK_LIMITS.grossWeightLbs.max,
+    ],
+    ['axles', t.axles, TRUCK_LIMITS.axles.min, TRUCK_LIMITS.axles.max],
+  ];
+  for (const [name, value, min, max] of bounds) {
+    if (!Number.isFinite(value) || value < min || value > max) {
+      problems.push(`${name} out of range ${min}..${max}`);
+    }
+  }
+  return problems;
 }
 
 type HereSection = {
@@ -193,6 +234,9 @@ export function routeCacheKey(req: RoutingRequest): string {
     Math.round(t.grossWeightLbs / 100),
     t.axles,
     hazmatToHereGoods(t.hazmatClass) ?? '',
+    // Avoidances change the route — a toll-free route must not be served
+    // from the cache of an unrestricted one (sorted for order-independence).
+    sanitizeAvoidances(req.avoid).sort().join(','),
   ].join('|');
 }
 
@@ -241,6 +285,9 @@ export function createHereRoutingPort(
     name: 'here',
     route: async (req: RoutingRequest): Promise<RoutingResult | null> => {
       if (!apiKey) return null;
+      // Impossible truck profiles never reach the provider: no transaction
+      // spent, no garbage route — the caller falls back to the estimate.
+      if (validateTruckProfileForRouting(req.truck).length > 0) return null;
       try {
         const key = routeCacheKey(req);
         const hit = cache.get(key);
