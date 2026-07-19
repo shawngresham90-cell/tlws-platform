@@ -1,14 +1,23 @@
 /**
  * Knowledge Center validation suite — Batch 1 (037, HOS + inspections),
  * Batch 2 (038, DOT Compliance cluster), Batch 3 (040, Getting Your CDL
- * cluster), and Batch 4 (042, Careers & Money cluster): 40 authority pages.
+ * cluster), Batch 4 (042, Careers & Money cluster), and Batch 5 (045,
+ * DOT Medical cluster): 50 authority pages.
  *
  * Batch 4 seeds into the pre-existing (empty) 'trucking-careers' category and
  * carries extra money discipline: no invented pay/CPM/salary/dollar figures,
  * an information-not-financial-advice disclaimer, and pay described
  * structurally with live wage data pointed to on BLS.
  *
- * Checks per batch and across all four:
+ * Batch 5 seeds into the pre-existing (empty) 'health-on-the-road' category
+ * and carries medical discipline: no diagnosis language, no qualification
+ * promises ("you will pass", "automatically disqualifies"), regulation vs
+ * FMCSA guidance vs examiner judgment vs carrier policy labeled in-text, a
+ * visible medical-information disclaimer with review date, and the two
+ * asymmetries stated correctly (no standalone sleep-apnea rule; vision moved
+ * to 391.44 individual assessment while hearing kept its exemption program).
+ *
+ * Checks per batch and across all five:
  *   - exact slug sets; unique titles / SEO titles / meta descriptions
  *   - official-domain-only sources in canonical eCFR/FMCSA/CVSA/TPR formats
  *   - required structure per batch (quick answer, disclaimer + review date,
@@ -16,15 +25,15 @@
  *     checklist, keep-learning, CTAs, practice-test links)
  *   - every internal link resolves; cross-cluster bridges exist; ≤2 in-body
  *     links per target per article
- *   - FAQ uniqueness across all 40 pages; FAQ answers substantial
+ *   - FAQ uniqueness across all 50 pages; FAQ answers substantial
  *   - no duplicated substantial paragraphs anywhere
  *   - number consistency; no unsupported claim patterns; no invented money
  *     (Batch 4: no dollar/CPM/salary figures; pay described structurally)
  *   - migration mechanics: guarded inserts, guarded category creation (040
- *     only; 042 seeds into a pre-existing category and never creates one),
+ *     only; 042/045 seed into pre-existing categories and never create one),
  *     conflict-safe kc_related, guarded replace-based cross-link UPDATEs
  *     (038: three into Batch 1; 040: four into Batches 1–2; 042: three into
- *     Batch 3), nothing destructive anywhere
+ *     Batch 3; 045: three into Batches 2–4), nothing destructive anywhere
  *   - the rendering stack still wires schema/SEO correctly
  *
  * Run:
@@ -48,6 +57,7 @@ const seed1 = read('supabase/migrations/037_seed_kc_authority_articles.sql');
 const seed2 = read('supabase/migrations/038_seed_kc_dot_compliance_articles.sql');
 const seed3 = read('supabase/migrations/040_seed_kc_getting_your_cdl_articles.sql');
 const seed4 = read('supabase/migrations/042_seed_kc_careers_money_articles.sql');
+const seed5 = read('supabase/migrations/045_seed_kc_dot_medical_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
 const guardRe =
@@ -56,11 +66,13 @@ check('037: ten guarded inserts', (seed1.match(guardRe) ?? []).length === 10);
 check('038: ten guarded inserts', (seed2.match(guardRe) ?? []).length === 10);
 check('040: ten guarded inserts', (seed3.match(guardRe) ?? []).length === 10);
 check('042: ten guarded inserts', (seed4.match(guardRe) ?? []).length === 10);
+check('045: ten guarded inserts', (seed5.match(guardRe) ?? []).length === 10);
 for (const [name, s] of [
   ['037', seed1],
   ['038', seed2],
   ['040', seed3],
   ['042', seed4],
+  ['045', seed5],
 ] as const) {
   check(
     `${name}: kc_related inserts are conflict-safe`,
@@ -154,6 +166,41 @@ check(
     /a\.slug = 'sponsored-vs-private-cdl-school'/.test(seed4) &&
     (seed4.match(/and c\.slug = 'getting-your-cdl'/g) ?? []).length === 3,
 );
+// Batch 5 (045) seeds into the PRE-EXISTING health-on-the-road category and
+// must never create or alter a category.
+check('045: never creates categories', !/insert into public\.kc_categories/.test(seed5));
+check('045: never alters categories', !/update public\.kc_categories/.test(seed5));
+check(
+  '045: all ten article inserts use the health-on-the-road category variable',
+  (seed5.match(/values \(\s*v_med,/g) ?? []).length === 10,
+);
+check(
+  '045: looks up health-on-the-road and raises if categories are missing',
+  /select id into v_med from public\.kc_categories where slug = 'health-on-the-road'/.test(seed5) &&
+    /raise exception 'Knowledge Center categories missing/.test(seed5),
+);
+const crossLinkUpdates5 =
+  seed5.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('045: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates5.length === 3);
+check(
+  '045: no other UPDATE statements of any kind',
+  (seed5.match(/update public\./g) ?? []).length === 3,
+);
+check(
+  '045: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
+  (seed5.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed5.match(/and a\.body_mdx not like '%\/knowledge\/health-on-the-road\//g) ?? []).length ===
+      3,
+);
+check(
+  '045: UPDATEs are slug-scoped to one target each in Batches 2, 3, and 4',
+  /a\.slug = 'dot-medical-card'/.test(seed5) &&
+    /a\.slug = 'how-to-get-your-cdl'/.test(seed5) &&
+    /a\.slug = 'home-time-and-quality-of-life'/.test(seed5) &&
+    /and c\.slug = 'dot-compliance'/.test(seed5) &&
+    /and c\.slug = 'getting-your-cdl'/.test(seed5) &&
+    /and c\.slug = 'trucking-careers'/.test(seed5),
+);
 
 // ── 2. Parse all 40 article records ─────────────────────────────────────────
 const BATCH1 = [
@@ -204,6 +251,18 @@ const BATCH4 = [
   'home-time-and-quality-of-life',
   'trucking-career-paths',
 ];
+const BATCH5 = [
+  'dot-physical-exam-what-to-expect',
+  'dot-physical-requirements',
+  'dot-physical-blood-pressure',
+  'diabetes-and-the-dot-physical',
+  'sleep-apnea-and-the-dot-physical',
+  'vision-and-hearing-dot-standards',
+  'dot-medical-exemptions-and-variances',
+  'medications-and-the-dot-physical',
+  'medical-card-renewal-and-self-certification',
+  'finding-a-dot-medical-examiner',
+];
 const CAT_OF: Record<string, string> = {};
 for (const s of BATCH1)
   CAT_OF[s] =
@@ -215,10 +274,11 @@ for (const s of BATCH1)
 for (const s of BATCH2) CAT_OF[s] = 'dot-compliance';
 for (const s of BATCH3) CAT_OF[s] = 'getting-your-cdl';
 for (const s of BATCH4) CAT_OF[s] = 'trucking-careers';
+for (const s of BATCH5) CAT_OF[s] = 'health-on-the-road';
 
 type Article = {
   slug: string;
-  batch: 1 | 2 | 3 | 4;
+  batch: 1 | 2 | 3 | 4 | 5;
   title: string;
   body: string;
   metaTitle: string;
@@ -227,13 +287,14 @@ type Article = {
   faqs: { q: string; a: string }[];
 };
 const blockRe =
-  /values \(\s*v_(?:hos|dot|cdl|gyc|car),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
+  /values \(\s*v_(?:hos|dot|cdl|gyc|car|med),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
 const articles: Article[] = [];
 for (const [batch, s] of [
   [1, seed1],
   [2, seed2],
   [3, seed3],
   [4, seed4],
+  [5, seed5],
 ] as const) {
   let m: RegExpExecArray | null;
   blockRe.lastIndex = 0;
@@ -325,7 +386,33 @@ for (const { search, replacement, slug } of extracted4) {
     replacement.length > search.length && /\]\(\/knowledge\/trucking-careers\//.test(replacement),
   );
 }
-check('all 40 articles parse (10 per batch)', articles.length === 40, articles.length);
+// 045's three inbound cross-links point INTO the new health-on-the-road
+// cluster from one page each in Batches 2, 3, and 4 — extracted from the
+// migration and applied to the already-parsed bodies so downstream link
+// checks see effective post-migration text.
+const extracted5: { search: string; replacement: string; slug: string }[] = [];
+updateRe.lastIndex = 0;
+while ((um = updateRe.exec(seed5)) !== null) {
+  extracted5.push({
+    search: um[1].replace(/''/g, "'"),
+    replacement: um[2].replace(/''/g, "'"),
+    slug: um[3],
+  });
+}
+check('045: all three replacement pairs parse from the migration', extracted5.length === 3);
+for (const { search, replacement, slug } of extracted5) {
+  const target = articles.find((a) => a.slug === slug);
+  check(
+    `045 replacement target text exists exactly once in ${slug}`,
+    !!target && target.body.split(search).length === 2,
+  );
+  if (target) target.body = target.body.replace(search, replacement);
+  check(
+    `045 replacement for ${slug} grows the text and links into health-on-the-road`,
+    replacement.length > search.length && /\]\(\/knowledge\/health-on-the-road\//.test(replacement),
+  );
+}
+check('all 50 articles parse (10 per batch)', articles.length === 50, articles.length);
 check(
   "038's and 040's replacements all matched real seeded text (effective content differs)",
   articles
@@ -352,13 +439,14 @@ check(
   BATCH1.every((s) => articles.some((a) => a.slug === s && a.batch === 1)) &&
     BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)) &&
     BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)) &&
-    BATCH4.every((s) => articles.some((a) => a.slug === s && a.batch === 4)),
+    BATCH4.every((s) => articles.some((a) => a.slug === s && a.batch === 4)) &&
+    BATCH5.every((s) => articles.some((a) => a.slug === s && a.batch === 5)),
 );
-check('titles unique across 40', new Set(articles.map((a) => a.title)).size === 40);
-check('meta titles unique across 40', new Set(articles.map((a) => a.metaTitle)).size === 40);
+check('titles unique across 50', new Set(articles.map((a) => a.title)).size === 50);
+check('meta titles unique across 50', new Set(articles.map((a) => a.metaTitle)).size === 50);
 check(
-  'meta descriptions unique across 40',
-  new Set(articles.map((a) => a.metaDescription)).size === 40,
+  'meta descriptions unique across 50',
+  new Set(articles.map((a) => a.metaDescription)).size === 50,
 );
 check(
   'meta descriptions sane length (70–175 chars)',
@@ -379,7 +467,8 @@ check(
   (seed1.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
-    (seed4.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10,
+    (seed4.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
+    (seed5.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10,
 );
 
 // ── 3. Official sources only, canonical formats ─────────────────────────────
@@ -397,6 +486,11 @@ const OFFICIAL = [
   'www.bls.gov',
   'www.irs.gov',
   'www.dol.gov',
+  // Batch 5 (DOT Medical) primary sources — the National Registry and the
+  // Federal Register (final-rule history for the 2018 diabetes and 2022
+  // vision rules, and the 2017 sleep-apnea rulemaking withdrawal).
+  'nationalregistry.fmcsa.dot.gov',
+  'www.federalregister.gov',
 ];
 check(
   'every source URL is an official domain',
@@ -425,7 +519,7 @@ check(
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question reused across the 40 pages', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 50 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
   'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
@@ -435,7 +529,8 @@ check(
 const b12 = articles.filter((a) => a.batch === 1 || a.batch === 2);
 const b3 = articles.filter((a) => a.batch === 3);
 const b4 = articles.filter((a) => a.batch === 4);
-const b123 = articles.filter((a) => a.batch !== 4);
+const b5 = articles.filter((a) => a.batch === 5);
+const b123 = articles.filter((a) => a.batch === 1 || a.batch === 2 || a.batch === 3);
 // Universal across all 40 pages.
 const shared: [string, RegExp][] = [
   ['direct answer at the top', /^\*\*Quick answer:\*\*/],
@@ -563,6 +658,128 @@ check(
     b3
       .find((a) => a.slug === 'sponsored-vs-private-cdl-school')!
       .body.includes('/knowledge/trucking-careers/owner-operator-vs-company-driver'),
+);
+// ── Batch 5 (DOT Medical): structure + medical-content safety guards ────────
+const b5Structure: [string, RegExp][] = [
+  [
+    'medical-information disclaimer with review date',
+    /\*\*Medical-information disclaimer:\*\* Last reviewed \*\*July 19, 2026\*\*/,
+  ],
+  ['not-medical-advice language', /\*\*not medical( or legal)? advice\*\*/i],
+  ['orienting definition or how/what section', /## (What|How|Why|The|Who|Step by step|First,)/],
+  ['labeled illustration (not a claim)', /\([Ii]llustration[^)]{0,140}not /],
+  ['checklist section', /## Your [^\n]*checklist/i],
+  ['pre-school CTA', /\/cdl-pre-school\)/],
+  ['examiner named as the decision-maker', /examiner/i],
+];
+for (const [name, re] of b5Structure) {
+  check(
+    `every Batch 5 body has: ${name}`,
+    b5.every((a) => re.test(a.body)),
+    b5.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+// No qualification promises, anywhere in body or FAQs.
+const promiseRe =
+  /you will (pass|fail|qualify|be disqualified)|guaranteed to (pass|qualify)|automatically disqualif/i;
+check(
+  'Batch 5 bodies make no qualification promises (no "you will pass/fail", no "automatically disqualifies")',
+  b5.every((a) => !promiseRe.test(a.body)),
+  b5.filter((a) => promiseRe.test(a.body)).map((a) => a.slug),
+);
+check(
+  'Batch 5 FAQ answers make no qualification promises',
+  b5.every((a) => a.faqs.every((f) => !promiseRe.test(f.a))),
+  b5.filter((a) => a.faqs.some((f) => promiseRe.test(f.a))).map((a) => a.slug),
+);
+// No diagnosis assertions ("you probably have X").
+const diagnosisRe = /\byou (probably|likely|definitely|clearly|almost certainly) have\b/i;
+check(
+  'Batch 5 never diagnoses the reader',
+  b5.every((a) => !diagnosisRe.test(a.body) && !diagnosisRe.test(JSON.stringify(a.faqs))),
+  b5.filter((a) => diagnosisRe.test(a.body + JSON.stringify(a.faqs))).map((a) => a.slug),
+);
+// The two asymmetries must be stated correctly.
+check(
+  'sleep-apnea page states there is no standalone federal sleep-apnea regulation',
+  /no standalone (federal )?sleep-apnea regulation/i.test(
+    b5.find((a) => a.slug === 'sleep-apnea-and-the-dot-physical')!.body,
+  ),
+);
+check(
+  'vision/hearing page states 391.44 individual assessment replaced the vision exemption',
+  (() => {
+    const b = b5.find((a) => a.slug === 'vision-and-hearing-dot-standards')!.body;
+    return /individual.assessment/i.test(b) && /replaced/i.test(b) && /391\.44/.test(b);
+  })(),
+);
+check(
+  'vision/hearing page preserves the hearing-exemption asymmetry',
+  /[Hh]earing kept its exemption program/.test(
+    b5.find((a) => a.slug === 'vision-and-hearing-dot-standards')!.body,
+  ),
+);
+// Blood pressure: staging must be labeled guidance, not regulation.
+check(
+  'blood-pressure page labels numeric staging as guidance, not regulation',
+  (() => {
+    const b = b5.find((a) => a.slug === 'dot-physical-blood-pressure')!.body;
+    return /guidance, not regulation/i.test(b) && /no numbers|contains \*\*no numbers\*\*/i.test(b);
+  })(),
+);
+// Current form numbers present where the topic demands them.
+check(
+  'Batch 5 cites the current MCSA form numbers in the right places',
+  b5.find((a) => a.slug === 'dot-physical-exam-what-to-expect')!.body.includes('MCSA-5875') &&
+    b5.find((a) => a.slug === 'dot-physical-exam-what-to-expect')!.body.includes('MCSA-5876') &&
+    b5.find((a) => a.slug === 'diabetes-and-the-dot-physical')!.body.includes('MCSA-5870') &&
+    b5.find((a) => a.slug === 'vision-and-hearing-dot-standards')!.body.includes('MCSA-5871'),
+);
+// Hub-and-spoke: every spoke links the pillar.
+check(
+  'Batch 5 every spoke links the cluster pillar (dot-physical-exam-what-to-expect)',
+  b5
+    .filter((a) => a.slug !== 'dot-physical-exam-what-to-expect')
+    .every((a) =>
+      a.body.includes('/knowledge/health-on-the-road/dot-physical-exam-what-to-expect'),
+    ),
+  b5
+    .filter(
+      (a) =>
+        a.slug !== 'dot-physical-exam-what-to-expect' &&
+        !a.body.includes('/knowledge/health-on-the-road/dot-physical-exam-what-to-expect'),
+    )
+    .map((a) => a.slug),
+);
+// Cross-cluster bridges out of the new cluster.
+check(
+  'Batch 5 bridges: pillar → dot-medical-card; medications → clearinghouse',
+  b5
+    .find((a) => a.slug === 'dot-physical-exam-what-to-expect')!
+    .body.includes('/knowledge/dot-compliance/dot-medical-card') &&
+    b5
+      .find((a) => a.slug === 'medications-and-the-dot-physical')!
+      .body.includes('/knowledge/dot-compliance/drug-alcohol-testing-clearinghouse'),
+);
+// Inbound cross-links landed on the three older pages (post-045 effective text).
+check(
+  'Batches 2/3/4 → Batch 5 inbound cross-links landed (medical-card, CDL pillar, home-time)',
+  articles
+    .find((a) => a.slug === 'dot-medical-card')!
+    .body.includes('/knowledge/health-on-the-road/dot-physical-exam-what-to-expect') &&
+    articles
+      .find((a) => a.slug === 'how-to-get-your-cdl')!
+      .body.includes('/knowledge/health-on-the-road/dot-physical-exam-what-to-expect') &&
+    articles
+      .find((a) => a.slug === 'home-time-and-quality-of-life')!
+      .body.includes('/knowledge/health-on-the-road/sleep-apnea-and-the-dot-physical'),
+);
+// Cannibalization guard: the credential head-term stays with the Batch 2 page.
+check(
+  'no Batch 5 title or meta title claims the "DOT Medical Card" head term',
+  b5.every(
+    (a) => !/^The DOT Medical Card/i.test(a.title) && !/^The DOT Medical Card/i.test(a.metaTitle),
+  ),
 );
 const b12Structure: [string, RegExp][] = [
   ['why section', /## Why /],
