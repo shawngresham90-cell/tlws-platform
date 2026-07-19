@@ -160,10 +160,12 @@ check(
     'hos: 30-min break clears break clock',
     remainingClocks(okBreak).untilBreakMin === HOS.BREAK_AFTER_DRIVING_MIN,
   );
+  // 2020 rule (§395.3(a)(3)(ii) as amended): ANY ≥30-min non-driving period
+  // satisfies the break, including on-duty-not-driving (fueling, loading).
   const onDutyBreak = advance(to8h.state, 'on-duty', 30).state;
   check(
-    'hos: 30-min ON-DUTY period does not clear break clock in this engine (conservative)',
-    remainingClocks(onDutyBreak).untilBreakMin === 0,
+    'hos: 30-min ON-DUTY period satisfies the break (2020 rule)',
+    remainingClocks(onDutyBreak).untilBreakMin === HOS.BREAK_AFTER_DRIVING_MIN,
   );
 }
 
