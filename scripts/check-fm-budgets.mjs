@@ -50,7 +50,9 @@ for (const f of readdirSync(chunkDir)) {
   const rel = `static/chunks/${f}`;
   if (initialSet.has(rel)) continue;
   const src = readFileSync(join(chunkDir, f), 'utf8');
-  if (src.includes('WebGLRenderer') || src.includes('SpineCanvas')) {
+  // 'fm-spine' is a deliberate minification-surviving marker on the canvas
+  // wrapper; scene-code chunks carry it even after identifiers are mangled.
+  if (src.includes('WebGLRenderer') || src.includes('fm-spine')) {
     lazy += gzipSync(src).length;
     lazyFiles.push(f);
   }

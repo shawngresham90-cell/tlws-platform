@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { ROAD_LEN, YEARS } from './consts';
+import { Truck } from './Truck';
 
 /**
  * FM-1 "spine": the continuous drive rendered behind the whole story.
@@ -25,9 +27,6 @@ import * as THREE from 'three';
  * This chunk is loaded lazily by ExperienceShell only on capable devices and
  * never under prefers-reduced-motion (see the shell for the ladder).
  */
-
-const ROAD_LEN = 420;
-const YEARS = [2009, 2012, 2015, 2018, 2021, 2024, 2026, 2036, 2056, 2076];
 
 /** Pre-dawn → dawn color stops (sky, fog share them). */
 const SKY_STOPS: [number, string][] = [
@@ -142,24 +141,80 @@ function MileMarkers() {
 
 function School({ litRef }: { litRef: React.MutableRefObject<number> }) {
   const signMat = useRef<THREE.MeshBasicMaterial>(null);
-  useFrame(() => {
-    if (signMat.current) signMat.current.opacity = 0.08 + litRef.current * 0.92;
+  const glassMat = useRef<THREE.MeshBasicMaterial>(null);
+  const powerOnAt = useRef<number | null>(null);
+
+  // FM-2: the reveal is EARNED — the sign powers on once, gently (two soft
+  // pulses ~1.4Hz, WCAG-safe), only when dawn reaches the lot.
+  useFrame((state) => {
+    const dawn = litRef.current;
+    if (dawn > 0.25 && powerOnAt.current === null) powerOnAt.current = state.clock.elapsedTime;
+    let sign = 0.06;
+    if (powerOnAt.current !== null) {
+      const e = state.clock.elapsedTime - powerOnAt.current;
+      const settle = Math.min(1, e / 1.4);
+      const pulse = 1 - 0.4 * Math.exp(-2.2 * e) * Math.cos(e * 8.5);
+      sign = 0.06 + 0.94 * settle * pulse * (0.35 + dawn * 0.65);
+    }
+    if (signMat.current) signMat.current.opacity = THREE.MathUtils.clamp(sign, 0, 1);
+    if (glassMat.current) glassMat.current.opacity = 0.05 + dawn * 0.5;
   });
+
+  const conePositions = useMemo(() => {
+    const arr: [number, number][] = [];
+    for (let i = 0; i < 12; i++) arr.push([-4 + (i % 6) * 2.4, 6 + Math.floor(i / 6) * 5]);
+    return arr;
+  }, []);
+
   return (
-    <group position={[-11, 0, -(ROAD_LEN + 4)]}>
-      <mesh position={[0, 1.6, 0]}>
-        <boxGeometry args={[14, 3.2, 8]} />
+    <group position={[-13, 0, -(ROAD_LEN + 4)]}>
+      {/* Lot */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1, 0.005, 6]}>
+        <planeGeometry args={[26, 24]} />
+        <meshStandardMaterial color="#101318" />
+      </mesh>
+      {/* Main building */}
+      <mesh position={[0, 1.7, -2]}>
+        <boxGeometry args={[16, 3.4, 8]} />
         <meshStandardMaterial color="#0b0d10" />
       </mesh>
-      <mesh position={[5.5, 3.9, 0]}>
-        <boxGeometry args={[3, 1.4, 3]} />
+      <mesh position={[6.5, 4.1, -2]}>
+        <boxGeometry args={[3.2, 1.4, 3.2]} />
         <meshStandardMaterial color="#0b0d10" />
       </mesh>
-      {/* Sign strip that lights as dawn breaks. */}
-      <mesh position={[0, 3.4, 4.05]}>
-        <planeGeometry args={[9, 0.6]} />
-        <meshBasicMaterial ref={signMat} color="#ffeb00" transparent opacity={0.08} />
+      {/* Entry glass — warms with dawn */}
+      <mesh position={[0, 1.25, 2.05]}>
+        <planeGeometry args={[3.4, 2.2]} />
+        <meshBasicMaterial
+          ref={glassMat}
+          color="#ffc873"
+          transparent
+          opacity={0.05}
+          toneMapped={false}
+        />
       </mesh>
+      {/* Pole sign — powers on once at dawn */}
+      <mesh position={[10.5, 2.6, 4]}>
+        <boxGeometry args={[0.12, 5.2, 0.12]} />
+        <meshStandardMaterial color="#22262c" />
+      </mesh>
+      <mesh position={[10.5, 5.4, 4]}>
+        <planeGeometry args={[5.2, 1.1]} />
+        <meshBasicMaterial
+          ref={signMat}
+          color="#ffeb00"
+          transparent
+          opacity={0.06}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* Practice-range cones */}
+      {conePositions.map(([x, z], i) => (
+        <mesh key={i} position={[x, 0.22, z]}>
+          <coneGeometry args={[0.16, 0.44, 8]} />
+          <meshStandardMaterial color="#b4530a" />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -248,6 +303,7 @@ function World() {
       ))}
       <Dashes />
       <MileMarkers />
+      <Truck />
       <School litRef={litRef} />
 
       {/* The sun — below the horizon until the school chapter. */}
@@ -272,7 +328,7 @@ export default function SpineCanvas({ onFail }: { onFail: () => void }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
+    <div aria-hidden="true" data-chunk="fm-spine" className="pointer-events-none fixed inset-0 -z-10">
       <Canvas
         dpr={[1, Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
         gl={{ antialias: true, powerPreference: 'low-power' }}

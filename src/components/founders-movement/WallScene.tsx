@@ -134,7 +134,33 @@ export function WallScene({ founderCount = 0 }: { founderCount?: number }) {
       </p>
 
       {/* Perspective container: the "3D" of the placeholder wall. */}
-      <div style={{ perspective: '1400px' }}>
+      <div className="relative overflow-hidden" style={{ perspective: '1400px' }}>
+        {/* FM-2: one-time raking-light sweep across the wall on reveal —
+            low sun catching engraved names edge-first. Skipped under
+            reduced motion; plays exactly once (fill: forwards). */}
+        {revealed && !reduced && (
+          <div
+            aria-hidden="true"
+            data-testid="fm-wall-sweep"
+            className="fm-wall-sweep pointer-events-none absolute inset-y-0 z-10 w-1/3"
+            style={{
+              background:
+                'linear-gradient(105deg, transparent 0%, rgba(255,235,150,0.14) 45%, rgba(255,235,150,0.05) 55%, transparent 100%)',
+            }}
+          />
+        )}
+        <style>{`
+          @keyframes fm-wall-sweep-move {
+            from { transform: translateX(-120%); }
+            to { transform: translateX(420%); }
+          }
+          .fm-wall-sweep {
+            animation: fm-wall-sweep-move 1.6s cubic-bezier(0.3, 0.6, 0.4, 1) 0.35s both;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .fm-wall-sweep { animation: none; opacity: 0; }
+          }
+        `}</style>
         <ul
           className="grid list-none grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
           style={reduced ? undefined : { transform: 'rotateX(4deg) rotateY(-6deg)' }}
