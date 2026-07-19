@@ -65,10 +65,13 @@ const SAMPLE_TILES: SampleTile[] = [
   { name: 'Brick Sample Five', tier: 'brick', story: 'For the next generation.' },
 ];
 
-export function WallScene() {
+export function WallScene({ founderCount = 0 }: { founderCount?: number }) {
   const [revealed, setRevealed] = useState(false);
   const [reduced, setReduced] = useState(false);
-  const [selected, setSelected] = useState<SampleTile | null>(null);
+  const [selected, setSelected] = useState<SampleTile | 'empty' | null>(null);
+  // Empty Tile preview state — never stored, never sent anywhere.
+  const [previewName, setPreviewName] = useState('');
+  const [previewTier, setPreviewTier] = useState<Tier>('brick');
   const rootRef = useRef<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const lastTriggerRef = useRef<HTMLElement | null>(null);
@@ -161,6 +164,27 @@ export function WallScene() {
               </li>
             );
           })}
+          {/* The Empty Tile — the one that isn't taken. */}
+          <li>
+            <button
+              type="button"
+              onClick={(e) => {
+                lastTriggerRef.current = e.currentTarget;
+                setSelected('empty');
+              }}
+              className={`block w-full rounded-card border border-dashed border-signal/60 bg-asphalt-800/80 p-4 text-left shadow-lg transition-all duration-500 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                revealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+              }`}
+              style={reduced ? undefined : { transitionDelay: `${SAMPLE_TILES.length * 60}ms` }}
+            >
+              <span className="block font-display text-sm uppercase tracking-[0.12em] text-signal">
+                This one isn&apos;t taken.
+              </span>
+              <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wider text-muted">
+                See your name on it
+              </span>
+            </button>
+          </li>
         </ul>
       </div>
 
@@ -175,23 +199,98 @@ export function WallScene() {
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-label={`Founder story: ${selected.name}`}
+            aria-label={
+              selected === 'empty' ? 'See your name on the wall' : `Founder story: ${selected.name}`
+            }
             tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md rounded-card border border-line bg-asphalt-800 p-6 shadow-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
           >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-              {TIER_STYLE[selected.tier].label} · sample story
-            </p>
-            <h3 className="mt-1 font-display text-2xl uppercase text-white">{selected.name}</h3>
-            <p className="mt-3 text-sm text-muted">{selected.story}</p>
-            <button
-              type="button"
-              onClick={close}
-              className="mt-6 rounded-card border border-line px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-signal focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
-            >
-              Close
-            </button>
+            {selected === 'empty' ? (
+              <>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+                  The founding generation
+                </p>
+                <h3 className="mt-1 font-display text-2xl uppercase text-white">
+                  See your name on it
+                </h3>
+                <label htmlFor="fm-preview-name" className="mt-4 block text-sm text-muted">
+                  Type your name — preview only, nothing is saved or sent.
+                </label>
+                <input
+                  id="fm-preview-name"
+                  type="text"
+                  maxLength={40}
+                  autoComplete="off"
+                  value={previewName}
+                  onChange={(e) => setPreviewName(e.target.value)}
+                  placeholder="Your name"
+                  className="mt-2 w-full rounded-card border border-line bg-asphalt px-3 py-2 text-white placeholder:text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
+                />
+                <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Choose a tier">
+                  {(Object.keys(TIER_STYLE) as Tier[]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={previewTier === t}
+                      onClick={() => setPreviewTier(t)}
+                      className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal ${
+                        previewTier === t
+                          ? 'border-signal text-signal'
+                          : 'border-line text-muted hover:border-signal/60'
+                      }`}
+                    >
+                      {TIER_STYLE[t].label}
+                    </button>
+                  ))}
+                </div>
+                {/* The engraved preview tile. */}
+                <div
+                  className={`mt-4 rounded-card border ${TIER_STYLE[previewTier].edge} ${TIER_STYLE[previewTier].surface} p-5`}
+                >
+                  <span className="block font-display text-lg uppercase tracking-[0.14em] [text-shadow:0_1px_0_rgba(255,255,255,0.2),0_-1px_2px_rgba(0,0,0,0.65)]">
+                    {previewName.trim() || 'Your Name'}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-semibold uppercase tracking-wider opacity-75">
+                    {TIER_STYLE[previewTier].label} · Founder #{founderCount + 1}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs text-muted">
+                  Founder numbers are permanent — once the school opens, the founding generation is
+                  closed.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <a
+                    href="/founders#join"
+                    className="rounded-card bg-signal px-5 py-2.5 text-sm font-semibold text-asphalt transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+                  >
+                    Take your place on the wall
+                  </a>
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="rounded-card border border-line px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-signal focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+                  {TIER_STYLE[selected.tier].label} · sample story
+                </p>
+                <h3 className="mt-1 font-display text-2xl uppercase text-white">{selected.name}</h3>
+                <p className="mt-3 text-sm text-muted">{selected.story}</p>
+                <button
+                  type="button"
+                  onClick={close}
+                  className="mt-6 rounded-card border border-line px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-signal focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
+                >
+                  Close
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

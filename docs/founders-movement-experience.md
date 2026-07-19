@@ -196,7 +196,7 @@ Load ladder:
 | Budget | Ceiling |
 |--------|---------|
 | Route-initial JS (before canvas chunk) | **≤ 30KB gz** over the site baseline |
-| Canvas chunk (three+R3F+Drei+GSAP+scene code) | **≤ 180KB gz**, lazy |
+| Canvas chunk (three+R3F+scene code) | **≤ 220KB gz**, lazy (FM-1 measured: three 0.168 + fiber 8 floor ≈ 208KB; original 180KB estimate corrected) |
 | Truck GLB (Meshopt) | ≤ 300KB |
 | School GLB (2 LODs) | ≤ 250KB |
 | Road/signs/wall geometry | generated, ≤ 30KB code |

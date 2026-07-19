@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section } from '@/components/ui';
-import { HeroScene } from '@/components/founders-movement/HeroScene';
+import { ExperienceShell } from '@/components/founders-movement/ExperienceShell';
 import { WallScene } from '@/components/founders-movement/WallScene';
 import { SoundToggle } from '@/components/founders-movement/SoundToggle';
 import { getCampaignProgress } from '@/lib/community/founders';
@@ -54,11 +54,11 @@ export default async function FoundersMovementPage() {
 
   return (
     <>
-      {/* Scene 0 — ignition hero (client enhancement over real DOM). */}
-      <HeroScene founderCount={progress.founder_count} />
+      {/* Scene 0 — ignition hero; the shell decides lite vs WebGL spine. */}
+      <ExperienceShell founderCount={progress.founder_count} />
 
       {/* Scene 1 — the road / Shawn's beginning. */}
-      <Section className="border-b border-line">
+      <Section className="border-b border-line bg-asphalt/70">
         <div className="max-w-2xl">
           <h2 className="display-section">The road came first</h2>
           <p className="mt-4 text-muted">
@@ -70,7 +70,7 @@ export default async function FoundersMovementPage() {
       </Section>
 
       {/* Scene 2 — the trainer / education mission. */}
-      <Section className="border-b border-line bg-asphalt-800">
+      <Section className="border-b border-line bg-asphalt-800/85">
         <div className="max-w-2xl">
           <h2 className="display-section">From driver to teacher</h2>
           <p className="mt-4 text-muted">
@@ -82,7 +82,7 @@ export default async function FoundersMovementPage() {
       </Section>
 
       {/* Scene 3 — already built (real links, crawlable). */}
-      <Section className="border-b border-line">
+      <Section className="border-b border-line bg-asphalt/70">
         <div className="mb-8 max-w-2xl">
           <h2 className="display-section">Already on the road</h2>
           <p className="mt-4 text-muted">Built free for drivers, and already rolling:</p>
@@ -103,7 +103,7 @@ export default async function FoundersMovementPage() {
       </Section>
 
       {/* Scene 4 — the future ecosystem (honestly labeled). */}
-      <Section className="border-b border-line bg-asphalt-800">
+      <Section className="border-b border-line bg-asphalt-800/85">
         <div className="mb-8 max-w-2xl">
           <h2 className="display-section">Where the road goes next</h2>
           <p className="mt-4 text-muted">
@@ -124,7 +124,7 @@ export default async function FoundersMovementPage() {
       </Section>
 
       {/* Scenes 5–6 — approaching the wall + interactive wall (placeholder). */}
-      <Section className="border-b border-line">
+      <Section className="border-b border-line bg-asphalt/70">
         <div className="mb-8 max-w-2xl">
           <h2 className="display-section">The people building it</h2>
           <p className="mt-4 text-muted">
@@ -135,11 +135,11 @@ export default async function FoundersMovementPage() {
             &quot;build it.&quot;
           </p>
         </div>
-        <WallScene />
+        <WallScene founderCount={progress.founder_count} />
       </Section>
 
       {/* Scene 7 — the school stands. */}
-      <Section className="border-b border-line bg-asphalt-800">
+      <Section className="border-b border-line bg-asphalt-800/85">
         <div className="max-w-2xl">
           <h2 className="display-section">A school you can park a truck at</h2>
           <p className="mt-4 text-muted">
@@ -163,7 +163,7 @@ export default async function FoundersMovementPage() {
               href="/founders#join"
               className="rounded-card bg-signal px-6 py-3 font-semibold text-asphalt transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
             >
-              Join the Founders Movement
+              Take your place on the wall
             </Link>
             <Link
               href="/founders"
