@@ -84,7 +84,7 @@ An **owner-operator** owns or leases a truck and runs it as a business. A compan
 1. **USDOT number and, for for-hire interstate, an MC number.** These are two different things — the difference is explained in [DOT Number vs MC Number](/knowledge/owner-operator-business/dot-number-vs-mc-number-explained). You apply through the FMCSA's **[Unified Registration System](/knowledge/owner-operator-business/unified-registration-system-urs-explained)** ([49 CFR Part 365](https://www.ecfr.gov/current/title-49/part-365)). *(Federal requirement.)*
 2. **Process agents (BOC-3).** Before operating authority is granted, you must have a **[BOC-3 process-agent designation](/knowledge/owner-operator-business/boc-3-process-agent-requirements)** on file ([49 CFR Part 366](https://www.ecfr.gov/current/title-49/part-366)). *(Federal requirement.)*
 3. **Insurance filings.** Your insurer files proof of the required liability coverage directly with the FMCSA before authority activates — see [Trucking Business Insurance](/knowledge/owner-operator-business/trucking-business-insurance-explained) ([49 CFR Part 387](https://www.ecfr.gov/current/title-49/part-387)). *(Federal requirement.)*
-4. **IRP and IFTA for interstate operation.** Apportioned plates through the [IRP](/knowledge/owner-operator-business/irp-registration-explained) and a fuel-tax license through [IFTA](/knowledge/owner-operator-business/ifta-explained-for-truck-drivers). *(Federal/interstate agreements administered by your base state.)*
+4. **IRP and IFTA for interstate operation.** Apportioned plates through the [IRP](/knowledge/owner-operator-business/irp-registration-explained) and a fuel-tax license through [IFTA](/knowledge/owner-operator-business/ifta-explained-for-truck-drivers). *(Interstate agreements administered by your base state.)*
 
 ## The business side (off the road)
 
@@ -94,7 +94,7 @@ An **owner-operator** owns or leases a truck and runs it as a business. A compan
 
 ## A worked example (not advice)
 
-A leased owner-operator decides to go independent. They register a single-member LLC, get an EIN, and apply through the URS for a USDOT and MC number. They line up their own insurance (the agent files the FMCSA proof), file a BOC-3 through a blanket process-agent company, and register for IRP apportioned plates and an IFTA license in their base state. Before taking the first load, they build a cost-per-mile model so they know their break-even. The gating items were **insurance and the authority's 21-day protest period**, not the paperwork itself. *(Illustration of the sequence, not a promise; your steps, timing, and costs vary — confirm each with the FMCSA and a professional.)*
+A leased owner-operator decides to go independent. They register a single-member LLC, get an EIN, and apply through the URS for a USDOT and MC number. They line up their own insurance (the agent files the FMCSA proof), file a BOC-3 through a blanket process-agent company, and register for IRP apportioned plates and an IFTA license in their base state. Before taking the first load, they build a cost-per-mile model so they know their break-even. The gating items were **insurance and the authority's statutory protest window**, not the paperwork itself. *(Illustration of the sequence, not a promise; your steps, timing, and costs vary — confirm each with the FMCSA and a professional.)*
 
 ## Common mistakes
 
@@ -123,7 +123,7 @@ The order matters because several steps gate each other. The USDOT and MC applic
 - The money: [Insurance](/knowledge/owner-operator-business/trucking-business-insurance-explained) · [Factoring](/knowledge/owner-operator-business/factoring-companies-explained) · [Cost Per Mile](/knowledge/owner-operator-business/cost-per-mile-for-owner-operators) · [LLC vs Sole Proprietor](/knowledge/owner-operator-business/llc-vs-sole-proprietor-for-trucking-businesses)
 - **Build the business free:** [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter). More on your CDL YouTube channel at [Trucking Life with Shawn](https://youtu.be/PDeJF0CMoUw).$mdx$,
       'How to Become an Owner-Operator | Trucking Life with Shawn',
-      'How to become an owner-operator: the two paths, the FMCSA registration steps (USDOT, MC, URS, BOC-3, insurance, IRP, IFTA), and the business setup — mapped end to end.',
+      'How to become an owner-operator: the two paths, the FMCSA registration steps (USDOT, MC, URS, BOC-3, insurance), and the business setup — mapped end to end.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"FMCSA — Registration (USDOT number and operating authority)","url":"https://www.fmcsa.dot.gov/registration"},
@@ -137,7 +137,7 @@ The order matters because several steps gate each other. The USDOT and MC applic
         {"q":"What federal registrations does an owner-operator with their own authority need?","a":"Generally a USDOT number and, for for-hire interstate freight, an MC operating-authority number obtained through the FMCSA's Unified Registration System; a BOC-3 process-agent designation on file; the required insurance filed with the FMCSA; and, for interstate operation, IRP apportioned plates and an IFTA fuel-tax license through the base state. The exact set depends on what and where you haul, so confirm with the FMCSA."},
         {"q":"Do I need to own my truck to become an owner-operator?","a":"Not necessarily up front. Some drivers buy a truck outright, others finance one, and lease-purchase programs let you drive toward ownership through a carrier. What defines an owner-operator is running the truck as a business — controlling the equipment and bearing its costs — not how you first acquire it. The right financing path depends on your capital and risk tolerance, so weigh it against a company seat before committing."},
         {"q":"How long does it take to get operating authority?","a":"The knowledge test and paperwork are quick, but new for-hire operating authority carries a statutory protest window and does not activate until the required insurance and BOC-3 are on file, so the practical timeline runs to several weeks. Lining up insurance and a process agent early, rather than after applying, is what keeps the launch from stalling."},
-        {"q":"Should a new CDL holder become an owner-operator right away?","a":"Usually not. Most drivers benefit from running as a company driver first to learn the freight network and the real costs before risking their own capital. Ownership rewards a cash cushion and tax, maintenance, and cost-per-mile discipline — things a first-year driver is still building. It is a business decision, not a next rung on a ladder."}
+        {"q":"What do I need to have in place before getting my own authority?","a":"Line up the two filings that gate activation early — the required insurance (your insurer files proof with the FMCSA) and a BOC-3 process agent — because new for-hire authority carries a protest window and will not activate until both are on record. Off the road, set up your business structure, an EIN, and a business bank account before the first load settles, and build a cost-per-mile model so you know your break-even. Doing these in parallel with the URS application is what keeps the launch from stalling."}
       ]$j$::jsonb,
       '{owner-operator,business,operating-authority,fmcsa,registration}',
       10, true, 'published', true, '2026-07-19', v_pub
@@ -346,7 +346,7 @@ The URS was created through federal rulemaking to **streamline and consolidate**
 
 ## The biennial update (keeping it alive)
 
-Registration is not "set and forget." Every carrier must **update its information every two years** through the FMCSA — even if **nothing has changed and even if the carrier is no longer operating**. This biennial update (the successor to the old MCS-150 update cycle) keeps your USDOT record active; miss it and your registration can be **deactivated**, which can stop you from operating. The schedule keys off your USDOT number, so know your month. *(Federal requirement.)*
+Registration is not "set and forget." Every carrier must **update its information every two years** through the FMCSA — even if **nothing has changed and even if the carrier is no longer operating**. This biennial update (still filed on the MCS-150 form, or its URS online successor as that rolls out) keeps your USDOT record active; miss it and your registration can be **deactivated**, which can stop you from operating. The schedule keys off your USDOT number, so know your month. *(Federal requirement.)*
 
 ## A worked example (not advice)
 
@@ -551,7 +551,7 @@ IRP and IFTA are best understood as **twins**: one apportions your **registratio
 - The paired credential: [IFTA Explained](/knowledge/owner-operator-business/ifta-explained-for-truck-drivers)
 - Where it fits: [How to Become an Owner-Operator](/knowledge/owner-operator-business/how-to-become-an-owner-operator) · [DOT vs MC Number](/knowledge/owner-operator-business/dot-number-vs-mc-number-explained)
 - **Plate up smart, free:** [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter). More at [Trucking Life with Shawn](https://youtu.be/PDeJF0CMoUw).$mdx$,
-      'IRP Registration Explained (Apportioned Plates) | Trucking Life with Shawn',
+      'IRP Apportioned Plates for Interstate Trucks | Trucking Life with Shawn',
       'IRP apportioned registration for interstate trucks: one plate and cab card, fees split by miles per jurisdiction, who needs it, and how distance records drive renewal.',
       'Shawn Gresham', v_bio,
       $j$[
@@ -632,7 +632,7 @@ Of all the launch steps, insurance is the one that most often decides **whether 
 - The other activation filing: [BOC-3 Process Agents](/knowledge/owner-operator-business/boc-3-process-agent-requirements) · and what it costs to run: [Cost Per Mile](/knowledge/owner-operator-business/cost-per-mile-for-owner-operators)
 - **Protect the business free:** [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter). More at [Trucking Life with Shawn](https://youtu.be/PDeJF0CMoUw).$mdx$,
       'Trucking Business Insurance Explained | Trucking Life with Shawn',
-      'Owner-operator insurance: primary liability, cargo, physical damage, and bobtail coverage, the FMCSA minimum and filing under 49 CFR Part 387, and how it activates authority.',
+      'Owner-operator insurance: primary liability, cargo, physical damage, and bobtail coverage, plus the FMCSA minimum and filing under 49 CFR Part 387.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"FMCSA — Insurance Filing Requirements","url":"https://www.fmcsa.dot.gov/registration/insurance-filing-requirements"},
@@ -882,7 +882,7 @@ The internet is full of confident, absolute answers — "always form an LLC," "s
 - Where the entity fits the whole build: [How to Become an Owner-Operator](/knowledge/owner-operator-business/how-to-become-an-owner-operator) · [Trucking Business Insurance](/knowledge/owner-operator-business/trucking-business-insurance-explained)
 - **Structure it right, free:** [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter). More at [Trucking Life with Shawn](https://youtu.be/PDeJF0CMoUw).$mdx$,
       'LLC vs Sole Proprietor for Trucking | Trucking Life with Shawn',
-      'LLC vs sole proprietor for a trucking business: how liability and taxes really differ, why an LLC is not an automatic tax cut, and why the choice is a professional question.',
+      'LLC vs sole proprietor for truckers: how liability and taxes really differ, why an LLC is not an automatic tax cut, and why the choice needs a professional.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"IRS — Business Structures","url":"https://www.irs.gov/businesses/small-businesses-self-employed/business-structures"},

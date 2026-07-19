@@ -39,14 +39,14 @@
  *     checklist, keep-learning, CTAs, practice-test links)
  *   - every internal link resolves; cross-cluster bridges exist; ≤2 in-body
  *     links per target per article
- *   - FAQ uniqueness across all 50 pages; FAQ answers substantial
+ *   - FAQ uniqueness across all 70 pages; FAQ answers substantial
  *   - no duplicated substantial paragraphs anywhere
  *   - number consistency; no unsupported claim patterns; no invented money
  *     (Batch 4: no dollar/CPM/salary figures; pay described structurally)
  *   - migration mechanics: guarded inserts, guarded category creation (040
  *     only; 042/045 seed into pre-existing categories and never create one),
  *     conflict-safe kc_related, guarded replace-based cross-link UPDATEs
- *     (038: three into Batch 1; 040: four into Batches 1–2; 042: three into
+ *     (038: three into Batch 1; 040: four into Batches 1–2; 042/045/046/047: three each into
  *     Batch 3; 045: three into Batches 2–4), nothing destructive anywhere
  *   - the rendering stack still wires schema/SEO correctly
  *
@@ -304,7 +304,7 @@ check(
     (seed7.match(/and c\.slug = 'trucking-careers'/g) ?? []).length === 3,
 );
 
-// ── 2. Parse all 40 article records ─────────────────────────────────────────
+// ── 2. Parse all 70 article records ─────────────────────────────────────────
 const BATCH1 = [
   'cdl-hours-of-service-rules',
   '11-hour-driving-limit',
@@ -721,13 +721,13 @@ check(
   ),
 );
 
-// ── 4. FAQs unique across all 40 pages ──────────────────────────────────────
+// ── 4. FAQs unique across all 70 pages ──────────────────────────────────────
 check(
   'every article has 4+ FAQs',
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question reused across the 60 pages', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 70 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
   'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
@@ -1397,7 +1397,7 @@ check(
   ),
 );
 
-// ── 7. No duplicated substance across the 30 articles ───────────────────────
+// ── 7. No duplicated substance across the 70 articles ───────────────────────
 const paragraphs = new Map<string, string>();
 let dupParagraph: string | null = null;
 for (const a of articles) {
