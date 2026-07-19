@@ -96,6 +96,11 @@ export const quoteRequestSchema = z.object({
   mpg: z.number().positive().max(15).default(DEFAULT_TRUCK_PROFILE.mpg),
   tankGallons: z.number().positive().max(500).default(DEFAULT_TRUCK_PROFILE.tankGallons),
   truck: truckParamsSchema.default({}),
+  /** Optional road-feature avoidances (whitelisted; unknown values rejected). */
+  avoid: z
+    .array(z.enum(['tollRoad', 'ferry', 'tunnel', 'dirtRoad', 'uTurns']))
+    .max(5)
+    .default([]),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
@@ -252,6 +257,7 @@ export async function composeQuote(
         waypoints: [],
         truck,
         departAtMs: input.departAtMs,
+        avoid: input.avoid,
       }),
       deps.routingBudgetMs ?? 6000,
     );

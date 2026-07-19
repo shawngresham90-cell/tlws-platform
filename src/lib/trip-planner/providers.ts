@@ -22,12 +22,17 @@ export type { ExternalGeocoderAdapter as GeocodingPort } from '@/lib/directory/g
 
 /* ----------------------------------------------------------------- routing */
 
+/** Road features a route can be asked to avoid (provider-neutral names). */
+export type RouteAvoidance = 'tollRoad' | 'ferry' | 'tunnel' | 'dirtRoad' | 'uTurns';
+
 export type RoutingRequest = {
   origin: LatLng;
   destination: LatLng;
   waypoints: LatLng[];
   truck: TruckProfile;
   departAtMs: number;
+  /** Optional feature avoidances; unknown values must be dropped by adapters. */
+  avoid?: RouteAvoidance[];
 };
 
 export type RoutingResult = {
