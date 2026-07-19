@@ -13,12 +13,15 @@ import {
   emptyStore,
   markFavoritePlanned,
   renameFavorite as renameFavoriteStore,
+  replaceFavoritesAndPresets,
   saveFavorite as saveFavoriteStore,
   saveTruckPreset as saveTruckPresetStore,
   serialize,
+  type FavoriteRoute,
   type PlaceRef,
   type PlannerStore,
   type PlannedTrip,
+  type TruckPreset,
   type TruckPresetInput,
 } from '@/lib/trip-planner/saved-trips-store';
 
@@ -131,6 +134,12 @@ export function useSavedTrips() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+  const applyMerged = useCallback(
+    (favorites: FavoriteRoute[], presets: TruckPreset[]) =>
+      persist((s) => replaceFavoritesAndPresets(s, favorites, presets, now())),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   return {
     store,
@@ -146,5 +155,6 @@ export function useSavedTrips() {
     deleteTruckPreset,
     clearRecents,
     clearAll,
+    applyMerged,
   };
 }

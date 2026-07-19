@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 import type { PlaceResult } from '@/lib/trip-planner/place-search';
 import type { FavoriteRoute, PlaceRef, TruckPreset } from '@/lib/trip-planner/saved-trips-store';
 import { PlaceCombobox } from './PlaceCombobox';
 import { SavedTripsPanel } from './SavedTripsPanel';
+import { AccountPanel } from './AccountPanel';
 import { useSavedTrips } from './useSavedTrips';
+import { useCloudSync } from './useCloudSync';
 
 /** A saved PlaceRef → the PlaceResult shape the form and combobox expect. */
 function refToPlace(ref: PlaceRef): PlaceResult {
@@ -152,6 +154,13 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [savedNote, setSavedNote] = useState('');
 
   const saved = useSavedTrips();
+  const cloud = useCloudSync({
+    getLocal: () => ({ favorites: saved.store.favorites, presets: saved.store.truckPresets }),
+    applyMerged: saved.applyMerged,
+    // Cross-user isolation: clear ALL local data on sign-out so the next
+    // person on this device never sees the previous user's trips.
+    onSignedOut: saved.clearAll,
+  });
   const currentTruck = () => ({
     heightFt,
     lengthFt,
@@ -166,6 +175,36 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
     setAxles(p.axles);
     setHazmatClass(p.hazmatClass ?? '');
   };
+
+  // While signed in, diff the local favorites/presets against a baseline and
+  // enqueue cloud upserts (new/changed) and deletes (removed). This centralizes
+  // all sync triggers so every save/rename/delete/preset action propagates
+  // without threading ids through each handler. Signed-out: never runs.
+  const syncBaseline = useRef<{ favs: Map<string, number>; presets: Map<string, string> } | null>(
+    null,
+  );
+  useEffect(() => {
+    if (cloud.authStatus !== 'signed-in') {
+      syncBaseline.current = null;
+      return;
+    }
+    const favs = new Map(saved.store.favorites.map((f) => [f.id, f.updatedAt]));
+    const presetSig = (p: TruckPreset) =>
+      `${p.name}|${p.heightFt}|${p.lengthFt}|${p.grossWeightLbs}|${p.axles}|${p.hazmatClass ?? ''}`;
+    const presets = new Map(saved.store.truckPresets.map((p) => [p.id, presetSig(p)]));
+    // Until the first merge completes, only TRACK the baseline — never enqueue.
+    // This absorbs the merge's own writes (including cap eviction) so they are
+    // never mistaken for user deletes/edits and pushed to the cloud.
+    const base = cloud.syncReady ? syncBaseline.current : null;
+    if (base) {
+      for (const [id, u] of favs) if (base.favs.get(id) !== u) cloud.enqueueUpsertTrip(id);
+      for (const id of base.favs.keys()) if (!favs.has(id)) cloud.enqueueDeleteTrip(id);
+      for (const [id, s] of presets) if (base.presets.get(id) !== s) cloud.enqueueUpsertPreset(id);
+      for (const id of base.presets.keys()) if (!presets.has(id)) cloud.enqueueDeletePreset(id);
+    }
+    syncBaseline.current = { favs, presets };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloud.authStatus, cloud.syncReady, saved.store.favorites, saved.store.truckPresets]);
   const pickOrigin = (p: PlaceResult | null) => {
     setOrigin(p);
     if (p) saved.recordRecentPlace(p);
@@ -662,6 +701,18 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
           )}
         </section>
       )}
+
+      {/* ------------------------------------------------ account + sync */}
+      <AccountPanel
+        authStatus={cloud.authStatus}
+        email={cloud.email}
+        syncStatus={cloud.syncStatus}
+        sendOtp={cloud.sendOtp}
+        verifyOtp={cloud.verifyOtp}
+        signOut={cloud.signOut}
+        syncNow={cloud.syncNow}
+        deleteAllCloud={cloud.deleteAllCloud}
+      />
 
       {/* ------------------------------------------------ saved trips */}
       <SavedTripsPanel

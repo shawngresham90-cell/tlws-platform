@@ -398,6 +398,21 @@ export function deleteTruckPreset(store: PlannerStore, id: string, now: number):
   };
 }
 
+/** Replace favorites + presets wholesale (used after a cloud merge). */
+export function replaceFavoritesAndPresets(
+  store: PlannerStore,
+  favorites: FavoriteRoute[],
+  presets: TruckPreset[],
+  now: number,
+): PlannerStore {
+  return {
+    ...store,
+    favorites: favorites.slice(0, LIMITS.favorites),
+    truckPresets: presets.slice(0, LIMITS.truckPresets),
+    updatedAt: now,
+  };
+}
+
 export function clearRecents(store: PlannerStore, now: number): PlannerStore {
   return { ...store, recentPlaces: [], plannedTrips: [], updatedAt: now };
 }
