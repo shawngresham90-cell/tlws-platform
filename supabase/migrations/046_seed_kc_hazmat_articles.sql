@@ -30,7 +30,6 @@ do $kc$
 declare
   v_haz uuid;
   v_gyc uuid;
-  v_dot uuid;
   v_pub timestamptz := '2026-07-19 17:00:00+00';
   v_bio text := 'CDL-A driver and instructor — 17 years driving, zero violations. Founder of Trucking Life with Shawn and the TLWS truck driving school in Dalton, Georgia.';
 begin
@@ -48,7 +47,6 @@ begin
 
   select id into v_haz from public.kc_categories where slug = 'hazmat-knowledge';
   select id into v_gyc from public.kc_categories where slug = 'getting-your-cdl';
-  select id into v_dot from public.kc_categories where slug = 'dot-compliance';
   if v_haz is null then
     raise exception 'Knowledge Center category hazmat-knowledge missing after insert';
   end if;
@@ -89,7 +87,7 @@ If this is your **first-ever hazmat endorsement**, federal **Entry-Level Driver 
 
 1. **Read the hazmat section of your state CDL manual** end to end — it is the source the test is written from.
 2. **Learn the systems, not trivia:** how the [Hazardous Materials Table](/knowledge/hazmat-knowledge/hazmat-table-explained) drives everything, when placards are required, what a complete shipping paper contains, and how to use the Emergency Response Guidebook.
-3. **Drill with practice questions** until the vocabulary is automatic — free [hazmat practice tests](/practice-tests/hazmat).
+3. **Drill with practice questions** until the vocabulary is automatic.
 4. **Understand the driver's role:** placarding, paperwork, segregation, and incident response are the day-one responsibilities the test targets.
 
 *(The manual is the authority; practice tests are a study aid, not the exam.)*
@@ -111,7 +109,7 @@ A driver already holding a CDL wants to haul fuel, so needs **X** (tank + hazmat
 - ELDT hazmat theory (first-timers) booked with a [TPR](https://tpr.fmcsa.dot.gov/) provider
 - TSA security threat assessment **application started early**
 - State CDL manual hazmat section read in full
-- Practice tests drilled until fluent — [start here](/practice-tests/hazmat)
+- Practice tests drilled until fluent
 - Knowledge test scheduled once theory is recorded
 - Renewal cycle for the TSA assessment noted
 
@@ -124,7 +122,7 @@ A driver already holding a CDL wants to haul fuel, so needs **X** (tank + hazmat
       'How to get the hazmat (H) endorsement: the written knowledge test, the TSA security threat assessment, and ELDT theory for first-timers — and how to prepare for each.',
       'Shawn Gresham', v_bio,
       $j$[
-        {"label":"eCFR — 49 CFR 383.93, Endorsements and Restrictions","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.93"},
+        {"label":"eCFR — 49 CFR 383.93, Endorsements","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.93"},
         {"label":"eCFR — 49 CFR 383.121, Requirements for Hazardous Materials Endorsement","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.121"},
         {"label":"eCFR — 49 CFR Part 1572, Credentialing and Security Threat Assessments","url":"https://www.ecfr.gov/current/title-49/part-1572"},
         {"label":"TSA — Hazardous Materials Endorsement Threat Assessment Program","url":"https://www.tsa.gov/for-industry/hazmat-endorsement"},
@@ -207,20 +205,20 @@ A driver moving from dry van to fuel hauling checks the load: it requires placar
 - What the load requires: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained)
 - Where H sits among the letters: [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions) · drill it free: [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Endorsement Requirements: Who Needs H | Trucking Life with Shawn',
-      'Hazmat (H) endorsement requirements: when placards trigger it, eligibility and disqualifying offenses under 49 CFR Part 1572, the knowledge test and TSA check, and renewal.',
+      'Hazmat (H) endorsement requirements: when placards trigger it, eligibility and disqualifying offenses under 49 CFR Part 1572, the tests, and renewal.',
       'Shawn Gresham', v_bio,
       $j$[
-        {"label":"eCFR — 49 CFR 383.93, Endorsements and Restrictions","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.93"},
+        {"label":"eCFR — 49 CFR 383.93, Endorsements","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.93"},
         {"label":"eCFR — 49 CFR 383.121, Requirements for Hazardous Materials Endorsement","url":"https://www.ecfr.gov/current/title-49/part-383/section-383.121"},
         {"label":"eCFR — 49 CFR Part 1572, Credentialing and Security Threat Assessments","url":"https://www.ecfr.gov/current/title-49/part-1572"},
         {"label":"TSA — Hazardous Materials Endorsement Threat Assessment Program","url":"https://www.tsa.gov/for-industry/hazmat-endorsement"}
       ]$j$::jsonb,
       $j$[
         {"q":"Who needs a hazmat endorsement?","a":"Any driver operating a vehicle that requires hazardous materials placards under 49 CFR Part 172 needs the H (or X) endorsement. The trigger is placards — set by the material and quantity via the Hazardous Materials Table and the placarding rules — not simply carrying any hazardous material. Non-placardable quantities generally do not require the endorsement."},
-        {"q":"What disqualifies you from a hazmat endorsement?","a":"49 CFR Part 1572 lists permanent and interim disqualifying criminal offenses — including certain terrorism, espionage, sedition, explosives, and violent felony convictions — as well as failing the immigration or mental-capacity checks. A conviction in a listed category bars the endorsement. Because the lists are specific, check Part 1572 before applying and paying fees."},
+        {"q":"How can I check my hazmat eligibility before I apply?","a":"Before paying fees, review the 49 CFR Part 1572 eligibility criteria: lawful immigration status, no permanent or interim disqualifying criminal offense in the 1572.103 lists, and no adjudication of lacking mental capacity. The TSA security threat assessment makes the actual determination, so confirming you meet these criteria before enrolling avoids a wasted fee if a listed offense applies."},
         {"q":"How often do you renew a hazmat endorsement?","a":"The endorsement depends on the TSA security threat assessment, which is generally valid for up to five years, though states may set the endorsement's own validity period. To keep H you must renew the TSA assessment before it expires and re-verify as your state requires; if the assessment lapses, the endorsement is lost until you clear a new one."},
         {"q":"Do you need to be a U.S. citizen for a hazmat endorsement?","a":"You must be a U.S. citizen or national, a lawful permanent resident, or fall within another eligible non-citizen category defined in 49 CFR Part 1572. The TSA security threat assessment verifies immigration status as part of the check, so lawful status is a core eligibility requirement for the H endorsement."},
-        {"q":"Is the hazmat endorsement the same as company hazmat registration?","a":"No. The H endorsement is a driver credential on a CDL. PHMSA hazmat registration under 49 CFR Part 107 Subpart G is a separate obligation on companies that offer or transport certain hazardous materials. A driver can hold H while the carrier separately handles its registration; the two are different requirements."}
+        {"q":"Do intrastate (in-state-only) drivers need the hazmat endorsement?","a":"Generally yes. The federal standard requiring the H endorsement for placarded loads is adopted by the states for the CDLs they issue, so a driver hauling a placardable amount of hazardous material typically needs the endorsement whether the trip is interstate or intrastate. The placarding rules, not the trip crossing state lines, are what trigger the endorsement."}
       ]$j$::jsonb,
       '{hazmat-knowledge,endorsement,requirements,tsa,renewal}',
       9, false, 'published', true, '2026-07-19', v_pub
@@ -240,7 +238,7 @@ A driver moving from dry van to fuel hauling checks the load: it requires placar
       'hazmat-placards-explained',
       'Hazmat Placards Explained: When and How They Go On',
       'The diamond-shaped placards on a hazmat load are a federal code, not decoration. What they mean, the two placarding tables that decide when they are required, where they go, and the driver''s responsibility.',
-      $mdx$**Quick answer:** **Placards** are the ~10¾-inch **square-on-point (diamond)** signs that identify a load's hazard class, required by [49 CFR Part 172 Subpart F](https://www.ecfr.gov/current/title-49/part-172/subpart-F). Whether a shipment needs them is decided by **two tables** in [172.504](https://www.ecfr.gov/current/title-49/part-172/section-172.504): **Table 1** materials require placards in **any amount**; **Table 2** materials require them once the total is **1,001 pounds (454 kg) or more** aggregate gross weight. Placards go on **all four sides** of the vehicle and must match the hazard class on the [shipping paper](/knowledge/hazmat-knowledge/shipping-papers-explained). The driver must refuse a load that is placarded wrong.
+      $mdx$**Quick answer:** **Placards** are the ~9¾-inch (250 mm minimum) **square-on-point (diamond)** signs that identify a load's hazard class, required by [49 CFR Part 172 Subpart F](https://www.ecfr.gov/current/title-49/part-172/subpart-F). Whether a shipment needs them is decided by **two tables** in [172.504](https://www.ecfr.gov/current/title-49/part-172/section-172.504): **Table 1** materials require placards in **any amount**; **Table 2** materials require them once the total is **1,001 pounds (454 kg) or more** aggregate gross weight. Placards go on **all four sides** of the vehicle and must match the hazard class on the [shipping paper](/knowledge/hazmat-knowledge/shipping-papers-explained). The driver must refuse a load that is placarded wrong.
 
 **Regulatory-change disclaimer:** Last reviewed **July 19, 2026**. Placarding rules (49 CFR Part 172, Subparts E–F) change. Confirm current tables and specifications on the [eCFR](https://www.ecfr.gov/current/title-49/part-172) and with [PHMSA](https://www.phmsa.dot.gov/). Not legal advice.
 
@@ -419,7 +417,7 @@ An officer at a scale asks for the shipping papers. The driver hands over a tabb
       'the-emergency-response-guidebook',
       'The Emergency Response Guidebook (ERG): How to Use It',
       'The orange ERG is the first tool at a hazmat incident. What its color-coded sections do, how to go from a placard or ID number to the right response, and the driver''s role before responders arrive.',
-      $mdx$**Quick answer:** The **Emergency Response Guidebook (ERG)** is the free reference published by **PHMSA** (with Transport Canada and Mexico's SCT) that first responders and drivers use in the first minutes of a hazmat incident. You go from an **ID number** (yellow section) or **proper shipping name** (blue section) to a **guide number**, then read that **guide** (orange section) for hazards, protective clothing, fire and spill actions, and first aid. The **green section** gives **initial isolation and protective-action distances** for toxic-inhalation and water-reactive materials. It is a **first-response** tool, not a cleanup manual — the driver's job is to protect life, call for help, and hand responders the [shipping papers](/knowledge/hazmat-knowledge/shipping-papers-explained).
+      $mdx$**Quick answer:** The **Emergency Response Guidebook (ERG)** is the free reference published by **PHMSA** (with Transport Canada and Mexico's SICT) that first responders and drivers use in the first minutes of a hazmat incident. You go from an **ID number** (yellow section) or **proper shipping name** (blue section) to a **guide number**, then read that **guide** (orange section) for hazards, protective clothing, fire and spill actions, and first aid. The **green section** gives **initial isolation and protective-action distances** for toxic-inhalation and water-reactive materials. It is a **first-response** tool, not a cleanup manual — the driver's job is to protect life, call for help, and hand responders the [shipping papers](/knowledge/hazmat-knowledge/shipping-papers-explained).
 
 **Regulatory-change disclaimer:** Last reviewed **July 19, 2026**. The ERG is reissued periodically (the 2024 edition is current at review time). Use the latest edition and confirm requirements with [PHMSA](https://www.phmsa.dot.gov/hazmat/erg/emergency-response-guidebook-erg). Not legal advice.
 
@@ -481,7 +479,7 @@ A trailer develops a leak from a drum placarded with an ID number. The driver st
         {"label":"PHMSA — Hazardous Materials Safety","url":"https://www.phmsa.dot.gov/hazmat"}
       ]$j$::jsonb,
       $j$[
-        {"q":"What is the Emergency Response Guidebook?","a":"The ERG is a free first-response reference published by PHMSA with Transport Canada and Mexico's SCT. It maps hazardous materials to a set of numbered response guides so drivers and first responders can act in the first minutes of an incident. It is reissued about every four years, and the 2024 edition is current at the time of review."},
+        {"q":"What is the Emergency Response Guidebook?","a":"The ERG is a free first-response reference published by PHMSA with Transport Canada and Mexico's SICT. It maps hazardous materials to a set of numbered response guides so drivers and first responders can act in the first minutes of an incident. It is reissued about every four years, and the 2024 edition is current at the time of review."},
         {"q":"What do the ERG color sections mean?","a":"Yellow lists materials by four-digit ID number, blue lists them by proper shipping name, and both point to a guide number. Orange holds the numbered response guides — hazards, protective clothing, fire, spill, and first-aid actions. Green gives initial isolation and protective-action distances for toxic-inhalation and water-reactive materials, including day and night distances."},
         {"q":"How do I use the ERG at a hazmat incident?","a":"Get the ID number or name from the placard or shipping paper, look it up in yellow (by number) or blue (by name) to find the guide number, then read that orange guide. If the entry is highlighted or the guide directs you, use the green section for isolation and protective-action distances. Then isolate the area, call for help, and give responders the papers."},
         {"q":"Is the driver supposed to clean up a hazmat spill?","a":"No. The driver's role is to protect life, move to safety upwind and uphill where possible, keep people away, call 911 and the shipping paper's 24-hour number, and hand responders the shipping papers and ERG guide number. Cleanup and firefighting are for trained responders; the green-section distances exist because some materials require large evacuations."},
@@ -846,7 +844,7 @@ A carrier hauling a Subpart-I material trains its drivers on the security plan: 
 - What you are protecting: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Registration Requirements](/knowledge/hazmat-knowledge/hazmat-registration-requirements)
 - **Sharpen up free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Security Plans: What Part 172 Subpart I Requires | Trucking Life with Shawn',
-      'Hazmat security plans under 49 CFR Part 172 Subpart I: who needs one via the 172.800 list, the three required components, security awareness training, and the driver''s role.',
+      'Hazmat security plans under 49 CFR Part 172 Subpart I: who needs one, the three required components, security awareness training, and the driver''s role.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR Part 172 Subpart I, Safety and Security Plans","url":"https://www.ecfr.gov/current/title-49/part-172/subpart-I"},
@@ -879,7 +877,7 @@ A carrier hauling a Subpart-I material trains its drivers on the security plan: 
       'hazmat-registration-requirements',
       'Hazmat Registration Requirements (PHMSA)',
       'Beyond the driver''s endorsement, companies that ship or carry certain hazardous materials must register with PHMSA each year. Who must register, what the program is, and how it differs from the endorsement and the security plan.',
-      $mdx$**Quick answer:** Separate from the driver's endorsement, **companies that offer or transport certain hazardous materials** must register with **PHMSA** every year under [49 CFR Part 107 Subpart G](https://www.ecfr.gov/current/title-49/part-107/subpart-G). Registration applies to **higher-risk categories** — for example **highway route-controlled radioactive material, large quantities of explosives, poison-inhalation-hazard materials, bulk shipments, and any quantity requiring placards** for certain classes ([107.601](https://www.ecfr.gov/current/title-49/part-107/section-107.601)). The **registration year runs July 1–June 30**, there is a **fee paid to PHMSA**, and proof of current registration must be **carried on the vehicle**. This is a **company** obligation, distinct from the H endorsement and the security plan.
+      $mdx$**Quick answer:** Separate from the driver's endorsement, **companies that offer or transport certain hazardous materials** must register with **PHMSA** every year under [49 CFR Part 107 Subpart G](https://www.ecfr.gov/current/title-49/part-107/subpart-G). Registration applies to **higher-risk categories** — for example **highway route-controlled radioactive material, large quantities of explosives, poison-inhalation-hazard materials, bulk shipments, and non-bulk shipments of 5,000 lb of a single placarded hazard class** ([107.601](https://www.ecfr.gov/current/title-49/part-107/section-107.601)). The **registration year runs July 1–June 30**, there is a **fee paid to PHMSA**, and proof of current registration must be **carried on the vehicle**. This is a **company** obligation, distinct from the H endorsement and the security plan.
 
 **Regulatory-change disclaimer:** Last reviewed **July 19, 2026**. Registration rules and fees (49 CFR Part 107 Subpart G) change. Confirm current applicability and fees with [PHMSA](https://www.phmsa.dot.gov/hazmat-program-management-data-and-statistics/data-operations/hazardous-materials-registration) and the [eCFR](https://www.ecfr.gov/current/title-49/part-107/subpart-G). Not legal advice.
 
@@ -899,9 +897,9 @@ Registration under [107.601](https://www.ecfr.gov/current/title-49/part-107/sect
 
 - **Highway route-controlled quantity** of Class 7 radioactive material.
 - **More than 25 kg** of a Division 1.1, 1.2, or 1.3 **explosive**.
-- **Any quantity** of a material **extremely toxic by inhalation** (Hazard Zone A).
+- **More than one liter (1.06 qt) per package** of a material **poisonous by inhalation** (Hazard Zone A).
 - **Bulk** shipments above set thresholds (e.g., large-volume tanks).
-- **Any quantity requiring placarding** for certain listed classes.
+- A **non-bulk shipment of 2,268 kg (5,000 lb) gross weight** of a single hazard class for which placarding is required.
 
 Smaller, lower-risk shipments may be exempt. The regulation's list governs. *(Federal requirement.)*
 
@@ -957,7 +955,7 @@ A small carrier lands a contract hauling a poison-inhalation-hazard material. Be
       ]$j$::jsonb,
       $j$[
         {"q":"What is PHMSA hazmat registration?","a":"It is an annual federal registration and fee program under 49 CFR Part 107 Subpart G for companies that offer or transport certain higher-risk hazardous materials. The company files a registration statement with PHMSA, pays a fee that funds emergency-response grants, and receives a certificate and registration number. It is a company obligation, separate from a driver's endorsement."},
-        {"q":"Who has to register with PHMSA for hazmat?","a":"Under 49 CFR 107.601, registration is required to offer or transport higher-risk hazmat — for example a highway route-controlled quantity of radioactive material, more than 25 kg of a Division 1.1 to 1.3 explosive, any quantity of a material extremely toxic by inhalation (Hazard Zone A), bulk shipments above set thresholds, and any quantity requiring placarding for certain classes. Lower-risk shipments may be exempt."},
+        {"q":"Who has to register with PHMSA for hazmat?","a":"Under 49 CFR 107.601, registration is required to offer or transport higher-risk hazmat — for example a highway route-controlled quantity of radioactive material, more than 25 kg of a Division 1.1 to 1.3 explosive, more than one liter per package of a material poisonous by inhalation (Hazard Zone A), bulk shipments above set thresholds, and non-bulk shipments of 5,000 lb of a single placarded hazard class. Lower-risk shipments may be exempt."},
         {"q":"How is hazmat registration different from the hazmat endorsement?","a":"The H endorsement is a driver credential on a CDL, earned through a knowledge test and a TSA security threat assessment. PHMSA registration is a company-level annual federal filing and fee for transporting certain higher-risk materials. They are separate requirements: a driver can hold the endorsement while the carrier independently handles its PHMSA registration and its security plan."},
         {"q":"When does hazmat registration need to be renewed?","a":"The PHMSA registration year runs from July 1 through June 30, so covered companies renew annually. A copy of the current registration or the registration number must be kept on the vehicle when it transports a material covered by the program, and letting the registration lapse while still hauling covered materials is a compliance violation."},
         {"q":"Does a driver need to carry the hazmat registration?","a":"When transporting a material covered by the registration program, a copy of the company's current registration certificate or its registration number must be carried on the vehicle. Drivers typically do not file the registration themselves — the company does — but they should know whether a load falls into a registered category and be able to produce the proof on the vehicle."}
