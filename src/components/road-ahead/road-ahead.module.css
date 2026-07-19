@@ -1,0 +1,289 @@
+/*
+ * Cinematic styling for THE ROAD AHEAD — the parts Tailwind can't express:
+ * real 3D (perspective + preserve-3d), scroll-driven transforms fed by a --p
+ * custom property, and film-grade lighting/keyframes.
+ *
+ * Scroll-driven elements read `--p` (0→1 play-head) set inline from JS. When
+ * `--p` is unset (SSR, no-JS, or reduced motion) every rule defaults to the
+ * FINAL composed state (opacity 1, no offset), so the page is fully readable
+ * with zero animation. A reduced-motion media query hard-stops all motion as a
+ * second guarantee.
+ */
+
+/* ---------------------------------------------------------------- chapter */
+
+.chapter {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+
+/* Full-bleed media/lighting layer behind a chapter's content. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.backdropMedia {
+  position: absolute;
+  inset: -8% 0;
+  width: 100%;
+  height: 116%;
+  object-fit: cover;
+  /* Slow parallax drift fed by --p; defaults to centered when unset. */
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0) scale(1.08);
+  will-change: transform;
+}
+
+/* Cinematic vignette + top/bottom falloff so text always has contrast. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+      180deg,
+      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 0.25) 22%,
+      rgba(14, 14, 14, 0.25) 72%,
+      rgba(14, 14, 14, 0.95) 100%
+    ),
+    radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(14, 14, 14, 0.7) 100%);
+}
+
+/* A slow-moving key light — signal-yellow warmth that drifts across the frame. */
+.keyLight {
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    40% 40% at 30% 30%,
+    rgba(255, 235, 0, 0.1) 0%,
+    rgba(255, 235, 0, 0) 70%
+  );
+  animation: keyLightDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes keyLightDrift {
+  from {
+    transform: translate3d(-6%, -4%, 0);
+  }
+  to {
+    transform: translate3d(10%, 6%, 0);
+  }
+}
+
+/* ------------------------------------------------------ scroll-driven text */
+
+/* A reveal: rises + fades in as --p climbs. Final state at --p = 1.
+ * No `will-change`: this class is applied to many text nodes and the transform
+ * already composites on its own — permanently promoting every one would waste
+ * mobile memory (and can't be cleared under reduced motion). */
+.reveal {
+  opacity: var(--p, 1);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 2.5rem), 0);
+}
+
+/* A settle: text that eases up and locks — used for headline lines. */
+.settle {
+  opacity: clamp(0, calc(var(--p, 1) * 1.4), 1);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 1.75rem), 0);
+}
+
+/* -------------------------------------------------------------- 3D wall */
+
+.stage {
+  perspective: 1400px;
+  perspective-origin: 50% 42%;
+}
+
+.wall {
+  transform-style: preserve-3d;
+  /* Tilts from a raked 3D view (--p = 0) toward flat-on (--p = 1). */
+  transform: rotateX(calc((1 - var(--p, 1)) * 14deg))
+    translate3d(0, 0, calc((1 - var(--p, 1)) * -120px));
+  transition: transform 120ms linear;
+  will-change: transform;
+}
+
+.tile {
+  transform-style: preserve-3d;
+  /* Each tile carries its own depth via --z; parallax reads as real distance.
+   * No `will-change`: the wall can hold 100+ tiles and promoting each to its own
+   * layer would exhaust mobile GPU memory. */
+  transform: translate3d(0, 0, calc(var(--z, 0) * 1px * (1 - var(--p, 1))));
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.tile:hover,
+.tile:focus-within {
+  transform: translate3d(0, 0, 28px);
+  z-index: 1;
+}
+
+/* A moving specular highlight that rakes across the wall — the "lighting". */
+.tileSheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  opacity: calc(0.35 + var(--p, 0) * 0.4);
+}
+
+/* --------------------------------------------------------- founder number */
+
+.founderNumber {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* Kicker number that counts into place (scale + fade driven by --p). */
+.bigNumber {
+  transform: scale(calc(0.92 + var(--p, 1) * 0.08));
+  opacity: var(--p, 1);
+}
+
+/* --------------------------------------------------- museum spotlight (wall) */
+
+/* A slow gallery spotlight that breathes over the Founder Wall — the "museum"
+ * light. Purely decorative; gated off under reduced motion. */
+.spotlight {
+  position: absolute;
+  inset: -30% -10% 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 40% at 50% 0%,
+    rgba(255, 235, 0, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 35%,
+    rgba(255, 235, 0, 0) 70%
+  );
+  animation: spotlightBreathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes spotlightBreathe {
+  from {
+    opacity: 0.55;
+    transform: translateX(-4%) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(4%) scale(1.06);
+  }
+}
+
+/* ------------------------------------------------- name engraving (scene 6) */
+
+/* Brushed-metal plate the founder's name is engraved into. */
+.plate {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.25)),
+    repeating-linear-gradient(90deg, #1a1a1a 0px, #1f1f1f 1px, #191919 2px, #1c1c1c 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.6),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Engraved text: an incised, debossed look via layered shadows. */
+.engraved {
+  color: #cfcfcf;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+
+.engravedSignal {
+  color: #ffeb00;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 18px rgba(255, 235, 0, 0.25);
+}
+
+/* The engraving light: a bright rake that crosses the plate once it's in view,
+ * as if the name is being cut and catching the light. */
+.etchSweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.18) 48%,
+    rgba(255, 235, 0, 0.22) 50%,
+    rgba(255, 255, 255, 0.18) 52%,
+    transparent 65%
+  );
+  /* Position driven by --p (0→1) so the sweep tracks the scroll reveal. */
+  transform: translateX(calc(var(--p, 1) * 240% - 120%));
+}
+
+/* ------------------------------------------------------------- scroll cue */
+
+.scrollCue {
+  animation: cueBob 1.8s ease-in-out infinite;
+}
+
+@keyframes cueBob {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------- progress rail */
+
+.railFill {
+  transform-origin: top;
+  transform: scaleY(var(--p, 0));
+  transition: transform 120ms linear;
+}
+
+/* ------------------------------------------------- reduced-motion hard stop */
+
+@media (prefers-reduced-motion: reduce) {
+  .backdropMedia,
+  .reveal,
+  .settle,
+  .wall,
+  .tile,
+  .bigNumber,
+  .etchSweep {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .keyLight,
+  .scrollCue,
+  .spotlight,
+  .tile:hover,
+  .tile:focus-within {
+    animation: none !important;
+    transform: none !important;
+  }
+  .etchSweep {
+    display: none;
+  }
+  .stage {
+    perspective: none;
+  }
+}
