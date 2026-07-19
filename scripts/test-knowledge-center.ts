@@ -1,8 +1,15 @@
 /**
  * Knowledge Center validation suite — Batch 1 (037, HOS + inspections),
  * Batch 2 (038, DOT Compliance cluster), Batch 3 (040, Getting Your CDL
- * cluster), Batch 4 (042, Careers & Money cluster), and Batch 5 (045,
- * DOT Medical cluster): 50 authority pages.
+ * cluster), Batch 4 (042, Careers & Money cluster), Batch 5 (045,
+ * DOT Medical cluster), and Batch 6 (046, Hazmat Knowledge cluster):
+ * 60 authority pages.
+ *
+ * Batch 6 CREATES the 'hazmat-knowledge' category (guarded, like 040) and
+ * carries hazmat discipline: official primary sources only (49 CFR Parts
+ * 171-180 via eCFR, PHMSA, FMCSA, TSA, DOT ERG), no invented fees or pass
+ * rates, no "you will pass/fail" promises, and regulation vs guidance vs
+ * carrier policy vs example labeled in-text.
  *
  * Batch 4 seeds into the pre-existing (empty) 'trucking-careers' category and
  * carries extra money discipline: no invented pay/CPM/salary/dollar figures,
@@ -58,6 +65,7 @@ const seed2 = read('supabase/migrations/038_seed_kc_dot_compliance_articles.sql'
 const seed3 = read('supabase/migrations/040_seed_kc_getting_your_cdl_articles.sql');
 const seed4 = read('supabase/migrations/042_seed_kc_careers_money_articles.sql');
 const seed5 = read('supabase/migrations/045_seed_kc_dot_medical_articles.sql');
+const seed6 = read('supabase/migrations/046_seed_kc_hazmat_articles.sql');
 
 // ── 1. Migration mechanics ──────────────────────────────────────────────────
 const guardRe =
@@ -73,6 +81,7 @@ for (const [name, s] of [
   ['040', seed3],
   ['042', seed4],
   ['045', seed5],
+  ['046', seed6],
 ] as const) {
   check(
     `${name}: kc_related inserts are conflict-safe`,
@@ -201,6 +210,47 @@ check(
     /and c\.slug = 'getting-your-cdl'/.test(seed5) &&
     /and c\.slug = 'trucking-careers'/.test(seed5),
 );
+// Batch 6 (046) CREATES the hazmat-knowledge category (guarded), like 040.
+check('046: ten guarded inserts', (seed6.match(guardRe) ?? []).length === 10);
+check(
+  '046: creates exactly one category, guarded by not-exists on the slug',
+  (seed6.match(/insert into public\.kc_categories/g) ?? []).length === 1 &&
+    /where not exists \(select 1 from public\.kc_categories where slug = 'hazmat-knowledge'\)/.test(
+      seed6,
+    ),
+);
+check(
+  '046: category is additive only (no category updates)',
+  !/update public\.kc_categories/.test(seed6),
+);
+check(
+  '046: all ten article inserts use the hazmat-knowledge category variable',
+  (seed6.match(/values \(\s*v_haz,/g) ?? []).length === 10,
+);
+check(
+  '046: looks up hazmat-knowledge and raises if it is missing after insert',
+  /select id into v_haz from public\.kc_categories where slug = 'hazmat-knowledge'/.test(seed6) &&
+    /raise exception 'Knowledge Center category hazmat-knowledge missing/.test(seed6),
+);
+const crossLinkUpdates6 =
+  seed6.match(/update public\.kc_articles a set body_mdx = replace\(/g) ?? [];
+check('046: exactly three inbound-link UPDATEs, all replace-based', crossLinkUpdates6.length === 3);
+check(
+  '046: no other UPDATE statements of any kind',
+  (seed6.match(/update public\./g) ?? []).length === 3,
+);
+check(
+  '046: every UPDATE is presence-guarded AND absence-guarded (idempotent)',
+  (seed6.match(/and a\.body_mdx like '%/g) ?? []).length === 3 &&
+    (seed6.match(/and a\.body_mdx not like '%\/knowledge\/hazmat-knowledge\//g) ?? []).length === 3,
+);
+check(
+  '046: all three UPDATEs are slug-scoped Batch 3 targets in getting-your-cdl',
+  /a\.slug = 'cdl-endorsements-restrictions'/.test(seed6) &&
+    /a\.slug = 'cdl-cost'/.test(seed6) &&
+    /a\.slug = 'eldt-requirements'/.test(seed6) &&
+    (seed6.match(/and c\.slug = 'getting-your-cdl'/g) ?? []).length === 3,
+);
 
 // ── 2. Parse all 40 article records ─────────────────────────────────────────
 const BATCH1 = [
@@ -263,6 +313,18 @@ const BATCH5 = [
   'medical-card-renewal-and-self-certification',
   'finding-a-dot-medical-examiner',
 ];
+const BATCH6 = [
+  'how-to-pass-the-hazmat-endorsement-test',
+  'hazmat-endorsement-requirements',
+  'hazmat-placards-explained',
+  'shipping-papers-explained',
+  'the-emergency-response-guidebook',
+  'hazmat-load-segregation-rules',
+  'tsa-threat-assessment-process',
+  'hazmat-table-explained',
+  'hazmat-security-plans',
+  'hazmat-registration-requirements',
+];
 const CAT_OF: Record<string, string> = {};
 for (const s of BATCH1)
   CAT_OF[s] =
@@ -275,10 +337,11 @@ for (const s of BATCH2) CAT_OF[s] = 'dot-compliance';
 for (const s of BATCH3) CAT_OF[s] = 'getting-your-cdl';
 for (const s of BATCH4) CAT_OF[s] = 'trucking-careers';
 for (const s of BATCH5) CAT_OF[s] = 'health-on-the-road';
+for (const s of BATCH6) CAT_OF[s] = 'hazmat-knowledge';
 
 type Article = {
   slug: string;
-  batch: 1 | 2 | 3 | 4 | 5;
+  batch: 1 | 2 | 3 | 4 | 5 | 6;
   title: string;
   excerpt: string;
   body: string;
@@ -288,7 +351,7 @@ type Article = {
   faqs: { q: string; a: string }[];
 };
 const blockRe =
-  /values \(\s*v_(?:hos|dot|cdl|gyc|car|med),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
+  /values \(\s*v_(?:hos|dot|cdl|gyc|car|med|haz),\s*'([^']+)',\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*\$mdx\$([\s\S]*?)\$mdx\$,\s*'((?:[^']|'')+)',\s*'((?:[^']|'')+)',\s*'Shawn Gresham', v_bio,\s*\$j\$([\s\S]*?)\$j\$::jsonb,\s*\$j\$([\s\S]*?)\$j\$::jsonb/g;
 const articles: Article[] = [];
 for (const [batch, s] of [
   [1, seed1],
@@ -296,6 +359,7 @@ for (const [batch, s] of [
   [3, seed3],
   [4, seed4],
   [5, seed5],
+  [6, seed6],
 ] as const) {
   let m: RegExpExecArray | null;
   blockRe.lastIndex = 0;
@@ -414,7 +478,32 @@ for (const { search, replacement, slug } of extracted5) {
     replacement.length > search.length && /\]\(\/knowledge\/health-on-the-road\//.test(replacement),
   );
 }
-check('all 50 articles parse (10 per batch)', articles.length === 50, articles.length);
+// 046's three inbound cross-links point INTO the new hazmat-knowledge cluster
+// from three Batch 3 pages — extracted from the migration and applied to the
+// already-parsed bodies so downstream link checks see effective text.
+const extracted6: { search: string; replacement: string; slug: string }[] = [];
+updateRe.lastIndex = 0;
+while ((um = updateRe.exec(seed6)) !== null) {
+  extracted6.push({
+    search: um[1].replace(/''/g, "'"),
+    replacement: um[2].replace(/''/g, "'"),
+    slug: um[3],
+  });
+}
+check('046: all three replacement pairs parse from the migration', extracted6.length === 3);
+for (const { search, replacement, slug } of extracted6) {
+  const target = articles.find((a) => a.slug === slug);
+  check(
+    `046 replacement target text exists exactly once in ${slug}`,
+    !!target && target.body.split(search).length === 2,
+  );
+  if (target) target.body = target.body.replace(search, replacement);
+  check(
+    `046 replacement for ${slug} grows the text and links into hazmat-knowledge`,
+    replacement.length > search.length && /\]\(\/knowledge\/hazmat-knowledge\//.test(replacement),
+  );
+}
+check('all 60 articles parse (10 per batch)', articles.length === 60, articles.length);
 check(
   "038's and 040's replacements all matched real seeded text (effective content differs)",
   articles
@@ -442,11 +531,12 @@ check(
     BATCH2.every((s) => articles.some((a) => a.slug === s && a.batch === 2)) &&
     BATCH3.every((s) => articles.some((a) => a.slug === s && a.batch === 3)) &&
     BATCH4.every((s) => articles.some((a) => a.slug === s && a.batch === 4)) &&
-    BATCH5.every((s) => articles.some((a) => a.slug === s && a.batch === 5)),
+    BATCH5.every((s) => articles.some((a) => a.slug === s && a.batch === 5)) &&
+    BATCH6.every((s) => articles.some((a) => a.slug === s && a.batch === 6)),
 );
-check('titles unique across 50', new Set(articles.map((a) => a.title)).size === 50);
-check('meta titles unique across 50', new Set(articles.map((a) => a.metaTitle)).size === 50);
-check('excerpts unique across 50', new Set(articles.map((a) => a.excerpt)).size === 50);
+check('titles unique across 60', new Set(articles.map((a) => a.title)).size === 60);
+check('meta titles unique across 60', new Set(articles.map((a) => a.metaTitle)).size === 60);
+check('excerpts unique across 60', new Set(articles.map((a) => a.excerpt)).size === 60);
 check(
   'excerpts are substantial (80–320 chars) and carry no literal doubled apostrophe',
   articles.every(
@@ -457,8 +547,8 @@ check(
     .map((a) => `${a.slug}:${a.excerpt.length}`),
 );
 check(
-  'meta descriptions unique across 50',
-  new Set(articles.map((a) => a.metaDescription)).size === 50,
+  'meta descriptions unique across 60',
+  new Set(articles.map((a) => a.metaDescription)).size === 60,
 );
 check(
   'meta descriptions sane length (70–175 chars)',
@@ -480,7 +570,8 @@ check(
     (seed2.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed3.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
     (seed4.match(/'published', true, '2026-07-17', v_pub/g) ?? []).length === 10 &&
-    (seed5.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10,
+    (seed5.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10 &&
+    (seed6.match(/'published', true, '2026-07-19', v_pub/g) ?? []).length === 10,
 );
 
 // ── 3. Official sources only, canonical formats ─────────────────────────────
@@ -503,6 +594,10 @@ const OFFICIAL = [
   // vision rules, and the 2017 sleep-apnea rulemaking withdrawal).
   'nationalregistry.fmcsa.dot.gov',
   'www.federalregister.gov',
+  // Batch 6 (Hazmat) primary sources — PHMSA (hazmat program, ERG,
+  // registration) and TSA (the security threat assessment program).
+  'www.phmsa.dot.gov',
+  'www.tsa.gov',
 ];
 check(
   'every source URL is an official domain',
@@ -518,7 +613,7 @@ check(
     a.sources
       .filter((s) => s.url.includes('ecfr.gov'))
       .every((s) =>
-        /^https:\/\/www\.ecfr\.gov\/current\/title-49\/(part-\d+)(\/section-\d+\.\d+)?$/.test(
+        /^https:\/\/www\.ecfr\.gov\/current\/title-49\/(part-\d+)(\/section-\d+\.\d+|\/subpart-[A-Z])?$/.test(
           s.url,
         ),
       ),
@@ -531,7 +626,7 @@ check(
   articles.every((a) => a.faqs.length >= 4),
 );
 const allFaqQs = articles.flatMap((a) => a.faqs.map((f) => f.q));
-check('no FAQ question reused across the 50 pages', new Set(allFaqQs).size === allFaqQs.length);
+check('no FAQ question reused across the 60 pages', new Set(allFaqQs).size === allFaqQs.length);
 check(
   'every FAQ answer is substantial (80+ chars)',
   articles.every((a) => a.faqs.every((f) => f.a.length >= 80)),
@@ -542,6 +637,7 @@ const b12 = articles.filter((a) => a.batch === 1 || a.batch === 2);
 const b3 = articles.filter((a) => a.batch === 3);
 const b4 = articles.filter((a) => a.batch === 4);
 const b5 = articles.filter((a) => a.batch === 5);
+const b6 = articles.filter((a) => a.batch === 6);
 const b123 = articles.filter((a) => a.batch === 1 || a.batch === 2 || a.batch === 3);
 // Universal across all 40 pages.
 const shared: [string, RegExp][] = [
@@ -596,6 +692,86 @@ for (const [name, re] of b4Structure) {
     b4.filter((a) => !re.test(a.body)).map((a) => a.slug),
   );
 }
+// Batch 6 (Hazmat): regulatory-change disclaimer with the 2026-07-19 date, an
+// orienting definition section, a labeled illustration, a checklist, a
+// practice-test link, and the pre-school CTA.
+const b6Structure: [string, RegExp][] = [
+  [
+    'regulatory-change disclaimer with review date',
+    /\*\*Regulatory-change disclaimer:\*\* Last reviewed \*\*July 19, 2026\*\*/,
+  ],
+  ['not legal advice language', /not legal advice/i],
+  ['orienting definition or why/what section', /## (What|Why|The|Reading|Where|Who) /],
+  ['labeled illustration (not a claim)', /\([Ii]llustration[^)]{0,140}not /],
+  ['checklist section', /## Your [^\n]*checklist/i],
+  ['practice-test link', /\/practice-tests\/hazmat/],
+  ['pre-school CTA', /\/cdl-pre-school\)/],
+];
+for (const [name, re] of b6Structure) {
+  check(
+    `every Batch 6 body has: ${name}`,
+    b6.every((a) => re.test(a.body)),
+    b6.filter((a) => !re.test(a.body)).map((a) => a.slug),
+  );
+}
+// Hazmat discipline: no invented fees (dollar figures), no pass/fail promises,
+// and the agency named as the decision-maker for the test / TSA assessment.
+check(
+  'Batch 6 quotes no dollar amounts (fees are pointed to, never hardcoded)',
+  b6.every((a) => !/\$\s?\.?\d/.test(a.body) && !/\$\s?\.?\d/.test(JSON.stringify(a.faqs))),
+  b6
+    .filter((a) => /\$\s?\.?\d/.test(a.body) || /\$\s?\.?\d/.test(JSON.stringify(a.faqs)))
+    .map((a) => a.slug),
+);
+check(
+  'Batch 6 makes no pass/fail or guarantee promises',
+  b6.every(
+    (a) =>
+      !/you will (pass|fail|be denied|be approved|qualify)/i.test(
+        a.body + JSON.stringify(a.faqs),
+      ) && !/guaranteed to (pass|qualify)/i.test(a.body + JSON.stringify(a.faqs)),
+  ),
+  b6
+    .filter((a) =>
+      /you will (pass|fail|be denied|be approved|qualify)|guaranteed to (pass|qualify)/i.test(
+        a.body + JSON.stringify(a.faqs),
+      ),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'Batch 6 every spoke links the cluster pillar (how-to-pass-the-hazmat-endorsement-test)',
+  b6
+    .filter((a) => a.slug !== 'how-to-pass-the-hazmat-endorsement-test')
+    .every((a) =>
+      a.body.includes('/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test'),
+    ),
+  b6
+    .filter(
+      (a) =>
+        a.slug !== 'how-to-pass-the-hazmat-endorsement-test' &&
+        !a.body.includes('/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test'),
+    )
+    .map((a) => a.slug),
+);
+check(
+  'Batch 6 cross-cluster bridge: pillar links into getting-your-cdl',
+  b6
+    .find((a) => a.slug === 'how-to-pass-the-hazmat-endorsement-test')!
+    .body.includes('/knowledge/getting-your-cdl/'),
+);
+check(
+  'Batch 3 → Batch 6 inbound cross-links landed (endorsements, cost, eldt)',
+  b3
+    .find((a) => a.slug === 'cdl-endorsements-restrictions')!
+    .body.includes('/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test') &&
+    b3
+      .find((a) => a.slug === 'cdl-cost')!
+      .body.includes('/knowledge/hazmat-knowledge/tsa-threat-assessment-process') &&
+    b3
+      .find((a) => a.slug === 'eldt-requirements')!
+      .body.includes('/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test'),
+);
 // Dollar-quoted ($mdx$) bodies do NO escape processing, so a doubled
 // apostrophe would render literally (it''s). Bodies must use single
 // apostrophes; only plain-SQL literals (title/excerpt/meta) double them, and

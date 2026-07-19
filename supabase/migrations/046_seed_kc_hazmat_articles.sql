@@ -88,7 +88,7 @@ If this is your **first-ever hazmat endorsement**, federal **Entry-Level Driver 
 ## How to prepare for the knowledge test
 
 1. **Read the hazmat section of your state CDL manual** end to end — it is the source the test is written from.
-2. **Learn the systems, not trivia:** how the [Hazardous Materials Table](/knowledge/hazmat-knowledge/hazmat-table-explained) drives everything, when [placards](/knowledge/hazmat-knowledge/hazmat-placards-explained) are required, what a complete [shipping paper](/knowledge/hazmat-knowledge/shipping-papers-explained) contains, and how to use the [ERG](/knowledge/hazmat-knowledge/the-emergency-response-guidebook).
+2. **Learn the systems, not trivia:** how the [Hazardous Materials Table](/knowledge/hazmat-knowledge/hazmat-table-explained) drives everything, when placards are required, what a complete shipping paper contains, and how to use the Emergency Response Guidebook.
 3. **Drill with practice questions** until the vocabulary is automatic — free [hazmat practice tests](/practice-tests/hazmat).
 4. **Understand the driver's role:** placarding, paperwork, segregation, and incident response are the day-one responsibilities the test targets.
 
@@ -135,7 +135,7 @@ A driver already holding a CDL wants to haul fuel, so needs **X** (tank + hazmat
         {"q":"How long does the hazmat endorsement take to get?","a":"The knowledge test itself is a single sitting, but the TSA security threat assessment can take several weeks to process, and first-timers must finish ELDT hazmat theory before testing. Because the TSA check is usually the longest step, the practical approach is to start that application first and study for the knowledge test while it processes."},
         {"q":"Is there a driving (behind-the-wheel) test for hazmat?","a":"No. The hazmat endorsement is theory only — for first-timers, ELDT requires the hazmat theory curriculum from a registered provider, but there is no separate behind-the-wheel test for H. You demonstrate knowledge of the rules on the written test and clear the TSA background check; there is no skills-test component for the endorsement itself."},
         {"q":"Can I add hazmat to a commercial learner's permit?","a":"No. The hazmat (H) endorsement cannot be issued on a CLP — it is added to a full CDL. First-timers also need registered-provider ELDT hazmat theory recorded before the state administers the knowledge test, and the TSA security threat assessment must return a favorable determination before the endorsement is granted."},
-        {"q":"What is the X endorsement?","a":"X is the combined code for tank vehicles plus hazardous materials — the authority a fuel hauler needs. It bundles the N (tank) and H (hazmat) authorities, so it carries the same TSA security threat assessment requirement as H. You still pass the underlying knowledge tests; X simply reflects holding both on one CDL."}
+        {"q":"Does the X (tank plus hazmat) endorsement also need the TSA check?","a":"Yes. X is the combined code for tank vehicles plus hazardous materials — the authority a fuel hauler needs — and because it includes the H (hazmat) authority, it carries the same TSA security threat assessment requirement. You still pass the underlying tank and hazmat knowledge tests; X simply reflects holding both authorities on one CDL."}
       ]$j$::jsonb,
       '{hazmat-knowledge,endorsement,tsa,eldt,knowledge-test}',
       9, true, 'published', true, '2026-07-19', v_pub
@@ -205,7 +205,7 @@ A driver moving from dry van to fuel hauling checks the load: it requires placar
 
 - The how-to: [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test) · the security check, [The TSA Threat Assessment Process](/knowledge/hazmat-knowledge/tsa-threat-assessment-process)
 - What the load requires: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained)
-- Where H sits among the letters: [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions) · drill it: [hazmat practice tests](/practice-tests/hazmat).$mdx$,
+- Where H sits among the letters: [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions) · drill it free: [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Endorsement Requirements: Who Needs H | Trucking Life with Shawn',
       'Hazmat (H) endorsement requirements: when placards trigger it, eligibility and disqualifying offenses under 49 CFR Part 1572, the knowledge test and TSA check, and renewal.',
       'Shawn Gresham', v_bio,
@@ -293,9 +293,9 @@ A driver is handed a load with a single flammable-liquid placard on the rear onl
 
 - Where the class comes from: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · what rides with the load, [Shipping Papers Explained](/knowledge/hazmat-knowledge/shipping-papers-explained)
 - When things go wrong: [The Emergency Response Guidebook](/knowledge/hazmat-knowledge/the-emergency-response-guidebook) · the endorsement behind it all, [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy).$mdx$,
+- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Placards Explained: When and How They Go On | Trucking Life with Shawn',
-      'How hazmat placards work: the two placarding tables in 49 CFR 172.504, the 1,001-lb aggregate rule, all-four-sides placement, and the driver''s duty to match placards to the papers.',
+      'How hazmat placards work: the two placarding tables in 49 CFR 172.504, the 1,001-lb rule, all-four-sides placement, and matching placards to the papers.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR Part 172 Subpart F, Placarding","url":"https://www.ecfr.gov/current/title-49/part-172/subpart-F"},
@@ -384,9 +384,9 @@ An officer at a scale asks for the shipping papers. The driver hands over a tabb
 
 - Where the description comes from: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · the signs it drives, [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained)
 - Using the emergency data: [The Emergency Response Guidebook](/knowledge/hazmat-knowledge/the-emergency-response-guidebook) · the endorsement, [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [CDL Pre-School](/cdl-pre-school).$mdx$,
+- **Study it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Shipping Papers Explained | Trucking Life with Shawn',
-      'What a hazmat shipping paper must contain: the basic description order (ID number, name, class, packing group), emergency info and 24-hour phone, certification, and where to keep it.',
+      'What a hazmat shipping paper needs: the basic description order (ID number, name, class, packing group), emergency info and 24-hour phone, and where to keep it.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR Part 172 Subpart C, Shipping Papers","url":"https://www.ecfr.gov/current/title-49/part-172/subpart-C"},
@@ -470,9 +470,9 @@ A trailer develops a leak from a drum placarded with an ID number. The driver st
 
 - What points you into it: [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained) · [Shipping Papers Explained](/knowledge/hazmat-knowledge/shipping-papers-explained)
 - Loading it safely in the first place: [Hazmat Load Segregation Rules](/knowledge/hazmat-knowledge/hazmat-load-segregation-rules) · the endorsement, [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy).$mdx$,
+- **Practice free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'The Emergency Response Guidebook (ERG): How to Use It | Trucking Life with Shawn',
-      'How to use the DOT Emergency Response Guidebook: the yellow, blue, orange, and green sections, going from an ID number or placard to the right response, and the driver''s first-response role.',
+      'How to use the DOT Emergency Response Guidebook: the yellow, blue, orange, and green sections, going from an ID number to the response, and the driver''s role.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"PHMSA — Emergency Response Guidebook (ERG)","url":"https://www.phmsa.dot.gov/hazmat/erg/emergency-response-guidebook-erg"},
@@ -557,7 +557,7 @@ A driver is asked to add a few packages of an oxidizer to a trailer already hold
 
 - Where the classes come from: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained)
 - If something goes wrong: [The Emergency Response Guidebook](/knowledge/hazmat-knowledge/the-emergency-response-guidebook) · the endorsement, [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [CDL Pre-School](/cdl-pre-school).$mdx$,
+- **Get exam-ready free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Load Segregation Rules | Trucking Life with Shawn',
       'How hazmat segregation works: the 49 CFR 177.848 table and its blank/O/X codes, the general blocking-and-bracing and handling rules, and the driver''s duty on mixed loads.',
       'Shawn Gresham', v_bio,
@@ -634,6 +634,10 @@ A denial is not always final. Part 1572 provides:
 
 There is also a **redress** path for identity mix-ups. Deadlines are strict; act quickly. *(Federal rights; outcomes are TSA determinations.)*
 
+## A worked example (not legal advice)
+
+A driver planning to add hazmat starts the TSA application first, reviews the [1572.103](https://www.ecfr.gov/current/title-49/part-1572/section-1572.103) disqualifier lists to confirm nothing applies, and enrolls in person with fingerprints and documents. Weeks later a favorable determination reaches the state, and after the driver passes the knowledge test the endorsement is added. Five years on, a renewal notice arrives; the driver reapplies before it expires so the endorsement never lapses. The long pole was the **background-check timeline**, which is exactly why it went first. *(Illustration of the sequence, not a promise; TSA and your state govern the actual timing and outcome.)*
+
 ## Common mistakes
 
 - **Starting late.** The check is usually the longest step; begin first.
@@ -653,9 +657,9 @@ There is also a **redress** path for identity mix-ups. Deadlines are strict; act
 
 - The endorsement it gates: [Hazmat Endorsement Requirements](/knowledge/hazmat-knowledge/hazmat-endorsement-requirements) · [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
 - Company-side security: [Hazmat Security Plans](/knowledge/hazmat-knowledge/hazmat-security-plans) · where H sits, [CDL Endorsements and Restrictions](/knowledge/getting-your-cdl/cdl-endorsements-restrictions)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy).$mdx$,
+- **Prep free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'The TSA Threat Assessment Process for Hazmat | Trucking Life with Shawn',
-      'The TSA security threat assessment for the hazmat endorsement: what TSA reviews under 49 CFR Part 1572, disqualifying offenses, how to apply, the 5-year validity, and appeal and waiver rights.',
+      'The TSA security threat assessment for the hazmat endorsement: what TSA reviews under 49 CFR Part 1572, disqualifying offenses, applying, validity, and appeal rights.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR Part 1572, Credentialing and Security Threat Assessments","url":"https://www.ecfr.gov/current/title-49/part-1572"},
@@ -688,7 +692,7 @@ There is also a **redress** path for identity mix-ups. Deadlines are strict; act
       'hazmat-table-explained',
       'The Hazmat Table Explained (49 CFR 172.101)',
       'The Hazardous Materials Table is the master index that drives every other hazmat decision. What its ten columns mean, how to read a row, and why the proper shipping name and ID number start everything.',
-      $mdx$**Quick answer:** The **Hazardous Materials Table** in [49 CFR 172.101](https://www.ecfr.gov/current/title-49/part-172/section-172.101) is the master list that ties a material to its **proper shipping name, hazard class, ID number, packing group, labels, packaging, and quantity limits**. You find your material by name, read across its **ten columns**, and everything else — the [shipping paper](/knowledge/hazmat-knowledge/shipping-papers-explained) description, the [placards](/knowledge/hazmat-knowledge/hazmat-placards-explained), the packaging, the [segregation](/knowledge/hazmat-knowledge/hazmat-load-segregation-rules) — flows from that row. Column 1 **symbols** (like +, A, D, G, I, W) change how the entry is used. The table is where hazmat classification **starts**.
+      $mdx$**Quick answer:** The **Hazardous Materials Table** in [49 CFR 172.101](https://www.ecfr.gov/current/title-49/part-172/section-172.101) is the master list that ties a material to its **proper shipping name, hazard class, ID number, packing group, labels, packaging, and quantity limits**. You find your material by name, read across its **ten columns**, and everything else — the shipping-paper description, the placards, the packaging, the segregation — flows from that row. Column 1 **symbols** (like +, A, D, G, I, W) change how the entry is used. The table is where hazmat classification **starts**.
 
 **Regulatory-change disclaimer:** Last reviewed **July 19, 2026**. The table and its provisions (49 CFR 172.101 and 172.102) change. Confirm the current entry on the [eCFR](https://www.ecfr.gov/current/title-49/part-172/section-172.101) and with [PHMSA](https://www.phmsa.dot.gov/). Not legal advice.
 
@@ -713,7 +717,7 @@ Nearly every hazmat requirement points back to the table. Get the **row** right 
 
 ## How to read a row
 
-Start with the **proper shipping name** (or ID number) and read across: note the **class**, **ID number**, and **packing group** for the [shipping paper](/knowledge/hazmat-knowledge/shipping-papers-explained); the **labels** for the package; the **special provisions** and **packaging** columns for how it must be contained. A **"G"** in column 1 means you must add the **technical name** in parentheses. The row is the recipe; the other rules are the cooking. *(How-to.)*
+Start with the **proper shipping name** (or ID number) and read across: note the **class**, **ID number**, and **packing group** for the shipping paper; the **labels** for the package; the **special provisions** and **packaging** columns for how it must be contained. A **"G"** in column 1 means you must add the **technical name** in parentheses. The row is the recipe; the other rules are the cooking. *(How-to.)*
 
 ## Where the table sends you next
 
@@ -751,9 +755,9 @@ A driver reviewing papers sees a generic proper shipping name flagged **"G"** in
 
 - What the row feeds: [Shipping Papers Explained](/knowledge/hazmat-knowledge/shipping-papers-explained) · [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained) · [Segregation Rules](/knowledge/hazmat-knowledge/hazmat-load-segregation-rules)
 - The endorsement: [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [CDL Pre-School](/cdl-pre-school).$mdx$,
+- **Train up free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'The Hazmat Table Explained (49 CFR 172.101) | Trucking Life with Shawn',
-      'How to read the Hazardous Materials Table in 49 CFR 172.101: the ten columns, the column-1 symbols, the proper shipping name and ID number, and how the row drives every other hazmat rule.',
+      'How to read the Hazardous Materials Table in 49 CFR 172.101: the ten columns, the column-1 symbols, and how the row drives every other hazmat rule.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR 172.101, Purpose and Use of Hazardous Materials Table","url":"https://www.ecfr.gov/current/title-49/part-172/section-172.101"},
@@ -838,9 +842,9 @@ A carrier hauling a Subpart-I material trains its drivers on the security plan: 
 
 ## Keep learning
 
-- The personnel side: [The TSA Threat Assessment Process](/knowledge/hazmat-knowledge/tsa-threat-assessment-process) · [Hazmat Endorsement Requirements](/knowledge/hazmat-knowledge/hazmat-endorsement-requirements)
+- The personnel side: [The TSA Threat Assessment Process](/knowledge/hazmat-knowledge/tsa-threat-assessment-process) · [Hazmat Endorsement Requirements](/knowledge/hazmat-knowledge/hazmat-endorsement-requirements) · the endorsement itself, [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test)
 - What you are protecting: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Registration Requirements](/knowledge/hazmat-knowledge/hazmat-registration-requirements)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy).$mdx$,
+- **Sharpen up free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Security Plans: What Part 172 Subpart I Requires | Trucking Life with Shawn',
       'Hazmat security plans under 49 CFR Part 172 Subpart I: who needs one via the 172.800 list, the three required components, security awareness training, and the driver''s role.',
       'Shawn Gresham', v_bio,
@@ -941,9 +945,9 @@ A small carrier lands a contract hauling a poison-inhalation-hazard material. Be
 
 - The other two obligations: [How to Pass the Hazmat Endorsement Test](/knowledge/hazmat-knowledge/how-to-pass-the-hazmat-endorsement-test) · [Hazmat Security Plans](/knowledge/hazmat-knowledge/hazmat-security-plans)
 - What defines a covered load: [The Hazmat Table](/knowledge/hazmat-knowledge/hazmat-table-explained) · [Hazmat Placards Explained](/knowledge/hazmat-knowledge/hazmat-placards-explained)
-- **Drill it free:** [hazmat practice tests](/practice-tests/hazmat) · [CDL Pre-School](/cdl-pre-school).$mdx$,
+- **Review it free:** [hazmat practice tests](/practice-tests/hazmat) · [TLWS Academy](/academy) · [CDL Pre-School](/cdl-pre-school) · [the newsletter](/#newsletter).$mdx$,
       'Hazmat Registration Requirements (PHMSA) | Trucking Life with Shawn',
-      'PHMSA hazmat registration under 49 CFR Part 107 Subpart G: who must register, the higher-risk categories, the July–June registration year and fee, and how it differs from the H endorsement.',
+      'PHMSA hazmat registration under 49 CFR Part 107 Subpart G: who must register, the higher-risk categories, the annual fee, and how it differs from the endorsement.',
       'Shawn Gresham', v_bio,
       $j$[
         {"label":"eCFR — 49 CFR Part 107 Subpart G, Registration of Hazmat Persons","url":"https://www.ecfr.gov/current/title-49/part-107/subpart-G"},
