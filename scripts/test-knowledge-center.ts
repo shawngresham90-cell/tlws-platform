@@ -280,6 +280,7 @@ type Article = {
   slug: string;
   batch: 1 | 2 | 3 | 4 | 5;
   title: string;
+  excerpt: string;
   body: string;
   metaTitle: string;
   metaDescription: string;
@@ -303,6 +304,7 @@ for (const [batch, s] of [
       slug: m[1],
       batch,
       title: m[2].replace(/''/g, "'"),
+      excerpt: m[3].replace(/''/g, "'"),
       body: m[4],
       metaTitle: m[5].replace(/''/g, "'"),
       metaDescription: m[6].replace(/''/g, "'"),
@@ -444,6 +446,16 @@ check(
 );
 check('titles unique across 50', new Set(articles.map((a) => a.title)).size === 50);
 check('meta titles unique across 50', new Set(articles.map((a) => a.metaTitle)).size === 50);
+check('excerpts unique across 50', new Set(articles.map((a) => a.excerpt)).size === 50);
+check(
+  'excerpts are substantial (80–320 chars) and carry no literal doubled apostrophe',
+  articles.every(
+    (a) => a.excerpt.length >= 80 && a.excerpt.length <= 320 && !a.excerpt.includes("''"),
+  ),
+  articles
+    .filter((a) => a.excerpt.length < 80 || a.excerpt.length > 320 || a.excerpt.includes("''"))
+    .map((a) => `${a.slug}:${a.excerpt.length}`),
+);
 check(
   'meta descriptions unique across 50',
   new Set(articles.map((a) => a.metaDescription)).size === 50,
@@ -670,7 +682,6 @@ const b5Structure: [string, RegExp][] = [
   ['labeled illustration (not a claim)', /\([Ii]llustration[^)]{0,140}not /],
   ['checklist section', /## Your [^\n]*checklist/i],
   ['pre-school CTA', /\/cdl-pre-school\)/],
-  ['examiner named as the decision-maker', /examiner/i],
 ];
 for (const [name, re] of b5Structure) {
   check(
@@ -679,6 +690,26 @@ for (const [name, re] of b5Structure) {
     b5.filter((a) => !re.test(a.body)).map((a) => a.slug),
   );
 }
+// The certified examiner must be framed as the decision-maker: "examiner"
+// must co-occur with a decision verb (decides/determines/discretion/etc.),
+// not merely appear somewhere on the page.
+check(
+  'every Batch 5 body frames the examiner as the decision-maker (examiner + a decision verb)',
+  b5.every(
+    (a) =>
+      /examiner/i.test(a.body) &&
+      /decid|determin|discretion|judg(e|ment)|certif|assess/i.test(a.body),
+  ),
+  b5
+    .filter(
+      (a) =>
+        !(
+          /examiner/i.test(a.body) &&
+          /decid|determin|discretion|judg(e|ment)|certif|assess/i.test(a.body)
+        ),
+    )
+    .map((a) => a.slug),
+);
 // No qualification promises, anywhere in body or FAQs.
 const promiseRe =
   /you will (pass|fail|qualify|be disqualified)|guaranteed to (pass|qualify)|automatically disqualif/i;
