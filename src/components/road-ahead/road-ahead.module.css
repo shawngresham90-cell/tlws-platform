@@ -37,13 +37,16 @@
   will-change: transform;
 }
 
-/* Cinematic vignette + top/bottom falloff so text always has contrast. */
+/* Cinematic vignette + top/bottom falloff so text always has contrast, plus a
+ * faint STATIC film grain over the whole scene for filmic texture (no animation,
+ * negligible cost — a tiny inline turbulence tile at very low opacity). */
 .vignette {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.4'/%3E%3C/svg%3E"),
+    linear-gradient(
       180deg,
       rgba(14, 14, 14, 0.85) 0%,
       rgba(14, 14, 14, 0.25) 22%,
@@ -51,6 +54,10 @@
       rgba(14, 14, 14, 0.95) 100%
     ),
     radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(14, 14, 14, 0.7) 100%);
+  background-size:
+    160px 160px,
+    cover,
+    cover;
 }
 
 /* A slow-moving key light — signal-yellow warmth that drifts across the frame. */
@@ -183,6 +190,114 @@
   }
 }
 
+/* ============================================================================
+ * MUSEUM ATMOSPHERE (Scene 5) — volumetric shafts, a gallery light-sweep, and
+ * drifting dust motes. Pure CSS, decorative, mounted only when motion is on.
+ * ==========================================================================*/
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* A soft volumetric shaft raking down through the gallery. */
+.lightShaft {
+  position: absolute;
+  top: -20%;
+  left: var(--x, 50%);
+  width: 26%;
+  height: 150%;
+  transform: translateX(-50%) rotate(var(--a, 0deg));
+  transform-origin: top center;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 244, 200, 0.09) 0%,
+    rgba(255, 235, 160, 0.04) 35%,
+    rgba(255, 235, 160, 0) 72%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: shaftSway 13s ease-in-out infinite alternate;
+}
+@keyframes shaftSway {
+  from {
+    transform: translateX(-50%) rotate(calc(var(--a, 0deg) - 2deg));
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(-50%) rotate(calc(var(--a, 0deg) + 2deg));
+    opacity: 1;
+  }
+}
+
+/* A bright museum light that sweeps across the wall on a slow cycle. */
+.lightSweep {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 40%;
+  height: 120%;
+  transform: skewX(-14deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 250, 225, 0.07) 45%,
+    rgba(255, 235, 0, 0.05) 50%,
+    rgba(255, 250, 225, 0.07) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+  animation: lightSweep 11s ease-in-out infinite;
+}
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-60%) skewX(-14deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(320%) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+/* Dust motes drifting up through the light. */
+.dustField {
+  position: absolute;
+  inset: 0;
+}
+.mote {
+  position: absolute;
+  bottom: -5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 210, 0.8) 0%, rgba(255, 245, 210, 0) 70%);
+  opacity: 0;
+  animation: moteDrift var(--dur, 16s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes moteDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  88% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0), -105vh, 0);
+    opacity: 0;
+  }
+}
+
 /* ------------------------------------------------- name engraving (scene 6) */
 
 /* Brushed-metal plate the founder's name is engraved into. */
@@ -197,6 +312,46 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -2px 8px rgba(0, 0, 0, 0.6),
     0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Induction (Scene 6): the plate pushes toward the lens and glows as the name
+ * is cut in — a spotlight halo breathes behind it. */
+.inductStage {
+  position: relative;
+}
+.plateHalo {
+  position: absolute;
+  inset: -34% -22%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 46% at 50% 46%,
+    rgba(255, 235, 0, 0.17),
+    rgba(255, 235, 0, 0.05) 45%,
+    rgba(255, 235, 0, 0) 72%
+  );
+  animation: haloBreathe 2.4s ease-in-out infinite alternate;
+}
+@keyframes haloBreathe {
+  from {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+.inducting {
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.6),
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(255, 235, 0, 0.14);
+  transition:
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 0.6s ease;
 }
 
 /* Engraved text: an incised, debossed look via layered shadows. */
@@ -291,10 +446,15 @@
 }
 
 /* Camera push: the founder the visitor has reached lifts toward the lens, the
- * others hold the wall. Reads as the camera moving to that plaque. */
+ * others hold the wall. Reads as the camera moving to that plaque — now with a
+ * warm signal bloom + a lifted shadow so it glows in the gallery light. */
 .focused {
   transform: translateZ(46px) scale(1.035);
-  filter: brightness(1.12) contrast(1.02);
+  filter: brightness(1.14) contrast(1.02) drop-shadow(0 0 26px rgba(255, 235, 0, 0.22));
+  box-shadow:
+    0 0 0 1px rgba(255, 235, 0, 0.28),
+    0 22px 60px rgba(0, 0, 0, 0.6),
+    0 0 46px rgba(255, 235, 0, 0.12);
   z-index: 3;
 }
 
@@ -305,13 +465,13 @@
 
 @keyframes raSettle {
   0% {
-    filter: brightness(1);
+    filter: brightness(1) drop-shadow(0 0 0 rgba(255, 235, 0, 0));
   }
-  35% {
-    filter: brightness(1.28);
+  30% {
+    filter: brightness(1.35) drop-shadow(0 0 22px rgba(255, 245, 190, 0.55));
   }
   100% {
-    filter: brightness(1);
+    filter: brightness(1) drop-shadow(0 0 0 rgba(255, 235, 0, 0));
   }
 }
 

@@ -10,7 +10,8 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/generate-road-ahead-manifest.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.7",

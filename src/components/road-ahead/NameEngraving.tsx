@@ -3,18 +3,26 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { formatFounderNumber } from '@/lib/road-ahead/founder-number';
-import { cueEngrave, duckForReveal } from './audio';
+import { cueEngrave, cueCarveTick, cueCarveFinish, duckForReveal, soundOn } from './audio';
 import { downloadFounderCard, sanitizeFounderName } from './founder-card';
 import styles from './road-ahead.module.css';
 
 /**
- * Scene 6 — the cinematic name engraving. No video: a brushed-metal founder
- * plate with the next open founder number and a light rake (the "cut"). A
- * visitor can type their name to see it engraved onto the plate — accompanied by
- * the synth engrave thump and an audio duck — and download a shareable Founder
- * Card PNG. The name lives only in local state (no upload, no persistence, no
- * account); it is purely the emotional beat before the real call to action.
+ * Scene 6 — the cinematic name INDUCTION. A visitor types their name and taps
+ * "See it on the wall." The lights draw down, the plate pushes toward the lens,
+ * and their name is cut into brushed steel letter by letter — sparks, a rising
+ * glow, synchronized carve audio, and a final weld-flash reveal — before the
+ * Founder Card is offered. It should feel like being inducted into something
+ * historic.
+ *
+ * The name lives only in local state (no upload, no persistence, no account).
+ * Under reduced motion it reveals instantly and statically; with sound off the
+ * whole sequence still plays, just silent.
  */
+
+const CARVE_STEP_MS = 64;
+type Phase = 'idle' | 'carving' | 'done';
+
 export function NameEngraving({
   nextNumber,
   numberWidth,
@@ -31,56 +39,122 @@ export function NameEngraving({
 }) {
   const sweepStyle = reduced ? undefined : ({ ['--p']: progress } as CSSProperties);
   const [draft, setDraft] = useState('');
-  const [engravedName, setEngravedName] = useState('');
+  const [name, setName] = useState('');
+  const [phase, setPhase] = useState<Phase>('idle');
   const resultRef = useRef<HTMLParagraphElement>(null);
+  const timers = useRef<number[]>([]);
 
-  // Move focus to the confirmation when a name is engraved, so keyboard/AT users
-  // aren't dropped to <body> when the form is replaced, and the live message is
-  // reliably announced.
+  const glyphs = Array.from(name);
+
+  // Move focus to the confirmation once the induction completes, so keyboard/AT
+  // users aren't dropped to <body> when the form is replaced.
   useEffect(() => {
-    if (engravedName) resultRef.current?.focus();
-  }, [engravedName]);
+    if (phase === 'done') resultRef.current?.focus();
+  }, [phase]);
+
+  // Clear any scheduled carve audio/timers on unmount.
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
 
   const engrave = (e: FormEvent) => {
     e.preventDefault();
     const clean = sanitizeFounderName(draft);
     if (!clean) return;
-    setEngravedName(clean);
-    // Atmosphere only (no-ops when the soundtrack is off).
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+    setName(clean);
+
+    if (reduced) {
+      setPhase('done');
+      return;
+    }
+
+    setPhase('carving');
     cueEngrave();
     duckForReveal();
+    const chars = Array.from(clean);
+    const total = chars.length * CARVE_STEP_MS;
+    if (soundOn()) {
+      chars.forEach((ch, i) => {
+        if (ch.trim() === '') return;
+        timers.current.push(window.setTimeout(() => cueCarveTick('metal', i), i * CARVE_STEP_MS));
+      });
+      timers.current.push(window.setTimeout(() => cueCarveFinish('metal'), total));
+    }
+    timers.current.push(window.setTimeout(() => setPhase('done'), total + 520));
   };
+
+  const reset = () => {
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+    setName('');
+    setDraft('');
+    setPhase('idle');
+  };
+
+  // 'carving' animates the letters in; 'done'/reduced holds them fully carved.
+  const carveState = !reduced && phase === 'carving' ? styles.carveGo : styles.carveStatic;
+
+  const carveVars = {
+    ['--n']: glyphs.length,
+    ['--step']: `${CARVE_STEP_MS}ms`,
+    ['--dust']: 'rgba(255,245,200,0.95)',
+  } as CSSProperties;
+
+  const inducting = phase !== 'idle';
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className={cn('relative px-6 py-12 sm:px-12 sm:py-16', styles.plate)}>
-        {!reduced ? (
-          <span className={styles.etchSweep} style={sweepStyle} aria-hidden="true" />
-        ) : null}
-        <p className={cn('text-center text-xs uppercase tracking-[0.35em]', styles.engraved)}>
-          Founder
-        </p>
-        <p
+      <div className={cn('relative', inducting && !reduced && styles.inductStage)}>
+        {inducting && !reduced ? <span className={styles.plateHalo} aria-hidden="true" /> : null}
+        <div
           className={cn(
-            'mt-4 text-center font-display text-6xl sm:text-7xl',
-            styles.founderNumber,
-            styles.engravedSignal,
+            'relative px-6 py-12 sm:px-12 sm:py-16',
+            styles.plate,
+            inducting && !reduced && styles.inducting,
           )}
         >
-          {formatFounderNumber(nextNumber, numberWidth)}
-        </p>
-        <div className="mx-auto mt-6 h-px w-24 bg-line" />
-        <p
-          className={cn(
-            'mt-6 break-words text-center font-display text-3xl uppercase tracking-wider sm:text-4xl',
-            engravedName ? styles.engravedSignal : styles.engraved,
-          )}
-        >
-          {engravedName || 'Your name here'}
-        </p>
+          {!reduced ? (
+            <span className={styles.etchSweep} style={sweepStyle} aria-hidden="true" />
+          ) : null}
+          <p className={cn('text-center text-xs uppercase tracking-[0.35em]', styles.engraved)}>
+            Founder
+          </p>
+          <p
+            className={cn(
+              'mt-4 text-center font-display text-6xl sm:text-7xl',
+              styles.founderNumber,
+              styles.engravedSignal,
+            )}
+          >
+            {formatFounderNumber(nextNumber, numberWidth)}
+          </p>
+          <div className="mx-auto mt-6 h-px w-24 bg-line" />
+          <p
+            className={cn(
+              'mt-6 break-words text-center font-display text-3xl uppercase tracking-wider sm:text-4xl',
+              name ? styles.engravedSignal : styles.engraved,
+            )}
+          >
+            {name ? (
+              <>
+                <span className="sr-only">{name}</span>
+                <span className={cn(styles.carve, carveState)} style={carveVars} aria-hidden="true">
+                  <span className={styles.chisel} />
+                  {glyphs.map((ch, i) => (
+                    <span key={i} className={styles.glyph} style={{ ['--i']: i } as CSSProperties}>
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : (
+              'Your name here'
+            )}
+          </p>
+        </div>
       </div>
 
-      {!engravedName ? (
+      {phase !== 'done' ? (
         <form onSubmit={engrave} className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row">
           <label htmlFor="founder-name" className="sr-only">
             Your name
@@ -99,7 +173,7 @@ export function NameEngraving({
             type="submit"
             className="rounded-card bg-signal px-5 py-3 font-display uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
           >
-            Engrave it
+            See it on the wall
           </button>
         </form>
       ) : (
@@ -111,18 +185,13 @@ export function NameEngraving({
             aria-live="polite"
           >
             That&rsquo;s how it looks on the wall,{' '}
-            <span className="font-semibold text-signal">{engravedName}</span>. Take it with you.
+            <span className="font-semibold text-signal">{name}</span>. Take it with you.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() =>
-                downloadFounderCard({
-                  name: engravedName,
-                  number: nextNumber,
-                  numberWidth,
-                  tierLabel,
-                })
+                downloadFounderCard({ name, number: nextNumber, numberWidth, tierLabel })
               }
               className="rounded-card bg-signal px-5 py-3 font-display uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
             >
@@ -130,10 +199,7 @@ export function NameEngraving({
             </button>
             <button
               type="button"
-              onClick={() => {
-                setEngravedName('');
-                setDraft('');
-              }}
+              onClick={reset}
               className="rounded-card border border-line px-5 py-3 font-display uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
             >
               Try another name

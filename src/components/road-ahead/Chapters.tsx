@@ -11,6 +11,7 @@ import { ECOSYSTEM_PILLARS } from '@/lib/road-ahead/ecosystem';
 import { type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { CampaignProgress } from '@/lib/community/founders';
 import { CinematicVideo } from './CinematicVideo';
+import { WallAtmosphere } from './WallAtmosphere';
 import { FounderWall3D } from './FounderWall3D';
 import { NameEngraving } from './NameEngraving';
 import styles from './road-ahead.module.css';
@@ -266,6 +267,7 @@ export function ChapterWall({
     <section id="scene-wall" ref={setRef} className={cn('relative w-full py-28', styles.chapter)}>
       <div className={styles.backdrop} aria-hidden="true" style={{ background: '#0b0b0b' }}>
         {!reduced ? <span className={styles.spotlight} /> : null}
+        {!reduced ? <WallAtmosphere /> : null}
         <span className={styles.vignette} />
       </div>
       <Container>

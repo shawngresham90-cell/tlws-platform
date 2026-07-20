@@ -127,11 +127,12 @@ provides zero-asset ambience that **cross-fades by scene** (`setActiveScene`):
 | `narration` | whole experience | file-only |
 | `score` (licensed music) | whole experience | file-only |
 
-To swap a synth bed for a real recording, or add narration / licensed music,
-drop a file into `public/road-ahead/audio/` named after the slot
-(`rain-ambience.mp3`, `narration.mp3`, `score.mp3`). The resolver fills its `src`
-and it plays alongside (music/narration) the synth beds when sound is on — still
-never autoplaying. Music must be licensed for web/background use.
+Drop `narration.mp3` or `score.mp3` (licensed music) into
+`public/road-ahead/audio/` and the resolver plays it alongside the synth beds
+when sound is on — still never autoplaying. The five ambience beds are
+synthesized in this phase (no file needed); playing a dropped-in ambience
+recording in place of a synth bed is a small future enhancement. Music must be
+licensed for web/background use.
 
 ## GSAP scene transitions (lazy, gated)
 

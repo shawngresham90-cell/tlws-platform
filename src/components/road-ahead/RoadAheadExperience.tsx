@@ -17,7 +17,13 @@ import { ROAD_AHEAD_CHAPTERS } from '@/lib/road-ahead/chapters';
 import { founderNumberWidth, type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { SceneId, VideoSlot } from '@/lib/road-ahead/assets';
 import type { CampaignProgress } from '@/lib/community/founders';
-import { cueAirBrake, setActiveScene, setSuppliedTrack, subscribeSound } from './audio';
+import {
+  cueAirBrake,
+  disableSound,
+  setActiveScene,
+  setSuppliedTrack,
+  subscribeSound,
+} from './audio';
 import { ProgressRail } from './ProgressRail';
 import { MotionToggle } from './MotionToggle';
 import { AudioController } from './AudioController';
@@ -81,6 +87,9 @@ export function RoadAheadExperience({
   // once sound is enabled). No-op while sound is off; pure atmosphere.
   const [soundOn, setSoundOn] = useState(false);
   useEffect(() => subscribeSound(setSoundOn), []);
+  // Stop all audio (synth + any looping supplied music) when leaving the page,
+  // so nothing keeps playing across a client-side route change.
+  useEffect(() => () => disableSound(), []);
   // Register any dropped-in music/narration so it plays when sound is enabled.
   useEffect(() => {
     setSuppliedTrack('music', suppliedAudio.music);

@@ -342,15 +342,8 @@ export const ROAD_AHEAD_AUDIO: AudioSlot[] = [
     'ambience',
     'A warm tonal swell as the sun breaks.',
   ),
-  a(
-    'narration',
-    'Narration',
-    [],
-    'narration',
-    'Optional voiceover for the whole experience.',
-    true,
-  ),
-  a('score', 'Licensed score', [], 'music', 'Optional licensed instrumental bed. Loops.', true),
+  a('narration', 'Narration', [], 'narration', 'Optional voiceover for the whole experience.'),
+  a('score', 'Licensed score', [], 'music', 'Optional licensed instrumental bed. Loops.'),
 ];
 
 /** Compact AudioSlot constructor. */
@@ -360,7 +353,6 @@ function a(
   scenes: SceneId[],
   kind: AudioSlot['kind'],
   description: string,
-  fileOnly = false,
 ): AudioSlot {
   return {
     id,
@@ -368,7 +360,7 @@ function a(
     description,
     scenes,
     kind,
-    file: fileOnly ? `${id}.mp3` : `${id}.mp3`,
+    file: `${id}.mp3`,
     src: null,
     loop: kind !== 'narration',
     title: null,

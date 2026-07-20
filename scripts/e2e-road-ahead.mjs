@@ -134,13 +134,15 @@ try {
     // Type a name and engrave it → the plate updates and the shareable card
     // download appears.
     await page.locator('#founder-name').fill('Test Driver');
-    await page.getByRole('button', { name: /engrave it/i }).click();
-    await page.waitForTimeout(200);
+    await page.getByRole('button', { name: /see it on the wall/i }).click();
+    // The induction carves letter-by-letter then reveals the card — wait for it.
+    const cardBtn = page.getByRole('button', { name: /download my founder card/i });
+    await cardBtn.waitFor({ state: 'visible', timeout: 6000 });
     const engravedText = await page.locator('#scene-name').innerText();
     check('engraving: typed name appears on the plate', /TEST DRIVER/i.test(engravedText));
     check(
-      'engraving: founder card download offered',
-      (await page.getByRole('button', { name: /download my founder card/i }).count()) === 1,
+      'engraving: founder card download offered after induction',
+      (await cardBtn.count()) === 1,
     );
 
     // Scene 7 payoff carries the primary call to action.

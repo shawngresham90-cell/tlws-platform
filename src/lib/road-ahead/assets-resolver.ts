@@ -1,6 +1,4 @@
 import 'server-only';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   ROAD_AHEAD_ASSET_BASE,
   ROAD_AHEAD_AUDIO,
@@ -13,27 +11,32 @@ import {
   type SceneId,
   type VideoSlot,
 } from './assets';
+import { PRESENT_ASSETS } from './asset-presence.generated';
 
 /**
- * Build-time asset resolver — the reason footage is TRUE zero-code drop-in.
+ * Asset resolver — the reason footage is TRUE zero-code drop-in.
  *
  * The pure manifest (assets.ts) keeps every clip's `src`/`poster` null. This
- * resolver runs on the server (build / ISR) and scans `public/road-ahead/**`,
- * filling `src`/`webmSrc`/`poster`/`captionsSrc` for the files that actually
- * exist. So the owner just drops `dark-highway.mp4` into the video folder and
- * redeploys — the slot lights up, no code edit. Until then the slot keeps its
- * gradient (and its poster, if a still was dropped in first).
+ * resolver fills `src`/`webmSrc`/`poster`/`captionsSrc` for the files that exist
+ * in `public/road-ahead/**`. Presence is read from a manifest GENERATED AT BUILD
+ * (scripts/generate-road-ahead-manifest.mjs via the prebuild hook) rather than a
+ * per-request `fs` scan — on serverless/ISR hosts `public/` lives on the CDN and
+ * isn't in the page function's file trace, so a runtime scan would report every
+ * file missing after the first regeneration and silently revert footage to
+ * gradients. So the owner drops `dark-highway.mp4` in, redeploys (which
+ * regenerates the manifest), and the slot lights up — no code edit.
  */
 
-const PUBLIC_ROOT = join(process.cwd(), 'public', 'road-ahead');
 const OWNER_LICENSE = {
   source: 'Owner-supplied',
   licenseType: 'Owner-owned',
   attribution: null,
 } as const;
 
+const PRESENT = new Set(PRESENT_ASSETS);
+
 function present(...parts: string[]): boolean {
-  return existsSync(join(PUBLIC_ROOT, ...parts));
+  return PRESENT.has(parts.join('/'));
 }
 
 /** Fill a video slot from whatever files exist on disk for its id. */
