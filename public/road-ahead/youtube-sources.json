@@ -1,7 +1,7 @@
 {
   "_comment": "Map a scene slot id to a YouTube-Unlisted video id or URL, e.g. \"dark-highway\": \"dQw4w9WgXcQ\" or a full watch/share/embed URL. Slot ids are the drop-in filename stems (see public/road-ahead/video/README.md). A dropped-in .mp4 file always wins over YouTube for quality. Keys starting with _ are ignored. Edit this data file (no code change) and redeploy — the scene picks it up automatically.",
   "dark-highway": "",
-  "night-driving": "",
+  "night-driving": "https://youtube.com/shorts/wsanOA1aJ1U",
   "headlights": "",
   "windshield-rain": "",
   "pretrip": "",

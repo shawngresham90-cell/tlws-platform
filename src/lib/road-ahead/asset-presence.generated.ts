@@ -5,4 +5,6 @@
 export const PRESENT_ASSETS: readonly string[] = [];
 
 // slot id → YouTube-Unlisted video id (from public/road-ahead/youtube-sources.json).
-export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {};
+export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
+  "night-driving": "wsanOA1aJ1U"
+};
