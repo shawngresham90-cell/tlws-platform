@@ -8,5 +8,6 @@ export const PRESENT_ASSETS: readonly string[] = [];
 export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
   "late-night-driving": "PQPWyX98fMU",
   "night-driving": "wsanOA1aJ1U",
+  "pretrip": "Okpkg_xjwX8",
   "truck-driving-away": "0xgnGSxdMGI"
 };
