@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { founderNumberWidth, type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { FounderTier, CampaignProgress } from '@/lib/community/founders';
@@ -106,13 +106,10 @@ function SoundGate() {
 
 export function FounderWall3D({
   founders,
-  progress,
   reduced,
   campaign,
 }: {
   founders: WallFounder[];
-  /** 0→1 reveal progress for the wall's entrance. */
-  progress: number;
   reduced: boolean;
   /** Authoritative campaign totals for the bottom fundraising display. */
   campaign: CampaignProgress;
@@ -135,10 +132,11 @@ export function FounderWall3D({
     );
   }
 
-  const wrapStyle = reduced ? undefined : ({ ['--p']: progress } as CSSProperties);
-
+  // No wall-level opacity reveal: each plaque reveals itself as it's reached
+  // (see FounderPlaque). A wrapper opacity tied to scroll progress would fade
+  // the top tier (Iron), which is on-screen while that progress is still near 0.
   return (
-    <div className={cn(!reduced && styles.reveal)} style={wrapStyle}>
+    <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <SoundGate />
         <span className="text-xs text-muted">

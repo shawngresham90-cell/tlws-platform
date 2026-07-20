@@ -248,7 +248,6 @@ export function ChapterWall({
 }) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.1, 0.4);
-  const wallP = reduced ? 1 : subBeat(progress, 0.2, 0.65);
   return (
     <section id="scene-wall" ref={setRef} className={cn('relative w-full py-28', styles.chapter)}>
       <div className={styles.backdrop} aria-hidden="true" style={{ background: '#0b0b0b' }}>
@@ -274,12 +273,7 @@ export function ChapterWall({
         </p>
 
         <div className="mt-10">
-          <FounderWall3D
-            founders={founders}
-            progress={wallP}
-            reduced={reduced}
-            campaign={campaign}
-          />
+          <FounderWall3D founders={founders} reduced={reduced} campaign={campaign} />
         </div>
       </Container>
     </section>

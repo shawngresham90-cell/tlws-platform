@@ -47,8 +47,8 @@ const MATERIALS: Record<
     carve: styles.carveMetalDark,
     dust: 'rgba(210,220,230,0.9)',
     sound: 'metal',
-    label: 'text-white/55',
-    link: 'text-white/70 hover:text-signal',
+    label: 'text-white/70',
+    link: 'text-white/80 hover:text-signal',
   },
   steel: {
     surface: styles.matSteel,
@@ -223,43 +223,50 @@ export function FounderPlaque({
         settled && styles.settled,
       )}
     >
-      <p className={cn('font-display', styles.founderNumber, mat.carve, dims.number)}>
-        {formatFounderNumber(founder.wallNumber, numberWidth)}
-      </p>
+      {/* Content sits ABOVE the material texture/shine pseudo-layers so the
+          carved lettering stays crisp (those layers paint over in-flow text). */}
+      <div className="relative z-10">
+        <p className={cn('font-display', styles.founderNumber, mat.carve, dims.number)}>
+          {formatFounderNumber(founder.wallNumber, numberWidth)}
+        </p>
 
-      <p className={cn('mt-1 font-display uppercase leading-tight', mat.carve, dims.name)}>
-        <span className="sr-only">{name}</span>
-        <span className={cn(styles.carve, carveState)} style={carveVars} aria-hidden="true">
-          <span className={styles.chisel} />
-          {glyphs.map((ch, i) => (
-            <span key={i} className={styles.glyph} style={{ ['--i']: i } as CSSProperties}>
-              {ch}
-            </span>
-          ))}
-        </span>
-      </p>
+        <p className={cn('mt-1 font-display uppercase leading-tight', mat.carve, dims.name)}>
+          <span className="sr-only">{name}</span>
+          <span className={cn(styles.carve, carveState)} style={carveVars} aria-hidden="true">
+            <span className={styles.chisel} />
+            {glyphs.map((ch, i) => (
+              <span key={i} className={styles.glyph} style={{ ['--i']: i } as CSSProperties}>
+                {ch}
+              </span>
+            ))}
+          </span>
+        </p>
 
-      <p className={cn('mt-2 font-semibold uppercase tracking-wide', dims.tier, mat.label)}>
-        {founder.tierLabel}
-        {founder.contributions && founder.contributions > 1 ? (
-          <span className={cn('ml-2', mat.link)}>· {founder.contributions} contributions</span>
+        <p className={cn('mt-2 font-semibold uppercase tracking-wide', dims.tier, mat.label)}>
+          {founder.tierLabel}
+          {founder.contributions && founder.contributions > 1 ? (
+            <span className={cn('ml-2', mat.link)}>· {founder.contributions} contributions</span>
+          ) : null}
+        </p>
+
+        {founder.businessName ? (
+          isSafeExternalUrl(founder.businessUrl) ? (
+            <a
+              href={founder.businessUrl ?? undefined}
+              target="_blank"
+              rel="sponsored nofollow noopener noreferrer"
+              className={cn(
+                'mt-2 inline-block text-xs underline-offset-2 hover:underline',
+                mat.link,
+              )}
+            >
+              {founder.businessName}
+            </a>
+          ) : (
+            <p className={cn('mt-2 text-xs', mat.label)}>{founder.businessName}</p>
+          )
         ) : null}
-      </p>
-
-      {founder.businessName ? (
-        isSafeExternalUrl(founder.businessUrl) ? (
-          <a
-            href={founder.businessUrl ?? undefined}
-            target="_blank"
-            rel="sponsored nofollow noopener noreferrer"
-            className={cn('mt-2 inline-block text-xs underline-offset-2 hover:underline', mat.link)}
-          >
-            {founder.businessName}
-          </a>
-        ) : (
-          <p className={cn('mt-2 text-xs', mat.label)}>{founder.businessName}</p>
-        )
-      ) : null}
+      </div>
     </div>
   );
 }
