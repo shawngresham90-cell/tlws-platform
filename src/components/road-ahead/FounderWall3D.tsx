@@ -169,6 +169,10 @@ export function FounderWall3D({
         })}
       </div>
 
+      <p className={styles.wallDedication}>
+        Every name here believed first — before the doors, before the trucks, before the proof.
+      </p>
+
       <FundraisingTotals campaign={campaign} reduced={reduced} />
     </div>
   );

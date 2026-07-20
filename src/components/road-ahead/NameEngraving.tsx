@@ -21,6 +21,9 @@ import styles from './road-ahead.module.css';
  */
 
 const CARVE_STEP_MS = 64;
+/** The founding class year — a brand constant stamped on the induction plate,
+ * not a live clock (stable across renders, no Date dependency). */
+const FOUNDING_YEAR = 2026;
 type Phase = 'idle' | 'carving' | 'done';
 
 export function NameEngraving({
@@ -151,6 +154,17 @@ export function NameEngraving({
               'Your name here'
             )}
           </p>
+          <p
+            className={cn(
+              'mt-7 text-[10px] uppercase tracking-[0.4em] sm:text-xs',
+              styles.hallmark,
+              phase === 'done' && styles.hallmarkStruck,
+            )}
+          >
+            <span className={styles.hallmarkRule} aria-hidden="true" />
+            Founding Class · {FOUNDING_YEAR}
+            <span className={styles.hallmarkRule} aria-hidden="true" />
+          </p>
         </div>
       </div>
 
@@ -185,7 +199,8 @@ export function NameEngraving({
             aria-live="polite"
           >
             That&rsquo;s how it looks on the wall,{' '}
-            <span className="font-semibold text-signal">{name}</span>. Take it with you.
+            <span className="font-semibold text-signal">{name}</span> — Founder{' '}
+            {formatFounderNumber(nextNumber, numberWidth)}. Take it with you.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <button

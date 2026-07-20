@@ -384,6 +384,70 @@
     box-shadow 0.6s ease;
 }
 
+/* A dated maker's mark stamped into the plate — the "you belong to history now"
+ * signal. A hairline rule flanks a letter-spaced FOUNDING CLASS · <year> seal,
+ * incised like the rest of the plate. Static; it reads as part of the object. */
+.hallmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  color: #b9bcc2;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+.hallmarkRule {
+  display: inline-block;
+  width: clamp(28px, 12vw, 64px);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 235, 0, 0.35),
+    rgba(255, 255, 255, 0.28)
+  );
+}
+.hallmarkRule:last-child {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 235, 0, 0.35),
+    transparent
+  );
+}
+/* On the reveal, the seal warms to signal — the induction is "official". */
+.hallmarkStruck {
+  color: #ffe873;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(255, 235, 0, 0.3);
+  transition: color 0.5s ease 0.15s;
+}
+
+/* Wall dedication — a carved brass foundation line under the tier bands, so the
+ * wall closes like a monument's base plate rather than just ending. */
+.wallDedication {
+  position: relative;
+  margin-top: 2.25rem;
+  padding: 0.9rem 1.25rem;
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 235, 0, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.28)),
+    linear-gradient(90deg, rgba(58, 44, 12, 0.35), rgba(30, 24, 8, 0.35));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 0, 0.1),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.55);
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #d9c98f;
+  text-shadow:
+    0 1px 0 rgba(255, 245, 205, 0.18),
+    0 -1px 2px rgba(0, 0, 0, 0.7);
+}
+
 /* Engraved text: an incised, debossed look via layered shadows. */
 .engraved {
   color: #cfcfcf;
@@ -829,9 +893,11 @@
   .lightSweep,
   .mote,
   .plateHalo,
-  .inducting {
+  .inducting,
+  .hallmarkStruck {
     animation: none !important;
     transform: none !important;
+    transition: none !important;
   }
   .atmosphere,
   .plateHalo {

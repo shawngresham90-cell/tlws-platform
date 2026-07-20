@@ -131,6 +131,10 @@ try {
     const nameText = await page.locator('#scene-name').innerText();
     check('engraving: shows the next open founder number', /No\.\s*\d/.test(nameText));
     check('engraving: has the "your name here" plate', /your name here/i.test(nameText));
+    check(
+      'engraving: plate carries the dated founding-class hallmark',
+      /founding class/i.test(nameText),
+    );
     // Type a name and engrave it → the plate updates and the shareable card
     // download appears.
     await page.locator('#founder-name').fill('Test Driver');
