@@ -127,6 +127,7 @@ export function FounderPlaque({
 
   const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  const firstCb = useRef(true);
   const [phase, setPhase] = useState<Phase>(reduced ? 'static' : 'pre');
   const [focused, setFocused] = useState(false);
   const [settled, setSettled] = useState(false);
@@ -150,6 +151,18 @@ export function FounderPlaque({
     const io = new IntersectionObserver(
       ([entry]) => {
         setFocused(entry.isIntersecting);
+        // If the plaque is already in the centre band on the very first callback
+        // (e.g. a deep-link landing right on it), show it carved rather than
+        // re-cutting an already-visible name. Carve only when it's scrolled INTO
+        // the band.
+        if (firstCb.current) {
+          firstCb.current = false;
+          if (entry.isIntersecting) {
+            started.current = true;
+            setPhase('static');
+          }
+          return;
+        }
         if (entry.isIntersecting && !started.current) {
           started.current = true;
           setPhase('go');

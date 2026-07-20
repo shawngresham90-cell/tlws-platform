@@ -70,7 +70,12 @@ const BANDS: BandSpec[] = [
 function SoundGate() {
   const mounted = useMounted();
   const [on, setOn] = useState(false);
-  useEffect(() => subscribeSound(setOn), []);
+  // Sync to the engine's current state on mount — the visitor may have enabled
+  // sound from the global control before reaching the wall — then follow changes.
+  useEffect(() => {
+    setOn(soundOn());
+    return subscribeSound(setOn);
+  }, []);
   if (!mounted) return null;
   return (
     <button

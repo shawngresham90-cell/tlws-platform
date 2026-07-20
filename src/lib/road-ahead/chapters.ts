@@ -55,8 +55,11 @@ export function validateChapters(): string[] {
       problems.push(`scene "${c.id}" index ${c.index} is not contiguous (expected ${i})`);
     if (!c.anchor || c.anchor.trim().length === 0)
       problems.push(`scene "${c.id}" is missing an anchor`);
-    if (c.hasVideo && !sceneBackdropSlot(c.id)) {
-      problems.push(`scene "${c.id}" is a video scene but resolves no backdrop slot`);
+    if (c.hasVideo) {
+      const slot = sceneBackdropSlot(c.id);
+      if (!slot.gradient || slot.gradient.trim().length === 0) {
+        problems.push(`scene "${c.id}" is a video scene but its backdrop has no gradient fallback`);
+      }
     }
   });
 
