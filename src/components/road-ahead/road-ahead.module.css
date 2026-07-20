@@ -793,4 +793,31 @@
   .plaqueBand {
     perspective: none;
   }
+  /* Backstop for the museum atmosphere + induction (these are also JS-gated to
+   * mount only when motion is on, but stop them here too as defense-in-depth). */
+  .lightShaft,
+  .lightSweep,
+  .mote,
+  .plateHalo,
+  .inducting {
+    animation: none !important;
+    transform: none !important;
+  }
+  .atmosphere,
+  .plateHalo {
+    display: none;
+  }
+}
+
+/* Mobile perf: drop the compositor-heavy shafts + light-sweep (blur +
+ * mix-blend-mode: screen force per-frame backdrop compositing) and halve the
+ * dust motes on small screens. The cheap transform/opacity motes remain. */
+@media (max-width: 768px) {
+  .lightShaft,
+  .lightSweep {
+    display: none;
+  }
+  .dustField .mote:nth-child(n + 12) {
+    display: none;
+  }
 }
