@@ -64,14 +64,6 @@ const BANDS: BandSpec[] = [
     grid: 'grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4',
     course: true,
   },
-  {
-    key: 'final_founder',
-    heading: 'Final Founders',
-    tiers: ['final_founder'],
-    size: 'sm',
-    grid: 'grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4',
-    course: true,
-  },
 ];
 
 /** The wall-scoped sound gate. Browsers block audio until an explicit click, so

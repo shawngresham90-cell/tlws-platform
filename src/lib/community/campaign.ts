@@ -108,7 +108,6 @@ export function tierUsage(founders: Pick<PublicFounder, 'tier'>[]): Record<Found
     iron: 0,
     steel: 0,
     brick: 0,
-    final_founder: 0,
   } as Record<FounderTier, number>;
   for (const f of founders) {
     if (f.tier in usage) usage[f.tier] += 1;

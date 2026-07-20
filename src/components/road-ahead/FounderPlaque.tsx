@@ -26,7 +26,7 @@ import styles from './road-ahead.module.css';
  * no animation, no audio.
  */
 
-type MaterialKey = 'iron' | 'steel' | 'brick' | 'sponsor' | 'paver';
+type MaterialKey = 'iron' | 'steel' | 'brick' | 'sponsor';
 type PlaqueSize = 'lg' | 'md' | 'sm';
 
 const MATERIALS: Record<
@@ -74,14 +74,6 @@ const MATERIALS: Record<
     label: 'text-black/60',
     link: 'text-black/70 hover:text-black',
   },
-  paver: {
-    surface: styles.matPaver,
-    carve: styles.carvePaver,
-    dust: 'rgba(180,180,175,0.85)',
-    sound: 'stone',
-    label: 'text-white/55',
-    link: 'text-white/70 hover:text-signal',
-  },
 };
 
 /** Which physical material a founder tier is rendered in. */
@@ -89,7 +81,6 @@ export function materialForTier(tier: FounderTier): MaterialKey {
   if (tier === 'equipment_sponsor' || tier === 'student_sponsor') return 'sponsor';
   if (tier === 'iron') return 'iron';
   if (tier === 'steel') return 'steel';
-  if (tier === 'final_founder') return 'paver';
   return 'brick';
 }
 
@@ -244,9 +235,6 @@ export function FounderPlaque({
 
         <p className={cn('mt-2 font-semibold uppercase tracking-wide', dims.tier, mat.label)}>
           {founder.tierLabel}
-          {founder.contributions && founder.contributions > 1 ? (
-            <span className={cn('ml-2', mat.link)}>· {founder.contributions} contributions</span>
-          ) : null}
         </p>
 
         {founder.businessName ? (

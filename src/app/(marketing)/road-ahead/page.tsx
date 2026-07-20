@@ -1,17 +1,19 @@
 import { buildMetadata } from '@/lib/seo/metadata';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
-import { buildAuthoritativeWall, buildAuthoritativeCampaign } from '@/lib/road-ahead/founders-data';
+import { getCampaignProgress, getPublicFounders } from '@/lib/community/founders';
+import { buildWallSequence } from '@/lib/road-ahead/founder-number';
 import { RoadAheadExperience } from '@/components/road-ahead/RoadAheadExperience';
 
 /**
  * THE ROAD AHEAD — the flagship, homepage-quality experience that explains the
  * whole Trucking Life ecosystem and ends on the Founders Wall.
  *
- * Server component. The Founder Wall + fundraising total come from the
- * authoritative owner-supplied roster (src/lib/road-ahead/founders-data.ts) —
- * a single source of truth summed to the verified campaign total — so the first
- * paint is complete, crawlable, and identical everywhere, with the client only
- * layering cinematic motion on top.
+ * PRESENTATION LAYER ONLY. The Founder Wall + fundraising total are read from
+ * the existing source of truth (the founders DB + campaign_progress aggregate)
+ * via the shared community readers — this experience never defines founder
+ * pricing, tiers, or totals. It just presents the current records cinematically.
+ * Both reads fail soft (empty wall / zeroed thermometer), so the page always
+ * ships. ISR (revalidate 60s); the client only layers motion on top.
  */
 export const revalidate = 60;
 
@@ -22,9 +24,9 @@ export const metadata = buildMetadata({
   path: '/road-ahead',
 });
 
-export default function RoadAheadPage() {
-  const founders = buildAuthoritativeWall();
-  const campaign = buildAuthoritativeCampaign();
+export default async function RoadAheadPage() {
+  const [foundersRaw, campaign] = await Promise.all([getPublicFounders(), getCampaignProgress()]);
+  const founders = buildWallSequence(foundersRaw);
 
   return (
     <>

@@ -51,12 +51,6 @@ import { ROAD_AHEAD_CHAPTERS, validateChapters } from '@/lib/road-ahead/chapters
 import { ECOSYSTEM_PILLARS, validateEcosystem } from '@/lib/road-ahead/ecosystem';
 import { ROAD_LEN, YEARS, yearAt } from '@/components/road-ahead/spine/consts';
 import { sanitizeFounderName } from '@/components/road-ahead/founder-card';
-import {
-  FOUNDER_RECORDS,
-  raisedCentsFromRecords,
-  buildAuthoritativeWall,
-  buildAuthoritativeCampaign,
-} from '@/lib/road-ahead/founders-data';
 import type { FounderTier, PublicFounder } from '@/lib/community/founders';
 
 let passed = 0;
@@ -342,94 +336,6 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
     sanitizeFounderName('   ') === '' && sanitizeFounderName('') === '',
   );
   check('card: respects custom max', sanitizeFounderName('abcdef', 3) === 'abc');
-}
-
-/* ------------------------------------ authoritative founder roster + totals */
-{
-  // HARD gate: the imported roster must sum to exactly $9,055 raised and leave
-  // exactly $2,495 to go. These assertions fail the suite if the data drifts.
-  const raised = raisedCentsFromRecords();
-  check('founders: exactly 40 contribution records imported', FOUNDER_RECORDS.length === 40);
-  check('founders: raised total is exactly $9,055', raised === 905_500, raised);
-
-  const campaign = buildAuthoritativeCampaign();
-  check(
-    'founders: campaign raised = $9,055',
-    campaign.raised_cents === 905_500,
-    campaign.raised_cents,
-  );
-  check(
-    'founders: campaign goal = $11,550',
-    campaign.goal_cents === 1_155_000,
-    campaign.goal_cents,
-  );
-  check(
-    'founders: remaining is exactly $2,495',
-    campaign.remaining_cents === 249_500,
-    campaign.remaining_cents,
-  );
-  check(
-    'founders: funded percentage is 78.4%',
-    campaign.pct_to_goal === 78.4,
-    campaign.pct_to_goal,
-  );
-
-  // Per-tier counts + amounts (Iron 3×$1000, Steel 8×$500, Brick 16×$100, Final 13×$35).
-  const byTier = (tier: FounderTier) => FOUNDER_RECORDS.filter((r) => r.tier === tier);
-  const tierSum = (tier: FounderTier) =>
-    byTier(tier).reduce((s, r) => s + Math.round(r.amount * 100), 0);
-  check(
-    'founders: iron 3 × $1,000 = $3,000',
-    byTier('iron').length === 3 && tierSum('iron') === 300_000,
-  );
-  check(
-    'founders: steel 8 × $500 = $4,000',
-    byTier('steel').length === 8 && tierSum('steel') === 400_000,
-  );
-  check(
-    'founders: brick 16 × $100 = $1,600',
-    byTier('brick').length === 16 && tierSum('brick') === 160_000,
-  );
-  check(
-    'founders: final_founder 13 × $35 = $455',
-    byTier('final_founder').length === 13 && tierSum('final_founder') === 45_500,
-  );
-
-  // Wall placements: 39 (Barry's two SAME-tier spots collapse; Jose's two
-  // DIFFERENT-tier spots stay separate).
-  const wall = buildAuthoritativeWall();
-  check('wall: 39 placements after same-tier dedup', wall.length === 39, wall.length);
-  check(
-    'wall: numbers are contiguous 1..39',
-    wall.map((w) => w.wallNumber).join(',') ===
-      Array.from({ length: 39 }, (_, i) => i + 1).join(','),
-  );
-  check(
-    'wall: tier bands ordered iron → steel → brick → final_founder',
-    wall.every((w, i) => i === 0 || tierRank(wall[i - 1].tier) <= tierRank(w.tier)),
-  );
-
-  const barry = wall.filter((w) => /van hammee/i.test(w.displayName));
-  check('wall: Barry Van Hammee Jr is one placement', barry.length === 1, barry.length);
-  check(
-    'wall: Barry carries 2 contributions in Final Founder',
-    barry[0]?.contributions === 2 && barry[0]?.tier === 'final_founder',
-  );
-  const jose = wall.filter((w) => /jose cotto/i.test(w.displayName));
-  check('wall: Jose Cotto keeps two separate placements', jose.length === 2, jose.length);
-  check(
-    'wall: Jose Cotto spans Steel + Brick, one contribution each',
-    jose.some((w) => w.tier === 'steel') &&
-      jose.some((w) => w.tier === 'brick') &&
-      jose.every((w) => (w.contributions ?? 1) === 1),
-  );
-
-  // No name was altered: every displayed name appears verbatim in the roster.
-  const rosterNames = new Set(FOUNDER_RECORDS.map((r) => r.fullName));
-  check(
-    'wall: every displayed name is verbatim from the roster',
-    wall.every((w) => rosterNames.has(w.displayName)),
-  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
