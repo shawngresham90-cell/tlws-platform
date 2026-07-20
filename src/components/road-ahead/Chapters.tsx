@@ -267,7 +267,7 @@ export function ChapterWall({
     <section id="scene-wall" ref={setRef} className={cn('relative w-full py-28', styles.chapter)}>
       <div className={styles.backdrop} aria-hidden="true" style={{ background: '#0b0b0b' }}>
         {!reduced ? <span className={styles.spotlight} /> : null}
-        {!reduced ? <WallAtmosphere /> : null}
+        {!reduced ? <WallAtmosphere style={reveal(progress, reduced)} /> : null}
         <span className={styles.vignette} />
       </div>
       <Container>

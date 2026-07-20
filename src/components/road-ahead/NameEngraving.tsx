@@ -24,6 +24,8 @@ const CARVE_STEP_MS = 64;
 /** The founding class year — a brand constant stamped on the induction plate,
  * not a live clock (stable across renders, no Date dependency). */
 const FOUNDING_YEAR = 2026;
+/** Deterministic ember indices for the one-shot "forged in" burst on reveal. */
+const EMBERS = Array.from({ length: 12 }, (_, i) => i);
 type Phase = 'idle' | 'carving' | 'done';
 
 export function NameEngraving({
@@ -109,6 +111,23 @@ export function NameEngraving({
     <div className="mx-auto max-w-2xl">
       <div className={cn('relative', inducting && !reduced && styles.inductStage)}>
         {inducting && !reduced ? <span className={styles.plateHalo} aria-hidden="true" /> : null}
+        {phase === 'done' && !reduced ? (
+          <span className={styles.emberField} aria-hidden="true">
+            {EMBERS.map((i) => (
+              <span
+                key={i}
+                className={styles.ember}
+                style={
+                  {
+                    left: `${(i * 53) % 100}%`,
+                    ['--d']: `${(i % 6) * 85}ms`,
+                    ['--x']: `${((i * 29) % 44) - 22}px`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </span>
+        ) : null}
         <div
           className={cn(
             'relative px-6 py-12 sm:px-12 sm:py-16',

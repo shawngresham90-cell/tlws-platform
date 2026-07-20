@@ -229,6 +229,11 @@
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+  /* Scroll-driven camera dolly: the whole volumetric light field drifts as the
+   * visitor scrolls the exhibit (--p = wall progress, centered at 0.5 so it
+   * pans both ways). Compositor-only transform; default 0 when --p is unset. */
+  transform: translate3d(calc((var(--p, 0.5) - 0.5) * -7%), 0, 0);
+  will-change: transform;
 }
 
 /* A soft volumetric shaft raking down through the gallery. */
@@ -425,6 +430,42 @@
   transition: color 0.5s ease 0.15s;
 }
 
+/* One-shot ember burst on the induction reveal — a handful of glowing sparks
+ * rise off the plate as the name is "forged in". Mounted only for the 'done'
+ * phase and only when motion is allowed, so it plays exactly once per reveal and
+ * never under reduced motion. Cheap: transform + opacity on 12 tiny spans. */
+.emberField {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ember {
+  position: absolute;
+  bottom: 34%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 200, 0.95), rgba(255, 200, 60, 0.5) 55%, transparent 70%);
+  box-shadow: 0 0 6px rgba(255, 220, 120, 0.8);
+  opacity: 0;
+  animation: raEmber 1300ms ease-out var(--d, 0ms) forwards;
+}
+@keyframes raEmber {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--x, 0), -180px, 0) scale(1.1);
+  }
+}
+
 /* Wall dedication — a carved brass foundation line under the tier bands, so the
  * wall closes like a monument's base plate rather than just ending. */
 .wallDedication {
@@ -512,6 +553,47 @@
   transform-origin: top;
   transform: scaleY(var(--p, 0));
   transition: transform 120ms linear;
+}
+
+/* ------------------------------------------------ GSAP scene-transition beats */
+
+/* Mood bloom — a soft, scene-tinted swell driven by GSAP on scene enter. Only
+ * ever mounted when motion is on; --flare is set per scene (cool → gold). */
+.transBloom {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 50% 42%,
+    var(--flare, rgba(255, 235, 0, 0.1)),
+    rgba(255, 255, 255, 0.04) 38%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Light flare — a bright diagonal rake that crosses the frame once per scene
+ * cut, like a passing headlight or a lens flare. GSAP drives xPercent/opacity. */
+.transStreak {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 42%;
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(9deg);
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--flare, rgba(255, 235, 0, 0.9)) 30%, transparent) 42%,
+    var(--flare, rgba(255, 235, 0, 0.9)) 50%,
+    color-mix(in srgb, var(--flare, rgba(255, 235, 0, 0.9)) 30%, transparent) 58%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
 }
 
 /* ============================================================================
@@ -894,13 +976,22 @@
   .mote,
   .plateHalo,
   .inducting,
-  .hallmarkStruck {
+  .hallmarkStruck,
+  .ember,
+  .transBloom,
+  .transStreak {
     animation: none !important;
     transform: none !important;
     transition: none !important;
   }
+  .atmosphere {
+    transform: none !important;
+  }
   .atmosphere,
-  .plateHalo {
+  .plateHalo,
+  .emberField,
+  .transBloom,
+  .transStreak {
     display: none;
   }
 }
@@ -914,6 +1005,11 @@
     display: none;
   }
   .dustField .mote:nth-child(n + 12) {
+    display: none;
+  }
+  /* Drop the blurred + screen-blended transition flare on phones (keeps the
+   * cheap tinted bloom); the camera-dolly transform stays (compositor-only). */
+  .transStreak {
     display: none;
   }
 }

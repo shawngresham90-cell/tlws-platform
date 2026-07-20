@@ -12,9 +12,14 @@ import styles from './road-ahead.module.css';
 
 const MOTES = Array.from({ length: 22 }, (_, i) => i);
 
-export function WallAtmosphere() {
+/**
+ * @param style optional inline style — the wall passes `--p` (its own scroll
+ *   progress) so the whole light field can dolly horizontally as the visitor
+ *   scrolls the exhibit (a compositor-only transform; see `.atmosphere`).
+ */
+export function WallAtmosphere({ style }: { style?: CSSProperties }) {
   return (
-    <div className={styles.atmosphere} aria-hidden="true">
+    <div className={styles.atmosphere} aria-hidden="true" style={style}>
       <span
         className={styles.lightShaft}
         style={{ ['--a']: '-18deg', ['--x']: '22%' } as CSSProperties}

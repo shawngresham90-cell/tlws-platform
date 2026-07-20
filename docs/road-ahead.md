@@ -6,6 +6,9 @@ and is production-ready with **zero real media** — every video and audio asset
 a typed _slot_ that renders a brand-safe fallback until a real file is dropped
 in. No component changes are needed to go live with footage.
 
+> **Cinematic polish, performance budget, and a11y/mobile validation** are
+> tracked in [`road-ahead-polish-report.md`](./road-ahead-polish-report.md).
+
 ## Architecture at a glance
 
 | Concern | Where | Notes |
