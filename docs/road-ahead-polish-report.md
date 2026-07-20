@@ -20,6 +20,13 @@ what it cost" log for visual review.
 
 ## Per-scene status
 
+**Currently mapped footage (owner batch #1, YouTube-Unlisted):** Scene 1 →
+`night-driving` (`wsanOA1aJ1U`), Scene 3 → `late-night-driving` (`PQPWyX98fMU`),
+Scene 7 → `truck-driving-away` (`0xgnGSxdMGI`). All vertical Shorts (play
+centered in the 16:9 frame); replace with landscape or `.mp4` files any time —
+one edit to `public/road-ahead/youtube-sources.json`, no code change. Scenes 3
+and 7 were placed sight-unseen and are trivially reassignable after visual review.
+
 On the **full tier** (WebGL-capable desktop) the continuous 3D truck spine drives
 behind scenes 1–4/7; the bespoke CSS atmosphere below is the **lite-tier + mobile**
 equivalent and the footage fallback. Any scene auto-swaps to a dropped-in clip
