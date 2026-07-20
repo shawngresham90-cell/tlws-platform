@@ -37,6 +37,36 @@
   will-change: transform;
 }
 
+/* YouTube-Unlisted cover-fit backdrop. A YouTube iframe is a fixed 16:9 box that
+ * won't `object-fit: cover`, so we crop it: the frame is sized to the larger of
+ * 16:9-by-viewport-width or 16:9-by-viewport-height and centered, so it always
+ * fills the backdrop with the overflow clipped — same visual as a cover-fit
+ * video. Pointer-events off so it stays purely ambient (no accidental clicks
+ * into the embed). */
+.ytCover {
+  position: absolute;
+  inset: -8% 0;
+  width: 100%;
+  height: 116%;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0) scale(1.08);
+  will-change: transform;
+}
+
+.ytFrame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 177.78vh; /* 16:9 measured by viewport height */
+  height: 56.25vw; /* 16:9 measured by viewport width */
+  min-width: 100%;
+  min-height: 100%;
+  transform: translate(-50%, -50%);
+  border: 0;
+  pointer-events: none;
+}
+
 /* Cinematic vignette + top/bottom falloff so text always has contrast, plus a
  * faint STATIC film grain over the whole scene for filmic texture (no animation,
  * negligible cost — a tiny inline turbulence tile at very low opacity). */

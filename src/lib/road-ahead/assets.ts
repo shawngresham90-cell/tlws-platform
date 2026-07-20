@@ -58,6 +58,13 @@ export type VideoSlot = {
   webmSrc: string | null;
   /** Poster still path — null until poster/<stem>.jpg exists (resolver fills it). */
   poster: string | null;
+  /**
+   * Optional YouTube-Unlisted video id — an alternative to a dropped-in file
+   * for filming on the road. Set by mapping the slot in
+   * public/road-ahead/youtube-sources.json (resolver fills it). A native file
+   * (`src`) always wins for quality; the embed is the fallback when no file yet.
+   */
+  youtubeId: string | null;
   /** Brand-safe CSS background — ALWAYS present, the ultimate fallback. */
   gradient: string;
   /** Captions track (WebVTT) for spoken/graphic content — accessibility. */
@@ -127,6 +134,7 @@ function v(id: string, scene: SceneId, gradient: string, label: string, alt: str
     src: null,
     webmSrc: null,
     poster: null,
+    youtubeId: null,
     gradient,
     captionsSrc: null,
     alt,
@@ -405,7 +413,7 @@ export function sceneGradient(scene: SceneId): string {
  * first (for its gradient). Pure — the resolver fills `src` before calling this.
  */
 export function pickBackdrop(slots: VideoSlot[]): VideoSlot | undefined {
-  return slots.find(hasFootage) ?? slots[0];
+  return slots.find(hasAnyFootage) ?? slots[0];
 }
 
 /**
@@ -426,6 +434,7 @@ export function sceneBackdropSlot(scene: SceneId): VideoSlot {
     src: null,
     webmSrc: null,
     poster: null,
+    youtubeId: null,
     gradient: sceneGradient(scene),
     captionsSrc: null,
     alt: '',
@@ -433,9 +442,19 @@ export function sceneBackdropSlot(scene: SceneId): VideoSlot {
   };
 }
 
-/** Has real footage been supplied for this slot? */
+/** Has a dropped-in native file been supplied for this slot? */
 export function hasFootage(slot: VideoSlot): boolean {
   return typeof slot.src === 'string' && slot.src.length > 0;
+}
+
+/** Has a YouTube-Unlisted clip been mapped for this slot? */
+export function hasYouTube(slot: VideoSlot): boolean {
+  return typeof slot.youtubeId === 'string' && slot.youtubeId.length > 0;
+}
+
+/** Any playable footage — native file or YouTube. Drives backdrop selection. */
+export function hasAnyFootage(slot: VideoSlot): boolean {
+  return hasFootage(slot) || hasYouTube(slot);
 }
 
 /** Has a licensed track/recording been supplied for this audio slot? */

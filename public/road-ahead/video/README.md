@@ -1,20 +1,36 @@
-# THE ROAD AHEAD — scene clips (drop-in folder)
+# THE ROAD AHEAD — scene clips (zero-code drop-in folder)
 
-Drop one short clip per scene here, named **exactly**:
+Two ways to give a scene real footage. **Neither one touches code.**
 
-| File | Scene | What it shows |
+1. **Drop a file here** — name it exactly `<slot-id>.mp4` (table below), redeploy.
+2. **Map a YouTube-Unlisted clip** — add the slot id + link to
+   `../youtube-sources.json`, redeploy.
+
+A dropped-in `.mp4` always wins over YouTube (better quality, no third party).
+Until a scene has either, it shows its cinematic gradient fallback, so the
+experience is never blank.
+
+## Slot ids per scene
+
+Each scene has several named slots; the **first slot that has footage** becomes
+that scene's backdrop, so the first row per scene is the hero shot. Drop a file
+named `<slot-id>.mp4` (e.g. `dark-highway.mp4`).
+
+| Scene | Slot id (filename stem) | What it shows |
 | --- | --- | --- |
-| `scene-01.mp4` | 1 · Night Drive | Night driving, headlights, highway, windshield POV |
-| `scene-02.mp4` | 2 · The Pre-Trip | Inspection, walk-around, backing, climb-in, air-brake |
-| `scene-03.mp4` | 3 · The Grind | Truck stop, rain, late-night driving, empty highway |
-| `scene-04.mp4` | 4 · First Light | Sunrise, truck hero shot, drone, academy |
-| `scene-05.mp4` | 5 · The Wall | *(optional atmosphere — the 3D Founder Wall renders its own scene)* |
-| `scene-06.mp4` | 6 · Your Name | *(optional atmosphere — the engraving renders its own scene)* |
-| `scene-07.mp4` | 7 · The Payoff | Student, key handoff, training, truck driving away |
+| 1 · Night Drive | `dark-highway` · `night-driving` · `headlights` · `windshield-rain` | Empty night highway, headlights carving the dark, windshield POV, rain |
+| 2 · The Pre-Trip | `pretrip` · `truck-walkaround` · `backing` · `climb-into-cab` · `air-brake-check` | Inspection, walk-around, backing, climb-in, air-brake check |
+| 3 · The Grind | `truck-stop` · `empty-highway` · `rain-driving` · `late-night-driving` | Truck stop at night, empty highway, rain driving, late-night miles |
+| 4 · First Light | `sunrise` · `hero-shot` · `drone-shot` · `academy-footage` | Sunrise, truck hero shot, drone flyover, academy |
+| 5 · The Wall | *(none — the 3D Founder Wall renders its own scene)* | — |
+| 6 · Your Name | *(none — the engraving renders its own scene)* | — |
+| 7 · The Payoff | `student-training` · `key-handoff` · `student-success` · `truck-driving-away` | Student training, key handoff, success, truck driving away |
 
-A matching poster still goes in `../poster/` as `scene-0N.jpg` (first frame is fine).
+A matching poster still (shown before the clip decodes, and under Save-Data /
+slow connections) goes in `../poster/` as `<slot-id>.jpg` or `.webp`. Optional
+captions go in `../captions/` as `<slot-id>.vtt`.
 
-## Recommended encoding
+## Recommended encoding (dropped-in files)
 
 | Setting | Value |
 | --- | --- |
@@ -25,19 +41,32 @@ A matching poster still goes in `../poster/` as `scene-0N.jpg` (first frame is f
 | Audio | **None** (clips play muted; strip the audio track) |
 | Max file size | **≤ 4 MB** per clip (aim for 2–3 MB); posters ≤ 200 KB |
 
-## The easy way
+### The easy way (compress + poster in one command)
 
 Hand Claude your raw clip and it will compress + generate the poster for you:
 
 ```bash
-node scripts/compress-road-ahead-video.mjs <input-file> <scene-number 1-7>
-# e.g.  node scripts/compress-road-ahead-video.mjs ~/night-drive.mov 1
+node scripts/compress-road-ahead-video.mjs <input-file> <slot-id>
+# e.g.  node scripts/compress-road-ahead-video.mjs ~/night-drive.mov dark-highway
 ```
 
-That writes `scene-0N.mp4`, `scene-0N.webm`, and `../poster/scene-0N.jpg` at the
-recommended settings. After the files land, set each scene's `src`/`webmSrc`/
-`poster` in `src/lib/road-ahead/assets.ts` (`SCENE_BACKDROP`) and add license
-provenance — the scene goes live with no component changes.
+## The YouTube-Unlisted way (no file, no code)
 
-Until a clip is supplied, each scene shows its cinematic gradient fallback, so
-the experience is never blank.
+1. Film a clip.
+2. Upload it to YouTube and set visibility to **Unlisted**.
+3. Open `../youtube-sources.json` and paste the link (or bare id) next to the
+   slot id — e.g. `"dark-highway": "https://youtu.be/dQw4w9WgXcQ"`.
+4. Redeploy. The scene plays it as a muted, looping, cover-fit background.
+
+Watch/share/embed/`youtu.be`/shorts URLs and bare 11-char ids all work. The clip
+plays via privacy-enhanced `youtube-nocookie.com`, muted and controls-off, and
+is skipped under reduced-motion and Save-Data — same guards as a dropped-in file.
+
+## How "no code changes" works
+
+`npm run build` runs `scripts/generate-road-ahead-manifest.mjs` (the `prebuild`
+hook), which scans this folder **and** `../youtube-sources.json` and writes
+`src/lib/road-ahead/asset-presence.generated.ts`. The scene resolver reads that
+build-time manifest (never the filesystem at request time — serverless/ISR-safe),
+so a new file or YouTube mapping lights up its scene on the next deploy with zero
+component edits.

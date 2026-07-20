@@ -38,6 +38,8 @@ import {
   allVideoSlots,
   ROAD_AHEAD_AUDIO,
   hasFootage,
+  hasYouTube,
+  hasAnyFootage,
   slotsForScene,
   sceneBackdropSlot,
   sceneNumber,
@@ -241,6 +243,30 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
     'assets: no footage supplied yet (pending drop-in)',
     slots.every((v) => !hasFootage(v)),
   );
+
+  // YouTube-Unlisted pipeline: every slot ships youtubeId null (no mapping yet),
+  // so hasYouTube/hasAnyFootage are false until youtube-sources.json is edited.
+  check(
+    'youtube: all slots start with youtubeId null',
+    slots.every((v) => v.youtubeId === null),
+  );
+  check(
+    'youtube: hasYouTube/hasAnyFootage false with no mapping',
+    slots.every((v) => !hasYouTube(v) && !hasAnyFootage(v)),
+  );
+  // A mapped YouTube id counts as footage for backdrop selection, and a native
+  // file still outranks it.
+  {
+    const mapped = { ...slots[0], youtubeId: 'dQw4w9WgXcQ' };
+    check('youtube: mapped id makes hasYouTube/hasAnyFootage true', hasYouTube(mapped) && hasAnyFootage(mapped));
+    check('youtube: mapped id is not a native file', !hasFootage(mapped));
+    const withFile = { ...slots[1], src: '/road-ahead/video/x.mp4' };
+    check(
+      'youtube: pickBackdrop prefers a slot with any footage over a bare gradient',
+      pickBackdrop([slots[2], mapped])?.youtubeId === 'dQw4w9WgXcQ' &&
+        pickBackdrop([slots[2], withFile])?.src === '/road-ahead/video/x.mp4',
+    );
+  }
 
   // Scene grouping (exact named counts per the owner shot list).
   check('assets: scene 1 has its four night slots', slotsForScene('nightDrive').length === 4);

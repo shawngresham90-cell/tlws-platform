@@ -11,7 +11,7 @@ import {
   type SceneId,
   type VideoSlot,
 } from './assets';
-import { PRESENT_ASSETS } from './asset-presence.generated';
+import { PRESENT_ASSETS, YOUTUBE_SOURCES } from './asset-presence.generated';
 
 /**
  * Asset resolver — the reason footage is TRUE zero-code drop-in.
@@ -53,9 +53,15 @@ function resolveVideoSlot(slot: VideoSlot): VideoSlot {
       ? `${ROAD_AHEAD_ASSET_BASE}/poster/${slot.id}.webp`
       : null;
 
+  // A YouTube-Unlisted mapping (youtube-sources.json) is a lower-priority
+  // fallback: a dropped-in .mp4 always wins for quality/perf, but if none exists
+  // yet the mapped clip lets the scene light up with zero code changes.
+  const youtubeId = YOUTUBE_SOURCES[slot.id] ?? null;
+
   if (!hasMp4) {
-    // No clip yet — keep the gradient, but a poster (if dropped in early) shows.
-    return { ...slot, poster };
+    // No local clip — keep the gradient (or the YouTube cover, if mapped), and a
+    // poster shows through if one was dropped in early.
+    return { ...slot, poster, youtubeId };
   }
   return {
     ...slot,
@@ -63,6 +69,7 @@ function resolveVideoSlot(slot: VideoSlot): VideoSlot {
     webmSrc: hasWebm ? `${ROAD_AHEAD_ASSET_BASE}/video/${slot.id}.webm` : null,
     poster,
     captionsSrc: hasVtt ? `${ROAD_AHEAD_ASSET_BASE}/captions/${slot.id}.vtt` : null,
+    youtubeId,
     license: { ...OWNER_LICENSE },
   };
 }

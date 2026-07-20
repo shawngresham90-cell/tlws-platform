@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { hasFootage, type VideoSlot } from '@/lib/road-ahead/assets';
+import { hasAnyFootage, hasFootage, hasYouTube, type VideoSlot } from '@/lib/road-ahead/assets';
 import { useInView } from '@/lib/road-ahead/hooks';
 import styles from './road-ahead.module.css';
 
@@ -68,16 +68,20 @@ export function CinematicVideo({
   // latch it off and fall back to the poster/gradient — never a broken element.
   const [failed, setFailed] = useState(false);
   const lightMedia = usePrefersLightMedia();
-  // Only observe (and only ever play) when motion is on, footage exists, the
-  // clip hasn't errored, and the network isn't asking us to conserve data.
-  const canPlay = !reduced && hasFootage(slot) && !failed && !lightMedia;
-  const { ref, inView } = useInView<HTMLDivElement>(canPlay);
-  const showVideo = canPlay && (inView || priority);
+  // Native file always wins for quality/perf. A YouTube-Unlisted mapping is the
+  // lower-priority fallback used only when no local clip exists yet.
+  const canPlayVideo = !reduced && hasFootage(slot) && !failed && !lightMedia;
+  const canPlayYouTube = !reduced && !hasFootage(slot) && hasYouTube(slot) && !failed && !lightMedia;
+  // Only observe (and only ever play) when some clip could actually play, so
+  // media never decodes off-screen.
+  const { ref, inView } = useInView<HTMLDivElement>(canPlayVideo || canPlayYouTube);
+  const showVideo = canPlayVideo && (inView || priority);
+  const showYouTube = canPlayYouTube && (inView || priority);
   const mediaStyle = { ['--p']: progress } as CSSProperties;
-  // When the 3D spine is driving and this scene has no footage yet, drop the
-  // gradient so the continuous truck drive shows through; keep the vignette for
-  // text contrast. Footage (when supplied) still wins and stays opaque.
-  const transparent = spineActive && !hasFootage(slot);
+  // When the 3D spine is driving and this scene has NO footage of any kind yet,
+  // drop the gradient so the continuous truck drive shows through; keep the
+  // vignette for text contrast. Any footage (file or YouTube) stays opaque.
+  const transparent = spineActive && !hasAnyFootage(slot);
 
   return (
     <div
@@ -106,6 +110,22 @@ export function CinematicVideo({
             <track kind="captions" src={slot.captionsSrc} srcLang="en" label="English" default />
           ) : null}
         </video>
+      ) : showYouTube && slot.youtubeId ? (
+        // Privacy-enhanced (youtube-nocookie) cover-fit background clip. Muted +
+        // looped + controls-off so it reads as ambient footage, not an embed. The
+        // wrapper crops the fixed 16:9 iframe to fill any aspect (see .ytCover).
+        <div className={styles.ytCover} style={mediaStyle}>
+          <iframe
+            className={styles.ytFrame}
+            src={`https://www.youtube-nocookie.com/embed/${slot.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${slot.youtubeId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&cc_load_policy=0`}
+            title=""
+            aria-hidden="true"
+            tabIndex={-1}
+            frameBorder="0"
+            allow="autoplay; encrypted-media"
+            loading={priority ? 'eager' : 'lazy'}
+          />
+        </div>
       ) : slot.poster ? (
         // eslint-disable-next-line @next/next/no-img-element -- decorative full-bleed backdrop, not content
         <img

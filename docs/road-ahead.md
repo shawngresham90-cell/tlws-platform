@@ -57,11 +57,20 @@ load only for the opted-in full tier.
 ## The video asset system — true zero-code drop-in
 
 Every clip is a named SLOT in `ROAD_AHEAD_VIDEO` (`src/lib/road-ahead/assets.ts`),
-and each slot's id **is** its drop-in filename stem. Drop the file into
-`public/road-ahead/video/` and **it appears — no code edit.** The build-time
-resolver (`assets-resolver.ts`) scans the folder and fills each slot's
-`src`/`webmSrc`/`poster`/`captions` for the files that exist; until then the slot
-keeps its cinematic gradient (and its poster, if a still was dropped in first).
+and each slot's id **is** its drop-in filename stem. There are **two** zero-code
+ways to give a scene footage, and neither touches a component:
+
+1. **Drop a file** into `public/road-ahead/video/<slot>.mp4`.
+2. **Map a YouTube-Unlisted clip** in `public/road-ahead/youtube-sources.json`.
+
+A dropped-in file always wins over YouTube (higher quality, no third party). A
+build-time generator (`scripts/generate-road-ahead-manifest.mjs`, run from the
+`prebuild` hook) scans the folder **and** the YouTube map once at build and emits
+`asset-presence.generated.ts`; the resolver (`assets-resolver.ts`) reads that
+manifest — never the filesystem at request time, so it's serverless/ISR-safe —
+and fills each slot's `src`/`webmSrc`/`poster`/`captions`/`youtubeId`. Until a
+scene has either kind of footage it keeps its cinematic gradient (and its poster,
+if a still was dropped in first).
 
 - **Video folder:** `public/road-ahead/video/` — filename = `<slot>.mp4`
 - **Poster folder:** `public/road-ahead/poster/` — `<slot>.jpg` (or `.webp`)
@@ -104,11 +113,25 @@ This writes `video/<slot>.mp4`, `video/<slot>.webm`, and `poster/<slot>.jpg` at
 the settings above (ffmpeg resolved from `$FFMPEG`, PATH, then the bundled
 Playwright build), then you just redeploy — the resolver does the rest.
 
+**The YouTube-Unlisted workflow (film → upload → map → redeploy):**
+
+1. Film a clip; upload to YouTube with visibility **Unlisted**.
+2. Open `public/road-ahead/youtube-sources.json` and paste the link (or bare id)
+   next to the slot id: `"dark-highway": "https://youtu.be/dQw4w9WgXcQ"`.
+3. Redeploy.
+
+The generator extracts the 11-char id from watch/share/embed/`youtu.be`/shorts
+URLs or a bare id, and the scene plays it through privacy-enhanced
+`youtube-nocookie.com` as a muted, looping, controls-off, cover-fit background
+(`CinematicVideo.tsx` → `.ytCover`/`.ytFrame`). Empty values are ignored, so the
+committed template with all slots blank maps nothing.
+
 **Playback behaviour (all automatic):** clips autoplay muted, loop, use
 `playsInline`, and load **only when the scene is on/near screen** (eager for scene
 1). On a Save-Data / 2g connection, or if a clip fails to load, the scene falls
 back to its poster then its gradient — never a broken or blank backdrop. Under
-reduced-motion no video plays at all.
+reduced-motion no video (file or YouTube) plays at all. The same priority and
+guards apply to a YouTube backdrop as to a dropped-in file.
 
 ## The audio pipeline
 
