@@ -12,6 +12,7 @@ import { type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { CampaignProgress } from '@/lib/community/founders';
 import { CinematicVideo } from './CinematicVideo';
 import { NightHighwayFX } from './NightHighwayFX';
+import { FirstLightFX } from './FirstLightFX';
 import { DawnHorizonFX } from './DawnHorizonFX';
 import { WallAtmosphere } from './WallAtmosphere';
 import { FounderWall3D } from './FounderWall3D';
@@ -195,6 +196,9 @@ export function ChapterGrind({ reduced, register, spineActive, backdrop }: Scene
 export function ChapterFirstLight({ reduced, register, spineActive, backdrop }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.1, 0.45);
+  // Daybreak atmosphere for the gradient state only; a dropped-in clip (or the
+  // live spine drive) auto-takes over — no code change.
+  const showFirstLightFx = !reduced && !spineActive && (!backdrop || !hasAnyFootage(backdrop));
   return (
     <section id="scene-firstlight" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       {backdrop ? (
@@ -205,6 +209,7 @@ export function ChapterFirstLight({ reduced, register, spineActive, backdrop }: 
           spineActive={spineActive}
         />
       ) : null}
+      {showFirstLightFx ? <FirstLightFX style={reveal(progress, reduced)} /> : null}
       <Container className="py-28">
         <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>
           Then the sun comes up

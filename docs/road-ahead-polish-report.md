@@ -20,12 +20,19 @@ what it cost" log for visual review.
 
 ## Per-scene status
 
-**Currently mapped footage (owner batch #1, YouTube-Unlisted):** Scene 1 →
-`night-driving` (`wsanOA1aJ1U`), Scene 3 → `late-night-driving` (`PQPWyX98fMU`),
-Scene 7 → `truck-driving-away` (`0xgnGSxdMGI`). All vertical Shorts (play
-centered in the 16:9 frame); replace with landscape or `.mp4` files any time —
-one edit to `public/road-ahead/youtube-sources.json`, no code change. Scenes 3
-and 7 were placed sight-unseen and are trivially reassignable after visual review.
+**Currently mapped footage (YouTube-Unlisted):** Scene 1 → `night-driving`
+(`wsanOA1aJ1U`), Scene 2 → `pretrip` (`Okpkg_xjwX8`), Scene 3 →
+`late-night-driving` (`PQPWyX98fMU`), Scene 7 → `truck-driving-away`
+(`0xgnGSxdMGI`). All vertical Shorts (play centered in the 16:9 frame); replace
+with landscape or `.mp4` files any time — one edit to
+`public/road-ahead/youtube-sources.json`, no code change. Scenes 3 & 7 were
+placed sight-unseen and are trivially reassignable after visual review.
+
+**Pending, unassigned:** additional owner clips are parked in
+`youtube-sources.json` under `_pending_unassigned` (ignored by the generator, so
+they render nowhere) until the owner confirms a scene for each — no guessing.
+Every narrative scene without an assigned clip shows its bespoke cinematic
+atmosphere, so the experience reads complete with or without footage.
 
 On the **full tier** (WebGL-capable desktop) the continuous 3D truck spine drives
 behind scenes 1–4/7; the bespoke CSS atmosphere below is the **lite-tier + mobile**
@@ -37,7 +44,7 @@ equivalent and the footage fallback. Any scene auto-swaps to a dropped-in clip
 | 1 · Dark Highway | Cold open | **`NightHighwayFX`** — deep sky, a horizon glow that swells with scroll (the light you drive toward), converging center-line dashes streaming under the camera, passing oncoming headlights, drifting fog. Cold-tinted entry flare. | Night footage (`dark-highway` …) / narration |
 | 2 · The Pre-Trip | The craft | Drifting key light + vignette + film grain; cold flare; air-brake audio cue on enter | Pre-trip footage |
 | 3 · The Grind | Sacrifice | Right-aligned copy pacing; cold-blue flare | Rain / truck-stop footage |
-| 4 · First Light | The future | Dawn-warm flare; ecosystem cards stagger-reveal | Sunrise / hero / drone footage |
+| 4 · First Light | The future | **`FirstLightFX`** — a cool morning sky brightening to a white-hot sun cresting the horizon, a wide anamorphic lens flare, and soft rays (distinct from Scene 7's golden dusk). Dawn-warm entry flare; ecosystem cards stagger-reveal over their own dark backing. | Sunrise / hero / drone footage |
 | 5 · Founder Wall | **Exhibit** | Volumetric light field + scroll camera dolly + carved plaques + dedication | Optional wall ambience clip |
 | 6 · Name Induction | **Emotional peak** | Halo push + letter carve + ember burst + dated hallmark | Optional narration bed |
 | 7 · Legacy | **Emotional payoff** | **`DawnHorizonFX`** — a sunrise that breaks and warms with scroll, god rays fanning from the horizon, a lone truck silhouette rolling into the light. Warm-gold flare; dual CTA. | Student / key-handoff footage |

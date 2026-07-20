@@ -1,5 +1,14 @@
 {
   "_comment": "Map a scene slot id to a YouTube-Unlisted video id or URL, e.g. \"dark-highway\": \"dQw4w9WgXcQ\" or a full watch/share/embed URL. Slot ids are the drop-in filename stems (see public/road-ahead/video/README.md). A dropped-in .mp4 file always wins over YouTube for quality. Keys starting with _ are ignored. Edit this data file (no code change) and redeploy — the scene picks it up automatically.",
+  "_pending_unassigned_comment": "Owner-supplied clips awaiting a scene assignment. These are NOT wired to any scene (the generator ignores _-prefixed keys). To assign one, move its id into the matching slot above. Do not guess — assign only on owner confirmation.",
+  "_pending_unassigned": [
+    "QKgMZa1k5IE",
+    "S6lWFUuoOP0",
+    "MjNhdIr51WE",
+    "IZjJMUczhuA",
+    "VocKAk4DjUs",
+    "TI1sucFBgG4"
+  ],
   "dark-highway": "",
   "night-driving": "https://youtube.com/shorts/wsanOA1aJ1U",
   "headlights": "",
