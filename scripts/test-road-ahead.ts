@@ -46,6 +46,7 @@ import {
 import { ROAD_AHEAD_CHAPTERS, validateChapters } from '@/lib/road-ahead/chapters';
 import { ECOSYSTEM_PILLARS, validateEcosystem } from '@/lib/road-ahead/ecosystem';
 import { ROAD_LEN, YEARS, yearAt } from '@/components/road-ahead/spine/consts';
+import { sanitizeFounderName } from '@/components/road-ahead/founder-card';
 import type { FounderTier, PublicFounder } from '@/lib/community/founders';
 
 let passed = 0;
@@ -293,6 +294,24 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
     'spine: yearAt midpoint within range',
     yearAt(0.5) >= YEARS[0] && yearAt(0.5) <= YEARS.at(-1)!,
   );
+}
+
+/* ------------------------------------------------ founder card name sanitize */
+{
+  check(
+    'card: trims and passes a normal name',
+    sanitizeFounderName('  Shawn Gresham ') === 'Shawn Gresham',
+  );
+  check(
+    'card: collapses inner whitespace',
+    sanitizeFounderName('Big   Rig\tDriver') === 'Big Rig Driver',
+  );
+  check('card: caps length at 26', sanitizeFounderName('X'.repeat(60)).length === 26);
+  check(
+    'card: empty/whitespace → empty',
+    sanitizeFounderName('   ') === '' && sanitizeFounderName('') === '',
+  );
+  check('card: respects custom max', sanitizeFounderName('abcdef', 3) === 'abc');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

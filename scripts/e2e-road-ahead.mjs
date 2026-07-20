@@ -122,6 +122,17 @@ try {
     const nameText = await page.locator('#scene-name').innerText();
     check('engraving: shows the next open founder number', /No\.\s*\d/.test(nameText));
     check('engraving: has the "your name here" plate', /your name here/i.test(nameText));
+    // Type a name and engrave it → the plate updates and the shareable card
+    // download appears.
+    await page.locator('#founder-name').fill('Test Driver');
+    await page.getByRole('button', { name: /engrave it/i }).click();
+    await page.waitForTimeout(200);
+    const engravedText = await page.locator('#scene-name').innerText();
+    check('engraving: typed name appears on the plate', /TEST DRIVER/i.test(engravedText));
+    check(
+      'engraving: founder card download offered',
+      (await page.getByRole('button', { name: /download my founder card/i }).count()) === 1,
+    );
 
     // Scene 7 payoff carries the primary call to action.
     await page.locator('#scene-payoff').scrollIntoViewIfNeeded();
