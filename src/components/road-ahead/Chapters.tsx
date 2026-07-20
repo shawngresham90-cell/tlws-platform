@@ -6,11 +6,13 @@ import { Container, Button } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { useElementProgress } from '@/lib/road-ahead/hooks';
 import { subBeat } from '@/lib/road-ahead/scroll-math';
-import type { VideoSlot } from '@/lib/road-ahead/assets';
+import { hasAnyFootage, type VideoSlot } from '@/lib/road-ahead/assets';
 import { ECOSYSTEM_PILLARS } from '@/lib/road-ahead/ecosystem';
 import { type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { CampaignProgress } from '@/lib/community/founders';
 import { CinematicVideo } from './CinematicVideo';
+import { NightHighwayFX } from './NightHighwayFX';
+import { DawnHorizonFX } from './DawnHorizonFX';
 import { WallAtmosphere } from './WallAtmosphere';
 import { FounderWall3D } from './FounderWall3D';
 import { NameEngraving } from './NameEngraving';
@@ -61,6 +63,9 @@ const SECTION_CLASS = 'relative flex min-h-[100svh] w-full items-center';
 export function ChapterNight({ reduced, register, spineActive, backdrop }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
+  // The cinematic night atmosphere shows for the gradient state only; a
+  // dropped-in clip (or the live spine drive) auto-takes over — no code change.
+  const showNightFx = !reduced && !spineActive && (!backdrop || !hasAnyFootage(backdrop));
   return (
     <section id="scene-night" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       {backdrop ? (
@@ -72,6 +77,7 @@ export function ChapterNight({ reduced, register, spineActive, backdrop }: Scene
           priority
         />
       ) : null}
+      {showNightFx ? <NightHighwayFX style={reveal(progress, reduced)} /> : null}
       <Container className="py-28 text-center sm:py-32">
         <p className={cn('eyebrow', styles.settle)} style={reveal(p, reduced)}>
           The Road Ahead
@@ -346,6 +352,9 @@ export function ChapterName({
 export function ChapterPayoff({ reduced, register, spineActive, backdrop }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
+  // Dawn payoff atmosphere for the gradient state only; a dropped-in clip (or
+  // the live spine drive) auto-takes over — no code change.
+  const showDawnFx = !reduced && !spineActive && (!backdrop || !hasAnyFootage(backdrop));
   return (
     <section id="scene-payoff" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       {backdrop ? (
@@ -356,6 +365,7 @@ export function ChapterPayoff({ reduced, register, spineActive, backdrop }: Scen
           spineActive={spineActive}
         />
       ) : null}
+      {showDawnFx ? <DawnHorizonFX style={reveal(progress, reduced)} /> : null}
       <Container className="py-28 text-center">
         <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>
           This is who it&rsquo;s for

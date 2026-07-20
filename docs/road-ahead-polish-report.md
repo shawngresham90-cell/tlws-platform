@@ -20,21 +20,27 @@ what it cost" log for visual review.
 
 ## Per-scene status
 
+On the **full tier** (WebGL-capable desktop) the continuous 3D truck spine drives
+behind scenes 1–4/7; the bespoke CSS atmosphere below is the **lite-tier + mobile**
+equivalent and the footage fallback. Any scene auto-swaps to a dropped-in clip
+(file or YouTube) with zero code changes.
+
 | Scene | Beat | Cinematic state | Awaiting |
 | --- | --- | --- | --- |
-| 1 · Dark Highway | Cold open | Gradient + drifting key light + vignette + film grain; cold-tinted entry flare | Night footage (`dark-highway` …) / narration |
-| 2 · The Pre-Trip | The craft | Same atmosphere kit; cold flare; air-brake audio cue on enter | Pre-trip footage |
+| 1 · Dark Highway | Cold open | **`NightHighwayFX`** — deep sky, a horizon glow that swells with scroll (the light you drive toward), converging center-line dashes streaming under the camera, passing oncoming headlights, drifting fog. Cold-tinted entry flare. | Night footage (`dark-highway` …) / narration |
+| 2 · The Pre-Trip | The craft | Drifting key light + vignette + film grain; cold flare; air-brake audio cue on enter | Pre-trip footage |
 | 3 · The Grind | Sacrifice | Right-aligned copy pacing; cold-blue flare | Rain / truck-stop footage |
 | 4 · First Light | The future | Dawn-warm flare; ecosystem cards stagger-reveal | Sunrise / hero / drone footage |
 | 5 · Founder Wall | **Exhibit** | Volumetric light field + scroll camera dolly + carved plaques + dedication | Optional wall ambience clip |
 | 6 · Name Induction | **Emotional peak** | Halo push + letter carve + ember burst + dated hallmark | Optional narration bed |
-| 7 · Legacy | Handoff | Warm-gold flare; dual CTA (Become a founder / Explore) | Student / key-handoff footage |
+| 7 · Legacy | **Emotional payoff** | **`DawnHorizonFX`** — a sunrise that breaks and warms with scroll, god rays fanning from the horizon, a lone truck silhouette rolling into the light. Warm-gold flare; dual CTA. | Student / key-handoff footage |
 
 ## Performance report
 
-- Route first load holds at **≈17.6 kB / 114 kB** — `three.js`, `@react-three/fiber`, and `gsap` are **all code-split** out of the route-initial bundle (verified in `next build` output). The YouTube backdrop is a plain iframe and the hallmark / dedication / embers are static markup + CSS — **no added route JS**.
-- All new motion is **transform/opacity only** (compositor-friendly): the transition flare/bloom, the wall camera dolly, and the ember burst never trigger layout. GSAP runs on its own ticker and never touches the native `--p` scroll timeline.
-- **Mobile perf budget:** the blurred + screen-blended transition flare and the light shafts / gallery sweep are dropped under `max-width: 768px`; dust motes are halved. The cheap tinted bloom, the compositor-only camera dolly, and the ember burst remain.
+- Route first load holds at **≈18.1 kB / 115 kB** — `three.js`, `@react-three/fiber`, and `gsap` are **all code-split** out of the route-initial bundle (verified in `next build` output). The YouTube backdrop is a plain iframe; the hallmark / dedication / embers and the Scene 1/7 atmosphere are pure markup + CSS — **no added route JS beyond two tiny presentational components**.
+- New motion is **transform/opacity** plus a couple of cheap masked `background-position` streaks (compositor-friendly): the transition flare/bloom, the wall camera dolly, the ember burst, the highway lane streaks, the sunrise, and the god rays never trigger layout. GSAP runs on its own ticker and never touches the native `--p` scroll timeline.
+- **Mobile perf budget:** the blurred + screen-blended transition flare, the wall light shafts / gallery sweep, and the Scene 7 conic **god rays** are dropped under `max-width: 768px`; dust motes are halved. The cheap tinted bloom, the compositor-only camera dolly, the ember burst, and the Scene 1 lane streaks / oncoming lights remain.
+- Scenes 1 and 7 render their bespoke atmosphere **only on the lite tier / mobile and only while the scene has no footage** — the full-tier 3D spine and any dropped-in clip take precedence, so effects never stack on top of real media.
 - Footage/YouTube decode **only when a scene is on/near screen** (IntersectionObserver) and is skipped entirely under Save-Data / 2g.
 
 ## Accessibility validation
@@ -50,6 +56,6 @@ what it cost" log for visual review.
 
 ## Validation snapshot (this pass)
 
-- Typecheck / ESLint / Prettier clean · **96 unit checks** · `next build` succeeds (17.6 kB / 114 kB)
+- Typecheck / ESLint / Prettier clean · **96 unit checks** · `next build` succeeds (18.1 kB / 115 kB)
 - **Main e2e 29/0** + **spine e2e 9/9** — real headless Chromium
-- Screenshots: wall exhibit + induction reveal (with ember burst + struck hallmark) captured and reviewed
+- Screenshots: Scene 1 night highway (lane streaks + horizon glow) and Scene 7 dawn (sunrise + truck silhouette) captured at mobile and reviewed for legibility; wall exhibit + induction reveal reviewed

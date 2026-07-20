@@ -597,6 +597,250 @@
 }
 
 /* ============================================================================
+ * SCENE 1 — DARK HIGHWAY atmosphere (gradient state). Hollywood cold open:
+ * deep sky, a horizon glow that swells with scroll (--p), converging center-line
+ * dashes streaking under the camera, passing oncoming headlights, drifting fog.
+ * Bright elements stay in the lower third so the centred headline keeps
+ * contrast. Transform/opacity + one masked background-position — compositor-kind.
+ * ==========================================================================*/
+.nightFx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.nhSky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 7, 12, 0.6) 0%,
+    rgba(5, 7, 12, 0) 30%,
+    rgba(5, 7, 12, 0) 60%,
+    rgba(3, 4, 8, 0.72) 100%
+  );
+}
+/* The distant light you drive toward — grows brighter/larger as you scroll in. */
+.nhHorizon {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  width: 72%;
+  height: 34%;
+  transform: translateX(-50%) scale(calc(0.85 + var(--p, 0) * 0.4));
+  transform-origin: 50% 0%;
+  background: radial-gradient(
+    50% 70% at 50% 0%,
+    rgba(150, 180, 240, 0.22),
+    rgba(120, 150, 220, 0.06) 45%,
+    transparent 72%
+  );
+  filter: blur(10px);
+  opacity: calc(0.35 + var(--p, 0) * 0.6);
+}
+/* Perspective road; the dashes stream toward the camera (masked near the lens). */
+.nhRoad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8%;
+  height: 56%;
+  overflow: hidden;
+  perspective: 26rem;
+  perspective-origin: 50% -10%;
+  opacity: calc(0.3 + var(--p, 0) * 0.45);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 46%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 46%);
+}
+.nhLanes {
+  position: absolute;
+  left: 46%;
+  right: 46%;
+  top: -30%;
+  bottom: 0;
+  transform: rotateX(70deg);
+  transform-origin: 50% 100%;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 238, 190, 0) 0 60px,
+    rgba(255, 238, 190, 0.85) 60px 92px
+  );
+  background-size: 100% 92px;
+  animation: nhDrive 1.05s linear infinite;
+}
+@keyframes nhDrive {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 92px;
+  }
+}
+/* Oncoming headlights that swell and pass on the left, on a long stagger. */
+.nhOncoming {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 250, 235, 0.95),
+    rgba(255, 240, 210, 0.4) 45%,
+    transparent 70%
+  );
+  box-shadow: 0 0 10px 4px rgba(255, 245, 220, 0.45);
+  opacity: 0;
+  animation: nhPass 18s linear infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes nhPass {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  55% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-280%, 130%) scale(2.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-380%, 250%) scale(3.2);
+  }
+}
+.nhFog {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 42%;
+  background: radial-gradient(80% 100% at 50% 100%, rgba(120, 130, 150, 0.14), transparent 65%);
+  animation: nhFogDrift 26s ease-in-out infinite alternate;
+}
+@keyframes nhFogDrift {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+
+/* ============================================================================
+ * SCENE 7 — LEGACY / DAWN atmosphere (gradient state). The emotional payoff:
+ * a sunrise breaks and warms as you scroll in (--p), god rays fan from the
+ * horizon, a lone truck rolls toward the light. Bright elements sit low so the
+ * centred headline keeps contrast.
+ * ==========================================================================*/
+.dawnFx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.dhSky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 26, 0.5) 0%,
+    rgba(20, 20, 30, 0) 34%,
+    rgba(255, 180, 120, 0) 60%,
+    rgba(255, 150, 80, 0.1) 82%,
+    rgba(255, 120, 60, 0.16) 100%
+  );
+  opacity: calc(0.5 + var(--p, 0) * 0.5);
+}
+.dhSun {
+  position: absolute;
+  left: 50%;
+  bottom: calc(2% + var(--p, 0) * 16%);
+  width: 44%;
+  height: 44%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgba(255, 236, 180, 0.85),
+    rgba(255, 190, 110, 0.35) 38%,
+    rgba(255, 150, 80, 0.08) 60%,
+    transparent 72%
+  );
+  filter: blur(3px);
+  opacity: calc(0.4 + var(--p, 0) * 0.6);
+}
+.dhRays {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 160%;
+  height: 150%;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 100%,
+    rgba(255, 224, 160, 0.07) 0deg 3deg,
+    transparent 3deg 11deg
+  );
+  -webkit-mask-image: radial-gradient(58% 62% at 50% 100%, #000 10%, transparent 72%);
+  mask-image: radial-gradient(58% 62% at 50% 100%, #000 10%, transparent 72%);
+  opacity: calc(0.22 + var(--p, 0) * 0.5);
+  animation: dhRaysSway 30s ease-in-out infinite alternate;
+}
+@keyframes dhRaysSway {
+  from {
+    transform: translateX(-50%) rotate(-3deg);
+  }
+  to {
+    transform: translateX(-50%) rotate(3deg);
+  }
+}
+.dhTruck {
+  position: absolute;
+  left: 50%;
+  bottom: calc(15% + var(--p, 0) * 13%);
+  width: clamp(64px, 12vw, 128px);
+  transform: translateX(-50%);
+  color: rgba(8, 8, 12, 0.92);
+  opacity: calc(0.5 + var(--p, 0) * 0.5);
+  filter: drop-shadow(0 0 12px rgba(255, 190, 120, 0.5));
+  animation: dhTruckRoll 9s ease-in-out infinite alternate;
+}
+.dhTruck svg {
+  display: block;
+}
+@keyframes dhTruckRoll {
+  from {
+    transform: translateX(-53%);
+  }
+  to {
+    transform: translateX(-47%);
+  }
+}
+.dhHaze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  background: linear-gradient(180deg, transparent, rgba(255, 190, 130, 0.1));
+  animation: dhHazeBreathe 22s ease-in-out infinite alternate;
+}
+@keyframes dhHazeBreathe {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
  * PHOTOREALISTIC FOUNDER WALL — real materials, carved names, camera push.
  * Iron = forged iron plate, Steel = brushed steel, Brick = carved red clay,
  * Sponsor = premium brass. All procedural (layered gradients + a tiny inline
@@ -991,7 +1235,9 @@
   .plateHalo,
   .emberField,
   .transBloom,
-  .transStreak {
+  .transStreak,
+  .nightFx,
+  .dawnFx {
     display: none;
   }
 }
@@ -1010,6 +1256,12 @@
   /* Drop the blurred + screen-blended transition flare on phones (keeps the
    * cheap tinted bloom); the camera-dolly transform stays (compositor-only). */
   .transStreak {
+    display: none;
+  }
+  /* Scene-atmosphere: the streaking lane dashes + oncoming headlights are cheap
+   * (one masked strip + two tiny dots) so they stay on phones for the driving
+   * drama; only the conic god-rays (expensive to paint) are dropped. */
+  .dhRays {
     display: none;
   }
 }
