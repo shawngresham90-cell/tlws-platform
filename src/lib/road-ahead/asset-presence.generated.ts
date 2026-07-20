@@ -9,6 +9,7 @@ export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
   "late-night-driving": "PQPWyX98fMU",
   "night-driving": "wsanOA1aJ1U",
   "pretrip": "Okpkg_xjwX8",
+  "sunrise": "8E6U04-K3qA",
   "truck-driving-away": "0xgnGSxdMGI"
 };
 
