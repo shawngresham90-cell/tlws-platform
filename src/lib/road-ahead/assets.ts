@@ -43,6 +43,52 @@ export type AssetLicense = {
   attribution: string | null;
 };
 
+/** Color-grade presets applied as a CSS filter over the backdrop. */
+export type ColorGrade = 'none' | 'night' | 'dawn' | 'noir' | 'warm' | 'steel' | 'cool';
+
+/**
+ * A cinematic "moment" edit — how a slot's source clip is presented. Lets one
+ * long source video contribute multiple independent moments across scenes
+ * (start/end pick the segment) with per-moment treatment, all from the footage
+ * manifest — no code changes. Every field is optional/defaulted so an
+ * unedited whole-clip slot still works.
+ */
+export type FootageEdit = {
+  /** Segment start (seconds from the source). null = from the beginning. */
+  start: number | null;
+  /** Segment end (seconds). null = to the end. With start, defines the moment. */
+  end: number | null;
+  /** Playback rate (0.25–2). null/1 = normal; <1 = slow motion. */
+  speed: number | null;
+  /** Loop the segment (default true — backdrops are ambient). */
+  loop: boolean;
+  /** Reframe: CSS object-position, e.g. 'center' or '50% 30%'. null = center. */
+  crop: string | null;
+  /** Extra fill scale (>=1) to reframe/crop in. null = the base 1.08. */
+  zoom: number | null;
+  /** Color-grade preset (CSS filter). */
+  grade: ColorGrade;
+  /** Fade-in seconds (opacity ramp when the moment enters). null = default. */
+  fadeIn: number | null;
+  /** Fade-out seconds. null = default. */
+  fadeOut: number | null;
+  /** Duck the ambience beds while this moment plays. */
+  duck: boolean;
+};
+
+export const DEFAULT_EDIT: FootageEdit = {
+  start: null,
+  end: null,
+  speed: null,
+  loop: true,
+  crop: null,
+  zoom: null,
+  grade: 'none',
+  fadeIn: null,
+  fadeOut: null,
+  duck: false,
+};
+
 export type VideoSlot = {
   /** Stable id — also the drop-in filename stem (e.g. 'dark-highway'). */
   id: string;
@@ -71,6 +117,14 @@ export type VideoSlot = {
   captionsSrc: string | null;
   /** Text alternative describing the footage for AT and no-video contexts. */
   alt: string;
+  /**
+   * Cinematic edit for this slot's moment (segment/speed/loop/crop/grade/fade/
+   * duck). Filled from the footage manifest by the resolver; defaults are a
+   * no-op whole-clip presentation.
+   */
+  edit: FootageEdit;
+  /** Optional edit overrides applied on small screens (mobile-first tuning). */
+  editMobile: Partial<FootageEdit> | null;
   license: AssetLicense;
 };
 
@@ -138,6 +192,8 @@ function v(id: string, scene: SceneId, gradient: string, label: string, alt: str
     gradient,
     captionsSrc: null,
     alt,
+    edit: { ...DEFAULT_EDIT },
+    editMobile: null,
     license: NO_LICENSE,
   };
 }
@@ -438,6 +494,8 @@ export function sceneBackdropSlot(scene: SceneId): VideoSlot {
     gradient: sceneGradient(scene),
     captionsSrc: null,
     alt: '',
+    edit: { ...DEFAULT_EDIT },
+    editMobile: null,
     license: NO_LICENSE,
   };
 }
@@ -455,6 +513,29 @@ export function hasYouTube(slot: VideoSlot): boolean {
 /** Any playable footage — native file or YouTube. Drives backdrop selection. */
 export function hasAnyFootage(slot: VideoSlot): boolean {
   return hasFootage(slot) || hasYouTube(slot);
+}
+
+/** True when this slot carries any non-default cinematic edit. */
+export function hasEdit(slot: VideoSlot): boolean {
+  const e = slot.edit;
+  return (
+    e.start != null ||
+    e.end != null ||
+    e.speed != null ||
+    e.crop != null ||
+    e.zoom != null ||
+    e.grade !== 'none' ||
+    e.fadeIn != null ||
+    e.fadeOut != null ||
+    e.duck ||
+    slot.editMobile != null
+  );
+}
+
+/** The effective edit for a viewport — base merged with the mobile override. */
+export function effectiveEdit(slot: VideoSlot, isMobile: boolean): FootageEdit {
+  if (!isMobile || !slot.editMobile) return slot.edit;
+  return { ...slot.edit, ...slot.editMobile };
 }
 
 /** Has a licensed track/recording been supplied for this audio slot? */

@@ -40,6 +40,9 @@ import {
   hasFootage,
   hasYouTube,
   hasAnyFootage,
+  hasEdit,
+  effectiveEdit,
+  DEFAULT_EDIT,
   slotsForScene,
   sceneBackdropSlot,
   sceneNumber,
@@ -265,6 +268,37 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
       'youtube: pickBackdrop prefers a slot with any footage over a bare gradient',
       pickBackdrop([slots[2], mapped])?.youtubeId === 'dQw4w9WgXcQ' &&
         pickBackdrop([slots[2], withFile])?.src === '/road-ahead/video/x.mp4',
+    );
+  }
+
+  // Cinematic edit (footage manifest moments): every base slot ships the no-op
+  // default edit; hasEdit is false until a moment sets something.
+  check(
+    'edit: DEFAULT_EDIT is a no-op (loop on, no segment/speed/grade)',
+    DEFAULT_EDIT.start === null &&
+      DEFAULT_EDIT.end === null &&
+      DEFAULT_EDIT.speed === null &&
+      DEFAULT_EDIT.loop === true &&
+      DEFAULT_EDIT.grade === 'none' &&
+      DEFAULT_EDIT.duck === false,
+  );
+  check(
+    'edit: base slots carry the default edit and no mobile override',
+    slots.every((v) => !hasEdit(v) && v.editMobile === null),
+  );
+  {
+    const edited = {
+      ...slots[0],
+      edit: { ...DEFAULT_EDIT, start: 14, end: 23, speed: 0.85, grade: 'night' as const },
+      editMobile: { speed: 1 } as Partial<typeof DEFAULT_EDIT>,
+    };
+    check('edit: hasEdit true once a segment/grade is set', hasEdit(edited));
+    check(
+      'edit: effectiveEdit uses base on desktop, merges mobile override on mobile',
+      effectiveEdit(edited, false).speed === 0.85 &&
+        effectiveEdit(edited, true).speed === 1 &&
+        effectiveEdit(edited, true).start === 14 &&
+        effectiveEdit(edited, true).grade === 'night',
     );
   }
 

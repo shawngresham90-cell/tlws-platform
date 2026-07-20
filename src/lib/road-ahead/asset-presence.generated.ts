@@ -11,3 +11,24 @@ export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
   "pretrip": "Okpkg_xjwX8",
   "truck-driving-away": "0xgnGSxdMGI"
 };
+
+// slot id → resolved cinematic MOMENT (segment + edits) from
+// public/road-ahead/footage.json. Takes precedence over YOUTUBE_SOURCES for the
+// same slot. `file` is validated against PRESENT_ASSETS by the resolver.
+export type GeneratedMoment = {
+  youtubeId: string | null;
+  file: string | null;
+  poster: string | null;
+  start: number | null;
+  end: number | null;
+  speed: number | null;
+  loop: boolean;
+  crop: string | null;
+  zoom: number | null;
+  grade: string;
+  fadeIn: number | null;
+  fadeOut: number | null;
+  duck: boolean;
+  mobile: Record<string, unknown> | null;
+};
+export const FOOTAGE_MOMENTS: Readonly<Record<string, GeneratedMoment>> = {};

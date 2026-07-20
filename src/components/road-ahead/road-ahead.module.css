@@ -32,9 +32,42 @@
   width: 100%;
   height: 116%;
   object-fit: cover;
-  /* Slow parallax drift fed by --p; defaults to centered when unset. */
-  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0) scale(1.08);
+  /* Slow parallax drift fed by --p; defaults to centered when unset. `--zoom`
+   * (>=1) lets a moment reframe/crop in via the footage manifest. */
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0)
+    scale(calc(1.08 * var(--zoom, 1)));
   will-change: transform;
+}
+
+/* Color-grade presets (footage manifest `grade`). Applied to the media element
+ * (or the YouTube cover wrapper) as a filter — a cheap cinematic look. */
+.gradeNight {
+  filter: brightness(0.82) contrast(1.16) saturate(0.82) hue-rotate(-8deg);
+}
+.gradeDawn {
+  filter: brightness(1.05) contrast(1.05) saturate(1.12) sepia(0.14) hue-rotate(-10deg);
+}
+.gradeNoir {
+  filter: grayscale(1) contrast(1.22) brightness(0.95);
+}
+.gradeWarm {
+  filter: saturate(1.16) sepia(0.2) brightness(1.03) contrast(1.03);
+}
+.gradeSteel {
+  filter: saturate(0.72) contrast(1.12) brightness(0.95) hue-rotate(6deg);
+}
+.gradeCool {
+  filter: saturate(0.9) hue-rotate(12deg) brightness(0.98) contrast(1.04);
+}
+
+/* Fade-in on entry (footage manifest `fadeIn`). Duration is set inline. */
+@keyframes raMediaFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* YouTube-Unlisted cover-fit backdrop. A YouTube iframe is a fixed 16:9 box that
@@ -50,11 +83,15 @@
   height: 116%;
   overflow: hidden;
   pointer-events: none;
-  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0) scale(1.08);
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0)
+    scale(calc(1.08 * var(--zoom, 1)));
   will-change: transform;
 }
 
-.ytFrame {
+/* Cover-fit the fixed 16:9 iframe — both the plain embed (.ytFrame class) and the
+ * IFrame-API player (which replaces its host div with a bare <iframe>). */
+.ytFrame,
+.ytCover iframe {
   position: absolute;
   top: 50%;
   left: 50%;

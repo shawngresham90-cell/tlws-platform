@@ -136,6 +136,64 @@ back to its poster then its gradient — never a broken or blank backdrop. Under
 reduced-motion no video (file or YouTube) plays at all. The same priority and
 guards apply to a YouTube backdrop as to a dropped-in file.
 
+## Cinematic moments — pull segments from long videos (footage.json)
+
+`youtube-sources.json` maps a **whole** clip to a slot. For pulling **specific
+moments** out of longer footage — so one 20-minute video can feed several scenes
+— use `public/road-ahead/footage.json`. Each entry in its `moments` array pulls
+one segment of a source (a YouTube id/URL **or** a dropped-in `./video/` filename)
+into a slot, with a cinematic edit. Still **zero code** — edit the data file and
+redeploy; the build generator emits the moments and the resolver + `CinematicVideo`
+apply them.
+
+```jsonc
+{
+  "moments": [
+    { "source": "https://youtube.com/watch?v=…", "slot": "dark-highway",
+      "start": "0:14", "end": "0:23", "speed": 0.85, "grade": "night",
+      "crop": "center", "zoom": 1.06, "fadeIn": 0.5, "duck": true,
+      "mobile": { "speed": 1 } },
+    { "source": "morning-drive-nashville.mp4", "slot": "sunrise", "start": "3:17", "end": "3:29", "grade": "dawn" },
+    { "source": "morning-drive-nashville.mp4", "slot": "truck-driving-away", "start": "9:11", "end": "9:24", "grade": "warm", "speed": 0.75 }
+  ]
+}
+```
+
+**Fields** (all optional except `source` + `slot`; times accept `14` or `"0:14"`):
+
+| Field | Effect |
+| --- | --- |
+| `source` | YouTube link/id, or a filename in `./video/` (reused across many moments) |
+| `slot` | the scene slot this moment fills |
+| `start` / `end` | the segment; it loops start→end |
+| `speed` | playback rate 0.25–2 (`0.5` = slow motion) |
+| `loop` | loop the segment (default true) |
+| `crop` | CSS `object-position` reframe (`center`, `50% 30%`, …) |
+| `zoom` | fill scale ≥1 to crop in |
+| `grade` | color-grade preset: `none · night · dawn · noir · warm · steel · cool` |
+| `fadeIn` / `fadeOut` | fade seconds on entry/exit |
+| `poster` | still in `./poster/` shown before play / under Save-Data |
+| `duck` | duck the ambience beds while this moment plays |
+| `mobile` | per-field overrides applied at ≤768px |
+
+**How each edit runs:**
+- **Native files** (`./video/*.mp4`) apply everything directly on the `<video>`
+  element — segment loop (seek start→end), `playbackRate`, crop/zoom, grade
+  (CSS filter), fade, duck. A single long file is fetched once (HTTP cache) and
+  each scene seeks to its own segment via range requests.
+- **YouTube whole clips** stay a plain, script-free `youtube-nocookie` iframe
+  (with a `start` offset if set) — grade/crop/zoom/fade via CSS.
+- **YouTube trimmed or slowed** moments use the **YouTube IFrame Player API**
+  (`YouTubeCinema.tsx`), lazy-loaded via `next/dynamic` **only** for such moments
+  and **desktop-only** (skipped on mobile / Save-Data to stay lean); it seeks the
+  segment on loop at the set speed, and falls back to the gradient if the API
+  can't load. Precedence per slot: a `footage.json` moment > a `<slot>.mp4` file
+  > a `youtube-sources.json` mapping.
+
+All of it stays under the same guards: `aria-hidden` decorative, gated by
+`prefers-reduced-motion` / the pause control (WCAG 2.2.2), viewport-lazy, and
+Save-Data-aware.
+
 ## The audio pipeline
 
 Off by default; nothing autoplays. A visitor taps **"Enter with sound"** (on the
