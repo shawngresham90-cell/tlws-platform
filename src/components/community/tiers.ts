@@ -51,6 +51,12 @@ export const FOUNDER_TIERS: TierMeta[] = [
     blurb: 'Lay a brick in the foundation. Every founder counts, no matter the size.',
     capacity: 50,
   },
+  {
+    value: 'final_founder',
+    label: 'Final Founder',
+    blurb: 'The last wave — your name set in the foundation pavers as the wall closes out.',
+    capacity: null,
+  },
 ];
 
 /** Tier capacity by value (null = uncapped/unknown). */

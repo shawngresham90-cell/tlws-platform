@@ -10,7 +10,6 @@ import { sceneBackdropSlot } from '@/lib/road-ahead/assets';
 import { ECOSYSTEM_PILLARS } from '@/lib/road-ahead/ecosystem';
 import { type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { CampaignProgress } from '@/lib/community/founders';
-import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { CinematicVideo } from './CinematicVideo';
 import { FounderWall3D } from './FounderWall3D';
 import { NameEngraving } from './NameEngraving';
@@ -274,14 +273,13 @@ export function ChapterWall({
           on the wall — a permanent place in how this started.
         </p>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start">
-          <div
-            className={styles.reveal}
-            style={reveal(reduced ? 1 : subBeat(progress, 0.2, 0.55), reduced)}
-          >
-            <CampaignThermometer progress={campaign} />
-          </div>
-          <FounderWall3D founders={founders} progress={wallP} reduced={reduced} />
+        <div className="mt-10">
+          <FounderWall3D
+            founders={founders}
+            progress={wallP}
+            reduced={reduced}
+            campaign={campaign}
+          />
         </div>
       </Container>
     </section>

@@ -28,6 +28,13 @@ export type WallFounder = {
   /** 1-based place across the ENTIRE wall in reading order — the founder number. */
   wallNumber: number;
   message: string | null;
+  /**
+   * How many contributions this single wall placement represents. >1 when the
+   * same person holds multiple spots IN THE SAME TIER (shown as "N CONTRIBUTIONS"
+   * on one plaque). Absent/1 for a normal single placement. Distinct-tier spots
+   * for the same person remain SEPARATE placements (each contributions = 1).
+   */
+  contributions?: number;
 };
 
 /** Tier's rank in wall order; unknown/absent tiers sort after all known tiers. */

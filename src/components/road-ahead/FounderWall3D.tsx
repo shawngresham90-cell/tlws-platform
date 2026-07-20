@@ -3,10 +3,11 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { founderNumberWidth, type WallFounder } from '@/lib/road-ahead/founder-number';
-import type { FounderTier } from '@/lib/community/founders';
+import type { FounderTier, CampaignProgress } from '@/lib/community/founders';
 import { useMounted } from '@/lib/road-ahead/hooks';
 import { enableSound, disableSound, soundOn, subscribeSound } from './audio';
 import { FounderPlaque } from './FounderPlaque';
+import { FundraisingTotals } from './FundraisingTotals';
 import styles from './road-ahead.module.css';
 
 /**
@@ -63,6 +64,14 @@ const BANDS: BandSpec[] = [
     grid: 'grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4',
     course: true,
   },
+  {
+    key: 'final_founder',
+    heading: 'Final Founders',
+    tiers: ['final_founder'],
+    size: 'sm',
+    grid: 'grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4',
+    course: true,
+  },
 ];
 
 /** The wall-scoped sound gate. Browsers block audio until an explicit click, so
@@ -99,11 +108,14 @@ export function FounderWall3D({
   founders,
   progress,
   reduced,
+  campaign,
 }: {
   founders: WallFounder[];
   /** 0→1 reveal progress for the wall's entrance. */
   progress: number;
   reduced: boolean;
+  /** Authoritative campaign totals for the bottom fundraising display. */
+  campaign: CampaignProgress;
 }) {
   const width = founderNumberWidth(founders.length || 1);
 
@@ -166,6 +178,8 @@ export function FounderWall3D({
           );
         })}
       </div>
+
+      <FundraisingTotals campaign={campaign} reduced={reduced} />
     </div>
   );
 }

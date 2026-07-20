@@ -120,7 +120,18 @@ try {
     await page.waitForTimeout(400);
     const foundersText = await page.locator('#scene-wall').innerText();
     check('wall: shows founder numbers or empty-state No. 001', /No\.\s*\d/.test(foundersText));
-    check('wall: shows the campaign thermometer', foundersText.toLowerCase().includes('raised'));
+    check('wall: shows the fundraising total', foundersText.toLowerCase().includes('raised'));
+    // Authoritative fundraising numbers (summed from the roster).
+    check('wall: shows $9,055 raised', foundersText.includes('$9,055'));
+    check('wall: shows $2,495 to go', foundersText.includes('$2,495'));
+    check('wall: shows $11,550 goal', foundersText.includes('$11,550'));
+    check('wall: shows 78.4% funded', foundersText.includes('78.4%'));
+    // A real founder name is carved on the wall.
+    check('wall: shows a real founder name', /DAVID GRESHAM/i.test(foundersText));
+    check(
+      "wall: Barry's two same-tier spots collapse to one plaque",
+      /2 CONTRIBUTIONS/i.test(foundersText),
+    );
     check(
       'wall: never shows an amount-per-founder cents field',
       !/\$\d+\.\d{2}/.test(foundersText),

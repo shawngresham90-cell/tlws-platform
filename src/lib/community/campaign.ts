@@ -101,15 +101,14 @@ export function tierRemaining(capacity: number | null, usedCount: number): numbe
 }
 
 /** How many published founders currently hold each tier. */
-export function tierUsage(
-  founders: Pick<PublicFounder, 'tier'>[],
-): Record<FounderTier, number> {
+export function tierUsage(founders: Pick<PublicFounder, 'tier'>[]): Record<FounderTier, number> {
   const usage = {
     equipment_sponsor: 0,
     student_sponsor: 0,
     iron: 0,
     steel: 0,
     brick: 0,
+    final_founder: 0,
   } as Record<FounderTier, number>;
   for (const f of founders) {
     if (f.tier in usage) usage[f.tier] += 1;
