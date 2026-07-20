@@ -1,0 +1,1388 @@
+/*
+ * Cinematic styling for THE ROAD AHEAD — the parts Tailwind can't express:
+ * real 3D (perspective + preserve-3d), scroll-driven transforms fed by a --p
+ * custom property, and film-grade lighting/keyframes.
+ *
+ * Scroll-driven elements read `--p` (0→1 play-head) set inline from JS. When
+ * `--p` is unset (SSR, no-JS, or reduced motion) every rule defaults to the
+ * FINAL composed state (opacity 1, no offset), so the page is fully readable
+ * with zero animation. A reduced-motion media query hard-stops all motion as a
+ * second guarantee.
+ */
+
+/* ---------------------------------------------------------------- chapter */
+
+.chapter {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+
+/* Full-bleed media/lighting layer behind a chapter's content. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.backdropMedia {
+  position: absolute;
+  inset: -8% 0;
+  width: 100%;
+  height: 116%;
+  object-fit: cover;
+  /* Slow parallax drift fed by --p; defaults to centered when unset. `--zoom`
+   * (>=1) lets a moment reframe/crop in via the footage manifest. */
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0)
+    scale(calc(1.08 * var(--zoom, 1)));
+  will-change: transform;
+}
+
+/* Color-grade presets (footage manifest `grade`). Applied to the media element
+ * (or the YouTube cover wrapper) as a filter — a cheap cinematic look. */
+.gradeNight {
+  filter: brightness(0.82) contrast(1.16) saturate(0.82) hue-rotate(-8deg);
+}
+.gradeDawn {
+  filter: brightness(1.05) contrast(1.05) saturate(1.12) sepia(0.14) hue-rotate(-10deg);
+}
+.gradeNoir {
+  filter: grayscale(1) contrast(1.22) brightness(0.95);
+}
+.gradeWarm {
+  filter: saturate(1.16) sepia(0.2) brightness(1.03) contrast(1.03);
+}
+.gradeSteel {
+  filter: saturate(0.72) contrast(1.12) brightness(0.95) hue-rotate(6deg);
+}
+.gradeCool {
+  filter: saturate(0.9) hue-rotate(12deg) brightness(0.98) contrast(1.04);
+}
+
+/* Fade-in on entry (footage manifest `fadeIn`). Duration is set inline. */
+@keyframes raMediaFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* YouTube-Unlisted cover-fit backdrop. A YouTube iframe is a fixed 16:9 box that
+ * won't `object-fit: cover`, so we crop it: the frame is sized to the larger of
+ * 16:9-by-viewport-width or 16:9-by-viewport-height and centered, so it always
+ * fills the backdrop with the overflow clipped — same visual as a cover-fit
+ * video. Pointer-events off so it stays purely ambient (no accidental clicks
+ * into the embed). */
+.ytCover {
+  position: absolute;
+  inset: -8% 0;
+  width: 100%;
+  height: 116%;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc((var(--p, 0.5) - 0.5) * -12%), 0)
+    scale(calc(1.08 * var(--zoom, 1)));
+  will-change: transform;
+}
+
+/* Cover-fit the fixed 16:9 iframe — both the plain embed (.ytFrame class) and the
+ * IFrame-API player (which replaces its host div with a bare <iframe>). */
+.ytFrame,
+.ytCover iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 177.78vh; /* 16:9 measured by viewport height */
+  height: 56.25vw; /* 16:9 measured by viewport width */
+  min-width: 100%;
+  min-height: 100%;
+  transform: translate(-50%, -50%);
+  border: 0;
+  pointer-events: none;
+}
+
+/* Cinematic vignette + top/bottom falloff so text always has contrast, plus a
+ * faint STATIC film grain over the whole scene for filmic texture (no animation,
+ * negligible cost — a tiny inline turbulence tile at very low opacity). */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.4'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 0.25) 22%,
+      rgba(14, 14, 14, 0.25) 72%,
+      rgba(14, 14, 14, 0.95) 100%
+    ),
+    radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(14, 14, 14, 0.7) 100%);
+  background-size:
+    160px 160px,
+    cover,
+    cover;
+}
+
+/* A slow-moving key light — signal-yellow warmth that drifts across the frame. */
+.keyLight {
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    40% 40% at 30% 30%,
+    rgba(255, 235, 0, 0.1) 0%,
+    rgba(255, 235, 0, 0) 70%
+  );
+  animation: keyLightDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes keyLightDrift {
+  from {
+    transform: translate3d(-6%, -4%, 0);
+  }
+  to {
+    transform: translate3d(10%, 6%, 0);
+  }
+}
+
+/* ------------------------------------------------------ scroll-driven text */
+
+/* A reveal: rises + fades in as --p climbs. Final state at --p = 1.
+ * No `will-change`: this class is applied to many text nodes and the transform
+ * already composites on its own — permanently promoting every one would waste
+ * mobile memory (and can't be cleared under reduced motion). */
+.reveal {
+  opacity: var(--p, 1);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 2.5rem), 0);
+}
+
+/* A settle: text that eases up and locks — used for headline lines. */
+.settle {
+  opacity: clamp(0, calc(var(--p, 1) * 1.4), 1);
+  transform: translate3d(0, calc((1 - var(--p, 1)) * 1.75rem), 0);
+}
+
+/* -------------------------------------------------------------- 3D wall */
+
+.stage {
+  perspective: 1400px;
+  perspective-origin: 50% 42%;
+}
+
+.wall {
+  transform-style: preserve-3d;
+  /* Tilts from a raked 3D view (--p = 0) toward flat-on (--p = 1). */
+  transform: rotateX(calc((1 - var(--p, 1)) * 14deg))
+    translate3d(0, 0, calc((1 - var(--p, 1)) * -120px));
+  transition: transform 120ms linear;
+  will-change: transform;
+}
+
+.tile {
+  transform-style: preserve-3d;
+  /* Each tile carries its own depth via --z; parallax reads as real distance.
+   * No `will-change`: the wall can hold 100+ tiles and promoting each to its own
+   * layer would exhaust mobile GPU memory. */
+  transform: translate3d(0, 0, calc(var(--z, 0) * 1px * (1 - var(--p, 1))));
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+}
+
+.tile:hover,
+.tile:focus-within {
+  transform: translate3d(0, 0, 28px);
+  z-index: 1;
+}
+
+/* A moving specular highlight that rakes across the wall — the "lighting". */
+.tileSheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  opacity: calc(0.35 + var(--p, 0) * 0.4);
+}
+
+/* --------------------------------------------------------- founder number */
+
+.founderNumber {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* Kicker number that counts into place (scale + fade driven by --p). */
+.bigNumber {
+  transform: scale(calc(0.92 + var(--p, 1) * 0.08));
+  opacity: var(--p, 1);
+}
+
+/* --------------------------------------------------- museum spotlight (wall) */
+
+/* A slow gallery spotlight that breathes over the Founder Wall — the "museum"
+ * light. Purely decorative; gated off under reduced motion. */
+.spotlight {
+  position: absolute;
+  inset: -30% -10% 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 40% at 50% 0%,
+    rgba(255, 235, 0, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 35%,
+    rgba(255, 235, 0, 0) 70%
+  );
+  animation: spotlightBreathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes spotlightBreathe {
+  from {
+    opacity: 0.55;
+    transform: translateX(-4%) scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(4%) scale(1.06);
+  }
+}
+
+/* ============================================================================
+ * MUSEUM ATMOSPHERE (Scene 5) — volumetric shafts, a gallery light-sweep, and
+ * drifting dust motes. Pure CSS, decorative, mounted only when motion is on.
+ * ==========================================================================*/
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Scroll-driven camera dolly: the whole volumetric light field drifts as the
+   * visitor scrolls the exhibit (--p = wall progress, centered at 0.5 so it
+   * pans both ways). Compositor-only transform; default 0 when --p is unset. */
+  transform: translate3d(calc((var(--p, 0.5) - 0.5) * -7%), 0, 0);
+  will-change: transform;
+}
+
+/* A soft volumetric shaft raking down through the gallery. */
+.lightShaft {
+  position: absolute;
+  top: -20%;
+  left: var(--x, 50%);
+  width: 26%;
+  height: 150%;
+  transform: translateX(-50%) rotate(var(--a, 0deg));
+  transform-origin: top center;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 244, 200, 0.09) 0%,
+    rgba(255, 235, 160, 0.04) 35%,
+    rgba(255, 235, 160, 0) 72%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: shaftSway 13s ease-in-out infinite alternate;
+}
+@keyframes shaftSway {
+  from {
+    transform: translateX(-50%) rotate(calc(var(--a, 0deg) - 2deg));
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(-50%) rotate(calc(var(--a, 0deg) + 2deg));
+    opacity: 1;
+  }
+}
+
+/* A bright museum light that sweeps across the wall on a slow cycle. */
+.lightSweep {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 40%;
+  height: 120%;
+  transform: skewX(-14deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 250, 225, 0.07) 45%,
+    rgba(255, 235, 0, 0.05) 50%,
+    rgba(255, 250, 225, 0.07) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+  animation: lightSweep 11s ease-in-out infinite;
+}
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-60%) skewX(-14deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(320%) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+/* Dust motes drifting up through the light. */
+.dustField {
+  position: absolute;
+  inset: 0;
+}
+.mote {
+  position: absolute;
+  bottom: -5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 210, 0.8) 0%, rgba(255, 245, 210, 0) 70%);
+  opacity: 0;
+  animation: moteDrift var(--dur, 16s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes moteDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  88% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate3d(var(--drift, 0), -105vh, 0);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------- name engraving (scene 6) */
+
+/* Brushed-metal plate the founder's name is engraved into. */
+.plate {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.25)),
+    repeating-linear-gradient(90deg, #1a1a1a 0px, #1f1f1f 1px, #191919 2px, #1c1c1c 3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.6),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Induction (Scene 6): the plate pushes toward the lens and glows as the name
+ * is cut in — a spotlight halo breathes behind it. */
+.inductStage {
+  position: relative;
+}
+.plateHalo {
+  position: absolute;
+  inset: -34% -22%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 46% at 50% 46%,
+    rgba(255, 235, 0, 0.17),
+    rgba(255, 235, 0, 0.05) 45%,
+    rgba(255, 235, 0, 0) 72%
+  );
+  animation: haloBreathe 2.4s ease-in-out infinite alternate;
+}
+@keyframes haloBreathe {
+  from {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+.inducting {
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.6),
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(255, 235, 0, 0.14);
+  transition:
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 0.6s ease;
+}
+
+/* A dated maker's mark stamped into the plate — the "you belong to history now"
+ * signal. A hairline rule flanks a letter-spaced FOUNDING CLASS · <year> seal,
+ * incised like the rest of the plate. Static; it reads as part of the object. */
+.hallmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  color: #b9bcc2;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+.hallmarkRule {
+  display: inline-block;
+  width: clamp(28px, 12vw, 64px);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 235, 0, 0.35),
+    rgba(255, 255, 255, 0.28)
+  );
+}
+.hallmarkRule:last-child {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 235, 0, 0.35),
+    transparent
+  );
+}
+/* On the reveal, the seal warms to signal — the induction is "official". */
+.hallmarkStruck {
+  color: #ffe873;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(255, 235, 0, 0.3);
+  transition: color 0.5s ease 0.15s;
+}
+
+/* One-shot ember burst on the induction reveal — a handful of glowing sparks
+ * rise off the plate as the name is "forged in". Mounted only for the 'done'
+ * phase and only when motion is allowed, so it plays exactly once per reveal and
+ * never under reduced motion. Cheap: transform + opacity on 12 tiny spans. */
+.emberField {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ember {
+  position: absolute;
+  bottom: 34%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 200, 0.95), rgba(255, 200, 60, 0.5) 55%, transparent 70%);
+  box-shadow: 0 0 6px rgba(255, 220, 120, 0.8);
+  opacity: 0;
+  animation: raEmber 1300ms ease-out var(--d, 0ms) forwards;
+}
+@keyframes raEmber {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--x, 0), -180px, 0) scale(1.1);
+  }
+}
+
+/* Wall dedication — a carved brass foundation line under the tier bands, so the
+ * wall closes like a monument's base plate rather than just ending. */
+.wallDedication {
+  position: relative;
+  margin-top: 2.25rem;
+  padding: 0.9rem 1.25rem;
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 235, 0, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.28)),
+    linear-gradient(90deg, rgba(58, 44, 12, 0.35), rgba(30, 24, 8, 0.35));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 0, 0.1),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.55);
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #d9c98f;
+  text-shadow:
+    0 1px 0 rgba(255, 245, 205, 0.18),
+    0 -1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* Engraved text: an incised, debossed look via layered shadows. */
+.engraved {
+  color: #cfcfcf;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+}
+
+.engravedSignal {
+  color: #ffeb00;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 18px rgba(255, 235, 0, 0.25);
+}
+
+/* The engraving light: a bright rake that crosses the plate once it's in view,
+ * as if the name is being cut and catching the light. */
+.etchSweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.18) 48%,
+    rgba(255, 235, 0, 0.22) 50%,
+    rgba(255, 255, 255, 0.18) 52%,
+    transparent 65%
+  );
+  /* Position driven by --p (0→1) so the sweep tracks the scroll reveal. */
+  transform: translateX(calc(var(--p, 1) * 240% - 120%));
+}
+
+/* ------------------------------------------------------------- scroll cue */
+
+.scrollCue {
+  animation: cueBob 1.8s ease-in-out infinite;
+}
+
+@keyframes cueBob {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------- fundraising total bar */
+
+/* The funded-percentage bar fills as it scrolls into view. */
+.fundBar {
+  transition: width 1.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---------------------------------------------------------- progress rail */
+
+.railFill {
+  transform-origin: top;
+  transform: scaleY(var(--p, 0));
+  transition: transform 120ms linear;
+}
+
+/* ------------------------------------------------ GSAP scene-transition beats */
+
+/* Mood bloom — a soft, scene-tinted swell driven by GSAP on scene enter. Only
+ * ever mounted when motion is on; --flare is set per scene (cool → gold). */
+.transBloom {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 50% 42%,
+    var(--flare, rgba(255, 235, 0, 0.1)),
+    rgba(255, 255, 255, 0.04) 38%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Light flare — a bright diagonal rake that crosses the frame once per scene
+ * cut, like a passing headlight or a lens flare. GSAP drives xPercent/opacity. */
+.transStreak {
+  position: absolute;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 42%;
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(9deg);
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--flare, rgba(255, 235, 0, 0.9)) 30%, transparent) 42%,
+    var(--flare, rgba(255, 235, 0, 0.9)) 50%,
+    color-mix(in srgb, var(--flare, rgba(255, 235, 0, 0.9)) 30%, transparent) 58%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  mix-blend-mode: screen;
+}
+
+/* ============================================================================
+ * SCENE 1 — DARK HIGHWAY atmosphere (gradient state). Hollywood cold open:
+ * deep sky, a horizon glow that swells with scroll (--p), converging center-line
+ * dashes streaking under the camera, passing oncoming headlights, drifting fog.
+ * Bright elements stay in the lower third so the centred headline keeps
+ * contrast. Transform/opacity + one masked background-position — compositor-kind.
+ * ==========================================================================*/
+.nightFx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.nhSky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 7, 12, 0.6) 0%,
+    rgba(5, 7, 12, 0) 30%,
+    rgba(5, 7, 12, 0) 60%,
+    rgba(3, 4, 8, 0.72) 100%
+  );
+}
+/* The distant light you drive toward — grows brighter/larger as you scroll in. */
+.nhHorizon {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  width: 72%;
+  height: 34%;
+  transform: translateX(-50%) scale(calc(0.85 + var(--p, 0) * 0.4));
+  transform-origin: 50% 0%;
+  background: radial-gradient(
+    50% 70% at 50% 0%,
+    rgba(150, 180, 240, 0.22),
+    rgba(120, 150, 220, 0.06) 45%,
+    transparent 72%
+  );
+  filter: blur(10px);
+  opacity: calc(0.35 + var(--p, 0) * 0.6);
+}
+/* Perspective road; the dashes stream toward the camera (masked near the lens). */
+.nhRoad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8%;
+  height: 56%;
+  overflow: hidden;
+  perspective: 26rem;
+  perspective-origin: 50% -10%;
+  opacity: calc(0.3 + var(--p, 0) * 0.45);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 46%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 46%);
+}
+.nhLanes {
+  position: absolute;
+  left: 46%;
+  right: 46%;
+  top: -30%;
+  bottom: 0;
+  transform: rotateX(70deg);
+  transform-origin: 50% 100%;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 238, 190, 0) 0 60px,
+    rgba(255, 238, 190, 0.85) 60px 92px
+  );
+  background-size: 100% 92px;
+  animation: nhDrive 1.05s linear infinite;
+}
+@keyframes nhDrive {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 92px;
+  }
+}
+/* Oncoming headlights that swell and pass on the left, on a long stagger. */
+.nhOncoming {
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 250, 235, 0.95),
+    rgba(255, 240, 210, 0.4) 45%,
+    transparent 70%
+  );
+  box-shadow: 0 0 10px 4px rgba(255, 245, 220, 0.45);
+  opacity: 0;
+  animation: nhPass 18s linear infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes nhPass {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  55% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-280%, 130%) scale(2.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-380%, 250%) scale(3.2);
+  }
+}
+.nhFog {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 42%;
+  background: radial-gradient(80% 100% at 50% 100%, rgba(120, 130, 150, 0.14), transparent 65%);
+  animation: nhFogDrift 26s ease-in-out infinite alternate;
+}
+@keyframes nhFogDrift {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+
+/* ============================================================================
+ * SCENE 7 — LEGACY / DAWN atmosphere (gradient state). The emotional payoff:
+ * a sunrise breaks and warms as you scroll in (--p), god rays fan from the
+ * horizon, a lone truck rolls toward the light. Bright elements sit low so the
+ * centred headline keeps contrast.
+ * ==========================================================================*/
+.dawnFx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.dhSky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 14, 26, 0.5) 0%,
+    rgba(20, 20, 30, 0) 34%,
+    rgba(255, 180, 120, 0) 60%,
+    rgba(255, 150, 80, 0.1) 82%,
+    rgba(255, 120, 60, 0.16) 100%
+  );
+  opacity: calc(0.5 + var(--p, 0) * 0.5);
+}
+.dhSun {
+  position: absolute;
+  left: 50%;
+  bottom: calc(2% + var(--p, 0) * 16%);
+  width: 44%;
+  height: 44%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgba(255, 236, 180, 0.85),
+    rgba(255, 190, 110, 0.35) 38%,
+    rgba(255, 150, 80, 0.08) 60%,
+    transparent 72%
+  );
+  filter: blur(3px);
+  opacity: calc(0.4 + var(--p, 0) * 0.6);
+}
+.dhRays {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 160%;
+  height: 150%;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 100%,
+    rgba(255, 224, 160, 0.07) 0deg 3deg,
+    transparent 3deg 11deg
+  );
+  -webkit-mask-image: radial-gradient(58% 62% at 50% 100%, #000 10%, transparent 72%);
+  mask-image: radial-gradient(58% 62% at 50% 100%, #000 10%, transparent 72%);
+  opacity: calc(0.22 + var(--p, 0) * 0.5);
+  animation: dhRaysSway 30s ease-in-out infinite alternate;
+}
+@keyframes dhRaysSway {
+  from {
+    transform: translateX(-50%) rotate(-3deg);
+  }
+  to {
+    transform: translateX(-50%) rotate(3deg);
+  }
+}
+.dhTruck {
+  position: absolute;
+  left: 50%;
+  bottom: calc(15% + var(--p, 0) * 13%);
+  width: clamp(64px, 12vw, 128px);
+  transform: translateX(-50%);
+  color: rgba(8, 8, 12, 0.92);
+  opacity: calc(0.5 + var(--p, 0) * 0.5);
+  filter: drop-shadow(0 0 12px rgba(255, 190, 120, 0.5));
+  animation: dhTruckRoll 9s ease-in-out infinite alternate;
+}
+.dhTruck svg {
+  display: block;
+}
+@keyframes dhTruckRoll {
+  from {
+    transform: translateX(-53%);
+  }
+  to {
+    transform: translateX(-47%);
+  }
+}
+.dhHaze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  background: linear-gradient(180deg, transparent, rgba(255, 190, 130, 0.1));
+  animation: dhHazeBreathe 22s ease-in-out infinite alternate;
+}
+@keyframes dhHazeBreathe {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+ * SCENE 4 — FIRST LIGHT atmosphere (gradient state). The hopeful lift: a cool
+ * morning sky brightening to a white-hot sun cresting the horizon, a wide
+ * anamorphic lens flare, and soft rays. Cooler/whiter than Scene 7's golden
+ * dusk. Bright core sits low; the ecosystem cards carry their own dark backing.
+ * ==========================================================================*/
+.firstLightFx {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.flSky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 48, 84, 0.45) 0%,
+    rgba(70, 96, 140, 0.16) 34%,
+    rgba(200, 200, 190, 0) 58%,
+    rgba(255, 226, 170, 0.14) 84%,
+    rgba(255, 238, 200, 0.22) 100%
+  );
+  opacity: calc(0.5 + var(--p, 0) * 0.5);
+}
+/* Sun cresting the horizon — brighter/whiter and higher than the dusk sun. */
+.flSun {
+  position: absolute;
+  left: 50%;
+  bottom: calc(6% + var(--p, 0) * 20%);
+  width: 40%;
+  height: 40%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgba(255, 255, 250, 0.92),
+    rgba(255, 236, 180, 0.4) 30%,
+    rgba(255, 200, 120, 0.1) 55%,
+    transparent 70%
+  );
+  filter: blur(2px);
+  opacity: calc(0.45 + var(--p, 0) * 0.55);
+}
+/* Wide anamorphic lens flare across the sun's height — the cinematic signature. */
+.flFlare {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: calc(10% + var(--p, 0) * 20%);
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(180, 210, 255, 0.28) 34%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(180, 210, 255, 0.28) 66%,
+    transparent 100%
+  );
+  filter: blur(1.5px);
+  opacity: calc(0.35 + var(--p, 0) * 0.5);
+  mix-blend-mode: screen;
+}
+.flRays {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 150%;
+  height: 140%;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 100%,
+    rgba(255, 250, 235, 0.06) 0deg 3deg,
+    transparent 3deg 12deg
+  );
+  -webkit-mask-image: radial-gradient(56% 60% at 50% 100%, #000 8%, transparent 72%);
+  mask-image: radial-gradient(56% 60% at 50% 100%, #000 8%, transparent 72%);
+  opacity: calc(0.18 + var(--p, 0) * 0.42);
+  animation: dhRaysSway 34s ease-in-out infinite alternate;
+}
+
+/* ============================================================================
+ * PHOTOREALISTIC FOUNDER WALL — real materials, carved names, camera push.
+ * Iron = forged iron plate, Steel = brushed steel, Brick = carved red clay,
+ * Sponsor = premium brass. All procedural (layered gradients + a tiny inline
+ * feTurbulence noise texture) so there are zero image textures to download.
+ * ==========================================================================*/
+
+/* Each tier band gives its plaques a shared perspective so a focused plaque can
+ * physically push toward the camera (translateZ). */
+.plaqueBand {
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
+}
+
+.plaque {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 0.55s ease,
+    filter 0.55s ease;
+}
+
+/* Camera push: the founder the visitor has reached lifts toward the lens, the
+ * others hold the wall. Reads as the camera moving to that plaque — now with a
+ * warm signal bloom + a lifted shadow so it glows in the gallery light. */
+.focused {
+  transform: translateZ(46px) scale(1.035);
+  filter: brightness(1.14) contrast(1.02) drop-shadow(0 0 26px rgba(255, 235, 0, 0.22));
+  box-shadow:
+    0 0 0 1px rgba(255, 235, 0, 0.28),
+    0 22px 60px rgba(0, 0, 0, 0.6),
+    0 0 46px rgba(255, 235, 0, 0.12);
+  z-index: 3;
+}
+
+/* A completion pulse the moment a name finishes carving. */
+.settled {
+  animation: raSettle 620ms ease-out;
+}
+
+@keyframes raSettle {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 0 rgba(255, 235, 0, 0));
+  }
+  30% {
+    filter: brightness(1.35) drop-shadow(0 0 22px rgba(255, 245, 190, 0.55));
+  }
+  100% {
+    filter: brightness(1) drop-shadow(0 0 0 rgba(255, 235, 0, 0));
+  }
+}
+
+/* ---- Forged iron: lit gunmetal plate — pitted, scratched, cold reflection.
+   Kept clearly lighter than the near-black wall so it reads as a real plate. -- */
+.matIron {
+  background: radial-gradient(130% 85% at 28% -5%, rgba(190, 205, 222, 0.22), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(148deg, #52565d 0%, #3a3e44 40%, #282b30 72%, #1c1f23 100%);
+  border: 1px solid #14161a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.6),
+    0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.matIron::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Fine pitting + scratches. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+}
+
+/* ---- Brushed steel: bright, satin horizontal grain, moving shine ---------- */
+.matSteel {
+  background: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(0, 0, 0, 0.05) 1px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(0, 0, 0, 0.04) 3px
+    ),
+    linear-gradient(180deg, #cbd1d6 0%, #9aa1a8 52%, #737a81 100%);
+  border: 1px solid #5c6268;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -3px 10px rgba(0, 0, 0, 0.32),
+    0 18px 40px rgba(0, 0, 0, 0.5);
+}
+.matSteel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 32%,
+    rgba(255, 255, 255, 0.5) 48%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  opacity: 0.45;
+}
+
+/* ---- Red clay brick: warm, rough, chipped, sits in mortar ----------------- */
+.brickCourse {
+  padding: 0.5rem;
+  border-radius: 6px;
+  /* Mortar bed the bricks are set into. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)' opacity='0.5'/%3E%3C/svg%3E")
+      #3b3936,
+    linear-gradient(180deg, #45433f, #34322f);
+  background-size:
+    90px 90px,
+    cover;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+.matBrick {
+  border-radius: 3px;
+  background: radial-gradient(120% 90% at 30% 10%, rgba(255, 200, 160, 0.14), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(180deg, #a13e2b 0%, #8c3323 52%, #792a1c 100%);
+  border: 1px solid #55190f;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 210, 180, 0.12),
+    inset 0 -4px 9px rgba(0, 0, 0, 0.5),
+    /* seated into the mortar */ 0 0 0 2px rgba(0, 0, 0, 0.25),
+    0 6px 12px rgba(0, 0, 0, 0.5);
+}
+.matBrick::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Clay grain + a couple of chips knocked out of the surface. */
+  background-image: radial-gradient(
+      circle at 14% 82%,
+      rgba(0, 0, 0, 0.32) 0,
+      rgba(0, 0, 0, 0.32) 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 86% 24%,
+      rgba(0, 0, 0, 0.22) 0,
+      rgba(0, 0, 0, 0.22) 2px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 62% 68%, rgba(255, 220, 190, 0.12) 0, transparent 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045 0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  background-size:
+    cover,
+    cover,
+    cover,
+    150px 96px;
+  opacity: 0.45;
+  mix-blend-mode: multiply;
+}
+
+/* ---- Premium sponsor: polished brass, larger, most impressive ------------- */
+.matSponsor {
+  background: radial-gradient(140% 90% at 30% 0%, rgba(255, 250, 220, 0.35), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(160deg, #f3d789 0%, #cb9c3e 32%, #a67c28 62%, #dcb662 100%);
+  border: 1px solid #6b4b11;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 0 0 2px rgba(255, 242, 195, 0.18),
+    inset 0 -5px 16px rgba(80, 50, 0, 0.5),
+    0 24px 54px rgba(0, 0, 0, 0.55);
+}
+.matSponsor::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0) 34%,
+    rgba(255, 255, 255, 0.55) 48%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  opacity: 0.4;
+}
+
+/* --------------------------------------------------- carved-name lettering */
+
+/* The engraved look per material: a cut groove (dark inner) with a catch-light
+ * lip. Legible by design — these are real names. */
+.carveMetalDark {
+  /* bright incised letters on lit gunmetal — high contrast + a catch-light lip */
+  color: #eef2f6;
+  text-shadow:
+    0 -1px 1px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.carveMetalLight {
+  /* dark incised letters on bright steel */
+  color: #24272b;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7),
+    0 -1px 1px rgba(0, 0, 0, 0.4);
+}
+.carveStone {
+  /* deeply carved into red clay */
+  color: #190c07;
+  text-shadow:
+    0 1px 0 rgba(255, 190, 150, 0.2),
+    0 -1px 2px rgba(0, 0, 0, 0.9),
+    0 -2px 3px rgba(0, 0, 0, 0.55);
+}
+.carveGold {
+  /* incised into brass */
+  color: #3c2c06;
+  text-shadow:
+    0 1px 0 rgba(255, 245, 205, 0.6),
+    0 -1px 2px rgba(60, 40, 0, 0.6);
+}
+
+/* Container carrying the per-letter carve. `--n` = letter count, `--step` = ms
+ * per letter, `--dust` = particle colour. Block so long names wrap across lines
+ * on small bricks/mobile instead of overflowing the plaque. */
+.carve {
+  position: relative;
+  display: block;
+}
+.glyph {
+  position: relative;
+  display: inline-block;
+  white-space: pre;
+}
+
+/* Motion, reached: cut each letter in, one at a time, and hold it (forwards). */
+.carveGo .glyph {
+  opacity: 0;
+  animation: raCut 300ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation-delay: calc(var(--i) * var(--step, 58ms));
+}
+/* Material dust/metal particles kicked up as each letter is cut. */
+.carveGo .glyph::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 0.5em;
+  height: 0.5em;
+  transform: translate(-50%, -50%) scale(0.2);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, var(--dust, rgba(255, 255, 255, 0.85)) 0%, transparent 70%);
+  animation: raDust 380ms ease-out forwards;
+  animation-delay: calc(var(--i) * var(--step, 58ms));
+}
+/* Motion, not yet reached: blank groove (name still in the DOM for AT). */
+.carvePre .glyph {
+  opacity: 0;
+}
+/* Reduced motion / no-JS: fully carved, static, readable. */
+.carveStatic .glyph {
+  opacity: 1;
+}
+
+@keyframes raCut {
+  0% {
+    opacity: 0;
+    transform: translateY(-0.14em) scale(1.12);
+    filter: blur(1.4px);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes raDust {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  25% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -130%) scale(1.7);
+  }
+}
+
+/* The chisel's catch-light rakes across the name as it's cut — changing
+ * highlights that track the carve. */
+.chisel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.chisel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 42%;
+  transform: translateX(-150%);
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+}
+.carveGo .chisel::before {
+  animation: raChisel calc(var(--n, 8) * var(--step, 58ms) + 260ms) ease-out forwards;
+}
+@keyframes raChisel {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+/* ------------------------------------------------- reduced-motion hard stop */
+
+@media (prefers-reduced-motion: reduce) {
+  .backdropMedia,
+  .reveal,
+  .settle,
+  .wall,
+  .tile,
+  .bigNumber,
+  .etchSweep,
+  .plaque,
+  .focused,
+  .carveGo .glyph {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .keyLight,
+  .scrollCue,
+  .spotlight,
+  .tile:hover,
+  .tile:focus-within,
+  .settled,
+  .carveGo .glyph,
+  .carveGo .glyph::after,
+  .carveGo .chisel::before {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .carveGo .glyph::after {
+    display: none;
+  }
+  .etchSweep {
+    display: none;
+  }
+  .stage,
+  .plaqueBand {
+    perspective: none;
+  }
+  /* Backstop for the museum atmosphere + induction (these are also JS-gated to
+   * mount only when motion is on, but stop them here too as defense-in-depth). */
+  .lightShaft,
+  .lightSweep,
+  .mote,
+  .plateHalo,
+  .inducting,
+  .hallmarkStruck,
+  .ember,
+  .transBloom,
+  .transStreak {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .atmosphere {
+    transform: none !important;
+  }
+  .atmosphere,
+  .plateHalo,
+  .emberField,
+  .transBloom,
+  .transStreak,
+  .nightFx,
+  .dawnFx,
+  .firstLightFx {
+    display: none;
+  }
+}
+
+/* Mobile perf: drop the compositor-heavy shafts + light-sweep (blur +
+ * mix-blend-mode: screen force per-frame backdrop compositing) and halve the
+ * dust motes on small screens. The cheap transform/opacity motes remain. */
+@media (max-width: 768px) {
+  .lightShaft,
+  .lightSweep {
+    display: none;
+  }
+  .dustField .mote:nth-child(n + 12) {
+    display: none;
+  }
+  /* Drop the blurred + screen-blended transition flare on phones (keeps the
+   * cheap tinted bloom); the camera-dolly transform stays (compositor-only). */
+  .transStreak {
+    display: none;
+  }
+  /* Scene-atmosphere: the streaking lane dashes + oncoming headlights are cheap
+   * (one masked strip + two tiny dots) so they stay on phones for the driving
+   * drama; only the conic god-rays (expensive to paint) are dropped. */
+  .dhRays,
+  .flRays {
+    display: none;
+  }
+}
