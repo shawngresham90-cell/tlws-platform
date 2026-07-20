@@ -1,13 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { useMounted, useReducedMotion, useRoadAheadTimeline } from '@/lib/road-ahead/hooks';
+import { cn } from '@/lib/utils/cn';
+import {
+  useCinemaTier,
+  useMounted,
+  useReducedMotion,
+  useRoadAheadTimeline,
+} from '@/lib/road-ahead/hooks';
 import { ROAD_AHEAD_CHAPTERS } from '@/lib/road-ahead/chapters';
 import { founderNumberWidth, type WallFounder } from '@/lib/road-ahead/founder-number';
 import type { CampaignProgress } from '@/lib/community/founders';
 import { ProgressRail } from './ProgressRail';
 import { MotionToggle } from './MotionToggle';
 import { AudioController } from './AudioController';
+import { SpineLayer } from './SpineLayer';
+import { YearOdometer } from './YearOdometer';
 import {
   ChapterNight,
   ChapterPreTrip,
@@ -44,6 +52,14 @@ export function RoadAheadExperience({
   // on only after mount, and off whenever the OS or the visitor asks for it.
   const reduced = !mounted || prefersReduced || paused;
 
+  // WebGL truck-spine tier: only on capable, motion-on devices (the hook gates
+  // pointer/memory/WebGL/Save-Data). `spineFailed` latches a context-loss so we
+  // never retry a dead GPU. When the spine is live the narrative scenes go
+  // transparent so the continuous 3D drive shows through behind them.
+  const tier = useCinemaTier(!reduced);
+  const [spineFailed, setSpineFailed] = useState(false);
+  const spineActive = tier === 'full' && !reduced && !spineFailed;
+
   const { scrollProgress, activeChapter, registerChapter } = useRoadAheadTimeline(
     ROAD_AHEAD_CHAPTERS.length,
   );
@@ -52,7 +68,13 @@ export function RoadAheadExperience({
   const numberWidth = founderNumberWidth(nextNumber);
 
   return (
-    <div className="relative bg-asphalt" data-ra-hydrated={mounted ? 'true' : 'false'}>
+    <div
+      className={cn('relative', !spineActive && 'bg-asphalt')}
+      data-ra-hydrated={mounted ? 'true' : 'false'}
+      data-ra-tier={spineActive ? 'full' : 'lite'}
+    >
+      {spineActive ? <SpineLayer onFail={() => setSpineFailed(true)} /> : null}
+      <YearOdometer reduced={reduced} />
       {/* Accessible skip-to-chapter navigation — visible on keyboard focus. */}
       <nav aria-label="Chapters" className="sr-only focus-within:not-sr-only">
         <ul className="fixed left-2 top-2 z-50 flex flex-wrap gap-2 rounded-card border border-line bg-asphalt p-2">
@@ -85,10 +107,14 @@ export function RoadAheadExperience({
         ) : null}
       </div>
 
-      <ChapterNight reduced={reduced} register={registerChapter(0)} />
-      <ChapterPreTrip reduced={reduced} register={registerChapter(1)} />
-      <ChapterGrind reduced={reduced} register={registerChapter(2)} />
-      <ChapterFirstLight reduced={reduced} register={registerChapter(3)} />
+      <ChapterNight reduced={reduced} register={registerChapter(0)} spineActive={spineActive} />
+      <ChapterPreTrip reduced={reduced} register={registerChapter(1)} spineActive={spineActive} />
+      <ChapterGrind reduced={reduced} register={registerChapter(2)} spineActive={spineActive} />
+      <ChapterFirstLight
+        reduced={reduced}
+        register={registerChapter(3)}
+        spineActive={spineActive}
+      />
       <ChapterWall
         reduced={reduced}
         register={registerChapter(4)}

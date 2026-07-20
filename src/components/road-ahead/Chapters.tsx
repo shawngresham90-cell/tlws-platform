@@ -27,6 +27,9 @@ import styles from './road-ahead.module.css';
 
 type Register = (el: HTMLElement | null) => void;
 
+/** Props for a footage-backed scene. `spineActive` = the WebGL truck drive is live. */
+type SceneProps = { reduced: boolean; register: Register; spineActive?: boolean };
+
 /** Attach both the parallax-progress ref and the timeline registration to one node. */
 function useChapter(reduced: boolean, register: Register) {
   const { ref, progress } = useElementProgress<HTMLElement>(!reduced);
@@ -49,7 +52,7 @@ const SECTION_CLASS = 'relative flex min-h-[100svh] w-full items-center';
 
 /* --------------------------------------------------------- 1. Night Drive */
 
-export function ChapterNight({ reduced, register }: { reduced: boolean; register: Register }) {
+export function ChapterNight({ reduced, register, spineActive }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
   return (
@@ -58,6 +61,7 @@ export function ChapterNight({ reduced, register }: { reduced: boolean; register
         slot={sceneBackdropSlot('nightDrive')!}
         progress={progress}
         reduced={reduced}
+        spineActive={spineActive}
         priority
       />
       <Container className="py-28 text-center sm:py-32">
@@ -100,12 +104,17 @@ export function ChapterNight({ reduced, register }: { reduced: boolean; register
 
 /* ---------------------------------------------------------- 2. The Pre-Trip */
 
-export function ChapterPreTrip({ reduced, register }: { reduced: boolean; register: Register }) {
+export function ChapterPreTrip({ reduced, register, spineActive }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
   return (
     <section id="scene-pretrip" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
-      <CinematicVideo slot={sceneBackdropSlot('preTrip')!} progress={progress} reduced={reduced} />
+      <CinematicVideo
+        slot={sceneBackdropSlot('preTrip')!}
+        progress={progress}
+        reduced={reduced}
+        spineActive={spineActive}
+      />
       <Container className="py-28">
         <div className="max-w-3xl">
           <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>
@@ -130,12 +139,17 @@ export function ChapterPreTrip({ reduced, register }: { reduced: boolean; regist
 
 /* ------------------------------------------------------------- 3. The Grind */
 
-export function ChapterGrind({ reduced, register }: { reduced: boolean; register: Register }) {
+export function ChapterGrind({ reduced, register, spineActive }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
   return (
     <section id="scene-grind" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
-      <CinematicVideo slot={sceneBackdropSlot('theGrind')!} progress={progress} reduced={reduced} />
+      <CinematicVideo
+        slot={sceneBackdropSlot('theGrind')!}
+        progress={progress}
+        reduced={reduced}
+        spineActive={spineActive}
+      />
       <Container className="py-28">
         <div className="ml-auto max-w-3xl text-right">
           <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>
@@ -160,7 +174,7 @@ export function ChapterGrind({ reduced, register }: { reduced: boolean; register
 
 /* ---------------------------------------------------------- 4. First Light */
 
-export function ChapterFirstLight({ reduced, register }: { reduced: boolean; register: Register }) {
+export function ChapterFirstLight({ reduced, register, spineActive }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.1, 0.45);
   return (
@@ -169,6 +183,7 @@ export function ChapterFirstLight({ reduced, register }: { reduced: boolean; reg
         slot={sceneBackdropSlot('firstLight')!}
         progress={progress}
         reduced={reduced}
+        spineActive={spineActive}
       />
       <Container className="py-28">
         <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>
@@ -320,7 +335,7 @@ export function ChapterName({
 
 /* ------------------------------------------------------------ 7. The Payoff */
 
-export function ChapterPayoff({ reduced, register }: { reduced: boolean; register: Register }) {
+export function ChapterPayoff({ reduced, register, spineActive }: SceneProps) {
   const { setRef, progress } = useChapter(reduced, register);
   const p = reduced ? 1 : subBeat(progress, 0.15, 0.5);
   return (
@@ -329,6 +344,7 @@ export function ChapterPayoff({ reduced, register }: { reduced: boolean; registe
         slot={sceneBackdropSlot('thePayoff')!}
         progress={progress}
         reduced={reduced}
+        spineActive={spineActive}
       />
       <Container className="py-28 text-center">
         <p className={cn('eyebrow', styles.reveal)} style={reveal(p, reduced)}>

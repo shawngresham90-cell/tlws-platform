@@ -110,6 +110,57 @@ export function useRoadAheadTimeline(chapterCount: number) {
   return { scrollProgress, activeChapter, registerChapter };
 }
 
+/** Is a WebGL context obtainable in this browser right now? */
+function webglAvailable(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return (
+      typeof window !== 'undefined' &&
+      'WebGLRenderingContext' in window &&
+      !!(c.getContext('webgl') || c.getContext('experimental-webgl'))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The cinematic capability tier. Starts 'lite' (SSR + first render + reduced
+ * motion), and upgrades to 'full' (WebGL truck spine) only on a capable
+ * device — pointer:fine, deviceMemory >= 4, WebGL available, and not
+ * Save-Data. This is the ladder that keeps the heavy 3D chunk off mobile and
+ * off reduced-motion, so the experience stays mobile-first and accessible;
+ * everyone else gets the native CSS scenes. The upgrade runs on idle so it
+ * never blocks first interaction. `enabled=false` (reduced motion) pins 'lite'.
+ */
+export function useCinemaTier(enabled: boolean): 'lite' | 'full' {
+  const [tier, setTier] = useState<'lite' | 'full'>('lite');
+
+  useEffect(() => {
+    if (!enabled) {
+      setTier('lite');
+      return;
+    }
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean };
+      deviceMemory?: number;
+    };
+    if (nav.connection?.saveData) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return; // coarse pointer → treat as mobile
+    if ((nav.deviceMemory ?? 8) < 4) return;
+    if (!webglAvailable()) return;
+
+    const ric =
+      window.requestIdleCallback ??
+      ((cb: () => void) => window.setTimeout(cb, 200) as unknown as number);
+    const cic = window.cancelIdleCallback ?? window.clearTimeout;
+    const id = ric(() => setTier('full'));
+    return () => cic(id as number);
+  }, [enabled]);
+
+  return enabled ? tier : 'lite';
+}
+
 /**
  * Whether a ref'd element is at/near the viewport (IntersectionObserver with a
  * generous rootMargin). Used to gate video playback so footage only decodes when

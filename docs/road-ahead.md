@@ -20,11 +20,39 @@ in. No component changes are needed to go live with footage.
 | Pure logic (tested) | `src/lib/road-ahead/*.ts` | `assets`, `chapters`, `ecosystem`, `founder-number`, `audio-state`, `scroll-math`, `hooks`. |
 | Tests | `scripts/test-road-ahead.ts` (unit) · `scripts/e2e-road-ahead.mjs` (Playwright) | |
 
-No new npm dependencies: the whole experience runs on native web APIs — a shared
-rAF-throttled scroll timeline for progress/active-scene, IntersectionObserver
-only to viewport-gate video playback, CSS 3D transforms, and CSS keyframes. GSAP
-and Three.js remain drop-in options if a future beat justifies them, but the
-current cinematic result needs neither and stays lean for mobile.
+## The WebGL truck spine (capability-gated enhancement)
+
+On top of the native scenes, capable desktops get a **continuous 3D truck
+drive** rendered behind the whole page — a procedural (no GLB, no asset files)
+low-poly semi that leads the camera down a pre-dawn interstate, mile markers
+counting the years, dawn withheld until the school. It is a pure enhancement,
+gated hard so it never costs the rest of the audience:
+
+- **Code-split** (`three` + `@react-three/fiber` via `next/dynamic`, `ssr:false`)
+  — the ~200 KB 3D chunk is never in the route-initial bundle (`/road-ahead`
+  stays ~12 KB route / ~109 KB first load).
+- **Capability ladder** (`useCinemaTier`): only upgrades to the spine on
+  `pointer:fine` + `deviceMemory ≥ 4` + WebGL available + not Save-Data, on
+  requestIdleCallback. Mobile, low-memory, Save-Data, no-WebGL, and
+  reduced-motion visitors stay on the native CSS scenes (`data-ra-tier="lite"`).
+- **Never fatal**: a React error boundary + WebGL context-loss handler drop
+  straight back to the lite scenes — a spine failure can never show a crash
+  screen.
+- **Pause-aware**: the WCAG pause control (and `prefers-reduced-motion`) unmounts
+  the spine with everything else.
+
+When the spine is live, the narrative scenes with no footage go transparent so
+the drive shows through; footage (when supplied) still wins. A DOM **Year
+Odometer** (2009 → 2076) reinforces the same timeline on every tier.
+
+GSAP was evaluated and intentionally **not** adopted: in the source build it only
+bridged scroll → the footage layer (the truck reads scroll directly), so the
+native shared-timeline already covers it with no added dependency.
+
+The route-initial experience still adds **no** dependencies of its own — the
+native scenes run on a shared rAF-throttled scroll timeline, IntersectionObserver
+only to viewport-gate video, CSS 3D transforms, and CSS keyframes. three.js/R3F
+load only for the opted-in full tier.
 
 ## The seven-scene shot list (owner-supplied footage)
 

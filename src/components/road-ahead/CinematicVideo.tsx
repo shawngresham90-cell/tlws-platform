@@ -24,6 +24,7 @@ export function CinematicVideo({
   progress = 0.5,
   reduced,
   priority = false,
+  spineActive = false,
 }: {
   slot: VideoSlot;
   /** 0→1 crossing progress for the parallax drift. */
@@ -32,18 +33,24 @@ export function CinematicVideo({
   reduced: boolean;
   /** Eager-load the first chapter's media; lazy for the rest. */
   priority?: boolean;
+  /** WebGL truck spine is live behind the page. */
+  spineActive?: boolean;
 }) {
   // Only observe (and only ever play) when motion is on and footage exists.
   const { ref, inView } = useInView<HTMLDivElement>(!reduced && hasFootage(slot));
   const showVideo = !reduced && hasFootage(slot) && (inView || priority);
   const mediaStyle = { ['--p']: progress } as CSSProperties;
+  // When the 3D spine is driving and this scene has no footage yet, drop the
+  // gradient so the continuous truck drive shows through; keep the vignette for
+  // text contrast. Footage (when supplied) still wins and stays opaque.
+  const transparent = spineActive && !hasFootage(slot);
 
   return (
     <div
       ref={ref}
       className={styles.backdrop}
       aria-hidden="true"
-      style={{ background: slot.gradient }}
+      style={{ background: transparent ? 'transparent' : slot.gradient }}
     >
       {showVideo ? (
         <video
@@ -73,7 +80,7 @@ export function CinematicVideo({
           decoding="async"
         />
       ) : null}
-      {!reduced ? <span className={styles.keyLight} /> : null}
+      {!reduced && !transparent ? <span className={styles.keyLight} /> : null}
       <span className={styles.vignette} />
     </div>
   );

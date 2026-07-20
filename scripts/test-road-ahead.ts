@@ -53,6 +53,7 @@ import {
 } from '@/lib/road-ahead/assets';
 import { ROAD_AHEAD_CHAPTERS, validateChapters } from '@/lib/road-ahead/chapters';
 import { ECOSYSTEM_PILLARS, validateEcosystem } from '@/lib/road-ahead/ecosystem';
+import { ROAD_LEN, YEARS, yearAt } from '@/components/road-ahead/spine/consts';
 import type { FounderTier, PublicFounder } from '@/lib/community/founders';
 
 let passed = 0;
@@ -324,6 +325,31 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
   check(
     'ecosystem: ids unique',
     new Set(ECOSYSTEM_PILLARS.map((p) => p.id)).size === ECOSYSTEM_PILLARS.length,
+  );
+}
+
+/* ------------------------------------------------ spine year mapping (odometer) */
+{
+  check('spine: ROAD_LEN positive', ROAD_LEN > 0);
+  check(
+    'spine: years ascending',
+    YEARS.every((y, i) => i === 0 || y > YEARS[i - 1]),
+  );
+  check('spine: yearAt(0) is the first year', yearAt(0) === YEARS[0]);
+  check('spine: yearAt(1) is the last year', yearAt(1) === YEARS[YEARS.length - 1]);
+  check('spine: yearAt clamps below 0', yearAt(-0.5) === YEARS[0]);
+  check('spine: yearAt clamps above 1', yearAt(2) === YEARS[YEARS.length - 1]);
+  let monotonic = true;
+  let prevYear = -Infinity;
+  for (let i = 0; i <= 20; i++) {
+    const y = yearAt(i / 20);
+    if (y < prevYear) monotonic = false;
+    prevYear = y;
+  }
+  check('spine: yearAt is monotonic non-decreasing', monotonic);
+  check(
+    'spine: yearAt midpoint within range',
+    yearAt(0.5) >= YEARS[0] && yearAt(0.5) <= YEARS.at(-1)!,
   );
 }
 

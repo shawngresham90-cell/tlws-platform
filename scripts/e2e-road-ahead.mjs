@@ -55,7 +55,14 @@ try {
 
   /* ---------------------------------------------- motion-on default page */
   {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }); // mobile-first
+    // Real mobile context (touch, coarse pointer) → stays on the lite CSS tier,
+    // so this suite deterministically exercises the native scenes. The WebGL
+    // (full-tier) path is covered by e2e-road-ahead-spine.mjs.
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
     const page = await ctx.newPage();
     const errors = [];
     page.on('console', (m) => {
@@ -220,7 +227,11 @@ try {
 
   /* --------------------------------------------------- homepage entry point */
   {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
     check(
