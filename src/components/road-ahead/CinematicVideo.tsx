@@ -1,9 +1,37 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { hasFootage, type VideoSlot } from '@/lib/road-ahead/assets';
 import { useInView } from '@/lib/road-ahead/hooks';
 import styles from './road-ahead.module.css';
+
+/**
+ * True when the browser/network is asking us to conserve data — an explicit
+ * Save-Data header, or a slow (2g) effective connection. In those cases we skip
+ * the looping clip and show the poster/gradient instead, so a heavy backdrop
+ * never lands on a metered or slow phone. SSR-safe (defaults to false).
+ */
+function usePrefersLightMedia(): boolean {
+  const [light, setLight] = useState(false);
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      connection?: {
+        saveData?: boolean;
+        effectiveType?: string;
+        addEventListener?: (type: 'change', listener: () => void) => void;
+        removeEventListener?: (type: 'change', listener: () => void) => void;
+      };
+    };
+    const conn = nav.connection;
+    if (!conn) return;
+    const evaluate = () =>
+      setLight(Boolean(conn.saveData) || /(^|-)2g$/.test(conn.effectiveType ?? ''));
+    evaluate();
+    conn.addEventListener?.('change', evaluate);
+    return () => conn.removeEventListener?.('change', evaluate);
+  }, []);
+  return light;
+}
 
 /**
  * The full-bleed backdrop for a chapter. Renders, in order of preference:
@@ -36,9 +64,15 @@ export function CinematicVideo({
   /** WebGL truck spine is live behind the page. */
   spineActive?: boolean;
 }) {
-  // Only observe (and only ever play) when motion is on and footage exists.
-  const { ref, inView } = useInView<HTMLDivElement>(!reduced && hasFootage(slot));
-  const showVideo = !reduced && hasFootage(slot) && (inView || priority);
+  // If a clip fails to load/decode (missing file, aborted on a flaky network),
+  // latch it off and fall back to the poster/gradient — never a broken element.
+  const [failed, setFailed] = useState(false);
+  const lightMedia = usePrefersLightMedia();
+  // Only observe (and only ever play) when motion is on, footage exists, the
+  // clip hasn't errored, and the network isn't asking us to conserve data.
+  const canPlay = !reduced && hasFootage(slot) && !failed && !lightMedia;
+  const { ref, inView } = useInView<HTMLDivElement>(canPlay);
+  const showVideo = canPlay && (inView || priority);
   const mediaStyle = { ['--p']: progress } as CSSProperties;
   // When the 3D spine is driving and this scene has no footage yet, drop the
   // gradient so the continuous truck drive shows through; keep the vignette for
@@ -62,9 +96,12 @@ export function CinematicVideo({
           playsInline
           preload={priority ? 'auto' : 'metadata'}
           poster={slot.poster ?? undefined}
+          onError={() => setFailed(true)}
         >
-          {slot.src ? <source src={slot.src} type="video/mp4" /> : null}
+          {/* WebM first: VP9-capable browsers pick the smaller payload; MP4 is
+              the universal fallback. */}
           {slot.webmSrc ? <source src={slot.webmSrc} type="video/webm" /> : null}
+          {slot.src ? <source src={slot.src} type="video/mp4" /> : null}
           {slot.captionsSrc ? (
             <track kind="captions" src={slot.captionsSrc} srcLang="en" label="English" default />
           ) : null}

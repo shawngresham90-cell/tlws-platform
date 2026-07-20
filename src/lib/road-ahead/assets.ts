@@ -318,9 +318,72 @@ function v(
   };
 }
 
+/**
+ * Canonical per-scene backdrop clips — the SIMPLE upload system. One clip per
+ * scene, named `scene-01.mp4` … `scene-07.mp4`, dropped into
+ * `public/road-ahead/video/` with a matching poster in
+ * `public/road-ahead/poster/`. `src` is null until a clip is supplied; fill it
+ * with the path and that scene goes live (the granular shot-list slots above
+ * remain available for future montage work). Scenes 5 (Founder Wall) and 6
+ * (engraving) are video-free by design — a clip there is optional atmosphere.
+ */
+export const SCENE_ORDER: SceneId[] = [
+  'nightDrive',
+  'preTrip',
+  'theGrind',
+  'firstLight',
+  'foundersWall',
+  'nameEngraving',
+  'thePayoff',
+];
+
+/** Two-digit scene number for the canonical filename, e.g. 'nightDrive' → '01'. */
+export function sceneNumber(scene: SceneId): string {
+  const i = SCENE_ORDER.indexOf(scene);
+  return String(i + 1).padStart(2, '0');
+}
+
+const SCENE_GRADIENT: Record<SceneId, string> = {
+  nightDrive: G.night,
+  preTrip: G.steel,
+  theGrind: G.rain,
+  firstLight: G.dawn,
+  foundersWall: 'linear-gradient(180deg, #0b0b0b 0%, #0E0E0E 100%)',
+  nameEngraving: 'linear-gradient(180deg, #0b0b0b 0%, #0E0E0E 100%)',
+  thePayoff: G.gold,
+};
+
+/** The canonical drop-in backdrop slot for each scene (`scene-01`…`scene-07`). */
+export const SCENE_BACKDROP: Record<SceneId, VideoSlot> = SCENE_ORDER.reduce(
+  (acc, scene) => {
+    const n = sceneNumber(scene);
+    acc[scene] = {
+      id: `scene-${n}`,
+      scene,
+      label: `Scene ${n} backdrop`,
+      description: `Drop-in scene clip: public/road-ahead/video/scene-${n}.mp4 (+ optional .webm, poster scene-${n}.jpg).`,
+      // Fill these when the owner uploads a clip for this scene:
+      src: null, // e.g. `${ROAD_AHEAD_ASSET_BASE}/video/scene-${n}.mp4`
+      webmSrc: null,
+      poster: null, // e.g. `${ROAD_AHEAD_ASSET_BASE}/poster/scene-${n}.jpg`
+      gradient: SCENE_GRADIENT[scene],
+      captionsSrc: null,
+      alt: `Cinematic backdrop for scene ${n} of The Road Ahead.`,
+      license: NO_LICENSE,
+    };
+    return acc;
+  },
+  {} as Record<SceneId, VideoSlot>,
+);
+
 /** All video slots as an array (stable order matches declaration). */
 export function allVideoSlots(): VideoSlot[] {
   return Object.values(ROAD_AHEAD_VIDEO);
+}
+
+/** The seven canonical drop-in backdrop slots, in scene order. */
+export function allBackdropSlots(): VideoSlot[] {
+  return SCENE_ORDER.map((scene) => SCENE_BACKDROP[scene]);
 }
 
 /** Look up a video slot by id (undefined if unknown). */
@@ -334,13 +397,15 @@ export function slotsForScene(scene: SceneId): VideoSlot[] {
 }
 
 /**
- * The backdrop slot to render for a scene: the first slot with real footage, or
- * the first slot (for its gradient) while footage is pending. Returns undefined
- * for the no-video scenes (Founder Wall, Name Engraving).
+ * The backdrop slot to render for a scene — the SIMPLE upload system. Every
+ * scene resolves to its canonical `scene-01`…`scene-07` slot: drop a clip at
+ * `public/road-ahead/video/scene-0N.mp4`, fill that slot's `src` here, and the
+ * scene goes live. Until then the slot's gradient keeps the scene cinematic, so
+ * this never returns undefined. (Scenes 5/6 are video-free by design; their slot
+ * exists for optional atmosphere but the components render their own treatment.)
  */
-export function sceneBackdropSlot(scene: SceneId): VideoSlot | undefined {
-  const slots = slotsForScene(scene);
-  return slots.find(hasFootage) ?? slots[0];
+export function sceneBackdropSlot(scene: SceneId): VideoSlot {
+  return SCENE_BACKDROP[scene];
 }
 
 /** Has real footage been supplied for this slot? */
@@ -378,8 +443,8 @@ export function validateAssetManifest(): string[] {
     ids.add(id);
   };
 
-  for (const slot of allVideoSlots()) {
-    claim(slot.id, 'video');
+  const checkVideoSlot = (slot: VideoSlot, where: string) => {
+    claim(slot.id, where);
     if (!slot.gradient || slot.gradient.trim().length === 0) {
       problems.push(`video slot "${slot.id}" is missing its gradient fallback`);
     }
@@ -389,7 +454,11 @@ export function validateAssetManifest(): string[] {
     if (hasFootage(slot) && !licenseIsAccounted(slot.license)) {
       problems.push(`video slot "${slot.id}" has footage but no accounted license`);
     }
-  }
+  };
+
+  // Granular shot-list slots (montage) + the seven canonical drop-in backdrops.
+  for (const slot of allVideoSlots()) checkVideoSlot(slot, 'video');
+  for (const slot of allBackdropSlots()) checkVideoSlot(slot, 'backdrop');
 
   claim(ROAD_AHEAD_AUDIO.id, 'audio');
   if (hasSoundtrack() && !licenseIsAccounted(ROAD_AHEAD_AUDIO.license)) {

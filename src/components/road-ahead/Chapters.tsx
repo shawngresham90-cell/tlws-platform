@@ -58,7 +58,7 @@ export function ChapterNight({ reduced, register, spineActive }: SceneProps) {
   return (
     <section id="scene-night" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       <CinematicVideo
-        slot={sceneBackdropSlot('nightDrive')!}
+        slot={sceneBackdropSlot('nightDrive')}
         progress={progress}
         reduced={reduced}
         spineActive={spineActive}
@@ -110,7 +110,7 @@ export function ChapterPreTrip({ reduced, register, spineActive }: SceneProps) {
   return (
     <section id="scene-pretrip" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       <CinematicVideo
-        slot={sceneBackdropSlot('preTrip')!}
+        slot={sceneBackdropSlot('preTrip')}
         progress={progress}
         reduced={reduced}
         spineActive={spineActive}
@@ -145,7 +145,7 @@ export function ChapterGrind({ reduced, register, spineActive }: SceneProps) {
   return (
     <section id="scene-grind" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       <CinematicVideo
-        slot={sceneBackdropSlot('theGrind')!}
+        slot={sceneBackdropSlot('theGrind')}
         progress={progress}
         reduced={reduced}
         spineActive={spineActive}
@@ -180,7 +180,7 @@ export function ChapterFirstLight({ reduced, register, spineActive }: SceneProps
   return (
     <section id="scene-firstlight" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       <CinematicVideo
-        slot={sceneBackdropSlot('firstLight')!}
+        slot={sceneBackdropSlot('firstLight')}
         progress={progress}
         reduced={reduced}
         spineActive={spineActive}
@@ -341,7 +341,7 @@ export function ChapterPayoff({ reduced, register, spineActive }: SceneProps) {
   return (
     <section id="scene-payoff" ref={setRef} className={cn(SECTION_CLASS, styles.chapter)}>
       <CinematicVideo
-        slot={sceneBackdropSlot('thePayoff')!}
+        slot={sceneBackdropSlot('thePayoff')}
         progress={progress}
         reduced={reduced}
         spineActive={spineActive}

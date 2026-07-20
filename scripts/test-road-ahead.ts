@@ -36,11 +36,15 @@ import {
 } from '@/lib/road-ahead/founder-number';
 import {
   allVideoSlots,
+  allBackdropSlots,
   ROAD_AHEAD_AUDIO,
   hasFootage,
   hasSoundtrack,
   slotsForScene,
   sceneBackdropSlot,
+  sceneNumber,
+  SCENE_ORDER,
+  SCENE_BACKDROP,
   validateAssetManifest,
 } from '@/lib/road-ahead/assets';
 import { ROAD_AHEAD_CHAPTERS, validateChapters } from '@/lib/road-ahead/chapters';
@@ -221,24 +225,44 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
   );
   check('assets: no soundtrack supplied yet (pending)', !hasSoundtrack());
 
-  // Scene grouping + backdrop resolution.
+  // Granular shot-list grouping (montage slots).
   check('assets: scene 1 has its four night slots', slotsForScene('nightDrive').length === 4);
   check('assets: scene 2 has its five pre-trip slots', slotsForScene('preTrip').length === 5);
   check('assets: scene 7 has its four payoff slots', slotsForScene('thePayoff').length === 4);
   check(
-    'assets: no-video scenes carry no slots',
+    'assets: no-video scenes carry no montage slots',
     slotsForScene('foundersWall').length === 0 && slotsForScene('nameEngraving').length === 0,
   );
+
+  // Canonical drop-in backdrop system: scene-01 … scene-07.
+  const backdrops = allBackdropSlots();
+  check('assets: seven canonical backdrop slots', backdrops.length === 7);
   check(
-    'assets: every video scene resolves a backdrop slot',
-    (['nightDrive', 'preTrip', 'theGrind', 'firstLight', 'thePayoff'] as const).every(
-      (s) => sceneBackdropSlot(s) !== undefined,
-    ),
+    'assets: backdrop ids are scene-01 … scene-07',
+    backdrops.map((b) => b.id).join(',') ===
+      'scene-01,scene-02,scene-03,scene-04,scene-05,scene-06,scene-07',
   );
   check(
-    'assets: no-video scenes resolve no backdrop',
-    sceneBackdropSlot('foundersWall') === undefined &&
-      sceneBackdropSlot('nameEngraving') === undefined,
+    'assets: sceneNumber maps order to two-digit numbers',
+    sceneNumber('nightDrive') === '01' &&
+      sceneNumber('foundersWall') === '05' &&
+      sceneNumber('thePayoff') === '07',
+  );
+  check(
+    'assets: every scene resolves a canonical backdrop (never undefined)',
+    SCENE_ORDER.every((s) => sceneBackdropSlot(s) === SCENE_BACKDROP[s]),
+  );
+  check(
+    'assets: every backdrop has a gradient + alt fallback',
+    backdrops.every((b) => b.gradient.trim().length > 0 && b.alt.trim().length > 0),
+  );
+  check(
+    'assets: no backdrop footage supplied yet (pending upload)',
+    backdrops.every((b) => !hasFootage(b)),
+  );
+  check(
+    'assets: backdrop ids are distinct from montage ids',
+    backdrops.every((b) => !allVideoSlots().some((v) => v.id === b.id)),
   );
 }
 

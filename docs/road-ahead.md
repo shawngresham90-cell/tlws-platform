@@ -54,43 +54,85 @@ native scenes run on a shared rAF-throttled scroll timeline, IntersectionObserve
 only to viewport-gate video, CSS 3D transforms, and CSS keyframes. three.js/R3F
 load only for the opted-in full tier.
 
-## The seven-scene shot list (owner-supplied footage)
+## The video asset system (owner-supplied footage)
 
-Every clip is a typed slot in `ROAD_AHEAD_VIDEO` (`src/lib/road-ahead/assets.ts`),
-grouped by scene. Film against this list and drop each clip into its slot — no
-component changes needed. Scenes 5 and 6 use no video by design.
+There are two ways to supply footage. The **simple system** is the default; the
+**shot-list** is for later montage work.
 
-| Scene | Slots to fill |
+### The simple system: one clip per scene (`scene-01` … `scene-07`)
+
+Each scene resolves its backdrop from `SCENE_BACKDROP` in
+`src/lib/road-ahead/assets.ts` via `sceneBackdropSlot(scene)`. Drop **one** clip
+per scene and the scene goes live — no component changes.
+
+- **Video folder:** `public/road-ahead/video/` — name clips `scene-01.mp4` …
+  `scene-07.mp4`.
+- **Poster folder:** `public/road-ahead/poster/` — matching stills `scene-01.jpg`
+  … `scene-07.jpg`.
+
+| Slot | Scene | Footage |
+| --- | --- | --- |
+| `scene-01` | 1 · Night Drive | Night driving, headlights, highway, windshield POV |
+| `scene-02` | 2 · The Pre-Trip | Inspection, walk-around, backing, climb-in, air-brake |
+| `scene-03` | 3 · The Grind | Truck stop, rain, late-night driving, empty highway |
+| `scene-04` | 4 · First Light | Sunrise, truck hero, drone, academy |
+| `scene-05` | 5 · The Wall | _optional atmosphere — the 3D wall renders its own scene_ |
+| `scene-06` | 6 · Your Name | _optional atmosphere — the engraving renders its own scene_ |
+| `scene-07` | 7 · The Payoff | Student, key handoff, training, truck driving away |
+
+**Recommended encoding for every clip:**
+
+| Setting | Value |
+| --- | --- |
+| Resolution | 1920×1080 (1080p) — phones auto-downscale |
+| Container / codec | MP4 / H.264 (`yuv420p`, `+faststart`); optional `.webm` (VP9) beside it |
+| Duration | 8–15 s, framed to loop cleanly |
+| Frame rate | 24–30 fps |
+| Audio | none (clips play muted) |
+| Max file size | ≤ 4 MB per clip (aim 2–3 MB); posters ≤ 200 KB |
+
+**Compress a raw clip (and auto-generate its poster):**
+
+```bash
+node scripts/compress-road-ahead-video.mjs <input-file> <scene 1-7> [maxSeconds]
+# e.g.  node scripts/compress-road-ahead-video.mjs ~/night-drive.mov 1
+```
+
+This writes `video/scene-0N.mp4`, `video/scene-0N.webm`, and
+`poster/scene-0N.jpg` at the settings above (ffmpeg resolved from `$FFMPEG`,
+PATH, then the bundled Playwright build). Under the hood the MP4 pass is:
+
+```bash
+ffmpeg -i input.mov -t 15 \
+  -vf "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" \
+  -an -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 24 -preset slow \
+  -movflags +faststart public/road-ahead/video/scene-01.mp4
+```
+
+After the files land, fill that scene's slot in `assets.ts` → `SCENE_BACKDROP`:
+set `src` (`/road-ahead/video/scene-01.mp4`), optional `webmSrc` + `poster`, and
+a complete `license` (**required once `src` is set** — the test suite fails on
+supplied media with no accounted license).
+
+**Playback behaviour (all automatic):** clips autoplay muted, loop, use
+`playsInline`, and load **only when the scene is on/near screen** (or eagerly for
+scene 1). On a Save-Data or 2g connection, or if a clip fails to load, the scene
+falls back to its poster then its gradient — never a broken or blank backdrop.
+Under reduced-motion no video plays at all.
+
+### The shot-list (optional montage slots)
+
+`ROAD_AHEAD_VIDEO` also holds 21 finer-grained slots grouped by scene, for future
+montage cuts. They don't drive the backdrop today (the canonical `scene-0N` slot
+does) but remain available and validated:
+
+| Scene | Montage slots |
 | --- | --- |
 | 1 · Night Drive | `nightDriving`, `headlights`, `highwayNight`, `windshield` |
 | 2 · The Pre-Trip | `preTripInspection`, `walkAround`, `backing`, `climbingIn`, `airBrakeCheck` |
 | 3 · The Grind | `truckStop`, `rain`, `lateNightDriving`, `emptyHighway` |
-| 4 · First Light | `sunrise`, `truckHero`, `drone`, `academy` (future) |
-| 5 · Founder Wall | _no video — 3D wall_ |
-| 6 · Your Name | _no video — engraving_ |
+| 4 · First Light | `sunrise`, `truckHero`, `drone`, `academy` |
 | 7 · The Payoff | `student`, `keyHandoff`, `training`, `truckDrivingAway` |
-
-Each scene renders **one** backdrop — `sceneBackdropSlot(scene)` picks the first
-slot with footage, else the first slot's gradient — so a scene goes cinematic the
-moment its first clip is supplied, and the rest are available for future cuts.
-
-### Dropping in a clip
-
-1. Add the file under `public/road-ahead/video/` (optional poster under
-   `public/road-ahead/poster/`, captions under `public/road-ahead/captions/`).
-2. In `assets.ts`, fill that slot's fields:
-   - `src`: `/road-ahead/video/night-driving.mp4` (H.264 MP4 — broadest support)
-   - `webmSrc` _(optional)_: a smaller VP9/WebM encoding for mobile
-   - `poster` _(recommended)_: a still shown before the video paints
-   - `captionsSrc` _(required if the footage has speech/graphic text)_: a WebVTT file
-   - `license`: **required once `src` is set** — `licenseType` plus a `source`
-     or `attribution`. The test suite fails if supplied media has no accounted
-     license.
-
-Each slot's `description` + `alt` document the shot inline. Recommended specs:
-1080p or 4K, 8–20s, loops cleanly, graded dark to sit behind white text. Until a
-slot's `src` is set, its scene shows the `gradient` (always present), so the page
-is never blank.
 
 ## Dropping in the licensed soundtrack
 
