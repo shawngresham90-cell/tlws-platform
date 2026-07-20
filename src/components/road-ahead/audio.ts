@@ -285,6 +285,110 @@ export async function toggleSound(): Promise<void> {
   else await enableSound();
 }
 
+/**
+ * One carve tick — the chisel scrape for a single letter as it's cut into the
+ * material. `material` shapes the timbre (bright metal scrape vs. duller stone),
+ * `index` nudges the pitch a touch per letter so a name doesn't machine-gun the
+ * same tone. Short and quiet by design: many of these fire in a row. No-op when
+ * sound is off.
+ */
+export function cueCarveTick(material: 'metal' | 'stone', index = 0): void {
+  if (!on || !ctx || !sfxBus) return;
+  const ac = ctx;
+  const now = ac.currentTime;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac, 0.09, false);
+  const band = ac.createBiquadFilter();
+  band.type = 'bandpass';
+  const base = material === 'stone' ? 680 : 1900;
+  band.frequency.value = base + ((index % 5) - 2) * 70;
+  band.Q.value = material === 'stone' ? 1.2 : 2.4;
+  const env = ac.createGain();
+  const peak = material === 'stone' ? 0.085 : 0.055;
+  const dur = material === 'stone' ? 0.055 : 0.04;
+  env.gain.setValueAtTime(0.0001, now);
+  env.gain.exponentialRampToValueAtTime(peak, now + 0.004);
+  env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  src.connect(band);
+  band.connect(env);
+  env.connect(sfxBus);
+  src.start(now);
+  src.stop(now + 0.09);
+  if (material === 'stone') {
+    // A faint low knock under the scrape — the grit of stone.
+    const knock = ac.createOscillator();
+    knock.frequency.setValueAtTime(150, now);
+    knock.frequency.exponentialRampToValueAtTime(90, now + 0.05);
+    const kEnv = ac.createGain();
+    kEnv.gain.setValueAtTime(0.05, now);
+    kEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    knock.connect(kEnv);
+    kEnv.connect(sfxBus);
+    knock.start(now);
+    knock.stop(now + 0.07);
+  }
+}
+
+/**
+ * The finish beat once a name is fully cut: a subtle struck-metal ring for the
+ * metal plaques, or a low stone-settle thud for brick. No-op when sound is off.
+ */
+export function cueCarveFinish(material: 'metal' | 'stone'): void {
+  if (!on || !ctx || !sfxBus) return;
+  const ac = ctx;
+  const now = ac.currentTime;
+  if (material === 'metal') {
+    // A short, bright ring — two partials with a quick transient.
+    for (const [freq, level, decay] of [
+      [1180, 0.09, 0.5],
+      [1760, 0.05, 0.4],
+    ] as const) {
+      const osc = ac.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const env = ac.createGain();
+      env.gain.setValueAtTime(level, now);
+      env.gain.exponentialRampToValueAtTime(0.0005, now + decay);
+      osc.connect(env);
+      env.connect(sfxBus);
+      osc.start(now);
+      osc.stop(now + decay + 0.05);
+    }
+    const tick = ac.createBufferSource();
+    tick.buffer = noiseBuffer(ac, 0.05, false);
+    const tEnv = ac.createGain();
+    tEnv.gain.setValueAtTime(0.12, now);
+    tEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    tick.connect(tEnv);
+    tEnv.connect(sfxBus);
+    tick.start(now);
+  } else {
+    // A low settle — the brick locking into the course.
+    const sine = ac.createOscillator();
+    sine.frequency.setValueAtTime(96, now);
+    sine.frequency.exponentialRampToValueAtTime(58, now + 0.18);
+    const env = ac.createGain();
+    env.gain.setValueAtTime(0.34, now);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    sine.connect(env);
+    env.connect(sfxBus);
+    sine.start(now);
+    sine.stop(now + 0.26);
+    const grit = ac.createBufferSource();
+    grit.buffer = noiseBuffer(ac, 0.1, false);
+    const gFilter = ac.createBiquadFilter();
+    gFilter.type = 'lowpass';
+    gFilter.frequency.value = 420;
+    const gEnv = ac.createGain();
+    gEnv.gain.setValueAtTime(0.12, now);
+    gEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    grit.connect(gFilter);
+    gFilter.connect(gEnv);
+    gEnv.connect(sfxBus);
+    grit.start(now);
+  }
+}
+
 /* ── Induction cues ───────────────────────────────────────────────────────── */
 
 /** The single engrave thump. No-op when sound is off. */
