@@ -3,29 +3,29 @@
  *
  * WHY THIS EXISTS: the flagship experience is built to cinematic spec now, but
  * the real trucking footage and licensed soundtrack are owner-supplied and can't
- * be fetched, purchased, or committed from this environment. So every piece of
- * media is a typed SLOT keyed to a scene: the page renders a brand-safe fallback
- * today and the real clip the moment a file is dropped in and its `src` is
- * filled here — no component changes required. See docs/road-ahead.md.
+ * be committed from this environment. So every clip is a typed SLOT keyed to a
+ * scene and to an exact drop-in FILENAME. Drop the file into the public folder
+ * and it appears — no code change (the server resolver in assets-resolver.ts
+ * fills the slot at build time; see docs/road-ahead.md).
  *
- * The slots mirror the locked shot list, scene by scene, so the owner can film
- * against this list and drop each clip straight into its slot:
+ * The slots mirror the locked shot list, scene by scene, with the exact filename
+ * to drop into `public/road-ahead/video/`:
  *
- *   Scene 1  Night Drive    — night driving, headlights, highway, windshield
- *   Scene 2  The Pre-Trip   — inspection, walk-around, backing, climb-in, air-brake
- *   Scene 3  The Grind      — truck stop, rain, late-night driving, empty highway
- *   Scene 4  First Light    — sunrise, truck hero, drone, academy (future)
- *   Scene 5  The Wall       — no video (3D Founder Wall)
- *   Scene 6  Your Name      — no video (cinematic name engraving)
- *   Scene 7  The Payoff     — student, key handoff, training, truck driving away
+ *   Scene 1  Night Drive   — dark-highway, night-driving, headlights, windshield-rain
+ *   Scene 2  The Pre-Trip  — pretrip, truck-walkaround, backing, climb-into-cab, air-brake-check
+ *   Scene 3  The Grind     — truck-stop, empty-highway, rain-driving, late-night-driving
+ *   Scene 4  First Light   — sunrise, hero-shot, drone-shot, academy-footage
+ *   Scene 5  The Wall      — no video (3D Founder Wall)
+ *   Scene 6  Your Name     — no video (cinematic name engraving)
+ *   Scene 7  The Payoff    — student-training, key-handoff, student-success, truck-driving-away
  *
  * CONTRACT (enforced by validateAssetManifest + scripts/test-road-ahead.ts):
  *   - Every video slot ALWAYS has a `gradient` fallback → never a blank scene.
- *   - Slot ids are unique across video + audio.
+ *   - Slot ids/filenames are unique.
  *   - Any slot whose `src` is filled MUST carry license provenance.
  *   - Audio is optional; the synthesized soundtrack (audio.ts) is off by default.
  *
- * DB-free / React-free so it is unit-tested and importable server-side.
+ * DB-free / React-free so it is unit-tested and importable on server and client.
  */
 
 export type SceneId =
@@ -38,45 +38,49 @@ export type SceneId =
   | 'thePayoff';
 
 export type AssetLicense = {
-  /** Where the asset came from, e.g. 'Owner-supplied' or a stock vendor. */
   source: string | null;
-  /** Rights basis, e.g. 'Owner-owned', 'Licensed — Artlist', 'CC-BY-4.0'. */
   licenseType: string | null;
-  /** Required on-screen/credit text, if the license demands attribution. */
   attribution: string | null;
 };
 
 export type VideoSlot = {
+  /** Stable id — also the drop-in filename stem (e.g. 'dark-highway'). */
   id: string;
-  /** Scene this clip belongs to. */
   scene: SceneId;
-  /** Human label for docs/admin. */
   label: string;
-  /** What footage belongs here — guidance for whoever fills the slot. */
+  /** What footage belongs here — guidance for whoever films the slot. */
   description: string;
-  /** Primary encoding (MP4/H.264). null until supplied → gradient/poster shows. */
+  /** Exact drop-in filename in public/road-ahead/video/ (e.g. 'dark-highway.mp4'). */
+  file: string;
+  /** Primary encoding path — null until the file is dropped in (resolver fills it). */
   src: string | null;
-  /** Optional alternate encoding (WebM/VP9) for smaller mobile payloads. */
+  /** Optional WebM/VP9 path (resolver fills it if a .webm sibling exists). */
   webmSrc: string | null;
-  /** Optional still poster shown before/behind video. null → gradient only. */
+  /** Poster still path — null until poster/<stem>.jpg exists (resolver fills it). */
   poster: string | null;
   /** Brand-safe CSS background — ALWAYS present, the ultimate fallback. */
   gradient: string;
-  /** Captions track (WebVTT) for any spoken/graphic content — accessibility. */
+  /** Captions track (WebVTT) for spoken/graphic content — accessibility. */
   captionsSrc: string | null;
   /** Text alternative describing the footage for AT and no-video contexts. */
   alt: string;
   license: AssetLicense;
 };
 
+/** An ambience/narration/music audio slot (synth or file-backed). */
 export type AudioSlot = {
   id: string;
   label: string;
   description: string;
-  /** null until a licensed track is supplied → the control stays hidden. */
+  /** Which scenes this bed belongs under (empty = whole experience). */
+  scenes: SceneId[];
+  /** 'ambience' = looping environment · 'narration' = spoken · 'music' = score. */
+  kind: 'ambience' | 'narration' | 'music';
+  /** Drop-in filename in public/road-ahead/audio/ (e.g. 'rain-ambience.mp3'). */
+  file: string | null;
+  /** Filled by the resolver when the file exists; null → the synth stand-in plays. */
   src: string | null;
   loop: boolean;
-  /** Track title for the credits line, when supplied. */
   title: string | null;
   license: AssetLicense;
 };
@@ -97,217 +101,29 @@ const G = {
   gold: 'radial-gradient(120% 120% at 50% 120%, #2a2100 0%, #14130a 45%, #0E0E0E 100%)',
 } as const;
 
-/**
- * All video slots, in scene/shot order. `src`/`poster`/`captionsSrc` are null
- * until the owner supplies files; the `gradient` keeps each scene cinematic in
- * the meantime. Suggested filenames are documented in docs/road-ahead.md.
- */
-export const ROAD_AHEAD_VIDEO: Record<string, VideoSlot> = {
-  // ---------------------------------------------------- Scene 1 — Night Drive
-  nightDriving: v(
-    'nightDriving',
-    'nightDrive',
-    'Night driving — cab interior',
-    'The driver alone in the cab at night, dash glow on their face. The emotional open.',
-    G.night,
-    'A driver alone in a truck cab at night, lit by the dashboard glow.',
-  ),
-  headlights: v(
-    'headlights',
-    'nightDrive',
-    'Headlights cutting the dark',
-    'Headlights sweeping an empty road; the beam is the only light. Loops cleanly.',
-    G.night,
-    'Truck headlights cutting through darkness on an empty road.',
-  ),
-  highwayNight: v(
-    'highwayNight',
-    'nightDrive',
-    'Highway at night',
-    'Wide highway footage at night — tail lights, lane lines streaming past.',
-    G.night,
-    'A highway at night with streaming lane lines and distant tail lights.',
-  ),
-  windshield: v(
-    'windshield',
-    'nightDrive',
-    'Windshield POV',
-    'Windshield point-of-view down the night road — puts the viewer in the seat.',
-    G.night,
-    "A driver's-eye view through the windshield down a dark highway.",
-  ),
+export const SCENE_ORDER: SceneId[] = [
+  'nightDrive',
+  'preTrip',
+  'theGrind',
+  'firstLight',
+  'foundersWall',
+  'nameEngraving',
+  'thePayoff',
+];
 
-  // ----------------------------------------------------- Scene 2 — The Pre-Trip
-  preTripInspection: v(
-    'preTripInspection',
-    'preTrip',
-    'Pre-trip inspection',
-    'Hands checking lights, tires, connections — the discipline of the job.',
-    G.steel,
-    'A driver performing a pre-trip inspection, checking lights and tires.',
-  ),
-  walkAround: v(
-    'walkAround',
-    'preTrip',
-    'Walking around the truck',
-    'A slow walk-around of the rig in cold morning light — respect for the equipment.',
-    G.steel,
-    'A driver walking around a parked truck in cold morning light.',
-  ),
-  backing: v(
-    'backing',
-    'preTrip',
-    'Backing the trailer',
-    'Backing footage — mirrors, angle, precision. The skill of it.',
-    G.steel,
-    'A truck backing a trailer into a spot, framed through the mirrors.',
-  ),
-  climbingIn: v(
-    'climbingIn',
-    'preTrip',
-    'Climbing into the cab',
-    'Boots on the step, hand on the grab bar, climbing up into the seat.',
-    G.steel,
-    'A driver climbing up into the cab of a truck.',
-  ),
-  airBrakeCheck: v(
-    'airBrakeCheck',
-    'preTrip',
-    'Air brake check',
-    'The air brake check — gauges, the hiss, the routine that keeps everyone safe.',
-    G.steel,
-    'A driver performing an air brake check, watching the gauges.',
-  ),
+/** Two-digit scene number, e.g. 'nightDrive' → '01'. */
+export function sceneNumber(scene: SceneId): string {
+  return String(SCENE_ORDER.indexOf(scene) + 1).padStart(2, '0');
+}
 
-  // ------------------------------------------------------- Scene 3 — The Grind
-  truckStop: v(
-    'truckStop',
-    'theGrind',
-    'Truck stop at night',
-    'A truck stop after dark — rows of rigs, sodium lights, the life on the road.',
-    G.sodium,
-    'A truck stop at night, rows of parked rigs under sodium lights.',
-  ),
-  rain: v(
-    'rain',
-    'theGrind',
-    'Rain on the glass',
-    'Rain streaking the windshield, wipers working — the hard nights.',
-    G.rain,
-    'Rain streaking across a windshield with the wipers running.',
-  ),
-  lateNightDriving: v(
-    'lateNightDriving',
-    'theGrind',
-    'Late-night driving',
-    'The long hours — dash clock late, road empty, the discipline of the miles.',
-    G.rain,
-    'Late-night driving on a near-empty road, dashboard clock glowing.',
-  ),
-  emptyHighway: v(
-    'emptyHighway',
-    'theGrind',
-    'Empty highway',
-    'A wide empty highway stretching to the dark horizon — the solitude of it.',
-    G.rain,
-    'An empty highway stretching toward a dark horizon.',
-  ),
-
-  // ------------------------------------------------------ Scene 4 — First Light
-  sunrise: v(
-    'sunrise',
-    'firstLight',
-    'Sunrise over the road',
-    'The sun breaking the horizon over the highway — the turn from night to hope.',
-    G.dawn,
-    'Sunrise breaking over a highway, the road running toward the light.',
-  ),
-  truckHero: v(
-    'truckHero',
-    'firstLight',
-    'Truck hero shot',
-    'A hero shot of the rig catching first light — chrome, lines, pride.',
-    G.dawn,
-    'A hero shot of a truck catching the first light of dawn.',
-  ),
-  drone: v(
-    'drone',
-    'firstLight',
-    'Drone over the highway',
-    'Drone footage pulling up and away from the truck on an open road.',
-    G.dawn,
-    'An aerial drone view of a truck on an open highway at dawn.',
-  ),
-  academy: v(
-    'academy',
-    'firstLight',
-    'Academy footage (future)',
-    'Future: the Trucking Life Academy — the yard, the trucks, a class beginning.',
-    G.dawn,
-    'The Trucking Life Academy training yard with trucks and students.',
-  ),
-
-  // -------------------------------------------------------- Scene 7 — The Payoff
-  student: v(
-    'student',
-    'thePayoff',
-    'The student',
-    'A new driver — nervous, ready — the person all of this is for.',
-    G.gold,
-    'A new student driver standing beside a truck, ready to begin.',
-  ),
-  keyHandoff: v(
-    'keyHandoff',
-    'thePayoff',
-    'The key handoff',
-    'Keys passed hand to hand — the moment a career becomes real.',
-    G.gold,
-    'Truck keys being handed from an instructor to a new driver.',
-  ),
-  training: v(
-    'training',
-    'thePayoff',
-    'Training on the pad',
-    'Training footage — the student behind the wheel, the instructor beside them.',
-    G.gold,
-    'A student driving on a training pad with an instructor alongside.',
-  ),
-  truckDrivingAway: v(
-    'truckDrivingAway',
-    'thePayoff',
-    'The truck drives away',
-    'The final shot: the truck pulling out and driving away toward the horizon — launched.',
-    G.gold,
-    'A truck pulling out and driving away toward a bright horizon.',
-  ),
-};
-
-/** Optional licensed-track slot (the synth soundtrack in audio.ts is the default). */
-export const ROAD_AHEAD_AUDIO: AudioSlot = {
-  id: 'ambientScore',
-  label: 'Ambient cinematic score',
-  description:
-    'Optional licensed instrumental bed for the whole experience. Loops. Never autoplays — the driver turns it on.',
-  src: null,
-  loop: true,
-  title: null,
-  license: NO_LICENSE,
-};
-
-/** Compact VideoSlot constructor — keeps the manifest readable. */
-function v(
-  id: string,
-  scene: SceneId,
-  label: string,
-  description: string,
-  gradient: string,
-  alt: string,
-): VideoSlot {
+/** Compact VideoSlot constructor — id is also the drop-in filename stem. */
+function v(id: string, scene: SceneId, gradient: string, label: string, alt: string): VideoSlot {
   return {
     id,
     scene,
     label,
-    description,
+    description: label,
+    file: `${id}.mp4`,
     src: null,
     webmSrc: null,
     poster: null,
@@ -319,71 +135,260 @@ function v(
 }
 
 /**
- * Canonical per-scene backdrop clips — the SIMPLE upload system. One clip per
- * scene, named `scene-01.mp4` … `scene-07.mp4`, dropped into
- * `public/road-ahead/video/` with a matching poster in
- * `public/road-ahead/poster/`. `src` is null until a clip is supplied; fill it
- * with the path and that scene goes live (the granular shot-list slots above
- * remain available for future montage work). Scenes 5 (Founder Wall) and 6
- * (engraving) are video-free by design — a clip there is optional atmosphere.
+ * All video slots, in scene/shot order, keyed by their drop-in filename stem.
+ * `src`/`poster` are null until the owner drops the file into the public folder;
+ * the resolver (assets-resolver.ts) fills them at build. Suggested specs live in
+ * docs/road-ahead.md.
  */
-export const SCENE_ORDER: SceneId[] = [
-  'nightDrive',
-  'preTrip',
-  'theGrind',
-  'firstLight',
-  'foundersWall',
-  'nameEngraving',
-  'thePayoff',
-];
+export const ROAD_AHEAD_VIDEO: Record<string, VideoSlot> = {
+  // ---------------------------------------------------- Scene 1 — Night Drive
+  'dark-highway': v(
+    'dark-highway',
+    'nightDrive',
+    G.night,
+    'Dark highway',
+    'A dark highway at night, the road disappearing into black.',
+  ),
+  'night-driving': v(
+    'night-driving',
+    'nightDrive',
+    G.night,
+    'Night driving — cab interior',
+    'A driver alone in a truck cab at night, lit by the dashboard glow.',
+  ),
+  headlights: v(
+    'headlights',
+    'nightDrive',
+    G.night,
+    'Headlights cutting the dark',
+    'Truck headlights cutting through darkness on an empty road.',
+  ),
+  'windshield-rain': v(
+    'windshield-rain',
+    'nightDrive',
+    G.night,
+    'Windshield in the rain',
+    "A driver's-eye view through a rain-streaked windshield down a dark highway.",
+  ),
 
-/** Two-digit scene number for the canonical filename, e.g. 'nightDrive' → '01'. */
-export function sceneNumber(scene: SceneId): string {
-  const i = SCENE_ORDER.indexOf(scene);
-  return String(i + 1).padStart(2, '0');
-}
+  // ----------------------------------------------------- Scene 2 — The Pre-Trip
+  pretrip: v(
+    'pretrip',
+    'preTrip',
+    G.steel,
+    'Pre-trip inspection',
+    'A driver performing a pre-trip inspection, checking lights and tires.',
+  ),
+  'truck-walkaround': v(
+    'truck-walkaround',
+    'preTrip',
+    G.steel,
+    'Walking around the truck',
+    'A driver walking around a parked truck in cold morning light.',
+  ),
+  backing: v(
+    'backing',
+    'preTrip',
+    G.steel,
+    'Backing the trailer',
+    'A truck backing a trailer into a spot, framed through the mirrors.',
+  ),
+  'climb-into-cab': v(
+    'climb-into-cab',
+    'preTrip',
+    G.steel,
+    'Climbing into the cab',
+    'A driver climbing up into the cab of a truck.',
+  ),
+  'air-brake-check': v(
+    'air-brake-check',
+    'preTrip',
+    G.steel,
+    'Air brake check',
+    'A driver performing an air brake check, watching the gauges.',
+  ),
 
-const SCENE_GRADIENT: Record<SceneId, string> = {
-  nightDrive: G.night,
-  preTrip: G.steel,
-  theGrind: G.rain,
-  firstLight: G.dawn,
-  foundersWall: 'linear-gradient(180deg, #0b0b0b 0%, #0E0E0E 100%)',
-  nameEngraving: 'linear-gradient(180deg, #0b0b0b 0%, #0E0E0E 100%)',
-  thePayoff: G.gold,
+  // ------------------------------------------------------- Scene 3 — The Grind
+  'truck-stop': v(
+    'truck-stop',
+    'theGrind',
+    G.sodium,
+    'Truck stop at night',
+    'A truck stop at night, rows of parked rigs under sodium lights.',
+  ),
+  'empty-highway': v(
+    'empty-highway',
+    'theGrind',
+    G.rain,
+    'Empty highway',
+    'An empty highway stretching toward a dark horizon.',
+  ),
+  'rain-driving': v(
+    'rain-driving',
+    'theGrind',
+    G.rain,
+    'Driving in the rain',
+    'Driving through rain, wipers working across the windshield.',
+  ),
+  'late-night-driving': v(
+    'late-night-driving',
+    'theGrind',
+    G.rain,
+    'Late-night driving',
+    'Late-night driving on a near-empty road, dashboard clock glowing.',
+  ),
+
+  // ------------------------------------------------------ Scene 4 — First Light
+  sunrise: v(
+    'sunrise',
+    'firstLight',
+    G.dawn,
+    'Sunrise over the road',
+    'Sunrise breaking over a highway, the road running toward the light.',
+  ),
+  'hero-shot': v(
+    'hero-shot',
+    'firstLight',
+    G.dawn,
+    'Truck hero shot',
+    'A hero shot of a truck catching the first light of dawn.',
+  ),
+  'drone-shot': v(
+    'drone-shot',
+    'firstLight',
+    G.dawn,
+    'Drone over the highway',
+    'An aerial drone view of a truck on an open highway at dawn.',
+  ),
+  'academy-footage': v(
+    'academy-footage',
+    'firstLight',
+    G.dawn,
+    'Academy footage',
+    'The Trucking Life Academy training yard with trucks and students.',
+  ),
+
+  // -------------------------------------------------------- Scene 7 — The Payoff
+  'student-training': v(
+    'student-training',
+    'thePayoff',
+    G.gold,
+    'Student training',
+    'A student driving on a training pad with an instructor alongside.',
+  ),
+  'key-handoff': v(
+    'key-handoff',
+    'thePayoff',
+    G.gold,
+    'The key handoff',
+    'Truck keys being handed from an instructor to a new driver.',
+  ),
+  'student-success': v(
+    'student-success',
+    'thePayoff',
+    G.gold,
+    'Student success',
+    'A new driver standing proud beside their truck, licensed and ready.',
+  ),
+  'truck-driving-away': v(
+    'truck-driving-away',
+    'thePayoff',
+    G.gold,
+    'The truck drives away',
+    'A truck pulling out and driving away toward a bright horizon.',
+  ),
 };
 
-/** The canonical drop-in backdrop slot for each scene (`scene-01`…`scene-07`). */
-export const SCENE_BACKDROP: Record<SceneId, VideoSlot> = SCENE_ORDER.reduce(
-  (acc, scene) => {
-    const n = sceneNumber(scene);
-    acc[scene] = {
-      id: `scene-${n}`,
-      scene,
-      label: `Scene ${n} backdrop`,
-      description: `Drop-in scene clip: public/road-ahead/video/scene-${n}.mp4 (+ optional .webm, poster scene-${n}.jpg).`,
-      // Fill these when the owner uploads a clip for this scene:
-      src: null, // e.g. `${ROAD_AHEAD_ASSET_BASE}/video/scene-${n}.mp4`
-      webmSrc: null,
-      poster: null, // e.g. `${ROAD_AHEAD_ASSET_BASE}/poster/scene-${n}.jpg`
-      gradient: SCENE_GRADIENT[scene],
-      captionsSrc: null,
-      alt: `Cinematic backdrop for scene ${n} of The Road Ahead.`,
-      license: NO_LICENSE,
-    };
-    return acc;
-  },
-  {} as Record<SceneId, VideoSlot>,
-);
+/**
+ * Audio beds/slots. The synth engine (audio.ts) provides zero-asset stand-ins
+ * for the ambiences today; dropping a file into public/road-ahead/audio/ swaps
+ * in the real recording with no code change. Narration + licensed music are
+ * file-only (no synth) and stay silent until supplied. Nothing autoplays.
+ */
+export const ROAD_AHEAD_AUDIO: AudioSlot[] = [
+  a(
+    'engine-idle',
+    'Engine idle',
+    ['nightDrive', 'preTrip'],
+    'ambience',
+    'The low idle of a diesel engine.',
+  ),
+  a(
+    'air-brakes',
+    'Air brakes',
+    ['preTrip'],
+    'ambience',
+    'The hiss and knock of an air-brake release.',
+  ),
+  a(
+    'highway-ambience',
+    'Highway ambience',
+    ['nightDrive', 'theGrind'],
+    'ambience',
+    'The wash of tires and wind at highway speed.',
+  ),
+  a('rain-ambience', 'Rain ambience', ['theGrind'], 'ambience', 'Rain on the cab and glass.'),
+  a(
+    'truck-stop-ambience',
+    'Truck stop ambience',
+    ['theGrind'],
+    'ambience',
+    'The murmur of a truck stop after dark.',
+  ),
+  a(
+    'dawn-swell',
+    'Dawn swell',
+    ['firstLight'],
+    'ambience',
+    'A warm tonal swell as the sun breaks.',
+  ),
+  a(
+    'narration',
+    'Narration',
+    [],
+    'narration',
+    'Optional voiceover for the whole experience.',
+    true,
+  ),
+  a('score', 'Licensed score', [], 'music', 'Optional licensed instrumental bed. Loops.', true),
+];
+
+/** Compact AudioSlot constructor. */
+function a(
+  id: string,
+  label: string,
+  scenes: SceneId[],
+  kind: AudioSlot['kind'],
+  description: string,
+  fileOnly = false,
+): AudioSlot {
+  return {
+    id,
+    label,
+    description,
+    scenes,
+    kind,
+    file: fileOnly ? `${id}.mp3` : `${id}.mp3`,
+    src: null,
+    loop: kind !== 'narration',
+    title: null,
+    license: NO_LICENSE,
+  };
+}
+
+/** The expected public path for a slot's primary clip. */
+export function videoPath(slot: VideoSlot): string {
+  return `${ROAD_AHEAD_ASSET_BASE}/video/${slot.file}`;
+}
+
+/** The expected public path for a slot's poster still. */
+export function posterPath(slot: VideoSlot): string {
+  return `${ROAD_AHEAD_ASSET_BASE}/poster/${slot.id}.jpg`;
+}
 
 /** All video slots as an array (stable order matches declaration). */
 export function allVideoSlots(): VideoSlot[] {
   return Object.values(ROAD_AHEAD_VIDEO);
-}
-
-/** The seven canonical drop-in backdrop slots, in scene order. */
-export function allBackdropSlots(): VideoSlot[] {
-  return SCENE_ORDER.map((scene) => SCENE_BACKDROP[scene]);
 }
 
 /** Look up a video slot by id (undefined if unknown). */
@@ -396,16 +401,44 @@ export function slotsForScene(scene: SceneId): VideoSlot[] {
   return allVideoSlots().filter((s) => s.scene === scene);
 }
 
+/** Scene-appropriate gradient (used for the video-free scenes 5/6 too). */
+export function sceneGradient(scene: SceneId): string {
+  const withSlots = slotsForScene(scene)[0];
+  if (withSlots) return withSlots.gradient;
+  return 'linear-gradient(180deg, #0b0b0b 0%, #0E0E0E 100%)';
+}
+
 /**
- * The backdrop slot to render for a scene — the SIMPLE upload system. Every
- * scene resolves to its canonical `scene-01`…`scene-07` slot: drop a clip at
- * `public/road-ahead/video/scene-0N.mp4`, fill that slot's `src` here, and the
- * scene goes live. Until then the slot's gradient keeps the scene cinematic, so
- * this never returns undefined. (Scenes 5/6 are video-free by design; their slot
- * exists for optional atmosphere but the components render their own treatment.)
+ * Pick the backdrop slot from a list: the first with real footage, else the
+ * first (for its gradient). Pure — the resolver fills `src` before calling this.
+ */
+export function pickBackdrop(slots: VideoSlot[]): VideoSlot | undefined {
+  return slots.find(hasFootage) ?? slots[0];
+}
+
+/**
+ * The backdrop slot for a scene from the UNRESOLVED manifest (all gradient).
+ * The server resolver produces the resolved version; this is the safe fallback
+ * (SSR without the resolver, tests, video-free scenes).
  */
 export function sceneBackdropSlot(scene: SceneId): VideoSlot {
-  return SCENE_BACKDROP[scene];
+  const first = slotsForScene(scene)[0];
+  if (first) return first;
+  // Video-free scene (5/6): a synthetic gradient-only slot.
+  return {
+    id: `${scene}-backdrop`,
+    scene,
+    label: `${scene} backdrop`,
+    description: 'Gradient-only backdrop (this scene renders its own treatment).',
+    file: '',
+    src: null,
+    webmSrc: null,
+    poster: null,
+    gradient: sceneGradient(scene),
+    captionsSrc: null,
+    alt: '',
+    license: NO_LICENSE,
+  };
 }
 
 /** Has real footage been supplied for this slot? */
@@ -413,8 +446,8 @@ export function hasFootage(slot: VideoSlot): boolean {
   return typeof slot.src === 'string' && slot.src.length > 0;
 }
 
-/** Has a licensed soundtrack been supplied? */
-export function hasSoundtrack(slot: AudioSlot = ROAD_AHEAD_AUDIO): boolean {
+/** Has a licensed track/recording been supplied for this audio slot? */
+export function hasAudio(slot: AudioSlot): boolean {
   return typeof slot.src === 'string' && slot.src.length > 0;
 }
 
@@ -429,22 +462,21 @@ function licenseIsAccounted(license: AssetLicense): boolean {
 }
 
 /**
- * Validate the manifest. Returns a list of human-readable problems (empty =
- * healthy). Enforces the contract in this file's header so a bad drop-in
- * (missing gradient, duplicate id, unlicensed supplied asset) fails the test
- * suite instead of shipping.
+ * Validate the manifest. Returns human-readable problems (empty = healthy).
  */
 export function validateAssetManifest(): string[] {
   const problems: string[] = [];
   const ids = new Set<string>();
+  const files = new Set<string>();
 
-  const claim = (id: string, where: string) => {
-    if (ids.has(id)) problems.push(`duplicate asset id "${id}" (${where})`);
-    ids.add(id);
-  };
-
-  const checkVideoSlot = (slot: VideoSlot, where: string) => {
-    claim(slot.id, where);
+  for (const slot of allVideoSlots()) {
+    if (ids.has(slot.id)) problems.push(`duplicate video slot id "${slot.id}"`);
+    ids.add(slot.id);
+    if (files.has(slot.file)) problems.push(`duplicate drop-in filename "${slot.file}"`);
+    files.add(slot.file);
+    if (slot.file !== `${slot.id}.mp4`) {
+      problems.push(`video slot "${slot.id}" filename must be "${slot.id}.mp4"`);
+    }
     if (!slot.gradient || slot.gradient.trim().length === 0) {
       problems.push(`video slot "${slot.id}" is missing its gradient fallback`);
     }
@@ -454,15 +486,14 @@ export function validateAssetManifest(): string[] {
     if (hasFootage(slot) && !licenseIsAccounted(slot.license)) {
       problems.push(`video slot "${slot.id}" has footage but no accounted license`);
     }
-  };
+  }
 
-  // Granular shot-list slots (montage) + the seven canonical drop-in backdrops.
-  for (const slot of allVideoSlots()) checkVideoSlot(slot, 'video');
-  for (const slot of allBackdropSlots()) checkVideoSlot(slot, 'backdrop');
-
-  claim(ROAD_AHEAD_AUDIO.id, 'audio');
-  if (hasSoundtrack() && !licenseIsAccounted(ROAD_AHEAD_AUDIO.license)) {
-    problems.push(`audio slot "${ROAD_AHEAD_AUDIO.id}" has a track but no accounted license`);
+  for (const slot of ROAD_AHEAD_AUDIO) {
+    if (ids.has(slot.id)) problems.push(`duplicate asset id "${slot.id}" (audio)`);
+    ids.add(slot.id);
+    if (hasAudio(slot) && !licenseIsAccounted(slot.license)) {
+      problems.push(`audio slot "${slot.id}" has a track but no accounted license`);
+    }
   }
 
   return problems;

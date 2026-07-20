@@ -38,6 +38,26 @@ let wired = false;
 let dawnPlayed = false;
 const listeners = new Set<Listener>();
 
+/** Per-bed gains under the ambience bus, cross-faded by the active scene. */
+type BedName = 'engine' | 'highway' | 'rain' | 'truckStop';
+const beds: Partial<Record<BedName, GainNode>> = {};
+
+/**
+ * The ambience mix for each scene (0→1 per bed). As the visitor moves through
+ * the story the beds cross-fade to match — engine + highway on the road, rain
+ * and the truck-stop rumble through The Grind, everything low as dawn/wall/name
+ * arrive. Pure atmosphere; no information is carried by audio.
+ */
+const SCENE_MIX: Record<string, Record<BedName, number>> = {
+  nightDrive: { engine: 0.9, highway: 0.8, rain: 0, truckStop: 0 },
+  preTrip: { engine: 0.7, highway: 0.15, rain: 0, truckStop: 0 },
+  theGrind: { engine: 0.5, highway: 0.6, rain: 0.8, truckStop: 0.5 },
+  firstLight: { engine: 0.3, highway: 0.4, rain: 0, truckStop: 0 },
+  foundersWall: { engine: 0.12, highway: 0.15, rain: 0, truckStop: 0 },
+  nameEngraving: { engine: 0.1, highway: 0.12, rain: 0, truckStop: 0 },
+  thePayoff: { engine: 0.4, highway: 0.5, rain: 0, truckStop: 0 },
+};
+
 function emit() {
   listeners.forEach((l) => l(on));
 }
@@ -117,6 +137,58 @@ function buildHighway(ac: AudioContext, out: GainNode): void {
   level.connect(out);
   src.start();
   lfo.start();
+}
+
+/** Rain ambience: white noise → highpass hiss + slow amplitude patter. */
+function buildRain(ac: AudioContext, out: GainNode): void {
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac, 3, false);
+  src.loop = true;
+  const hp = ac.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 1600;
+  const level = ac.createGain();
+  level.gain.value = 0.05;
+  const lfo = ac.createOscillator();
+  lfo.frequency.value = 3.1;
+  const depth = ac.createGain();
+  depth.gain.value = 0.02;
+  lfo.connect(depth);
+  depth.connect(level.gain);
+  src.connect(hp);
+  hp.connect(level);
+  level.connect(out);
+  src.start();
+  lfo.start();
+}
+
+/** Truck-stop ambience: distant low rumble + faint mid murmur — idling lot. */
+function buildTruckStop(ac: AudioContext, out: GainNode): void {
+  const rumble = ac.createBufferSource();
+  rumble.buffer = noiseBuffer(ac, 2, true);
+  rumble.loop = true;
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 220;
+  const rGain = ac.createGain();
+  rGain.gain.value = 0.5;
+  rumble.connect(lp);
+  lp.connect(rGain);
+  rGain.connect(out);
+  rumble.start();
+  const murmur = ac.createBufferSource();
+  murmur.buffer = noiseBuffer(ac, 3, false);
+  murmur.loop = true;
+  const band = ac.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 380;
+  band.Q.value = 0.4;
+  const mGain = ac.createGain();
+  mGain.gain.value = 0.02;
+  murmur.connect(band);
+  band.connect(mGain);
+  mGain.connect(out);
+  murmur.start();
 }
 
 /**
@@ -238,8 +310,64 @@ function buildGraph(ac: AudioContext): void {
   sfxBus = ac.createGain();
   sfxBus.gain.value = 1;
   sfxBus.connect(master);
-  buildEngine(ac, ambienceBus);
-  buildHighway(ac, ambienceBus);
+
+  // Each ambience bed gets its own gain (starts silent) so the scene mixer can
+  // cross-fade between them. Synth stand-ins today; file-backed recordings swap
+  // in later by replacing the builder — the bed gains + mixer don't change.
+  const mkBed = (name: BedName, build: (ac: AudioContext, out: GainNode) => void) => {
+    const g = ac.createGain();
+    g.gain.value = 0;
+    g.connect(ambienceBus!);
+    build(ac, g);
+    beds[name] = g;
+  };
+  mkBed('engine', buildEngine);
+  mkBed('highway', buildHighway);
+  mkBed('rain', buildRain);
+  mkBed('truckStop', buildTruckStop);
+}
+
+/**
+ * Cross-fade the ambience beds to a scene's mix over ~1.2s. No-op when sound is
+ * off. Called as the active chapter changes so the soundscape tracks the story.
+ */
+export function setActiveScene(scene: string): void {
+  if (!ctx) return;
+  const mix = SCENE_MIX[scene];
+  if (!mix) return;
+  const now = ctx.currentTime;
+  (Object.keys(mix) as BedName[]).forEach((name) => {
+    const g = beds[name];
+    if (!g) return;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now);
+    g.gain.linearRampToValueAtTime(mix[name], now + 1.2);
+  });
+}
+
+/**
+ * File-backed music / narration support. When the owner drops a track into
+ * public/road-ahead/audio/ the resolver fills its src and this plays it (looping
+ * for music) alongside the synth beds — still off until the visitor enables
+ * sound. Plain HTMLAudioElement so no decode/CORS ceremony; volume is fixed low
+ * for music so it sits under the ambience.
+ */
+const suppliedEls: Partial<Record<'music' | 'narration', HTMLAudioElement>> = {};
+
+export function setSuppliedTrack(kind: 'music' | 'narration', src: string | null): void {
+  if (typeof Audio === 'undefined') return;
+  const current = suppliedEls[kind];
+  if (current) current.pause();
+  if (!src) {
+    delete suppliedEls[kind];
+    return;
+  }
+  const el = new Audio(src);
+  el.loop = kind === 'music';
+  el.preload = 'none';
+  el.volume = kind === 'music' ? 0.35 : 0.85;
+  suppliedEls[kind] = el;
+  if (on) void el.play().catch(() => {});
 }
 
 /** User gesture handler — the only way audio ever starts. */
@@ -253,6 +381,7 @@ export async function enableSound(): Promise<void> {
   await ctx.resume();
   fadeTo(MASTER_LEVEL);
   on = true;
+  for (const el of Object.values(suppliedEls)) void el?.play().catch(() => {});
   try {
     localStorage.setItem(PREF_KEY, 'on');
   } catch {
@@ -262,6 +391,7 @@ export async function enableSound(): Promise<void> {
 }
 
 export function disableSound(): void {
+  for (const el of Object.values(suppliedEls)) el?.pause();
   if (ctx) {
     fadeTo(0);
     window.setTimeout(
@@ -395,6 +525,38 @@ export function cueCarveFinish(material: 'metal' | 'stone'): void {
 export function cueEngrave(): void {
   if (!on || !ctx || !sfxBus) return;
   cueEngraveSynth(ctx, sfxBus);
+}
+
+/** An air-brake release — a highpass hiss that decays into a low knock. */
+export function cueAirBrake(): void {
+  if (!on || !ctx || !sfxBus) return;
+  const ac = ctx;
+  const now = ac.currentTime;
+  const hiss = ac.createBufferSource();
+  hiss.buffer = noiseBuffer(ac, 0.5, false);
+  const hp = ac.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 2200;
+  const hEnv = ac.createGain();
+  hEnv.gain.setValueAtTime(0.0001, now);
+  hEnv.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+  hEnv.gain.exponentialRampToValueAtTime(0.0001, now + 0.34);
+  hiss.connect(hp);
+  hp.connect(hEnv);
+  hEnv.connect(sfxBus);
+  hiss.start(now);
+  hiss.stop(now + 0.5);
+  const knock = ac.createOscillator();
+  knock.frequency.setValueAtTime(120, now + 0.3);
+  knock.frequency.exponentialRampToValueAtTime(70, now + 0.42);
+  const kEnv = ac.createGain();
+  kEnv.gain.setValueAtTime(0.0001, now + 0.3);
+  kEnv.gain.exponentialRampToValueAtTime(0.22, now + 0.32);
+  kEnv.gain.exponentialRampToValueAtTime(0.0001, now + 0.46);
+  knock.connect(kEnv);
+  kEnv.connect(sfxBus);
+  knock.start(now + 0.3);
+  knock.stop(now + 0.5);
 }
 
 /**

@@ -54,31 +54,33 @@ native scenes run on a shared rAF-throttled scroll timeline, IntersectionObserve
 only to viewport-gate video, CSS 3D transforms, and CSS keyframes. three.js/R3F
 load only for the opted-in full tier.
 
-## The video asset system (owner-supplied footage)
+## The video asset system — true zero-code drop-in
 
-There are two ways to supply footage. The **simple system** is the default; the
-**shot-list** is for later montage work.
+Every clip is a named SLOT in `ROAD_AHEAD_VIDEO` (`src/lib/road-ahead/assets.ts`),
+and each slot's id **is** its drop-in filename stem. Drop the file into
+`public/road-ahead/video/` and **it appears — no code edit.** The build-time
+resolver (`assets-resolver.ts`) scans the folder and fills each slot's
+`src`/`webmSrc`/`poster`/`captions` for the files that exist; until then the slot
+keeps its cinematic gradient (and its poster, if a still was dropped in first).
 
-### The simple system: one clip per scene (`scene-01` … `scene-07`)
+- **Video folder:** `public/road-ahead/video/` — filename = `<slot>.mp4`
+- **Poster folder:** `public/road-ahead/poster/` — `<slot>.jpg` (or `.webp`)
+- **WebM (optional):** `public/road-ahead/video/<slot>.webm` (VP9, smaller mobile)
+- **Captions (optional):** `public/road-ahead/captions/<slot>.vtt`
 
-Each scene resolves its backdrop from `SCENE_BACKDROP` in
-`src/lib/road-ahead/assets.ts` via `sceneBackdropSlot(scene)`. Drop **one** clip
-per scene and the scene goes live — no component changes.
+Each scene renders **one** backdrop — the first of its slots with real footage,
+else the first slot's gradient. Extra slots per scene are montage material for
+later cuts.
 
-- **Video folder:** `public/road-ahead/video/` — name clips `scene-01.mp4` …
-  `scene-07.mp4`.
-- **Poster folder:** `public/road-ahead/poster/` — matching stills `scene-01.jpg`
-  … `scene-07.jpg`.
-
-| Slot | Scene | Footage |
-| --- | --- | --- |
-| `scene-01` | 1 · Night Drive | Night driving, headlights, highway, windshield POV |
-| `scene-02` | 2 · The Pre-Trip | Inspection, walk-around, backing, climb-in, air-brake |
-| `scene-03` | 3 · The Grind | Truck stop, rain, late-night driving, empty highway |
-| `scene-04` | 4 · First Light | Sunrise, truck hero, drone, academy |
-| `scene-05` | 5 · The Wall | _optional atmosphere — the 3D wall renders its own scene_ |
-| `scene-06` | 6 · Your Name | _optional atmosphere — the engraving renders its own scene_ |
-| `scene-07` | 7 · The Payoff | Student, key handoff, training, truck driving away |
+| Scene | Drop-in filenames |
+| --- | --- |
+| 1 · Night Drive | `dark-highway.mp4`, `night-driving.mp4`, `headlights.mp4`, `windshield-rain.mp4` |
+| 2 · The Pre-Trip | `pretrip.mp4`, `truck-walkaround.mp4`, `backing.mp4`, `climb-into-cab.mp4`, `air-brake-check.mp4` |
+| 3 · The Grind | `truck-stop.mp4`, `empty-highway.mp4`, `rain-driving.mp4`, `late-night-driving.mp4` |
+| 4 · First Light | `sunrise.mp4`, `hero-shot.mp4`, `drone-shot.mp4`, `academy-footage.mp4` |
+| 5 · The Wall | _no video — 3D Founder Wall_ |
+| 6 · Your Name | _no video — name engraving_ |
+| 7 · The Payoff | `student-training.mp4`, `key-handoff.mp4`, `student-success.mp4`, `truck-driving-away.mp4` |
 
 **Recommended encoding for every clip:**
 
@@ -91,60 +93,54 @@ per scene and the scene goes live — no component changes.
 | Audio | none (clips play muted) |
 | Max file size | ≤ 4 MB per clip (aim 2–3 MB); posters ≤ 200 KB |
 
-**Compress a raw clip (and auto-generate its poster):**
+**Compress a raw clip to a slot (and auto-generate its poster):**
 
 ```bash
-node scripts/compress-road-ahead-video.mjs <input-file> <scene 1-7> [maxSeconds]
-# e.g.  node scripts/compress-road-ahead-video.mjs ~/night-drive.mov 1
+node scripts/compress-road-ahead-video.mjs <input-file> <slot-name> [maxSeconds]
+# e.g.  node scripts/compress-road-ahead-video.mjs ~/night.mov dark-highway
 ```
 
-This writes `video/scene-0N.mp4`, `video/scene-0N.webm`, and
-`poster/scene-0N.jpg` at the settings above (ffmpeg resolved from `$FFMPEG`,
-PATH, then the bundled Playwright build). Under the hood the MP4 pass is:
-
-```bash
-ffmpeg -i input.mov -t 15 \
-  -vf "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2" \
-  -an -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 24 -preset slow \
-  -movflags +faststart public/road-ahead/video/scene-01.mp4
-```
-
-After the files land, fill that scene's slot in `assets.ts` → `SCENE_BACKDROP`:
-set `src` (`/road-ahead/video/scene-01.mp4`), optional `webmSrc` + `poster`, and
-a complete `license` (**required once `src` is set** — the test suite fails on
-supplied media with no accounted license).
+This writes `video/<slot>.mp4`, `video/<slot>.webm`, and `poster/<slot>.jpg` at
+the settings above (ffmpeg resolved from `$FFMPEG`, PATH, then the bundled
+Playwright build), then you just redeploy — the resolver does the rest.
 
 **Playback behaviour (all automatic):** clips autoplay muted, loop, use
-`playsInline`, and load **only when the scene is on/near screen** (or eagerly for
-scene 1). On a Save-Data or 2g connection, or if a clip fails to load, the scene
-falls back to its poster then its gradient — never a broken or blank backdrop.
-Under reduced-motion no video plays at all.
+`playsInline`, and load **only when the scene is on/near screen** (eager for scene
+1). On a Save-Data / 2g connection, or if a clip fails to load, the scene falls
+back to its poster then its gradient — never a broken or blank backdrop. Under
+reduced-motion no video plays at all.
 
-### The shot-list (optional montage slots)
+## The audio pipeline
 
-`ROAD_AHEAD_VIDEO` also holds 21 finer-grained slots grouped by scene, for future
-montage cuts. They don't drive the backdrop today (the canonical `scene-0N` slot
-does) but remain available and validated:
+Off by default; nothing autoplays. A visitor taps **"Enter with sound"** (on the
+Founder Wall) or the soundtrack control, then the synth engine (`audio.ts`)
+provides zero-asset ambience that **cross-fades by scene** (`setActiveScene`):
 
-| Scene | Montage slots |
-| --- | --- |
-| 1 · Night Drive | `nightDriving`, `headlights`, `highwayNight`, `windshield` |
-| 2 · The Pre-Trip | `preTripInspection`, `walkAround`, `backing`, `climbingIn`, `airBrakeCheck` |
-| 3 · The Grind | `truckStop`, `rain`, `lateNightDriving`, `emptyHighway` |
-| 4 · First Light | `sunrise`, `truckHero`, `drone`, `academy` |
-| 7 · The Payoff | `student`, `keyHandoff`, `training`, `truckDrivingAway` |
+| Bed | Scenes | Today |
+| --- | --- | --- |
+| `engine-idle` | Night Drive, Pre-Trip | synth |
+| `air-brakes` | Pre-Trip (cue) | synth |
+| `highway-ambience` | Night Drive, The Grind | synth |
+| `rain-ambience` | The Grind | synth |
+| `truck-stop-ambience` | The Grind | synth |
+| `dawn-swell` | First Light | synth |
+| `narration` | whole experience | file-only |
+| `score` (licensed music) | whole experience | file-only |
 
-## Dropping in the licensed soundtrack
+To swap a synth bed for a real recording, or add narration / licensed music,
+drop a file into `public/road-ahead/audio/` named after the slot
+(`rain-ambience.mp3`, `narration.mp3`, `score.mp3`). The resolver fills its `src`
+and it plays alongside (music/narration) the synth beds when sound is on — still
+never autoplaying. Music must be licensed for web/background use.
 
-1. Add the track under `public/road-ahead/audio/`.
-2. Fill `ROAD_AHEAD_AUDIO` in `assets.ts`: `src`, `title`, and a complete
-   `license`. The soundtrack **must** be licensed for web/background use — record
-   the license in the manifest.
+## GSAP scene transitions (lazy, gated)
 
-The audio control is hidden until `src` is set. Audio is **off by default** and
-only ever starts from an explicit user tap — it never autoplays (browser policy
-+ accessibility). The soundtrack is atmospheric only; it carries no information,
-so a visitor who never enables it misses nothing.
+`GsapTransitions.tsx` adds a Hollywood-style light-bloom transition between scenes
+via GSAP + ScrollTrigger. It is **dynamically imported** (gsap is never in the
+route-initial bundle) and mounted **only when motion is allowed** — a pause or
+reduced-motion request unmounts it, killing every trigger and tween. GSAP runs on
+its own ticker, so it layers on top of the native scroll engine without touching
+its `--p` timeline; if gsap fails to load, the native experience stands on its own.
 
 ## Accessibility model
 

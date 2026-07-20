@@ -1,7 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils/cn';
+
+// GSAP scene-transition layer — code-split so gsap is never in the route-initial
+// bundle; only fetched when mounted (motion-on).
+const GsapTransitions = dynamic(() => import('./GsapTransitions'), { ssr: false });
 import {
   useCinemaTier,
   useMounted,
@@ -10,7 +15,9 @@ import {
 } from '@/lib/road-ahead/hooks';
 import { ROAD_AHEAD_CHAPTERS } from '@/lib/road-ahead/chapters';
 import { founderNumberWidth, type WallFounder } from '@/lib/road-ahead/founder-number';
+import type { SceneId, VideoSlot } from '@/lib/road-ahead/assets';
 import type { CampaignProgress } from '@/lib/community/founders';
+import { cueAirBrake, setActiveScene, setSuppliedTrack, subscribeSound } from './audio';
 import { ProgressRail } from './ProgressRail';
 import { MotionToggle } from './MotionToggle';
 import { AudioController } from './AudioController';
@@ -40,9 +47,15 @@ import {
 export function RoadAheadExperience({
   founders,
   campaign,
+  backdrops,
+  suppliedAudio,
 }: {
   founders: WallFounder[];
   campaign: CampaignProgress;
+  /** Resolved per-scene backdrop slots (server-scanned footage → gradient fallback). */
+  backdrops: Record<SceneId, VideoSlot | null>;
+  /** Resolved file-backed music/narration srcs (null until a track is dropped in). */
+  suppliedAudio: { music: string | null; narration: string | null };
 }) {
   const prefersReduced = useReducedMotion();
   const [paused, setPaused] = useState(false);
@@ -64,6 +77,24 @@ export function RoadAheadExperience({
     ROAD_AHEAD_CHAPTERS.length,
   );
 
+  // Cross-fade the ambience beds to the active scene whenever it changes (and
+  // once sound is enabled). No-op while sound is off; pure atmosphere.
+  const [soundOn, setSoundOn] = useState(false);
+  useEffect(() => subscribeSound(setSoundOn), []);
+  // Register any dropped-in music/narration so it plays when sound is enabled.
+  useEffect(() => {
+    setSuppliedTrack('music', suppliedAudio.music);
+    setSuppliedTrack('narration', suppliedAudio.narration);
+  }, [suppliedAudio.music, suppliedAudio.narration]);
+  useEffect(() => {
+    if (!soundOn) return;
+    const chapter = ROAD_AHEAD_CHAPTERS[activeChapter];
+    if (!chapter) return;
+    setActiveScene(chapter.id);
+    // The pre-trip beat gets its signature air-brake release.
+    if (chapter.id === 'preTrip') cueAirBrake();
+  }, [soundOn, activeChapter]);
+
   const nextNumber = founders.length + 1;
   const numberWidth = founderNumberWidth(nextNumber);
 
@@ -74,6 +105,9 @@ export function RoadAheadExperience({
       data-ra-tier={spineActive ? 'full' : 'lite'}
     >
       {spineActive ? <SpineLayer onFail={() => setSpineFailed(true)} /> : null}
+      {/* GSAP transition flourishes — mounted only when motion is allowed, so a
+          pause / reduced-motion unmount kills every trigger and tween. */}
+      {mounted && !reduced ? <GsapTransitions /> : null}
       <YearOdometer reduced={reduced} />
       {/* Accessible skip-to-chapter navigation — visible on keyboard focus. */}
       <nav aria-label="Chapters" className="sr-only focus-within:not-sr-only">
@@ -107,13 +141,29 @@ export function RoadAheadExperience({
         ) : null}
       </div>
 
-      <ChapterNight reduced={reduced} register={registerChapter(0)} spineActive={spineActive} />
-      <ChapterPreTrip reduced={reduced} register={registerChapter(1)} spineActive={spineActive} />
-      <ChapterGrind reduced={reduced} register={registerChapter(2)} spineActive={spineActive} />
+      <ChapterNight
+        reduced={reduced}
+        register={registerChapter(0)}
+        spineActive={spineActive}
+        backdrop={backdrops.nightDrive}
+      />
+      <ChapterPreTrip
+        reduced={reduced}
+        register={registerChapter(1)}
+        spineActive={spineActive}
+        backdrop={backdrops.preTrip}
+      />
+      <ChapterGrind
+        reduced={reduced}
+        register={registerChapter(2)}
+        spineActive={spineActive}
+        backdrop={backdrops.theGrind}
+      />
       <ChapterFirstLight
         reduced={reduced}
         register={registerChapter(3)}
         spineActive={spineActive}
+        backdrop={backdrops.firstLight}
       />
       <ChapterWall
         reduced={reduced}
@@ -127,7 +177,12 @@ export function RoadAheadExperience({
         nextNumber={nextNumber}
         numberWidth={numberWidth}
       />
-      <ChapterPayoff reduced={reduced} register={registerChapter(6)} />
+      <ChapterPayoff
+        reduced={reduced}
+        register={registerChapter(6)}
+        spineActive={spineActive}
+        backdrop={backdrops.thePayoff}
+      />
     </div>
   );
 }

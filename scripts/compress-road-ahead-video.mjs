@@ -8,8 +8,10 @@
  *   - public/road-ahead/poster/scene-0N.jpg  (first-frame still)
  *
  * Usage:
- *   node scripts/compress-road-ahead-video.mjs <input> <scene 1-7> [maxSeconds]
- *   e.g. node scripts/compress-road-ahead-video.mjs ~/night-drive.mov 1
+ *   node scripts/compress-road-ahead-video.mjs <input> <slot-name> [maxSeconds]
+ *   e.g. node scripts/compress-road-ahead-video.mjs ~/night.mov dark-highway
+ *   (slot-name = the drop-in filename stem from the manifest, e.g. dark-highway,
+ *    air-brake-check, truck-stop, drone-shot, truck-driving-away)
  *
  * ffmpeg is resolved from $FFMPEG, then PATH, then the bundled Playwright build
  * at /opt/pw-browsers/ffmpeg-linux.
@@ -42,13 +44,14 @@ function run(bin, args, label) {
 }
 
 function main() {
-  const [input, sceneArg, maxArg] = process.argv.slice(2);
-  const scene = Number(sceneArg);
+  const [input, slotArg, maxArg] = process.argv.slice(2);
+  const slot = (slotArg ?? '').trim();
   const maxSeconds = maxArg ? Number(maxArg) : 15;
 
-  if (!input || !Number.isInteger(scene) || scene < 1 || scene > 7) {
+  if (!input || !/^[a-z0-9-]+$/.test(slot)) {
     console.error(
-      'Usage: node scripts/compress-road-ahead-video.mjs <input> <scene 1-7> [maxSeconds]',
+      'Usage: node scripts/compress-road-ahead-video.mjs <input> <slot-name> [maxSeconds]\n' +
+        '  slot-name = drop-in filename stem, e.g. dark-highway, air-brake-check, drone-shot',
     );
     process.exit(2);
   }
@@ -66,10 +69,9 @@ function main() {
   mkdirSync(VIDEO_DIR, { recursive: true });
   mkdirSync(POSTER_DIR, { recursive: true });
 
-  const n = String(scene).padStart(2, '0');
-  const mp4 = resolve(VIDEO_DIR, `scene-${n}.mp4`);
-  const webm = resolve(VIDEO_DIR, `scene-${n}.webm`);
-  const poster = resolve(POSTER_DIR, `scene-${n}.jpg`);
+  const mp4 = resolve(VIDEO_DIR, `${slot}.mp4`);
+  const webm = resolve(VIDEO_DIR, `${slot}.webm`);
+  const poster = resolve(POSTER_DIR, `${slot}.jpg`);
 
   // Fit within 1920x1080 (never upscale), even dimensions, drop audio, cap length.
   const scale =
@@ -138,14 +140,14 @@ function main() {
   const mb = (p) => (statSync(p).size / (1024 * 1024)).toFixed(2);
   const kb = (p) => (statSync(p).size / 1024).toFixed(0);
   console.log('\n✓ Done. Wrote:');
-  console.log(`   video/scene-${n}.mp4   ${mb(mp4)} MB`);
-  console.log(`   video/scene-${n}.webm  ${mb(webm)} MB`);
-  console.log(`   poster/scene-${n}.jpg  ${kb(poster)} KB`);
+  console.log(`   video/${slot}.mp4   ${mb(mp4)} MB`);
+  console.log(`   video/${slot}.webm  ${mb(webm)} MB`);
+  console.log(`   poster/${slot}.jpg  ${kb(poster)} KB`);
   if (Number(mb(mp4)) > 4) {
     console.log('\n⚠ MP4 exceeds the 4 MB target — try a shorter clip or a higher -crf.');
   }
-  console.log('\nNext: set src/webmSrc/poster + license for this scene in');
-  console.log('   src/lib/road-ahead/assets.ts → SCENE_BACKDROP.');
+  console.log('\nDrop-in complete — no code change needed. Redeploy and the slot lights up');
+  console.log('   (the build resolver in assets-resolver.ts picks up the new files).');
 }
 
 main();

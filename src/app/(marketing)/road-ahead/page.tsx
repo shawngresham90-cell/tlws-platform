@@ -2,6 +2,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { getCampaignProgress, getPublicFounders } from '@/lib/community/founders';
 import { buildWallSequence } from '@/lib/road-ahead/founder-number';
+import { resolveSceneBackdrops, resolveAudioSlots } from '@/lib/road-ahead/assets-resolver';
 import { RoadAheadExperience } from '@/components/road-ahead/RoadAheadExperience';
 
 /**
@@ -27,6 +28,13 @@ export const metadata = buildMetadata({
 export default async function RoadAheadPage() {
   const [foundersRaw, campaign] = await Promise.all([getPublicFounders(), getCampaignProgress()]);
   const founders = buildWallSequence(foundersRaw);
+  // Scan the public folder for dropped-in media (true zero-code drop-in).
+  const backdrops = resolveSceneBackdrops();
+  const audioSlots = resolveAudioSlots();
+  const suppliedAudio = {
+    music: audioSlots.find((s) => s.kind === 'music')?.src ?? null,
+    narration: audioSlots.find((s) => s.kind === 'narration')?.src ?? null,
+  };
 
   return (
     <>
@@ -36,7 +44,12 @@ export default async function RoadAheadPage() {
           { name: 'The Road Ahead', path: '/road-ahead' },
         ])}
       />
-      <RoadAheadExperience founders={founders} campaign={campaign} />
+      <RoadAheadExperience
+        founders={founders}
+        campaign={campaign}
+        backdrops={backdrops}
+        suppliedAudio={suppliedAudio}
+      />
     </>
   );
 }

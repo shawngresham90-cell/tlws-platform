@@ -36,15 +36,15 @@ import {
 } from '@/lib/road-ahead/founder-number';
 import {
   allVideoSlots,
-  allBackdropSlots,
   ROAD_AHEAD_AUDIO,
   hasFootage,
-  hasSoundtrack,
   slotsForScene,
   sceneBackdropSlot,
   sceneNumber,
   SCENE_ORDER,
-  SCENE_BACKDROP,
+  videoPath,
+  posterPath,
+  pickBackdrop,
   validateAssetManifest,
 } from '@/lib/road-ahead/assets';
 import { ROAD_AHEAD_CHAPTERS, validateChapters } from '@/lib/road-ahead/chapters';
@@ -206,7 +206,7 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
     validateAssetManifest(),
   );
   const slots = allVideoSlots();
-  check('assets: 21 video slots across the shot list', slots.length === 21);
+  check('assets: 21 named video slots across the shot list', slots.length === 21);
   check(
     'assets: every slot has a gradient fallback',
     slots.every((v) => v.gradient.trim().length > 0),
@@ -216,53 +216,84 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
     slots.every((v) => v.alt.trim().length > 0),
   );
 
-  const ids = [...slots.map((v) => v.id), ROAD_AHEAD_AUDIO.id];
+  // Drop-in filename convention: id === filename stem, file === "<id>.mp4".
+  check(
+    'assets: every slot filename is "<id>.mp4"',
+    slots.every((v) => v.file === `${v.id}.mp4`),
+  );
+  check('assets: filenames are unique', new Set(slots.map((v) => v.file)).size === slots.length);
+  check(
+    'assets: the exact named clips exist',
+    ['dark-highway', 'air-brake-check', 'truck-stop', 'drone-shot', 'truck-driving-away'].every(
+      (id) => slots.some((v) => v.id === id),
+    ),
+  );
+  check(
+    'assets: videoPath/posterPath use the public folders',
+    videoPath(slots[0]) === `/road-ahead/video/${slots[0].file}` &&
+      posterPath(slots[0]) === `/road-ahead/poster/${slots[0].id}.jpg`,
+  );
+
+  const ids = [...slots.map((v) => v.id), ...ROAD_AHEAD_AUDIO.map((s) => s.id)];
   check('assets: ids unique across video+audio', new Set(ids).size === ids.length);
 
   check(
-    'assets: no footage supplied yet (pending)',
+    'assets: no footage supplied yet (pending drop-in)',
     slots.every((v) => !hasFootage(v)),
   );
-  check('assets: no soundtrack supplied yet (pending)', !hasSoundtrack());
 
-  // Granular shot-list grouping (montage slots).
+  // Scene grouping (exact named counts per the owner shot list).
   check('assets: scene 1 has its four night slots', slotsForScene('nightDrive').length === 4);
   check('assets: scene 2 has its five pre-trip slots', slotsForScene('preTrip').length === 5);
+  check('assets: scene 3 has its four grind slots', slotsForScene('theGrind').length === 4);
+  check('assets: scene 4 has its four first-light slots', slotsForScene('firstLight').length === 4);
   check('assets: scene 7 has its four payoff slots', slotsForScene('thePayoff').length === 4);
   check(
-    'assets: no-video scenes carry no montage slots',
+    'assets: no-video scenes carry no slots',
     slotsForScene('foundersWall').length === 0 && slotsForScene('nameEngraving').length === 0,
   );
 
-  // Canonical drop-in backdrop system: scene-01 … scene-07.
-  const backdrops = allBackdropSlots();
-  check('assets: seven canonical backdrop slots', backdrops.length === 7);
-  check(
-    'assets: backdrop ids are scene-01 … scene-07',
-    backdrops.map((b) => b.id).join(',') ===
-      'scene-01,scene-02,scene-03,scene-04,scene-05,scene-06,scene-07',
-  );
   check(
     'assets: sceneNumber maps order to two-digit numbers',
     sceneNumber('nightDrive') === '01' &&
       sceneNumber('foundersWall') === '05' &&
       sceneNumber('thePayoff') === '07',
   );
+
+  // Backdrop resolution: video scenes resolve to their first named slot (gradient
+  // until footage lands); no-video scenes fall back to a synthetic gradient slot.
   check(
-    'assets: every scene resolves a canonical backdrop (never undefined)',
-    SCENE_ORDER.every((s) => sceneBackdropSlot(s) === SCENE_BACKDROP[s]),
+    'assets: video scenes resolve a real named backdrop',
+    (['nightDrive', 'preTrip', 'theGrind', 'firstLight', 'thePayoff'] as const).every(
+      (s) => sceneBackdropSlot(s).id === slotsForScene(s)[0].id,
+    ),
   );
   check(
-    'assets: every backdrop has a gradient + alt fallback',
-    backdrops.every((b) => b.gradient.trim().length > 0 && b.alt.trim().length > 0),
+    'assets: sceneBackdropSlot never returns undefined',
+    SCENE_ORDER.every((s) => sceneBackdropSlot(s) !== undefined),
   );
   check(
-    'assets: no backdrop footage supplied yet (pending upload)',
-    backdrops.every((b) => !hasFootage(b)),
+    'assets: pickBackdrop prefers footage, else first slot',
+    pickBackdrop(slotsForScene('nightDrive')) === slotsForScene('nightDrive')[0] &&
+      pickBackdrop([]) === undefined,
+  );
+
+  // Audio pipeline: ambience beds + narration + music slots, none supplied yet.
+  check('assets: audio has 8 beds/slots', ROAD_AHEAD_AUDIO.length === 8);
+  check(
+    'assets: audio covers engine/air-brake/highway/rain/truck-stop ambiences',
+    ['engine-idle', 'air-brakes', 'highway-ambience', 'rain-ambience', 'truck-stop-ambience'].every(
+      (id) => ROAD_AHEAD_AUDIO.some((s) => s.id === id && s.kind === 'ambience'),
+    ),
   );
   check(
-    'assets: backdrop ids are distinct from montage ids',
-    backdrops.every((b) => !allVideoSlots().some((v) => v.id === b.id)),
+    'assets: narration + licensed music slots exist',
+    ROAD_AHEAD_AUDIO.some((s) => s.kind === 'narration') &&
+      ROAD_AHEAD_AUDIO.some((s) => s.kind === 'music'),
+  );
+  check(
+    'assets: no audio supplied yet (pending)',
+    ROAD_AHEAD_AUDIO.every((s) => s.src === null),
   );
 }
 
