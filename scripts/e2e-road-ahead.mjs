@@ -26,6 +26,15 @@ function check(name, cond, detail) {
   }
 }
 
+async function waitHydrated(page) {
+  for (let i = 0; i < 60; i++) {
+    const v = await page.getAttribute('[data-ra-hydrated]', 'data-ra-hydrated').catch(() => null);
+    if (v === 'true') return true;
+    await page.waitForTimeout(250);
+  }
+  throw new Error('page did not hydrate within 15s');
+}
+
 async function waitForServer(url, timeoutMs = 60000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -51,6 +60,7 @@ server.stderr.on('data', () => {});
 let browser;
 try {
   await waitForServer(`${BASE}/road-ahead`);
+  await fetch(`${BASE}/road-ahead`).catch(() => {}); // Warm the route (cold compile)
   browser = await chromium.launch();
 
   /* ---------------------------------------------- motion-on default page */
@@ -75,7 +85,7 @@ try {
     page.on('pageerror', (e) => errors.push(String(e)));
 
     const resp = await page.goto(`${BASE}/road-ahead`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('[data-ra-hydrated="true"]', { timeout: 10000 });
+    await waitHydrated(page);
     check('page: 200 OK', resp && resp.status() === 200, resp && resp.status());
 
     check('page: exactly one h1', (await page.locator('h1').count()) === 1);
@@ -149,7 +159,10 @@ try {
     );
     // Synth soundtrack control is available and OFF by default (no autoplay).
     const audioBtn = page.getByRole('button', { name: /turn on soundtrack/i });
-    check('controls: soundtrack control present and off by default', (await audioBtn.count()) === 1);
+    check(
+      'controls: soundtrack control present and off by default',
+      (await audioBtn.count()) === 1,
+    );
     check(
       'controls: soundtrack not playing until tapped',
       (await audioBtn.getAttribute('aria-pressed')) === 'false',
@@ -181,7 +194,7 @@ try {
     });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/road-ahead`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('[data-ra-hydrated="true"]', { timeout: 10000 });
+    await waitHydrated(page);
 
     // No <video> should be autoplaying under reduced motion (slots are also empty,
     // but this asserts the reduced path renders no playing media element).

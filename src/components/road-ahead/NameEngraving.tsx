@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { formatFounderNumber } from '@/lib/road-ahead/founder-number';
 import { cueEngrave, duckForReveal } from './audio';
@@ -32,6 +32,14 @@ export function NameEngraving({
   const sweepStyle = reduced ? undefined : ({ ['--p']: progress } as CSSProperties);
   const [draft, setDraft] = useState('');
   const [engravedName, setEngravedName] = useState('');
+  const resultRef = useRef<HTMLParagraphElement>(null);
+
+  // Move focus to the confirmation when a name is engraved, so keyboard/AT users
+  // aren't dropped to <body> when the form is replaced, and the live message is
+  // reliably announced.
+  useEffect(() => {
+    if (engravedName) resultRef.current?.focus();
+  }, [engravedName]);
 
   const engrave = (e: FormEvent) => {
     e.preventDefault();
@@ -96,7 +104,12 @@ export function NameEngraving({
         </form>
       ) : (
         <div className="mx-auto mt-6 flex max-w-md flex-col items-center gap-3">
-          <p className="text-center text-lg text-ink" aria-live="polite">
+          <p
+            ref={resultRef}
+            tabIndex={-1}
+            className="text-center text-lg text-ink focus-visible:outline-none"
+            aria-live="polite"
+          >
             That&rsquo;s how it looks on the wall,{' '}
             <span className="font-semibold text-signal">{engravedName}</span>. Take it with you.
           </p>
