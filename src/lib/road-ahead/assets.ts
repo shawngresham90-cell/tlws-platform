@@ -23,7 +23,7 @@
  *   - Every video slot ALWAYS has a `gradient` fallback → never a blank scene.
  *   - Slot ids are unique across video + audio.
  *   - Any slot whose `src` is filled MUST carry license provenance.
- *   - Audio is optional and, per audio-state.ts, off by default.
+ *   - Audio is optional; the synthesized soundtrack (audio.ts) is off by default.
  *
  * DB-free / React-free so it is unit-tested and importable server-side.
  */
@@ -282,7 +282,7 @@ export const ROAD_AHEAD_VIDEO: Record<string, VideoSlot> = {
   ),
 };
 
-/** The single optional ambient soundtrack slot (off by default, see audio-state). */
+/** Optional licensed-track slot (the synth soundtrack in audio.ts is the default). */
 export const ROAD_AHEAD_AUDIO: AudioSlot = {
   id: 'ambientScore',
   label: 'Ambient cinematic score',

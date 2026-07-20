@@ -3,7 +3,7 @@
  * experience. Deterministic, no DOM, no network:
  *   - scroll-math: clamping, easing, viewport/pinned/sub-beat progress
  *   - founder-number: wall ordering, global numbering, formatting, determinism
- *   - audio-state: the off-by-default soundtrack state machine
+ *   - assets: manifest + scene config integrity
  *   - assets: manifest integrity + license/fallback contract
  *   - chapters / ecosystem: config integrity
  *
@@ -34,14 +34,6 @@ import {
   founderNumberWidth,
   isSafeExternalUrl,
 } from '@/lib/road-ahead/founder-number';
-import {
-  audioReducer,
-  INITIAL_AUDIO_STATE,
-  isAudioPlaying,
-  isAudioControlVisible,
-  audioControlLabel,
-  type AudioState,
-} from '@/lib/road-ahead/audio-state';
 import {
   allVideoSlots,
   ROAD_AHEAD_AUDIO,
@@ -198,56 +190,6 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
   check(
     'format: width scales with total',
     founderNumberWidth(9) === 2 && founderNumberWidth(120) === 3 && founderNumberWidth(0) === 2,
-  );
-}
-
-/* ----------------------------------------------------------- audio-state */
-{
-  const s = (status: AudioState['status']): AudioState => ({ status });
-
-  check(
-    'audio: init without track → unavailable',
-    audioReducer(INITIAL_AUDIO_STATE, { type: 'INIT', hasTrack: false }).status === 'unavailable',
-  );
-  const off = audioReducer(INITIAL_AUDIO_STATE, { type: 'INIT', hasTrack: true });
-  check('audio: init with track → off', off.status === 'off');
-
-  check(
-    'audio: unavailable ignores TOGGLE',
-    audioReducer(s('unavailable'), { type: 'TOGGLE' }).status === 'unavailable',
-  );
-  check(
-    'audio: unavailable ignores ENABLE',
-    audioReducer(s('unavailable'), { type: 'ENABLE' }).status === 'unavailable',
-  );
-  check('audio: off→on via TOGGLE', audioReducer(s('off'), { type: 'TOGGLE' }).status === 'on');
-  check('audio: on→off via TOGGLE', audioReducer(s('on'), { type: 'TOGGLE' }).status === 'off');
-  check(
-    'audio: blocked→on via TOGGLE (retry)',
-    audioReducer(s('blocked'), { type: 'TOGGLE' }).status === 'on',
-  );
-  check('audio: ENABLE→on', audioReducer(s('off'), { type: 'ENABLE' }).status === 'on');
-  check('audio: DISABLE→off', audioReducer(s('on'), { type: 'DISABLE' }).status === 'off');
-  check('audio: BLOCKED→blocked', audioReducer(s('on'), { type: 'BLOCKED' }).status === 'blocked');
-  check('audio: ENDED from on→off', audioReducer(s('on'), { type: 'ENDED' }).status === 'off');
-  check(
-    'audio: ENDED from off unchanged',
-    audioReducer(s('off'), { type: 'ENDED' }).status === 'off',
-  );
-
-  check(
-    'audio: isPlaying only when on',
-    isAudioPlaying(s('on')) && !isAudioPlaying(s('off')) && !isAudioPlaying(s('blocked')),
-  );
-  check(
-    'audio: control hidden only when unavailable',
-    !isAudioControlVisible(s('unavailable')) && isAudioControlVisible(s('off')),
-  );
-  check(
-    'audio: labels',
-    audioControlLabel(s('on')) === 'Turn off soundtrack' &&
-      audioControlLabel(s('off')) === 'Turn on soundtrack' &&
-      audioControlLabel(s('blocked')).toLowerCase().includes('retry'),
   );
 }
 

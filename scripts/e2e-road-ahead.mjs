@@ -136,10 +136,12 @@ try {
       'controls: motion pause button present',
       (await page.getByRole('button', { name: /pause cinematic motion/i }).count()) === 1,
     );
-    // Audio control hidden (no track supplied).
+    // Synth soundtrack control is available and OFF by default (no autoplay).
+    const audioBtn = page.getByRole('button', { name: /turn on soundtrack/i });
+    check('controls: soundtrack control present and off by default', (await audioBtn.count()) === 1);
     check(
-      'controls: audio control hidden until a track exists',
-      (await page.getByRole('button', { name: /soundtrack/i }).count()) === 0,
+      'controls: soundtrack not playing until tapped',
+      (await audioBtn.getAttribute('aria-pressed')) === 'false',
     );
 
     // WCAG 2.2.2: pressing the pause button must stop ALL motion — no running
