@@ -15,7 +15,6 @@ const nextConfig = {
       { source: '/dot-guide', destination: '/knowledge/dot-compliance', permanent: true },
       { source: '/directory/trip-planner', destination: '/trip-planner', permanent: true },
       { source: '/contact', destination: '/academy/faq', permanent: false },
-      { source: '/sponsors', destination: '/', permanent: false },
       {
         source: '/videos',
         destination: 'https://www.youtube.com/@TruckingLifewithShawn',

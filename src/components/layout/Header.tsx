@@ -15,6 +15,7 @@ const NAV = [
   { label: 'Store', href: '/store' },
   { label: 'Books', href: '/books' },
   { label: 'Apps', href: '/apps' },
+  { label: 'Sponsors', href: '/sponsors' },
   { label: 'Founders Wall', href: '/founders' },
 ];
 
