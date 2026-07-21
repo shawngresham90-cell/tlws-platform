@@ -4,7 +4,8 @@
 # on-site ASIN to its final Amazon URL, capture the page title + product image
 # URL, download cover JPGs, and commit the results to THIS branch for review
 # on the draft PR. Read-only against Amazon; repo files only — no database,
-# no secrets, no deploy. Triggers only when this file itself changes (the
+# no secrets, no deploy. Run 2: covers via the Associates image widget.
+# Triggers only when this file itself changes (the
 # results commit uses [skip ci] and cannot retrigger).
 name: books-audit
 on:
