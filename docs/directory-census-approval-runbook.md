@@ -35,7 +35,20 @@ Work these lists before bulk-approving anything:
    `verification_notes` column, which carries the exact address the Census
    service matched.
 
-## Step 2 — The approval edit
+## SHORTCUT (owner bulk approval, 2026-07-21)
+
+The owner approved 713 of the 745 rows in bulk, holding the 32
+cross-validation disagreements for individual review. The finished file is
+already committed: **`data/geocoding/census/census-review-approved.csv`** —
+713 rows `action=ready`/`confidence=high`, the 32 flagged rows left as
+`manual-review` (the console auto-holds them). Verified against the
+console's own validation: 713 applicable, 32 held, 0 overwrites.
+
+**Owner's remaining steps: download that file → upload at
+`/admin/directory/geocoding` → review the preview → Apply.** Steps 2–3
+below are only needed later, for the 32 held rows.
+
+## Step 2 — The approval edit (for the 32 held rows, later)
 
 Open `census-review.csv` in a spreadsheet. For every row you ACCEPT, set:
 
