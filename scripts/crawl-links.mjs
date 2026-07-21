@@ -60,11 +60,19 @@ function extractLinks(html) {
 async function visit(path) {
   crawled++;
   let res;
-  try {
-    res = await fetch(BASE + path, { redirect: 'follow' });
-  } catch (err) {
-    broken.push({ path, status: `fetch error: ${err.message}` });
-    return;
+  // One retry: a transient connection error (reset, abort) is not a broken
+  // link — only a repeatable failure or an HTTP error status counts.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      res = await fetch(BASE + path, { redirect: 'follow' });
+      break;
+    } catch (err) {
+      if (attempt >= 3) {
+        broken.push({ path, status: `fetch error: ${err.message}` });
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
   }
   if (res.status >= 400) {
     if (res.status === 404 && WARN_PREFIXES.some((p) => path.startsWith(p))) {
