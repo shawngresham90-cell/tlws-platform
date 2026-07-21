@@ -12,27 +12,30 @@
     }
   },
   "checkpoint": {
-    "fetched": 0,
-    "pending": 967,
-    "matched": 0,
-    "rejected": 0,
+    "fetched": 965,
+    "pending": 2,
+    "matched": 745,
+    "rejected": 220,
     "staleIgnored": 0,
-    "rejectionReasons": {}
+    "rejectionReasons": {
+      "no-match": 217,
+      "tie": 3
+    }
   },
   "confidence": {
     "high": 0,
-    "medium": 0
+    "medium": 745
   },
-  "verificationFlags": 0,
+  "verificationFlags": 1,
   "coverage": {
     "directoryTotal": 1252,
     "withCoordsNow": 85,
     "pctNow": 6.8,
-    "afterReviewingMatches": 85,
-    "pctAfterReviewingMatches": 6.8,
+    "afterReviewingMatches": 830,
+    "pctAfterReviewingMatches": 66.3,
     "projectedIfPendingMatches70to85pct": {
-      "low": 60.8,
-      "high": 72.4
+      "low": 66.4,
+      "high": 66.4
     }
   },
   "guarantees": [
