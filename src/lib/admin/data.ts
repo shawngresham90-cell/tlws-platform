@@ -34,6 +34,8 @@ export type SponsorRow = {
   email: string | null;
   phone: string | null;
   tier_interest: string | null;
+  /** The inquiry message the sponsor wrote on /sponsors. */
+  notes: string | null;
   status: string;
   created_at: string;
 };
@@ -71,7 +73,7 @@ export function getFounders(): Promise<Result<FounderRow>> {
 export function getSponsors(): Promise<Result<SponsorRow>> {
   return fetchRows<SponsorRow>(
     'sponsors',
-    'id, company, contact_name, email, phone, tier_interest, status, created_at',
+    'id, company, contact_name, email, phone, tier_interest, notes, status, created_at',
   );
 }
 

@@ -1,4 +1,5 @@
 import { Section, Eyebrow } from '@/components/ui';
+import { AcademyFaq } from '@/components/academy';
 import { SponsorInquiryForm } from '@/components/sponsors/SponsorInquiryForm';
 import { SPONSOR_PLACEMENTS } from '@/lib/directory/sponsors';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -109,6 +110,30 @@ export default function SponsorsPage({
           Every sponsored link is disclosed and carries rel=&quot;sponsored&quot; — good for
           drivers, honest for search engines.
         </p>
+      </Section>
+
+      <Section className="border-b border-line">
+        <AcademyFaq
+          heading="Sponsor questions"
+          faqs={[
+            {
+              q: 'What does sponsorship cost?',
+              a: 'Rates aren’t published — placements start small and scale with the audience, and every engagement is priced in the first conversation. Nothing is committed until you talk to Shawn.',
+            },
+            {
+              q: 'Where would my business appear?',
+              a: 'Across the driver directory: the hub, state pages, interstate corridor pages, individual listing pages, the map sidebar, and the truck parking landing pages. Every sponsored link is clearly labeled and carries rel="sponsored".',
+            },
+            {
+              q: 'How do payments work?',
+              a: 'No payment is collected on this site. The inquiry form starts a conversation; terms and invoicing are handled directly with Shawn.',
+            },
+            {
+              q: 'Can I fund a student instead of buying placement?',
+              a: 'Yes — community-funded seats are the heart of the mission. The Founders Wall is the direct way to fund training for a driver.',
+            },
+          ]}
+        />
       </Section>
 
       <Section id="inquire" className="border-b border-line">
