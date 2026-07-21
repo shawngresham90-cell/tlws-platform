@@ -11,7 +11,8 @@ export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
   "night-driving": "wsanOA1aJ1U",
   "pretrip": "Okpkg_xjwX8",
   "sunrise": "8E6U04-K3qA",
-  "truck-driving-away": "0xgnGSxdMGI"
+  "truck-driving-away": "0xgnGSxdMGI",
+  "truck-walkaround": "UgB8CPtzjSg"
 };
 
 // slot id → resolved cinematic MOMENT (segment + edits) from
