@@ -2,7 +2,11 @@
 // Regenerated on every build (prebuild hook) from public/road-ahead/**. Lists the
 // media present at build so the resolver never touches the filesystem at request
 // time (serverless/ISR-safe). Empty = no owner media supplied yet.
-export const PRESENT_ASSETS: readonly string[] = [];
+export const PRESENT_ASSETS: readonly string[] = [
+  "poster/empty-highway.jpg",
+  "video/empty-highway.mp4",
+  "video/empty-highway.webm"
+];
 
 // slot id → YouTube-Unlisted video id (from public/road-ahead/youtube-sources.json).
 export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
