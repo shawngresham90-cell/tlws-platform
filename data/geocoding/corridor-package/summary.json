@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-07-21",
+  "snapshotRows": 1252,
+  "withCoordsNow": 85,
+  "missingCoords": 1167,
+  "censusMatched": 745,
+  "anchors": {
+    "sourceRows": 700,
+    "directory": 85,
+    "batch": 27,
+    "censusPending": 588,
+    "corridors": 19,
+    "rejectedBySanity": 28
+  },
+  "candidates": {
+    "total": 122,
+    "verifiedOnly": 0,
+    "censusDependent": 122,
+    "medium": 93,
+    "low": 29,
+    "nearDuplicateFlags": 0,
+    "coLocatedOnAnotherListingsAnchor": 84,
+    "sharedProposedPointGroups": 27,
+    "byCorridor": {
+      "I-40 AR": 24,
+      "I-65 IN": 16,
+      "I-75 OH": 15,
+      "I-75 FL": 13,
+      "I-95 VA": 11,
+      "I-65 AL": 8,
+      "I-40 TN": 6,
+      "I-95 NC": 4,
+      "I-75 MI": 4,
+      "I-95 SC": 4,
+      "I-40 NC": 3,
+      "I-75 KY": 3,
+      "I-95 GA": 3,
+      "I-95 MD": 2,
+      "I-75 GA": 2,
+      "I-65 TN": 2,
+      "I-95 FL": 2
+    }
+  },
+  "crossValidation": {
+    "compared": 313,
+    "agreeWithin2mi": 281,
+    "disagree": 32,
+    "verifiedBasis": {
+      "compared": 8,
+      "agree": 8
+    },
+    "censusInternalBasis": {
+      "compared": 305,
+      "agree": 273
+    },
+    "selfAnchored": 231,
+    "noInterpolation": 201
+  },
+  "rejected": {
+    "total": 300,
+    "byReason": {
+      "no exit path and no street address": 168,
+      "no-exit-number; has street address (Census rejected this address)": 58,
+      "anchor-gap-too-large; has street address (Census rejected this address)": 53,
+      "outside-anchor-range; has street address (Census rejected this address)": 16,
+      "no-calibration; has street address (Census rejected this address)": 2,
+      "no-exit-number; has street address (address not Census-matched (ineligible or not yet fetched))": 2,
+      "outside-anchor-range; has street address (address not Census-matched (ineligible or not yet fetched))": 1
+    }
+  },
+  "reconciliation": {
+    "formula": "missingCoords = censusMatched + reviewNowCsvRows + afterCensusCsvRows + rejectedCsvRows",
+    "holds": true
+  },
+  "coverage": {
+    "directoryTotal": 1252,
+    "now": 85,
+    "pctNow": 6.8,
+    "afterCensusApprovals": 830,
+    "pctAfterCensusApprovals": 66.3,
+    "afterCensusPlusInterpolation": 952,
+    "pctAfterCensusPlusInterpolation": 76
+  }
+}

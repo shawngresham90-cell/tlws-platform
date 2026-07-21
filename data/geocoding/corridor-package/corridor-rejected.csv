@@ -1,0 +1,301 @@
+listing_id,business_name,category,city,state,interstate,exit_number,classification,reason
+01141f13-1417-494d-a94d-1445b4261451,HOB-CO LLC Mobile Truck & Trailer Repair,roadside-service,Richmond,KY,I-75,,unresolved,no exit path and no street address
+020975e1-13ef-41d9-a02e-c94d8ba05896,"CAT Scale — Love's Travel Stop #624, Prichard",cat-scales,Prichard,AL,I-65,8,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+03cfac83-ce8b-457e-98e6-26265c60d3b4,Love's Truck Wash - Hazen,truck-washes,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+0432986c-b8ae-47fe-a647-db30b12d9434,"Love's Truck Tire Care #624, Prichard",tire-repair,Prichard,AL,I-65,8,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+062c24f7-7145-41f3-97f7-431b2d8965b3,Pilot Travel Center #6990,truck-stops,Kenly,NC,I-95,106,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+06883341-0452-4e42-ac4a-110e3c75596d,Waynesville Tire Inc,tire-repair,Waynesville,NC,I-40,,unresolved,no exit path and no street address
+06e42540-a961-466c-8a92-b323201f9410,Arkansas Highway Police Weigh Station - I-40 Westbound (Riverside / West Memphis),weigh-stations,West Memphis,AR,I-40,,unresolved,no exit path and no street address
+0b34c58e-1c6e-4138-a978-f49cbf546920,"CAT Scale — Love's Travel Stop #470, Jasper",cat-scales,Jasper,FL,I-75,451,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+0b4195b4-4e0a-4192-99a0-dea2c6eb0d9e,Halifax County I-95 Weigh Station (SHP),weigh-stations,Enfield,NC,I-95,,unresolved,no exit path and no street address
+0b924a84-cb2d-4876-b433-f63fdfa47c78,Carson Safety Rest Area,parking,Carson,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+0c12c406-4c2e-44e8-9782-2a153284e104,I-65 Athens Weigh Station (Northbound),weigh-stations,Athens,AL,I-65,,unresolved,no exit path and no street address
+0c8f2702-18ba-465d-ad9f-7222b3db2744,Maryland House Travel Plaza,truck-stops,Aberdeen,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+0ea22351-f61f-4716-adf4-d44bb53de66a,American Towing Service - Miami,roadside-service,Miami,FL,I-95,,unresolved,no exit path and no street address
+0ef95380-098c-4503-9bc9-74781c544195,Ladysmith Safety Rest Area (Southbound),parking,Ladysmith,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+0fa0d81a-c5bf-427b-9015-3a607768f25b,El Cheapo (Richmond Hill),truck-stops,Richmond Hill,GA,I-95,87,unresolved,no exit path and no street address
+0fdb9170-a4db-4d78-9139-2772e54dc673,"Englewood Truck (SW Ohio Towing, Recovery & Mobile Truck Repair)",roadside-service,Englewood,OH,I-75,,unresolved,no exit path and no street address
+10905c05-3522-4be3-892e-19218c42f507,Motor City Truck Plaza,truck-stops,Detroit,MI,I-75,43,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+110ba438-bcf5-4d06-892f-4c107be0581f,Truck Parking Club - Pence Ln lot behind Workman's Travel Center,parking,Ozark,AR,I-40,,unresolved,no exit path and no street address
+1251f757-4ab4-4acf-93d1-a95df046b3b1,Smith County Welcome Center (TDOT),parking,Buffalo Valley,TN,I-40,MM 267,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+128a2d09-7f2f-42f0-81cc-1f714b61b3d7,Tennessee Weigh Station - I-75 Northbound (Bradley County),weigh-stations,Cleveland,TN,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+128e28fd-ea53-4895-8b25-1d330554e8b6,East Holly Truck Stop,truck-stops,Holly,MI,I-75,98,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+132a8918-4b7b-429b-b420-ce69e9ecb151,"Tennessee Weigh Station — I-65 Southbound (Robertson County, near KY line)",weigh-stations,Mitchellville,TN,I-65,,unresolved,no exit path and no street address
+13a9285c-b1a3-41c1-8bd8-b37661403226,Conoco Truck Stop (Carlisle One Stop),truck-stops,Carlisle,AR,I-40,183,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+13facf37-f06a-48ef-acb8-b73b634a4505,Sam's Roadside Service (mobile),roadside-service,Indianapolis,IN,I-65,,unresolved,no exit path and no street address
+148c8e61-8e91-4f2e-85a1-cc1b5d178d5b,I-75 Bay City Rest Area (Southbound),parking,Bay City,MI,I-75,,unresolved,no exit path and no street address
+14b53fd6-ea8b-4e2a-8618-128e28612212,Southern Tire Mart #330,tire-repair,West Memphis,AR,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+16b6c4e2-49bc-47f6-89de-cd8db48e1427,Bethal Diesel Service,roadside-service,Conway,AR,I-40,,unresolved,no exit path and no street address
+17e513b1-c6cb-4d55-a60c-54cf04234398,Truck Parking Club - 250 W Cumberland Gap Pkwy (Corbin),parking,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+188b983c-bfc5-4d1d-9027-02850775a06a,Benton County I-40 Westbound Rest Area,parking,Holladay,TN,I-40,MM 131.5 WB,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+18ded510-87c5-4865-86e6-b043c6768486,"BP Truck Stop (I-75 Exit 47A, Detroit)",truck-stops,Detroit,MI,I-75,,unresolved,no exit path and no street address
+1933b8ea-539e-40c2-a8c1-3b177375cc7a,Sleep Inn Walterboro I-95,hotels-truck-parking,Walterboro,SC,I-95,53,unresolved,no exit path and no street address
+1b0ef012-d5cf-4550-8723-3c19fa283ddb,Fredericksburg Welcome Center (Southbound),parking,Fredericksburg,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+1b16d50c-fe90-4999-9174-24b1afd5d87f,CAT Scale — London Travel Plaza (AMBEST),cat-scales,London,KY,I-75,41,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+1b26d26d-059c-4bb0-adf1-0775ac9da1e8,Super 8 by Wyndham Corbin/London KY,hotels-truck-parking,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+1b9fd8ed-aee3-458f-9296-7a6a5f5ca340,Southern Tire Mart at Pilot (Hardeeville),tire-repair,Hardeeville,SC,I-95,5,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+1ccf0377-ac4f-4d85-9b13-c810b44a0045,Days Inn by Wyndham Lonoke,hotels-truck-parking,Lonoke,AR,I-40,175,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+1dfbe578-4d95-4f90-b00b-ba6cff921daf,Kentucky Weigh Station - I-75 Southbound (Laurel County),weigh-stations,London,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+1e7a6551-2a7e-4d32-a04f-400c8ed8db63,St. Johns County Rest Area (I-95 MM 331),parking,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+20527ca4-925d-432f-a857-1150c2a09ba8,Dale City Safety Rest Area (Northbound),parking,Dale City,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+2063c01e-5281-4755-bb20-ddf02a1653bd,North Carolina Welcome Center - I-40 West (Haywood County),parking,Waynesville,NC,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+208bb775-28c3-4123-8bd8-6eaaeac77ad4,Maryland House Travel Plaza Truck Parking,parking,Aberdeen,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+214dc102-0732-4ffa-85a4-bf40a8856a14,Pit Stop Diner,truck-stops,Wheatley,AR,I-40,221,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+2237db27-ede4-4872-9149-f2ea2e2fb8c7,CAT Scale at Love's Yemassee,cat-scales,Yemassee,SC,I-95,38,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+22a4681b-6a31-4b56-a959-f4b3fe40ab2f,North American Trade Schools (CDL Program),cdl-schools,Baltimore,MD,I-95,,unresolved,no exit path and no street address
+2336b0fe-5981-4520-b61b-5bfa9d81fced,"Brevard County Rest Area (I-95 MM 225, Titusville)",parking,Titusville,FL,I-95,,unresolved,no exit path and no street address
+233d03c8-da5e-4cb2-b239-c48f238ec2a1,Sardis Auto/Truck Plaza,truck-stops,Sardis,SC,I-95,150,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+238eeba1-8e9e-4260-99e9-907013e3acd2,Circle C 24/7 Truck Wash,truck-washes,Walterboro,SC,I-95,57,unresolved,no exit path and no street address
+2533368e-1ea7-4a8f-b73e-a6c79eec61c5,Georgia Welcome Center (I-95 Northbound),parking,Kingsland,GA,I-95,,unresolved,no exit path and no street address
+25dea13e-8d96-411a-8945-782f2b5694d4,I-95 Cumberland County Rest Area (Southbound),parking,Fayetteville,NC,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+25e73d4a-657a-498b-9deb-ceabc08caef4,"Love's Truck Care #225, Evergreen",tire-repair,Evergreen,AL,I-65,93,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+270b3a0e-3826-4c85-8c3d-d1dd311b1c71,GA I-95 Glynn County Rest Area (Southbound),parking,Brunswick,GA,I-95,,unresolved,no exit path and no street address
+291f4ba9-2de3-4f95-a81d-642f0bf0ac93,"Westbound Truck Parking Area, I-40 WB near Monterey",parking,Monterey,TN,I-40,MM ~301,unresolved,no exit path and no street address
+2937ca5e-063c-4ac7-b4c4-0e7da286f488,TA Montgomery #111,truck-stops,Montgomery,AL,I-65,168,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+2a3d7c32-e385-41db-9b12-6111d7fa91fc,I-95/I-495 Commercial Vehicle Weigh & Inspection Station (MSP CVED),weigh-stations,College Park,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+2aafd4fa-3045-492d-a047-49a8ada973dd,"CAT Scale — Pilot Travel Center #231, Corbin",cat-scales,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+2e036deb-3b94-41b3-9fcb-fd5b71923e44,ONE9 Travel Center (former Pilot Travel Center #254),truck-stops,Wildwood,GA,I-24,169,needs-external-geocode,no-calibration; has street address (Census rejected this address)
+32e6a809-fac2-4ed9-9b6f-466bd58dbd12,Arkansas Highway Police Weigh Station - I-40 Eastbound (Lehi / West Memphis),weigh-stations,West Memphis,AR,I-40,,unresolved,no exit path and no street address
+344a08fa-8320-4f25-95b6-1519225ca8b4,I-95 Truck Stop - Santee,truck-stops,Santee,SC,I-95,93,unresolved,no exit path and no street address
+34d6ae7a-216e-46fa-986d-81d0a47ea7e4,I-65 Conecuh County Rest Area (Northbound),parking,Evergreen,AL,I-65,,unresolved,no exit path and no street address
+34f173ec-5520-4e3b-aa7e-41cd6bb9de9d,Tennessee Weigh Station - I-75 Southbound (Bradley County),weigh-stations,Cleveland,TN,I-75,,unresolved,no exit path and no street address
+351caca3-836f-49e4-be14-a0eeb416a4b3,Blue Beacon Truck Wash of Corbin,truck-washes,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+362fcb47-e547-41fc-906c-0e919a652678,Alma I-40 Weigh Station (Westbound),weigh-stations,Alma,AR,I-40,,unresolved,no exit path and no street address
+37a7f0ab-cf4f-4a92-8bc2-22b25dfdbfec,CDS Tractor Trailer Training - Richmond,cdl-schools,Richmond,VA,I-95,74,unresolved,no exit path and no street address
+38cc0860-23d0-41f4-acee-987625766068,CAT Scale at Love's Richmond Hill (#338),cat-scales,Richmond Hill,GA,I-95,90,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+38ffb2aa-c692-4376-9d7c-4b39e745845d,CAT Scale at ONE9 Travel Center Brinkley,cat-scales,Brinkley,AR,I-40,216,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+39d8b991-c7a4-4631-82f9-23f3e3947ae9,Dickson County Rest Area - I-40 Eastbound (MM 170),parking,Dickson,TN,I-40,,unresolved,no exit path and no street address
+3aab07e4-ad3b-4220-91ee-7894d6c3502b,Yellow Hammer Travel Center,truck-stops,Brewton,AL,I-65,69,unresolved,no exit path and no street address
+3b66bf1e-4b38-46c8-8b27-b1945714c544,Arlington Truck and Trailer Repair,roadside-service,Eads,TN,I-40,,unresolved,no exit path and no street address
+3d065e68-3f21-47d9-8ace-4670366e6fed,Truck Parking Club - 6180 Hagman Rd (Toledo),parking,Toledo,OH,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+3d8ca37c-b13f-4f2b-847e-7365440ac123,Reddy's Super Stop,truck-stops,Brinkley,AR,I-40,216,unresolved,no exit path and no street address
+3e75627b-f631-421e-ae02-45d39777a67b,Conway Diesel Service — Evergreen,roadside-service,Evergreen,AL,I-65,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+3f69b705-f6fc-4802-bea2-68c7bd838ed7,"White River Rest Area (I-40 MM 199, EB and WB)",parking,De Valls Bluff,AR,I-40,,unresolved,no exit path and no street address
+424c3177-2768-489b-914b-cff1d01ef43f,Littrell Truck & Tractor,roadside-service,Lexington,KY,I-75,,unresolved,no exit path and no street address
+431feb1a-211c-4ca1-9c3c-d6b9e32cba5f,Fort Massac Welcome Center / Rest Area (I-24 MM 37),parking,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+4487c8c2-b9dc-4b24-bf94-e18b76de138e,Love's Travel Stop #225,truck-stops,Evergreen,AL,I-65,93,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+455fc247-b84b-46fe-91fe-29749283ab41,US Fuel Mart (US Petro Mart),truck-stops,Detroit,MI,I-75,,unresolved,no exit path and no street address
+456620fc-23bd-4cf1-a984-21ec9138b774,Savannah Technical College - Commercial Truck Driving (CDL),cdl-schools,Savannah,GA,I-95,,unresolved,no exit path and no street address
+45a1cbfc-d6ab-4797-9708-e993055412e4,Georgia Welcome Center (Savannah) - I-95 SB,parking,Port Wentworth,GA,I-95,,unresolved,no exit path and no street address
+45b986e7-6555-41bc-9735-4ce59bfae89d,ASAP Towing & Storage,roadside-service,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+46a4172e-6c72-4fa2-aecc-c6d44fbb6f74,"After Hours Road Service, Inc.",roadside-service,Naples,FL,I-75,,unresolved,no exit path and no street address
+471132d2-2361-4f71-a7c8-23c836f28f02,Interstate Fleet Services,roadside-service,Clarksville,IN,I-65,,unresolved,no exit path and no street address
+47af659e-3b29-419f-a723-21d6bcd4f152,JAX24 Mobile Semi Truck Repair,roadside-service,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+4851db39-17a3-4025-877d-966353811088,Motel 6 West Memphis,hotels-truck-parking,West Memphis,AR,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+488ef5d6-960c-4504-a163-4c4c8c6d11fc,247 Truck Stop,truck-stops,Widener,AR,I-40,247,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+48942c6d-d58b-46ad-8a29-906278fceb35,Pilot Travel Center #75,truck-stops,Satsuma,AL,I-65,19,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+493f87f4-8dca-4681-9d42-1da6c4646855,Love's Travel Stop #470 (Jasper),truck-stops,Jasper,FL,I-75,451,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+49bf9a34-856c-4427-b94b-c8af02009a4c,Carson Safety Rest Area - I-95 NB,parking,Port Wentworth,GA,I-95,,unresolved,no exit path and no street address
+4ab44bf3-6b50-4ff0-b5d6-7161536c8563,Vienna Automotive Center,tire-repair,Vienna,IL,I-24,,unresolved,no exit path and no street address
+4c5cc4c2-5394-4b3e-900e-ab729ab8bc54,Red Roof Inn Yemassee,hotels-truck-parking,Yemassee,SC,I-95,33,unresolved,no exit path and no street address
+4e7f48fa-e247-4722-bc76-34f269cde7f3,B & F Towing Co.,roadside-service,Wilmington,DE,I-95,,unresolved,no exit path and no street address
+4ee402f8-abbf-471f-a9f7-620234b2b192,Days Inn Carlisle,hotels-truck-parking,Carlisle,AR,I-40,183,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+4f21b0d2-18b1-46a0-9a7e-a11b3922f9a7,Ardmore Welcome Center (I-65 Southbound),parking,Elkmont,AL,I-65,,unresolved,no exit path and no street address
+50f05436-a429-44f6-829e-630075daec0d,I-95 Robeson County Weigh Station (Northbound),weigh-stations,Lumberton,NC,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+51038905-7826-4be7-83d8-b1ef23a9b7f6,Franco Road Service Inc,roadside-service,Fredericksburg,VA,I-95,,unresolved,no exit path and no street address
+525d165f-3020-48a5-a584-8bf689288500,Love's Speedco #906,tire-repair,Brunswick,GA,I-95,29,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+5495d58c-7ab4-4954-af09-7e7d9a6b6804,TNT Services (Fleet Washing / Drive-Thru Truck Wash),truck-washes,Lexington,KY,I-75,,unresolved,no exit path and no street address
+54a502b2-9b7d-49be-ba59-e2a4ef38ce72,Agricultural Inspection Station No. 16B (I-95),weigh-stations,Yulee,FL,I-95,,unresolved,no exit path and no street address
+55ea9889-c967-4506-aab5-c5fb836ee30e,Michigan Welcome Center - St. Ignace (I-75),parking,St. Ignace,MI,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+56a93068-45d4-4033-ba20-a00d3fe66ba6,Truck Parking Club - Auburn Hills,parking,Auburn Hills,MI,I-75,,unresolved,no exit path and no street address
+57d57e31-b67b-4313-bb11-c8ac084587ef,Diesel Down LLC,roadside-service,Auburn Hills,MI,I-75,,unresolved,no exit path and no street address
+58062585-dc00-475c-a72f-3ca3df99520e,Georgia I-24 Weigh / Inspection Station (Dade County),weigh-stations,Wildwood,GA,I-24,,unresolved,no exit path and no street address
+580ad9fe-73e7-4c6a-bac4-72d30e46f2f7,Henryville Rest Area (Northbound),parking,Henryville,IN,I-65,,unresolved,no exit path and no street address
+581dc977-7484-4a7c-a5a8-651dba638261,Express Inn West Memphis,hotels-truck-parking,West Memphis,AR,I-40,,unresolved,no exit path and no street address
+5bb26e5f-300b-4e53-856d-4e29876dee0e,Fuel Mart of America,truck-stops,Detroit,MI,I-75,43,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+5cb0eddc-0234-4964-8e45-0cb9980b9c8b,Truck Parking Club lot - 2409 IL-145 Metropolis,parking,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+5d4b5503-e66f-42af-89db-63e3bb9eb809,Coastal Chevron / Sunshine Travel Plaza,truck-stops,Woodbine,GA,I-95,14,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+5ee50208-ea02-4cbd-8477-5f7469cc0385,"Love's Truck Care / Speedco - Love's Travel Stop #321, Corbin",tire-repair,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+5f8a9e1f-6fd6-411f-83aa-6a56f2cb8c97,"I-65 Northbound Truck Parking Area (former weigh station, Robertson County)",parking,Mitchellville,TN,I-65,,unresolved,no exit path and no street address
+6027611b-b476-48b3-a777-b43b6492b5ae,CAT Scale at Love's Travel Stop #759,cat-scales,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+60eb6009-2034-4200-b1ea-da4d5bd0fe73,Circle K Travel Center - Walterboro,truck-stops,Walterboro,SC,I-95,53,unresolved,no exit path and no street address
+640d6b42-4c71-4eb9-b734-da42ae182bab,My Parking Hub - Toledo (Sam's Hub Access),parking,Toledo,OH,I-75,,unresolved,no exit path and no street address
+642f5b91-976b-4b31-aee9-c9dec2f544e8,Truck N Learn CDL Training,cdl-schools,Woodbridge,VA,I-95,160,unresolved,no exit path and no street address
+66990611-5600-4c2b-be68-7e14bc61820f,Holiday Inn Express & Suites Lonoke I-40 (Exit 175),hotels-truck-parking,Lonoke,AR,I-40,175,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+688309bc-4aac-48a4-97ce-0b3db43d8d33,"Brevard County Rest Area (I-95 MM 168, Palm Bay)",parking,Palm Bay,FL,I-95,,unresolved,no exit path and no street address
+69f1f244-c4c0-480b-9e95-f1b02554cb6b,ONE9 Travel Center (Pilot Company),truck-stops,Brinkley,AR,I-40,216,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+6a17477e-60fd-4cb3-86e2-9bdb93546852,Plaza Tire Service - Metropolis,tire-repair,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+6a994e3d-56e9-4f0c-97dc-5557807a5fe4,Georgia DPS Weigh Station 2 - I-75 Northbound (Catoosa County),weigh-stations,Ringgold,GA,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+6ad4784a-e243-424d-add0-f86c493522d8,"Hamer Welcome Center (I-95 SB, NC line)",parking,Hamer,SC,I-95,,unresolved,no exit path and no street address
+6b484fca-b4c5-41aa-bf35-2560cb161aff,All Truck Service - Jacksonville,roadside-service,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+6bc0c663-fe39-4d71-b270-4b4d3d04b651,Chesapeake House Travel Plaza Truck Parking,parking,North East,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+6bd441b6-c0a8-43f2-9c45-b2c9aad57353,Johnston Community College CDL Driver Training,cdl-schools,Smithfield,NC,I-95,95,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+6c6a902c-51f9-4aee-859d-3eb835664f64,Maryland I-95 North Welcome Center & Rest Area,parking,Savage,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+6d944928-3079-4aef-b907-dfab87dadbb1,CAT Scale at ONE9 Travel Center Wildwood,cat-scales,Wildwood,GA,I-24,169,needs-external-geocode,no-calibration; has street address (Census rejected this address)
+6df953c3-9071-4d79-9238-a770b8948f8a,Sapp's Wrecker Service,roadside-service,Savannah,GA,I-95,,unresolved,no exit path and no street address
+6e3a9268-d9ac-4350-9e70-6f1c9a9d1964,"GA DPS Weigh Station (I-95 Northbound, Townsend)",weigh-stations,Townsend,GA,I-95,,unresolved,no exit path and no street address
+6f4f6754-96fb-4fe2-be0a-9e1c2f7358d8,I-65 Butler County Rest Area (Northbound),parking,Greenville,AL,I-65,,unresolved,no exit path and no street address
+6f7fee11-ff4c-445d-b830-d899d682312c,CAT Scale at Flying J Saint Augustine,cat-scales,Saint Augustine,FL,I-95,305,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+703372a3-ddb0-4201-b738-cab8ded1a1cf,Love's Travel Stop #321,truck-stops,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+71be62b4-a262-4f8d-b1df-481f987e5298,On-Site Truck and Trailer Services,roadside-service,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+72a21b70-6f02-439d-a737-1423eabc65f5,Admiral — Sault Ste. Marie (I-75 Business Spur),truck-stops,Sault Ste. Marie,MI,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+7397efa7-9bc0-4be1-8b78-6e3e8e2d39a0,Ziegler Tire,tire-repair,Lexington,KY,I-75,,unresolved,no exit path and no street address
+73a2d986-6a30-41a4-83b8-e396fb3b71e1,Michigan Weigh Station - I-75 Northbound (Mackinac Bridge / St. Ignace),weigh-stations,St. Ignace,MI,I-75,,unresolved,no exit path and no street address
+74aacea6-d2b2-4040-88d9-dbbb25571af5,Nassau County Weigh Station (I-95),weigh-stations,Yulee,FL,I-95,,unresolved,no exit path and no street address
+754ad6c5-67c3-471c-a1f0-a2add44818fa,McDowell County Rest Area I-40 Eastbound (MM 82),parking,Marion,NC,I-40,,unresolved,no exit path and no street address
+77957a3c-8092-4517-8b33-2e50e4047ed4,Van Buren Travel Center,truck-stops,Van Buren,AR,I-40,,unresolved,no exit path and no street address
+77f995a5-8ff3-46d9-a772-c1731bd609ba,Albert's Road Service,roadside-service,West Palm Beach,FL,I-95,,unresolved,no exit path and no street address
+780cc3cf-1b89-490d-b3f8-676a93f4c6f9,"GA DPS Weigh Station (I-95 Southbound, Townsend)",weigh-stations,Townsend,GA,I-95,,unresolved,no exit path and no street address
+789edf6c-1440-44ca-8034-2d2a483a651d,Scott County Rest Area Northbound (MM 127),parking,Georgetown,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+79b23309-1563-43cb-9657-4edb9d990acb,"TDOT Madison County Rest Area (I-40 Eastbound, MM 73)",parking,Denmark,TN,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+7a03c1f5-6b4d-4951-98a2-a3e752d2270b,TA Richmond (TravelCenters of America),truck-stops,Ashland,VA,I-95,89,unresolved,no exit path and no street address
+7af1a802-82f1-4501-a026-986e8230ccfb,Carson Weigh Station Southbound,weigh-stations,Carson,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+7bddc0f4-c215-42e9-958a-82260e323ba5,I-40 Weigh/Inspection Station - Cocke County (near NC line),weigh-stations,Hartford,TN,I-40,,unresolved,no exit path and no street address
+7d8b58e5-05b3-43bc-8ce7-2ec4e660fc2e,Ed's 24 Hour Service,roadside-service,Findlay,OH,I-75,,unresolved,no exit path and no street address
+7e1b02c3-b62d-490a-9974-eafe3428f02a,Forrest City Rest Area - I-40 Westbound (MM 242.6),parking,Forrest City,AR,I-40,,unresolved,no exit path and no street address
+7e23df57-04ed-4904-a5ca-c80c5ecbbdd7,I-65 Athens Weigh Station (Southbound),weigh-stations,Athens,AL,I-65,,unresolved,no exit path and no street address
+7e3bf39e-aaad-40cc-b496-182450fb2ffe,White Springs Weigh Station (I-75),weigh-stations,White Springs,FL,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+7e5d2317-5854-4dbb-8ebd-dad61a06f0c4,TransTech CDL Training (Fayetteville),cdl-schools,Fayetteville,NC,I-95,,unresolved,no exit path and no street address
+7e66d12a-90ea-4550-bf23-c4ef369c55bf,LP Mobile Tire (Bradenton area),roadside-service,Bradenton,FL,I-75,,unresolved,no exit path and no street address
+7e7568b1-db1e-4d3a-8403-85df63b12990,"CAT Scale — Pilot Travel Center #75, Satsuma",cat-scales,Satsuma,AL,I-65,19,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+7eb47ea3-8514-41aa-be0d-82f6fbf5e8c3,I-95 Perryville Truck Weigh & Inspection Station (Northbound),weigh-stations,Perryville,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+7efc409a-2666-417c-8c11-38fe30e02d21,Mangum's Towing & Road Service (Rocky Mount),roadside-service,Rocky Mount,NC,I-95,,unresolved,no exit path and no street address
+804c5c9d-e0f9-4667-984d-e4bbd51775db,Tennessee Weigh Station - I-75 Southbound (Knox County),weigh-stations,Knoxville,TN,I-75,,needs-external-geocode,no-exit-number; has street address (address not Census-matched (ineligible or not yet fetched))
+80786332-ef51-4045-9f28-a33abfbf56bd,Chesapeake House Travel Plaza,truck-stops,North East,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+8095c618-daf7-49a4-ad3d-4a4cd02617e3,Liberty Fleet Solutions (Liberty Equipment),roadside-service,Fredericksburg,VA,I-95,,unresolved,no exit path and no street address
+80a397c9-f16f-4be8-a819-bfc96ca43746,Martin County Weigh Station (I-95 Southbound),weigh-stations,Palm City,FL,I-95,114,unresolved,no exit path and no street address
+80e720ca-5925-46a8-a9a1-005528f34f4c,St. Lucie County Rest Area (I-95 MM 133),parking,Fort Pierce,FL,I-95,,unresolved,no exit path and no street address
+810e3a7f-2fb7-4966-be83-faa58fbc5407,Truck and Trailer Mobile Repair - Flint,roadside-service,Flint,MI,I-75,,unresolved,no exit path and no street address
+84220419-b8f4-47eb-bae1-d9fb3dc20040,"TDOT Haywood County Welcome Center / Rest Area (I-40 Westbound, MM 44-45)",parking,Stanton,TN,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+84fa50b8-a334-4d48-a35e-094013ae1772,I-40 Truck Turnout - Mile 134 Eastbound (Mayflower/Conway),parking,Mayflower,AR,I-40,,unresolved,no exit path and no street address
+8518cd23-a383-4308-bf0a-48a23448d54d,Mackinaw City Citgo,truck-stops,Mackinaw City,MI,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+866d463e-0f44-43fe-984f-33291dd073f0,"CAT Scale — TA Montgomery, Montgomery",cat-scales,Montgomery,AL,I-65,168,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+86d47759-3b76-45cc-af33-522640ecec16,Michigan Welcome Center - Mackinaw City (I-75),parking,Mackinaw City,MI,I-75,,unresolved,no exit path and no street address
+86e0949e-2d59-46d6-96f2-7d23539bdc3e,Hampton Inn Santee I-95,hotels-truck-parking,Santee,SC,I-95,98,unresolved,no exit path and no street address
+877374ab-3d90-4893-a9bd-77893e763ae9,White Glove Towing Service,roadside-service,Greenwood,IN,I-65,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+87de1008-5deb-4d36-a871-6b48dd5ddf9f,"Weigh Station — I-75 Northbound, Luna Pier",weigh-stations,Luna Pier,MI,I-75,,unresolved,no exit path and no street address
+87f37135-0d5e-4f02-9889-537c3adc6bd3,Cullman County Rest Area (I-65 MM 301),parking,Cullman,AL,I-65,,unresolved,no exit path and no street address
+894b3ac4-90d0-4a5d-bd24-0bc534e4eaa8,Kentucky Weigh Station - I-75 Northbound (Laurel County),weigh-stations,London,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+89c2531c-300b-4d19-b9f8-e4f065f2d605,Love's Travel Stop #338,truck-stops,Richmond Hill,GA,I-95,90,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+89e875dc-9852-4f4d-9a5e-0265fd2f564c,Ozark Truck & Travel Plaza,truck-stops,Alma,AR,I-40,,unresolved,no exit path and no street address
+89e8f796-d286-4e0e-b0d3-327b03d76cfa,"THP Check Station - Poplar Springs (Lexington area, portable scales)",weigh-stations,Lexington,TN,I-40,,unresolved,no exit path and no street address
+8a1de13d-bd2e-4ece-ae16-6eae921f024b,Cross Diesel Repair,roadside-service,Corinth,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+8abd0ae7-4cad-4015-9309-0c1ad798955e,Georgia DPS Weigh Station 1 - I-75 Southbound (Catoosa County),weigh-stations,Ringgold,GA,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+8adc84ed-7d07-4b43-8225-6ff185121d86,Vintage Wrecker Service,roadside-service,Colora,MD,I-95,,unresolved,no exit path and no street address
+8b02e14f-6692-4781-9589-8b907c49850f,Coastal Towing (Coastal Wrecker),roadside-service,Rocky Mount,NC,I-95,,unresolved,no exit path and no street address
+8be8a312-d7fe-4b5d-8029-4e4be16db6cd,"CAT Scale — Love's Travel Stop #225, Evergreen",cat-scales,Evergreen,AL,I-65,93,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+902453cb-99ec-47e4-9a2a-45b1502c85f3,Quality Inn & Suites Alma I-40,hotels-truck-parking,Alma,AR,I-40,,unresolved,no exit path and no street address
+9216c281-99ca-4b5f-8a8d-c5f5e952a769,Kentucky Weigh Station - I-75 Northbound (Scott County),weigh-stations,Georgetown,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+9286ea5b-259f-47ce-a075-eec19375191e,Quality Inn West Memphis I-40,hotels-truck-parking,West Memphis,AR,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+9294ef9c-0e44-440c-a480-81bc00da21e5,"I-40 Cumberland County Rest Area (Westbound, MM 326.6)",parking,Crossville,TN,I-40,,unresolved,no exit path and no street address
+93d11293-5961-44a5-ba5d-ae01bf86716b,Florida Secure Self-Storage — Pembroke Pines,parking,Pembroke Pines,FL,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+94480a62-6e45-41d9-ab9c-ddaf9d084ca8,I-65 Southbound Weigh Station (Lowell),weigh-stations,Lowell,IN,I-65,,unresolved,no exit path and no street address
+944b49c4-30dd-432f-bdd3-c137cf827e86,Ziegler Tire,tire-repair,Toledo,OH,I-75,,unresolved,no exit path and no street address
+964e5e38-d45d-4c4b-812a-c4ecf904bb4e,S & K Bronco BP (Gaylord),truck-stops,Gaylord,MI,I-75,282,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+9668985d-0c95-4ec6-9d8f-55c3a0e4b034,Parker's Kitchen #69,truck-stops,Pooler,GA,I-95,,unresolved,no exit path and no street address
+97435277-e8a8-49a8-9ff1-0ed17bec85af,Miccosukee Service Plaza,truck-stops,Ochopee,FL,I-75,49,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+97a91141-ec4d-49fb-b8d2-4c30a90c308a,I-75 Rest Area — Southbound (Miami County),parking,Piqua,OH,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+992872b0-b0e0-4f51-867c-1460666822b7,South Carolina Welcome Center (I-95 NB),parking,Hardeeville,SC,I-95,,unresolved,no exit path and no street address
+99c486f6-7e9b-4c26-b6da-b7219cc694c6,"Arkansas Welcome Center at Van Buren/Fort Smith (I-40 EB, MM 2)",parking,Van Buren,AR,I-40,,unresolved,no exit path and no street address
+99f4a8cf-a977-46a5-8226-ad8721be76b9,I-95 Robeson County Weigh Station (Southbound),weigh-stations,Lumberton,NC,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+9a0ac97f-90d6-4f60-a96d-d51791049ffe,Virginia Welcome Center (Skippers),parking,Skippers,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+9a6d740d-debc-4f90-b5fc-e9daae0d3986,Blue Beacon Truck Wash of Kenly,truck-washes,Kenly,NC,I-95,106,unresolved,no exit path and no street address
+9ac45310-ac8c-4885-a5aa-ebf787c2f13a,Pilot Travel Center #4569,truck-stops,Hardeeville,SC,I-95,5,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+9b5a7530-2901-474a-ad32-b53c84cbd478,I-65 Butler County Rest Area (Southbound),parking,Greenville,AL,I-65,,unresolved,no exit path and no street address
+9ba81ef1-4451-4a4d-83fe-93baa59df27c,Circle C 24/7 Truck Repair,roadside-service,Walterboro,SC,I-95,57,unresolved,no exit path and no street address
+9c02196d-c003-4a1c-8d12-900557e6c70f,Ohio Weigh Station - I-75 Southbound (Hancock County),weigh-stations,Findlay,OH,I-75,,unresolved,no exit path and no street address
+9cd99e1e-66f3-43a9-977f-2f0e3f9e9810,Michigan Welcome Center - Sault Ste. Marie (I-75),parking,Sault Ste. Marie,MI,I-75,,unresolved,no exit path and no street address
+9d0ebd15-c261-4702-a709-a7828d639a9d,Love's Travel Stop #624,truck-stops,Prichard,AL,I-65,8,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+9d0f39c3-4609-4b0b-8051-7ca9b53f97b0,"St. Ignace Rest Area (I-75 SB, MM 348)",parking,St. Ignace,MI,I-75,,unresolved,no exit path and no street address
+9d5a2272-c6dd-4da0-bebb-cefcb166dbca,Ohio Weigh Station - I-75 Northbound (Wood County),weigh-stations,North Baltimore,OH,I-75,,unresolved,no exit path and no street address
+9e06c3ca-5ad6-4e47-b42c-583b6befe935,Mangum's Towing & Road Service (Fayetteville),roadside-service,Fayetteville,NC,I-95,,unresolved,no exit path and no street address
+9e98d564-93c0-4149-9680-1b13a06e0740,Keep It Rolling Semi Truck & Trailer Repair,roadside-service,Detroit,MI,I-75,,unresolved,no exit path and no street address
+9ee0d88b-f880-4157-81ec-2453ef1f37ed,Maryland I-95 South Welcome Center & Rest Area,parking,Savage,MD,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+9fb45fb9-5d97-4ed0-911e-352e92f9fd5a,Circle K (Valero) - Lonoke,truck-stops,Lonoke,AR,I-40,175,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+9fe701ff-4960-4778-89fa-3c7602733ca0,Alma I-40 Weigh Station (Eastbound),weigh-stations,Alma,AR,I-40,,unresolved,no exit path and no street address
+a01a4518-ce97-4894-8d57-674209395e9e,SAGE Truck Driving School - Jacksonville,cdl-schools,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+a10bc9c5-3119-4a79-bb06-906f09e4d234,CAT Scale at TA Ashland,cat-scales,Ashland,VA,I-95,92,unresolved,no exit path and no street address
+a3953ace-f227-41eb-8824-30476efb2e60,CAT Scale at Pilot Hardeeville,cat-scales,Hardeeville,SC,I-95,5,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+a3bd4ae7-8628-43ac-ba05-c03028eb215c,"Sault Ste. Marie Rest Area (I-75 NB, MM 389)",parking,Sault Ste. Marie,MI,I-75,,unresolved,no exit path and no street address
+a55fe534-cdce-4fa2-946f-7e54ac747462,I-95 Johnston County Rest Area (MM 99),parking,Selma,NC,I-95,,unresolved,no exit path and no street address
+a57aadf4-496b-4065-83e8-5c87885bf2b0,Benton County I-40 Eastbound Rest Area (Loretta Lynn / Hank Williams Rest Area),parking,Holladay,TN,I-40,MM 130.5 EB,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+a5cf4099-551f-4a7b-b4e2-344446b62a4c,"Weigh Station — I-75 Southbound, Monroe/Erie",weigh-stations,Erie,MI,I-75,,unresolved,no exit path and no street address
+a78733d7-c361-4bb9-b33b-fce85430accb,Santee Rest Area (Northbound),parking,Santee,SC,I-95,,unresolved,no exit path and no street address
+a7a13453-9509-4465-98f8-e94a8ff9ff75,Harford Community College Commercial Truck Driving (CDL),cdl-schools,Bel Air,MD,I-95,77B,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+a8c4f2d2-a328-4706-8fe2-5b4230bde389,"London Travel Plaza (AMBEST, formerly London Auto/Truck Center BP)",truck-stops,London,KY,I-75,41,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+a8d7a25d-dbe1-4cf0-87ba-640ca6973894,Boss Truck Shop #40 (at Love's),tire-repair,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+a9a6b5c2-d0aa-4f0b-bce6-0feba95184e7,"Tommie's Auto, Diesel Repair & Towing",roadside-service,Walterboro,SC,I-95,53,unresolved,no exit path and no street address
+aab7a84d-f5c3-436a-a8c4-5b3c181f2ed2,Love's Travel Stop #894,truck-stops,Saint Augustine,FL,I-95,305,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+ad3e43c4-ef04-43df-b994-d7c9fb475388,Pilot Flying J Truck Care Service Center - Waynesville,roadside-service,Waynesville,NC,I-40,,unresolved,no exit path and no street address
+b02dc944-f9fc-4392-b5f6-47710831930a,St. Ignace Truck Stop (BP),truck-stops,St. Ignace,MI,I-75,344,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+b0bc8564-8366-420d-ae6b-5e7beba07881,Santee Welcome Center (Southbound),parking,Santee,SC,I-95,,unresolved,no exit path and no street address
+b0e52e2c-764d-4cfb-a8bb-2d785e119711,"I-65 Giles County Weigh Station (Northbound, Ardmore)",weigh-stations,Ardmore,TN,I-65,,unresolved,no exit path and no street address
+b106bf49-e8d4-4e65-96c0-d9124ddf49fc,Central Carolina Diesel Repair,roadside-service,Kenly,NC,I-95,106,unresolved,no exit path and no street address
+b2af1bed-36cf-4497-8e3d-d2c2209fca12,Love's Travel Stop #740,truck-stops,Yemassee,SC,I-95,38,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+b3c32523-9238-4888-a80f-48c89bb738ea,Shed Lot Truck Parking,parking,Corbin,KY,I-75,,unresolved,no exit path and no street address
+b440fb9a-6e87-485e-8279-680b862a8f0b,Dale City Truck Rest Area (Southbound),parking,Dale City,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+b4a4a740-5466-4969-9770-542cc900e3b6,Kentucky Weigh Station - I-75 Southbound (Kenton County),weigh-stations,Crittenden,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+b5213d8a-633f-4d73-9172-7ec041bc1cc0,Speedco at Love's Travel Stop #759,roadside-service,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+b56d0a14-0fd0-4b65-aa19-9af1edb59f4b,Seymour Weigh Station (Northbound),weigh-stations,Seymour,IN,I-65,,unresolved,no exit path and no street address
+b5d0079f-4f1b-4399-a662-e881a2059892,"Kentucky Welcome Center / Rest Area (I-71/75, Boone County)",parking,Florence,KY,I-75,,unresolved,no exit path and no street address
+b5d906d6-22c5-4ed5-b39e-b8eea589346d,Love's Travel Stop #759,truck-stops,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+b690a7a6-401c-47ad-8c8b-7c4a63306b33,Heavy Towing Baltimore (BBT & Recovery),roadside-service,Baltimore,MD,I-95,,unresolved,no exit path and no street address
+b6d01963-8cf5-47b9-b982-c81a408933b4,Metropolis Truck Plaza,truck-stops,Metropolis,IL,I-24,37,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+b6e214a9-642b-4f97-a844-fe869483a318,I-95 Weigh / Inspection Station (Hardeeville),weigh-stations,Hardeeville,SC,I-95,,unresolved,no exit path and no street address
+b7154959-9416-47c5-8665-52458bdd0de3,Mapco Express #3524,truck-stops,Wildwood,GA,I-24,,unresolved,no exit path and no street address
+b7a1bf29-998f-498a-a44a-0974411802b6,Pilot Travel Center #231,truck-stops,Corbin,KY,I-75,29,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+b7f8d80e-0fbe-47f0-b26c-81d1ceafcfe7,CAT Scale - Ozark (Love's #271 area),cat-scales,Ozark,AR,I-40,,unresolved,no exit path and no street address
+b90d812b-1e76-445c-bb73-779032a1a4c3,St. Johns County Rest Area (I-95 MM 302),parking,Saint Augustine,FL,I-95,,unresolved,no exit path and no street address
+b90f8a31-7e91-45ae-beb4-814184f70330,Super 8 by Wyndham Metropolis,hotels-truck-parking,Metropolis,IL,I-24,37,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+b9c3bccf-a9fd-4aff-a7b1-57cca6f58b63,C&P Towing and Transport,roadside-service,Pompano Beach,FL,I-95,,unresolved,no exit path and no street address
+bd45a0c6-862a-4c3b-a2ae-8ef2a07781c2,Asheville Weigh Station (NC State Highway Patrol),weigh-stations,Asheville,NC,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+bdc8b533-9542-4312-b7da-1a39a2f6d297,Truck parking only lot - 5570 S US Route 45 (former truck stop),parking,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+bef99f45-641b-4410-b4a8-9b261b2b1c72,"Tire Sales & Service, Inc. (Commercial Tires)",tire-repair,Fayetteville,NC,I-95,,unresolved,no exit path and no street address
+c05b09af-8df6-4092-9130-91c9a3deb61e,"CAT Scale - Flying J, Miami",cat-scales,Miami,FL,I-75,2,unresolved,no exit path and no street address
+c1566ed5-05d1-41ec-b101-6fcb878c1d07,Exit 38 Truck Plaza (Shell),truck-stops,London,KY,I-75,38,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+c1b2faaa-1b77-420d-88ce-d1d2d36f7a5b,"Tennessee Welcome Center - I-65 (Ardmore, Northbound)",parking,Ardmore,TN,I-65,,unresolved,no exit path and no street address
+c251431a-ff37-4d55-9b22-1fd126b525aa,Pilot Travel Center #602,truck-stops,Birmingham,AL,I-65,264,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+c33d248f-de4a-48ce-8b98-555d7b1f92ad,Florida Welcome Center (I-95),parking,Yulee,FL,I-95,,unresolved,no exit path and no street address
+c372a30e-8b6d-44db-b71f-1a3621ef7a7e,Flying J Travel Center #626,truck-stops,Saint Augustine,FL,I-95,305,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+c4c53150-93d8-46e4-a4a5-8a5ede62e6ec,Dickson County Rest Area - I-40 Westbound (MM 170),parking,Dickson,TN,I-40,,unresolved,no exit path and no street address
+c7d92966-ddcd-4536-8992-193b66e21c6f,Dumfries Weigh Station (Northbound),weigh-stations,Dumfries,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+c7f25b2f-f452-4eb3-b77d-7f74097bd34e,Truck Parking Club - Madison Heights,parking,Madison Heights,MI,I-75,,unresolved,no exit path and no street address
+c98c8bbd-c96d-42dd-8250-6114418fac02,Shell Super Stop,truck-stops,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+ca6444ea-5194-40de-a7a4-5f3428c4f36e,Holiday Inn Express Metropolis,hotels-truck-parking,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+cac9d520-9a63-441f-866f-d2de402affe6,Super 8 by Wyndham Russellville,hotels-truck-parking,Russellville,AR,I-40,,unresolved,no exit path and no street address
+cbd3eb31-8759-4d5b-9000-9bcd7f5dcd2f,Super 8 by Wyndham Hazen,hotels-truck-parking,Hazen,AR,I-40,193,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+cbd5d136-9f13-4141-b126-9e0d8d414157,Entec Station #105,truck-stops,Millbrook,AL,I-65,181,unresolved,no exit path and no street address
+cd150996-dea1-4ec3-82aa-268f08bf0ba2,Road X Truck Repair (Greenwood),roadside-service,Greenwood,IN,I-65,,unresolved,no exit path and no street address
+ce99eb50-9aef-4eef-b2a6-022e4f902a17,Mapco Express #3316 (5325 Summer Ave),truck-stops,Memphis,TN,I-40,,unresolved,no exit path and no street address
+d07bf85c-8a1e-4f99-b194-19e7307a8889,Marion County Truck Comfort / Weigh Station (I-75 MM 338),weigh-stations,Ocala,FL,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+d111217f-786e-4b71-b57e-ffa4dca9f3b2,Truck Parking Club - 47 Walker Way,parking,Canton,NC,I-40,,unresolved,no exit path and no street address
+d1a0677b-70ad-4022-ad21-d629f8373457,Days Inn by Wyndham Newport,hotels-truck-parking,Newport,TN,I-40,,unresolved,no exit path and no street address
+d284bab0-f773-43c5-9c3e-20b4580c5c0a,Forrest City Rest Area - I-40 Eastbound (MM 235),parking,Forrest City,AR,I-40,,unresolved,no exit path and no street address
+d375452a-670c-4a2e-8d3e-92fc53756210,"TDOT I-65 Truck Parking Area (former Northbound Weigh Station, Giles County)",parking,Ardmore,TN,I-65,,unresolved,no exit path and no street address
+d4a2a4fa-6bf3-407f-a16d-eb56851d1818,I-95 South N.C. Welcome Center,parking,Rowland,NC,I-95,1,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+d4b5471d-8f4e-4668-b659-bf7c6e00c353,Keen's Truck & Trailer Repair (at Metropolis Truck Plaza),roadside-service,Metropolis,IL,I-24,,unresolved,no exit path and no street address
+d63266c7-1e06-4353-9ee9-5f5bb7775346,Highway 64 Truck & Trailer Repair,roadside-service,Van Buren,AR,I-40,,unresolved,no exit path and no street address
+d7e9da52-4a01-4b3d-9c14-86f59343ca7c,Scott County Rest Area Southbound (MM 127),parking,Georgetown,KY,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+d8c8b88a-0af7-4faf-838f-5288eef85239,I-95 Cumberland County Rest Area (Northbound),parking,Fayetteville,NC,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+db53fced-a16d-49cf-9a90-186e8acaedc3,"Collier County Rest Area (Alligator Alley, Milepost 63)",parking,Alligator Alley,FL,I-75,,unresolved,no exit path and no street address
+db877e00-74cc-4667-b567-9cc8df78f72b,THP Commercial Vehicle Scale Complex - Haywood County (I-40 Westbound),weigh-stations,Brownsville,TN,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+e0b210c3-6279-48a6-b091-059a2aa3a3ca,TA Truck Service — Montgomery,roadside-service,Montgomery,AL,I-65,168,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+e1730d2e-0567-43bc-a3db-6e15a0f8cb11,Toledo Truck Hub,parking,Toledo,OH,I-75,,unresolved,no exit path and no street address
+e36e07df-2f06-48a6-9494-8cf3b0f4cc15,TA Ashland (TravelCenters of America),truck-stops,Ashland,VA,I-95,92,unresolved,no exit path and no street address
+e587e93e-816e-4cb7-ac11-c681dcae2cd7,Pedro's / Porky's Truck Stop (South of the Border),truck-stops,Hamer,SC,I-95,193,needs-external-geocode,outside-anchor-range; has street address (address not Census-matched (ineligible or not yet fetched))
+e58cf487-aa6f-4583-b627-f3cf1528ad49,Martin County Rest Area (I-95 MM 106),parking,Stuart,FL,I-95,,unresolved,no exit path and no street address
+e637db12-eba1-494a-a73a-aa86545cf6bc,Seymour Weigh Station (Southbound),weigh-stations,Seymour,IN,I-65,,unresolved,no exit path and no street address
+e7edb2b3-ca16-40d5-b412-7435c59bd132,I-75 Rest Area — Northbound (Miami County),parking,Piqua,OH,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+e9a4dbbb-9015-4850-91ec-28fbad53f841,Tennessee Weigh Station - I-75 Northbound (Knox County),weigh-stations,Knoxville,TN,I-75,,needs-external-geocode,no-exit-number; has street address (address not Census-matched (ineligible or not yet fetched))
+e9f9100d-6132-4979-a13e-bc3f90a6df1f,Taylorsville Rest Area (I-65),parking,Taylorsville,IN,I-65,,unresolved,no exit path and no street address
+ea9dc82f-67a9-4e54-b0b9-10a0ebe33359,"CAT Scale - Pilot Travel Center #602, Birmingham",cat-scales,Birmingham,AL,I-65,264,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+eaf18864-af61-48b8-bbeb-edee81021740,I-95 Weigh Station - Port Wentworth,weigh-stations,Port Wentworth,GA,I-95,,unresolved,no exit path and no street address
+ed7cf6d6-954e-4e3b-8717-b50637452c5a,Baymont by Wyndham Monroe,hotels-truck-parking,Monroe,MI,I-75,11,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+ee07dd11-b979-45e2-90a1-9ba14254ba28,Carson Weigh Station Northbound,weigh-stations,Carson,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+ee131041-98e4-4917-a09b-dcdca1d5ed0c,RecNation Storage - Ruskin (Truck Parking),parking,Ruskin,FL,I-75,240,needs-external-geocode,anchor-gap-too-large; has street address (Census rejected this address)
+f06d1393-166a-44a7-8ea1-9bb9ffdf749a,Turbeville Rest Area (I-95 MM 139),parking,Turbeville,SC,I-95,,unresolved,no exit path and no street address
+f272ad94-84b1-4088-8ce0-b1efa77a4230,"Michigan Weigh Station - I-75 Northbound (Oakland County, Baldwin Rd)",weigh-stations,Auburn Hills,MI,I-75,,unresolved,no exit path and no street address
+f2afcd23-d5f0-4a59-b8b0-00b83e24da33,"I-40 Cumberland County Rest Area (Eastbound, MM 324.4)",parking,Crossville,TN,I-40,,unresolved,no exit path and no street address
+f2ee667c-a7d7-4e9d-9f9d-b3333d69bb73,I-95 Nash County Rest Area (MM 142),parking,Battleboro,NC,I-95,,unresolved,no exit path and no street address
+f3c46c18-6a34-496a-8f0b-b36901142096,I-65 Conecuh County Rest Area (Southbound),parking,Evergreen,AL,I-65,,unresolved,no exit path and no street address
+f4089b87-a23d-4210-bb67-5485d5a6447d,Dumfries Weigh Station (Southbound),weigh-stations,Dumfries,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+f4d3f9bc-301b-4c9d-bdf5-843989754796,Handy Pantry (3360 Crabtree Rd),truck-stops,Lake Junaluska,NC,I-40,,unresolved,no exit path and no street address
+f53939a7-5718-4d0b-b511-3ab367de0fa7,Arkansas Welcome Center at West Memphis,parking,West Memphis,AR,I-40,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+f594401c-0ec8-4dc1-be86-5d3f54438e64,Agricultural Inspection Station No. 9A — Interstate 75 (Southbound),weigh-stations,White Springs,FL,I-75,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+f975e826-2c84-4032-ae61-177240dec9fb,Mike's Diesel Tech,roadside-service,Sellersburg,IN,I-65,,unresolved,no exit path and no street address
+fa0a4d6a-3627-4d84-b35d-f39e8a2ba94b,Snider Fleet Solutions,tire-repair,Lexington,KY,I-75,,unresolved,no exit path and no street address
+faa5e68a-557a-4258-bcee-90397f126864,Henryville Rest Area (Southbound),parking,Henryville,IN,I-65,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+fb8d0e91-7e7c-4302-a44f-dfe3d998bdc8,El Cheapo #54 (Texaco),truck-stops,Darien,GA,I-95,49,needs-external-geocode,outside-anchor-range; has street address (Census rejected this address)
+fdaa1660-b2bb-4d97-bd0f-7be6287ec055,Roadmaster Drivers School of Jacksonville,cdl-schools,Jacksonville,FL,I-95,,unresolved,no exit path and no street address
+fe637d31-d4dc-4482-9e3c-2b196a38335c,Ladysmith Safety Rest Area (Northbound),parking,Ladysmith,VA,I-95,,needs-external-geocode,no-exit-number; has street address (Census rejected this address)
+ff910909-fb85-4078-89de-733cdf1b24f3,McDowell County Rest Area I-40 Westbound (MM 82),parking,Marion,NC,I-40,,unresolved,no exit path and no street address
