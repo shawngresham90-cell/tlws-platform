@@ -1,5 +1,6 @@
 import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
+import { SITE } from '@/lib/seo/site';
 
 /**
  * Featured videos. Card-style outbound links (no live embeds = zero
@@ -85,7 +86,7 @@ export function FeaturedVideos() {
         ))}
       </div>
       <div className="mt-9">
-        <Button variant="ghost" href="/videos">
+        <Button variant="ghost" href={SITE.social.youtube} external>
           Watch on YouTube
         </Button>
       </div>

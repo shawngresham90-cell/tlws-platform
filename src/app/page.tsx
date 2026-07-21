@@ -11,7 +11,6 @@ import { Apps } from '@/components/sections/Apps';
 import { Store } from '@/components/sections/Store';
 import { TruckParking } from '@/components/sections/TruckParking';
 import { FoundersWall } from '@/components/sections/FoundersWall';
-import { Sponsors } from '@/components/sections/Sponsors';
 import { LatestArticles } from '@/components/sections/LatestArticles';
 import { Newsletter } from '@/components/sections/Newsletter';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -36,7 +35,6 @@ export default function HomePage() {
       <Store />
       <TruckParking />
       <FoundersWall />
-      <Sponsors />
       <LatestArticles />
       <Newsletter />
     </>

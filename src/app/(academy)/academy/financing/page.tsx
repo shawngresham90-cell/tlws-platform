@@ -123,8 +123,8 @@ export default function FinancingPage() {
         <Button variant="secondary" href="/founders">
           Fund the School
         </Button>
-        <Button variant="ghost" href="/contact">
-          Ask about funding
+        <Button variant="ghost" href="/academy/faq">
+          Read the FAQ
         </Button>
       </PageHero>
 

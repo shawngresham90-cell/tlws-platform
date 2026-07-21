@@ -1,22 +1,21 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
 
-/** Full nav map. Links are placeholders until each module ships. */
+/** Full nav map. Every entry must resolve to a live route. */
 const NAV = [
   { label: 'The Road Ahead', href: '/road-ahead' },
   { label: 'Academy', href: '/academy' },
   { label: 'CDL Pre-School', href: '/cdl-pre-school' },
   { label: 'Knowledge Center', href: '/knowledge' },
-  { label: 'DOT Guide', href: '/dot-guide' },
+  { label: 'DOT Guide', href: '/knowledge/dot-compliance' },
   { label: 'Practice Tests', href: '/practice-tests' },
+  { label: 'Trip Planner', href: '/trip-planner' },
   { label: 'Truck Parking', href: '/directory/parking' },
   { label: 'Directories', href: '/directory' },
   { label: 'Store', href: '/store' },
   { label: 'Books', href: '/books' },
   { label: 'Apps', href: '/apps' },
-  { label: 'Sponsors', href: '/sponsors' },
   { label: 'Founders Wall', href: '/founders' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 /**

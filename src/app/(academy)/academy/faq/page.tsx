@@ -4,6 +4,7 @@ import { PageHero, AcademyFaq, CtaBand } from '@/components/academy';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { faqPageSchema } from '@/lib/seo/academy-schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { SITE } from '@/lib/seo/site';
 import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
@@ -114,9 +115,11 @@ export default function FaqPage() {
         eyebrow="Frequently asked questions"
         title="Straight answers,"
         highlight="no runaround."
-        intro="Everything drivers ask about training at Trucking Life Academy — admissions, curriculum, cost, and logistics. Don’t see your question? Reach out."
+        intro="Everything drivers ask about training at Trucking Life Academy — admissions, curriculum, cost, and logistics. Don’t see your question? Reach out on the channel."
       >
-        <Button href="/contact">Ask a question</Button>
+        <Button href={SITE.social.facebook} external>
+          Ask on Facebook
+        </Button>
         <Button variant="ghost" href="/academy/requirements">
           Check requirements
         </Button>

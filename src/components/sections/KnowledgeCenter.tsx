@@ -7,7 +7,7 @@ const TOPICS: Feature[] = [
     title: 'DOT Guide',
     description:
       'Plain-English FMCSA and 49 CFR reference, verified against the eCFR before it ships.',
-    href: '/dot-guide',
+    href: '/knowledge/dot-compliance',
     cta: 'Open the guide',
   },
   {
@@ -21,7 +21,7 @@ const TOPICS: Feature[] = [
     title: 'Career Paths',
     description:
       'OTR, regional, local, owner-operator — how the money and the life really compare.',
-    href: '/knowledge/careers',
+    href: '/knowledge/trucking-careers',
     cta: 'Compare paths',
   },
 ];

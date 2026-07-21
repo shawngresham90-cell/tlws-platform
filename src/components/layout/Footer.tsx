@@ -2,7 +2,10 @@ import Link from 'next/link';
 import { Container } from '@/components/ui';
 import { SITE } from '@/lib/seo/site';
 
-const COLUMNS = [
+const COLUMNS: Array<{
+  heading: string;
+  links: Array<{ label: string; href: string; external?: boolean }>;
+}> = [
   {
     heading: 'School',
     links: [
@@ -10,16 +13,15 @@ const COLUMNS = [
       { label: 'CDL Pre-School', href: '/cdl-pre-school' },
       { label: 'Founding Students', href: '/cdl-pre-school/founding-students' },
       { label: 'Founders Wall', href: '/founders' },
-      { label: 'Sponsors', href: '/sponsors' },
-      { label: 'Contact', href: '/contact' },
     ],
   },
   {
     heading: 'Resources',
     links: [
       { label: 'Knowledge Center', href: '/knowledge' },
-      { label: 'DOT Guide', href: '/dot-guide' },
+      { label: 'DOT Guide', href: '/knowledge/dot-compliance' },
       { label: 'Practice Tests', href: '/practice-tests' },
+      { label: 'Trip Planner', href: '/trip-planner' },
       { label: 'Truck Parking', href: '/directory/parking' },
     ],
   },
@@ -32,7 +34,7 @@ const COLUMNS = [
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
       { label: 'Directories', href: '/directory' },
-      { label: 'Videos', href: '/videos' },
+      { label: 'Videos', href: SITE.social.youtube, external: true },
     ],
   },
 ];
@@ -66,13 +68,26 @@ export function Footer() {
               {col.heading}
             </p>
             <ul className="space-y-2">
-              {col.links.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-muted hover:text-signal">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
+              {col.links.map((l) =>
+                l.external ? (
+                  <li key={l.href}>
+                    <a
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted hover:text-signal"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ) : (
+                  <li key={l.href}>
+                    <Link href={l.href} className="text-sm text-muted hover:text-signal">
+                      {l.label}
+                    </Link>
+                  </li>
+                ),
+              )}
             </ul>
           </nav>
         ))}

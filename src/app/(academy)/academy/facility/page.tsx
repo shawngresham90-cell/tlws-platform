@@ -95,8 +95,8 @@ export default function FacilityPage() {
         intro="A real training range and real Class A equipment on the I-75 corridor in North Georgia. You practice on the same kind of rig and the same roads you’ll run for a living."
       >
         <Button href="/academy/cdl-school-dalton-ga">Why Dalton, GA</Button>
-        <Button variant="ghost" href="/contact">
-          Ask about a visit
+        <Button variant="ghost" href="/academy/faq">
+          Read the FAQ
         </Button>
       </PageHero>
 
