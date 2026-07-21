@@ -2,23 +2,30 @@ import { Section, Button } from '@/components/ui';
 import { SectionHeading } from './SectionHeading';
 import { FeatureGrid, type Feature } from './FeatureGrid';
 
+/** Mirrors the published Amazon catalog on /books — real titles only. */
 const BOOKS: Feature[] = [
   {
-    title: 'Carnivore In The Truck',
-    description: 'Eating for energy and health from the driver’s seat. Built for the road.',
-    href: '/books',
+    title: 'The Trucker’s Carnivore Cookbook',
+    description: '100 air-fryer meals you can cook right in the cab. Eat for energy and health.',
+    href: '/books#truckers-carnivore-cookbook',
     cta: 'Get the book',
   },
   {
-    title: 'The HOS Bible',
-    description: 'Hours of Service, decoded. Keep your logbook — and your CDL — clean.',
-    href: '/books',
+    title: 'The DOT Survival Guide',
+    description: 'Inspections, audits, and shutdowns — decoded from 17 years of clean records.',
+    href: '/books#dot-survival-guide',
     cta: 'Get the book',
   },
   {
-    title: '17 Years, Zero Violations',
-    description: 'The habits behind a clean record, from a driver who lived it.',
-    href: '/books',
+    title: 'Defensive Driving For Truck Drivers',
+    description: 'The habits and space management that keep a big truck out of trouble.',
+    href: '/books#defensive-driving-for-truck-drivers',
+    cta: 'Get the book',
+  },
+  {
+    title: 'Discipline Over Everything',
+    description: 'The truths nobody tells you — road-tested discipline for a bigger life.',
+    href: '/books#discipline-over-everything',
     cta: 'Get the book',
   },
 ];
@@ -31,7 +38,7 @@ export function Books() {
         title="Driver-built guides"
         intro="Written by a driver, for drivers. No fluff — the stuff that keeps you legal, healthy, and earning."
       />
-      <FeatureGrid features={BOOKS} />
+      <FeatureGrid features={BOOKS} columns={4} />
       <div className="mt-9">
         <Button variant="ghost" href="/books">
           Browse all books

@@ -1,0 +1,37 @@
+# Books audit — resolve the owner's Amazon links on a network-capable runner.
+# The build sandbox cannot reach amazon.com/a.co (proxy 403), so this runs
+# scripts/books-audit.sh here instead: resolve each supplied short link and
+# on-site ASIN to its final Amazon URL, capture the page title + product image
+# URL, download cover JPGs, and commit the results to THIS branch for review
+# on the draft PR. Read-only against Amazon; repo files only — no database,
+# no secrets, no deploy. Run 2: covers via the Associates image widget.
+# Triggers only when this file itself changes (the
+# results commit uses [skip ci] and cannot retrigger).
+name: books-audit
+on:
+  push:
+    branches: [claude/books-catalog-complete]
+    paths: ['.github/workflows/books-audit.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: books-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve links, titles, and covers
+        run: bash scripts/books-audit.sh
+      - name: Commit results to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/books-audit public/covers-raw
+          git commit -m "Books audit: resolved Amazon links + covers [skip ci]" || echo "no changes to commit"
+          git push

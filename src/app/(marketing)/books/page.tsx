@@ -8,7 +8,7 @@ import { SITE } from '@/lib/seo/site';
 export const metadata = buildMetadata({
   title: 'Books by Shawn Gresham — The Trucker Bookstore | Trucking Life with Shawn',
   description:
-    'Books written by a CDL driver with 17 years on the road and zero violations: The Trucker’s Carnivore Cookbook, DOT Survival Guide, and Discipline Over Everything. Available on Amazon.',
+    'All six books by Shawn Gresham: The Trucker’s Carnivore Cookbook, The DOT Survival Guide, Defensive Driving For Truck Drivers, Discipline Over Everything, Broken But Built, and Meth Is the Devil’s Poison. Available on Amazon.',
   path: '/books',
   image: '/covers/truckers-carnivore-cookbook.jpg',
 });
@@ -24,6 +24,8 @@ type Book = {
   whoFor: string;
   learn: string[];
   href: string;
+  /** ISBN-13 when known — emitted in the Book schema for SEO. */
+  isbn?: string;
   /** Path under /public — only set when the real cover exists. */
   cover?: { src: string; width: number; height: number };
 };
@@ -32,7 +34,6 @@ const BOOKS: Book[] = [
   {
     slug: 'truckers-carnivore-cookbook',
     title: 'The Trucker’s Carnivore Cookbook',
-    badge: 'Bestseller · 4.8★ on Amazon',
     description:
       '100 air-fryer meals you can cook right in the cab — real food that keeps you rolling. This is the book behind Shawn’s 93-pounds-down, diabetes-reversed story, written for drivers who are done letting truck-stop food run their health.',
     whoFor:
@@ -43,11 +44,12 @@ const BOOKS: Book[] = [
       'The exact eating approach behind 93 pounds lost from the driver’s seat',
     ],
     href: 'https://a.co/d/03cOB4V3',
+    isbn: '9798284810675',
     cover: { src: '/covers/truckers-carnivore-cookbook.jpg', width: 297, height: 445 },
   },
   {
     slug: 'dot-survival-guide',
-    title: 'DOT Survival Guide',
+    title: 'The DOT Survival Guide',
     description:
       'Inspections, audits, and shutdowns — the playbook for staying legal when the DOT comes knocking. Written from 17 years of clean inspections, not from a lawyer’s desk.',
     whoFor:
@@ -58,6 +60,23 @@ const BOOKS: Book[] = [
       'The habits behind 17 years with zero violations',
     ],
     href: `https://www.amazon.com/DOT-Survival-Guide-Truckers-Shutdowns/dp/B0FDL26V8Q?tag=${AMZN_TAG}`,
+    isbn: '9798288489280',
+    cover: { src: '/covers/dot-survival-guide.jpg', width: 600, height: 899 },
+  },
+  {
+    slug: 'defensive-driving-for-truck-drivers',
+    title: 'Defensive Driving For Truck Drivers',
+    description:
+      'The habits, scanning patterns, and space-management rules that keep a big truck out of trouble — from a CDL instructor with 17 years and zero violations. Defensive driving is the skill that keeps every other part of this career alive.',
+    whoFor:
+      'New CDL holders building safe habits from day one, and veterans who want a sharp refresher on the discipline that keeps a record clean — because one preventable accident can undo years of work.',
+    learn: [
+      'Space management, scanning, and following-distance habits that prevent accidents',
+      'How to handle four-wheelers, weather, work zones, and heavy traffic in a big truck',
+      'The defensive mindset behind 17 years with zero violations',
+    ],
+    href: `https://www.amazon.com/Defensive-Driving-Truck-Drivers-Gresham/dp/B0FHQPQ3QR?tag=${AMZN_TAG}`,
+    isbn: '9798292659631',
   },
   {
     slug: 'discipline-over-everything',
@@ -72,8 +91,50 @@ const BOOKS: Book[] = [
       'Building a life you don’t need a break from — from the driver’s seat',
     ],
     href: `https://www.amazon.com/Discipline-Over-Everything-Truths-Nobody/dp/B0FK3XQL5S?tag=${AMZN_TAG}`,
+    cover: { src: '/covers/discipline-over-everything.jpg', width: 600, height: 899 },
   },
 ];
+
+/**
+ * Beyond the road — Shawn's faith, recovery, and rebuilding titles. Same
+ * shelf treatment, separate section so the trucker bookstore stays focused.
+ */
+const LIFE_BOOKS: Book[] = [
+  {
+    slug: 'broken-but-built',
+    title: 'Broken But Built',
+    description:
+      'A Christian man’s guide to healing after divorce, heartbreak, and betrayal. When life breaks you down, this is about letting God build you back — written straight, from a man who has lived the rebuilding.',
+    whoFor:
+      'Men walking through divorce, heartbreak, or betrayal who want a faith-grounded path forward — and anyone tired of pretending they’re fine when they’re not.',
+    learn: [
+      'Facing the wreckage honestly instead of numbing it',
+      'A Christian framework for healing after divorce and betrayal',
+      'Rebuilding identity, purpose, and strength one day at a time',
+    ],
+    href: `https://www.amazon.com/Broken-But-Built-Christian-Heartbreak/dp/B0FLPJ4PVM?tag=${AMZN_TAG}`,
+    isbn: '9798296169419',
+    cover: { src: '/covers/broken-but-built.jpg', width: 600, height: 899 },
+  },
+  {
+    slug: 'meth-is-the-devils-poison',
+    title: 'Meth Is the Devil’s Poison',
+    description:
+      'A true story of addiction, deliverance, and God’s power to save a soul from meth. No sugar-coating — what the poison takes, what it costs, and the way out.',
+    whoFor:
+      'Anyone fighting addiction, loving someone who is, or looking for proof that deliverance is real — told as a true story, not a lecture.',
+    learn: [
+      'What meth addiction actually does to a life, told first-hand',
+      'The turning point from addiction to deliverance',
+      'Faith, recovery, and staying free — one honest chapter at a time',
+    ],
+    href: `https://www.amazon.com/Meth-Devils-Poison-Addiction-Deliverance/dp/B0FW74VQNT?tag=${AMZN_TAG}`,
+    cover: { src: '/covers/meth-is-the-devils-poison.jpg', width: 600, height: 899 },
+  },
+];
+
+/** Every published book — schema, related links, and counts draw from this. */
+const ALL_BOOKS: Book[] = [...BOOKS, ...LIFE_BOOKS];
 
 /** Real cover when it exists; on-brand typographic cover until then (swap = one line). */
 function BookCover({ book, featured = false }: { book: Book; featured?: boolean }) {
@@ -125,12 +186,10 @@ function ReviewsBlock({ book }: { book: Book }) {
 }
 
 function RelatedBooks({ current }: { current: Book }) {
-  const related = BOOKS.filter((b) => b.slug !== current.slug);
+  const related = ALL_BOOKS.filter((b) => b.slug !== current.slug);
   return (
     <div className="mt-6">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-        Related books
-      </h3>
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Related books</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         {related.map((b) => (
           <Link
@@ -187,7 +246,9 @@ function BookShelf({ book, featured = false }: { book: Book; featured?: boolean 
         </div>
 
         <div className="mt-7">
-          <Button href={book.href}>Buy on Amazon</Button>
+          <Button href={book.href} external rel="sponsored">
+            Buy on Amazon
+          </Button>
         </div>
 
         <ReviewsBlock book={book} />
@@ -205,6 +266,7 @@ function bookSchema(book: Book) {
     author: { '@type': 'Person', name: SITE.founder.name },
     url: `${SITE.url}/books#${book.slug}`,
     ...(book.cover ? { image: `${SITE.url}${book.cover.src}` } : {}),
+    ...(book.isbn ? { isbn: book.isbn } : {}),
     bookFormat: 'https://schema.org/Paperback',
     inLanguage: 'en',
     audience: { '@type': 'Audience', audienceType: 'Truck drivers' },
@@ -225,7 +287,7 @@ export default function BooksPage() {
             '@context': 'https://schema.org',
             '@type': 'ItemList',
             name: 'Books by Shawn Gresham',
-            itemListElement: BOOKS.map((b, i) => ({
+            itemListElement: ALL_BOOKS.map((b, i) => ({
               '@type': 'ListItem',
               position: i + 1,
               item: bookSchema(b),
@@ -240,8 +302,12 @@ export default function BooksPage() {
           <Eyebrow>The Trucker Bookstore</Eyebrow>
           <h1 className="display-section">Driver-built books</h1>
           <p className="mt-4 text-muted">
-            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff,
-            just the stuff that keeps you legal, healthy, and earning.
+            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff, just
+            the stuff that keeps you legal, healthy, and earning.
+          </p>
+          <p className="mt-3 text-xs text-muted">
+            As an Amazon Associate, purchases through the links below may earn a commission — at no
+            extra cost to you.
           </p>
         </div>
         <div className="mt-12">
@@ -259,12 +325,28 @@ export default function BooksPage() {
         </Section>
       ))}
 
+      {/* Beyond the road — faith, recovery, and rebuilding */}
       <Section className="border-b border-line">
-        <p className="text-xs text-muted">
-          As an Amazon Associate, purchases through these links may earn a commission — at no extra
-          cost to you.
-        </p>
-        <div className="mt-8 flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="max-w-2xl">
+          <Eyebrow>Beyond the Road</Eyebrow>
+          <h2 className="display-section">Faith, recovery &amp; rebuilding</h2>
+          <p className="mt-4 text-muted">
+            The road teaches more than driving. These books are Shawn’s story off the highway —
+            faith, healing, and getting back up.
+          </p>
+        </div>
+      </Section>
+      {LIFE_BOOKS.map((book, i) => (
+        <Section
+          key={book.slug}
+          className={`border-b border-line ${i % 2 === rest.length % 2 ? 'bg-asphalt-800' : ''}`}
+        >
+          <BookShelf book={book} />
+        </Section>
+      ))}
+
+      <Section className="border-b border-line">
+        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
             <h2 className="display-section">Want the PDFs &amp; tools?</h2>
             <p className="mt-3 text-muted">
@@ -277,6 +359,7 @@ export default function BooksPage() {
             <Button
               variant="ghost"
               href="https://stan.store/TRUCKINGLIFEWITHSHAWN"
+              external
               className="whitespace-nowrap"
             >
               Visit the Stan Store
