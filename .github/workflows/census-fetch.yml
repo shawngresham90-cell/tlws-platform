@@ -1,0 +1,52 @@
+# Directory P1·S3 — run the Census geocoder fetch step on a network-capable
+# runner. The build sandbox cannot reach geocoding.geo.census.gov, so this
+# workflow performs the ONE network step of the runner (free federal service,
+# no API key, ~2 req/s) and commits the resumable checkpoint + regenerated
+# review package back to THIS branch for human review on the draft PR.
+#
+# Safety: touches repo files only — no database, no secrets, no deploy. Every
+# resulting review row is action=manual-review; applying coordinates still
+# requires a human in /admin/directory/geocoding.
+#
+# Triggers only when this file itself changes on the runner branch (the
+# results commit uses [skip ci] and touches data/ only, so it cannot retrigger).
+name: census-fetch
+on:
+  push:
+    branches: [claude/directory-census-runner]
+    paths: ['.github/workflows/census-fetch.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: census-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Bundle the runner CLI
+        run: |
+          npx esbuild scripts/census-runner.ts --bundle --platform=node --format=cjs \
+            --alias:@=./src --alias:server-only=./scripts/shims/server-only.ts \
+            --outfile=/tmp/census-runner.cjs
+      - name: Fetch (free US Census geocoder, resumable checkpoint)
+        run: node /tmp/census-runner.cjs fetch data/geocoding/dry-run/directory-snapshot.json data/geocoding/census
+      - name: Package (offline, deterministic)
+        run: node /tmp/census-runner.cjs package data/geocoding/dry-run/directory-snapshot.json data/geocoding/census
+      - name: Commit results to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/geocoding/census
+          git commit -m "Census fetch results: checkpoint + review package [skip ci]" || echo "no changes to commit"
+          git push
