@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
 
@@ -28,11 +28,24 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
   const [error, setError] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
   const [token, setToken] = useState('');
+  // Turnstile tokens are single-use and verified server-side before the
+  // handler runs, so after ANY failed submit the held token is spent.
+  // Bumping this key remounts the widget for a fresh challenge.
+  const [challengeKey, setChallengeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const doneRef = useRef<HTMLDivElement>(null);
+
+  // Move focus to the confirmation so it is announced (a live region that
+  // mounts together with its content is not) and keyboard users aren't
+  // stranded when the form unmounts.
+  useEffect(() => {
+    if (done) doneRef.current?.focus();
+  }, [done]);
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
+    if (submitting) return;
     setError('');
     if (!EMAIL_RE.test(email.trim())) {
       setError('Enter a valid email address.');
@@ -57,12 +70,16 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
       const body = await res.json();
       if (!res.ok || !body.ok) {
         setError(body.error ?? 'Something went wrong. Please try again.');
+        setToken('');
+        setChallengeKey((k) => k + 1);
         return;
       }
       trackEvent('newsletter_lead_captured');
       setDone(true);
     } catch {
       setError('Network error. Check your connection and try again.');
+      setToken('');
+      setChallengeKey((k) => k + 1);
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +87,11 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
 
   if (done) {
     return (
-      <div aria-live="polite" className="max-w-md rounded-card border border-line bg-asphalt p-5">
+      <div
+        ref={doneRef}
+        tabIndex={-1}
+        className="max-w-md rounded-card border border-line bg-asphalt p-5 outline-none"
+      >
         <p className="font-semibold text-ink">✓ You’re on the list.</p>
         <p className="mt-1 text-sm text-muted">
           Thanks — Shawn’s next driver briefing will land in your inbox. No spam, unsubscribe
@@ -84,7 +105,10 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
     <form onSubmit={submit} noValidate className="max-w-md">
       <div aria-live="assertive">
         {error && (
-          <p className="mb-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
+          <p
+            id="newsletter-email-error"
+            className="mb-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
+          >
             {error}
           </p>
         )}
@@ -106,19 +130,26 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
             setError('');
           }}
           aria-invalid={Boolean(error) || undefined}
+          aria-describedby={error ? 'newsletter-email-error' : undefined}
           className="flex-1 rounded-card border border-line bg-asphalt px-4 py-3 text-ink outline-none focus:border-signal"
         />
+        {/* aria-disabled + in-handler guard instead of disabled, so keyboard
+            focus isn't thrown off the button mid-submit. */}
         <button
           type="submit"
-          disabled={submitting}
           aria-disabled={submitting}
-          className="rounded-card bg-signal px-6 py-3 font-display text-lg uppercase text-asphalt transition-colors hover:bg-signal-600 disabled:opacity-60"
+          className="rounded-card bg-signal px-6 py-3 font-display text-lg uppercase text-asphalt transition-colors hover:bg-signal-600 aria-disabled:opacity-60"
         >
           {submitting ? 'Sending…' : 'Send it'}
         </button>
       </div>
       <div className="mt-4">
-        <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
+        <TurnstileWidget
+          key={challengeKey}
+          siteKey={siteKey}
+          onToken={setToken}
+          onError={setTurnstileError}
+        />
       </div>
     </form>
   );

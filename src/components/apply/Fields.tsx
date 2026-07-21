@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils/cn';
 
 const fieldBase =
-  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
+  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted ' +
   'focus:outline-none focus:ring-2 focus:ring-signal focus:ring-offset-2 focus:ring-offset-asphalt';
 
 function Label({ id, label, required }: { id: string; label: string; required?: boolean }) {
@@ -107,7 +107,8 @@ export function SelectField({
         aria-describedby={error ? `${id}-error` : undefined}
         className={cn(fieldBase, 'appearance-none', error ? 'border-diesel' : 'border-line')}
       >
-        <option value="" disabled>
+        {/* An optional select must let the user return to "no answer". */}
+        <option value="" disabled={required}>
           {placeholder}
         </option>
         {options.map((o) => (

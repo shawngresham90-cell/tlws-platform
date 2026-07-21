@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils/cn';
  */
 
 const fieldBase =
-  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
+  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted ' +
   'focus:outline-none focus:ring-2 focus:ring-signal focus:ring-offset-2 focus:ring-offset-asphalt';
 
 export function TextAreaField({

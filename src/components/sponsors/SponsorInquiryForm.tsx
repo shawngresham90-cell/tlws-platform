@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
@@ -34,8 +34,18 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
   const [formError, setFormError] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
   const [token, setToken] = useState('');
+  // Single-use Turnstile tokens are spent on any failed submit; remount the
+  // widget (key bump) so the retry gets a fresh challenge.
+  const [challengeKey, setChallengeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const doneRef = useRef<HTMLDivElement>(null);
+
+  // Focus the confirmation so it is announced and keyboard users aren't
+  // stranded when the form unmounts.
+  useEffect(() => {
+    if (done) doneRef.current?.focus();
+  }, [done]);
 
   function set<T>(setter: (v: T) => void, key: string) {
     return (v: T) => {
@@ -54,6 +64,7 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
+    if (submitting) return;
     setFormError('');
     const e = validate();
     if (Object.keys(e).length) {
@@ -84,11 +95,15 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
       const body = await res.json();
       if (!res.ok || !body.ok) {
         setFormError(body.error ?? 'Something went wrong. Please try again.');
+        setToken('');
+        setChallengeKey((k) => k + 1);
         return;
       }
       setDone(true);
     } catch {
       setFormError('Network error. Check your connection and try again.');
+      setToken('');
+      setChallengeKey((k) => k + 1);
     } finally {
       setSubmitting(false);
     }
@@ -97,8 +112,9 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
   if (done) {
     return (
       <div
-        aria-live="polite"
-        className="rounded-card border border-line bg-asphalt-800 p-8 text-center"
+        ref={doneRef}
+        tabIndex={-1}
+        className="rounded-card border border-line bg-asphalt-800 p-8 text-center outline-none"
       >
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-signal text-2xl text-asphalt">
           ✓
@@ -191,7 +207,12 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
       </div>
 
       <div className="mt-6">
-        <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
+        <TurnstileWidget
+          key={challengeKey}
+          siteKey={siteKey}
+          onToken={setToken}
+          onError={setTurnstileError}
+        />
       </div>
 
       <p className="mt-6 text-xs text-muted">
@@ -199,8 +220,10 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
         replies personally.
       </p>
 
+      {/* aria-disabled + in-handler guard instead of disabled, so keyboard
+          focus isn't thrown off the button mid-submit. */}
       <div className="mt-6">
-        <Button type="submit" aria-disabled={submitting} disabled={submitting}>
+        <Button type="submit" aria-disabled={submitting} className="aria-disabled:opacity-60">
           {submitting ? 'Sending…' : 'Start the conversation'}
         </Button>
       </div>

@@ -23,7 +23,10 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: none;
+    /* Transparent (not none): forced-colors mode strips box-shadows but
+       repaints transparent outlines, so High Contrast keeps a focus ring. */
+    outline: 2px solid transparent;
+    outline-offset: 2px;
     box-shadow:
       0 0 0 2px theme('colors.asphalt.DEFAULT'),
       0 0 0 4px theme('colors.signal.DEFAULT');

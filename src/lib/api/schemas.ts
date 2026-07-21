@@ -15,7 +15,13 @@ const usState = z
   .trim()
   .regex(/^[A-Z]{2}$/, 'Select your state.');
 const startTimeframe = z.enum(['asap', '30_days', '60_days', '90_plus', 'researching']);
-const utm = z.record(z.string(), z.string()).optional().default({});
+// Bounded so a direct API caller can't store an arbitrarily large blob in the
+// jsonb column; real utm_* params are far inside these limits.
+const utm = z
+  .record(z.string().max(40), z.string().max(200))
+  .refine((m) => Object.keys(m).length <= 20, 'Too many parameters.')
+  .optional()
+  .default({});
 const turnstileToken = z.string().min(1, 'Verification failed. Reload and try again.');
 
 // --- Application step 1: the low-friction hook (name + contact + location) ---

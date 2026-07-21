@@ -79,6 +79,7 @@ export function Footer() {
                       className="text-sm text-muted hover:text-signal"
                     >
                       {l.label}
+                      <span className="sr-only"> (opens in new tab)</span>
                     </a>
                   </li>
                 ) : (

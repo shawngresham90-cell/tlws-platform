@@ -38,6 +38,8 @@ export function Button({
   const classes = cn(base, variants[variant], className);
   if (href && external) {
     return (
+      // Custom rel intentionally omits noreferrer (affiliate links need the
+      // referrer for attribution); noopener is always enforced.
       <a
         href={href}
         target="_blank"
@@ -45,6 +47,7 @@ export function Button({
         className={classes}
       >
         {children}
+        <span className="sr-only"> (opens in new tab)</span>
       </a>
     );
   }

@@ -58,7 +58,7 @@ export function Header() {
         <details className="relative xl:hidden">
           <summary
             className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-card border border-line text-ink [&::-webkit-details-marker]:hidden"
-            aria-label="Open menu"
+            aria-label="Menu"
           >
             <svg
               width="20"
@@ -76,7 +76,7 @@ export function Header() {
           </summary>
           <nav
             aria-label="Mobile"
-            className="absolute right-0 top-12 w-60 rounded-card border border-line bg-asphalt-800 p-2 shadow-xl"
+            className="absolute right-0 top-12 max-h-[calc(100vh-5rem)] w-60 overflow-y-auto rounded-card border border-line bg-asphalt-800 p-2 shadow-xl"
           >
             {NAV.map((item) => (
               <Link
