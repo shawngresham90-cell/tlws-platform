@@ -97,4 +97,39 @@ done
 echo "" >> "$json"
 echo "]" >> "$json"
 
+# ---- Cover images via the Amazon Associates image widget -------------------
+# Product-page scraping gets bot-walled on datacenter IPs, but the SiteStripe
+# image widget is DESIGNED for direct embedding: it 302s to the book's real
+# m.media-amazon.com cover by ASIN. One request per book, saved as a repo
+# file for human review before anything is wired into the site.
+ASINS=(
+  "truckers-carnivore-cookbook|B0F9TT5S6G"
+  "dot-survival-guide|B0FDL26V8Q"
+  "defensive-driving-for-truck-drivers|B0FHQPQ3QR"
+  "discipline-over-everything|B0FK3XQL5S"
+  "broken-but-built|B0FLPJ4PVM"
+  "meth-is-the-devils-poison|B0FW74VQNT"
+)
+{
+  echo "## Cover fetch (Associates image widget)"
+  echo
+} >> "$md"
+for entry in "${ASINS[@]}"; do
+  slug="${entry%%|*}"
+  asin="${entry#*|}"
+  wurl="https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&ASIN=$asin&Format=_SL800_&ID=AsinImage&MarketPlace=US&ServiceVersion=20070822&WS=1&tag=truckinglif0d-20"
+  out="$COVERS/$slug.jpg"
+  curl -sL --max-time 45 -A "$UA" -o "$out" "$wurl" || true
+  bytes=$(stat -c%s "$out" 2>/dev/null || echo 0)
+  kind=$(file -b "$out" 2>/dev/null || echo unknown)
+  # The widget returns a tiny GIF spacer when it has nothing — keep real JPEGs only.
+  if [ "$bytes" -gt 5000 ] && printf '%s' "$kind" | grep -qi 'JPEG'; then
+    echo "- $slug ($asin): OK — $bytes bytes, $kind" >> "$md"
+  else
+    rm -f "$out"
+    echo "- $slug ($asin): NOT USABLE — $bytes bytes, $kind" >> "$md"
+  fi
+  sleep 2
+done
+
 echo "wrote $json, $md; covers in $COVERS/"
