@@ -55,3 +55,24 @@ After deploying with the variable set: open the site, then Plausible's
 Realtime view — your visit appears within seconds. Submit the newsletter
 form and the `newsletter_lead_captured` goal fires. `scripts/test-analytics.ts`
 covers the dispatcher and loader contracts offline in CI.
+
+## Attribution conventions (how traffic gets labeled)
+
+- **YouTube:** always use the `/go/<slug>` short links in video
+  descriptions (`youtube-funnel-guide.md`) — they tag
+  `utm_source=youtube` + `utm_campaign=<slug>` automatically. Never paste
+  bare page URLs into descriptions.
+- **Other channels:** tag links by hand, e.g.
+  `?utm_source=facebook&utm_campaign=<post>`; the newsletter form carries
+  whatever utm_* params are on the page into the lead record.
+- **Leads:** `/admin/leads` shows the list segmented by first-touch source
+  (newsletter / founder / practice-test) with each lead's utm source and
+  campaign. First touch is preserved forever — repeat signups never
+  overwrite where someone originally came from.
+
+## Reading the funnel once data flows
+
+1. Plausible → Top Sources: youtube vs direct vs search volume.
+2. Plausible → Goals filtered by source: which channel converts.
+3. `/admin/leads`: who those conversions actually are, by segment — the
+   send lists for the day email turns on.
