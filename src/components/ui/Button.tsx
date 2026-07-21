@@ -17,13 +17,37 @@ const variants: Record<Variant, string> = {
 type Props = {
   variant?: Variant;
   href?: string;
+  /** Off-site destination: renders a plain anchor, new tab, safe rel. */
+  external?: boolean;
+  /** Extra rel tokens for external links (e.g. "sponsored"); noopener is always added. */
+  rel?: string;
   className?: string;
   children: React.ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 /** Primary conversion primitive. A control says what happens: "Apply now," not "Submit." */
-export function Button({ variant = 'primary', href, className, children, ...rest }: Props) {
+export function Button({
+  variant = 'primary',
+  href,
+  external,
+  rel,
+  className,
+  children,
+  ...rest
+}: Props) {
   const classes = cn(base, variants[variant], className);
+  if (href && external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel={rel ? `${rel} noopener` : 'noopener noreferrer'}
+        className={classes}
+      >
+        {children}
+      </a>
+    );
+  }
   if (href) {
     return (
       <Link href={href} className={classes}>

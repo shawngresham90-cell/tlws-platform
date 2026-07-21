@@ -34,7 +34,6 @@ const BOOKS: Book[] = [
   {
     slug: 'truckers-carnivore-cookbook',
     title: 'The Trucker’s Carnivore Cookbook',
-    badge: 'Bestseller · 4.8★ on Amazon',
     description:
       '100 air-fryer meals you can cook right in the cab — real food that keeps you rolling. This is the book behind Shawn’s 93-pounds-down, diabetes-reversed story, written for drivers who are done letting truck-stop food run their health.',
     whoFor:
@@ -190,9 +189,7 @@ function RelatedBooks({ current }: { current: Book }) {
   const related = ALL_BOOKS.filter((b) => b.slug !== current.slug);
   return (
     <div className="mt-6">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-        Related books
-      </h3>
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Related books</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         {related.map((b) => (
           <Link
@@ -249,7 +246,9 @@ function BookShelf({ book, featured = false }: { book: Book; featured?: boolean 
         </div>
 
         <div className="mt-7">
-          <Button href={book.href}>Buy on Amazon</Button>
+          <Button href={book.href} external rel="sponsored">
+            Buy on Amazon
+          </Button>
         </div>
 
         <ReviewsBlock book={book} />
@@ -303,8 +302,12 @@ export default function BooksPage() {
           <Eyebrow>The Trucker Bookstore</Eyebrow>
           <h1 className="display-section">Driver-built books</h1>
           <p className="mt-4 text-muted">
-            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff,
-            just the stuff that keeps you legal, healthy, and earning.
+            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff, just
+            the stuff that keeps you legal, healthy, and earning.
+          </p>
+          <p className="mt-3 text-xs text-muted">
+            As an Amazon Associate, purchases through the links below may earn a commission — at no
+            extra cost to you.
           </p>
         </div>
         <div className="mt-12">
@@ -328,26 +331,22 @@ export default function BooksPage() {
           <Eyebrow>Beyond the Road</Eyebrow>
           <h2 className="display-section">Faith, recovery &amp; rebuilding</h2>
           <p className="mt-4 text-muted">
-            The road teaches more than driving. These books are Shawn’s story off the
-            highway — faith, healing, and getting back up.
+            The road teaches more than driving. These books are Shawn’s story off the highway —
+            faith, healing, and getting back up.
           </p>
         </div>
       </Section>
       {LIFE_BOOKS.map((book, i) => (
         <Section
           key={book.slug}
-          className={`border-b border-line ${i % 2 === (rest.length % 2) ? 'bg-asphalt-800' : ''}`}
+          className={`border-b border-line ${i % 2 === rest.length % 2 ? 'bg-asphalt-800' : ''}`}
         >
           <BookShelf book={book} />
         </Section>
       ))}
 
       <Section className="border-b border-line">
-        <p className="text-xs text-muted">
-          As an Amazon Associate, purchases through these links may earn a commission — at no extra
-          cost to you.
-        </p>
-        <div className="mt-8 flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
             <h2 className="display-section">Want the PDFs &amp; tools?</h2>
             <p className="mt-3 text-muted">
@@ -360,6 +359,7 @@ export default function BooksPage() {
             <Button
               variant="ghost"
               href="https://stan.store/TRUCKINGLIFEWITHSHAWN"
+              external
               className="whitespace-nowrap"
             >
               Visit the Stan Store
