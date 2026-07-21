@@ -62,6 +62,7 @@ const BOOKS: Book[] = [
     ],
     href: `https://www.amazon.com/DOT-Survival-Guide-Truckers-Shutdowns/dp/B0FDL26V8Q?tag=${AMZN_TAG}`,
     isbn: '9798288489280',
+    cover: { src: '/covers/dot-survival-guide.jpg', width: 600, height: 899 },
   },
   {
     slug: 'defensive-driving-for-truck-drivers',
@@ -91,6 +92,7 @@ const BOOKS: Book[] = [
       'Building a life you don’t need a break from — from the driver’s seat',
     ],
     href: `https://www.amazon.com/Discipline-Over-Everything-Truths-Nobody/dp/B0FK3XQL5S?tag=${AMZN_TAG}`,
+    cover: { src: '/covers/discipline-over-everything.jpg', width: 600, height: 899 },
   },
 ];
 
@@ -113,6 +115,7 @@ const LIFE_BOOKS: Book[] = [
     ],
     href: `https://www.amazon.com/Broken-But-Built-Christian-Heartbreak/dp/B0FLPJ4PVM?tag=${AMZN_TAG}`,
     isbn: '9798296169419',
+    cover: { src: '/covers/broken-but-built.jpg', width: 600, height: 899 },
   },
   {
     slug: 'meth-is-the-devils-poison',
@@ -127,6 +130,7 @@ const LIFE_BOOKS: Book[] = [
       'Faith, recovery, and staying free — one honest chapter at a time',
     ],
     href: `https://www.amazon.com/Meth-Devils-Poison-Addiction-Deliverance/dp/B0FW74VQNT?tag=${AMZN_TAG}`,
+    cover: { src: '/covers/meth-is-the-devils-poison.jpg', width: 600, height: 899 },
   },
 ];
 

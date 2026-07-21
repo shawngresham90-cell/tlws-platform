@@ -12,7 +12,7 @@ listings, with the two limitations disclosed at the bottom).
 | Amazon books published | **6** (4 found by search + 2 owner links resolved on an Actions runner) | 6 |
 | Books on `/books` | 3 | **6** |
 | Books on the homepage teaser | 3 (all **wrong titles**) | 4 trucking titles (real, deep-linked; the 2 Beyond-the-Road titles live on /books — flag if you want them on the homepage too) |
-| Real cover images | 1 of 3 | 1 of 6 (see cover status) |
+| Real cover images | 1 of 3 | **5 of 6** (only Defensive Driving still needs artwork — see cover status) |
 | Broken/missing purchase links | 0 broken; 3 books absent | 0 |
 | ISBNs in Book SEO schema | 0 | 4 |
 
@@ -59,22 +59,36 @@ formats Amazon offers, so no edition is orphaned either way.
    Existing ItemList/breadcrumb schema, `rel="noopener sponsored"` links,
    and the Amazon Associates disclosure are unchanged.
 
-## Cover image status (honest limitation)
+## Cover image status — 5 of 6 covers now live
 
-Only the Carnivore Cookbook has real cover art in the repo. **The other five
-covers cannot be downloaded from here**: Amazon product pages, Goodreads,
-and both Amazon image CDNs refuse connections from the build environment
-(HTTP 403 at the proxy), and the Actions-runner attempt got bot-walled
-(empty HTML, no image URLs). The page already renders an on-brand
-typographic cover for any book without art, so nothing looks broken — but
-to get the real covers up, either:
+The Actions-runner audit (run 2) captured the real Amazon cover for five of
+the six books by scraping each product page's `data-old-hires` image. Each
+was visually verified as the correct book, resized to 600×900 (progressive
+JPEG, mozjpeg q82, 20–81 KB) with `sharp`, and committed to `public/covers/`:
 
-- upload cover JPGs (any size ≥ ~600 px tall) to `public/covers/` named
-  `dot-survival-guide.jpg`, `defensive-driving-for-truck-drivers.jpg`,
-  `discipline-over-everything.jpg`, `broken-but-built.jpg`,
-  `meth-is-the-devils-poison.jpg` — wiring each in is a one-line change the
-  page is already structured for, or
-- send them in chat and I'll commit them.
+| book | cover file | size |
+| --- | --- | --- |
+| The Trucker's Carnivore Cookbook | `truckers-carnivore-cookbook.jpg` | 31 KB (pre-existing) |
+| The DOT Survival Guide | `dot-survival-guide.jpg` | 20 KB |
+| Discipline Over Everything | `discipline-over-everything.jpg` | 81 KB |
+| Broken But Built | `broken-but-built.jpg` | 71 KB |
+| Meth Is the Devil's Poison | `meth-is-the-devils-poison.jpg` | 46 KB |
+
+They serve through `next/image` (responsive srcset, WebP/AVIF, lazy-load
+below the fold) — verified 200 on both the static path and the optimizer,
+and confirmed decoded (`naturalWidth > 0`) in a headless browser on desktop
+and mobile.
+
+**Still missing: Defensive Driving For Truck Drivers (B0FHQPQ3QR).** Its
+product-page scrape returned no usable image (the Associates image-widget
+fallback was bot-walled). It renders the on-brand typographic placeholder —
+nothing looks broken. To finish: drop
+`public/covers/defensive-driving-for-truck-drivers.jpg` (≥ ~600 px tall) or
+send it in chat, and it's a one-line wire-in.
+
+Note: the Meth cover shows "METH IS / IS THE / DEVIL'S / POISON" — the word
+"IS" appears twice on Amazon's actual published cover art. It's reproduced
+as-is (the author's real cover, not altered here).
 
 ## Verification limits (disclosed)
 
