@@ -105,6 +105,9 @@ while (queue.length > 0) {
 }
 
 console.log(`Crawled ${crawled} internal URLs from ${BASE}`);
+if (visited.size >= MAX_PAGES) {
+  console.log(`NOTE: hit the ${MAX_PAGES}-page cap — coverage is a sample, not exhaustive.`);
+}
 console.log(`External links seen (not fetched): ${external.size}`);
 for (const url of [...external].sort()) console.log(`  external: ${url}`);
 
@@ -117,11 +120,15 @@ if (warned.length > 0) {
 }
 
 if (broken.length > 0) {
+  // BROKEN LIST FIRST, then the failing exit code via exitCode (NOT
+  // process.exit, which can kill the process before piped stdout flushes —
+  // that once swallowed this whole section in CI logs).
   console.log(`\nBROKEN INTERNAL LINKS: ${broken.length}`);
   for (const b of broken) {
     const refs = [...(referrers.get(b.path) ?? [])].slice(0, 5).join(', ');
     console.log(`  ${b.status}  ${b.path}   ← linked from: ${refs || '(seed)'}`);
   }
-  process.exit(1);
+  process.exitCode = 1;
+} else {
+  console.log('\nNo broken internal links.');
 }
-console.log('\nNo broken internal links.');
