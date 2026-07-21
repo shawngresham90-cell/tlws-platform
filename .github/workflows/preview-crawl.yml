@@ -5,14 +5,14 @@ name: preview-crawl
 # DB-backed routes (e.g. /knowledge/<category>) runs here instead.
 on:
   push:
-    branches: [claude/platform-activation]
+    branches: [claude/platform-activation, claude/launch-readiness]
     paths: ['.github/workflows/preview-crawl.yml', 'scripts/crawl-links.mjs']
   workflow_dispatch:
     inputs:
       base_url:
         description: 'Base URL to crawl'
         required: false
-        default: 'https://deploy-preview-161--lighthearted-clafoutis-144512.netlify.app'
+        default: ''
 
 jobs:
   crawl:
@@ -25,7 +25,13 @@ jobs:
           node-version: 22
       - name: Wait for preview to serve this commit
         run: |
-          URL="${{ github.event.inputs.base_url || 'https://deploy-preview-161--lighthearted-clafoutis-144512.netlify.app' }}"
+          # Pick the deploy preview for this branch's PR unless a URL is given.
+          case "${{ github.ref_name }}" in
+            claude/launch-readiness) DEFAULT="https://deploy-preview-162--lighthearted-clafoutis-144512.netlify.app" ;;
+            *) DEFAULT="https://deploy-preview-161--lighthearted-clafoutis-144512.netlify.app" ;;
+          esac
+          URL="${{ github.event.inputs.base_url }}"
+          URL="${URL:-$DEFAULT}"
           echo "BASE_URL=$URL" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")
