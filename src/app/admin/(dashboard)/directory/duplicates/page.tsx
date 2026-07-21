@@ -97,7 +97,9 @@ function Card({ row }: { row: ListingRow }) {
         {row.category_slug ? (getCategory(row.category_slug)?.title ?? row.category_slug) : '—'} ·{' '}
         {row.address ? `${row.address}, ` : ''}
         {row.city}, {row.state}
-        {row.lat != null && row.lng != null ? ` · ${row.lat.toFixed(4)}, ${row.lng.toFixed(4)}` : ''}
+        {row.lat != null && row.lng != null
+          ? ` · ${row.lat.toFixed(4)}, ${row.lng.toFixed(4)}`
+          : ''}
         {row.phone ? ` · ${row.phone}` : ''}
       </p>
       <Link
@@ -147,7 +149,8 @@ export default async function AdminDirectoryDuplicatesPage({
       <DirectoryToolsNav />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="display-section">
-          Duplicates &amp; co-location <span className="text-lg text-muted">({allPairs.length})</span>
+          Duplicates &amp; co-location{' '}
+          <span className="text-lg text-muted">({allPairs.length})</span>
         </h1>
         <DownloadCsvButton
           csv={classifiedPairsCsv(pairs, byIdPair)}
@@ -162,8 +165,8 @@ export default async function AdminDirectoryDuplicatesPage({
       </p>
       {!pairDecisions.tableAvailable && (
         <p className="mb-4 max-w-2xl rounded-card border border-line bg-asphalt-800 px-4 py-3 text-xs text-muted">
-          Decision reasons need migration 023 (not applied yet) — until then, decisions fall back
-          to exclusion-only records.
+          Decision reasons need migration 023 (not applied yet) — until then, decisions fall back to
+          exclusion-only records.
         </p>
       )}
 
@@ -192,7 +195,7 @@ export default async function AdminDirectoryDuplicatesPage({
         </p>
       )}
       {(err || error) && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {err ?? `Couldn’t scan for duplicates: ${error}`}
         </p>
       )}
@@ -201,7 +204,8 @@ export default async function AdminDirectoryDuplicatesPage({
         <div className="rounded-card border border-line bg-asphalt-800 p-10 text-center">
           <p className="font-display text-2xl uppercase text-ink">Nothing to review</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-            No unresolved pairs{classFilter ? ' in this class' : ''}. Run this again after big imports.
+            No unresolved pairs{classFilter ? ' in this class' : ''}. Run this again after big
+            imports.
           </p>
         </div>
       )}
@@ -212,7 +216,10 @@ export default async function AdminDirectoryDuplicatesPage({
           const b = byId.get(p.bId)!;
           const legitimate = LEGITIMATE_CLASSES.has(p.class);
           return (
-            <div key={`${p.aId}|${p.bId}`} className="rounded-card border border-line bg-asphalt-800 p-5">
+            <div
+              key={`${p.aId}|${p.bId}`}
+              className="rounded-card border border-line bg-asphalt-800 p-5"
+            >
               <div className="mb-3 flex flex-wrap items-center gap-3">
                 <span
                   className={`rounded-card px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${
@@ -268,7 +275,7 @@ export default async function AdminDirectoryDuplicatesPage({
                   <form action={deleteDuplicateAction.bind(null, b.id)}>
                     <ConfirmSubmit
                       message={`Delete "${b.name}"? It disappears from the admin list and the public directory. (Soft delete — the row is kept.)`}
-                      className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+                      className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
                     >
                       Delete “{b.name.slice(0, 24)}”
                     </ConfirmSubmit>

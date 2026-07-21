@@ -49,8 +49,8 @@ export default async function PreschoolAdminPage({
         <p className="mt-1 text-sm text-muted">
           {students.length} of {FOUNDING_STUDENT_CAPACITY} spots approved ·{' '}
           {students.filter((s) => s.is_published).length} published · {pending.length} claim
-          {pending.length === 1 ? '' : 's'} pending. Verify each purchase against Stan Store
-          records by hand before approving — approval assigns the next open spot and publishes.
+          {pending.length === 1 ? '' : 's'} pending. Verify each purchase against Stan Store records
+          by hand before approving — approval assigns the next open spot and publishes.
         </p>
       </header>
 
@@ -60,7 +60,7 @@ export default async function PreschoolAdminPage({
         </p>
       )}
       {searchParams.error && (
-        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {searchParams.error}
         </p>
       )}
@@ -106,7 +106,7 @@ export default async function PreschoolAdminPage({
                       {c.business_name && <p className="text-xs text-muted">{c.business_name}</p>}
                       {c.website_url && <p className="text-xs text-muted">{c.website_url}</p>}
                       {!c.consent_public_display && (
-                        <p className="text-xs font-semibold text-diesel">No display consent!</p>
+                        <p className="text-xs font-semibold text-diesel-300">No display consent!</p>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -244,7 +244,7 @@ export default async function PreschoolAdminPage({
           <ul className="space-y-1 text-sm text-muted">
             {decided.map((c) => (
               <li key={c.id}>
-                <span className={c.status === 'approved' ? 'text-signal' : 'text-diesel'}>
+                <span className={c.status === 'approved' ? 'text-signal' : 'text-diesel-300'}>
                   {c.status}
                 </span>{' '}
                 — {c.purchaser_email} ({c.is_anonymous ? 'anonymous' : c.display_name})

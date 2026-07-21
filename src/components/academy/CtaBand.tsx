@@ -5,13 +5,12 @@ import { Section, Button } from '@/components/ui';
  * in priority order: Apply, Fund the School, Contact. Reused verbatim at the
  * foot of each Academy page so the call to action never drifts.
  *
- * Destinations follow the platform's placeholder-link convention: `/academy/apply`
- * lights up with the application system (Milestone 8) and `/founders` with the
- * Founders Wall (Milestone 9). `/contact` is the always-available intake path.
+ * Both destinations are live modules: the application system at
+ * `/academy/apply` and the Founders Wall at `/founders`.
  */
 export function CtaBand({
   heading = 'Ready to get your CDL the right way?',
-  intro = 'Drivers helping drivers — that’s the whole idea. Start your application, help fund a seat, or just ask a question.',
+  intro = 'Drivers helping drivers — that’s the whole idea. Start your application, help fund a seat, or get your questions answered.',
 }: {
   heading?: string;
   intro?: string;
@@ -27,8 +26,8 @@ export function CtaBand({
         <Button variant="secondary" href="/founders">
           Fund the School
         </Button>
-        <Button variant="ghost" href="/contact">
-          Contact Us
+        <Button variant="ghost" href="/academy/faq">
+          Read the FAQ
         </Button>
       </div>
     </Section>

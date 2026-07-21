@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
 import { JsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import './globals.css';
@@ -32,6 +33,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Site-wide structured data — Organization, Person, WebSite */}
         <JsonLd schema={[organizationSchema(), personSchema(), websiteSchema()]} />
+        {/* Cookieless analytics — renders nothing unless the env var is set */}
+        <PlausibleAnalytics />
       </head>
       <body className="flex min-h-screen flex-col">
         <a

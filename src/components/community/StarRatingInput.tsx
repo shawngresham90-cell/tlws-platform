@@ -23,7 +23,7 @@ export function StarRatingInput({
     <div>
       <span className="mb-1.5 block text-sm font-semibold text-ink">
         Your rating
-        <span className="text-diesel" aria-hidden="true">
+        <span className="text-diesel-300" aria-hidden="true">
           {' '}
           *
         </span>
@@ -57,7 +57,7 @@ export function StarRatingInput({
         )}
       </div>
       {error && (
-        <p role="alert" className="mt-1.5 text-sm font-medium text-diesel">
+        <p role="alert" className="mt-1.5 text-sm font-medium text-diesel-300">
           {error}
         </p>
       )}

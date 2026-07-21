@@ -7,8 +7,7 @@ import { Section, Eyebrow } from '@/components/ui';
  * paths). The CTA is an external link to the Stan store and opens a new tab.
  * The shirt photo lives in /public and is optimized/resized by next/image.
  */
-const SHIRT_URL =
-  'https://stan.store/TRUCKINGLIFEWITHSHAWN/p/founding-member-shirt--only-100-made';
+const SHIRT_URL = 'https://stan.store/TRUCKINGLIFEWITHSHAWN/p/founding-member-shirt--only-100-made';
 
 export function ShirtHero() {
   return (
@@ -23,7 +22,6 @@ export function ShirtHero() {
           alt="Trucking Life Founding Member shirt — limited run, only 100 made"
           width={1086}
           height={1448}
-          priority
           sizes="(max-width: 640px) 80vw, 320px"
           className="h-auto w-full max-w-[20rem] rounded-card object-contain"
         />

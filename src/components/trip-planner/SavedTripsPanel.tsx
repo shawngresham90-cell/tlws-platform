@@ -20,7 +20,7 @@ const btn =
   'rounded-card px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors disabled:opacity-50';
 const btnPrimary = `${btn} bg-signal text-asphalt hover:bg-signal-600`;
 const btnGhost = `${btn} border border-line text-ink hover:bg-asphalt-700`;
-const btnDanger = `${btn} border border-diesel text-diesel hover:bg-diesel/10`;
+const btnDanger = `${btn} border border-diesel text-diesel-300 hover:bg-diesel/10`;
 
 export function SavedTripsPanel({
   store,

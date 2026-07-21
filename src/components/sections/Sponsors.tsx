@@ -12,7 +12,7 @@ export function Sponsors() {
       />
       <div className="flex flex-wrap gap-4">
         <Button href="/sponsors">Become a sponsor</Button>
-        <Button variant="ghost" href="/contact">
+        <Button variant="ghost" href="/sponsors#inquire">
           Talk to Shawn
         </Button>
       </div>

@@ -55,7 +55,7 @@ export const ECOSYSTEM_PILLARS: EcosystemPillar[] = [
   {
     id: 'trip-planner',
     name: 'Trip Planner & Directory',
-    href: '/directory/trip-planner',
+    href: '/trip-planner',
     tagline: 'Plan the drive, find the stop',
     blurb:
       'Truck-legal route planning with hours-of-service awareness, plus a directory of parking and stops built for big rigs. The road, mapped for the way you actually run it.',

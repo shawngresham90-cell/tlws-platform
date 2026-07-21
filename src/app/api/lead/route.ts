@@ -1,5 +1,6 @@
 import { guardedPost } from '@/lib/api/handler';
 import { leadCaptureSchema } from '@/lib/api/schemas';
+import { mergeLead } from '@/lib/leads/funnel';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ok, fail } from '@/lib/api/responses';
 import { log } from '@/lib/api/logger';
@@ -17,21 +18,59 @@ export const POST = guardedPost(
   async ({ data }) => {
     const supabase = createAdminClient();
 
-    const { data: lead, error } = await supabase
+    // First-touch attribution: a repeat signup must never overwrite where the
+    // lead ORIGINALLY came from (source/utm). Read-then-write instead of a
+    // blind upsert; mergeLead fills only missing fields (sms consent
+    // true-wins).
+    const { data: existing } = await supabase
       .from('leads')
-      .upsert(
-        {
+      .select('id, first_name, phone, sms_consent, source, utm')
+      .eq('email', data.email)
+      .maybeSingle();
+
+    let lead: { id: string } | null = null;
+    let error: { code?: string } | null = null;
+
+    if (existing) {
+      const update = mergeLead(existing, {
+        first_name: data.first_name ?? null,
+        phone: data.phone || null,
+        sms_consent: data.sms_consent,
+        source: data.source ?? null,
+        utm: data.utm,
+      });
+      if (Object.keys(update).length > 0) {
+        const res = await supabase.from('leads').update(update).eq('id', existing.id);
+        error = res.error;
+      }
+      lead = { id: existing.id };
+    } else {
+      const res = await supabase
+        .from('leads')
+        .insert({
           email: data.email,
           first_name: data.first_name ?? null,
           phone: data.phone || null,
-          sms_consent: data.sms_consent,
+          sms_consent: data.sms_consent ?? false,
           source: data.source ?? null,
           utm: data.utm,
-        },
-        { onConflict: 'email' },
-      )
-      .select('id')
-      .single();
+        })
+        .select('id')
+        .single();
+      lead = res.data;
+      // Lost race with a concurrent insert of the same email: fall back to
+      // the existing row instead of failing the signup.
+      if (res.error?.code === '23505') {
+        const again = await supabase
+          .from('leads')
+          .select('id')
+          .eq('email', data.email)
+          .maybeSingle();
+        lead = again.data;
+      } else {
+        error = res.error;
+      }
+    }
 
     if (error || !lead) {
       log.error('lead_upsert_failed', { code: error?.code });

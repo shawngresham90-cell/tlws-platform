@@ -9,4 +9,5 @@ export { NearbySections } from './NearbySections';
 export { DetailNearbySections } from './DetailNearbySections';
 export { RelatedLinks } from './RelatedLinks';
 export { SponsorSlot } from './SponsorSlot';
+export { GetFeaturedCta } from './GetFeaturedCta';
 export { ViewBeacon } from './ViewBeacon';

@@ -50,7 +50,7 @@ const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 
 const CONFIG_ERROR_MESSAGE =
   'Verification is temporarily unavailable due to a configuration issue on our end. ' +
-  'Please try again shortly, or contact us directly and we’ll get your application in.';
+  'Please try again shortly.';
 
 const CHALLENGE_ERROR_MESSAGE =
   'Verification couldn’t load. Reload the page — and if it keeps happening, turn off any ' +
@@ -151,14 +151,25 @@ export function TurnstileWidget({
       script.async = true;
       script.defer = true;
       script.onload = renderWidget;
+      // Blocked script (ad/privacy blocker, offline) must surface a real
+      // message instead of leaving a blank widget the form then points at.
+      script.onerror = () => {
+        if (!cancelled) onErrorRef.current?.(CHALLENGE_ERROR_MESSAGE);
+      };
       document.head.appendChild(script);
     } else {
-      // Script tag exists but not ready yet — poll briefly for the global.
+      // Script tag exists but not ready yet — poll briefly for the global,
+      // and give up loudly rather than spinning forever.
+      let waited = 0;
       pollTimer = setInterval(() => {
         if (window.turnstile) {
           if (pollTimer) clearInterval(pollTimer);
           pollTimer = null;
           renderWidget();
+        } else if ((waited += 200) >= 10_000) {
+          if (pollTimer) clearInterval(pollTimer);
+          pollTimer = null;
+          if (!cancelled) onErrorRef.current?.(CHALLENGE_ERROR_MESSAGE);
         }
       }, 200);
     }
@@ -180,7 +191,7 @@ export function TurnstileWidget({
     return (
       <div
         role="alert"
-        className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+        className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
       >
         {CONFIG_ERROR_MESSAGE}
       </div>

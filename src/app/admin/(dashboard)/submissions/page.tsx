@@ -3,11 +3,7 @@ import { requireAdmin } from '@/lib/admin/auth';
 import { getSubmissions, PAGE_SIZE } from '@/lib/admin/community';
 import { SUBMISSION_KINDS } from '@/lib/community/schemas';
 import { ConfirmSubmit } from '@/components/admin/directory/ConfirmSubmit';
-import {
-  approveSubmissionAction,
-  rejectSubmissionAction,
-  bulkSubmissionsAction,
-} from './actions';
+import { approveSubmissionAction, rejectSubmissionAction, bulkSubmissionsAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Submissions', robots: { index: false, follow: false } };
@@ -23,7 +19,7 @@ const KIND_LABELS: Record<string, string> = {
 const STATUS_STYLES: Record<string, string> = {
   pending: 'text-signal',
   approved: 'text-signal',
-  rejected: 'text-diesel',
+  rejected: 'text-diesel-300',
   duplicate: 'text-muted',
   merged: 'text-muted',
 };
@@ -109,7 +105,7 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
         </p>
       )}
       {(err || error) && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {err ?? `Couldn’t load submissions: ${error}`}
         </p>
       )}
@@ -133,7 +129,12 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
           <label htmlFor="kind" className="mb-1 block text-xs font-semibold text-muted">
             Kind
           </label>
-          <select id="kind" name="kind" defaultValue={searchParams.kind ?? ''} className={inputClasses}>
+          <select
+            id="kind"
+            name="kind"
+            defaultValue={searchParams.kind ?? ''}
+            className={inputClasses}
+          >
             <option value="">All kinds</option>
             {SUBMISSION_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -180,7 +181,7 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
             name="op"
             value="reject"
             message="Reject all checked submissions?"
-            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
           >
             Bulk reject
           </ConfirmSubmit>
@@ -192,8 +193,8 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
           <p className="font-display text-2xl uppercase text-ink">Queue is clear</p>
           <p className="mt-2 text-sm text-muted">
             No {status === 'all' ? '' : `${status} `}submissions
-            {searchParams.q || searchParams.kind ? ' match these filters' : ''}. Driver reports
-            from /directory/submit land here for review.
+            {searchParams.q || searchParams.kind ? ' match these filters' : ''}. Driver reports from
+            /directory/submit land here for review.
           </p>
         </div>
       )}
@@ -261,7 +262,7 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
                       ) : r.kind === 'new' ? (
                         '— (new)'
                       ) : (
-                        <span className="text-diesel">missing</span>
+                        <span className="text-diesel-300">missing</span>
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">
@@ -296,7 +297,7 @@ export default async function AdminSubmissionsPage({ searchParams }: { searchPar
                             <form action={rejectSubmissionAction.bind(null, r.id)}>
                               <button
                                 type="submit"
-                                className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+                                className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
                               >
                                 Reject
                               </button>

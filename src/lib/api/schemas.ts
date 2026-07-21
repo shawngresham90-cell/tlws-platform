@@ -15,7 +15,13 @@ const usState = z
   .trim()
   .regex(/^[A-Z]{2}$/, 'Select your state.');
 const startTimeframe = z.enum(['asap', '30_days', '60_days', '90_plus', 'researching']);
-const utm = z.record(z.string(), z.string()).optional().default({});
+// Bounded so a direct API caller can't store an arbitrarily large blob in the
+// jsonb column; real utm_* params are far inside these limits.
+const utm = z
+  .record(z.string().max(40), z.string().max(200))
+  .refine((m) => Object.keys(m).length <= 20, 'Too many parameters.')
+  .optional()
+  .default({});
 const turnstileToken = z.string().min(1, 'Verification failed. Reload and try again.');
 
 // --- Application step 1: the low-friction hook (name + contact + location) ---
@@ -50,7 +56,9 @@ export const leadCaptureSchema = z.object({
   phone,
   source: z.string().trim().max(40).optional(),
   magnet_slug: z.string().trim().max(80).optional(),
-  sms_consent: z.boolean().default(false),
+  // Optional WITHOUT a default: undefined means "this form didn't collect
+  // consent", which the merge logic must distinguish from an explicit false.
+  sms_consent: z.boolean().optional(),
   utm,
   turnstileToken,
 });

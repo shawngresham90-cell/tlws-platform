@@ -20,7 +20,7 @@ export default async function AdminSponsorsPage() {
       </h1>
 
       {error && (
-        <p className="mb-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn’t load sponsors: {error}
         </p>
       )}
@@ -44,7 +44,14 @@ export default async function AdminSponsorsPage() {
             <tbody className="divide-y divide-line">
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td className="whitespace-nowrap px-4 py-3 text-ink">{r.company}</td>
+                  <td className="px-4 py-3 text-ink">
+                    <span className="whitespace-nowrap">{r.company}</span>
+                    {r.notes && (
+                      <span className="mt-1 block max-w-xs whitespace-normal text-xs text-muted">
+                        “{r.notes}”
+                      </span>
+                    )}
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">
                     {r.contact_name || '—'}
                   </td>

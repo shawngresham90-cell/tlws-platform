@@ -23,7 +23,7 @@ const btnGhost =
   'tracking-wide text-ink transition-colors hover:bg-asphalt-700 disabled:opacity-50';
 const btnDanger =
   'min-h-[44px] rounded-card border border-diesel px-4 py-3 text-sm font-semibold uppercase ' +
-  'tracking-wide text-diesel transition-colors hover:bg-diesel/10 disabled:opacity-50';
+  'tracking-wide text-diesel-300 transition-colors hover:bg-diesel/10 disabled:opacity-50';
 
 const SYNC_LABEL: Record<SyncStatus, string> = {
   idle: 'Saved on this device',
@@ -152,7 +152,7 @@ export function AccountPanel({
         {msg && (
           <p
             role={msg.kind === 'error' ? 'alert' : 'status'}
-            className={`mt-3 text-sm ${msg.kind === 'error' ? 'text-diesel' : 'text-signal'}`}
+            className={`mt-3 text-sm ${msg.kind === 'error' ? 'text-diesel-300' : 'text-signal'}`}
           >
             {msg.text}
           </p>
@@ -236,7 +236,7 @@ export function AccountPanel({
       {msg && (
         <p
           role={msg.kind === 'error' ? 'alert' : 'status'}
-          className={`mt-3 text-sm ${msg.kind === 'error' ? 'text-diesel' : 'text-signal'}`}
+          className={`mt-3 text-sm ${msg.kind === 'error' ? 'text-diesel-300' : 'text-signal'}`}
         >
           {msg.text}
         </p>

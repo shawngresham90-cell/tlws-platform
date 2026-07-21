@@ -21,7 +21,8 @@ export const metadata = {
 const SLUG_MESSAGES: Record<string, string> = {
   'slug-updated':
     'Public URL regenerated. The previous URL now permanently redirects to the new one.',
-  'slug-current': 'The public URL already matches the listing’s name, city, and state — nothing to change.',
+  'slug-current':
+    'The public URL already matches the listing’s name, city, and state — nothing to change.',
 };
 
 export default async function AdminDirectoryEditPage({
@@ -36,7 +37,7 @@ export default async function AdminDirectoryEditPage({
   const { row, error } = await getListing(params.id);
   if (error) {
     return (
-      <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+      <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
         Couldn’t load the listing: {error}
       </p>
     );
@@ -55,7 +56,8 @@ export default async function AdminDirectoryEditPage({
   const expectedBase = detailSlugBase(row.name, row.city, row.state);
   const slugInSync =
     row.detail_slug != null &&
-    (row.detail_slug === expectedBase || new RegExp(`^${expectedBase}-\\d+$`).test(row.detail_slug));
+    (row.detail_slug === expectedBase ||
+      new RegExp(`^${expectedBase}-\\d+$`).test(row.detail_slug));
 
   return (
     <div>
@@ -67,7 +69,9 @@ export default async function AdminDirectoryEditPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="display-section">Edit listing</h1>
         <div className="flex flex-wrap gap-2">
-          <form action={setPublishedAction.bind(null, row.id, row.category_slug, !row.is_published)}>
+          <form
+            action={setPublishedAction.bind(null, row.id, row.category_slug, !row.is_published)}
+          >
             <button
               type="submit"
               className="rounded-card border border-line px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-signal hover:text-signal"
@@ -78,7 +82,7 @@ export default async function AdminDirectoryEditPage({
           <form action={softDeleteAction.bind(null, row.id, row.category_slug)}>
             <ConfirmSubmit
               message={`Delete "${row.name}"? It will disappear from the admin list and the public directory. (Soft delete — the row is kept.)`}
-              className="rounded-card border border-diesel px-4 py-2 text-sm font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+              className="rounded-card border border-diesel px-4 py-2 text-sm font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
             >
               Delete
             </ConfirmSubmit>
@@ -98,7 +102,7 @@ export default async function AdminDirectoryEditPage({
         <p
           className={`mb-4 rounded-card border px-4 py-3 text-sm font-medium ${
             slugError
-              ? 'border-diesel bg-diesel/10 text-diesel'
+              ? 'border-diesel bg-diesel/10 text-diesel-300'
               : 'border-signal/50 bg-signal/10 text-signal'
           }`}
         >

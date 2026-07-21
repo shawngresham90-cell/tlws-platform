@@ -34,7 +34,7 @@ function PendingButton({ label, pendingLabel }: { label: string; pendingLabel: s
 const VERDICT_STYLES: Record<string, string> = {
   'ready-to-publish': 'text-signal font-semibold',
   'import-unpublished': 'text-ink',
-  'manual-review': 'text-diesel font-semibold',
+  'manual-review': 'text-diesel-300 font-semibold',
 };
 
 export function ExpansionTool() {
@@ -77,7 +77,7 @@ export function ExpansionTool() {
       </form>
 
       {state.error && (
-        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {state.error}
         </p>
       )}
@@ -93,8 +93,13 @@ export function ExpansionTool() {
                 ['Rejected by parser', report.verdictCounts.reject],
               ] as const
             ).map(([label, n]) => (
-              <div key={label} className="rounded-card border border-line bg-asphalt-800 p-4 text-center">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
+              <div
+                key={label}
+                className="rounded-card border border-line bg-asphalt-800 p-4 text-center"
+              >
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {label}
+                </dt>
                 <dd className="mt-1 font-display text-3xl text-ink">{n}</dd>
               </div>
             ))}
@@ -104,14 +109,17 @@ export function ExpansionTool() {
               Download full report CSV
             </button>
             <span className="text-xs text-muted">
-              {report.summary.totalRows} rows · {report.summary.duplicates} duplicates vs live/file ·{' '}
-              {report.summary.errors.length} parser error{report.summary.errors.length === 1 ? '' : 's'}
+              {report.summary.totalRows} rows · {report.summary.duplicates} duplicates vs live/file
+              · {report.summary.errors.length} parser error
+              {report.summary.errors.length === 1 ? '' : 's'}
             </span>
           </div>
 
           {report.summary.errors.length > 0 && (
             <details className="mt-3 text-sm text-muted">
-              <summary className="cursor-pointer font-semibold text-diesel">Parser errors</summary>
+              <summary className="cursor-pointer font-semibold text-diesel-300">
+                Parser errors
+              </summary>
               <ul className="mt-2 grid gap-1">
                 {report.summary.errors.map((e) => (
                   <li key={`${e.row}-${e.message}`}>
@@ -145,7 +153,9 @@ export function ExpansionTool() {
                     </td>
                     <td className="max-w-[220px] break-all px-3 py-2 font-mono text-xs text-muted">
                       {r.slugPreview}
-                      {r.slugCollision && <span className="block text-diesel">collision suffix</span>}
+                      {r.slugCollision && (
+                        <span className="block text-diesel-300">collision suffix</span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-muted">
                       {r.completeness} · {r.completenessLabel}

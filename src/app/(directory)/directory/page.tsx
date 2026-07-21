@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
-import { CategoryCardGrid, SponsorSlot } from '@/components/directory';
+import { CategoryCardGrid, GetFeaturedCta, SponsorSlot } from '@/components/directory';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
 import { getDirectoryFacets } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
@@ -92,6 +92,7 @@ export default async function DirectoryPage() {
         </div>
 
         <SponsorSlot placement="directory-hub" className="mt-10" />
+        <GetFeaturedCta context="directory-hub" className="mt-6" />
 
         {/* Fresh in the directory (Milestone 25). */}
         <div className="mt-14 flex flex-wrap gap-2">
@@ -114,8 +115,8 @@ export default async function DirectoryPage() {
             </span>
             <h2 className="mt-2 font-display text-xl uppercase text-ink">Submit a location</h2>
             <p className="mt-1 text-sm text-muted">
-              Add a spot we don’t list, or report corrections, closures, and amenity changes.
-              Every report is human-reviewed before it goes live.
+              Add a spot we don’t list, or report corrections, closures, and amenity changes. Every
+              report is human-reviewed before it goes live.
             </p>
           </Link>
           <Link

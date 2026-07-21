@@ -114,8 +114,8 @@ export default async function AcademyPage() {
         <Button variant="secondary" href="/founders">
           Fund the School
         </Button>
-        <Button variant="ghost" href="/contact">
-          Contact Us
+        <Button variant="ghost" href="/academy/faq">
+          Read the FAQ
         </Button>
       </PageHero>
 

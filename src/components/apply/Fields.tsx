@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils/cn';
 
 const fieldBase =
-  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted/60 ' +
+  'w-full rounded-card border bg-asphalt-800 px-4 py-3 text-ink placeholder:text-muted ' +
   'focus:outline-none focus:ring-2 focus:ring-signal focus:ring-offset-2 focus:ring-offset-asphalt';
 
 function Label({ id, label, required }: { id: string; label: string; required?: boolean }) {
@@ -11,7 +11,7 @@ function Label({ id, label, required }: { id: string; label: string; required?: 
     <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
       {label}
       {required && (
-        <span className="text-diesel" aria-hidden="true">
+        <span className="text-diesel-300" aria-hidden="true">
           {' '}
           *
         </span>
@@ -23,7 +23,7 @@ function Label({ id, label, required }: { id: string; label: string; required?: 
 function ErrorText({ id, error }: { id: string; error?: string }) {
   if (!error) return null;
   return (
-    <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel">
+    <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel-300">
       {error}
     </p>
   );
@@ -107,7 +107,8 @@ export function SelectField({
         aria-describedby={error ? `${id}-error` : undefined}
         className={cn(fieldBase, 'appearance-none', error ? 'border-diesel' : 'border-line')}
       >
-        <option value="" disabled>
+        {/* An optional select must let the user return to "no answer". */}
+        <option value="" disabled={required}>
           {placeholder}
         </option>
         {options.map((o) => (
@@ -153,7 +154,7 @@ export function CheckboxField({
         <label htmlFor={id} className="text-sm text-muted">
           {children ?? label}
           {required && (
-            <span className="text-diesel" aria-hidden="true">
+            <span className="text-diesel-300" aria-hidden="true">
               {' '}
               *
             </span>
