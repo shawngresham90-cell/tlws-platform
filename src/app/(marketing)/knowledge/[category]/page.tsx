@@ -5,6 +5,7 @@ import { CategoryNav } from '@/components/kc/CategoryNav';
 import { ArticleCard } from '@/components/kc/ArticleCard';
 import { Pagination } from '@/components/kc/Pagination';
 import { SearchBox } from '@/components/kc/SearchBox';
+import { KcNextSteps } from '@/components/kc/KcNextSteps';
 import { getCategories, getCategoryBySlug, getCategoryArticles } from '@/lib/kc/queries';
 import { PAGE_SIZE } from '@/lib/kc/types';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
@@ -92,6 +93,7 @@ export default async function CategoryPage({
             />
           </>
         )}
+        <KcNextSteps categorySlug={cat.slug} />
       </Section>
     </>
   );
