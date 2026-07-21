@@ -5,16 +5,30 @@ environment via web search (Amazon, Goodreads, and image CDNs block direct
 fetches from this sandbox — every claim below is from search-indexed Amazon
 listings, with the two limitations disclosed at the bottom).
 
-## Before / after
+## Before / after (v2 — owner-supplied links resolved)
 
 | metric | before | after |
 | --- | --- | --- |
-| Amazon books found published | 4 | 4 |
-| Books on `/books` | 3 | **4** |
-| Books on the homepage teaser | 3 (all **wrong titles**) | 4 (real titles, deep-linked) |
-| Real cover images | 1 of 3 | 1 of 4 (see cover status) |
-| Broken/missing purchase links | 0 broken; 1 book absent | 0 |
-| ISBNs in Book SEO schema | 0 | 3 |
+| Amazon books published | **6** (4 found by search + 2 owner links resolved on an Actions runner) | 6 |
+| Books on `/books` | 3 | **6** |
+| Books on the homepage teaser | 3 (all **wrong titles**) | 4 trucking titles (real, deep-linked; the 2 Beyond-the-Road titles live on /books — flag if you want them on the homepage too) |
+| Real cover images | 1 of 3 | 1 of 6 (see cover status) |
+| Broken/missing purchase links | 0 broken; 3 books absent | 0 |
+| ISBNs in Book SEO schema | 0 | 4 |
+
+### Owner-link resolution (GitHub Actions runner; sandbox cannot reach Amazon)
+
+| supplied link | resolves to | title | on site before? |
+| --- | --- | --- | --- |
+| `a.co/d/0bWGALX2` | ASIN B0FW74VQNT | **Meth Is the Devil's Poison: A True Story of Addiction, Deliverance, and God's Power to Save a Soul from Meth** (Oct 2025, 150 pp) | NO — **added** (Beyond the Road section) |
+| `a.co/d/03d0iojz` | ASIN B0FLPJ4PVM | **Broken But Built: A Christian Man's Guide to Healing After Divorce, Heartbreak & Betrayal** (Aug 2025, 146 pp, ISBN 9798296169419) | NO — **added** (Beyond the Road section) |
+| `a.co/d/03cOB4V3` (already on site) | ASIN B0F9TT5S6G | The Trucker's Carnivore Cookbook | yes — link verified correct ✓ |
+
+Both new books use canonical `amazon.com/dp/<ASIN>` links with the associate
+tag (the raw share links carry personal `cm_sw_r` tracking tokens, stripped).
+Editions: paperback confirmed for both; whether Kindle/hardcover editions
+exist could not be verified from here — the `/dp/` links resolve to whatever
+formats Amazon offers, so no edition is orphaned either way.
 
 ## The catalog (verified against Amazon search listings)
 
@@ -24,6 +38,8 @@ listings, with the two limitations disclosed at the bottom).
 | 2 | The DOT Survival Guide (ISBN 9798288489280) | B0FDL26V8Q | yes | ⬜ branded placeholder | `/dp/B0FDL26V8Q` + associate tag ✓ (URL matches Amazon's listing exactly) |
 | 3 | **Defensive Driving For Truck Drivers** (ISBN 9798292659631, pub. 2025-07-15, 142 pp) | B0FHQPQ3QR | **NO — missing** | ⬜ branded placeholder | `/dp/B0FHQPQ3QR` + associate tag — **added** |
 | 4 | Discipline Over Everything | B0FK3XQL5S | yes | ⬜ branded placeholder | `/dp/B0FK3XQL5S` + associate tag (kept as shipped) |
+| 5 | Broken But Built (ISBN 9798296169419, pub. 2025-08-01, 146 pp) | B0FLPJ4PVM | **NO — missing** | ⬜ branded placeholder | `/dp/B0FLPJ4PVM` + associate tag — **added** |
+| 6 | Meth Is the Devil’s Poison (pub. 2025-10-14, 150 pp) | B0FW74VQNT | **NO — missing** | ⬜ branded placeholder | `/dp/B0FW74VQNT` + associate tag — **added** |
 
 ## Issues found and fixed
 
@@ -45,16 +61,18 @@ listings, with the two limitations disclosed at the bottom).
 
 ## Cover image status (honest limitation)
 
-Only the Carnivore Cookbook has real cover art in the repo. **This sandbox
-cannot download the other three covers**: Amazon product pages, Goodreads,
+Only the Carnivore Cookbook has real cover art in the repo. **The other five
+covers cannot be downloaded from here**: Amazon product pages, Goodreads,
 and both Amazon image CDNs refuse connections from the build environment
-(HTTP 403 at the proxy). The page already renders an on-brand typographic
-cover for any book without art, so nothing looks broken — but to get the
-real covers up, either:
+(HTTP 403 at the proxy), and the Actions-runner attempt got bot-walled
+(empty HTML, no image URLs). The page already renders an on-brand
+typographic cover for any book without art, so nothing looks broken — but
+to get the real covers up, either:
 
-- upload the three cover JPGs (any size ≥ ~600 px tall) to `public/covers/`
-  named `dot-survival-guide.jpg`, `defensive-driving-for-truck-drivers.jpg`,
-  `discipline-over-everything.jpg` — wiring each in is a one-line change the
+- upload cover JPGs (any size ≥ ~600 px tall) to `public/covers/` named
+  `dot-survival-guide.jpg`, `defensive-driving-for-truck-drivers.jpg`,
+  `discipline-over-everything.jpg`, `broken-but-built.jpg`,
+  `meth-is-the-devils-poison.jpg` — wiring each in is a one-line change the
   page is already structured for, or
 - send them in chat and I'll commit them.
 

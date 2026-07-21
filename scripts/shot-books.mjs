@@ -52,13 +52,15 @@ try {
       'The DOT Survival Guide',
       'Defensive Driving For Truck Drivers',
       'Discipline Over Everything',
+      'Broken But Built',
+      'Meth Is the Devil’s Poison',
     ];
     for (const t of titles) {
       if (!body.includes(t)) throw new Error(`MISSING on /books (${label}): ${t}`);
     }
     const buyLinks = await page.locator('a:has-text("Buy on Amazon")').count();
-    if (buyLinks !== 4) throw new Error(`expected 4 Buy on Amazon links, got ${buyLinks}`);
-    console.log(`${label}: 4/4 titles render, ${buyLinks} buy links`);
+    if (buyLinks !== 6) throw new Error(`expected 6 Buy on Amazon links, got ${buyLinks}`);
+    console.log(`${label}: ${titles.length}/${titles.length} titles render, ${buyLinks} buy links`);
     await page.close();
   }
   console.log('screenshots written');

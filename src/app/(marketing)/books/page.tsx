@@ -8,7 +8,7 @@ import { SITE } from '@/lib/seo/site';
 export const metadata = buildMetadata({
   title: 'Books by Shawn Gresham — The Trucker Bookstore | Trucking Life with Shawn',
   description:
-    'Books written by a CDL driver with 17 years on the road and zero violations: The Trucker’s Carnivore Cookbook, The DOT Survival Guide, Defensive Driving For Truck Drivers, and Discipline Over Everything. Available on Amazon.',
+    'All six books by Shawn Gresham: The Trucker’s Carnivore Cookbook, The DOT Survival Guide, Defensive Driving For Truck Drivers, Discipline Over Everything, Broken But Built, and Meth Is the Devil’s Poison. Available on Amazon.',
   path: '/books',
   image: '/covers/truckers-carnivore-cookbook.jpg',
 });
@@ -94,6 +94,45 @@ const BOOKS: Book[] = [
   },
 ];
 
+/**
+ * Beyond the road — Shawn's faith, recovery, and rebuilding titles. Same
+ * shelf treatment, separate section so the trucker bookstore stays focused.
+ */
+const LIFE_BOOKS: Book[] = [
+  {
+    slug: 'broken-but-built',
+    title: 'Broken But Built',
+    description:
+      'A Christian man’s guide to healing after divorce, heartbreak, and betrayal. When life breaks you down, this is about letting God build you back — written straight, from a man who has lived the rebuilding.',
+    whoFor:
+      'Men walking through divorce, heartbreak, or betrayal who want a faith-grounded path forward — and anyone tired of pretending they’re fine when they’re not.',
+    learn: [
+      'Facing the wreckage honestly instead of numbing it',
+      'A Christian framework for healing after divorce and betrayal',
+      'Rebuilding identity, purpose, and strength one day at a time',
+    ],
+    href: `https://www.amazon.com/Broken-But-Built-Christian-Heartbreak/dp/B0FLPJ4PVM?tag=${AMZN_TAG}`,
+    isbn: '9798296169419',
+  },
+  {
+    slug: 'meth-is-the-devils-poison',
+    title: 'Meth Is the Devil’s Poison',
+    description:
+      'A true story of addiction, deliverance, and God’s power to save a soul from meth. No sugar-coating — what the poison takes, what it costs, and the way out.',
+    whoFor:
+      'Anyone fighting addiction, loving someone who is, or looking for proof that deliverance is real — told as a true story, not a lecture.',
+    learn: [
+      'What meth addiction actually does to a life, told first-hand',
+      'The turning point from addiction to deliverance',
+      'Faith, recovery, and staying free — one honest chapter at a time',
+    ],
+    href: `https://www.amazon.com/Meth-Devils-Poison-Addiction-Deliverance/dp/B0FW74VQNT?tag=${AMZN_TAG}`,
+  },
+];
+
+/** Every published book — schema, related links, and counts draw from this. */
+const ALL_BOOKS: Book[] = [...BOOKS, ...LIFE_BOOKS];
+
 /** Real cover when it exists; on-brand typographic cover until then (swap = one line). */
 function BookCover({ book, featured = false }: { book: Book; featured?: boolean }) {
   const sizeClasses = featured ? 'w-56 sm:w-72' : 'w-48 sm:w-56';
@@ -144,7 +183,7 @@ function ReviewsBlock({ book }: { book: Book }) {
 }
 
 function RelatedBooks({ current }: { current: Book }) {
-  const related = BOOKS.filter((b) => b.slug !== current.slug);
+  const related = ALL_BOOKS.filter((b) => b.slug !== current.slug);
   return (
     <div className="mt-6">
       <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
@@ -245,7 +284,7 @@ export default function BooksPage() {
             '@context': 'https://schema.org',
             '@type': 'ItemList',
             name: 'Books by Shawn Gresham',
-            itemListElement: BOOKS.map((b, i) => ({
+            itemListElement: ALL_BOOKS.map((b, i) => ({
               '@type': 'ListItem',
               position: i + 1,
               item: bookSchema(b),
@@ -274,6 +313,26 @@ export default function BooksPage() {
         <Section
           key={book.slug}
           className={`border-b border-line ${i % 2 === 0 ? 'bg-asphalt-800' : ''}`}
+        >
+          <BookShelf book={book} />
+        </Section>
+      ))}
+
+      {/* Beyond the road — faith, recovery, and rebuilding */}
+      <Section className="border-b border-line">
+        <div className="max-w-2xl">
+          <Eyebrow>Beyond the Road</Eyebrow>
+          <h2 className="display-section">Faith, recovery &amp; rebuilding</h2>
+          <p className="mt-4 text-muted">
+            The road teaches more than driving. These books are Shawn’s story off the
+            highway — faith, healing, and getting back up.
+          </p>
+        </div>
+      </Section>
+      {LIFE_BOOKS.map((book, i) => (
+        <Section
+          key={book.slug}
+          className={`border-b border-line ${i % 2 === (rest.length % 2) ? 'bg-asphalt-800' : ''}`}
         >
           <BookShelf book={book} />
         </Section>
