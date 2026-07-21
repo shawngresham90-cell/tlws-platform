@@ -1,0 +1,44 @@
+{
+  "snapshotTakenAt": "2026-07-21",
+  "snapshotRows": 1252,
+  "snapshotWithCoords": 85,
+  "worklist": {
+    "eligible": 967,
+    "ineligible": 285,
+    "ineligibleReasons": {
+      "blank-address": 199,
+      "already-has-coordinates": 85,
+      "highway-only-address": 1
+    }
+  },
+  "checkpoint": {
+    "fetched": 0,
+    "pending": 967,
+    "matched": 0,
+    "rejected": 0,
+    "staleIgnored": 0,
+    "rejectionReasons": {}
+  },
+  "confidence": {
+    "high": 0,
+    "medium": 0
+  },
+  "verificationFlags": 0,
+  "coverage": {
+    "directoryTotal": 1252,
+    "withCoordsNow": 85,
+    "pctNow": 6.8,
+    "afterReviewingMatches": 85,
+    "pctAfterReviewingMatches": 6.8,
+    "projectedIfPendingMatches70to85pct": {
+      "low": 60.8,
+      "high": 72.4
+    }
+  },
+  "guarantees": [
+    "runner has no database client — it cannot read or write production",
+    "network exists only in the fetch step behind the injected CensusFetch seam",
+    "every review row is action=manual-review; applying requires the admin console",
+    "package output is a pure function of (snapshot, checkpoint) — reproducible offline"
+  ]
+}
