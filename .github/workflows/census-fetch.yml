@@ -10,6 +10,7 @@
 #
 # Triggers only when this file itself changes on the runner branch (the
 # results commit uses [skip ci] and touches data/ only, so it cannot retrigger).
+# Rerun 2026-07-21: retry the 2 service-error rows left on the fetch frontier.
 name: census-fetch
 on:
   push:
