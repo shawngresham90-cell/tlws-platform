@@ -51,7 +51,7 @@ export const POST = guardedPost(
           email: data.email,
           first_name: data.first_name ?? null,
           phone: data.phone || null,
-          sms_consent: data.sms_consent,
+          sms_consent: data.sms_consent ?? false,
           source: data.source ?? null,
           utm: data.utm,
         })

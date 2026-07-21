@@ -51,23 +51,38 @@ export function segmentFor(source: string | null | undefined): LeadSegment {
 export type LeadFields = {
   first_name?: string | null;
   phone?: string | null;
+  /** undefined = this form did not collect SMS consent at all. */
   sms_consent?: boolean | null;
   source?: string | null;
   utm?: Record<string, string> | null;
 };
 
 /**
- * First-touch attribution merge: when a known email signs up again,
- * source/utm keep their ORIGINAL values (where the lead really came from),
- * missing contact fields fill in, and sms consent is true-wins (a later
- * opt-in must stick; a later form that defaults to false must not revoke).
+ * Merge semantics for a repeat signup, split by field class:
+ *
+ * - ATTRIBUTION (source, utm): first-touch — set once, never overwritten.
+ *   Where the lead originally came from is a historical fact.
+ * - CONTACT + CONSENT (first_name, phone, sms_consent): explicit-last-wins —
+ *   a submission that PROVIDES the field updates it, including corrections
+ *   and consent revocation; a form that didn't collect the field
+ *   (undefined/empty) leaves it alone. This keeps planted or stale values
+ *   correctable by a later genuine submission instead of sticky forever.
+ *
  * Returns only the fields that should be updated — {} means no update.
  */
 export function mergeLead(existing: LeadFields, incoming: LeadFields): Partial<LeadFields> {
   const update: Partial<LeadFields> = {};
-  if (!existing.first_name && incoming.first_name) update.first_name = incoming.first_name;
-  if (!existing.phone && incoming.phone) update.phone = incoming.phone;
-  if (!existing.sms_consent && incoming.sms_consent) update.sms_consent = true;
+  if (incoming.first_name && incoming.first_name !== existing.first_name) {
+    update.first_name = incoming.first_name;
+  }
+  if (incoming.phone && incoming.phone !== existing.phone) update.phone = incoming.phone;
+  if (
+    incoming.sms_consent !== undefined &&
+    incoming.sms_consent !== null &&
+    incoming.sms_consent !== Boolean(existing.sms_consent)
+  ) {
+    update.sms_consent = incoming.sms_consent;
+  }
   if (!existing.source && incoming.source) update.source = incoming.source;
   if (
     (!existing.utm || Object.keys(existing.utm).length === 0) &&

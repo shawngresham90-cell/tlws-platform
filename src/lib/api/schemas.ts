@@ -56,7 +56,9 @@ export const leadCaptureSchema = z.object({
   phone,
   source: z.string().trim().max(40).optional(),
   magnet_slug: z.string().trim().max(80).optional(),
-  sms_consent: z.boolean().default(false),
+  // Optional WITHOUT a default: undefined means "this form didn't collect
+  // consent", which the merge logic must distinguish from an explicit false.
+  sms_consent: z.boolean().optional(),
   utm,
   turnstileToken,
 });

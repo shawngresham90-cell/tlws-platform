@@ -28,8 +28,10 @@ export const GO_LINKS: Record<string, string> = {
 
 /** Build the tagged destination for a slug; null when the slug is unknown. */
 export function resolveGoLink(slug: string): string | null {
+  // hasOwn guard: "/go/constructor" must miss, not resolve up the prototype
+  // chain and throw on a non-string.
+  if (!Object.hasOwn(GO_LINKS, slug)) return null;
   const target = GO_LINKS[slug];
-  if (!target) return null;
   const [path, hash] = target.split('#');
   const params = new URLSearchParams({
     utm_source: 'youtube',

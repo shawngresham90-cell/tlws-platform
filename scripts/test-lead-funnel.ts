@@ -28,35 +28,46 @@ for (const source of LEAD_SOURCES) {
 check('unknown source → unsegmented fallback', segmentFor('mystery').key === 'unsegmented');
 check('null source → unsegmented fallback', segmentFor(null).key === 'unsegmented');
 
-/* ------------------------------------------- first-touch merging */
+/* ------------------- merging: first-touch attribution, last-wins contact */
 {
   // Repeat signup from a different source must NOT clobber attribution.
   const update = mergeLead(
-    { source: 'practice-test', utm: { utm_source: 'youtube' }, sms_consent: false },
-    { source: 'newsletter', utm: { utm_source: 'facebook' }, sms_consent: false },
+    { source: 'practice-test', utm: { utm_source: 'youtube' } },
+    { source: 'newsletter', utm: { utm_source: 'facebook' } },
   );
   check('merge: original source preserved', !('source' in update));
   check('merge: original utm preserved', !('utm' in update));
 }
 {
-  // Missing fields fill in.
+  // Contact fields are explicit-last-wins: a later genuine submission can
+  // CORRECT a planted or stale value (security review, finding 2).
   const update = mergeLead(
-    { source: 'newsletter', first_name: null, phone: null },
+    { source: 'newsletter', first_name: 'Wrong', phone: 'attacker-555' },
     { source: 'founder', first_name: 'Pat', phone: '555-555-5555' },
   );
-  check('merge: missing name fills in', update.first_name === 'Pat');
-  check('merge: missing phone fills in', update.phone === '555-555-5555');
+  check('merge: provided name corrects the stored one', update.first_name === 'Pat');
+  check('merge: provided phone corrects the stored one', update.phone === '555-555-5555');
   check('merge: source still preserved', !('source' in update));
 }
 {
-  // SMS consent: later opt-in sticks; later default-false never revokes.
+  // A form that didn't collect a field leaves it alone.
+  const update = mergeLead({ first_name: 'Pat', phone: '5' }, { first_name: null, phone: '' });
+  check('merge: absent contact fields never cleared', Object.keys(update).length === 0);
+}
+{
+  // SMS consent: explicit values win in BOTH directions (a genuine later
+  // submission can revoke forged consent); undefined = form didn't ask.
   check(
-    'merge: sms opt-in sticks',
+    'merge: explicit sms opt-in updates',
     mergeLead({ sms_consent: false }, { sms_consent: true }).sms_consent === true,
   );
   check(
-    'merge: sms consent never revoked by a false',
-    !('sms_consent' in mergeLead({ sms_consent: true }, { sms_consent: false })),
+    'merge: explicit sms false revokes (correctable consent)',
+    mergeLead({ sms_consent: true }, { sms_consent: false }).sms_consent === false,
+  );
+  check(
+    'merge: form that did not collect consent leaves it alone',
+    !('sms_consent' in mergeLead({ sms_consent: true }, { sms_consent: undefined })),
   );
 }
 {

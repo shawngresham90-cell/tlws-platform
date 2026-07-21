@@ -67,5 +67,5 @@ const DEFAULT_CONVERSIONS: KcConversion[] = [PRACTICE_TESTS, DIRECTORY];
 
 /** Next steps for a category; unknown categories get safe defaults. */
 export function conversionsFor(categorySlug: string): KcConversion[] {
-  return BY_CATEGORY[categorySlug] ?? DEFAULT_CONVERSIONS;
+  return Object.hasOwn(BY_CATEGORY, categorySlug) ? BY_CATEGORY[categorySlug] : DEFAULT_CONVERSIONS;
 }

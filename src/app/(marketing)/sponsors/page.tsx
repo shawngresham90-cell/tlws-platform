@@ -43,16 +43,23 @@ const WAYS = [
   },
 ];
 
+/** Next delivers string | string[] | undefined; take the first value. */
+function firstParam(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : value) ?? '';
+}
+
 export default function SponsorsPage({
   searchParams,
 }: {
-  searchParams?: { interest?: string; context?: string };
+  searchParams?: { interest?: string | string[]; context?: string | string[] };
 }) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
   // "Get featured" links on directory surfaces preselect the interest and
   // carry which surface sent the visitor, so inquiries arrive with context.
-  const initialInterest = searchParams?.interest?.slice(0, 40) ?? '';
-  const context = searchParams?.context?.slice(0, 40) ?? '';
+  const initialInterest = firstParam(searchParams?.interest).slice(0, 40);
+  // Bounded so the composed tier_interest "<interest> (<context>)" always
+  // fits the schema's 60 chars without chopping the closing paren.
+  const context = firstParam(searchParams?.context).slice(0, 30);
   return (
     <>
       <JsonLd
