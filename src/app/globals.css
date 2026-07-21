@@ -17,6 +17,17 @@
   ::selection {
     @apply bg-signal text-asphalt;
   }
+  /* Uniform keyboard focus ring for form fields. Box-shadow based so the
+     common `outline-none focus:border-signal` field pattern can't cancel it,
+     matching the ring buttons/links already get from focus-visible:ring-2. */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px theme('colors.asphalt.DEFAULT'),
+      0 0 0 4px theme('colors.signal.DEFAULT');
+  }
 }
 
 @layer utilities {
