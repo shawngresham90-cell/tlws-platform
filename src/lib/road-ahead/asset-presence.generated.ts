@@ -4,8 +4,11 @@
 // time (serverless/ISR-safe). Empty = no owner media supplied yet.
 export const PRESENT_ASSETS: readonly string[] = [
   "poster/empty-highway.jpg",
+  "poster/sunrise.jpg",
   "video/empty-highway.mp4",
-  "video/empty-highway.webm"
+  "video/empty-highway.webm",
+  "video/sunrise.mp4",
+  "video/sunrise.webm"
 ];
 
 // slot id → YouTube-Unlisted video id (from public/road-ahead/youtube-sources.json).
