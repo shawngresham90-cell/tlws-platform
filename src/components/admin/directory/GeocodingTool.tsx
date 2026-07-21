@@ -73,7 +73,7 @@ function MethodCell({ row }: { row: ValidatedRow }) {
           {e.warnings.map((w) => (
             <span
               key={w}
-              className="rounded-card border border-diesel/60 px-1.5 py-0.5 font-semibold text-diesel"
+              className="rounded-card border border-diesel/60 px-1.5 py-0.5 font-semibold text-diesel-300"
             >
               {w}
             </span>
@@ -123,12 +123,12 @@ function RollbackPanel() {
         </button>
       </div>
       {loadError && (
-        <p role="alert" className="mt-3 text-sm font-medium text-diesel">
+        <p role="alert" className="mt-3 text-sm font-medium text-diesel-300">
           {loadError}
         </p>
       )}
       {rollbackState.error && (
-        <p role="alert" className="mt-3 text-sm font-medium text-diesel">
+        <p role="alert" className="mt-3 text-sm font-medium text-diesel-300">
           {rollbackState.error}
         </p>
       )}
@@ -366,7 +366,7 @@ export function GeocodingTool() {
           <ul className="mt-4 max-h-64 space-y-1 overflow-y-auto text-sm text-muted">
             {applyState.failures.map((f) => (
               <li key={f.id}>
-                <span className="font-semibold text-diesel">{f.name}:</span> {f.error}
+                <span className="font-semibold text-diesel-300">{f.name}:</span> {f.error}
               </li>
             ))}
           </ul>
@@ -413,14 +413,14 @@ export function GeocodingTool() {
       {preview.error && (
         <p
           role="alert"
-          className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+          className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
         >
           {preview.error}
         </p>
       )}
       {preview.fileErrors.length > 0 && (
         <div className="max-w-2xl rounded-card border border-diesel/60 bg-diesel/5 px-4 py-3 text-sm text-muted">
-          <p className="font-semibold text-diesel">
+          <p className="font-semibold text-diesel-300">
             Row-level file problems ({preview.fileErrors.length}):
           </p>
           <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto">
@@ -464,7 +464,7 @@ export function GeocodingTool() {
               <span className="font-semibold text-signal">{applicable.length} applicable</span> ·{' '}
               {rows.length - applicable.length} manual-review/skip · {selected.size} selected
               {selectedOverwrites.length > 0 && (
-                <span className="font-semibold text-diesel">
+                <span className="font-semibold text-diesel-300">
                   {' '}
                   · {selectedOverwrites.length} overwrite existing
                 </span>
@@ -580,7 +580,7 @@ export function GeocodingTool() {
                         </a>
                       )}
                       {r.wouldOverwrite && (
-                        <label className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-diesel">
+                        <label className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-diesel-300">
                           <input
                             type="checkbox"
                             checked={overwriteOk.has(r.listing_id)}
@@ -592,7 +592,7 @@ export function GeocodingTool() {
                                 return next;
                               })
                             }
-                            className="h-3.5 w-3.5 rounded border-diesel bg-asphalt text-diesel"
+                            className="h-3.5 w-3.5 rounded border-diesel bg-asphalt text-diesel-300"
                           />
                           confirm overwrite
                         </label>
@@ -618,7 +618,7 @@ export function GeocodingTool() {
                           r.confidence === 'high'
                             ? 'font-semibold text-signal'
                             : r.confidence === 'unresolved'
-                              ? 'text-diesel'
+                              ? 'text-diesel-300'
                               : 'text-muted'
                         }
                       >
@@ -643,7 +643,7 @@ export function GeocodingTool() {
                     </td>
                     <td className="max-w-72 px-3 py-2.5 align-top text-xs text-muted">
                       {r.problems.length > 0 && (
-                        <span className="block font-semibold text-diesel">
+                        <span className="block font-semibold text-diesel-300">
                           {r.problemDetails.join('; ')}
                         </span>
                       )}
@@ -693,7 +693,7 @@ export function GeocodingTool() {
                     <li key={r.listing_id}>
                       <span className="font-semibold text-ink">{r.business_name}</span> →{' '}
                       {fmtCoord(r.proposed_latitude)}, {fmtCoord(r.proposed_longitude)}
-                      {r.wouldOverwrite && <span className="text-diesel"> (overwrite)</span>}
+                      {r.wouldOverwrite && <span className="text-diesel-300"> (overwrite)</span>}
                     </li>
                   ))}
                 </ul>
@@ -716,7 +716,7 @@ export function GeocodingTool() {
                 {applyState.error && (
                   <p
                     role="alert"
-                    className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+                    className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
                   >
                     {applyState.error}
                   </p>

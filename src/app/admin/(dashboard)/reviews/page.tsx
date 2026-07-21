@@ -10,7 +10,7 @@ export const metadata = { title: 'Admin — Reviews', robots: { index: false, fo
 const STATUS_STYLES: Record<string, string> = {
   pending: 'text-signal',
   approved: 'text-signal',
-  rejected: 'text-diesel',
+  rejected: 'text-diesel-300',
   duplicate: 'text-muted',
 };
 
@@ -102,7 +102,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         </p>
       )}
       {(err || error) && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {err ?? `Couldn’t load reviews: ${error}`}
         </p>
       )}
@@ -175,7 +175,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
             name="op"
             value="reject"
             message="Reject all checked reviews?"
-            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
           >
             Bulk reject
           </ConfirmSubmit>
@@ -250,7 +250,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
                           </span>
                         </>
                       ) : (
-                        <span className="text-diesel">listing gone</span>
+                        <span className="text-diesel-300">listing gone</span>
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">
@@ -280,7 +280,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
                             <form action={rejectReviewAction.bind(null, r.id)}>
                               <button
                                 type="submit"
-                                className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+                                className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
                               >
                                 Reject
                               </button>

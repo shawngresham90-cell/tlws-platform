@@ -25,8 +25,11 @@ const config: Config = {
           600: '#2A2A2A',
         },
         diesel: {
-          DEFAULT: '#B91C1C', // plaid red — warnings, secondary accents
+          DEFAULT: '#B91C1C', // plaid red — warnings, secondary accents (borders/fills)
           700: '#991B1B',
+          // Readable red for TEXT on dark surfaces: DEFAULT measures ~2.7:1
+          // there (WCAG AA fail); 300 clears 6:1 on every dark background.
+          300: '#F87171',
         },
         line: '#333333', // hairline dividers
         ink: '#F5F5F5', // primary text on dark

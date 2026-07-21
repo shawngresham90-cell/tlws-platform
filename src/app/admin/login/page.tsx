@@ -27,13 +27,13 @@ export default function AdminLoginPage({
         <p className="mb-6 text-sm text-muted">Trucking Life Academy — staff only.</p>
 
         {!configured && (
-          <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             Admin isn’t configured yet. Set <code>ADMIN_PASSWORD</code> and{' '}
             <code>ADMIN_SESSION_SECRET</code> in the environment.
           </p>
         )}
         {configured && (error === '1' || error === 'notconfigured') && (
-          <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             Incorrect password. Try again.
           </p>
         )}

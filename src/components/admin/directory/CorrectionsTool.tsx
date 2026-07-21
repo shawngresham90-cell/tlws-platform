@@ -62,14 +62,18 @@ export function CorrectionsTool() {
   // Default selection: applicable rows WITHOUT destructive blanking.
   useEffect(() => {
     if (!rows) return;
-    setSelected(new Set(rows.filter((r) => r.applicable && !r.hasBlanking).map((r) => r.listingId)));
+    setSelected(
+      new Set(rows.filter((r) => r.applicable && !r.hasBlanking).map((r) => r.listingId)),
+    );
     setBlankingOk(new Set());
     setConfirming(false);
   }, [rows]);
 
   const applicable = rows?.filter((r) => r.applicable) ?? [];
   const selectedRows = applicable.filter((r) => selected.has(r.listingId));
-  const unconfirmedBlanking = selectedRows.filter((r) => r.hasBlanking && !blankingOk.has(r.listingId));
+  const unconfirmedBlanking = selectedRows.filter(
+    (r) => r.hasBlanking && !blankingOk.has(r.listingId),
+  );
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -117,7 +121,7 @@ export function CorrectionsTool() {
         </dl>
         {applyState.failures.length > 0 && (
           <>
-            <ul className="mt-4 grid gap-1 text-sm text-diesel">
+            <ul className="mt-4 grid gap-1 text-sm text-diesel-300">
               {applyState.failures.slice(0, 20).map((f) => (
                 <li key={f.id}>
                   {f.name}: {f.error}
@@ -150,12 +154,12 @@ export function CorrectionsTool() {
       </form>
 
       {preview.error && (
-        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {preview.error}
         </p>
       )}
       {preview.fileErrors.length > 0 && (
-        <ul className="mt-3 grid gap-1 text-sm text-diesel">
+        <ul className="mt-3 grid gap-1 text-sm text-diesel-300">
           {preview.fileErrors.map((e) => (
             <li key={e}>{e}</li>
           ))}
@@ -166,8 +170,8 @@ export function CorrectionsTool() {
         <>
           <p className="mt-5 text-sm text-muted">
             {rows.length} row{rows.length === 1 ? '' : 's'} · {applicable.length} applicable ·{' '}
-            {selectedRows.length} selected ·{' '}
-            {applicable.filter((r) => r.hasBlanking).length} with destructive blanking
+            {selectedRows.length} selected · {applicable.filter((r) => r.hasBlanking).length} with
+            destructive blanking
           </p>
           <div className="mt-3 grid gap-3">
             {rows.map((r) => (
@@ -192,7 +196,7 @@ export function CorrectionsTool() {
                     </span>
                   </div>
                   {r.hasBlanking && r.applicable && (
-                    <label className="text-xs font-semibold text-diesel">
+                    <label className="text-xs font-semibold text-diesel-300">
                       <input
                         type="checkbox"
                         checked={blankingOk.has(r.listingId)}
@@ -211,7 +215,7 @@ export function CorrectionsTool() {
                   )}
                 </div>
                 {r.problemDetails.length > 0 && (
-                  <p className="mt-2 text-xs text-diesel">{r.problemDetails.join('; ')}</p>
+                  <p className="mt-2 text-xs text-diesel-300">{r.problemDetails.join('; ')}</p>
                 )}
                 {r.changes.length > 0 && (
                   <table className="mt-3 w-full text-xs">
@@ -226,8 +230,12 @@ export function CorrectionsTool() {
                       {r.changes.map((c) => (
                         <tr key={c.column}>
                           <td className="py-1 pr-3 font-semibold text-ink">{c.label}</td>
-                          <td className="max-w-[260px] break-words py-1 pr-3 text-muted">{show(c.from)}</td>
-                          <td className={`max-w-[260px] break-words py-1 ${c.blanking ? 'font-semibold text-diesel' : 'text-ink'}`}>
+                          <td className="max-w-[260px] break-words py-1 pr-3 text-muted">
+                            {show(c.from)}
+                          </td>
+                          <td
+                            className={`max-w-[260px] break-words py-1 ${c.blanking ? 'font-semibold text-diesel-300' : 'text-ink'}`}
+                          >
                             {c.blanking ? '(cleared)' : show(c.to)}
                           </td>
                         </tr>
@@ -249,31 +257,44 @@ export function CorrectionsTool() {
               Continue to confirmation…
             </button>
           ) : (
-            <form action={applyAction} className="mt-4 max-w-2xl rounded-card border border-signal bg-asphalt-800 p-5">
+            <form
+              action={applyAction}
+              className="mt-4 max-w-2xl rounded-card border border-signal bg-asphalt-800 p-5"
+            >
               <h3 className="font-display text-lg uppercase text-ink">Confirm corrections</h3>
               <p className="mt-2 text-sm text-muted">
-                {selectedRows.length} listing{selectedRows.length === 1 ? '' : 's'} will be
-                updated. Only the changed fields shown above are written; a history record is
-                written first for every row.{' '}
-                {selectedRows.filter((r) => r.hasBlanking).length} row
-                {selectedRows.filter((r) => r.hasBlanking).length === 1 ? '' : 's'} blank existing data.
+                {selectedRows.length} listing{selectedRows.length === 1 ? '' : 's'} will be updated.
+                Only the changed fields shown above are written; a history record is written first
+                for every row. {selectedRows.filter((r) => r.hasBlanking).length} row
+                {selectedRows.filter((r) => r.hasBlanking).length === 1 ? '' : 's'} blank existing
+                data.
               </p>
               <input type="hidden" name="csv_text" value={csvText} />
-              <input type="hidden" name="selected" value={JSON.stringify(selectedRows.map((r) => r.listingId))} />
-              <input type="hidden" name="blanking_confirmed" value={JSON.stringify([...blankingOk])} />
+              <input
+                type="hidden"
+                name="selected"
+                value={JSON.stringify(selectedRows.map((r) => r.listingId))}
+              />
+              <input
+                type="hidden"
+                name="blanking_confirmed"
+                value={JSON.stringify([...blankingOk])}
+              />
               <div className="mt-4 flex gap-3">
                 <PendingButton label="Apply selected corrections" pendingLabel="Applying…" />
                 <button type="button" onClick={() => setConfirming(false)} className={smallBtn}>
                   Back
                 </button>
               </div>
-              {applyState.error && <p className="mt-3 text-sm font-medium text-diesel">{applyState.error}</p>}
+              {applyState.error && (
+                <p className="mt-3 text-sm font-medium text-diesel-300">{applyState.error}</p>
+              )}
             </form>
           )}
           {unconfirmedBlanking.length > 0 && !confirming && (
-            <p className="mt-2 text-xs text-diesel">
-              {unconfirmedBlanking.length} selected row{unconfirmedBlanking.length === 1 ? '' : 's'} blank
-              existing data — confirm each first.
+            <p className="mt-2 text-xs text-diesel-300">
+              {unconfirmedBlanking.length} selected row{unconfirmedBlanking.length === 1 ? '' : 's'}{' '}
+              blank existing data — confirm each first.
             </p>
           )}
         </>

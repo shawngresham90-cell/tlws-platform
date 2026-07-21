@@ -47,7 +47,9 @@ const selectClasses =
 const chipClasses = (active: boolean) =>
   `rounded-card border px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none ` +
   `focus:ring-2 focus:ring-signal ${
-    active ? 'border-signal bg-signal text-asphalt' : 'border-line bg-asphalt-800 text-ink hover:border-signal'
+    active
+      ? 'border-signal bg-signal text-asphalt'
+      : 'border-line bg-asphalt-800 text-ink hover:border-signal'
   }`;
 const btnClasses =
   'rounded-card border border-line bg-asphalt-800 px-4 py-2 text-sm font-semibold text-ink ' +
@@ -136,9 +138,7 @@ export function MapExplorer({
   function toggleAmenity(a: string) {
     setFilters((f) => ({
       ...f,
-      amenities: f.amenities.includes(a)
-        ? f.amenities.filter((x) => x !== a)
-        : [...f.amenities, a],
+      amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a],
     }));
   }
   function clearAll() {
@@ -214,7 +214,9 @@ export function MapExplorer({
     setServerDistances(null);
     setFocus(null);
     setOrigin(result.origin);
-    setStatus(`Centered on ${result.matches.length} listing${result.matches.length === 1 ? '' : 's'} matching “${searchText.trim()}”.`);
+    setStatus(
+      `Centered on ${result.matches.length} listing${result.matches.length === 1 ? '' : 's'} matching “${searchText.trim()}”.`,
+    );
   }
 
   function selectFromCard(id: string) {
@@ -355,7 +357,9 @@ export function MapExplorer({
         </div>
 
         <fieldset>
-          <legend className="mb-1.5 text-xs font-semibold text-muted">Parking &amp; amenities</legend>
+          <legend className="mb-1.5 text-xs font-semibold text-muted">
+            Parking &amp; amenities
+          </legend>
           <div className="flex flex-wrap gap-2">
             {PARKING_FILTERS.map((p) => (
               <button
@@ -391,7 +395,7 @@ export function MapExplorer({
       {/* Map */}
       <div className="mt-3">
         {mapFailed ? (
-          <div className="flex h-40 items-center justify-center rounded-card border border-diesel bg-diesel/10 px-4 text-sm text-diesel">
+          <div className="flex h-40 items-center justify-center rounded-card border border-diesel bg-diesel/10 px-4 text-sm text-diesel-300">
             The map failed to load. Every result is still available in the list below.
           </div>
         ) : (
@@ -416,8 +420,8 @@ export function MapExplorer({
         <div className="mt-4 rounded-card border border-line bg-asphalt-800 p-8 text-center">
           <p className="font-semibold text-ink">No mapped locations match these filters.</p>
           <p className="mt-2 text-sm text-muted">
-            Coordinates are loading batch by batch — the rest of the directory is still browsable
-            by list. Try widening the radius or clearing filters.
+            Coordinates are loading batch by batch — the rest of the directory is still browsable by
+            list. Try widening the radius or clearing filters.
           </p>
           <button type="button" onClick={clearAll} className={`${btnClasses} mt-4`}>
             Clear filters

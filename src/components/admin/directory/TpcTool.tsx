@@ -105,7 +105,7 @@ export function TpcTool() {
           ))}
         </dl>
         {applyState.failures.length > 0 && (
-          <ul className="mt-4 grid gap-1 text-sm text-diesel">
+          <ul className="mt-4 grid gap-1 text-sm text-diesel-300">
             {applyState.failures.map((f) => (
               <li key={f.id}>
                 {f.name}: {f.error}
@@ -135,14 +135,15 @@ export function TpcTool() {
       </form>
 
       {preview.error && (
-        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {preview.error}
         </p>
       )}
       {preview.fileErrors.length > 0 && (
         <details className="mt-3 text-sm text-muted">
-          <summary className="cursor-pointer font-semibold text-diesel">
-            {preview.fileErrors.length} row error{preview.fileErrors.length === 1 ? '' : 's'} in the file
+          <summary className="cursor-pointer font-semibold text-diesel-300">
+            {preview.fileErrors.length} row error{preview.fileErrors.length === 1 ? '' : 's'} in the
+            file
           </summary>
           <ul className="mt-2 grid gap-1">
             {preview.fileErrors.map((e) => (
@@ -172,7 +173,10 @@ export function TpcTool() {
               </thead>
               <tbody className="divide-y divide-line">
                 {rows.map((r) => (
-                  <tr key={`${r.listing_id}-${r.action}-${r.proposed_tpc_url}`} className={r.applicable ? '' : 'opacity-60'}>
+                  <tr
+                    key={`${r.listing_id}-${r.action}-${r.proposed_tpc_url}`}
+                    className={r.applicable ? '' : 'opacity-60'}
+                  >
                     <td className="px-3 py-2">
                       {r.applicable ? (
                         <input
@@ -199,7 +203,7 @@ export function TpcTool() {
                     <td className="max-w-[220px] break-all px-3 py-2 text-xs text-ink">
                       {r.nextValue ?? (r.action === 'clear' ? '(cleared)' : '—')}
                       {r.wouldOverwrite && (
-                        <label className="mt-1 block text-diesel">
+                        <label className="mt-1 block text-diesel-300">
                           <input
                             type="checkbox"
                             checked={overwriteOk.has(r.listing_id)}
@@ -217,7 +221,7 @@ export function TpcTool() {
                         </label>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-xs text-diesel">
+                    <td className="px-3 py-2 text-xs text-diesel-300">
                       {r.problemDetails.join('; ') || '—'}
                     </td>
                   </tr>
@@ -236,7 +240,10 @@ export function TpcTool() {
               Continue to confirmation…
             </button>
           ) : (
-            <form action={applyAction} className="mt-4 max-w-2xl rounded-card border border-signal bg-asphalt-800 p-5">
+            <form
+              action={applyAction}
+              className="mt-4 max-w-2xl rounded-card border border-signal bg-asphalt-800 p-5"
+            >
               <h3 className="font-display text-lg uppercase text-ink">Confirm TPC update</h3>
               <p className="mt-2 text-sm text-muted">
                 {selectedRows.length} listing{selectedRows.length === 1 ? '' : 's'} will be updated
@@ -261,14 +268,15 @@ export function TpcTool() {
                 </button>
               </div>
               {applyState.error && (
-                <p className="mt-3 text-sm font-medium text-diesel">{applyState.error}</p>
+                <p className="mt-3 text-sm font-medium text-diesel-300">{applyState.error}</p>
               )}
             </form>
           )}
           {unconfirmedOverwrites.length > 0 && !confirming && (
-            <p className="mt-2 text-xs text-diesel">
-              {unconfirmedOverwrites.length} selected row{unconfirmedOverwrites.length === 1 ? '' : 's'}{' '}
-              would replace an existing URL — tick “Replace existing URL” on each first.
+            <p className="mt-2 text-xs text-diesel-300">
+              {unconfirmedOverwrites.length} selected row
+              {unconfirmedOverwrites.length === 1 ? '' : 's'} would replace an existing URL — tick
+              “Replace existing URL” on each first.
             </p>
           )}
         </>

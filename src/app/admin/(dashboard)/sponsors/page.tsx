@@ -20,7 +20,7 @@ export default async function AdminSponsorsPage() {
       </h1>
 
       {error && (
-        <p className="mb-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn’t load sponsors: {error}
         </p>
       )}

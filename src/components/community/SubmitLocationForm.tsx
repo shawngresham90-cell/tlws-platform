@@ -116,9 +116,7 @@ export function SubmitLocationForm({
   // static HTML. Unknown values leave the default form untouched.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const linked = listings.find(
-      (l) => l.detailSlug && l.detailSlug === params.get('listing'),
-    );
+    const linked = listings.find((l) => l.detailSlug && l.detailSlug === params.get('listing'));
     const kindParam = params.get('kind');
     const linkedKind = (SUBMISSION_KINDS as readonly string[]).includes(kindParam ?? '')
       ? (kindParam as SubmissionKind)
@@ -243,7 +241,7 @@ export function SubmitLocationForm({
 
       <div aria-live="assertive">
         {formError && (
-          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             {formError}
           </p>
         )}
@@ -252,7 +250,7 @@ export function SubmitLocationForm({
       <fieldset>
         <legend className="mb-3 text-sm font-semibold text-ink">
           What are you reporting?
-          <span className="text-diesel" aria-hidden="true">
+          <span className="text-diesel-300" aria-hidden="true">
             {' '}
             *
           </span>

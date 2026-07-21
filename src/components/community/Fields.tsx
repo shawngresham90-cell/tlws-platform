@@ -38,7 +38,7 @@ export function TextAreaField({
       <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
         {label}
         {required && (
-          <span className="text-diesel" aria-hidden="true">
+          <span className="text-diesel-300" aria-hidden="true">
             {' '}
             *
           </span>
@@ -59,7 +59,7 @@ export function TextAreaField({
         className={cn(fieldBase, 'resize-y', error ? 'border-diesel' : 'border-line')}
       />
       {error && (
-        <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel">
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-sm font-medium text-diesel-300">
           {error}
         </p>
       )}

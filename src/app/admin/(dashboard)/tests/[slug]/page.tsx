@@ -49,7 +49,7 @@ export default async function AdminTestBankPage({
       </p>
 
       {error && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn&apos;t load the bank: {error}
         </p>
       )}
@@ -106,7 +106,7 @@ export default async function AdminTestBankPage({
             <p
               className={`mb-4 rounded-card border px-4 py-3 text-sm font-medium ${
                 errMessage
-                  ? 'border-diesel bg-diesel/10 text-diesel'
+                  ? 'border-diesel bg-diesel/10 text-diesel-300'
                   : 'border-signal/50 bg-signal/10 text-signal'
               }`}
             >
@@ -148,7 +148,7 @@ export default async function AdminTestBankPage({
                             {q.correct_key}.
                           </span>{' '}
                           {answerText ?? (
-                            <span className="font-semibold text-diesel">
+                            <span className="font-semibold text-diesel-300">
                               ⚠ key matches no choice
                             </span>
                           )}

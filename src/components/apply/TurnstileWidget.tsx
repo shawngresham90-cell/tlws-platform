@@ -180,7 +180,7 @@ export function TurnstileWidget({
     return (
       <div
         role="alert"
-        className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+        className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
       >
         {CONFIG_ERROR_MESSAGE}
       </div>

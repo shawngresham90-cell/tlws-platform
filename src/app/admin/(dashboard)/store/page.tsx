@@ -38,7 +38,9 @@ export default function AdminStorePage() {
   const Chip = ({ label, n }: { label: string; n: number }) => (
     <span className="rounded-card border border-line px-3 py-1.5 text-sm">
       <span className="text-muted">{label} missing: </span>
-      <span className={n > 0 ? 'font-semibold text-diesel-300' : 'font-semibold text-signal'}>{n}</span>
+      <span className={n > 0 ? 'font-semibold text-diesel-300' : 'font-semibold text-signal'}>
+        {n}
+      </span>
     </span>
   );
 
@@ -49,8 +51,8 @@ export default function AdminStorePage() {
         <p className="mt-1 text-sm text-muted">
           {total} products · <span className="text-signal">{liveCount} live</span> ·{' '}
           {total - liveCount} awaiting verified Amazon data. Associate tag{' '}
-          <code className="text-ink">{AMAZON_ASSOCIATE_TAG}</code>. A product goes live the moment it
-          has a valid ASIN and a confirmed price — no button appears until then. Bulk-fill via{' '}
+          <code className="text-ink">{AMAZON_ASSOCIATE_TAG}</code>. A product goes live the moment
+          it has a valid ASIN and a confirmed price — no button appears until then. Bulk-fill via{' '}
           <code className="text-ink">docs/store/owner-fill-template.csv</code>.
         </p>
       </header>
@@ -91,7 +93,9 @@ export default function AdminStorePage() {
                   <Link href={productHref(p.slug)} className="text-ink hover:text-signal">
                     {p.name}
                   </Link>
-                  <span className="block text-xs text-muted">{storeCategory(p.category)?.title}</span>
+                  <span className="block text-xs text-muted">
+                    {storeCategory(p.category)?.title}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-muted">{productTypeMeta(p.productType).label}</td>
                 <td className="px-4 py-3">
@@ -139,9 +143,9 @@ export default function AdminStorePage() {
       <p className="text-xs text-muted">
         To publish a product: add its verified Amazon ASIN and price (and, if you have them, a
         verified rating + review count and a licensed image) to its entry in{' '}
-        <code className="text-ink">src/lib/store/products.ts</code>, then ship. Never paste a guessed
-        ASIN, price, or rating — an unconfirmed product simply stays in the &quot;Amazon link coming
-        soon&quot; state, which is safe to have live.
+        <code className="text-ink">src/lib/store/products.ts</code>, then ship. Never paste a
+        guessed ASIN, price, or rating — an unconfirmed product simply stays in the &quot;Amazon
+        link coming soon&quot; state, which is safe to have live.
       </p>
     </div>
   );

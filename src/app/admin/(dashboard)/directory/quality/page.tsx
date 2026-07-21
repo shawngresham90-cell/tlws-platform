@@ -8,14 +8,23 @@ import {
   completenessDistribution,
   type CompletenessInput,
 } from '@/lib/directory/completeness';
-import { detectIssues, sortIssues, issuesCsv, type QualityListing, type IssueSeverity } from '@/lib/directory/issues';
+import {
+  detectIssues,
+  sortIssues,
+  issuesCsv,
+  type QualityListing,
+  type IssueSeverity,
+} from '@/lib/directory/issues';
 import { trustStatus, TRUST_LABELS, TRUST_STATUSES, type TrustStatus } from '@/lib/directory/trust';
 import { detailHref } from '@/lib/directory/detail-slug';
 import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { DownloadCsvButton } from '@/components/admin/directory/DownloadCsvButton';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Admin — Directory Quality', robots: { index: false, follow: false } };
+export const metadata = {
+  title: 'Admin — Directory Quality',
+  robots: { index: false, follow: false },
+};
 
 /**
  * Data-quality dashboard (Milestone 21): whole-directory counts, completeness
@@ -126,10 +135,16 @@ export default async function AdminQualityPage({
   const trust = new Map<string, TrustStatus>(
     rows.map((r) => [
       r.id,
-      trustStatus({ verifiedAt: r.verified_at, approvedReviews: aggregates[r.id]?.count ?? 0 }, now),
+      trustStatus(
+        { verifiedAt: r.verified_at, approvedReviews: aggregates[r.id]?.count ?? 0 },
+        now,
+      ),
     ]),
   );
-  const trustCounts = Object.fromEntries(TRUST_STATUSES.map((s) => [s, 0])) as Record<TrustStatus, number>;
+  const trustCounts = Object.fromEntries(TRUST_STATUSES.map((s) => [s, 0])) as Record<
+    TrustStatus,
+    number
+  >;
   for (const status of trust.values()) trustCounts[status] += 1;
 
   const allIssues = sortIssues(detectIssues(quality, now));
@@ -163,18 +178,25 @@ export default async function AdminQualityPage({
       <DirectoryToolsNav />
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="display-section">Directory quality</h1>
-        <DownloadCsvButton csv={issuesCsv(filtered)} filename="directory-quality-issues.csv" label="Export filtered issues CSV" />
+        <DownloadCsvButton
+          csv={issuesCsv(filtered)}
+          filename="directory-quality-issues.csv"
+          label="Export filtered issues CSV"
+        />
       </div>
 
       {error && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn’t load listings: {error}
         </p>
       )}
 
       <dl className="grid gap-3 sm:grid-cols-4">
         {counts.map(([label, n]) => (
-          <div key={label} className="rounded-card border border-line bg-asphalt-800 p-4 text-center">
+          <div
+            key={label}
+            className="rounded-card border border-line bg-asphalt-800 p-4 text-center"
+          >
             <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
             <dd className="mt-1 font-display text-3xl text-ink">{n}</dd>
           </div>
@@ -219,7 +241,12 @@ export default async function AdminQualityPage({
           <label htmlFor="severity" className="mb-1 block text-xs font-semibold text-muted">
             Severity
           </label>
-          <select id="severity" name="severity" defaultValue={severityFilter} className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink">
+          <select
+            id="severity"
+            name="severity"
+            defaultValue={severityFilter}
+            className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink"
+          >
             <option value="">All</option>
             {(['high', 'medium', 'low', 'info'] as const).map((s) => (
               <option key={s} value={s}>
@@ -232,7 +259,12 @@ export default async function AdminQualityPage({
           <label htmlFor="type" className="mb-1 block text-xs font-semibold text-muted">
             Issue type
           </label>
-          <select id="type" name="type" defaultValue={typeFilter} className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink">
+          <select
+            id="type"
+            name="type"
+            defaultValue={typeFilter}
+            className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink"
+          >
             <option value="">All</option>
             {issueTypes.map((t) => (
               <option key={t} value={t}>
@@ -245,7 +277,12 @@ export default async function AdminQualityPage({
           <label htmlFor="trust" className="mb-1 block text-xs font-semibold text-muted">
             Verification
           </label>
-          <select id="trust" name="trust" defaultValue={trustFilter} className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink">
+          <select
+            id="trust"
+            name="trust"
+            defaultValue={trustFilter}
+            className="rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink"
+          >
             <option value="">All</option>
             {TRUST_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -254,11 +291,17 @@ export default async function AdminQualityPage({
             ))}
           </select>
         </div>
-        <button type="submit" className="rounded-card border border-line px-3 py-2 text-xs font-semibold text-ink hover:border-signal hover:text-signal">
+        <button
+          type="submit"
+          className="rounded-card border border-line px-3 py-2 text-xs font-semibold text-ink hover:border-signal hover:text-signal"
+        >
           Apply
         </button>
         {(severityFilter || typeFilter || trustFilter) && (
-          <Link href="/admin/directory/quality" className="py-2 text-xs font-semibold text-muted hover:text-signal">
+          <Link
+            href="/admin/directory/quality"
+            className="py-2 text-xs font-semibold text-muted hover:text-signal"
+          >
             Clear filters
           </Link>
         )}
@@ -266,7 +309,9 @@ export default async function AdminQualityPage({
 
       <p className="mt-4 text-sm text-muted">
         {filtered.length} issue{filtered.length === 1 ? '' : 's'}
-        {filtered.length > TABLE_CAP ? ` — showing the first ${TABLE_CAP}; the CSV export contains all of them` : ''}
+        {filtered.length > TABLE_CAP
+          ? ` — showing the first ${TABLE_CAP}; the CSV export contains all of them`
+          : ''}
       </p>
 
       {filtered.length === 0 ? (
@@ -296,13 +341,15 @@ export default async function AdminQualityPage({
                       {i.category ?? '—'} · {i.city}, {i.state}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-muted">{i.published ? 'Published' : 'Unpublished'}</td>
+                  <td className="px-3 py-2 text-muted">
+                    {i.published ? 'Published' : 'Unpublished'}
+                  </td>
                   <td className="px-3 py-2 font-mono text-xs text-ink">{i.type}</td>
                   <td className="px-3 py-2">
                     <span
                       className={
                         i.severity === 'high'
-                          ? 'font-semibold text-diesel'
+                          ? 'font-semibold text-diesel-300'
                           : i.severity === 'medium'
                             ? 'font-semibold text-signal'
                             : 'text-muted'
@@ -312,9 +359,14 @@ export default async function AdminQualityPage({
                     </span>
                   </td>
                   <td className="max-w-[280px] px-3 py-2 text-xs text-muted">{i.detail}</td>
-                  <td className="max-w-[220px] px-3 py-2 text-xs text-muted">{i.suggestedAction}</td>
+                  <td className="max-w-[220px] px-3 py-2 text-xs text-muted">
+                    {i.suggestedAction}
+                  </td>
                   <td className="whitespace-nowrap px-3 py-2 text-xs">
-                    <Link href={`/admin/directory/${i.listingId}/edit`} className="text-signal hover:underline">
+                    <Link
+                      href={`/admin/directory/${i.listingId}/edit`}
+                      className="text-signal hover:underline"
+                    >
                       Edit
                     </Link>
                     {publishedById.get(i.listingId) && detailSlugById.get(i.listingId) && (

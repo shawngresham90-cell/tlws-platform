@@ -89,7 +89,7 @@ export function ListingForm({
       {state.error && (
         <p
           role="alert"
-          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
         >
           {state.error}
         </p>
@@ -324,13 +324,7 @@ export function ListingForm({
       <Fieldset legend="Amenities">
         <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:grid-cols-3">
           {AMENITIES.map((a) => (
-            <Check
-              key={a}
-              name="amenities"
-              label={a}
-              value={a}
-              defaultChecked={amenities.has(a)}
-            />
+            <Check key={a} name="amenities" label={a} value={a} defaultChecked={amenities.has(a)} />
           ))}
         </div>
       </Fieldset>

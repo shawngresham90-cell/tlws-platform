@@ -120,7 +120,7 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
     >
       <div aria-live="assertive">
         {formError && (
-          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             {formError}
           </p>
         )}

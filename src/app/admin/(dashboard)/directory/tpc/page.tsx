@@ -103,14 +103,17 @@ export default async function AdminTpcPage() {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn’t load listings: {error}
         </p>
       )}
 
       <dl className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map(([label, n]) => (
-          <div key={label} className="rounded-card border border-line bg-asphalt-800 p-4 text-center">
+          <div
+            key={label}
+            className="rounded-card border border-line bg-asphalt-800 p-4 text-center"
+          >
             <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
             <dd className="mt-1 font-display text-3xl text-ink">{n}</dd>
           </div>
@@ -128,7 +131,10 @@ export default async function AdminTpcPage() {
               >
                 <span className="font-semibold text-ink">{w.name}</span>{' '}
                 <span className="text-muted">— {w.detail}</span>{' '}
-                <Link href={`/admin/directory/${w.id}/edit`} className="font-semibold text-signal hover:underline">
+                <Link
+                  href={`/admin/directory/${w.id}/edit`}
+                  className="font-semibold text-signal hover:underline"
+                >
                   Edit →
                 </Link>
               </li>
@@ -142,9 +148,9 @@ export default async function AdminTpcPage() {
           Candidates <span className="text-base text-muted">({candidates.length})</span>
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Listings that likely belong on Truck Parking Club but have no URL yet — TPC-branded
-          names and everything in the parking category. Export, research the real URLs, and
-          upload the corrected file below. <strong className="text-ink">URLs are never guessed.</strong>
+          Listings that likely belong on Truck Parking Club but have no URL yet — TPC-branded names
+          and everything in the parking category. Export, research the real URLs, and upload the
+          corrected file below. <strong className="text-ink">URLs are never guessed.</strong>
         </p>
         {candidates.length === 0 ? (
           <p className="mt-3 rounded-card border border-line bg-asphalt-800 p-5 text-sm text-muted">
@@ -170,9 +176,14 @@ export default async function AdminTpcPage() {
                     <td className="px-3 py-2 text-muted">
                       {c.city}, {c.state}
                     </td>
-                    <td className="px-3 py-2 text-muted">{c.published ? 'Published' : 'Unpublished'}</td>
+                    <td className="px-3 py-2 text-muted">
+                      {c.published ? 'Published' : 'Unpublished'}
+                    </td>
                     <td className="px-3 py-2">
-                      <Link href={`/admin/directory/${c.id}/edit`} className="text-signal hover:underline">
+                      <Link
+                        href={`/admin/directory/${c.id}/edit`}
+                        className="text-signal hover:underline"
+                      >
                         Edit
                       </Link>
                       {c.published && c.detailSlug && (

@@ -224,7 +224,7 @@ export function PlaceCombobox({
       )}
 
       {showNoMatch && (
-        <p className="mt-1 text-xs text-diesel">
+        <p className="mt-1 text-xs text-diesel-300">
           No matches for “{query.trim()}”. Try a city &amp; state, street address, or ZIP.
         </p>
       )}
