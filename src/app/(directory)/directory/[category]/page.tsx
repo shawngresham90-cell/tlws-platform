@@ -10,6 +10,7 @@ import {
   NearbySections,
   RelatedLinks,
   SponsorSlot,
+  GetFeaturedCta,
 } from '@/components/directory';
 import { buildFaqs } from '@/lib/directory/faq';
 import {
@@ -122,11 +123,7 @@ export function generateMetadata({ params }: { params: { category: string } }): 
   });
 }
 
-export default async function DirectoryEnginePage({
-  params,
-}: {
-  params: { category: string };
-}) {
+export default async function DirectoryEnginePage({ params }: { params: { category: string } }) {
   const resolved = resolveSlug(params.category);
   if (!resolved) notFound();
 
@@ -221,6 +218,7 @@ export default async function DirectoryEnginePage({
         />
         <Section>
           <SponsorSlot placement="state" state={state.code} className="mb-8" />
+          <GetFeaturedCta context={state.code} className="mb-8" />
           {entries.some((e) => e.category === 'truck-stops') && (
             <p className="mb-6 text-sm">
               <Link
@@ -292,6 +290,7 @@ export default async function DirectoryEnginePage({
       />
       <Section>
         <SponsorSlot placement="interstate" interstate={interstate.designation} className="mb-8" />
+        <GetFeaturedCta context={interstate.designation} className="mb-8" />
         <p className="mb-6 text-sm">
           <Link
             href={`/directory/${interstate.slug}/truck-parking`}

@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, EntryCard, RelatedLinks, SponsorSlot } from '@/components/directory';
+import {
+  DirectoryHero,
+  EntryCard,
+  GetFeaturedCta,
+  RelatedLinks,
+  SponsorSlot,
+} from '@/components/directory';
 import { stateBySlug, stateByCode } from '@/lib/directory/states';
 import { getEntriesByState, getDirectoryFacets } from '@/lib/directory/data';
 import { getReviewAggregates } from '@/lib/community/data';
@@ -101,6 +107,7 @@ export default async function TopTruckStopsPage({ params }: { params: { category
       />
       <Section>
         <SponsorSlot placement="state" state={state.code} className="mb-8" />
+        <GetFeaturedCta context={`top-${state.code}`} className="mb-8" />
         {ranked.length > 0 ? (
           <>
             <p className="mb-6 max-w-3xl rounded-card border border-line bg-asphalt-800 p-4 text-sm text-muted">
@@ -118,7 +125,10 @@ export default async function TopTruckStopsPage({ params }: { params: { category
         ) : (
           <p className="rounded-card border border-line bg-asphalt-800 p-6 text-muted">
             No truck stops in {state.name} have enough verified detail to rank yet. Meanwhile,{' '}
-            <Link href={`/directory/${state.slug}`} className="text-signal underline-offset-4 hover:underline">
+            <Link
+              href={`/directory/${state.slug}`}
+              className="text-signal underline-offset-4 hover:underline"
+            >
               browse everything in {state.name} →
             </Link>
           </p>
@@ -127,7 +137,10 @@ export default async function TopTruckStopsPage({ params }: { params: { category
           <RelatedLinks groups={stateScopeLinks(state.name, state.code, entries, facets)} />
         </div>
         <p className="mt-10 text-sm text-muted">
-          <Link href={`/directory/${state.slug}`} className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href={`/directory/${state.slug}`}
+            className="text-signal underline-offset-4 hover:underline"
+          >
             All {state.name} listings →
           </Link>{' '}
           ·{' '}

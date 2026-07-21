@@ -23,12 +23,24 @@ const INTEREST_OPTIONS = [
 
 type Errors = Record<string, string>;
 
-export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
+export function SponsorInquiryForm({
+  siteKey,
+  initialInterest = '',
+  context = '',
+}: {
+  siteKey: string;
+  /** Preselects the interest dropdown (from "get featured" deep links). */
+  initialInterest?: string;
+  /** Which surface sent the visitor (e.g. "I-75"); recorded with the inquiry. */
+  context?: string;
+}) {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [interest, setInterest] = useState('');
+  const [interest, setInterest] = useState(
+    INTEREST_OPTIONS.some((o) => o.value === initialInterest) ? initialInterest : '',
+  );
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState('');
@@ -87,7 +99,9 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
           contact_name: contactName.trim() || undefined,
           email: email.trim(),
           phone: phone.trim(),
-          tier_interest: interest || undefined,
+          tier_interest: interest
+            ? `${interest}${context ? ` (${context})` : ''}`.slice(0, 60)
+            : undefined,
           message: message.trim() || undefined,
           turnstileToken: token,
         }),

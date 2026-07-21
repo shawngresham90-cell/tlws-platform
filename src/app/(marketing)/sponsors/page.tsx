@@ -42,8 +42,16 @@ const WAYS = [
   },
 ];
 
-export default function SponsorsPage() {
+export default function SponsorsPage({
+  searchParams,
+}: {
+  searchParams?: { interest?: string; context?: string };
+}) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+  // "Get featured" links on directory surfaces preselect the interest and
+  // carry which surface sent the visitor, so inquiries arrive with context.
+  const initialInterest = searchParams?.interest?.slice(0, 40) ?? '';
+  const context = searchParams?.context?.slice(0, 40) ?? '';
   return (
     <>
       <JsonLd
@@ -111,7 +119,11 @@ export default function SponsorsPage() {
             One short form. Shawn reads every inquiry and replies personally — placements, goals,
             and rates all get sorted in that first conversation.
           </p>
-          <SponsorInquiryForm siteKey={siteKey} />
+          <SponsorInquiryForm
+            siteKey={siteKey}
+            initialInterest={initialInterest}
+            context={context}
+          />
         </div>
       </Section>
     </>

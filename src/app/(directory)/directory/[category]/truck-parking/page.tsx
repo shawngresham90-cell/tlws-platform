@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, EntryCard, RelatedLinks, SponsorSlot } from '@/components/directory';
+import {
+  DirectoryHero,
+  EntryCard,
+  GetFeaturedCta,
+  RelatedLinks,
+  SponsorSlot,
+} from '@/components/directory';
 import { interstateBySlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
 import { getEntriesByInterstate, getDirectoryFacets } from '@/lib/directory/data';
@@ -117,6 +123,7 @@ export default async function InterstateParkingPage({ params }: { params: { cate
       />
       <Section>
         <SponsorSlot placement="parking" interstate={interstate.designation} className="mb-8" />
+        <GetFeaturedCta context={`parking-${interstate.designation}`} className="mb-8" />
         {parking.length > 0 ? (
           <>
             {(typeCounts.length > 0 || withSpaces > 0) && (
@@ -168,14 +175,22 @@ export default async function InterstateParkingPage({ params }: { params: { cate
         ) : (
           <p className="rounded-card border border-line bg-asphalt-800 p-6 text-muted">
             No verified {interstate.designation} parking yet. Browse{' '}
-            <Link href={`/directory/${interstate.slug}`} className="text-signal underline-offset-4 hover:underline">
+            <Link
+              href={`/directory/${interstate.slug}`}
+              className="text-signal underline-offset-4 hover:underline"
+            >
               the whole {interstate.designation} corridor →
             </Link>
           </p>
         )}
         <div className="mt-6">
           <RelatedLinks
-            groups={interstateScopeLinks(interstate.designation, interstate.stateOrder, entries, facets)}
+            groups={interstateScopeLinks(
+              interstate.designation,
+              interstate.stateOrder,
+              entries,
+              facets,
+            )}
           />
         </div>
         <p className="mt-10 text-sm text-muted">
@@ -183,7 +198,10 @@ export default async function InterstateParkingPage({ params }: { params: { cate
             View parking on the map →
           </Link>{' '}
           ·{' '}
-          <Link href="/directory/parking" className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href="/directory/parking"
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Reservable paid parking →
           </Link>
         </p>
