@@ -159,6 +159,7 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
         />
         <Section>
           <DirectoryBrowser categoryTitle={category.title} entries={entries} />
+          <GetFeaturedCta context={category.slug} className="mt-8" />
           <RelatedLinks groups={categoryScopeLinks(facets)} />
           <p className="mt-10 text-sm text-muted">
             <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">

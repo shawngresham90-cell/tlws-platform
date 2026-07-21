@@ -4,7 +4,7 @@ import { DirectoryBrowser } from '@/components/directory';
 import { getEntries } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { getDirectoryFacets } from '@/lib/directory/data';
-import { RelatedLinks } from '@/components/directory';
+import { GetFeaturedCta, RelatedLinks } from '@/components/directory';
 import { categoryScopeLinks } from '@/lib/directory/scope-links';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -75,7 +75,11 @@ const PARKING_TYPES: ParkingType[] = [
 
 export default async function TruckParkingPage() {
   const [entries, facets] = await Promise.all([getEntries('parking'), getDirectoryFacets()]);
-  const listings = await listingListSchemaWithReviews(entries, 'Truck Parking', '/directory/parking');
+  const listings = await listingListSchemaWithReviews(
+    entries,
+    'Truck Parking',
+    '/directory/parking',
+  );
 
   return (
     <>
@@ -98,16 +102,19 @@ export default async function TruckParkingPage() {
           <p className="mt-4 text-muted">
             This directory covers it all — <strong className="text-ink">free parking</strong> when
             you can get it, and <strong className="text-ink">paid or reserved parking</strong> when
-            a guaranteed spot beats an hour of hunting. Truck stops, rest areas, safe locations,
-            and spots called in by drivers who run these lanes.
+            a guaranteed spot beats an hour of hunting. Truck stops, rest areas, safe locations, and
+            spots called in by drivers who run these lanes.
           </p>
           <p className="mt-3 text-sm text-muted">
             This is the foundation page — the full searchable parking map and database are being
-            built on top of it. What’s here now: the categories we cover and the fastest way to
-            lock in a reserved spot tonight.
+            built on top of it. What’s here now: the categories we cover and the fastest way to lock
+            in a reserved spot tonight.
           </p>
           <p className="mt-3 text-sm">
-            <Link href="/directory/map" className="font-semibold text-signal underline-offset-4 hover:underline">
+            <Link
+              href="/directory/map"
+              className="font-semibold text-signal underline-offset-4 hover:underline"
+            >
               🗺️ View on map →
             </Link>
           </p>
@@ -197,6 +204,7 @@ export default async function TruckParkingPage() {
             Browse the directory →
           </Link>
         </div>
+        <GetFeaturedCta context="parking" className="mt-8" />
         <RelatedLinks groups={categoryScopeLinks(facets)} />
       </Section>
     </>
