@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
+import { MobileMenu } from './MobileMenu';
 
 /** Full nav map. Every entry must resolve to a live route. */
 const NAV = [
@@ -54,8 +55,9 @@ export function Header() {
           Apply
         </Link>
 
-        {/* Mobile menu — pure CSS disclosure */}
-        <details className="relative xl:hidden">
+        {/* Mobile menu — native disclosure; MobileMenu adds close-on-navigate
+            and Escape handling as progressive enhancement */}
+        <MobileMenu>
           <summary
             className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-card border border-line text-ink [&::-webkit-details-marker]:hidden"
             aria-label="Menu"
@@ -88,7 +90,7 @@ export function Header() {
               </Link>
             ))}
           </nav>
-        </details>
+        </MobileMenu>
       </Container>
     </header>
   );

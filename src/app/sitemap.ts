@@ -68,6 +68,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // Top-level destinations that predate no sitemap entry: books, apps, the
+  // trip planner, the sponsor front door, and THE ROAD AHEAD experience.
+  for (const [path, priority] of [
+    ['/books', 0.8],
+    ['/apps', 0.6],
+    ['/trip-planner', 0.8],
+    ['/sponsors', 0.6],
+    ['/road-ahead', 0.7],
+  ] as const) {
+    entries.push({
+      url: `${SITE.url}${path}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority,
+    });
+  }
+
   // Trucking Life Store — hub, every category, and every product. Placeholder
   // products are still crawlable content pages (no active affiliate link until
   // an ASIN is confirmed), so they belong in the sitemap.
