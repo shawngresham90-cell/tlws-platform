@@ -8,7 +8,7 @@ import { SITE } from '@/lib/seo/site';
 export const metadata = buildMetadata({
   title: 'Books by Shawn Gresham — The Trucker Bookstore | Trucking Life with Shawn',
   description:
-    'Books written by a CDL driver with 17 years on the road and zero violations: The Trucker’s Carnivore Cookbook, DOT Survival Guide, and Discipline Over Everything. Available on Amazon.',
+    'Books written by a CDL driver with 17 years on the road and zero violations: The Trucker’s Carnivore Cookbook, The DOT Survival Guide, Defensive Driving For Truck Drivers, and Discipline Over Everything. Available on Amazon.',
   path: '/books',
   image: '/covers/truckers-carnivore-cookbook.jpg',
 });
@@ -24,6 +24,8 @@ type Book = {
   whoFor: string;
   learn: string[];
   href: string;
+  /** ISBN-13 when known — emitted in the Book schema for SEO. */
+  isbn?: string;
   /** Path under /public — only set when the real cover exists. */
   cover?: { src: string; width: number; height: number };
 };
@@ -43,11 +45,12 @@ const BOOKS: Book[] = [
       'The exact eating approach behind 93 pounds lost from the driver’s seat',
     ],
     href: 'https://a.co/d/03cOB4V3',
+    isbn: '9798284810675',
     cover: { src: '/covers/truckers-carnivore-cookbook.jpg', width: 297, height: 445 },
   },
   {
     slug: 'dot-survival-guide',
-    title: 'DOT Survival Guide',
+    title: 'The DOT Survival Guide',
     description:
       'Inspections, audits, and shutdowns — the playbook for staying legal when the DOT comes knocking. Written from 17 years of clean inspections, not from a lawyer’s desk.',
     whoFor:
@@ -58,6 +61,22 @@ const BOOKS: Book[] = [
       'The habits behind 17 years with zero violations',
     ],
     href: `https://www.amazon.com/DOT-Survival-Guide-Truckers-Shutdowns/dp/B0FDL26V8Q?tag=${AMZN_TAG}`,
+    isbn: '9798288489280',
+  },
+  {
+    slug: 'defensive-driving-for-truck-drivers',
+    title: 'Defensive Driving For Truck Drivers',
+    description:
+      'The habits, scanning patterns, and space-management rules that keep a big truck out of trouble — from a CDL instructor with 17 years and zero violations. Defensive driving is the skill that keeps every other part of this career alive.',
+    whoFor:
+      'New CDL holders building safe habits from day one, and veterans who want a sharp refresher on the discipline that keeps a record clean — because one preventable accident can undo years of work.',
+    learn: [
+      'Space management, scanning, and following-distance habits that prevent accidents',
+      'How to handle four-wheelers, weather, work zones, and heavy traffic in a big truck',
+      'The defensive mindset behind 17 years with zero violations',
+    ],
+    href: `https://www.amazon.com/Defensive-Driving-Truck-Drivers-Gresham/dp/B0FHQPQ3QR?tag=${AMZN_TAG}`,
+    isbn: '9798292659631',
   },
   {
     slug: 'discipline-over-everything',
@@ -205,6 +224,7 @@ function bookSchema(book: Book) {
     author: { '@type': 'Person', name: SITE.founder.name },
     url: `${SITE.url}/books#${book.slug}`,
     ...(book.cover ? { image: `${SITE.url}${book.cover.src}` } : {}),
+    ...(book.isbn ? { isbn: book.isbn } : {}),
     bookFormat: 'https://schema.org/Paperback',
     inLanguage: 'en',
     audience: { '@type': 'Audience', audienceType: 'Truck drivers' },
