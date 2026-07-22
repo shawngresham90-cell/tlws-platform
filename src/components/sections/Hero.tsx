@@ -1,10 +1,15 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
 
 /**
- * Hero — the thesis (blueprint §4 S1). Leads with the one thing that can't be
- * faked — a driver's clean record — and routes to the school. CTA hierarchy:
- * ONE amber action (the school application), one outlined learn-more. Every
- * other path lives one scroll down in the Four Doors.
+ * Hero — THE CALL (cinematic flow beat 1). Leads with the one thing that
+ * can't be faked — a driver's clean record — and routes to the school.
+ * CTA hierarchy: ONE amber action (the school application), one outlined
+ * learn-more. Every other path lives one scroll down in the Four Doors.
+ *
+ * Type-led by design until real founder photography exists (see
+ * docs/design/owner-assets-needed.md) — no stock people, no AI people.
+ * Atmosphere comes from a restrained sodium light wash, film grain, and a
+ * verified proof-label row: documentary confidence, not decoration.
  *
  * No opening date is displayed until the owner confirms one — honest copy
  * over hype, per the design blueprint's own rule.
@@ -13,9 +18,24 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="border-b border-line bg-asphalt py-20 sm:py-28"
+      className="relative overflow-hidden border-b border-line bg-asphalt py-20 sm:py-28"
     >
-      <Container>
+      {/* Sodium light wash — ambient, top-right, like a yard lamp off-frame.
+          Decorative layers sit above the section background and below the
+          relatively-positioned content (negative z-index would paint them
+          behind the section's own background and hide them entirely). */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(110% 90% at 82% -10%, rgba(245,166,35,0.09) 0%, rgba(245,166,35,0) 55%), linear-gradient(180deg, #1A1A1C 0%, #141414 72%)',
+        }}
+      />
+      <div aria-hidden="true" className="film-grain absolute inset-0" />
+
+      {/* The one hero-level motion moment; killed under reduced motion */}
+      <Container className="relative motion-safe:animate-fade-up">
         <Eyebrow>Trucking Life · Dalton, GA · off I-75</Eyebrow>
         <h1 id="hero-heading" className="display-hero max-w-4xl">
           17 years. Zero violations.{' '}
@@ -32,6 +52,13 @@ export function Hero() {
             Explore Free Training
           </Button>
         </div>
+
+        {/* Documentary byline — the one verified credential the hero doesn't
+            already state (the headline owns 17 years / zero violations, the
+            eyebrow owns Dalton). Repetition is trailer filler, not proof. */}
+        <p className="doc-caption mt-12 max-w-3xl border-t border-line pt-5">
+          CDL instructor &amp; driver trainer
+        </p>
       </Container>
     </section>
   );

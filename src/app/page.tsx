@@ -1,5 +1,6 @@
 import { Hero } from '@/components/sections/Hero';
 import { ProofBar } from '@/components/sections/ProofBar';
+import { JourneyStrip } from '@/components/sections/JourneyStrip';
 import { RoadAheadTeaser } from '@/components/sections/RoadAheadTeaser';
 import { ShirtHero } from '@/components/sections/ShirtHero';
 import { FourPaths } from '@/components/sections/FourPaths';
@@ -14,45 +15,79 @@ import { TruckParking } from '@/components/sections/TruckParking';
 import { FoundersWall } from '@/components/sections/FoundersWall';
 import { Sponsors } from '@/components/sections/Sponsors';
 import { Newsletter } from '@/components/sections/Newsletter';
+import { Reveal } from '@/components/motion/Reveal';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 export const metadata = buildMetadata({ path: '/' });
 
 /**
- * Homepage order follows the design blueprint (§4): thesis → proof → the four
- * doors → the story → free value + email capture → gear & books → mission
- * momentum. LatestArticles (placeholder data) is intentionally not rendered —
- * a homepage never shows a dead end.
+ * Homepage story flow (docs/design/homepage-story-framework.md):
+ * THE CALL → THE PROOF → THE FOUR DOORS → THE JOURNEY → THE TOOLS →
+ * THE ACADEMY → THE MOVEMENT → THE TRUST CLOSE (footer). Every section has a
+ * live destination and verified data; LatestArticles (placeholder data) stays
+ * unrendered. <Reveal> adds the one scroll-entrance treatment — below-fold
+ * only, reduced-motion exempt, content always visible without JS.
  */
 export default function HomePage() {
   return (
     <>
       <JsonLd schema={breadcrumbSchema([{ name: 'Home', path: '/' }])} />
-      {/* S1 — the thesis */}
+      {/* 1 — THE CALL */}
       <Hero />
-      {/* S2 — live proof (real numbers only) */}
+      {/* 2 — THE PROOF (real numbers only) */}
       <ProofBar />
-      {/* S3 — the four doors */}
-      <FourPaths />
-      {/* S4 — the story */}
-      <RoadAheadTeaser />
-      {/* School promise */}
-      <Academy />
-      {/* S5 — free value + email capture */}
-      <KnowledgeCenter />
-      <FeaturedTest />
-      <Newsletter />
-      {/* S6 — gear & books */}
-      <Books />
-      <Apps />
-      <Store />
-      <TruckParking />
-      {/* S7 — mission momentum */}
-      <FeaturedVideos />
-      <ShirtHero />
-      <FoundersWall />
-      <Sponsors />
+      {/* 3 — THE FOUR DOORS */}
+      <Reveal>
+        <FourPaths />
+      </Reveal>
+      {/* 4 — THE JOURNEY: drove it, taught it, building it */}
+      <Reveal>
+        <JourneyStrip />
+      </Reveal>
+      {/* 5 — THE TOOLS: free value first, then gear that earns its keep */}
+      <Reveal>
+        <KnowledgeCenter />
+      </Reveal>
+      <Reveal>
+        <FeaturedTest />
+      </Reveal>
+      <Reveal>
+        <Apps />
+      </Reveal>
+      <Reveal>
+        <TruckParking />
+      </Reveal>
+      <Reveal>
+        <Books />
+      </Reveal>
+      <Reveal>
+        <Store />
+      </Reveal>
+      {/* 6 — THE ACADEMY bridge + stay close */}
+      <Reveal>
+        <Academy />
+      </Reveal>
+      <Reveal>
+        <Newsletter />
+      </Reveal>
+      {/* 7 — THE MOVEMENT: the drive, the channel, the founders, the shirt */}
+      <Reveal>
+        <RoadAheadTeaser />
+      </Reveal>
+      <Reveal>
+        <FeaturedVideos />
+      </Reveal>
+      <Reveal>
+        <FoundersWall />
+      </Reveal>
+      <Reveal>
+        <ShirtHero />
+      </Reveal>
+      {/* 8 — THE TRUST CLOSE: partners, then the footer's identity block */}
+      <Reveal>
+        <Sponsors />
+      </Reveal>
     </>
   );
 }
