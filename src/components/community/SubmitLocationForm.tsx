@@ -487,7 +487,7 @@ export function SubmitLocationForm({
           value={submitterContact}
           onChange={set(setSubmitterContact, 'submitter_contact')}
           autoComplete="email"
-          placeholder="In case we have a question"
+          placeholder="So we can follow up — no automated texts"
         />
       </div>
 

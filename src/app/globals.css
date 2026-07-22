@@ -72,6 +72,25 @@
   .doc-caption {
     @apply text-[11px] font-semibold uppercase tracking-wider text-muted;
   }
+  /* Readable prose for the static legal pages (Privacy Policy, SMS Terms). */
+  .legal-prose h2 {
+    @apply mt-10 font-display text-xl uppercase text-ink;
+  }
+  .legal-prose h3 {
+    @apply mt-6 text-base font-semibold text-ink;
+  }
+  .legal-prose p {
+    @apply mt-4 leading-relaxed text-muted;
+  }
+  .legal-prose ul {
+    @apply mt-4 list-disc space-y-2 pl-6 text-muted;
+  }
+  .legal-prose a {
+    @apply text-signal underline underline-offset-4 hover:text-signal-600;
+  }
+  .legal-prose strong {
+    @apply font-semibold text-ink;
+  }
   /* Film grain — SVG data-URI (zero network requests), decorative only.
      Apply to an absolutely-positioned aria-hidden div; opacity stays ≤ .06
      so text contrast is never affected. */

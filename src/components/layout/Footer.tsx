@@ -106,6 +106,14 @@ export function Footer() {
           As an Amazon Associate, Trucking Life earns from qualifying purchases made through store
           links. Sponsorship never changes directory rankings. Keep the shiny side up. 🚛
         </p>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+          <Link href="/privacy" className="text-muted hover:text-signal">
+            Privacy Policy
+          </Link>
+          <Link href="/sms-terms" className="text-muted hover:text-signal">
+            SMS Terms &amp; Conditions
+          </Link>
+        </p>
       </Container>
     </footer>
   );

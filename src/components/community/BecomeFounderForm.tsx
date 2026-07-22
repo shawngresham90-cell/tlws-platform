@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui';
-import { TextField, SelectField } from '@/components/apply/Fields';
+import { TextField, SelectField, CheckboxField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { FOUNDER_TIERS } from './tiers';
+
+// Stored as leads.sms_consent when checked (opt-in only, unchecked by default).
+const SMS_CONSENT_TEXT =
+  'I agree to receive text messages from Trucking Life Academy about founding the school. ' +
+  'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. ' +
+  'Consent is not a condition.';
 
 /**
  * "Become a founder" interest capture. No payment is processed here (payments
@@ -24,6 +31,7 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
   const [tier, setTier] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState('');
@@ -70,6 +78,7 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
           email: email.trim(),
           first_name: firstName.trim(),
           phone: phone.trim(),
+          sms_consent: smsConsent,
           source: 'founder',
           utm: tier ? { founder_tier: tier } : {},
           turnstileToken: token,
@@ -157,6 +166,26 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
           options={TIER_OPTIONS}
           placeholder="No preference yet"
         />
+      </div>
+
+      {/* Optional SMS opt-in — only texts you if you check it (TCPA/10DLC). */}
+      <div className="mt-5">
+        <CheckboxField
+          id="founder_sms_consent"
+          label="SMS consent"
+          checked={smsConsent}
+          onChange={setSmsConsent}
+        >
+          {SMS_CONSENT_TEXT} See our{' '}
+          <Link href="/sms-terms" target="_blank" className="text-signal underline">
+            SMS Terms
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" target="_blank" className="text-signal underline">
+            Privacy Policy
+          </Link>
+          .
+        </CheckboxField>
       </div>
 
       <div className="mt-6">
