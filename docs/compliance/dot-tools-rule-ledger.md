@@ -217,11 +217,11 @@ BLOCKED 8 = 89.
 
 ## Unresolved source requirements
 
-1. **CVSA Out-of-Service Criteria** — controlled/paid publication; owner must
-   obtain the current edition (or an authorized summary) before any CVSA-gated
-   row can verify. Alternative: soften all CVSA-numeric claims to non-numeric
-   language ("officers apply CVSA out-of-service criteria — measured
-   thresholds apply") and drop the numbers. OWNER TO DECIDE (D-9).
+1. **CVSA Out-of-Service Criteria** — RESOLVED (owner Decision 11,
+   July 22, 2026): **reference-only**. CVSA-gated rows verify to softened
+   non-numeric language; CFR-anchored numbers unaffected. Memo:
+   `dot-tools-verification/cvsa-licensing-memo.md` (includes the upgrade
+   path if access/permission is later obtained).
 2. **FMCSA SMS Methodology current appendix** — public but versioned; the
    click-through must stamp the version/date used.
 3. **FMCSA PC guidance (2018-05-31)** and yard-move guidance — locate the
