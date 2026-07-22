@@ -62,6 +62,35 @@
   .lift {
     @apply transition-transform duration-150 motion-safe:hover:-translate-y-0.5;
   }
+  /* Documentary caption — the small verified-fact voice on cinematic
+     surfaces. Every line it carries must be a verified fact, never hype. */
+  .doc-caption {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted;
+  }
+  /* Film grain — SVG data-URI (zero network requests), decorative only.
+     Apply to an absolutely-positioned aria-hidden div; opacity stays ≤ .06
+     so text contrast is never affected. */
+  .film-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+    opacity: 0.05;
+    pointer-events: none;
+  }
+  /* Section reveal (cinematic motion rules): opacity/transform only — no
+     layout shift — 220ms, applied by JS only to below-fold elements. SSR
+     output carries no data-reveal attribute, so content is always visible
+     without JS and under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal] {
+      transition:
+        opacity 220ms ease-out,
+        transform 220ms ease-out;
+    }
+    [data-reveal='pending'] {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
   /* Respect reduced motion — quality floor, not announced */
   @media (prefers-reduced-motion: reduce) {
     html {

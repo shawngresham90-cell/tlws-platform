@@ -193,6 +193,7 @@ export default async function AcademyPage() {
       />
 
       <PageHero
+        cinematic
         crumbs={[{ name: 'Home', href: '/' }, { name: 'Academy' }]}
         eyebrow="Trucking Life Academy · Dalton, GA · off I-75"
         title="The CDL-A school built by a driver,"
