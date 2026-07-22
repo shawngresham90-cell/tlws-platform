@@ -1,4 +1,5 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
+import { HeroShirtPromo } from './HeroShirtPromo';
 
 /**
  * Hero — THE CALL (cinematic flow beat 1). Leads with the one thing that
@@ -34,31 +35,42 @@ export function Hero() {
       />
       <div aria-hidden="true" className="film-grain absolute inset-0" />
 
-      {/* The one hero-level motion moment; killed under reduced motion */}
+      {/* The one hero-level motion moment; killed under reduced motion.
+          Grid (xl+) keeps the hero copy in column one and lifts the
+          temporary shirt placard into the upper-right column — no overlap,
+          no layout push. Below xl the placard stacks under the hero content
+          so it never crowds the primary CDL School CTA. */}
       <Container className="relative motion-safe:animate-fade-up">
-        <Eyebrow>Trucking Life · Dalton, GA · off I-75</Eyebrow>
-        <h1 id="hero-heading" className="display-hero max-w-4xl">
-          17 years. Zero violations.{' '}
-          <span className="text-signal">Now I&apos;m training the next generation.</span>
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg text-muted">
-          A CDL school in Dalton, GA — built by a driver, funded by drivers, no games.
-          ELDT-compliant CDL-A training on real trucks and real road, plus free tools for every
-          driver already out there running.
-        </p>
-        <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Button href="/academy/apply">Apply to the Academy</Button>
-          <Button variant="secondary" href="/knowledge">
-            Explore Free Training
-          </Button>
-        </div>
+        <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_19rem] xl:items-start xl:gap-10">
+          <div>
+            <Eyebrow>Trucking Life · Dalton, GA · off I-75</Eyebrow>
+            <h1 id="hero-heading" className="display-hero max-w-4xl">
+              17 years. Zero violations.{' '}
+              <span className="text-signal">Now I&apos;m training the next generation.</span>
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg text-muted">
+              A CDL school in Dalton, GA — built by a driver, funded by drivers, no games.
+              ELDT-compliant CDL-A training on real trucks and real road, plus free tools for every
+              driver already out there running.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button href="/academy/apply">Apply to the Academy</Button>
+              <Button variant="secondary" href="/knowledge">
+                Explore Free Training
+              </Button>
+            </div>
 
-        {/* Documentary byline — the one verified credential the hero doesn't
-            already state (the headline owns 17 years / zero violations, the
-            eyebrow owns Dalton). Repetition is trailer filler, not proof. */}
-        <p className="doc-caption mt-12 max-w-3xl border-t border-line pt-5">
-          CDL instructor &amp; driver trainer
-        </p>
+            {/* Documentary byline — the one verified credential the hero doesn't
+                already state (the headline owns 17 years / zero violations, the
+                eyebrow owns Dalton). Repetition is trailer filler, not proof. */}
+            <p className="doc-caption mt-12 max-w-3xl border-t border-line pt-5">
+              CDL instructor &amp; driver trainer
+            </p>
+          </div>
+
+          {/* TEMPORARY launch merchandising — remove when the shirt sells out */}
+          <HeroShirtPromo className="mt-10 xl:mt-0 xl:justify-self-end" />
+        </div>
       </Container>
     </section>
   );
