@@ -26,6 +26,8 @@ export type DirectoryListing = {
   exitNumber: string | null;
   parkingSpaces: number | null;
   overnightParking: boolean | null;
+  freeParking: boolean | null;
+  paidParking: boolean | null;
   reservationUrl: string | null;
   amenities: string[] | null;
   fuelBrands: string[] | null;
@@ -79,6 +81,8 @@ export function toStopCandidates(
       offRouteMiles: projected.offRouteMiles,
       parkingSpaces: l.parkingSpaces,
       overnightParking: l.overnightParking ?? false,
+      freeParking: l.freeParking,
+      paidParking: l.paidParking,
       reservationUrl: l.reservationUrl,
       amenities: (l.amenities ?? []).map((a) => a.toLowerCase()),
       fuelBrands: (l.fuelBrands ?? []).map((b) => b.toLowerCase()),

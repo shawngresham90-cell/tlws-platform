@@ -404,6 +404,8 @@ const mkListing = (over: Partial<DirectoryListing>): DirectoryListing => ({
   exitNumber: null,
   parkingSpaces: 60,
   overnightParking: true,
+  freeParking: null,
+  paidParking: null,
   reservationUrl: null,
   amenities: ['fuel', 'showers', 'food', 'restrooms'],
   fuelBrands: ["love's"],

@@ -72,9 +72,17 @@ dispatcher.
 
 ## 5. Implementation sequence (each PR flag-gated, independently rollback-able)
 
-- **PR 1 (this PR — docs only):** this file + partner/attribution audit
+- **PR 1 (merged — docs only):** this file + partner/attribution audit
   (`docs/partners/truck-parking-club.md`) + HOS verification record
   (`docs/compliance/hos-verification.md`).
+- **Phase 1 (owner-approved, promo-code MVP):** with the SHAWN20 revenue
+  model confirmed ($20/first-time user) and negotiations ongoing, the
+  owner authorized shipping the reservable band as promo-code link-out —
+  collapsing the original PR 2–4 into one flag-killable PR. Implemented:
+  loader parking flags, `last-stop.ts` selection (fail-closed reachability
+  filter), `TpcReserveBand`, tracked directory CTA, `tpc_*` analytics.
+  URL-parameter attribution, availability, pricing, and deep links remain
+  gated on §4 of the partner doc exactly as below.
 - **PR 2 — loader gap + attribution adapter (dormant):** loader selects
   free/paid/reserved + `verified_at`; `ParkingPort` seam + Tier-A
   attribution decoration (server env); disclosure constants; flag

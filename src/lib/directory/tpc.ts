@@ -14,9 +14,25 @@ import { parseCsv, toCsv, safeCsvCell } from './csv';
 /** The only hosts a TPC affiliate link may point at. Everything else is rejected. */
 export const TPC_ALLOWED_HOSTS = ['truckparkingclub.com', 'www.truckparkingclub.com'] as const;
 
-export type TpcUrlResult =
-  | { ok: true; normalized: string }
-  | { ok: false; reason: string };
+/* ------------------------------------------------------- partner constants */
+/* Phase 1 revenue model (owner-confirmed, July 2026): first-time TPC users
+ * who book with promo code SHAWN20 generate $20 for TLWS. Link-out only —
+ * no API, no availability, no pricing until the partner supplies them.
+ * Centralized here the way lib/store/amazon.ts centralizes the Amazon
+ * program, so every surface renders the same code, name, and disclosure. */
+
+export const TPC_PARTNER_NAME = 'Truck Parking Club';
+export const TPC_PROMO_CODE = 'SHAWN20';
+export const TPC_HOME_URL = 'https://truckparkingclub.com';
+/** Material-connection disclosure — shown on every surface with a Reserve CTA. */
+export const TPC_DISCLOSURE =
+  'Trucking Life earns a commission when first-time Truck Parking Club users book with ' +
+  'promo code SHAWN20. Partnerships never change organic rankings.';
+/** Honesty line for partner cards: we hold no availability or pricing data. */
+export const TPC_AVAILABILITY_NOTE = 'Availability and pricing are set by Truck Parking Club.';
+export const TPC_REL = 'sponsored noopener noreferrer';
+
+export type TpcUrlResult = { ok: true; normalized: string } | { ok: false; reason: string };
 
 /**
  * Validate + normalize a Truck Parking Club URL.
@@ -78,7 +94,10 @@ export type TpcListingRef = {
 };
 
 const normalize = (s: string | null | undefined) =>
-  (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  (s ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
 /** Categories where a reservation link makes sense. */
 export const TPC_RELEVANT_CATEGORIES = new Set(['parking', 'truck-stops', 'hotels-truck-parking']);

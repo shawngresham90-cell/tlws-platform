@@ -9,10 +9,14 @@ availability, or attribution that is not confirmed below.
 
 - Truck Parking Club (TPC) is an **active TLWS revenue partner** (owner
   directive, July 2026) and the Trip Planner's MVP reservable-parking
-  partner.
-- Intended affiliate code: **SHAWN20** (Trip Planner Blueprint §22). The
-  *mechanism* by which SHAWN20 attributes revenue is NOT yet confirmed —
-  see §4.
+  partner. Negotiations continue; **Phase 1 (promo-code link-out) is
+  owner-approved** and does not wait on the final agreement.
+- **Confirmed revenue model (owner, July 2026): first-time TPC users who
+  book with promo code SHAWN20 generate $20 for TLWS.** Phase 1 therefore
+  displays the code prominently and links out — no URL-parameter
+  attribution is wired until TPC confirms one (§4 item 2).
+- Phase 1 kill switch: `NEXT_PUBLIC_TPC_PLANNER_ENABLED=false` removes the
+  planner band; constants live in `src/lib/directory/tpc.ts`.
 - Contacts (Blueprint §22/§26): **Michael Lombard** (existing partner
   contact) · **Colin Schlick** (API credentials — pending since a prior
   project's Epic 2; not MVP-blocking, Phase-2-blocking).

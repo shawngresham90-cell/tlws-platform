@@ -3,6 +3,7 @@ import { freshClockState, remainingClocks, validateClockState } from './hos-engi
 import { planTrip } from './optimizer';
 import { estimateRoute } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
+import { selectLastStops, type LastStopResult } from './last-stop';
 import { estimateTripCost } from './cost-engine';
 import {
   DEFAULT_PLANNER_OPTIONS,
@@ -190,6 +191,8 @@ export type QuoteResult = {
     instructions?: string[];
   };
   remainingAtDeparture: RemainingClocks;
+  /** Named Last Stop slots (reservable/free) — see lib/trip-planner/last-stop. */
+  lastStop: LastStopResult;
   itinerary: Itinerary;
   cost: TripCostEstimate;
   fuelPrice: FuelPriceResult | null;
@@ -340,6 +343,18 @@ export async function composeQuote(
     driverPayPerMileCents: 0,
   });
 
+  const remainingAtDeparture = remainingClocks(clocks);
+
+  // Last Stop slots — pure selection layered over the organic itinerary.
+  // Reachability (arrival inside clocks minus buffer) is a hard filter here;
+  // the organic ranking above is never touched by these slots.
+  const lastStop = selectLastStops({
+    route: routeData.route,
+    candidates,
+    clocks: remainingAtDeparture,
+    departAtMs: input.departAtMs,
+  });
+
   return {
     ok: true,
     routeSummary: {
@@ -349,7 +364,8 @@ export async function composeQuote(
       method: routeData.method,
       instructions: routeData.instructions,
     },
-    remainingAtDeparture: remainingClocks(clocks),
+    remainingAtDeparture,
+    lastStop,
     itinerary,
     cost,
     fuelPrice,

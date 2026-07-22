@@ -26,6 +26,8 @@ type PlannerRow = {
   exit_number: string | null;
   parking_spaces: number | null;
   overnight_parking: boolean | null;
+  free_parking: boolean | null;
+  paid_parking: boolean | null;
   tpc_url: string | null;
   amenities: unknown;
   fuel_brands: unknown;
@@ -35,7 +37,8 @@ type PlannerRow = {
 
 const PLANNER_COLUMNS =
   'id, name, category_slug, lat, lng, state, interstate, exit_number, parking_spaces, ' +
-  'overnight_parking, tpc_url, amenities, fuel_brands, coord_verification_status, city';
+  'overnight_parking, free_parking, paid_parking, tpc_url, amenities, fuel_brands, ' +
+  'coord_verification_status, city';
 
 const strArray = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
@@ -65,6 +68,8 @@ export function mapRowToListing(row: PlannerRow): DirectoryListing {
     exitNumber: row.exit_number,
     parkingSpaces: row.parking_spaces,
     overnightParking: row.overnight_parking,
+    freeParking: row.free_parking,
+    paidParking: row.paid_parking,
     reservationUrl: safeUrl(row.tpc_url),
     amenities: strArray(row.amenities),
     fuelBrands: strArray(row.fuel_brands),

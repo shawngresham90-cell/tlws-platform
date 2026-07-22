@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
+import { TpcReserveCta } from '@/components/directory/TpcReserveCta';
 import { DirectoryBrowser } from '@/components/directory';
 import { getEntries } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
@@ -19,8 +20,6 @@ export const metadata = buildMetadata({
     'Find truck parking: free spots, paid and reserved parking, truck stops, rest areas, safe locations, and driver-submitted spots. Reserve guaranteed parking through TruckParkingClub.',
   path: '/directory/parking',
 });
-
-const TPC_URL = 'https://truckparkingclub.com';
 
 type ParkingType = {
   title: string;
@@ -75,7 +74,11 @@ const PARKING_TYPES: ParkingType[] = [
 
 export default async function TruckParkingPage() {
   const [entries, facets] = await Promise.all([getEntries('parking'), getDirectoryFacets()]);
-  const listings = await listingListSchemaWithReviews(entries, 'Truck Parking', '/directory/parking');
+  const listings = await listingListSchemaWithReviews(
+    entries,
+    'Truck Parking',
+    '/directory/parking',
+  );
 
   return (
     <>
@@ -98,16 +101,19 @@ export default async function TruckParkingPage() {
           <p className="mt-4 text-muted">
             This directory covers it all — <strong className="text-ink">free parking</strong> when
             you can get it, and <strong className="text-ink">paid or reserved parking</strong> when
-            a guaranteed spot beats an hour of hunting. Truck stops, rest areas, safe locations,
-            and spots called in by drivers who run these lanes.
+            a guaranteed spot beats an hour of hunting. Truck stops, rest areas, safe locations, and
+            spots called in by drivers who run these lanes.
           </p>
           <p className="mt-3 text-sm text-muted">
             This is the foundation page — the full searchable parking map and database are being
-            built on top of it. What’s here now: the categories we cover and the fastest way to
-            lock in a reserved spot tonight.
+            built on top of it. What’s here now: the categories we cover and the fastest way to lock
+            in a reserved spot tonight.
           </p>
           <p className="mt-3 text-sm">
-            <Link href="/directory/map" className="font-semibold text-signal underline-offset-4 hover:underline">
+            <Link
+              href="/directory/map"
+              className="font-semibold text-signal underline-offset-4 hover:underline"
+            >
               🗺️ View on map →
             </Link>
           </p>
@@ -119,7 +125,7 @@ export default async function TruckParkingPage() {
         <div className="rounded-card border border-line bg-asphalt p-8 sm:p-10">
           <div className="max-w-2xl">
             <Eyebrow>Reserve ahead</Eyebrow>
-            <h2 className="display-section">Guarantee tonight’s spot</h2>
+            <h2 className="display-section">Reserve tonight’s spot</h2>
             <p className="mt-4 text-muted">
               Done gambling on an open space at 7 PM? Reserve paid parking ahead through{' '}
               <strong className="text-ink">TruckParkingClub</strong> — pick the lot, book the spot,
@@ -127,15 +133,7 @@ export default async function TruckParkingPage() {
             </p>
           </div>
           <div className="mt-6">
-            <a
-              href={TPC_URL}
-              target="_blank"
-              rel="sponsored noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-card bg-signal px-6 py-3 font-display text-lg uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
-            >
-              Reserve paid parking through TruckParkingClub →
-            </a>
-            <p className="mt-3 text-xs text-muted">Affiliate link coming soon.</p>
+            <TpcReserveCta placement="parking-page-hero" />
           </div>
         </div>
       </Section>
