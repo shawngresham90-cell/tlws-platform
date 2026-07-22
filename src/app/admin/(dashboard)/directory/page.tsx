@@ -24,9 +24,57 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA',
-  'ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK',
-  'OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
+  'DC',
 ];
 
 const fmtDate = (iso: string) =>
@@ -114,7 +162,7 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
         </p>
       )}
       {(err || error) && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {err ?? `Couldn’t load listings: ${error}`}
         </p>
       )}
@@ -138,7 +186,12 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           <label htmlFor="category" className="mb-1 block text-xs font-semibold text-muted">
             Category
           </label>
-          <select id="category" name="category" defaultValue={filters.category ?? ''} className={inputClasses}>
+          <select
+            id="category"
+            name="category"
+            defaultValue={filters.category ?? ''}
+            className={inputClasses}
+          >
             <option value="">All categories</option>
             {DIRECTORY_CATEGORIES.map((c) => (
               <option key={c.slug} value={c.slug}>
@@ -151,7 +204,12 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           <label htmlFor="state" className="mb-1 block text-xs font-semibold text-muted">
             State
           </label>
-          <select id="state" name="state" defaultValue={filters.state ?? ''} className={inputClasses}>
+          <select
+            id="state"
+            name="state"
+            defaultValue={filters.state ?? ''}
+            className={inputClasses}
+          >
             <option value="">All states</option>
             {US_STATES.map((s) => (
               <option key={s} value={s}>
@@ -164,7 +222,12 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           <label htmlFor="published" className="mb-1 block text-xs font-semibold text-muted">
             Status
           </label>
-          <select id="published" name="published" defaultValue={filters.published ?? ''} className={inputClasses}>
+          <select
+            id="published"
+            name="published"
+            defaultValue={filters.published ?? ''}
+            className={inputClasses}
+          >
             <option value="">All</option>
             <option value="published">Published</option>
             <option value="unpublished">Unpublished</option>
@@ -174,7 +237,10 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           Apply
         </button>
         {hasFilters && (
-          <Link href="/admin/directory" className="py-2 text-xs font-semibold text-muted hover:text-signal">
+          <Link
+            href="/admin/directory"
+            className="py-2 text-xs font-semibold text-muted hover:text-signal"
+          >
             Clear filters
           </Link>
         )}
@@ -233,7 +299,9 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">
-                      {r.category_slug ? (getCategory(r.category_slug)?.title ?? r.category_slug) : '—'}
+                      {r.category_slug
+                        ? (getCategory(r.category_slug)?.title ?? r.category_slug)
+                        : '—'}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">
                       {r.city}, {r.state}
@@ -245,7 +313,9 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
                         <span className="text-muted">Unpublished</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-muted">{fmtDate(r.updated_at)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted">
+                      {fmtDate(r.updated_at)}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="flex flex-wrap items-center gap-2">
                         {r.is_published && r.detail_slug && (
@@ -263,14 +333,24 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
                           Edit
                         </Link>
                         <form
-                          action={setPublishedAction.bind(null, r.id, r.category_slug, !r.is_published)}
+                          action={setPublishedAction.bind(
+                            null,
+                            r.id,
+                            r.category_slug,
+                            !r.is_published,
+                          )}
                         >
                           <button type="submit" className={smallBtn}>
                             {r.is_published ? 'Unpublish' : 'Publish'}
                           </button>
                         </form>
                         <form
-                          action={setFeaturedAction.bind(null, r.id, r.category_slug, !r.is_featured)}
+                          action={setFeaturedAction.bind(
+                            null,
+                            r.id,
+                            r.category_slug,
+                            !r.is_featured,
+                          )}
                         >
                           <button type="submit" className={smallBtn}>
                             {r.is_featured ? 'Unfeature' : 'Feature'}
@@ -279,7 +359,7 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
                         <form action={softDeleteAction.bind(null, r.id, r.category_slug)}>
                           <ConfirmSubmit
                             message={`Delete "${r.name}"? It will disappear from the admin list and the public directory. (Soft delete — the row is kept.)`}
-                            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel transition-colors hover:bg-diesel hover:text-ink"
+                            className="rounded-card border border-diesel px-2.5 py-1 text-xs font-semibold text-diesel-300 transition-colors hover:bg-diesel hover:text-ink"
                           >
                             Delete
                           </ConfirmSubmit>

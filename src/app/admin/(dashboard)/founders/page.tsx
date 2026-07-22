@@ -1,6 +1,12 @@
 import { requireAdmin } from '@/lib/admin/auth';
 import { getFoundersAdminState, FOUNDER_TIER_VALUES } from '@/lib/admin/founders';
-import { dollars, pctToGoal, remainingCents, tierRemaining, tierUsage } from '@/lib/community/campaign';
+import {
+  dollars,
+  pctToGoal,
+  remainingCents,
+  tierRemaining,
+  tierUsage,
+} from '@/lib/community/campaign';
 import { TIER_CAPACITY, TIER_LABEL, TIER_ORDER } from '@/components/community/tiers';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { ConfirmSubmit } from '@/components/admin/directory/ConfirmSubmit';
@@ -30,8 +36,7 @@ const OK_MESSAGES: Record<string, string> = {
 
 const btn =
   'rounded-card border border-line px-2.5 py-1 text-xs font-semibold text-ink transition-colors hover:border-signal hover:text-signal';
-const input =
-  'mt-1 w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
+const input = 'mt-1 w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
 
 function FounderFields({ f }: { f?: AdminFounderRow }) {
   return (
@@ -70,7 +75,12 @@ function FounderFields({ f }: { f?: AdminFounderRow }) {
       </label>
       <label className="text-xs text-muted">
         Wall position
-        <input name="position" inputMode="numeric" defaultValue={f?.position ?? ''} className={input} />
+        <input
+          name="position"
+          inputMode="numeric"
+          defaultValue={f?.position ?? ''}
+          className={input}
+        />
       </label>
       <label className="text-xs text-muted lg:col-span-3">
         Message
@@ -78,7 +88,11 @@ function FounderFields({ f }: { f?: AdminFounderRow }) {
       </label>
       <div className="flex items-center gap-6 lg:col-span-4">
         <label className="flex items-center gap-2 text-xs text-muted">
-          <input type="checkbox" name="is_anonymous" defaultChecked={f?.display_name === 'Anonymous Founder'} />
+          <input
+            type="checkbox"
+            name="is_anonymous"
+            defaultChecked={f?.display_name === 'Anonymous Founder'}
+          />
           Anonymous (shows “Anonymous Founder”, hides business + site)
         </label>
         <label className="flex items-center gap-2 text-xs text-muted">
@@ -116,8 +130,8 @@ export default async function AdminFoundersPage({
         <p className="mt-1 text-sm text-muted">
           {publicFounders.length} spot{publicFounders.length === 1 ? '' : 's'} sold ·{' '}
           {founders.length} total record{founders.length === 1 ? '' : 's'}. Every public number
-          comes from the campaign_progress view — publishing, editing, or deleting a founder
-          updates the homepage, /founders, and /academy thermometers automatically.
+          comes from the campaign_progress view — publishing, editing, or deleting a founder updates
+          the homepage, /founders, and /academy thermometers automatically.
         </p>
       </header>
 
@@ -127,12 +141,12 @@ export default async function AdminFoundersPage({
         </p>
       )}
       {searchParams.error && (
-        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {searchParams.error}
         </p>
       )}
       {error && (
-        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           Couldn’t load: {error}
         </p>
       )}
@@ -220,7 +234,9 @@ export default async function AdminFoundersPage({
         </div>
 
         <div>
-          <h2 className="mb-4 font-display text-lg uppercase text-ink">Public thermometer preview</h2>
+          <h2 className="mb-4 font-display text-lg uppercase text-ink">
+            Public thermometer preview
+          </h2>
           <CampaignThermometer
             progress={{
               raised_cents: raised,
@@ -254,9 +270,7 @@ export default async function AdminFoundersPage({
 
       {/* Founder list */}
       <section className="space-y-4">
-        <h2 className="font-display text-lg uppercase text-ink">
-          Founders ({founders.length})
-        </h2>
+        <h2 className="font-display text-lg uppercase text-ink">Founders ({founders.length})</h2>
         {founders.map((f) => (
           <div key={f.id} className="rounded-card border border-line bg-asphalt-800 p-4">
             <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
@@ -270,7 +284,10 @@ export default async function AdminFoundersPage({
             <form action={updateFounderAction.bind(null, f.id)}>
               <FounderFields f={f} />
               <div className="mt-4 flex flex-wrap gap-2">
-                <ConfirmSubmit className={btn} message="Save changes to this founder? Public numbers update immediately.">
+                <ConfirmSubmit
+                  className={btn}
+                  message="Save changes to this founder? Public numbers update immediately."
+                >
                   Save
                 </ConfirmSubmit>
               </div>
@@ -290,7 +307,7 @@ export default async function AdminFoundersPage({
               </form>
               <form action={deleteFounderAction.bind(null, f.id)}>
                 <ConfirmSubmit
-                  className={`${btn} border-diesel text-diesel hover:border-diesel hover:text-diesel`}
+                  className={`${btn} border-diesel text-diesel-300 hover:border-diesel hover:text-diesel-300`}
                   message="PERMANENTLY delete this founder record? This cannot be undone. Consider Unpublish instead."
                 >
                   Delete

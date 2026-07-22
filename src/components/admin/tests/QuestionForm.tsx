@@ -55,7 +55,7 @@ export function QuestionForm({
       {state.error && (
         <p
           role="alert"
-          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
         >
           {state.error}
         </p>

@@ -84,9 +84,12 @@ export function ClaimForm({ siteKey }: { siteKey: string }) {
         <h2 className="font-display text-2xl uppercase text-signal">Claim received</h2>
         <p className="mt-3 text-ink">
           Thanks, driver. We verify every Founding Student purchase by hand against Stan Store
-          records, so your name won&apos;t appear instantly — once your purchase is confirmed,
-          your spot goes up on the{' '}
-          <Link href={FOUNDING_WALL_PATH} className="text-signal underline-offset-4 hover:underline">
+          records, so your name won&apos;t appear instantly — once your purchase is confirmed, your
+          spot goes up on the{' '}
+          <Link
+            href={FOUNDING_WALL_PATH}
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Founding Student Wall
           </Link>
           . Your email stays private and is used only for verification.
@@ -172,7 +175,10 @@ export function ClaimForm({ siteKey }: { siteKey: string }) {
         <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
 
         {error && (
-          <p role="alert" className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p
+            role="alert"
+            className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
+          >
             {error}
           </p>
         )}

@@ -2,11 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import {
-  getSubmission,
-  getListingOptions,
-  submissionPatch,
-} from '@/lib/admin/community';
+import { getSubmission, getListingOptions, submissionPatch } from '@/lib/admin/community';
 import { getHistoryForLocation, type HistoryRow } from '@/lib/admin/history';
 import { AMENITIES } from '@/lib/directory/amenities';
 import { DIRECTORY_CATEGORIES } from '@/lib/directory/categories';
@@ -49,18 +45,10 @@ const smallBtn =
   'rounded-card border border-line px-3 py-1.5 text-xs font-semibold text-ink transition-colors ' +
   'hover:border-signal hover:text-signal';
 const dangerBtn =
-  'rounded-card border border-diesel px-3 py-1.5 text-xs font-semibold text-diesel ' +
+  'rounded-card border border-diesel px-3 py-1.5 text-xs font-semibold text-diesel-300 ' +
   'transition-colors hover:bg-diesel hover:text-ink';
 
-function TriSelect({
-  name,
-  label,
-  value,
-}: {
-  name: string;
-  label: string;
-  value: boolean | null;
-}) {
+function TriSelect({ name, label, value }: { name: string; label: string; value: boolean | null }) {
   return (
     <div>
       <label htmlFor={name} className={labelClasses}>
@@ -152,7 +140,10 @@ export default async function AdminSubmissionDetailPage({
 
   return (
     <div className="max-w-4xl">
-      <Link href="/admin/submissions" className="text-sm font-semibold text-muted hover:text-signal">
+      <Link
+        href="/admin/submissions"
+        className="text-sm font-semibold text-muted hover:text-signal"
+      >
         ← Back to submissions
       </Link>
 
@@ -183,7 +174,7 @@ export default async function AdminSubmissionDetailPage({
         </p>
       )}
       {searchParams.error && (
-        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {searchParams.error}
         </p>
       )}
@@ -250,8 +241,8 @@ export default async function AdminSubmissionDetailPage({
                 <ul className="mt-2 grid gap-1 text-sm text-muted">
                   {Object.entries(preview.changed).map(([field, d]) => (
                     <li key={field}>
-                      <span className="font-semibold text-ink">{field}</span>: {fmtValue(d.from)}{' '}
-                      → <span className="text-signal">{fmtValue(d.to)}</span>
+                      <span className="font-semibold text-ink">{field}</span>: {fmtValue(d.from)} →{' '}
+                      <span className="text-signal">{fmtValue(d.to)}</span>
                     </li>
                   ))}
                 </ul>
@@ -261,7 +252,7 @@ export default async function AdminSubmissionDetailPage({
         </div>
       )}
       {!sub.locations && sub.kind !== 'new' && (
-        <p className="mt-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           The listing this report referred to no longer exists. Reject the submission, or merge it
           into another listing below.
         </p>
@@ -360,12 +351,7 @@ export default async function AdminSubmissionDetailPage({
             <label htmlFor="state" className={labelClasses}>
               State
             </label>
-            <select
-              id="state"
-              name="state"
-              defaultValue={sub.state ?? ''}
-              className={inputClasses}
-            >
+            <select id="state" name="state" defaultValue={sub.state ?? ''} className={inputClasses}>
               <option value="">—</option>
               {DIRECTORY_STATES.map((s) => (
                 <option key={s.code} value={s.code}>

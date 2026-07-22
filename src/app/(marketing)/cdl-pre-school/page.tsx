@@ -89,7 +89,9 @@ export default async function PreSchoolPage() {
           <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
         </div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <PurchaseCta placement="hero">Become a Founding Student — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
+          <PurchaseCta placement="hero">
+            Become a Founding Student — {PRESCHOOL_PRICE_LABEL}
+          </PurchaseCta>
           <Button variant="ghost" href="#whats-included">
             See what&apos;s included
           </Button>
@@ -141,8 +143,8 @@ export default async function PreSchoolPage() {
           {MODULE_COUNT} modules. {LESSON_COUNT} lessons. In the right order.
         </h2>
         <p className="mt-4 max-w-2xl text-muted">
-          Modules unlock one at a time — pass each module&apos;s quiz to open the next, the same
-          way a good school builds you up.
+          Modules unlock one at a time — pass each module&apos;s quiz to open the next, the same way
+          a good school builds you up.
         </p>
         <div className="mt-8 max-w-3xl space-y-8">
           {CURRICULUM_GROUPS.map((group) => (
@@ -150,10 +152,7 @@ export default async function PreSchoolPage() {
               <h3 className="mb-3 font-display text-xl uppercase text-signal">{group.heading}</h3>
               <div className="space-y-3">
                 {group.modules.map((m) => (
-                  <CurriculumDisclosure
-                    key={m.number}
-                    summary={`Module ${m.number} — ${m.title}`}
-                  >
+                  <CurriculumDisclosure key={m.number} summary={`Module ${m.number} — ${m.title}`}>
                     {m.summary} ({m.lessons} lessons, each with a workbook.)
                   </CurriculumDisclosure>
                 ))}
@@ -172,10 +171,15 @@ export default async function PreSchoolPage() {
       {/* 5 · Who it's for */}
       <Section className="border-b border-line">
         <Eyebrow>Who it&apos;s for</Eyebrow>
-        <h2 className="display-section max-w-3xl">Made for the people trucking hasn&apos;t met yet</h2>
+        <h2 className="display-section max-w-3xl">
+          Made for the people trucking hasn&apos;t met yet
+        </h2>
         <ul className="mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
           {WHO_ITS_FOR.map((w) => (
-            <li key={w} className="rounded-card border border-line bg-asphalt-800 p-5 text-sm text-ink">
+            <li
+              key={w}
+              className="rounded-card border border-line bg-asphalt-800 p-5 text-sm text-ink"
+            >
               {w}
             </li>
           ))}
@@ -192,7 +196,7 @@ export default async function PreSchoolPage() {
         <ul className="mt-8 max-w-3xl space-y-3">
           {WHAT_IT_IS_NOT.map((n) => (
             <li key={n} className="flex items-start gap-3 text-ink">
-              <span aria-hidden="true" className="mt-0.5 text-diesel">
+              <span aria-hidden="true" className="mt-0.5 text-diesel-300">
                 ✕
               </span>
               {n}
@@ -210,7 +214,9 @@ export default async function PreSchoolPage() {
         <div className="mt-8 grid max-w-4xl gap-6 sm:grid-cols-3">
           <div className="rounded-card border border-signal bg-signal/10 p-6">
             <p className="font-display text-3xl uppercase text-signal">{PRESCHOOL_PRICE_LABEL}</p>
-            <p className="mt-2 text-sm text-ink">The founding price for full access to CDL Pre-School.</p>
+            <p className="mt-2 text-sm text-ink">
+              The founding price for full access to CDL Pre-School.
+            </p>
           </div>
           <div className="rounded-card border border-line bg-asphalt-800 p-6">
             <p className="font-display text-3xl uppercase text-ink">{FOUNDING_STUDENT_CAPACITY}</p>
@@ -228,8 +234,8 @@ export default async function PreSchoolPage() {
                 className="text-signal underline-offset-4 hover:underline"
               >
                 Founding Student Wall
-              </TrackedNavLink>
-              {' '}— or stay anonymous. Your call.
+              </TrackedNavLink>{' '}
+              — or stay anonymous. Your call.
             </p>
           </div>
         </div>
@@ -237,7 +243,9 @@ export default async function PreSchoolPage() {
           <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
         </div>
         <div className="mt-8">
-          <PurchaseCta placement="offer">Claim a Founding Student spot — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
+          <PurchaseCta placement="offer">
+            Claim a Founding Student spot — {PRESCHOOL_PRICE_LABEL}
+          </PurchaseCta>
           <Disclosure />
         </div>
       </Section>
@@ -261,8 +269,8 @@ export default async function PreSchoolPage() {
           <Link href="/academy" className="text-signal underline-offset-4 hover:underline">
             Trucking Life Academy
           </Link>{' '}
-          — ELDT-compliant CDL-A training in Dalton, GA — is the destination. When you&apos;re
-          ready to kit out the cab, the{' '}
+          — ELDT-compliant CDL-A training in Dalton, GA — is the destination. When you&apos;re ready
+          to kit out the cab, the{' '}
           <Link href="/store" className="text-signal underline-offset-4 hover:underline">
             Trucking Life Store
           </Link>{' '}
@@ -285,16 +293,16 @@ export default async function PreSchoolPage() {
       <Section className="bg-asphalt-800">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>Ready when you are</Eyebrow>
-          <h2 className="display-section">
-            Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}
-          </h2>
+          <h2 className="display-section">Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}</h2>
           <p className="mt-4 text-muted">
             Limited to the first {FOUNDING_STUDENT_CAPACITY} verified Founding Students. No fake
             timers, no fake counters — when the wall is full, the founding offer is gone.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3">
             <SpotsMeter filled={wall.filled} remaining={wall.remaining} />
-            <PurchaseCta placement="final">Become a Founding Student — {PRESCHOOL_PRICE_LABEL}</PurchaseCta>
+            <PurchaseCta placement="final">
+              Become a Founding Student — {PRESCHOOL_PRICE_LABEL}
+            </PurchaseCta>
             <p className="max-w-md text-xs text-muted">{CHECKOUT_DISCLOSURE}</p>
             <TrackedNavLink
               href={FOUNDING_WALL_PATH}

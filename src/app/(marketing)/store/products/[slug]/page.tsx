@@ -174,7 +174,10 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         {guide && (
           <p className="mt-6 text-sm text-muted">
             Comparing options?{' '}
-            <Link href={guideHref(guide.slug)} className="font-semibold text-signal hover:underline">
+            <Link
+              href={guideHref(guide.slug)}
+              className="font-semibold text-signal hover:underline"
+            >
               {guide.title}
             </Link>{' '}
             puts the {typeMeta.label.toLowerCase()} side by side.
@@ -213,7 +216,10 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               All {cat.title.toLowerCase()} →
             </Link>
           )}
-          <Link href="/store/shawns-picks" className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href="/store/shawns-picks"
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Shawn&apos;s Picks →
           </Link>
           <Link href="/store" className="text-signal underline-offset-4 hover:underline">

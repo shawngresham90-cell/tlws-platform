@@ -34,7 +34,7 @@ export default async function AdminTestsPage({
       </div>
 
       {(error || actionError) && (
-        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {actionError ?? `Couldn't load the test banks: ${error}`}
         </p>
       )}

@@ -49,7 +49,7 @@ export function ImportForm() {
       {state.error && (
         <p
           role="alert"
-          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+          className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
         >
           {state.error}
         </p>
@@ -81,7 +81,7 @@ export function ImportForm() {
               <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto text-sm text-muted">
                 {s.errors.map((e, i) => (
                   <li key={i}>
-                    <span className="font-semibold text-diesel">Row {e.row}:</span> {e.message}
+                    <span className="font-semibold text-diesel-300">Row {e.row}:</span> {e.message}
                   </li>
                 ))}
               </ul>

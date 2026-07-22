@@ -28,7 +28,7 @@ export default async function AdminEditQuestionPage({
   const { question, error } = await getAdminQuestion(params.slug, params.id);
   if (error) {
     return (
-      <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+      <p className="rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
         Couldn&apos;t load the question: {error}
       </p>
     );
@@ -58,7 +58,7 @@ export default async function AdminEditQuestionPage({
           // The form can only round-trip the canonical a–d shape. Rendering
           // it for anything else would silently rewrite the row (and could
           // silently move the answer key) — refuse instead.
-          <p className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+          <p className="max-w-2xl rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             This question&apos;s choices are not in the canonical a–d shape, so the form can&apos;t
             edit it without rewriting the choices. Fix it with a targeted SQL UPDATE (keyed on this
             UUID) instead.

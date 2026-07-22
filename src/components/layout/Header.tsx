@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
 
-/** Full nav map. Links are placeholders until each module ships. */
+/** Full nav map. Every entry must resolve to a live route. */
 const NAV = [
   { label: 'The Road Ahead', href: '/road-ahead' },
   { label: 'Academy', href: '/academy' },
   { label: 'CDL Pre-School', href: '/cdl-pre-school' },
   { label: 'Knowledge Center', href: '/knowledge' },
-  { label: 'DOT Guide', href: '/dot-guide' },
+  { label: 'DOT Guide', href: '/knowledge/dot-compliance' },
   { label: 'Practice Tests', href: '/practice-tests' },
+  { label: 'Trip Planner', href: '/trip-planner' },
   { label: 'Truck Parking', href: '/directory/parking' },
   { label: 'Directories', href: '/directory' },
   { label: 'Store', href: '/store' },
@@ -16,7 +17,6 @@ const NAV = [
   { label: 'Apps', href: '/apps' },
   { label: 'Sponsors', href: '/sponsors' },
   { label: 'Founders Wall', href: '/founders' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 /**
@@ -58,7 +58,7 @@ export function Header() {
         <details className="relative xl:hidden">
           <summary
             className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-card border border-line text-ink [&::-webkit-details-marker]:hidden"
-            aria-label="Open menu"
+            aria-label="Menu"
           >
             <svg
               width="20"
@@ -76,7 +76,7 @@ export function Header() {
           </summary>
           <nav
             aria-label="Mobile"
-            className="absolute right-0 top-12 w-60 rounded-card border border-line bg-asphalt-800 p-2 shadow-xl"
+            className="absolute right-0 top-12 max-h-[calc(100vh-5rem)] w-60 overflow-y-auto rounded-card border border-line bg-asphalt-800 p-2 shadow-xl"
           >
             {NAV.map((item) => (
               <Link

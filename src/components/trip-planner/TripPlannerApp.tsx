@@ -328,7 +328,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
         onSelect={pickDestination}
       />
       {samePoint && (
-        <p className="mt-2 text-xs text-diesel">
+        <p className="mt-2 text-xs text-diesel-300">
           Origin and destination are the same place — pick two different locations.
         </p>
       )}
@@ -500,7 +500,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       {result && !result.ok && (
         <p
           role="alert"
-          className="mt-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel"
+          className="mt-6 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
         >
           {result.error?.message}
           {result.error?.problems?.length ? ` — ${result.error.problems[0]}` : ''}
@@ -632,7 +632,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
             {result.weather && result.weather.alerts.length > 0 && (
               <ul className="mt-1 space-y-1">
                 {result.weather.alerts.map((a, i) => (
-                  <li key={i} className="text-sm font-semibold text-diesel">
+                  <li key={i} className="text-sm font-semibold text-diesel-300">
                     ⚠️ {a.headline}
                   </li>
                 ))}
@@ -645,7 +645,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
                     mi {Math.round(b.fromMile)}–{Math.round(b.toMile)}:{' '}
                     <span
                       className={
-                        b.severity === 'warning' ? 'font-semibold text-diesel' : 'text-ink'
+                        b.severity === 'warning' ? 'font-semibold text-diesel-300' : 'text-ink'
                       }
                     >
                       {b.summary}
@@ -691,11 +691,12 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
             </ul>
           )}
           <p className="rounded-card border border-diesel/50 bg-diesel/5 p-4 text-xs text-muted">
-            <span className="font-semibold text-diesel">HOS disclaimer:</span> {result.disclaimer}
+            <span className="font-semibold text-diesel-300">HOS disclaimer:</span>{' '}
+            {result.disclaimer}
           </p>
           {result.routingDisclaimer && (
             <p className="rounded-card border border-diesel/50 bg-diesel/5 p-4 text-xs text-muted">
-              <span className="font-semibold text-diesel">Routing disclaimer:</span>{' '}
+              <span className="font-semibold text-diesel-300">Routing disclaimer:</span>{' '}
               {result.routingDisclaimer}
             </p>
           )}

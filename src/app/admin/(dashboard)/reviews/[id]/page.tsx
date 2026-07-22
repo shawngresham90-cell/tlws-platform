@@ -32,7 +32,7 @@ const smallBtn =
   'rounded-card border border-line px-3 py-1.5 text-xs font-semibold text-ink transition-colors ' +
   'hover:border-signal hover:text-signal';
 const dangerBtn =
-  'rounded-card border border-diesel px-3 py-1.5 text-xs font-semibold text-diesel ' +
+  'rounded-card border border-diesel px-3 py-1.5 text-xs font-semibold text-diesel-300 ' +
   'transition-colors hover:bg-diesel hover:text-ink';
 
 export default async function AdminReviewDetailPage({
@@ -83,7 +83,7 @@ export default async function AdminReviewDetailPage({
         </p>
       )}
       {searchParams.error && (
-        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel">
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
           {searchParams.error}
         </p>
       )}
