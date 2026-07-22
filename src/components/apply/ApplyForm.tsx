@@ -84,9 +84,12 @@ const PERMIT = [
   { value: 'no', label: 'Not yet' },
 ];
 
+// Stored verbatim as sms_consent_text for the TCPA audit trail. Keep it a
+// plain string (no markup); the on-screen label appends the policy links.
 const SMS_CONSENT_TEXT =
   'I agree to receive text messages from Trucking Life Academy about my application and enrollment. ' +
-  'Message and data rates may apply. Reply STOP to opt out. Consent is not a condition of enrollment.';
+  'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. ' +
+  'Consent is not a condition of enrollment.';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
@@ -584,7 +587,15 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
               checked={s2.sms_consent}
               onChange={(v) => set2('sms_consent', v)}
             >
-              {SMS_CONSENT_TEXT}
+              {SMS_CONSENT_TEXT} See our{' '}
+              <Link href="/sms-terms" target="_blank" className="text-signal underline">
+                SMS Terms
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" className="text-signal underline">
+                Privacy Policy
+              </Link>
+              .
             </CheckboxField>
           </div>
 

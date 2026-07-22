@@ -217,7 +217,8 @@ export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
 
       <p className="mt-6 text-xs text-muted">
         No payment is collected and no rate is committed here. This starts a conversation — Shawn
-        replies personally.
+        replies personally. If you share a phone number, we use it only to reply to this inquiry,
+        not for automated text messages.
       </p>
 
       {/* aria-disabled + in-handler guard instead of disabled, so keyboard
