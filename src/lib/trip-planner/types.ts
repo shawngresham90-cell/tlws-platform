@@ -70,6 +70,10 @@ export type StopCandidate = {
   offRouteMiles: number;
   parkingSpaces: number | null;
   overnightParking: boolean;
+  /** Directory free-parking flag (null = unknown — never assumed). */
+  freeParking: boolean | null;
+  /** Directory paid-parking flag (null = unknown — never assumed). */
+  paidParking: boolean | null;
   /** Reservable paid parking (Truck Parking Club) link, when present. */
   reservationUrl: string | null;
   amenities: string[];

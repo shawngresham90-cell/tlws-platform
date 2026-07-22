@@ -5,6 +5,7 @@ import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 import type { PlaceResult } from '@/lib/trip-planner/place-search';
 import type { FavoriteRoute, PlaceRef, TruckPreset } from '@/lib/trip-planner/saved-trips-store';
 import { PlaceCombobox } from './PlaceCombobox';
+import { TpcReserveBand } from './TpcReserveBand';
 import { SavedTripsPanel } from './SavedTripsPanel';
 import { AccountPanel } from './AccountPanel';
 import { useSavedTrips } from './useSavedTrips';
@@ -72,6 +73,29 @@ type QuoteResponse = {
     totalMinutes: number;
     driveMinutes: number;
     restMinutes: number;
+  };
+  lastStop?: {
+    usableDriveMin: number;
+    bufferMin: number;
+    noReservableOnCorridor: boolean;
+    slots: {
+      label: string;
+      driveMinutes: number;
+      arriveAtMs: number;
+      hosRemainingMinAtArrival: number;
+      detourMinutesEstimate: number;
+      reason: string;
+      candidate: {
+        id: string;
+        name: string;
+        interstate: string | null;
+        exitNumber: string | null;
+        offRouteMiles: number;
+        parkingSpaces: number | null;
+        amenities: string[];
+        reservationUrl: string | null;
+      };
+    }[];
   };
   cost?: { fuelGallons: number | null; fuelCents: number | null; notes: string[] };
   fuelPrice?: { centsPerGallon: number; period: string; region: string; source: string } | null;
@@ -579,6 +603,9 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
               {fmtHours(result.remainingAtDeparture.cycleMin)} left
             </p>
           </div>
+
+          {/* Partner band — separated, labeled; never reorders the organic list */}
+          {result.lastStop && <TpcReserveBand lastStop={result.lastStop} />}
 
           {/* Stops timeline */}
           <div className="rounded-card border border-line bg-asphalt-800 p-4">

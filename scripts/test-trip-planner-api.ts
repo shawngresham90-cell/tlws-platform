@@ -434,6 +434,8 @@ async function main() {
       exitNumber: null,
       parkingSpaces: 60,
       overnightParking: true,
+      freeParking: null,
+      paidParking: null,
       reservationUrl: null,
       amenities: ['fuel'],
       fuelBrands: [],
