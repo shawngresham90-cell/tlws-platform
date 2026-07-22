@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
+import { AttributionCapture } from '@/components/analytics/AttributionCapture';
 import { JsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import './globals.css';
@@ -35,6 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd schema={[organizationSchema(), personSchema(), websiteSchema()]} />
         {/* Cookieless analytics — renders nothing unless the env var is set */}
         <PlausibleAnalytics />
+        {/* First-touch utm capture — renders nothing, session-scoped */}
+        <AttributionCapture />
       </head>
       <body className="flex min-h-screen flex-col">
         <a

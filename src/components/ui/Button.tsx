@@ -1,17 +1,25 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'tertiary';
 
 const base =
   'inline-flex items-center justify-center font-display uppercase tracking-wide rounded-card ' +
   'px-6 py-3 text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt';
 
+/**
+ * CTA hierarchy (blueprint §2.8): primary = the money action, amber solid,
+ * one per screen. Secondary = the learn-more action, reflective-white
+ * outline. Ghost = quiet outlined utility action. Tertiary = amber text link
+ * (kept ≥48px tall for glove-thumb tap targets).
+ */
 const variants: Record<Variant, string> = {
   primary: 'bg-signal text-asphalt hover:bg-signal-600',
-  secondary: 'bg-diesel text-ink hover:bg-diesel-700',
+  secondary: 'border border-ink/60 text-ink hover:border-signal hover:text-signal',
   ghost: 'border border-line text-ink hover:border-signal hover:text-signal',
+  tertiary:
+    'px-2 font-body normal-case font-semibold text-signal underline-offset-4 hover:underline',
 };
 
 type Props = {

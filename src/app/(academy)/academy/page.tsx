@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Section, Button, Eyebrow } from '@/components/ui';
+import { Section, Button, Eyebrow, Placard } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { getCampaignProgress } from '@/lib/community/founders';
 import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
@@ -84,8 +84,97 @@ const FAQS: KcFaq[] = [
     a: 'Exact tuition is being finalized and will be published soon. In the meantime, the Financing page explains the funding routes drivers can use — workforce grants, VA benefits, employer sponsorship, and community-funded seats.',
   },
   {
+    q: 'How old do I have to be?',
+    a: 'At least 21 for interstate driving, or 18 if you’ll drive intrastate within Georgia. Not sure which applies to you? Apply anyway and say so — we’ll walk you through it.',
+  },
+  {
+    q: 'Do I need a DOT medical card?',
+    a: 'Yes — a DOT medical certificate is a federal requirement for a CDL. Not having one yet doesn’t block your application; the Knowledge Center explains the exam, and we’ll point you to the next step.',
+  },
+  {
+    q: 'What if my driving record isn’t perfect?',
+    a: 'A ticket or an old mistake doesn’t automatically end the conversation. Eligibility depends on the specifics — tell us honestly in your application and we’ll talk it through straight. No judgment, no runaround.',
+  },
+  {
+    q: 'What happens if I fail a test?',
+    a: 'The program’s whole job is to have you ready before test day — that’s what the phased training and free practice tests are for. Exact retest logistics will be published with the final enrollment details.',
+  },
+  {
+    q: 'Will you help me find a job after?',
+    a: 'We won’t promise placement numbers we haven’t earned yet. What you get is honest career preparation — the Knowledge Center’s career-path guides and straight talk about what the first year really looks like.',
+  },
+  {
     q: 'Where is the school located?',
     a: 'In Dalton, Georgia, right off the I-75 corridor — convenient to North Georgia and the Chattanooga, TN area.',
+  },
+];
+
+/**
+ * The program journey — free preparation to career-ready, using the real
+ * curriculum phase names (source of truth: /academy/curriculum). Honest by
+ * construction: no hours, dates, or placement claims that aren't published.
+ */
+const JOURNEY: Array<{ step: string; title: string; description: string; href: string }> = [
+  {
+    step: 'Before day one',
+    title: 'Prepare',
+    description:
+      'Free Knowledge Center guides and practice tests — or the full CDL Pre-School head start.',
+    href: '/cdl-pre-school',
+  },
+  {
+    step: 'Phase 1',
+    title: 'Theory & Permit Prep',
+    description: 'ELDT theory curriculum: pass the CDL knowledge tests and earn your CLP.',
+    href: '/academy/curriculum',
+  },
+  {
+    step: 'Phase 2',
+    title: 'Range Skills',
+    description: 'Pre-trip inspection, backing, docking, and coupling — on real equipment.',
+    href: '/academy/curriculum',
+  },
+  {
+    step: 'Phase 3',
+    title: 'Public Road Driving',
+    description: 'Real roads and real traffic, taught from 17 years of clean-record experience.',
+    href: '/academy/curriculum',
+  },
+  {
+    step: 'Phase 4',
+    title: 'Test Prep & Endorsements',
+    description: 'Polish for the CDL-A skills test, plus the endorsements worth adding.',
+    href: '/academy/curriculum',
+  },
+  {
+    step: 'After the CDL',
+    title: 'Career Preparation',
+    description: 'Straight talk on first-year jobs and career paths — guidance, not promises.',
+    href: '/knowledge/trucking-careers',
+  },
+];
+
+/** Enrollment transparency — every unpublished detail stated honestly. */
+const ENROLLMENT_STATUS: Array<{ label: string; value: string; note: string }> = [
+  {
+    label: 'Program standard',
+    value: 'FMCSA ELDT-compliant CDL-A curriculum',
+    note: 'Theory + behind-the-wheel, published phase by phase on the Curriculum page.',
+  },
+  {
+    label: 'Tuition',
+    value: 'Being finalized',
+    note: 'Published here the moment it’s locked. Financing routes are already documented.',
+  },
+  {
+    label: 'Schedule & start dates',
+    value: 'Being finalized',
+    note: 'Join the interest list below — applicants hear updates before anyone else.',
+  },
+  {
+    label: 'State licensing',
+    value: 'Details published when finalized',
+    note: 'Our licensing checklist will be published here as it comes together — and we think every school should show you theirs.',
   },
 ];
 
@@ -149,6 +238,18 @@ export default async function AcademyPage() {
             the driver’s side. No fluff. No games. Just the training it takes to earn a CDL-A and
             actually be ready for the road.
           </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {['17 years driving', 'Zero violations', 'CDL instructor', 'Driver trainer'].map(
+              (b) => (
+                <span
+                  key={b}
+                  className="rounded-card border border-line bg-asphalt-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-signal"
+                >
+                  {b}
+                </span>
+              ),
+            )}
+          </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button variant="ghost" href="/academy/instructors">
               Meet the founder
@@ -158,6 +259,76 @@ export default async function AcademyPage() {
             </Button>
           </div>
         </div>
+      </Section>
+
+      {/* The program journey — real curriculum phases, prepare → career */}
+      <Section className="border-b border-line bg-asphalt-800">
+        <Eyebrow>The program journey</Eyebrow>
+        <h2 className="display-section max-w-3xl">From first read to career-ready</h2>
+        <p className="mt-4 max-w-2xl text-muted">
+          No mystery, no filler. This is the road through the program — and it starts free, before
+          you spend a dollar.
+        </p>
+        <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {JOURNEY.map((j, i) => (
+            <li key={j.title} className="placard flex flex-col p-4 sm:p-6">
+              <p className="num-data text-xs font-semibold uppercase tracking-wide text-muted">
+                {i + 1} · {j.step}
+              </p>
+              <h3 className="mt-2 font-display text-xl uppercase text-ink">{j.title}</h3>
+              <p className="mt-2 flex-1 text-sm text-muted">{j.description}</p>
+              <p className="mt-4">
+                <Link
+                  href={j.href}
+                  className="inline-block py-3 text-sm font-semibold text-signal underline-offset-4 hover:underline"
+                >
+                  Learn more →
+                </Link>
+              </p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      {/* Enrollment transparency — the anti-mill move: publish what's known,
+          say plainly what isn't. No invented dates, prices, or credentials. */}
+      <Section className="border-b border-line">
+        <div className="max-w-3xl">
+          <Eyebrow>Where the school stands</Eyebrow>
+          <h2 className="display-section">Straight answers, published early</h2>
+          <p className="mt-4 text-muted">
+            Most schools make you sit through a sales call to learn the basics. We publish them —
+            including the parts still being finalized.
+          </p>
+        </div>
+        <dl className="mt-8 grid gap-4 sm:grid-cols-2">
+          {ENROLLMENT_STATUS.map((row) => (
+            <Placard key={row.label}>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {row.label}
+              </dt>
+              <dd className="mt-2">
+                <p className="font-display text-lg uppercase text-ink">{row.value}</p>
+                <p className="mt-1 text-sm text-muted">{row.note}</p>
+              </dd>
+            </Placard>
+          ))}
+        </dl>
+        <Placard
+          money
+          className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="max-w-xl text-sm text-muted">
+            <strong className="text-ink">
+              Final enrollment details are being confirmed. Join the interest list for updates
+            </strong>{' '}
+            — applying costs nothing, collects no payment, and puts you on the list before
+            enrollment opens.
+          </p>
+          <Button href="/academy/apply" className="shrink-0">
+            Apply — join the list
+          </Button>
+        </Placard>
       </Section>
 
       {/* Fundraising — live campaign thermometer (same source as /founders) */}
@@ -193,8 +364,8 @@ export default async function AcademyPage() {
           <p className="mt-4 text-muted">
             You don’t have to wait for day one to get ahead. The Knowledge Center is packed with
             plain-English guides on the CDL permit, the pre-trip inspection, DOT medical cards, and
-            Hours of Service — all verified against the regs by a 17-year driver. Want the full
-            head start — permit knowledge plus the money, family, and lifestyle prep? That’s{' '}
+            Hours of Service — all verified against the regs by a 17-year driver. Want the full head
+            start — permit knowledge plus the money, family, and lifestyle prep? That’s{' '}
             <Link href="/cdl-pre-school" className="text-signal underline-offset-4 hover:underline">
               CDL Pre-School
             </Link>

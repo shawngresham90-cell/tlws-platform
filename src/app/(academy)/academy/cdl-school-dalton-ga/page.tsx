@@ -67,7 +67,7 @@ const FAQS: KcFaq[] = [
   },
   {
     q: 'How do I get started with a Dalton CDL school?',
-    a: 'Check the Requirements page to confirm eligibility, review the Curriculum, and reach out through Contact. The online application opens soon.',
+    a: 'Check the Requirements page to confirm eligibility, review the Curriculum, then apply online at the Academy — the application is open, takes about two minutes, and collects no payment.',
   },
 ];
 

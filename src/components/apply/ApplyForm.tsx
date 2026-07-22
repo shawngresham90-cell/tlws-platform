@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import { trackEvent } from '@/lib/analytics';
 import { TextField, SelectField, CheckboxField } from './Fields';
 import { TurnstileWidget } from './TurnstileWidget';
+import { captureAttribution, readAttribution } from '@/lib/attribution';
 
 const US_STATES = [
   'AL',
@@ -116,6 +117,56 @@ const EMPTY2: Step2 = {
   sms_consent: false,
 };
 
+/**
+ * Save-and-resume: a driver applying from the sleeper gets interrupted — a
+ * dropped signal or a closed tab must never eat the application. The draft
+ * lives only on this device (localStorage), expires after 7 days, and is
+ * cleared the moment the application submits. No server writes involved.
+ */
+const DRAFT_KEY = 'tlws-apply-draft-v1';
+const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+type Draft = {
+  s1: Step1;
+  s2: Step2;
+  step: 1 | 2;
+  appId: string;
+  savedAt: number;
+  createdAt?: number;
+};
+
+function loadDraft(): Draft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Draft;
+    if (!d?.savedAt || Date.now() - (d.createdAt ?? d.savedAt) > DRAFT_MAX_AGE_MS) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(d: Omit<Draft, 'savedAt'>) {
+  try {
+    // createdAt is set once and preserved — expiry never rolls forward.
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...d, savedAt: Date.now() }));
+  } catch {
+    /* storage full/blocked — resume is best-effort */
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [s1, setS1] = useState<Step1>(EMPTY1);
@@ -126,17 +177,62 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [token, setToken] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
   const [appId, setAppId] = useState('');
+  const [resumed, setResumed] = useState(false);
+  const utmRef = useRef<Record<string, string>>({});
+  const draftCreatedAt = useRef<number | undefined>(undefined);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Mount: capture attribution (covers direct tagged entry; site-wide
+  // capture in the layout handles every other page), then restore any
+  // saved draft (client-only).
   useEffect(() => {
+    captureAttribution();
+    utmRef.current = readAttribution();
+    const draft = loadDraft();
+    if (draft) {
+      draftCreatedAt.current = draft.createdAt ?? draft.savedAt;
+      setS1(draft.s1);
+      setS2(draft.s2);
+      setAppId(draft.appId);
+      setStep(draft.step);
+      setResumed(true);
+    }
     trackEvent('application_started');
   }, []);
+
+  // Persist the draft whenever answers change (pre-submission steps only).
+  useEffect(() => {
+    if (step === 3) return;
+    const empty =
+      JSON.stringify(s1) === JSON.stringify(EMPTY1) &&
+      JSON.stringify(s2) === JSON.stringify(EMPTY2);
+    if (empty && !appId) return;
+    saveDraft({ s1, s2, step, appId, createdAt: draftCreatedAt.current ?? Date.now() });
+  }, [s1, s2, step, appId]);
 
   // Move focus to the step heading whenever the step changes (a11y).
   useEffect(() => {
     headingRef.current?.focus();
   }, [step]);
+
+  /**
+   * Escape hatch: discard the on-device draft and begin a fresh
+   * application. Also the exit from a stale resumed draft whose
+   * application row no longer exists server-side (step-2 update errors).
+   */
+  function startOver() {
+    clearDraft();
+    draftCreatedAt.current = undefined;
+    setS1(EMPTY1);
+    setS2(EMPTY2);
+    setAppId('');
+    setErrors({});
+    setFormError('');
+    setResumed(false);
+    setStep(1);
+    headingRef.current?.focus();
+  }
 
   function set1<K extends keyof Step1>(k: K, v: Step1[K]) {
     setS1((p) => ({ ...p, [k]: v }));
@@ -193,6 +289,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
           phone: s1.phone.trim(),
           city: s1.city.trim(),
           state: s1.state,
+          utm: utmRef.current,
           turnstileToken: token,
         }),
       });
@@ -240,6 +337,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
         return;
       }
       trackEvent('application_submitted');
+      clearDraft();
       setStep(3);
     } catch {
       setFormError('Network error. Check your connection and try again.');
@@ -274,6 +372,32 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
 
   return (
     <div>
+      {/* Resume notice — a dropped signal never eats a driver's application.
+          The live region is always present; only its TEXT appears on resume,
+          so screen readers reliably announce the change. */}
+      <p
+        role="status"
+        className={
+          resumed
+            ? 'mb-5 rounded-card border border-line bg-cab px-4 py-3 text-sm text-muted'
+            : 'sr-only'
+        }
+      >
+        {resumed && (
+          <>
+            <strong className="text-ink">Welcome back.</strong> We saved your progress on this
+            device — pick up right where you left off.{' '}
+            <button
+              type="button"
+              onClick={startOver}
+              className="font-semibold text-signal underline underline-offset-4 hover:text-signal-600"
+            >
+              Clear saved answers and start over
+            </button>
+          </>
+        )}
+      </p>
+
       {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted">
@@ -291,6 +415,9 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
             aria-label={`Step ${step} of 2`}
           />
         </div>
+        <p className="mt-2 text-xs text-muted">
+          Your answers save automatically on this device — lose signal, come back, keep going.
+        </p>
       </div>
 
       {/* Form-level error (announced) */}
@@ -298,6 +425,20 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
         {formError && (
           <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             {formError}
+            {step === 2 && appId && (
+              <>
+                {' '}
+                If this keeps happening,{' '}
+                <button
+                  type="button"
+                  onClick={startOver}
+                  className="font-semibold underline underline-offset-4"
+                >
+                  start over with a fresh application
+                </button>{' '}
+                — your saved answers will be cleared.
+              </>
+            )}
           </p>
         )}
       </div>
