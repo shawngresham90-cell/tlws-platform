@@ -9,17 +9,17 @@ reversible fix.
 - [ ] Hero: thesis + ONE amber "Apply to the Academy" above the fold
 - [ ] Hero atmosphere: subtle warm glow top-right + faint grain — felt, not
       seen; text contrast unaffected
-- [ ] Verified proof row under hero CTAs: 17 years / zero violations / CDL
-      instructor & driver trainer / Dalton
+- [ ] Credential byline under hero CTAs: "CDL instructor & driver trainer"
+      (just the one — the headline already owns 17 years / zero violations)
 - [ ] Proof bar: only real numbers (no zeros, no blanks)
 - [ ] Four Doors: exactly TWO amber left edges; purchase machinery works
 - [ ] THE JOURNEY strip: 01 Drove it / 02 Taught it / 03 Building it +
       "Built by a driver, funded by drivers, no games." pull-quote
 - [ ] Tools run: Knowledge → Practice test → Apps → Parking → Books → Store
 - [ ] Academy bridge + newsletter after the tools
-- [ ] THE MOVEMENT: ROAD AHEAD card shows the fog-lit highway still with
-      "Scene still" caption; ONE "Take the drive" CTA; clicking the image
-      also goes to /road-ahead
+- [ ] THE MOVEMENT: ROAD AHEAD card shows the fog-lit highway still with a
+      readable near-white "Scene still" caption; exactly ONE "Take the
+      drive" CTA (the still itself is not a link)
 - [ ] Videos → Founders thermometer → Shirt → Sponsors → footer trust block
 
 ## Motion (desktop + phone)
@@ -28,7 +28,8 @@ reversible fix.
 - [ ] Nothing is ever blank while waiting — content is visible immediately
       if you scroll fast
 - [ ] OS reduced-motion ON → zero reveals, zero fade-ups, zero hover lift
-- [ ] Movement card image scales very slightly on hover; nothing else moves
+- [ ] Press End right after load, then scroll back up — no blank sections
+      anywhere (jump-scroll must never strand a reveal)
 - [ ] No layout jumps anywhere while scrolling (watch the scrollbar)
 
 ## Academy landing
@@ -42,9 +43,10 @@ reversible fix.
 ## System-wide
 
 - [ ] Amber #F5A623 only on money/action (2 door edges, primary CTAs,
-      eyebrows/labels); the Journey pull-quote rule is ink, not amber
-- [ ] Keyboard: focus ring visible on hero CTAs, movement card image link,
-      every nav item
+      eyebrows/labels); Journey numerals and pull-quote rule are NOT amber
+- [ ] Headlines render in Anton (condensed industrial caps) — if headings
+      look like a generic web font, the font variable regressed
+- [ ] Keyboard: focus ring visible on hero CTAs and every nav item
 - [ ] No autoplay of anything, anywhere
 - [ ] ROAD AHEAD itself unchanged — full experience intact at /road-ahead
 - [ ] Lighthouse mobile on `/`: within a point of pre-change; `/` first

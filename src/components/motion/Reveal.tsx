@@ -37,7 +37,12 @@ export function Reveal({ children, className }: { children: React.ReactNode; cla
           }
         }
       },
-      { rootMargin: '0px 0px -10% 0px' },
+      // Huge top margin: an instant jump (End key, scrollbar drag,
+      // find-in-page) can move an element from below the viewport to above
+      // it in one frame — with a 0px top margin it never intersects and
+      // would stay stranded at opacity 0. Counting everything above the
+      // viewport as intersecting guarantees the state change always fires.
+      { rootMargin: '100000px 0px -10% 0px' },
     );
     io.observe(el);
     return () => io.disconnect();

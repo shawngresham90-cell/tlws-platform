@@ -71,7 +71,7 @@ still reads flat, and exactly what this pass changes.
 
 | # | Change | Files |
 |---|--------|-------|
-| 1 | Hero: sodium light wash, film grain, framing rule, verified proof-label row, documentary caption. Same thesis, same two CTAs. | `Hero.tsx`, `globals.css` |
+| 1 | Hero: sodium light wash, film grain, framing rule, verified credential byline. Same thesis, same two CTAs. | `Hero.tsx`, `globals.css` |
 | 2 | New **JourneyStrip** section — "Drove it / Taught it / Building it" as its own documentary beat with the site thesis as a pull-quote. | `JourneyStrip.tsx` |
 | 3 | **Story re-order** to Call → Proof → Doors → Journey → Tools → Academy → Movement → Trust close. No section added or removed; all destinations live. | `page.tsx` |
 | 4 | **Reveal** motion primitive — 220ms opacity/translate on section entry, IO-based, reduced-motion exempt, no CLS, no library. | `motion/Reveal.tsx`, `globals.css` |

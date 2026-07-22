@@ -19,12 +19,16 @@ const BEATS: Array<{ index: string; beat: string; detail: string }> = [
 export function JourneyStrip() {
   return (
     <Section id="journey" className="border-b border-line">
+      {/* One h2 per section like every other beat; the visible eyebrow stays
+          a label and the beats sit at h3 so the outline isn't three top-level
+          entries. Numerals are muted — amber stays money/action only. */}
+      <h2 className="sr-only">The journey</h2>
       <Eyebrow>The journey</Eyebrow>
       <div className="grid gap-8 lg:grid-cols-3">
         {BEATS.map((b) => (
           <div key={b.beat} className="border-t border-line pt-5">
-            <p className="num-data font-display text-sm uppercase text-signal">{b.index}</p>
-            <h2 className="mt-2 font-display text-3xl uppercase text-ink">{b.beat}</h2>
+            <p className="num-data font-display text-sm uppercase text-muted">{b.index}</p>
+            <h3 className="mt-2 font-display text-3xl uppercase text-ink">{b.beat}</h3>
             <p className="mt-2 text-sm text-muted">{b.detail}</p>
           </div>
         ))}

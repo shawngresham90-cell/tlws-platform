@@ -56,12 +56,14 @@ export function CinematicStill({
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(20,20,20,0.10) 0%, rgba(20,20,20,0) 40%, rgba(20,20,20,0.82) 100%), linear-gradient(0deg, rgba(245,166,35,0.07), rgba(245,166,35,0.07))',
+            'linear-gradient(180deg, rgba(20,20,20,0.10) 0%, rgba(20,20,20,0) 40%, rgba(20,20,20,0.88) 100%), linear-gradient(0deg, rgba(245,166,35,0.07), rgba(245,166,35,0.07))',
         }}
       />
       <div aria-hidden="true" className="film-grain absolute inset-0" />
       {caption && (
-        <figcaption className="doc-caption absolute inset-x-0 bottom-0 p-4 text-ink/90">
+        // Explicit utilities, not .doc-caption: that class carries text-muted,
+        // which would win the cascade and fail contrast over bright frames.
+        <figcaption className="absolute inset-x-0 bottom-0 p-4 text-[11px] font-semibold uppercase tracking-wider text-ink/90">
           {label && <span className="text-signal">{label} · </span>}
           {caption}
         </figcaption>

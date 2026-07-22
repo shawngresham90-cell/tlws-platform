@@ -1,13 +1,5 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
 
-/** Verified proof labels only — each one is repo-verified brand fact. */
-const PROOF_LABELS = [
-  '17 years on the road',
-  'Zero violations',
-  'CDL instructor & driver trainer',
-  'Dalton, Georgia · off I-75',
-];
-
 /**
  * Hero — THE CALL (cinematic flow beat 1). Leads with the one thing that
  * can't be faked — a driver's clean record — and routes to the school.
@@ -61,14 +53,12 @@ export function Hero() {
           </Button>
         </div>
 
-        {/* Documentary proof row — verified facts, framed by a hairline rule */}
-        <ul className="mt-12 flex max-w-3xl flex-wrap gap-x-8 gap-y-2 border-t border-line pt-5">
-          {PROOF_LABELS.map((label) => (
-            <li key={label} className="doc-caption">
-              {label}
-            </li>
-          ))}
-        </ul>
+        {/* Documentary byline — the one verified credential the hero doesn't
+            already state (the headline owns 17 years / zero violations, the
+            eyebrow owns Dalton). Repetition is trailer filler, not proof. */}
+        <p className="doc-caption mt-12 max-w-3xl border-t border-line pt-5">
+          CDL instructor &amp; driver trainer
+        </p>
       </Container>
     </section>
   );

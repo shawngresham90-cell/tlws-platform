@@ -11,8 +11,11 @@ movement isn't listed here, it doesn't ship.
 | Section reveal | 220ms, opacity 0→1 + translateY 14px→0, ease-out, once | Homepage sections below the fold (`<Reveal>`) |
 | Hero fade-up | Existing `animate-fade-up`, once on load | Homepage hero, proof bar |
 | Hover lift | 2px rise, 150ms | Placard link cards (`.lift`) |
-| Image scale on hover | 1.02, 300ms | The Movement card still (the homepage's one cinematic hover) |
 | Color transitions | 150ms border/text color | Buttons, links, nav (pre-existing) |
+
+(The Movement card's poster still is deliberately static — it is not a link,
+and motion on a non-interactive element would promise interactivity it
+doesn't have.)
 
 ## Why each rule exists
 
@@ -49,9 +52,8 @@ movement isn't listed here, it doesn't ship.
 
 `/road-ahead` keeps its own richer cinematic system (scenes, chapters,
 ambience). None of it crosses onto other pages. The homepage references it
-with exactly: one story card, one approved poster still, one hover-scale,
-one CTA. That contrast — restrained homepage, cinematic flagship — is the
-design.
+with exactly: one story card, one approved poster still, one CTA. That
+contrast — restrained homepage, cinematic flagship — is the design.
 
 ## Adding motion later (the test)
 

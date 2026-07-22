@@ -58,24 +58,19 @@ export function RoadAheadTeaser() {
             </div>
           </div>
 
-          {/* One approved still, one restrained hover — the only cinematic
-              crossover the homepage gets */}
-          <Link
-            href="/road-ahead"
-            aria-label="Take the drive — THE ROAD AHEAD"
-            className="group block rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
-          >
-            <CinematicStill
-              src="/road-ahead/poster/empty-highway.jpg"
-              alt="Tractor-trailer on a fog-lit highway under sodium lights — scene still from THE ROAD AHEAD"
-              width={752}
-              height={416}
-              sizes="(max-width: 1024px) 100vw, 560px"
-              label="Scene still"
-              caption="The Road Ahead — the full guided drive"
-              imgClassName="transition-transform duration-300 motion-safe:group-hover:scale-[1.02]"
-            />
-          </Link>
+          {/* One approved still, presented as a plain figure — the card keeps
+              exactly ONE action ("Take the drive"). A second link to the same
+              destination would double the tab stops for one choice, and a
+              hover-scale on a non-link would promise interactivity it lacks. */}
+          <CinematicStill
+            src="/road-ahead/poster/empty-highway.jpg"
+            alt="Tractor-trailer on a fog-lit highway under sodium lights"
+            width={752}
+            height={416}
+            sizes="(max-width: 1024px) 100vw, 560px"
+            label="Scene still"
+            caption="The Road Ahead — the full guided drive"
+          />
         </div>
       </Container>
     </section>

@@ -2,7 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* Zero-specificity fallbacks: next/font sets the real values via a class on
+   <html>, and :where() guarantees that class wins regardless of CSS chunk
+   order. A bare :root here ties specificity and lets bundle order decide —
+   which silently swapped Anton for the fallback sans when chunk order
+   flipped. */
+:where(:root) {
   --font-anton: 'Anton';
   --font-inter: 'Inter';
 }
