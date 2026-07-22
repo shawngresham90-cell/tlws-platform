@@ -25,8 +25,10 @@ Every submitted clip, its status and (where assigned) scene · slot · segment.
 
 | Clip | Scene | Slot | Segment | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
+| `https://youtu.be/OfM4krgRqcw` | Scene 01 · Night Drive | `dark-highway` | whole | — | **USED** |
 | `https://youtube.com/shorts/wsanOA1aJ1U` | Scene 01 · Night Drive | `night-driving` | whole | — | **USED** |
 | `https://youtube.com/shorts/Okpkg_xjwX8` | Scene 02 · The Pre-Trip | `pretrip` | whole | — | **USED** |
+| `https://youtu.be/UgB8CPtzjSg` | Scene 02 · The Pre-Trip | `truck-walkaround` | whole | — | **USED** |
 | `https://youtube.com/shorts/PQPWyX98fMU` | Scene 03 · The Grind | `late-night-driving` | whole | — | **USED** |
 | `https://youtu.be/8E6U04-K3qA` | Scene 04 · First Light | `sunrise` | whole | — | **USED** |
 | `https://youtube.com/shorts/0xgnGSxdMGI` | Scene 07 · Legacy | `truck-driving-away` | whole | — | **USED** |
@@ -44,7 +46,7 @@ Every submitted clip, its status and (where assigned) scene · slot · segment.
 | `tOGyLEdcEig` | — | — | — | — | _pending_ |
 | `UC0wu3leP1g` | — | — | — | — | _pending_ |
 
-- **Assigned (used):** 5
+- **Assigned (used):** 7
 - **Pending (unassigned):** 13
 - Status legend: **USED** = live in a scene · _pending_ = submitted, awaiting a scene + moment · _rejected_ = recorded here when the owner rejects a clip.
 
@@ -57,22 +59,20 @@ first (they show the CSS atmosphere until filled), then B-roll gaps.
 
 | Priority | Scene | Slot | Role | Missing moment | Candidate clips |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Scene 01 · Night Drive | `dark-highway` | B-roll | Dark highway | _unlabeled pending — needs viewing_ |
-| 2 | Scene 01 · Night Drive | `headlights` | B-roll | Headlights | _unlabeled pending — needs viewing_ |
-| 3 | Scene 01 · Night Drive | `windshield-rain` | B-roll | Windshield rain | _unlabeled pending — needs viewing_ |
-| 4 | Scene 02 · The Pre-Trip | `truck-walkaround` | B-roll | Truck walkaround | _unlabeled pending — needs viewing_ |
-| 5 | Scene 02 · The Pre-Trip | `backing` | B-roll | Backing | _unlabeled pending — needs viewing_ |
-| 6 | Scene 02 · The Pre-Trip | `climb-into-cab` | B-roll | Climb into cab | _unlabeled pending — needs viewing_ |
-| 7 | Scene 02 · The Pre-Trip | `air-brake-check` | B-roll | Air brake check | _unlabeled pending — needs viewing_ |
-| 8 | Scene 03 · The Grind | `truck-stop` | B-roll | Truck stop | _unlabeled pending — needs viewing_ |
-| 9 | Scene 03 · The Grind | `empty-highway` | B-roll | Empty highway | _unlabeled pending — needs viewing_ |
-| 10 | Scene 03 · The Grind | `rain-driving` | B-roll | Rain driving | _unlabeled pending — needs viewing_ |
-| 11 | Scene 04 · First Light | `hero-shot` | B-roll | Hero shot | _unlabeled pending — needs viewing_ |
-| 12 | Scene 04 · First Light | `drone-shot` | B-roll | Drone shot | _unlabeled pending — needs viewing_ |
-| 13 | Scene 04 · First Light | `academy-footage` | B-roll | Academy footage | _unlabeled pending — needs viewing_ |
-| 14 | Scene 07 · Legacy | `student-training` | B-roll | Student training | _unlabeled pending — needs viewing_ |
-| 15 | Scene 07 · Legacy | `key-handoff` | B-roll | Key handoff | _unlabeled pending — needs viewing_ |
-| 16 | Scene 07 · Legacy | `student-success` | B-roll | Student success | _unlabeled pending — needs viewing_ |
+| 1 | Scene 01 · Night Drive | `headlights` | B-roll | Headlights | _unlabeled pending — needs viewing_ |
+| 2 | Scene 01 · Night Drive | `windshield-rain` | B-roll | Windshield rain | _unlabeled pending — needs viewing_ |
+| 3 | Scene 02 · The Pre-Trip | `backing` | B-roll | Backing | _unlabeled pending — needs viewing_ |
+| 4 | Scene 02 · The Pre-Trip | `climb-into-cab` | B-roll | Climb into cab | _unlabeled pending — needs viewing_ |
+| 5 | Scene 02 · The Pre-Trip | `air-brake-check` | B-roll | Air brake check | _unlabeled pending — needs viewing_ |
+| 6 | Scene 03 · The Grind | `truck-stop` | B-roll | Truck stop | _unlabeled pending — needs viewing_ |
+| 7 | Scene 03 · The Grind | `empty-highway` | B-roll | Empty highway | _unlabeled pending — needs viewing_ |
+| 8 | Scene 03 · The Grind | `rain-driving` | B-roll | Rain driving | _unlabeled pending — needs viewing_ |
+| 9 | Scene 04 · First Light | `hero-shot` | B-roll | Hero shot | _unlabeled pending — needs viewing_ |
+| 10 | Scene 04 · First Light | `drone-shot` | B-roll | Drone shot | _unlabeled pending — needs viewing_ |
+| 11 | Scene 04 · First Light | `academy-footage` | B-roll | Academy footage | _unlabeled pending — needs viewing_ |
+| 12 | Scene 07 · Legacy | `student-training` | B-roll | Student training | _unlabeled pending — needs viewing_ |
+| 13 | Scene 07 · Legacy | `key-handoff` | B-roll | Key handoff | _unlabeled pending — needs viewing_ |
+| 14 | Scene 07 · Legacy | `student-success` | B-roll | Student success | _unlabeled pending — needs viewing_ |
 
 _Candidate clips_ stays "needs viewing" until a scene + timestamp is supplied per
 clip — the agent can't watch the pending library to match moments to slots.

@@ -2,15 +2,27 @@
 // Regenerated on every build (prebuild hook) from public/road-ahead/**. Lists the
 // media present at build so the resolver never touches the filesystem at request
 // time (serverless/ISR-safe). Empty = no owner media supplied yet.
-export const PRESENT_ASSETS: readonly string[] = [];
+export const PRESENT_ASSETS: readonly string[] = [
+  "poster/empty-highway.jpg",
+  "poster/key-handoff.jpg",
+  "poster/sunrise.jpg",
+  "video/empty-highway.mp4",
+  "video/empty-highway.webm",
+  "video/key-handoff.mp4",
+  "video/key-handoff.webm",
+  "video/sunrise.mp4",
+  "video/sunrise.webm"
+];
 
 // slot id → YouTube-Unlisted video id (from public/road-ahead/youtube-sources.json).
 export const YOUTUBE_SOURCES: Readonly<Record<string, string>> = {
+  "dark-highway": "OfM4krgRqcw",
   "late-night-driving": "PQPWyX98fMU",
   "night-driving": "wsanOA1aJ1U",
   "pretrip": "Okpkg_xjwX8",
   "sunrise": "8E6U04-K3qA",
-  "truck-driving-away": "0xgnGSxdMGI"
+  "truck-driving-away": "0xgnGSxdMGI",
+  "truck-walkaround": "UgB8CPtzjSg"
 };
 
 // slot id → resolved cinematic MOMENT (segment + edits) from
