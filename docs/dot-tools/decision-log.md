@@ -18,16 +18,25 @@ they touch. Dates are decision dates.
 | 9 | Verdict language | Banned: "You're legal", "Looks like valid PC", "Safe to drive", guaranteed CSA outcomes, equivalent legal conclusions. Required: LOWER RISK / HIGH RISK / DO NOT MOVE / CAN'T CALL IT + "based on the information entered" + official-source/ELD/company-policy pointer (`verdict-language-spec.md`). |
 | 10 | Adverse conditions | No toggle that automatically adds time. Path blocked until qualifying conditions verified, decision questions specified, engine's conservative behavior preserved, and the regulatory reviewer approves (ledger R-HOS-09/10). |
 
+## Decided — PR 2 authorization round (July 22, 2026)
+
+| # | Decision | Ruling |
+|---|---|---|
+| 11 | CVSA material | **Reference-only** unless proper access or permission is obtained. Softened non-numeric language ships where CVSA is the only source; CFR-anchored numbers unaffected. Full memo: `../compliance/dot-tools-verification/cvsa-licensing-memo.md`. Resolves O-3 (upgrade path documented). |
+| 12 | DataQ links | **Official FMCSA DataQs (dataqs.fmcsa.dot.gov) is the primary DataQ link** in all shipped content. The TLWS DataQ Tracker (godatq.netlify.app) may appear only as a clearly secondary, clearly TLWS-branded helper. Resolves O-6. |
+| 13 | Old-app migration banner + vault export | **Approved in principle** for a later implementation PR to the legacy app. Scheduling and final go remain with the owner (O-5 narrows to timing only). No old-app change ships from the platform repo. |
+| 14 | Reaffirmed | US-only MVP (Canada blocked except clearly labeled official link-outs); core tools eventually free; Wallet device-local; Fix-It Letters blocked until attorney review; existing Pro customers counted and reviewed before paid access is removed. |
+
 ## Open (OWNER TO DECIDE / TO APPROVE / TO ASSIGN)
 
 | ID | Item | Blocks |
 |---|---|---|
 | O-1 | Regulatory reviewer assignment (shared with Split Calculator pipeline) | All RC gates |
 | O-2 | Attorney engagement for AT-1..AT-5 | Letters; script/coaching sections |
-| O-3 | CVSA OOS criteria source: obtain current publication vs soften all numeric OOS claims to non-numeric language (ledger Unresolved Source 1) | RC-3 (Pre-Trip), parts of RC-2/RC-4 |
+| O-3 | ~~CVSA source~~ **RESOLVED by Decision 11** (reference-only; upgrade path in the memo) | — |
 | O-4 | Pro-customer compensation treatment (refund / credit / grandfather / bonus mix) after counts are pulled from Stan | Gate removal on legacy app; public "free" announcement |
-| O-5 | Old-app change approval (export button + banner — Phase 3 of `migration-and-redirects.md`) | Migration window start; all redirects |
-| O-6 | DataQ Tracker (godatq.netlify.app): keep as external link vs absorb later | Link policy on Checker/Letters |
+| O-5 | Old-app change **timing** (export button + banner approved in principle by Decision 13 — schedule + final go) | Migration window start; all redirects |
+| O-6 | ~~DataQ link policy~~ **RESOLVED by Decision 12** (official DataQs primary; Tracker secondary) | — |
 | O-7 | Voice items: Bible verse + "17 yrs, 0 violations" byline on the platform cheat sheet | Cheat-sheet content finalization |
 | O-8 | Read-aloud feature: port at MVP or defer | Regulation browser scope |
 | O-9 | Netlify Forms subscriber-list export timing | Retirement criteria |
