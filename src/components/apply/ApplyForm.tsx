@@ -116,6 +116,81 @@ const EMPTY2: Step2 = {
   sms_consent: false,
 };
 
+/**
+ * Save-and-resume: a driver applying from the sleeper gets interrupted — a
+ * dropped signal or a closed tab must never eat the application. The draft
+ * lives only on this device (localStorage), expires after 7 days, and is
+ * cleared the moment the application submits. No server writes involved.
+ */
+const DRAFT_KEY = 'tlws-apply-draft-v1';
+const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+type Draft = { s1: Step1; s2: Step2; step: 1 | 2; appId: string; savedAt: number };
+
+function loadDraft(): Draft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Draft;
+    if (!d?.savedAt || Date.now() - d.savedAt > DRAFT_MAX_AGE_MS) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(d: Omit<Draft, 'savedAt'>) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...d, savedAt: Date.now() }));
+  } catch {
+    /* storage full/blocked — resume is best-effort */
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * First-touch attribution: utm_* params from the landing URL (persisted in
+ * sessionStorage so they survive browsing to /academy/apply) plus the outside
+ * referrer. Bounded to match the API's utm contract; no PII, no cookies.
+ */
+const UTM_KEY = 'tlws-utm-first-touch';
+
+function captureAttribution(): Record<string, string> {
+  try {
+    const stored = sessionStorage.getItem(UTM_KEY);
+    const utm: Record<string, string> = stored
+      ? (JSON.parse(stored) as Record<string, string>)
+      : {};
+    const params = new URLSearchParams(window.location.search);
+    let hasNew = false;
+    params.forEach((value, key) => {
+      if (/^utm_[a-z_]{1,32}$/i.test(key) && value && !utm[key.toLowerCase()]) {
+        utm[key.toLowerCase()] = value.slice(0, 200);
+        hasNew = true;
+      }
+    });
+    if (!utm.referrer && document.referrer && !document.referrer.includes(location.hostname)) {
+      utm.referrer = document.referrer.slice(0, 200);
+      hasNew = true;
+    }
+    if (hasNew) sessionStorage.setItem(UTM_KEY, JSON.stringify(utm));
+    // Hard-cap to the API contract (≤20 keys).
+    return Object.fromEntries(Object.entries(utm).slice(0, 20));
+  } catch {
+    return {};
+  }
+}
+
 export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [s1, setS1] = useState<Step1>(EMPTY1);
@@ -126,12 +201,34 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [token, setToken] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
   const [appId, setAppId] = useState('');
+  const [resumed, setResumed] = useState(false);
+  const utmRef = useRef<Record<string, string>>({});
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
+  // Mount: capture attribution, then restore any saved draft (client-only).
   useEffect(() => {
+    utmRef.current = captureAttribution();
+    const draft = loadDraft();
+    if (draft) {
+      setS1(draft.s1);
+      setS2(draft.s2);
+      setAppId(draft.appId);
+      setStep(draft.step);
+      setResumed(true);
+    }
     trackEvent('application_started');
   }, []);
+
+  // Persist the draft whenever answers change (pre-submission steps only).
+  useEffect(() => {
+    if (step === 3) return;
+    const empty =
+      JSON.stringify(s1) === JSON.stringify(EMPTY1) &&
+      JSON.stringify(s2) === JSON.stringify(EMPTY2);
+    if (empty && !appId) return;
+    saveDraft({ s1, s2, step, appId });
+  }, [s1, s2, step, appId]);
 
   // Move focus to the step heading whenever the step changes (a11y).
   useEffect(() => {
@@ -193,6 +290,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
           phone: s1.phone.trim(),
           city: s1.city.trim(),
           state: s1.state,
+          utm: utmRef.current,
           turnstileToken: token,
         }),
       });
@@ -240,6 +338,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
         return;
       }
       trackEvent('application_submitted');
+      clearDraft();
       setStep(3);
     } catch {
       setFormError('Network error. Check your connection and try again.');
@@ -274,6 +373,17 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
 
   return (
     <div>
+      {/* Resume notice — a dropped signal never eats a driver's application */}
+      {resumed && (
+        <p
+          role="status"
+          className="mb-5 rounded-card border border-line bg-cab px-4 py-3 text-sm text-muted"
+        >
+          <strong className="text-ink">Welcome back.</strong> We saved your progress on this device
+          — pick up right where you left off.
+        </p>
+      )}
+
       {/* Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted">
@@ -291,6 +401,9 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
             aria-label={`Step ${step} of 2`}
           />
         </div>
+        <p className="mt-2 text-xs text-muted">
+          Your answers save automatically on this device — lose signal, come back, keep going.
+        </p>
       </div>
 
       {/* Form-level error (announced) */}

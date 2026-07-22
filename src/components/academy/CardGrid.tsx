@@ -43,7 +43,7 @@ export function CardGrid({ cards, columns = 3 }: { cards: Card[]; columns?: 2 | 
           </>
         );
 
-        const base = 'flex flex-col rounded-card border border-line bg-asphalt-800 p-6';
+        const base = 'placard lift flex flex-col p-4 sm:p-6';
 
         return c.href ? (
           <Link

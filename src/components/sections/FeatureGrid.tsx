@@ -30,7 +30,7 @@ export function FeatureGrid({
         <Link
           key={f.title}
           href={f.href}
-          className="group flex flex-col rounded-card border border-line bg-asphalt-800 p-6 transition-colors hover:border-signal"
+          className="placard lift group flex flex-col p-4 transition-colors hover:border-signal sm:p-6"
         >
           <h3 className="font-display text-xl uppercase text-signal">{f.title}</h3>
           <p className="mt-2 flex-1 text-sm text-muted">{f.description}</p>

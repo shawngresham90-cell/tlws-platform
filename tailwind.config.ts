@@ -1,8 +1,16 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * TLWS Design System — codifies the existing "Trucking Life with Shawn" brand:
- * Anton display, yellow #FFEB00 on dark, trucker-direct. Not invented — locked.
+ * TLWS Design System — "Steel & Sodium" (design blueprint §2).
+ * The brand feel: the inside of a well-kept Peterbilt at night — dark, warm,
+ * instrument-lit, nothing decorative. Anton display + Inter body stay locked.
+ *
+ * Color doctrine:
+ *  - Sodium Amber = money or action. Nothing else gets amber. One amber
+ *    element per viewport.
+ *  - Thumbnail yellow #FFEB00 remains the YouTube identity; on-platform amber
+ *    is deepened for dark-surface contrast (8.4:1 on Asphalt).
+ *  - Marker Green = success/verified only. Diesel red = errors/warnings only.
  */
 const config: Config = {
   content: [
@@ -13,27 +21,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Core brand
+        // Sodium Amber — THE accent. Primary CTAs, active states, money path.
         signal: {
-          DEFAULT: '#FFEB00', // brand yellow — CTAs, headlines on dark
-          600: '#E6D400',
+          DEFAULT: '#F5A623',
+          600: '#D98C1A', // hover/pressed
         },
+        // Asphalt — page + surface ramp. Never pure black (11pm sleeper-cab rule).
         asphalt: {
-          DEFAULT: '#0E0E0E', // near-black base
-          800: '#161616',
-          700: '#1F1F1F',
-          600: '#2A2A2A',
+          DEFAULT: '#141414', // page background
+          800: '#1A1A1C', // alternate section band
+          700: '#1F1F22', // Cab Panel — card/panel surface
+          600: '#2A2A2E', // raised/hover surface
         },
+        // Cab Panel alias — placard/card surface (same value as asphalt-700).
+        cab: '#1F1F22',
         diesel: {
-          DEFAULT: '#B91C1C', // plaid red — warnings, secondary accents (borders/fills)
+          DEFAULT: '#B91C1C', // brake red — errors, violations, warnings only
           700: '#991B1B',
           // Readable red for TEXT on dark surfaces: DEFAULT measures ~2.7:1
           // there (WCAG AA fail); 300 clears 6:1 on every dark background.
           300: '#F87171',
         },
-        line: '#333333', // hairline dividers
-        ink: '#F5F5F5', // primary text on dark
-        muted: '#A3A3A3', // secondary text
+        // Marker Green — success/verified/DOT-compliant states only.
+        marker: {
+          DEFAULT: '#3E7C4F', // fills/borders
+          300: '#7FC993', // text-safe on dark (≥6:1)
+        },
+        line: '#2A2A2E', // hairline dividers + placard borders
+        ink: '#F2F0EB', // Reflective White — warm primary text
+        muted: '#A3A39B', // secondary text (warmed to match ink)
       },
       fontFamily: {
         display: ['var(--font-anton)', 'Impact', 'sans-serif'],
@@ -49,8 +65,18 @@ const config: Config = {
         content: '72rem',
       },
       borderRadius: {
-        // Minimal radius — this brand is rugged, not soft
-        card: '4px',
+        // Placard radius — 8px: industrial, not consumer-soft (blueprint §2.4)
+        card: '8px',
+      },
+      keyframes: {
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        // Section-entry moment — 180ms, once, motion-safe only (blueprint §2.7)
+        'fade-up': 'fade-up 180ms ease-out both',
       },
     },
   },

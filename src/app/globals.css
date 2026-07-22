@@ -44,10 +44,31 @@
   .eyebrow {
     @apply font-body uppercase text-eyebrow text-signal font-semibold;
   }
+  /* Tabular figures for data: prices, mileage, counts, scores (§2.2) */
+  .num-data {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Placard card (§2.4): Cab Panel surface, hairline border, 8px radius. */
+  .placard {
+    @apply rounded-card border border-line bg-cab;
+  }
+  /* The one brand signature: a 2px sodium left edge marks a card that leads
+     to money or action. Free/informational cards never get it. Max two per
+     screen — if everything is amber, nothing is. */
+  .placard-money {
+    box-shadow: inset 2px 0 0 0 theme('colors.signal.DEFAULT');
+  }
+  /* Hover lift (§2.7): 2px rise, motion-safe only, never blocks paint. */
+  .lift {
+    @apply transition-transform duration-150 motion-safe:hover:-translate-y-0.5;
+  }
   /* Respect reduced motion — quality floor, not announced */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
+    }
+    .lift {
+      transition: none;
     }
   }
 }

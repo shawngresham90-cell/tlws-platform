@@ -18,7 +18,7 @@ export function RoadAheadTeaser() {
         className="absolute inset-0 -z-10"
         style={{
           background:
-            'radial-gradient(120% 120% at 15% 0%, rgba(255,235,0,0.10) 0%, rgba(255,235,0,0) 45%), linear-gradient(180deg, #161616 0%, #0E0E0E 100%)',
+            'radial-gradient(120% 120% at 15% 0%, rgba(245,166,35,0.10) 0%, rgba(245,166,35,0) 45%), linear-gradient(180deg, #1A1A1C 0%, #141414 100%)',
         }}
       />
       <Container className="py-16 sm:py-20">
@@ -26,6 +26,19 @@ export function RoadAheadTeaser() {
         <h2 id="road-ahead-teaser" className="display-section mt-3 max-w-3xl">
           See where the whole road goes
         </h2>
+        {/* The story in three beats — every claim verified brand fact */}
+        <ol className="mt-6 flex max-w-2xl flex-col gap-2 text-sm text-muted sm:flex-row sm:gap-8">
+          {[
+            ['Drove it', '17 years, zero violations'],
+            ['Taught it', 'CDL instructor & driver trainer'],
+            ['Building it', 'Trucking Life Academy, Dalton GA'],
+          ].map(([beat, detail]) => (
+            <li key={beat} className="flex items-baseline gap-2 sm:block">
+              <span className="font-display uppercase text-ink">{beat}</span>
+              <span className="block text-xs">{detail}</span>
+            </li>
+          ))}
+        </ol>
         <p className="mt-4 max-w-2xl text-lg text-muted">
           A guided drive through everything Trucking Life is — the school, the tools, and the
           founders building it. Finish knowing exactly where you fit.

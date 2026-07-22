@@ -1,11 +1,13 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
-import { PRESCHOOL_PRICE_LABEL } from '@/lib/preschool/constants';
 
 /**
- * Hero — the thesis. Leads with the one thing that can't be faked: a driver's
- * clean record and the mission. Four CTAs — Pre-School leads (the paid offer
- * is the conversion goal; its price comes from the preschool constants, the
- * single source of truth), then Apply, Fund, Free.
+ * Hero — the thesis (blueprint §4 S1). Leads with the one thing that can't be
+ * faked — a driver's clean record — and routes to the school. CTA hierarchy:
+ * ONE amber action (the school application), one outlined learn-more. Every
+ * other path lives one scroll down in the Four Doors.
+ *
+ * No opening date is displayed until the owner confirms one — honest copy
+ * over hype, per the design blueprint's own rule.
  */
 export function Hero() {
   return (
@@ -14,25 +16,20 @@ export function Hero() {
       className="border-b border-line bg-asphalt py-20 sm:py-28"
     >
       <Container>
-        <Eyebrow>17 Years · Zero Violations · {`Dalton, GA · off I-75`}</Eyebrow>
+        <Eyebrow>Trucking Life · Dalton, GA · off I-75</Eyebrow>
         <h1 id="hero-heading" className="display-hero max-w-4xl">
-          The CDL school built by a driver, <span className="text-signal">for drivers.</span>
+          17 years. Zero violations.{' '}
+          <span className="text-signal">Now I&apos;m training the next generation.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted">
-          Corporate schools can&apos;t reach the drivers who need it most. Trucking Life Academy
-          does — ELDT-compliant CDL-A training on real trucks, real road, real accountability, from
-          a man who&apos;s run 17 years with a clean record.
+          A CDL school in Dalton, GA — built by a driver, funded by drivers, no games.
+          ELDT-compliant CDL-A training on real trucks and real road, plus free tools for every
+          driver already out there running.
         </p>
         <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Button href="/cdl-pre-school">Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}</Button>
-          <Button variant="secondary" href="/academy">
-            Apply to the Academy
-          </Button>
-          <Button variant="ghost" href="/founders">
-            Fund the School
-          </Button>
-          <Button variant="ghost" href="/knowledge">
-            Free CDL Resources
+          <Button href="/academy/apply">Apply to the Academy</Button>
+          <Button variant="secondary" href="/knowledge">
+            Explore Free Training
           </Button>
         </div>
       </Container>

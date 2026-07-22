@@ -94,9 +94,17 @@ export function Footer() {
           </nav>
         ))}
       </Container>
-      <Container className="border-t border-line py-5">
+      {/* Trust block (blueprint §4 S8) — real identity, real disclosures.
+          Only verified facts render here; registration numbers are added by
+          the owner when confirmed, never invented. */}
+      <Container className="border-t border-line py-6">
         <p className="text-xs text-muted">
-          © {new Date().getFullYear()} Trucking Life Academy LLC. Keep the shiny side up. 🚛
+          © {new Date().getFullYear()} Trucking Life Academy LLC · {SITE.city}, {SITE.region} · off
+          I-75 · Founded by {SITE.founder.name} — {SITE.founder.credential}.
+        </p>
+        <p className="mt-2 text-xs text-muted">
+          As an Amazon Associate, Trucking Life earns from qualifying purchases made through store
+          links. Sponsorship never changes directory rankings. Keep the shiny side up. 🚛
         </p>
       </Container>
     </footer>
