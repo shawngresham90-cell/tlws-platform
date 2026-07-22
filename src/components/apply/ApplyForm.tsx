@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import { trackEvent } from '@/lib/analytics';
 import { TextField, SelectField, CheckboxField } from './Fields';
 import { TurnstileWidget } from './TurnstileWidget';
+import { captureAttribution, readAttribution } from '@/lib/attribution';
 
 const US_STATES = [
   'AL',
@@ -125,14 +126,21 @@ const EMPTY2: Step2 = {
 const DRAFT_KEY = 'tlws-apply-draft-v1';
 const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-type Draft = { s1: Step1; s2: Step2; step: 1 | 2; appId: string; savedAt: number };
+type Draft = {
+  s1: Step1;
+  s2: Step2;
+  step: 1 | 2;
+  appId: string;
+  savedAt: number;
+  createdAt?: number;
+};
 
 function loadDraft(): Draft | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const d = JSON.parse(raw) as Draft;
-    if (!d?.savedAt || Date.now() - d.savedAt > DRAFT_MAX_AGE_MS) {
+    if (!d?.savedAt || Date.now() - (d.createdAt ?? d.savedAt) > DRAFT_MAX_AGE_MS) {
       localStorage.removeItem(DRAFT_KEY);
       return null;
     }
@@ -144,6 +152,7 @@ function loadDraft(): Draft | null {
 
 function saveDraft(d: Omit<Draft, 'savedAt'>) {
   try {
+    // createdAt is set once and preserved — expiry never rolls forward.
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...d, savedAt: Date.now() }));
   } catch {
     /* storage full/blocked — resume is best-effort */
@@ -155,39 +164,6 @@ function clearDraft() {
     localStorage.removeItem(DRAFT_KEY);
   } catch {
     /* ignore */
-  }
-}
-
-/**
- * First-touch attribution: utm_* params from the landing URL (persisted in
- * sessionStorage so they survive browsing to /academy/apply) plus the outside
- * referrer. Bounded to match the API's utm contract; no PII, no cookies.
- */
-const UTM_KEY = 'tlws-utm-first-touch';
-
-function captureAttribution(): Record<string, string> {
-  try {
-    const stored = sessionStorage.getItem(UTM_KEY);
-    const utm: Record<string, string> = stored
-      ? (JSON.parse(stored) as Record<string, string>)
-      : {};
-    const params = new URLSearchParams(window.location.search);
-    let hasNew = false;
-    params.forEach((value, key) => {
-      if (/^utm_[a-z_]{1,32}$/i.test(key) && value && !utm[key.toLowerCase()]) {
-        utm[key.toLowerCase()] = value.slice(0, 200);
-        hasNew = true;
-      }
-    });
-    if (!utm.referrer && document.referrer && !document.referrer.includes(location.hostname)) {
-      utm.referrer = document.referrer.slice(0, 200);
-      hasNew = true;
-    }
-    if (hasNew) sessionStorage.setItem(UTM_KEY, JSON.stringify(utm));
-    // Hard-cap to the API contract (≤20 keys).
-    return Object.fromEntries(Object.entries(utm).slice(0, 20));
-  } catch {
-    return {};
   }
 }
 
@@ -203,14 +179,19 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [appId, setAppId] = useState('');
   const [resumed, setResumed] = useState(false);
   const utmRef = useRef<Record<string, string>>({});
+  const draftCreatedAt = useRef<number | undefined>(undefined);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // Mount: capture attribution, then restore any saved draft (client-only).
+  // Mount: capture attribution (covers direct tagged entry; site-wide
+  // capture in the layout handles every other page), then restore any
+  // saved draft (client-only).
   useEffect(() => {
-    utmRef.current = captureAttribution();
+    captureAttribution();
+    utmRef.current = readAttribution();
     const draft = loadDraft();
     if (draft) {
+      draftCreatedAt.current = draft.createdAt ?? draft.savedAt;
       setS1(draft.s1);
       setS2(draft.s2);
       setAppId(draft.appId);
@@ -227,13 +208,31 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
       JSON.stringify(s1) === JSON.stringify(EMPTY1) &&
       JSON.stringify(s2) === JSON.stringify(EMPTY2);
     if (empty && !appId) return;
-    saveDraft({ s1, s2, step, appId });
+    saveDraft({ s1, s2, step, appId, createdAt: draftCreatedAt.current ?? Date.now() });
   }, [s1, s2, step, appId]);
 
   // Move focus to the step heading whenever the step changes (a11y).
   useEffect(() => {
     headingRef.current?.focus();
   }, [step]);
+
+  /**
+   * Escape hatch: discard the on-device draft and begin a fresh
+   * application. Also the exit from a stale resumed draft whose
+   * application row no longer exists server-side (step-2 update errors).
+   */
+  function startOver() {
+    clearDraft();
+    draftCreatedAt.current = undefined;
+    setS1(EMPTY1);
+    setS2(EMPTY2);
+    setAppId('');
+    setErrors({});
+    setFormError('');
+    setResumed(false);
+    setStep(1);
+    headingRef.current?.focus();
+  }
 
   function set1<K extends keyof Step1>(k: K, v: Step1[K]) {
     setS1((p) => ({ ...p, [k]: v }));
@@ -373,16 +372,31 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
 
   return (
     <div>
-      {/* Resume notice — a dropped signal never eats a driver's application */}
-      {resumed && (
-        <p
-          role="status"
-          className="mb-5 rounded-card border border-line bg-cab px-4 py-3 text-sm text-muted"
-        >
-          <strong className="text-ink">Welcome back.</strong> We saved your progress on this device
-          — pick up right where you left off.
-        </p>
-      )}
+      {/* Resume notice — a dropped signal never eats a driver's application.
+          The live region is always present; only its TEXT appears on resume,
+          so screen readers reliably announce the change. */}
+      <p
+        role="status"
+        className={
+          resumed
+            ? 'mb-5 rounded-card border border-line bg-cab px-4 py-3 text-sm text-muted'
+            : 'sr-only'
+        }
+      >
+        {resumed && (
+          <>
+            <strong className="text-ink">Welcome back.</strong> We saved your progress on this
+            device — pick up right where you left off.{' '}
+            <button
+              type="button"
+              onClick={startOver}
+              className="font-semibold text-signal underline underline-offset-4 hover:text-signal-600"
+            >
+              Clear saved answers and start over
+            </button>
+          </>
+        )}
+      </p>
 
       {/* Progress */}
       <div className="mb-8">
@@ -411,6 +425,20 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
         {formError && (
           <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
             {formError}
+            {step === 2 && appId && (
+              <>
+                {' '}
+                If this keeps happening,{' '}
+                <button
+                  type="button"
+                  onClick={startOver}
+                  className="font-semibold underline underline-offset-4"
+                >
+                  start over with a fresh application
+                </button>{' '}
+                — your saved answers will be cleared.
+              </>
+            )}
           </p>
         )}
       </div>

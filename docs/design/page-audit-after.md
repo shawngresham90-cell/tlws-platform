@@ -14,7 +14,7 @@ not laboratory numbers; re-run after Plausible has 30 days of data.
 | Directory / Trip Planner | frozen scope | unchanged code | First honest homepage surface via Four Doors ("free tools" door) | Coordinate coverage (frozen); planner nav elevation (owner call) |
 | Books | PR #159 scope | untouched | — | #159 review |
 | Store | separate workstream | untouched | — | ASINs (owner) |
-| Sponsors / Newsletter / Analytics | PR #161 scope | untouched internals | Sponsors honesty line echoed in footer trust block | #161 review |
+| Sponsors / Newsletter / Analytics | PR #161 scope | untouched internals | Ranking-honesty line added to footer trust block (verified against ranking.ts) | #161 review |
 | ROAD AHEAD | launched (#160) | untouched | Teaser band on homepage repositioned + story beats; amber gradient tokens | — |
 | Practice tests / KC | good | consistent cards via shared grids | Score-screen conversion moments (blueprint §3.10) deliberately deferred | Future PR |
 | Pre-School | conversion-audited | preserved | Purchase machinery kept verbatim inside Door 1 (placement + tracking intact) | Cross-domain unity (satellite sites, §2.10) |

@@ -42,7 +42,9 @@ here is a small, reversible fix.
 
 ## System-wide
 
-- [ ] Amber is #F5A623 everywhere on-platform (no leftover #FFEB00 UI)
+- [ ] Amber is #F5A623 in on-platform UI chrome. (Deliberate exceptions: the
+      favicon, OG share cards, and ROAD AHEAD cinematics keep thumbnail
+      yellow #FFEB00 — the YouTube-facing identity; admin tools untouched)
 - [ ] Buttons: secondary = white outline (not red); red appears only on errors
 - [ ] Reduced motion (OS setting): no hover lift, no scroll animation
 - [ ] Keyboard: focus ring visible on every interactive element

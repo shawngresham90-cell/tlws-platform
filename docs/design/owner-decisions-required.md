@@ -44,11 +44,16 @@ item is reversible; none block the PR.
    pillars, store category icons) were left untouched to keep this PR's
    regression surface small. Approve a follow-up sweep to line icons.
 8. **Proof-bar numbers.** Renders only repo-verified/live figures: 84K+
-   YouTube, 10 practice tests, live guide count, live founder count. The
+   YouTube, 6 practice tests, live guide count, live founder count. The
    blueprint's "1,252 truck stops" was NOT used — repo documents conflict
    (139 vs 670 vs 1,252). Confirm the real listing count and it can join the
    bar (ideally as a live query).
-9. **Trip Planner nav placement.** Blueprint nests it under Directory; PR #161
+9. **Thumbnail-yellow surfaces.** The favicon, OG share cards, and ROAD
+   AHEAD cinematics still use #FFEB00/#0E0E0E (the YouTube-facing
+   identity — blueprint §2.1 keeps thumbnails yellow). If you'd rather
+   unify them with Sodium Amber, say so — it's a small find/replace in
+   icon.tsx and the two opengraph-image files.
+10. **Trip Planner nav placement.** Blueprint nests it under Directory; PR #161
    added it to the top bar. Compromise shipped: grouped under "Drive" in the
    menu + linked from the Four Doors and footer. Say the word to elevate it
    back to the top bar.

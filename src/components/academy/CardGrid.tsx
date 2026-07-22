@@ -43,13 +43,13 @@ export function CardGrid({ cards, columns = 3 }: { cards: Card[]; columns?: 2 | 
           </>
         );
 
-        const base = 'placard lift flex flex-col p-4 sm:p-6';
+        const base = 'placard flex flex-col p-4 sm:p-6';
 
         return c.href ? (
           <Link
             key={c.title}
             href={c.href}
-            className={`group ${base} transition-colors hover:border-signal`}
+            className={`group ${base} lift transition-colors hover:border-signal`}
           >
             {inner}
           </Link>

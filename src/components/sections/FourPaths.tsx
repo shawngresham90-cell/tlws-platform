@@ -49,7 +49,7 @@ export async function FourPaths() {
       <h2 className="display-section max-w-3xl">Four ways to start</h2>
       <div className="mt-10 grid gap-4 lg:grid-cols-2">
         {/* Door 1 — I want my CDL (money path: school + Pre-School) */}
-        <div className="placard placard-money lift flex flex-col p-4 sm:p-6 lg:row-span-2">
+        <div className="placard placard-money flex flex-col p-4 sm:p-6 lg:row-span-2">
           <h3 className="font-display text-2xl uppercase text-ink">I want my CDL</h3>
           <p className="mt-3 text-sm text-muted">
             ELDT-compliant CDL-A training on real trucks in Dalton, GA — applying is free and
@@ -91,7 +91,7 @@ export async function FourPaths() {
 
         {/* Doors 2–3 — free value, no amber */}
         {FREE_DOORS.map((d) => (
-          <div key={d.title} className="placard lift flex flex-col p-4 sm:p-6">
+          <div key={d.title} className="placard flex flex-col p-4 sm:p-6">
             <h3 className="font-display text-xl uppercase text-ink">{d.title}</h3>
             <p className="mt-2 flex-1 text-sm text-muted">{d.description}</p>
             <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
@@ -99,7 +99,7 @@ export async function FourPaths() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="font-semibold text-signal underline-offset-4 hover:underline"
+                  className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
                 >
                   {l.label} →
                 </Link>
@@ -109,7 +109,7 @@ export async function FourPaths() {
         ))}
 
         {/* Door 4 — back the mission (money path) */}
-        <div className="placard placard-money lift flex flex-col p-4 sm:p-6">
+        <div className="placard placard-money flex flex-col p-4 sm:p-6">
           <h3 className="font-display text-xl uppercase text-ink">I want to back the mission</h3>
           <p className="mt-2 flex-1 text-sm text-muted">
             Fund the school as a founder and put your name on the wall — or take the full drive
@@ -118,13 +118,13 @@ export async function FourPaths() {
           <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
             <Link
               href="/founders"
-              className="font-semibold text-signal underline-offset-4 hover:underline"
+              className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
             >
               Become a founder →
             </Link>
             <Link
               href="/road-ahead"
-              className="font-semibold text-signal underline-offset-4 hover:underline"
+              className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
             >
               See The Road Ahead →
             </Link>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
+import { HeaderMenu } from './HeaderMenu';
 
 /**
  * Navigation discipline (blueprint §2.9): six top-level destinations, one
@@ -94,12 +95,12 @@ export function Header() {
             Apply
           </Link>
 
-          {/* Grouped menu — pure CSS disclosure, all viewports */}
-          <details className="relative">
-            <summary
-              className="flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-card border border-line px-3 text-ink transition-colors hover:border-signal [&::-webkit-details-marker]:hidden"
-              aria-label="Menu"
-            >
+          {/* Grouped menu — CSS disclosure + client shell for route-change
+              close and Escape. Accessible name matches the visible label
+              ("More" on desktop, "Menu" where only the icon shows). */}
+          <HeaderMenu>
+            <summary className="flex h-12 cursor-pointer list-none items-center justify-center gap-2 rounded-card border border-line px-3 text-ink transition-colors hover:border-signal [&::-webkit-details-marker]:hidden">
+              <span className="sr-only xl:hidden">Menu</span>
               <span className="hidden text-xs font-semibold uppercase tracking-wide xl:inline">
                 More
               </span>
@@ -130,7 +131,7 @@ export function Header() {
                     <Link
                       key={`${group.heading}-${item.href}`}
                       href={item.href}
-                      className="block rounded-card px-3 py-2 text-sm font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-asphalt-600 hover:text-signal"
+                      className="block rounded-card px-3 py-3 text-sm font-semibold uppercase tracking-wide text-muted transition-colors hover:bg-asphalt-600 hover:text-signal"
                     >
                       {item.label}
                     </Link>
@@ -138,7 +139,7 @@ export function Header() {
                 </div>
               ))}
             </nav>
-          </details>
+          </HeaderMenu>
         </div>
       </Container>
     </header>

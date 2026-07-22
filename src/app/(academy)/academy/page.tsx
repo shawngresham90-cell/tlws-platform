@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Section, Button, Eyebrow } from '@/components/ui';
+import { Section, Button, Eyebrow, Placard } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { getCampaignProgress } from '@/lib/community/founders';
 import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
@@ -169,12 +169,12 @@ const ENROLLMENT_STATUS: Array<{ label: string; value: string; note: string }> =
   {
     label: 'Schedule & start dates',
     value: 'Being finalized',
-    note: 'Join the interest list below — applicants hear first.',
+    note: 'Join the interest list below — applicants hear updates before anyone else.',
   },
   {
     label: 'State licensing',
     value: 'Details published when finalized',
-    note: 'We publish our own licensing checklist — ask any school to show you theirs.',
+    note: 'Our licensing checklist will be published here as it comes together — and we think every school should show you theirs.',
   },
 ];
 
@@ -271,7 +271,7 @@ export default async function AcademyPage() {
         </p>
         <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {JOURNEY.map((j, i) => (
-            <li key={j.title} className="placard lift flex flex-col p-4 sm:p-6">
+            <li key={j.title} className="placard flex flex-col p-4 sm:p-6">
               <p className="num-data text-xs font-semibold uppercase tracking-wide text-muted">
                 {i + 1} · {j.step}
               </p>
@@ -280,7 +280,7 @@ export default async function AcademyPage() {
               <p className="mt-4">
                 <Link
                   href={j.href}
-                  className="text-sm font-semibold text-signal underline-offset-4 hover:underline"
+                  className="inline-block py-3 text-sm font-semibold text-signal underline-offset-4 hover:underline"
                 >
                   Learn more →
                 </Link>
@@ -303,7 +303,7 @@ export default async function AcademyPage() {
         </div>
         <dl className="mt-8 grid gap-4 sm:grid-cols-2">
           {ENROLLMENT_STATUS.map((row) => (
-            <div key={row.label} className="placard p-4 sm:p-6">
+            <Placard key={row.label}>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
                 {row.label}
               </dt>
@@ -311,20 +311,24 @@ export default async function AcademyPage() {
                 <p className="font-display text-lg uppercase text-ink">{row.value}</p>
                 <p className="mt-1 text-sm text-muted">{row.note}</p>
               </dd>
-            </div>
+            </Placard>
           ))}
         </dl>
-        <div className="placard placard-money mt-6 flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <Placard
+          money
+          className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
           <p className="max-w-xl text-sm text-muted">
             <strong className="text-ink">
               Final enrollment details are being confirmed. Join the interest list for updates
             </strong>{' '}
-            — applying costs nothing, collects no payment, and puts you first in line.
+            — applying costs nothing, collects no payment, and puts you on the list before
+            enrollment opens.
           </p>
           <Button href="/academy/apply" className="shrink-0">
             Apply — join the list
           </Button>
-        </div>
+        </Placard>
       </Section>
 
       {/* Fundraising — live campaign thermometer (same source as /founders) */}

@@ -52,8 +52,8 @@ export async function ProofBar() {
   ];
 
   return (
-    <div aria-label="Platform numbers" className="border-b border-line bg-asphalt-800">
-      <div className="mx-auto grid max-w-content grid-cols-2 gap-px px-5 sm:px-8 lg:grid-cols-4">
+    <section aria-label="Platform numbers" className="border-b border-line bg-asphalt-800">
+      <div className="mx-auto grid max-w-content grid-cols-2 gap-px px-5 motion-safe:animate-fade-up sm:px-8 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="py-6 text-center">
             <p className="num-data font-display text-3xl uppercase text-signal sm:text-4xl">
@@ -63,6 +63,6 @@ export async function ProofBar() {
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

@@ -70,5 +70,8 @@
     .lift {
       transition: none;
     }
+    .animate-fade-up {
+      animation: none;
+    }
   }
 }
