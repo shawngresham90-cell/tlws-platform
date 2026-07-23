@@ -23,6 +23,13 @@ const utm = z
   .optional()
   .default({});
 const turnstileToken = z.string().min(1, 'Verification failed. Reload and try again.');
+// Optional per-submission idempotency token (a UUID from crypto.randomUUID()).
+// Reused across retries of the same submit so SMS-consent evidence
+// de-duplicates instead of piling up. Strictly validated as a UUID; a malformed
+// value is dropped to undefined (via .catch) rather than failing the whole
+// request, so a bad/absent token never blocks the form. The server additionally
+// re-validates the token before trusting it as an idempotency key.
+const submissionId = z.string().uuid().optional().catch(undefined);
 
 // --- Application step 1: the low-friction hook (name + contact + location) ---
 export const applicationStep1Schema = z.object({
@@ -46,7 +53,9 @@ export const applicationStep2Schema = z.object({
   start_timeframe: startTimeframe.optional(),
   funding_type: z.enum(['self', 'employer', 'wioa', 'va', 'sponsor', 'unsure']).optional(),
   sms_consent: z.boolean().default(false),
-  sms_consent_text: z.string().max(500).optional(),
+  // No client-supplied disclosure text — the server is the sole authority on the
+  // disclosure wording, version, and timestamp (see the step2 route).
+  submission_id: submissionId,
 });
 
 // --- Lead capture: email-first, optional magnet claim ---
@@ -57,6 +66,7 @@ export const leadCaptureSchema = z.object({
   source: z.string().trim().max(40).optional(),
   magnet_slug: z.string().trim().max(80).optional(),
   sms_consent: z.boolean().default(false),
+  submission_id: submissionId,
   utm,
   turnstileToken,
 });
