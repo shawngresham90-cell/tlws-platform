@@ -132,7 +132,11 @@ application_fields · 017 admin_statuses · 018–025 directory (admin/bulk/
 community/geocoding/detail-pages/growth/sponsors/view-events) · 026–027 founders
 aggregate+seed · 028 cdl_preschool · 029–036/039/041 practice-test schema +
 question seeds · 037/038/040/042/045 KC article seeds · 043 geocoding provenance
-· 044 saved_trips_cloud. **No new migration is added by this block.**
+· 044 saved_trips_cloud. **The catch-up recovery work audited here (PRs A/B/C)
+adds no migration.** _(Update, after this audit was written: a separate SMS-consent
+requirement layered a proposed, still-unapplied migration `046_sms_consents`
+onto PR B's branch — see PR #175. It is not on `main`, is not applied, and is
+outside this audit's scope.)_
 
 ## 18. Scheduled / background jobs
 **No cron/scheduled triggers anywhere.** GitHub Actions: `preview-crawl.yml`
