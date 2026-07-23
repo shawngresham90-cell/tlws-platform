@@ -17,7 +17,7 @@ Status vocabulary: **PASS** · **PENDING** (work exists, not signed) ·
 | Cheat Sheet (PR 5b) | RC-4 (cheat rows G): S-3/S-5/S-13 — OPEN | AT-4 signing/arrest + AT-5 — OPEN | n/a | O-7 voice items | **NO-GO** |
 | Roadside Mode (PR 6) | RC-4 (roadside rows H, incl. R-RS-02 correction) — OPEN | AT-3 coaching + AT-5 — OPEN (may launch with say/don't section held) | n/a | sales-free policy applies by construction | **NO-GO** |
 | Before You Move (PR 7) | RC-1: S-1/S-10 + worksheet A–D signed — OPEN | AT-5 — OPEN | n/a | — | **NO-GO** |
-| Violation Checker + CSA estimate (PR 8) | RC-2: S-7 table complete + R-SMS-07 respec — OPEN | AT-2 scripts — OPEN (may launch with scripts held) + AT-5 | n/a | O-6 DataQs primary-link applied | **NO-GO** |
+| Violation Checker + CSA estimate (PR 8) | RC-2: S-7 Appendix A v3.21 **source-matched (23/23; 17 matched, 6 corrected)**; R-SMS-07 REMOVE recorded; framing fixed — **but reviewer countersignature PENDING (O-1)** | AT-2 scripts — OPEN (may launch with scripts held) + AT-5 | n/a | O-6 DataQs primary-link applied | **NO-GO** (advanced: mechanics + per-code data reconciled; blocked on reviewer sign-off + AT-2) |
 | Email capture activation (PR 9) | n/a | consent wording ride-along with AT-5 — OPEN | n/a | owner activation approval — OPEN | **NO-GO** |
 | Fix-It Letters (PR 10) | RC-2 subset (cites in templates) — OPEN | **AT-1 — OPEN (hard block, Decision 6)** | n/a | DataQs-primary-link applied | **NO-GO** |
 | Adverse-conditions path (no PR scheduled) | RC-6: worksheet B + reviewer approval — OPEN | n/a | n/a | Decision 10 conditions | **NO-GO (indefinite — CAN'T CALL IT until passed)** |

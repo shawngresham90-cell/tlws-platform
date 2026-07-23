@@ -81,7 +81,12 @@ Confirm each violation's severity weight and BASIC in the current Appendix
 A table; the OOS +2 adjustment; time weights (3/2/1 bands and their exact
 month boundaries); the 24-month observation window; warning-vs-citation
 treatment. Record the methodology version — it revises.
-`[ ] DONE · ____ · ____ · ____ · ____`
+`[x] DONE · viewed via sms_appendixa_violationslist_3.xlsx · v3.21 (Appendix A snapshot 05/15/2026; methodology revised May 2026, doc June 2026) · owner-supplied · all 23 codes matched — see violations-sms-verification-table.md`
+Result: 17 source-matched (review pending) · 6 SUPERSEDED (R-VIO-04/13/17/18/20/22).
+Time weights confirmed 3/2/1/excluded; OOS +2 is BASIC-conditional, never
+Unsafe Driving; ≥10/≥21 bands have no basis (removed). **Warning-vs-citation
+(R-SMS-05) not addressed in this file — remains UNVERIFIED.** DSMS(Y/N) column
+captured; brakeadj 393.47(e) and bare brakehose 393.45 are DSMS=N.
 
 ### S-8 · FMCSA PSP program
 **URL:** https://psp.fmcsa.dot.gov/

@@ -35,7 +35,20 @@ launches, or changes anything.
 | `attorney-packet.md` | Attorney packet (letters, DataQ language, scripts, coaching, signing/arrest claims, disclaimers, wallet disclosure) |
 | `reviewer-brief.md` | One-page independent compliance reviewer brief |
 | `release-gate-matrix.md` | Release-gate matrix for every future DOT Tool |
+| `corrected-legacy-claims.md` | Record of every legacy claim the official source corrects/removes |
+| `violations-sms-verification-table.md` | 23-row Appendix A v3.21 comparison (filled) |
 | `../../dot-tools/decision-log.md` | Updated owner-decision register (updated in this PR) |
+
+## Ledger status (after S-7 Appendix A v3.21 reconciliation)
+
+**89 rows — VERIFIED 0 · UNVERIFIED 64 · CROSS-REF 10 · BLOCKED 7 ·
+SUPERSEDED 8.** Of the UNVERIFIED, **21 rows are SOURCE MATCHED — INDEP.
+REVIEW PENDING** (17 violations + 4 SMS-mechanics rows). VERIFIED stays 0:
+a source match does not promote a row — only the independent reviewer's
+countersignature does. The 8 SUPERSEDED rows are where Appendix A v3.21
+directly contradicts the legacy app (6 violations + universal OOS +2 +
+invented bands); see `corrected-legacy-claims.md`. Full detail and the
+tally correction note are in `../dot-tools-rule-ledger.md`.
 
 ## Standing rules (owner decisions, restated)
 

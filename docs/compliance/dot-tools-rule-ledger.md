@@ -81,44 +81,78 @@ script on every row additionally carries the ATTORNEY gate (they script
 driver statements to law enforcement). Coaching claims embedded in fix[]
 strings that assert regulation (noted below) verify with the row.
 
-| ID | Key | App cite | Sev | OOS flag | Embedded regulatory claims to verify with the row | Status | Gate |
-|---|---|---|---|---|---|---|---|
-| R-VIO-01 | hos11 | 395.3(a)(3)(i) | 7 | yes | adverse/16-hr mentions (→R-HOS-09/12) | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-02 | hos14 | 395.3(a)(2) | 7 | yes | split mention (→R-HOS-11) | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-03 | hos30 | 395.3(a)(3)(ii) | 7 | no | "since 2020 on-duty-not-driving counts" | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-04 | nolog | 395.8(a) | 5 | yes | "§395.34 gives 8 days to repair"; 24-hr written malfunction notice | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-05 | falselog | 395.8(e) | 7 | yes | — | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-06 | lognotcurrent | 395.8(f)(1) | 5 | no | right to bring log current at stop | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-07 | phone | 392.82 | 10 | no | "fine up to $2,750; disqualification on repeat" | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-08 | texting | 392.80 | 10 | no | "2 in 3 years = 60-day disqualification" | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-09 | belt | 392.16 | 7 | no | — | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-10 | speed1 | 392.2-SLLS2 | 4 | no | SMS violation-group code exists as cited | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-11 | speed2 | 392.2-SLLS3 | 7 | no | "serious violation, two in 3 yrs = 60-day disqualification (§383.51)" | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-12 | speed3 | 392.2-SLLS4 | 10 | no | — | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-13 | lamp | 393.9 | 6 | no | — | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-14 | tireflat | 393.75(a) | 8 | yes | "automatic OOS" | UNVERIFIED | REG+CVSA+ATTORNEY |
-| R-VIO-15 | tiretread | 393.75(b)/(c) | 8 | yes | 4/32 steer · 2/32 other; major-groove measurement | UNVERIFIED | REG+CVSA+ATTORNEY |
-| R-VIO-16 | brakeadj | 393.47(e) | 4 | yes | "20%+ out of adjustment = vehicle OOS"; auto-slack-adjuster guidance | UNVERIFIED | REG+CVSA+ATTORNEY |
-| R-VIO-17 | brakehose | 393.45 | 4 | yes | audible leak/bulge = OOS | UNVERIFIED | REG+CVSA+ATTORNEY |
-| R-VIO-18 | mudflap | 393.87 | 1 | no | cite likely wrong anchor (393.87 is warning flags; flaps are state law + 393.78-adjacent) — verify or re-cite | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-19 | emerequip | 393.95 | 2 | no | 3 triangles + extinguisher + fuses list | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-20 | securement | 393.100 | 7 | yes | "aggregate WLL ≥ 1/2 cargo weight"; 50/150-mile recheck | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-21 | nomedcard | 391.41(a) | 1 | no | winnable-via-DataQ framing; CDLIS proof claim | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-22 | expmedcard | 391.41(a) | 7 | yes | cannot drive until re-examined | UNVERIFIED | REG+ATTORNEY |
-| R-VIO-23 | nocdl | 383.23(a)(2) | 8 | yes | — | UNVERIFIED | REG+ATTORNEY |
+**S-7 source stamp (this section):** SMS Methodology **v3.21** + Appendix A
+**v3.21** (snapshot implemented **05/15/2026**), read from
+`sms_appendixa_violationslist_3.xlsx`. See the filled comparison in
+`dot-tools-verification/violations-sms-verification-table.md` and the
+corrections record in `dot-tools-verification/corrected-legacy-claims.md`.
+
+**Status discipline (owner rule, this reconciliation):** a source match does
+**not** promote a row to VERIFIED. The ledger has no separate source-verified
+field, so source-matched rows keep **UNVERIFIED** with the note
+"SOURCE MATCHED — INDEP. REVIEW PENDING"; only the independent reviewer's
+countersignature promotes them. The six rows the official source directly
+contradicts are marked **SUPERSEDED** now.
+
+Legend for the Appendix A column: `code · group · sev · DSMS`. "no OOS wt" =
+Unsafe Driving receives no SMS OOS +2 adjustment.
+
+| ID | Key | Legacy cite→sev | Appendix A v3.21 match | Status |
+|---|---|---|---|---|
+| R-VIO-01 | hos11 | 395.3(a)(3)(i)→7 | `395.3A3I-HOSPDIT` · Hours · 7 · Y (>11 hr) | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (sev 7 confirmed; refine to SMS code) |
+| R-VIO-02 | hos14 | 395.3(a)(2)→7 | `395.3A2-HOSPD`/`-PROP`/`A2R` · Hours · 7 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (nominal-at-inspection variants weigh 1) |
+| R-VIO-03 | hos30 | 395.3(a)(3)(ii)→7 | `395.3(a)(3)(ii)` EXACT · Hours · 7 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-04 | nolog | 395.8(a)→5 | bare `395.8(a)` = Form&Manner · **sev 1**; no-RODS = `395.8A-NON-ELD`/`-ELD` · sev 5 · Y | **SUPERSEDED/BLOCKED** — sev 5 not valid for the bare cite; needs narrowed product choices (form&manner vs no-RODS ELD/non-ELD) |
+| R-VIO-05 | falselog | 395.8(e)→7 | `395.8(e)` EXACT · False Log · 7 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-06 | lognotcurrent | 395.8(f)(1)→5 | `395.8(f)(1)` EXACT · Incomplete/Wrong Log · 5 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-07 | phone | 392.82→10 | `392.82(a)(1)` · Phone Call · 10 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (code→392.82(a)(1)) |
+| R-VIO-08 | texting | 392.80→10 | `392.80(a)` · Texting · 10 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (code→392.80(a)) |
+| R-VIO-09 | belt | 392.16→7 | `392.16` EXACT · Seat Belt · 7 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-10 | speed1 | 392.2-SLLS2→4 | `392.2-SLLS2` EXACT · Speeding 2 · 4 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-11 | speed2 | 392.2-SLLS3→7 | `392.2-SLLS3` EXACT · Speeding 3 · 7 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-12 | speed3 | 392.2-SLLS4→10 | `392.2-SLLS4` EXACT · Speeding 4 · 10 · Y · no OOS wt | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-13 | lamp | 393.9→**6** | `393.9` EXACT "Inoperable Required Lamp" · 2 · Y | **SUPERSEDED — severity 6→2** |
+| R-VIO-14 | tireflat | 393.75(a)→8 | `393.75(a)` EXACT · Tires · 8 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (OOS/"automatic OOS" wording still CVSA-gated) |
+| R-VIO-15 | tiretread | 393.75(b)/(c)→8 | `393.75(b)` (front <4/32) + `393.75(c)` (other <2/32) · Tires · 8 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-16 | brakeadj | 393.47(e)→4 | `393.47(e)` EXACT · Brakes Out of Adjustment · 4 · **DSMS N** | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING · **DSMS=N — not a Driver SMS point contributor** |
+| R-VIO-17 | brakehose | 393.45→4 | bare `393.45` DSMS **N**; chafe/leak `393.45(b)(2)` · 4 · Y | **SUPERSEDED/BLOCKED** — bare cite is DSMS N; needs narrowed choice (scoring code 393.45(b)(2)) |
+| R-VIO-18 | mudflap | 393.87→1 | `393.87` = **Warning Flags (projecting load)** — WRONG; mud flap = `392.2-SLLMF` · Windshield/Glass/Markings · 1 · Y | **SUPERSEDED — cite corrected to 392.2-SLLMF** (sev 1) |
+| R-VIO-19 | emerequip | 393.95→2 | `393.95(a)` family · Emergency Equipment · 2 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (code→specific sub) |
+| R-VIO-20 | securement | 393.100→**7** | bare `393.100` = **sev 1** (General Securement); `393.100(b)` (leaking/blowing/falling) = 7 · Y | **SUPERSEDED/BLOCKED** — split into separate choices; general=1, 393.100(b)=7 |
+| R-VIO-21 | nomedcard | 391.41(a)→1 | `391.41(a)` EXACT · Medical Certificate · 1 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+| R-VIO-22 | expmedcard | 391.41(a)→**7** | `391.41(a)` = **sev 1**; 391.41 family all low severity | **SUPERSEDED — sev 7 unsupported**; distinguish possession/expiration (Medical Certificate, low) from operating-while-medically-**unqualified** (different section, not in the 391.41 family) |
+| R-VIO-23 | nocdl | 383.23(a)(2)→8 | `383.23(a)(2)` EXACT · License-related: High · 8 · Y | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING |
+
+**§C reconciliation tally:** 17 source-matched (UNVERIFIED · review pending) ·
+6 SUPERSEDED (R-VIO-04, 13, 17, 18, 20, 22). ATTORNEY gate on the "what to
+say" scripts and CVSA gate on OOS-wording claims are unchanged and still
+apply to these rows regardless of the S-7 match.
 
 ## D. CSA / SMS Estimate Mechanics (8 rows)
 
 | ID | Tool / path | Current app behavior | Primary source | Minimum operative language needed | TLWS interpretation to verify | Status | Gate |
 |---|---|---|---|---|---|---|---|
-| R-SMS-01 | Checker · math | +2 severity when placed OOS | FMCSA SMS Methodology | OOS severity adjustment rule | As displayed | UNVERIFIED | REG |
-| R-SMS-02 | Checker · math | Time weights ×3 (<6 mo), ×2 (6–12 mo), ×1 (1–2 yr) | SMS Methodology | Time-weighting bands | As displayed | UNVERIFIED | REG |
-| R-SMS-03 | Checker · text | Violations affect carrier scores 24 months | SMS Methodology | Carrier observation window | As displayed | UNVERIFIED | REG |
-| R-SMS-04 | Checker · text | PSP shows 3 yrs violations / 5 yrs crashes | PSP program (psp.fmcsa.dot.gov) | PSP retention windows | As displayed | UNVERIFIED | REG |
-| R-SMS-05 | Checker · text | "Citation vs warning doesn't change CSA — any noted violation counts" | SMS Methodology | Inspection-based scoring independent of citation outcome | As displayed | UNVERIFIED | REG |
-| R-SMS-06 | Checker · mapping | 4 BASIC assignments (HOS Compliance, Unsafe Driving, Vehicle Maint., Driver Fitness) | SMS Methodology App. A | Violation→BASIC mapping for all 23 rows | As mapped | UNVERIFIED | REG |
-| R-SMS-07 | Checker · banding | Points ≥21 "Heavy" / ≥10 "Moderate" impact bands | none — **TLWS invention** | n/a | Not a regulatory value. Either relabel explicitly as TLWS editorial framing or drop. May never be presented as FMCSA banding | **BLOCKED** until respec | REG |
-| R-SMS-08 | Checker · framing | Output presented as "CSA math (approx.)" | SMS Methodology + D-9 verdict rules | n/a | Must ship as "estimate based on public SMS methodology — not your official score" + official-source link; never "Official CSA score" | UNVERIFIED (spec rule) | REG |
+| R-SMS-01 | Checker · math | +2 severity when placed OOS (applied universally) | SMS Methodology v3.21 | OOS weight only where the BASIC authorizes; **Unsafe Driving never**; not universal | **SUPERSEDED** — universal +2 removed; future logic must be BASIC-aware | REG |
+| R-SMS-02 | Checker · math | Time weights ×3 (<6 mo), ×2 (6–12 mo), ×1 (1–2 yr) | SMS Methodology v3.21 | 0–6 mo = 3 · over 6–12 = 2 · over 12–24 = 1 · **older than 24 = excluded** | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (relabel boundaries + add >24 exclusion) | REG |
+| R-SMS-03 | Checker · text | Violations affect carrier scores 24 months | SMS Methodology v3.21 | 24-month SMS event window | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING | REG |
+| R-SMS-04 | Checker · text | PSP shows 3 yrs violations / 5 yrs crashes | PSP program (psp.fmcsa.dot.gov) | PSP retention windows | UNVERIFIED (S-8, not covered by S-7) | REG |
+| R-SMS-05 | Checker · text | "Citation vs warning doesn't change CSA — any noted violation counts" | SMS Methodology | Inspection-based scoring independent of citation outcome | UNVERIFIED (not addressed in S-7 evidence) | REG |
+| R-SMS-06 | Checker · mapping | 4 BASIC assignments (HOS Compliance, Unsafe Driving, Vehicle Maint., Driver Fitness) | SMS Methodology App. A v3.21 | Violation→BASIC mapping for all 23 rows | UNVERIFIED · SOURCE MATCHED for all 23 — INDEP. REVIEW PENDING (BASIC/group confirmed per §C) | REG |
+| R-SMS-07 | Checker · banding | Points ≥21 "Heavy" / ≥10 "Moderate" impact bands | none — **TLWS invention** | n/a | **SUPERSEDED — REMOVE** (owner order; no methodology basis) | REG |
+| R-SMS-08 | Checker · framing | Output presented as "CSA math (approx.)" | SMS Methodology v3.21 + verdict rules | Approved output string (below) | UNVERIFIED · SOURCE MATCHED — INDEP. REVIEW PENDING (spec fixed) | REG |
+
+**R-SMS-08 approved output string:** "Estimated SMS weighted value based on
+public methodology." **Banned output labels (never render):** CSA score ·
+PSP score · official FMCSA score · carrier percentile · points against your
+CDL · guaranteed company impact.
+
+**DSMS vs carrier-SMS (record):** the Appendix A "DSMS (Y/N)" flag marks
+whether a violation is used in the **Driver** SMS. It is not the same as
+carrier SMS treatment, and it is not the SMS OOS +2 adjustment. Rows flagged
+DSMS = N (`brakeadj` 393.47(e); bare `brakehose` 393.45) must **not** be
+described as automatically creating driver points. "OOS likely" (a
+placed-out-of-service outcome) is **not** evidence that the SMS OOS +2
+severity adjustment applies.
 
 ## E. Pre-Trip Failure Check (14 rows)
 
@@ -206,14 +240,28 @@ Unresolved Sources.
 | J. Canada | 1 |
 | **Total** | **89** |
 
-**Status counts:** VERIFIED 0 · CROSS-REF 9 (7 → `hos-verification.md`,
-R-CS-03/R-RS-03/R-LT-02 internal) · BLOCKED 8 (R-HOS-09, R-HOS-10, R-HOS-11,
-R-SMS-07, R-RS-02, R-LT-04, R-CA-01, + R-IDX-05 honest-status respec is a
-ship-blocker within its row) · UNVERIFIED 72.
+**Status counts (after S-7 Appendix A v3.21 reconciliation):**
+VERIFIED **0** · UNVERIFIED **64** · CROSS-REF **10** · BLOCKED **7** ·
+SUPERSEDED **8** = 89.
 
-Counting convention: R-IDX-05 is tallied under UNVERIFIED (its blocker is a
-spec change, not a source question), so UNVERIFIED 72 + CROSS-REF 9 +
-BLOCKED 8 = 89.
+- **VERIFIED 0** — unchanged. A source match does not promote a row; only the
+  independent reviewer's countersignature does (owner status rule).
+- **SOURCE MATCHED — INDEP. REVIEW PENDING: 21 rows** (a subset of UNVERIFIED,
+  not a separate status): §C R-VIO-01/02/03/05/06/07/08/09/10/11/12/14/15/16/19/21/23
+  (17) + §D R-SMS-02/03/06/08 (4).
+- **SUPERSEDED 8** — §C R-VIO-04, 13, 17, 18, 20, 22 (legacy value contradicted
+  by Appendix A v3.21) + §D R-SMS-01 (universal OOS +2) and R-SMS-07 (invented
+  bands, REMOVE). Of the §C six, R-VIO-04/17/20 are additionally
+  **BLOCKED pending narrowed product choices** (counted here under SUPERSEDED).
+- **BLOCKED 7** — R-HOS-09, R-HOS-10, R-HOS-11, R-IDX-05, R-RS-02, R-LT-04,
+  R-CA-01 (R-SMS-07 moved BLOCKED→SUPERSEDED).
+- **CROSS-REF 10** — R-HOS-01…07 (→ `hos-verification.md`) + R-CS-03 + R-RS-03
+  + R-LT-02.
+
+Correction note: the pre-reconciliation tally read "UNVERIFIED 72 · CROSS-REF 9
+· BLOCKED 8." An accurate recount of that prior state is UNVERIFIED 71 ·
+CROSS-REF 10 · BLOCKED 8 (CROSS-REF was undercounted by one — R-HOS-01…07 is
+7 rows, plus 3 internal = 10). Corrected here.
 
 ## Unresolved source requirements
 
