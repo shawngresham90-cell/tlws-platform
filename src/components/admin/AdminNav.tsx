@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/admin/submissions', label: 'Submissions' },
   { href: '/admin/reviews', label: 'Reviews' },
   { href: '/admin/applications', label: 'Applications' },
+  { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/founders', label: 'Founders' },
   { href: '/admin/cdl-preschool/founding-students', label: 'Pre-School' },
   { href: '/admin/store', label: 'Store' },

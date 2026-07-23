@@ -34,6 +34,8 @@ export type SponsorRow = {
   email: string | null;
   phone: string | null;
   tier_interest: string | null;
+  /** The inquiry message the prospect submitted (stored in sponsors.notes). */
+  notes: string | null;
   status: string;
   created_at: string;
 };
@@ -68,10 +70,29 @@ export function getFounders(): Promise<Result<FounderRow>> {
   );
 }
 
+export type LeadRow = {
+  id: string;
+  email: string;
+  first_name: string | null;
+  phone: string | null;
+  sms_consent: boolean | null;
+  source: string | null;
+  utm: Record<string, unknown> | null;
+  created_at: string;
+};
+
+/** Read-only lead list for the admin funnel view. Never writes. */
+export function getLeads(): Promise<Result<LeadRow>> {
+  return fetchRows<LeadRow>(
+    'leads',
+    'id, email, first_name, phone, sms_consent, source, utm, created_at',
+  );
+}
+
 export function getSponsors(): Promise<Result<SponsorRow>> {
   return fetchRows<SponsorRow>(
     'sponsors',
-    'id, company, contact_name, email, phone, tier_interest, status, created_at',
+    'id, company, contact_name, email, phone, tier_interest, notes, status, created_at',
   );
 }
 

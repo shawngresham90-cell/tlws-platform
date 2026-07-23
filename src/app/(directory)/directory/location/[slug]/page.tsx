@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { DirectoryHero, DetailNearbySections, SponsorSlot, ViewBeacon } from '@/components/directory';
+import {
+  DirectoryHero,
+  DetailNearbySections,
+  SponsorSlot,
+  ViewBeacon,
+  GetFeaturedCta,
+} from '@/components/directory';
 import { MapPreview } from '@/components/map/MapPreview';
 import { ReviewList, Stars } from '@/components/community/ReviewList';
 import { getCategory, categoryHref } from '@/lib/directory/categories';
@@ -25,10 +31,7 @@ import { isValidDetailSlug, detailHref } from '@/lib/directory/detail-slug';
 import { resolveSlugRedirect } from '@/lib/directory/redirects';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
-import {
-  getApprovedReviewsForLocation,
-  getReviewStatsForLocation,
-} from '@/lib/community/data';
+import { getApprovedReviewsForLocation, getReviewStatsForLocation } from '@/lib/community/data';
 import { listingDetailSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -155,7 +158,10 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
     facts.push({
       label: 'Interstate',
       value: interstateSlug(entry.interstate) ? (
-        <Link href={`/directory/${interstateSlug(entry.interstate)}`} className="text-signal hover:underline">
+        <Link
+          href={`/directory/${interstateSlug(entry.interstate)}`}
+          className="text-signal hover:underline"
+        >
           {entry.interstate}
         </Link>
       ) : (
@@ -189,7 +195,12 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
     facts.push({
       label: 'Website',
       value: (
-        <a href={entry.website} target="_blank" rel="noopener noreferrer" className="text-signal hover:underline">
+        <a
+          href={entry.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-signal hover:underline"
+        >
           Visit website ↗
         </a>
       ),
@@ -217,9 +228,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
           breadcrumbSchema([
             { name: 'Home', path: '/' },
             { name: 'Directory', path: '/directory' },
-            ...(category
-              ? [{ name: category.title, path: categoryHref(category) }]
-              : []),
+            ...(category ? [{ name: category.title, path: categoryHref(category) }] : []),
             { name: entry.name, path },
           ]),
           listingDetailSchema(entry, path, stats, seoReviews),
@@ -230,9 +239,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
         crumbs={[
           { name: 'Home', href: '/' },
           { name: 'Directory', href: '/directory' },
-          ...(category
-            ? [{ name: category.title, href: categoryHref(category) }]
-            : []),
+          ...(category ? [{ name: category.title, href: categoryHref(category) }] : []),
           { name: entry.name },
         ]}
         eyebrow={`Directory · ${category ? category.title : 'Listing'}`}
@@ -367,8 +374,8 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
                 {stats && (
                   <p className="text-sm text-muted">
                     <Stars rating={Math.round(stats.average)} />{' '}
-                    <span className="font-semibold text-ink">{stats.average}</span> ·{' '}
-                    {stats.count} review{stats.count === 1 ? '' : 's'}
+                    <span className="font-semibold text-ink">{stats.average}</span> · {stats.count}{' '}
+                    review{stats.count === 1 ? '' : 's'}
                   </p>
                 )}
               </div>
@@ -423,6 +430,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             Gear for the road →
           </Link>
         </p>
+        <GetFeaturedCta surface="directory-listing" className="mt-8 border-t border-line pt-8" />
       </Section>
     </>
   );

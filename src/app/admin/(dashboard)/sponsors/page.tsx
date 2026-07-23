@@ -37,6 +37,7 @@ export default async function AdminSponsorsPage() {
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Package interest</th>
+                <th className="px-4 py-3 font-semibold">Message</th>
                 <th className="px-4 py-3 font-semibold">Submitted</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
@@ -52,6 +53,9 @@ export default async function AdminSponsorsPage() {
                   <td className="px-4 py-3 text-muted">{r.email || '—'}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">
                     {r.tier_interest || '—'}
+                  </td>
+                  <td className="max-w-xs whitespace-pre-wrap break-words px-4 py-3 text-muted">
+                    {r.notes ? r.notes : '—'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">
                     {fmtDate(r.created_at)}

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { TpcReserveCta } from '@/components/directory/TpcReserveCta';
-import { DirectoryBrowser } from '@/components/directory';
+import { DirectoryBrowser, GetFeaturedCta } from '@/components/directory';
 import { getEntries } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { getDirectoryFacets } from '@/lib/directory/data';
@@ -196,6 +196,7 @@ export default async function TruckParkingPage() {
           </Link>
         </div>
         <RelatedLinks groups={categoryScopeLinks(facets)} />
+        <GetFeaturedCta surface="directory-parking" className="mt-8 border-t border-line pt-8" />
       </Section>
     </>
   );

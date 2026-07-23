@@ -23,12 +23,24 @@ const INTEREST_OPTIONS = [
 
 type Errors = Record<string, string>;
 
-export function SponsorInquiryForm({ siteKey }: { siteKey: string }) {
+const INTEREST_VALUES = new Set(INTEREST_OPTIONS.map((o) => o.value));
+
+export function SponsorInquiryForm({
+  siteKey,
+  defaultInterest,
+}: {
+  siteKey: string;
+  /** Preselects the interest dropdown when a directory CTA deep-links in.
+   * Only an existing allowed option is honored; anything else is ignored. */
+  defaultInterest?: string;
+}) {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [interest, setInterest] = useState('');
+  const [interest, setInterest] = useState(
+    defaultInterest && INTEREST_VALUES.has(defaultInterest) ? defaultInterest : '',
+  );
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState('');
