@@ -322,3 +322,86 @@ export function validateAndClassify(
     },
   };
 }
+
+/**
+ * Submitted UUIDs that received NO output row at all (the service silently
+ * dropped them). These must be surfaced — a batch is only trustworthy when
+ * every submitted id is accounted for. Returns a sorted list.
+ */
+export function findMissingOutputs(
+  rows: CensusBatchRow[],
+  submitted: Map<string, CensusQuery>,
+): string[] {
+  const got = new Set(rows.map((r) => r.id));
+  return [...submitted.keys()].filter((id) => !got.has(id)).sort();
+}
+
+/** Columns of the human coordinate-review sheet (one row per evaluated result). */
+export const REVIEW_REPORT_HEADER = [
+  'listing_id',
+  'business_name',
+  'input_address',
+  'census_matched_address',
+  'existing_coordinate',
+  'proposed_coordinate',
+  'distance_from_control_m',
+  'state_bounds_result',
+  'match_classification',
+  'reviewer_decision',
+  'reviewer_notes',
+] as const;
+
+/** RFC-4180 quote. */
+function rq(v: string): string {
+  return `"${v.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Build the human-review CSV rows (as arrays, header first). `listings` maps
+ * id → display fields; `controls` gives the verified point for controls. The
+ * `reviewer_decision` and `reviewer_notes` columns are intentionally blank —
+ * a human fills them, and nothing here approves or writes anything.
+ */
+export function toReviewReportRows(
+  records: ReviewRecord[],
+  listings: Map<string, { name: string }>,
+  controls: Map<string, ControlPoint>,
+): string[][] {
+  const out: string[][] = [REVIEW_REPORT_HEADER.map((h) => h)];
+  for (const r of records) {
+    const control = controls.get(r.id);
+    const stateBounds =
+      r.rejectionReason === 'wrong-state'
+        ? 'out-of-state/bounds'
+        : r.lat != null && r.lng != null
+          ? 'in-state'
+          : 'n/a';
+    out.push([
+      r.id,
+      listings.get(r.id)?.name ?? '',
+      r.submittedAddress,
+      r.matchedAddress,
+      control ? `${control.lat},${control.lng}` : '',
+      r.lat != null && r.lng != null ? `${r.lat},${r.lng}` : '',
+      r.controlDistanceMeters != null ? r.controlDistanceMeters.toFixed(1) : '',
+      stateBounds,
+      r.reviewDecision,
+      '', // reviewer_decision — human fills
+      '', // reviewer_notes — human fills
+    ]);
+  }
+  return out;
+}
+
+/** Serialize review rows to CSV text. */
+export function toReviewReportCsv(
+  records: ReviewRecord[],
+  listings: Map<string, { name: string }>,
+  controls: Map<string, ControlPoint>,
+): string {
+  return (
+    toReviewReportRows(records, listings, controls)
+      .map((row) => row.map(rq).join(','))
+      .join('\n') + '\n'
+  );
+}
