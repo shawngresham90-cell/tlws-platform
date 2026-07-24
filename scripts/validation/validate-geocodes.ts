@@ -373,7 +373,7 @@ export function toReviewReportRows(
     const stateBounds =
       r.rejectionReason === 'wrong-state'
         ? 'out-of-state/bounds'
-        : r.lat != null && r.lng != null
+        : r.lat != null && r.lon != null
           ? 'in-state'
           : 'n/a';
     out.push([
@@ -382,7 +382,7 @@ export function toReviewReportRows(
       r.submittedAddress,
       r.matchedAddress,
       control ? `${control.lat},${control.lng}` : '',
-      r.lat != null && r.lng != null ? `${r.lat},${r.lng}` : '',
+      r.lat != null && r.lon != null ? `${r.lat},${r.lon}` : '',
       r.controlDistanceMeters != null ? r.controlDistanceMeters.toFixed(1) : '',
       stateBounds,
       r.reviewDecision,

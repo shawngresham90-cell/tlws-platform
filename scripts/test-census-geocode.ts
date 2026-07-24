@@ -278,6 +278,11 @@ check('report: control shows business name', ctrlRow?.[1] === 'Pilot #53 (contro
 check('report: control shows existing coordinate', /,/.test(ctrlRow?.[4] ?? ''), ctrlRow?.[4]);
 check('report: control shows distance', (ctrlRow?.[6] ?? '') !== '', ctrlRow?.[6]);
 check(
+  'report: matched row shows proposed coordinate',
+  /^-?\d/.test(ctrlRow?.[5] ?? '') && (ctrlRow?.[5] ?? '').includes(','),
+  ctrlRow?.[5],
+);
+check(
   'report: classification present',
   (ctrlRow?.[8] ?? '') === 'census-calibration-pass',
   ctrlRow?.[8],
