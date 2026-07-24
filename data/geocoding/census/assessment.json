@@ -1,0 +1,220 @@
+{
+  "generatedFrom": {
+    "snapshotTakenAt": "2026-07-21",
+    "checkpointResults": 965
+  },
+  "totals": {
+    "directoryRows": 1252,
+    "withCoordsNow": 85,
+    "pctNow": 6.8,
+    "censusMatched": 745,
+    "censusHigh": 0,
+    "censusMedium": 745,
+    "censusRejected": 220,
+    "censusRejectionReasons": {
+      "no-match": 217,
+      "tie": 3
+    },
+    "censusPending": 2,
+    "projectedAfterApprovals": 830,
+    "projectedPct": 66.3
+  },
+  "stateByState": [
+    {
+      "state": "AL",
+      "total": 64,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 32,
+      "projectedPct": 50
+    },
+    {
+      "state": "AR",
+      "total": 127,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 65,
+      "projectedPct": 51.2
+    },
+    {
+      "state": "DE",
+      "total": 10,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 9,
+      "projectedPct": 90
+    },
+    {
+      "state": "FL",
+      "total": 127,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 79,
+      "projectedPct": 62.2
+    },
+    {
+      "state": "GA",
+      "total": 123,
+      "withCoordsNow": 55,
+      "projectedAfterCensus": 96,
+      "projectedPct": 78
+    },
+    {
+      "state": "IL",
+      "total": 12,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 2,
+      "projectedPct": 16.7
+    },
+    {
+      "state": "IN",
+      "total": 99,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 72,
+      "projectedPct": 72.7
+    },
+    {
+      "state": "KY",
+      "total": 99,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 71,
+      "projectedPct": 71.7
+    },
+    {
+      "state": "MD",
+      "total": 38,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 24,
+      "projectedPct": 63.2
+    },
+    {
+      "state": "MI",
+      "total": 73,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 44,
+      "projectedPct": 60.3
+    },
+    {
+      "state": "NC",
+      "total": 89,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 57,
+      "projectedPct": 64
+    },
+    {
+      "state": "OH",
+      "total": 95,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 70,
+      "projectedPct": 73.7
+    },
+    {
+      "state": "SC",
+      "total": 47,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 22,
+      "projectedPct": 46.8
+    },
+    {
+      "state": "TN",
+      "total": 202,
+      "withCoordsNow": 30,
+      "projectedAfterCensus": 169,
+      "projectedPct": 83.7
+    },
+    {
+      "state": "VA",
+      "total": 47,
+      "withCoordsNow": 0,
+      "projectedAfterCensus": 18,
+      "projectedPct": 38.3
+    }
+  ],
+  "unmatched": {
+    "total": 422,
+    "byState": {
+      "AR": 62,
+      "FL": 48,
+      "TN": 33,
+      "NC": 32,
+      "AL": 32,
+      "VA": 29,
+      "MI": 29,
+      "KY": 28,
+      "GA": 27,
+      "IN": 27,
+      "OH": 25,
+      "SC": 25,
+      "MD": 14,
+      "IL": 10,
+      "DE": 1
+    },
+    "byCorridor": {
+      "I-95": 132,
+      "I-75": 115,
+      "I-40": 95,
+      "I-65": 66,
+      "I-24": 14
+    },
+    "interpolationEligible": 219,
+    "interpolationEligibleByCorridor": {
+      "I-95": 62,
+      "I-75": 59,
+      "I-40": 53,
+      "I-65": 41,
+      "I-24": 4
+    },
+    "manualInvestigation": 203,
+    "manualInvestigationByState": {
+      "FL": 24,
+      "AR": 22,
+      "TN": 21,
+      "NC": 20,
+      "MI": 19,
+      "KY": 14,
+      "GA": 14,
+      "VA": 13,
+      "MD": 11,
+      "IN": 11,
+      "OH": 10,
+      "AL": 9,
+      "IL": 8,
+      "SC": 6,
+      "DE": 1
+    }
+  },
+  "thresholds": [
+    {
+      "thresholdPct": 75,
+      "targetRows": 939,
+      "projectedAfterCensus": 830,
+      "additionalRowsNeeded": 109,
+      "coverableByInterpolation": 109,
+      "requiringManualResearch": 0,
+      "reachableWithoutManualResearch": true
+    },
+    {
+      "thresholdPct": 85,
+      "targetRows": 1065,
+      "projectedAfterCensus": 830,
+      "additionalRowsNeeded": 235,
+      "coverableByInterpolation": 219,
+      "requiringManualResearch": 16,
+      "reachableWithoutManualResearch": false
+    },
+    {
+      "thresholdPct": 90,
+      "targetRows": 1127,
+      "projectedAfterCensus": 830,
+      "additionalRowsNeeded": 297,
+      "coverableByInterpolation": 219,
+      "requiringManualResearch": 78,
+      "reachableWithoutManualResearch": false
+    },
+    {
+      "thresholdPct": 95,
+      "targetRows": 1190,
+      "projectedAfterCensus": 830,
+      "additionalRowsNeeded": 360,
+      "coverableByInterpolation": 219,
+      "requiringManualResearch": 141,
+      "reachableWithoutManualResearch": false
+    }
+  ]
+}
