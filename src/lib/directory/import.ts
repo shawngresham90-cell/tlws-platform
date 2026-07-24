@@ -60,8 +60,58 @@ const HEADER_MAP: Record<string, string> = {
 
 const TRUE_VALUES = new Set(['yes', 'y', 'true', '1', 'x']);
 
+/**
+ * The canonical set of import columns (the de-duplicated HEADER_MAP targets),
+ * in a stable order. Exactly 32 columns. Exported so coverage/validation
+ * tooling can check a CSV against the importer's own vocabulary instead of
+ * re-declaring it — the harness must never fork this list.
+ */
+export const CANONICAL_IMPORT_COLUMNS = [
+  'name',
+  'category',
+  'address',
+  'city',
+  'state',
+  'zip',
+  'lat',
+  'lng',
+  'phone',
+  'website',
+  'description',
+  'parking_spaces',
+  'free_parking',
+  'paid_parking',
+  'reserved_parking',
+  'overnight_parking',
+  'am_Showers',
+  'am_Food',
+  'am_Fuel',
+  'am_Laundry',
+  'am_Restrooms',
+  'am_Repair',
+  'am_CAT Scale',
+  'am_Wi-Fi',
+  'am_Security',
+  'tpc_url',
+  'affiliate_code',
+  'image_url',
+  'is_published',
+  'is_featured',
+  'interstate',
+  'exit_number',
+] as const;
+
 function normHeader(h: string): string {
   return h.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Canonical field key for a raw header cell (e.g. "Business Name" → "name",
+ * "ZIP Code" → "zip"), or null if the importer would ignore it. Reuses the
+ * importer's own normalization + HEADER_MAP so validators never drift.
+ */
+export function recognizeHeader(rawHeader: string): string | null {
+  return HEADER_MAP[normHeader(rawHeader)] ?? null;
 }
 
 function asBool(v: string | undefined): boolean {
@@ -71,9 +121,7 @@ function asBool(v: string | undefined): boolean {
 /** Category cell accepts the display title ("Truck Parking") or the slug. */
 function resolveCategory(value: string): string | null {
   const v = value.trim().toLowerCase();
-  const hit = DIRECTORY_CATEGORIES.find(
-    (c) => c.slug === v || c.title.toLowerCase() === v,
-  );
+  const hit = DIRECTORY_CATEGORIES.find((c) => c.slug === v || c.title.toLowerCase() === v);
   return hit?.slug ?? null;
 }
 
