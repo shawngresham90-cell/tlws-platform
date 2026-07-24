@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
+import { GetFeaturedCta } from '@/components/directory';
 import {
   DirectoryHero,
   DirectoryBrowser,
@@ -122,11 +123,7 @@ export function generateMetadata({ params }: { params: { category: string } }): 
   });
 }
 
-export default async function DirectoryEnginePage({
-  params,
-}: {
-  params: { category: string };
-}) {
+export default async function DirectoryEnginePage({ params }: { params: { category: string } }) {
   const resolved = resolveSlug(params.category);
   if (!resolved) notFound();
 
@@ -344,6 +341,7 @@ export default async function DirectoryEnginePage({
             Browse all directories →
           </Link>
         </p>
+        <GetFeaturedCta surface={params.category} className="mt-8 border-t border-line pt-8" />
       </Section>
     </>
   );

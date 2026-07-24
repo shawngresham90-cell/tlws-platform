@@ -1,17 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui';
-import { TextField, SelectField, CheckboxField } from '@/components/apply/Fields';
+import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
+import { SmsConsentField } from '@/components/conversion/SmsConsentField';
 import { FOUNDER_TIERS } from './tiers';
-
-// Stored as leads.sms_consent when checked (opt-in only, unchecked by default).
-const SMS_CONSENT_TEXT =
-  'I agree to receive text messages from Trucking Life Academy about founding the school. ' +
-  'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. ' +
-  'Consent is not a condition.';
 
 /**
  * "Become a founder" interest capture. No payment is processed here (payments
@@ -39,6 +33,10 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
   const [token, setToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  // Per-submission idempotency token. Generated once per submit attempt and
+  // reused if the user retries after a failure, so SMS-consent evidence
+  // de-duplicates on retry; cleared after a successful submit.
+  const submissionId = useRef<string | null>(null);
 
   function set<T>(setter: (v: T) => void, key: string) {
     return (v: T) => {
@@ -70,6 +68,8 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
       return;
     }
     setSubmitting(true);
+    // Reuse the same token across retries of this attempt; make one if needed.
+    if (!submissionId.current) submissionId.current = crypto.randomUUID();
     try {
       const res = await fetch('/api/lead', {
         method: 'POST',
@@ -80,6 +80,7 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
           phone: phone.trim(),
           sms_consent: smsConsent,
           source: 'founder',
+          submission_id: submissionId.current,
           utm: tier ? { founder_tier: tier } : {},
           turnstileToken: token,
         }),
@@ -89,6 +90,8 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
         setFormError(body.error ?? 'Something went wrong. Please try again.');
         return;
       }
+      // Fresh token for any subsequent (distinct) submission.
+      submissionId.current = null;
       setDone(true);
     } catch {
       setFormError('Network error. Check your connection and try again.');
@@ -170,22 +173,12 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
 
       {/* Optional SMS opt-in — only texts you if you check it (TCPA/10DLC). */}
       <div className="mt-5">
-        <CheckboxField
+        <SmsConsentField
           id="founder_sms_consent"
-          label="SMS consent"
+          label="Yes, text me about founding the school (optional)"
           checked={smsConsent}
           onChange={setSmsConsent}
-        >
-          {SMS_CONSENT_TEXT} See our{' '}
-          <Link href="/sms-terms" target="_blank" className="text-signal underline">
-            SMS Terms
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" target="_blank" className="text-signal underline">
-            Privacy Policy
-          </Link>
-          .
-        </CheckboxField>
+        />
       </div>
 
       <div className="mt-6">

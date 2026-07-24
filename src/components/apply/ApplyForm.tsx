@@ -7,6 +7,7 @@ import { trackEvent } from '@/lib/analytics';
 import { TextField, SelectField, CheckboxField } from './Fields';
 import { TurnstileWidget } from './TurnstileWidget';
 import { captureAttribution, readAttribution } from '@/lib/attribution';
+import { SmsConsentField } from '@/components/conversion/SmsConsentField';
 
 const US_STATES = [
   'AL',
@@ -83,13 +84,6 @@ const PERMIT = [
   { value: 'yes', label: 'Yes, I have my CLP' },
   { value: 'no', label: 'Not yet' },
 ];
-
-// Stored verbatim as sms_consent_text for the TCPA audit trail. Keep it a
-// plain string (no markup); the on-screen label appends the policy links.
-const SMS_CONSENT_TEXT =
-  'I agree to receive text messages from Trucking Life Academy about my application and enrollment. ' +
-  'Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. ' +
-  'Consent is not a condition of enrollment.';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
@@ -183,6 +177,9 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
   const [resumed, setResumed] = useState(false);
   const utmRef = useRef<Record<string, string>>({});
   const draftCreatedAt = useRef<number | undefined>(undefined);
+  // Per-submission idempotency token for step 2 — reused across retries of the
+  // same attempt so SMS-consent evidence de-duplicates; cleared after success.
+  const step2SubmissionId = useRef<string | null>(null);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -320,6 +317,8 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
       return;
     }
     setSubmitting(true);
+    // Reuse the same token across retries of this attempt; make one if needed.
+    if (!step2SubmissionId.current) step2SubmissionId.current = crypto.randomUUID();
     try {
       const res = await fetch('/api/application/step2', {
         method: 'POST',
@@ -330,8 +329,10 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
           age_confirmed: s2.age_confirmed,
           start_timeframe: s2.start_timeframe,
           funding_type: s2.funding_type,
+          // Only the boolean choice is sent; the server owns the disclosure
+          // text, version, and timestamp (never trust client consent metadata).
           sms_consent: s2.sms_consent,
-          sms_consent_text: s2.sms_consent ? SMS_CONSENT_TEXT : undefined,
+          submission_id: step2SubmissionId.current,
         }),
       });
       const body = await res.json();
@@ -339,6 +340,8 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
         setFormError(body.error ?? 'Something went wrong. Please try again.');
         return;
       }
+      // Fresh token for any subsequent (distinct) submission.
+      step2SubmissionId.current = null;
       trackEvent('application_submitted');
       clearDraft();
       setStep(3);
@@ -581,22 +584,12 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
               intrastate Georgia driving).
             </CheckboxField>
 
-            <CheckboxField
+            <SmsConsentField
               id="sms_consent"
-              label="SMS consent"
+              label="Yes, text me updates about my application (optional)"
               checked={s2.sms_consent}
               onChange={(v) => set2('sms_consent', v)}
-            >
-              {SMS_CONSENT_TEXT} See our{' '}
-              <Link href="/sms-terms" target="_blank" className="text-signal underline">
-                SMS Terms
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" target="_blank" className="text-signal underline">
-                Privacy Policy
-              </Link>
-              .
-            </CheckboxField>
+            />
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">

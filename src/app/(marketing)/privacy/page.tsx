@@ -52,7 +52,9 @@ export default function PrivacyPolicyPage() {
         to receive texts is never a condition of enrolling, purchasing, or using any part of the
         site. You can opt out at any time by replying <strong>STOP</strong>. Full details, including
         message frequency and how to get help, are in our{' '}
-        <Link href="/sms-terms">SMS Terms &amp; Conditions</Link>.{' '}
+        <Link href="/sms-terms">SMS Terms &amp; Conditions</Link>. When you opt in, we keep a record
+        of the consent you gave — the disclosure you agreed to, its version, and when — so we can
+        honor your choice and our own obligations.{' '}
         <strong>
           We do not share or sell mobile phone numbers or SMS consent to third parties or affiliates
           for their own marketing.

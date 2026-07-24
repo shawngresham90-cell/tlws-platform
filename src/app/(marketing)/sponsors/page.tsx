@@ -42,8 +42,16 @@ const WAYS = [
   },
 ];
 
-export default function SponsorsPage() {
+export default function SponsorsPage({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+  // A directory "Get featured" CTA can deep-link with the interest
+  // preselected; the form validates it against the allowed options.
+  const rawInterest = searchParams?.interest;
+  const defaultInterest = Array.isArray(rawInterest) ? rawInterest[0] : rawInterest;
   return (
     <>
       <JsonLd
@@ -111,7 +119,7 @@ export default function SponsorsPage() {
             One short form. Shawn reads every inquiry and replies personally — placements, goals,
             and rates all get sorted in that first conversation.
           </p>
-          <SponsorInquiryForm siteKey={siteKey} />
+          <SponsorInquiryForm siteKey={siteKey} defaultInterest={defaultInterest} />
         </div>
       </Section>
     </>
