@@ -42,7 +42,7 @@ const DIRECTORY: KcConversion = {
 
 const BOOKS: KcConversion = {
   title: 'Driver-Built Books',
-  blurb: 'Shawn’s books: DOT survival, defensive driving, and eating right in the cab.',
+  blurb: 'Shawn’s books: DOT survival, discipline, and eating right in the cab.',
   href: '/books',
   cta: 'Browse the books',
 };
