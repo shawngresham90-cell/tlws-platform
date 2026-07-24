@@ -47,6 +47,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // Top-level public destinations that had no sitemap entry: THE ROAD AHEAD,
+  // Trip Planner, the static Truck Parking landing, Books, Apps, the sponsor
+  // front door, the DOT Tools informational landing, and the legal pages.
+  const topLevelPaths: Array<[string, number]> = [
+    ['/road-ahead', 0.7],
+    ['/trip-planner', 0.8],
+    ['/directory/parking', 0.7],
+    ['/books', 0.8],
+    ['/apps', 0.6],
+    ['/sponsors', 0.6],
+    ['/dot-tools', 0.6],
+    ['/privacy', 0.3],
+    ['/sms-terms', 0.3],
+  ];
+  for (const [path, priority] of topLevelPaths) {
+    entries.push({
+      url: `${SITE.url}${path}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority,
+    });
+  }
+
   // Academy module (Milestone 7) — static routes.
   const academyPaths = [
     '/academy',

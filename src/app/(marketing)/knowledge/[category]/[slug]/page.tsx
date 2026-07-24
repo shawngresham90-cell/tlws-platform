@@ -6,6 +6,7 @@ import { AuthorBlock } from '@/components/kc/AuthorBlock';
 import { FaqBlock } from '@/components/kc/FaqBlock';
 import { SourcesBlock } from '@/components/kc/SourcesBlock';
 import { RelatedArticles } from '@/components/kc/RelatedArticles';
+import { KcNextSteps } from '@/components/kc/KcNextSteps';
 import {
   getArticle,
   getCategories,
@@ -109,6 +110,7 @@ export default async function ArticlePage({
           <FaqBlock faqs={article.faqs} />
           <SourcesBlock sources={article.sources} />
           <RelatedArticles articles={related} categorySlugById={slugById} />
+          <KcNextSteps categorySlug={category.slug} />
         </Container>
       </article>
     </>
