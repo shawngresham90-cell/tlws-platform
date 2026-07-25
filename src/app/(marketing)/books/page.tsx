@@ -185,7 +185,14 @@ function BookShelf({ book, featured = false }: { book: Book; featured?: boolean 
         </div>
 
         <div className="mt-7">
-          <Button href={book.href}>Buy on Amazon</Button>
+          {/* external + rel="sponsored": this is an affiliate link (the URLs
+              carry the associate tag), so it must be disclosed to search
+              engines and open in a new tab like every other money link on the
+              site. Button appends noopener and keeps the referrer, which
+              Amazon Associates needs for attribution. */}
+          <Button href={book.href} external rel="sponsored">
+            Buy on Amazon
+          </Button>
         </div>
 
         <ReviewsBlock book={book} />
@@ -275,6 +282,8 @@ export default function BooksPage() {
             <Button
               variant="ghost"
               href="https://stan.store/TRUCKINGLIFEWITHSHAWN"
+              external
+              rel="sponsored"
               className="whitespace-nowrap"
             >
               Visit the Stan Store

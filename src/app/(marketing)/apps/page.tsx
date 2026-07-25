@@ -246,7 +246,9 @@ export default function AppsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button href={STAN_STORE}>Browse the full Stan Store</Button>
+            <Button href={STAN_STORE} external rel="sponsored">
+              Browse the full Stan Store
+            </Button>
             <Button variant="ghost" href="/books">
               See the paperbacks →
             </Button>

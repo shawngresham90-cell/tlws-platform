@@ -454,6 +454,64 @@ it, and the orphaned action directory is gone.
 
 ---
 
+## M10 — The "Buy on Amazon" CTA was not disclosed as an affiliate link
+
+**Problem.** `/books` rendered its primary money CTA as:
+
+```tsx
+<Button href={book.href}>Buy on Amazon</Button>
+```
+
+`Button` only emits an anchor with `target="_blank"` and a `rel` when it is
+given `external`. Without it the affiliate URL — which carries
+`?tag=truckinglif0d-20` — went out through a Next `<Link>`, so the
+highest-intent link on the page carried **no `rel="sponsored"`** and navigated
+the reader off the site entirely. The "read reviews on Amazon →" link three
+sections up on the same page had it right, which is how the inconsistency
+stayed invisible.
+
+`rel="sponsored"` on paid links is required by Google and assumed throughout
+this codebase: `lib/store/amazon.ts` exports `AMAZON_REL =
+'sponsored noopener noreferrer'`, `AmazonCta` applies it, `shop/ProductCard`
+auto-detects external hrefs and applies it, and the README states paid links
+render `rel="sponsored"`. Three CTAs missed it.
+
+Rendered evidence, before:
+
+```
+https://a.co/d/03cOB4V3                                  rel=(none) target=(none)   /books
+https://www.amazon.com/DOT-Survival-Guide-…?tag=…        rel=(none) target=(none)   /books
+https://www.amazon.com/Discipline-Over-Everything-…?tag=… rel=(none) target=(none)  /books
+https://stan.store/TRUCKINGLIFEWITHSHAWN                 rel=(none) target=(none)   /books, /apps
+```
+
+After:
+
+```
+… all four →  rel="sponsored noopener"  target="_blank"
+```
+
+**Change.** Passed `external rel="sponsored"` to the three `<Button>`s
+(`/books` Buy on Amazon, `/books` Visit the Stan Store, `/apps` Browse the full
+Stan Store). `Button` appends `noopener` and deliberately keeps the referrer,
+which Amazon Associates needs for attribution — the same contract `AMAZON_REL`
+already encodes. **No price, product, ASIN, or claim was added or changed.**
+
+**Test.** `scripts/test-outbound-links.ts` (9 checks): every off-site
+`<Button>` is marked `external`, every paid link carries `rel="sponsored"`, the
+three specific CTAs are correct, and the `AMAZON_REL` / `amazonProductUrl`
+contract holds (tag applied exactly once, invalid ASIN yields no link).
+Verified to bite — reverting the `/books` CTA fails three checks naming the
+exact line.
+
+**Noted, not changed:** the Founding Supporter shirt link on the home page uses
+`rel="noopener noreferrer"` without `sponsored`, while the CDL Pre-School link
+to the same Stan Store uses `sponsored`. Both are the owner's own store rather
+than a paid placement, so which is "right" is a business call, not a defect —
+flagging it rather than deciding it.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -463,7 +521,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 54 harnesses passed |
+| `npm test` | All 55 harnesses passed |
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |
