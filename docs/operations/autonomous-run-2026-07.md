@@ -589,6 +589,51 @@ full row below `sm` and still shares the toolbar row from `sm` up.
 
 ---
 
+## M13 — A blocked browser store crashed the practice-test runners
+
+**Problem.** `localStorage.getItem` does not merely return `null` when storage
+is unavailable — it **throws**. Safari private browsing, enterprise policy, a
+privacy extension, and a full quota all raise a `SecurityError` or
+`QuotaExceededError` on a plain read.
+
+`StudyRunner` and `TimedRunner` guarded every write and every remove, but
+hydrated with a bare call inside a `useEffect`:
+
+```tsx
+const restored = deserializeSession(
+  window.localStorage.getItem(studyStorageKey(test.slug, drill)),
+  …
+);
+```
+
+A throw there takes the whole runner down for a driver whose browser blocks
+storage — even though both files are already written to degrade gracefully
+(`deserializeSession(null, …)` starts a fresh session, and the write effect's
+own comment says *"Storage full/blocked — the session still works for this page
+view"*). The read simply did not match the intent the rest of the file states.
+
+Before M1 that throw surfaced as Next's raw "Application error" screen; it now
+lands on the branded error page — better, but the practice test still fails when
+it could just start fresh.
+
+**Change.** Wrapped both hydration reads in `try/catch` falling back to `null`,
+so a blocked store yields a new session (Study) or the start gate (Timed).
+
+**Test.** `scripts/test-storage-safety.ts` (9 checks) scans every `.ts`/`.tsx`
+file for direct `localStorage`/`sessionStorage` calls and asserts each one is
+lexically inside a `try` — a backwards brace-depth walk, whose own behaviour is
+unit-tested in the same file (a call inside `try`, a bare call, and a call after
+a *closed* `try` are all classified correctly). Verified to bite: restoring the
+bare read fails with
+`src/components/test/StudyRunner.tsx:77 → localStorage.getItem() outside try/catch`.
+
+**Repro limitation, stated plainly:** without database-seeded question banks the
+runners render their "test isn't open yet" state, so this was not reproduced
+end-to-end in a browser. The defect and the fix are established from the code
+path — an unguarded throwing call inside an effect — not from a live repro.
+
+---
+
 ## Checked and found clean (no change made)
 
 Recording these so the next pass does not re-investigate them.
@@ -630,7 +675,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 56 harnesses passed |
+| `npm test` | All 57 harnesses passed |
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |

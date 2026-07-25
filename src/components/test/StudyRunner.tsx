@@ -74,11 +74,17 @@ export function StudyRunner({
     if (hydrated.current) return;
     hydrated.current = true;
     const ids = questions.map((q) => q.id);
-    const restored = deserializeSession(
-      window.localStorage.getItem(studyStorageKey(test.slug, drill)),
-      test.slug,
-      ids,
-    );
+    // A blocked store (private mode, policy, extension) throws on READ too, not
+    // only on write — and this read runs inside an effect, so an unguarded
+    // throw takes the whole runner down instead of starting a fresh session.
+    // The writes below already degrade; the read has to match.
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(studyStorageKey(test.slug, drill));
+    } catch {
+      // Storage blocked — start fresh rather than fail to render.
+    }
+    const restored = deserializeSession(raw, test.slug, ids);
     setSession(restored ?? newSession(test.slug, Date.now()));
   }, [test.slug, questions, drill]);
 

@@ -86,12 +86,17 @@ export function TimedRunner({
     if (hydrated.current) return;
     hydrated.current = true;
     const ids = questions.map((q) => q.id);
-    const restored = deserializeTimedSession(
-      window.localStorage.getItem(timedStorageKey(test.slug)),
-      test.slug,
-      ids,
-      Date.now(),
-    );
+    // A blocked store (private mode, policy, extension) throws on READ too, not
+    // only on write — and this read runs inside an effect, so an unguarded
+    // throw takes the whole exam runner down instead of showing the start gate.
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(timedStorageKey(test.slug));
+    } catch {
+      // Storage blocked — fall through to the start gate. The persist effect
+      // below already surfaces the blocked store to the user.
+    }
+    const restored = deserializeTimedSession(raw, test.slug, ids, Date.now());
     setSession(restored ?? 'idle');
   }, [test.slug, questions]);
 
