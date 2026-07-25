@@ -87,8 +87,10 @@ Both are now in `.prettierignore` with the reasoning inline.
 
 ### 2b. 51 test harnesses existed; nothing ran them
 
-`scripts/test-*.ts` holds 51 offline harnesses (≈6,900 assertions), each
-documenting its own `npx esbuild … && node …` invocation in a header comment.
+At the time of this milestone `scripts/test-*.ts` held 51 offline harnesses
+(≈6,900 assertions) — the run has since added more, which is exactly why
+`ci.yml` names no count. Each documents its own `npx esbuild … && node …`
+invocation in a header comment.
 Nothing ran them together and nothing ran them in CI, so a regression in any
 one of them stayed invisible.
 
@@ -500,9 +502,12 @@ After:
 
 **Change.** Passed `external rel="sponsored"` to the three `<Button>`s
 (`/books` Buy on Amazon, `/books` Visit the Stan Store, `/apps` Browse the full
-Stan Store). `Button` appends `noopener` and deliberately keeps the referrer,
-which Amazon Associates needs for attribution — the same contract `AMAZON_REL`
-already encodes. **No price, product, ASIN, or claim was added or changed.**
+Stan Store). `Button` appends `noopener` and omits `noreferrer`. Associates
+attribution does **not** depend on the referrer — it comes from the
+`?tag=truckinglif0d-20` URL parameter that `amazonProductUrl` appends — so both
+link styles pay out. That is also why `AMAZON_REL`
+(`sponsored noopener noreferrer`), used by the store CTAs, can safely suppress
+the referrer. **No price, product, ASIN, or claim was added or changed.**
 
 **Test.** `scripts/test-outbound-links.ts` (9 checks): every off-site
 `<Button>` is marked `external`, every paid link carries `rel="sponsored"`, the

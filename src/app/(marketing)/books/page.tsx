@@ -188,8 +188,10 @@ function BookShelf({ book, featured = false }: { book: Book; featured?: boolean 
           {/* external + rel="sponsored": this is an affiliate link (the URLs
               carry the associate tag), so it must be disclosed to search
               engines and open in a new tab like every other money link on the
-              site. Button appends noopener and keeps the referrer, which
-              Amazon Associates needs for attribution. */}
+              site. Button appends noopener. Associates attribution comes from
+              the ?tag=truckinglif0d-20 URL parameter, not the referrer, so it
+              holds either way — AMAZON_REL, used by the store CTAs, sends
+              noreferrer for the same reason. */}
           <Button href={book.href} external rel="sponsored">
             Buy on Amazon
           </Button>

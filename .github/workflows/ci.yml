@@ -1,8 +1,8 @@
 name: CI
 
 # The gate every pull request has to clear. Until this existed nothing ran on a
-# PR: `format:check`, `lint`, `typecheck`, `build`, and the 51 offline harnesses
-# in scripts/test-*.ts were all manual, so a regression only surfaced if someone
+# PR: `format:check`, `lint`, `typecheck`, `build`, and every `scripts/test-*.ts`
+# harness were all manual, so a regression only surfaced if someone
 # happened to run that exact command. (It did: the CDL Pre-School hero
 # assertion in scripts/test-preschool.ts had been failing on main since the
 # cinematic homepage landed.)
