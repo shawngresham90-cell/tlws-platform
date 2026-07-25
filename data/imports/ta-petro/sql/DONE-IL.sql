@@ -1,21 +1,22 @@
--- TA/Petro authorized import — state IL (12 rows)
--- ONE transaction, INSERT-ONLY. Idempotent: the NOT EXISTS guards re-check
--- duplicates at execution time, so re-running inserts nothing extra and a row
--- that became a duplicate since planning is SKIPPED, never updated.
--- source is stamped 'official-ta-petro-20260725-5ebe0e9f'.
+-- TA/Petro authorized import - state IL (12 rows)
+-- ONE transaction, INSERT-ONLY. Live dual-key duplicate re-check runs
+-- ATOMICALLY inside this transaction; GET DIAGNOSTICS compares the actual
+-- inserted count with the expected payload count and RAISES on any mismatch,
+-- rolling back this entire state. Idempotent: re-running inserts nothing.
+-- source stamped 'official-ta-petro-20260725-5ebe0e9f'. geo is never written.
 begin;
+do $g$ declare n int; begin
 with s as (select jsonb_array_elements('[["TA Chicago North","16650 W. Russell Road","Zion","IL","60099","847-395-5580","215 truck parking spaces. 12 showers. 3 service bays. 10 diesel lanes. Weigh scale on site (brand unconfirmed)",42.4857,-87.951,215,["Showers","Fuel","Laundry","Repair"],"ta-chicago-north"],["TA Effingham","1702 West Evergreen Ave","Effingham","IL","62401-1388","217-347-7183","137 truck parking spaces. 10 showers. 6 service bays. 11 diesel lanes. On site: Dunkin'', Popeyes, Sbarro. Weigh scale on site (brand unconfirmed)",39.1364,-88.5662,137,["Showers","Food","Fuel","Laundry","Repair"],"ta-effingham"],["TA Mt Vernon","4510 Broadway St","Mt. Vernon","IL","62864","618-244-4242","136 truck parking spaces. 11 showers. 6 service bays. 8 diesel lanes. On site: Popeyes. Weigh scale on site (brand unconfirmed)",38.3134,-88.9594,136,["Showers","Food","Fuel","Laundry","Repair"],"ta-mt-vernon"],["TA Elgin","19 N. 430 US Hwy 20","Hampshire","IL","60140","847-683-4550","92 truck parking spaces. 10 showers. 2 service bays. 8 diesel lanes. On site: Popeyes. Weigh scale on site (brand unconfirmed)",42.1451,-88.5095,92,["Showers","Food","Fuel","Laundry","Repair"],"ta-elgin"],["TA Bloomington","505 Truckers Lane","Bloomington","IL","61701","309-827-4676","160 truck parking spaces. 8 showers. 6 service bays. 8 diesel lanes. Weigh scale on site (brand unconfirmed)",40.488,-89.0262,160,["Showers","Fuel","Laundry","Repair"],"ta-bloomington"],["TA Troy","819 Edwardsville Rd.","Troy","IL","62294","618-667-9931","92 truck parking spaces. 7 showers. 5 service bays. 8 diesel lanes. On site: Baskin Robbins, Dunkin''. Weigh scale on site (brand unconfirmed)",38.7338,-89.9098,92,["Showers","Food","Fuel","Laundry","Repair"],"ta-troy"],["TA Morris","21 Romines Drive","Morris","IL","60450","815-942-5690","292 truck parking spaces. 6 showers. 4 service bays. 8 diesel lanes. On site: Black Bear Diner; Charleys Philly Steaks. Weigh scale on site (brand unconfirmed)",41.3917,-88.4203,292,["Showers","Food","Fuel","Laundry","Repair"],"ta-morris"],["Petro Effingham","1805 West Fayette Ave","Effingham","IL","62401","217-347-0480","212 truck parking spaces. 19 showers. 5 service bays. 14 diesel lanes. On site: IHOP. Weigh scale on site (brand unconfirmed)",39.1197,-88.5723,212,["Showers","Food","Fuel","Laundry","Repair"],"petro-effingham"],["Petro Rochelle","900 Petro Rd","Rochelle","IL","61068","815-562-3716","350 truck parking spaces. 16 showers. 5 service bays. 10 diesel lanes. On site: Iron Skillet; Hub City Express",41.9356,-89.0335,350,["Showers","Food","Fuel","Repair"],"petro-rochelle"],["Petro Monee","5915 Monee Road","Monee","IL","60449","708-534-0400","90 truck parking spaces. 8 showers. 5 service bays. 7 diesel lanes. Weigh scale on site (brand unconfirmed)",41.4258,-87.7549,90,["Showers","Fuel","Laundry","Repair"],"petro-monee"],["Petro Wilmington","24225 W. Lorenzo Road","Wilmington","IL","60481","779-232-7975","229 truck parking spaces. 9 showers. 5 service bays. 8 diesel lanes. On site: Charleys Philly Steaks, Highway Kitchen. Weigh scale on site (brand unconfirmed)",41.3454,-88.1974,229,["Showers","Food","Fuel","Laundry","Repair"],"petro-wilmington"],["TA Express Riverton","2855 Overpass Road","Riverton","IL","62561","217-606-7666","44 truck parking spaces. 4 showers. 5 diesel lanes. On site: Little Caesar''s, Taco John''s. Weigh scale on site (brand unconfirmed)",39.8423772,-89.5210377,44,["Showers","Food","Fuel","Laundry"],"ta-express-riverton"]]'::jsonb) e),
-i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,
-  (e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
+i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,(e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
 f as (select i.* from i
   where not exists (select 1 from public.locations l where l.deleted_at is null
       and trim(regexp_replace(lower(l.name),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.name),'[^a-z0-9]+',' ','g')) and trim(regexp_replace(lower(l.city),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.city),'[^a-z0-9]+',' ','g')) and upper(l.state)=upper(i.state))
     and not exists (select 1 from public.locations l2 where l2.deleted_at is null
       and l2.type='truck_stop' and upper(l2.state)=upper(i.state) and l2.city=i.city and l2.slug=i.slug))
-insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
-select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false
-from f on conflict do nothing
-returning id::text, state, slug;
+insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
+select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false from f on conflict do nothing;
+get diagnostics n = row_count;
+if n <> 12 then raise exception 'IL: expected 12 inserted, got % - rolling back this state', n; end if;
+raise notice 'IL: inserted % of 12', n;
+end $g$;
 commit;

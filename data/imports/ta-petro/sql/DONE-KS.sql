@@ -1,21 +1,22 @@
--- TA/Petro authorized import — state KS (10 rows)
--- ONE transaction, INSERT-ONLY. Idempotent: the NOT EXISTS guards re-check
--- duplicates at execution time, so re-running inserts nothing extra and a row
--- that became a duplicate since planning is SKIPPED, never updated.
--- source is stamped 'official-ta-petro-20260725-5ebe0e9f'.
+-- TA/Petro authorized import - state KS (10 rows)
+-- ONE transaction, INSERT-ONLY. Live dual-key duplicate re-check runs
+-- ATOMICALLY inside this transaction; GET DIAGNOSTICS compares the actual
+-- inserted count with the expected payload count and RAISES on any mismatch,
+-- rolling back this entire state. Idempotent: re-running inserts nothing.
+-- source stamped 'official-ta-petro-20260725-5ebe0e9f'. geo is never written.
 begin;
+do $g$ declare n int; begin
 with s as (select jsonb_array_elements('[["TA Oakley","1001 Hwy 40","Oakley","KS","67748","785-672-4111","84 truck parking spaces. 6 showers. 6 service bays. 8 diesel lanes. On site: IHOP; Sonic, Subway. Weigh scale on site (brand unconfirmed)",39.1188,-100.811,84,["Showers","Food","Fuel","Laundry","Repair"],"ta-oakley"],["TA Beto Junction","2775 Highway 75","Lebo","KS","66856","620-256-6311","226 truck parking spaces. 8 showers. 3 service bays. 7 diesel lanes. On site: Country Pride; Wendy''s. Weigh scale on site (brand unconfirmed)",38.4276,-95.7272,226,["Showers","Food","Fuel","Laundry","Repair"],"ta-beto-junction"],["TA Express Edgerton","32501 W 200th Street","Edgerton","KS","66021","913-882-3362","90 truck parking spaces. 4 showers. 6 diesel lanes. On site: IHOP; Goodcents, Miss J\u2019s Caf\u00e9",38.76281,-94.96248,90,["Showers","Food","Fuel","Laundry"],"ta-express-edgerton"],["Petro Colby","700 West Horton","Colby","KS","67701","785-460-0044","90 truck parking spaces. 7 showers. 5 service bays. 7 diesel lanes. On site: City Wok Fresh Chinese, Qdoba Mexican Grill, Starbucks. Weigh scale on site (brand unconfirmed)",39.3617,-101.0537,90,["Showers","Food","Fuel","Laundry","Repair"],"petro-colby"],["TA Express Kansas City","4610 Kansas Ave","Kansas City","KS","66106","913-359-6767","28 truck parking spaces. 2 showers. 8 diesel lanes. On site: Highway Kitchen. Weigh scale on site (brand unconfirmed)",39.090626,-94.682921,28,["Showers","Food","Fuel","Laundry"],"ta-express-kansas-city"],["Petro Salina","2125 N. 9th St.","Salina","KS","67401","785-825-7723","75 truck parking spaces. 6 showers. 4 service bays. 6 diesel lanes. On site: Miss J''s, Popeyes. Weigh scale on site (brand unconfirmed)",38.8789,-97.613,75,["Showers","Food","Fuel","Laundry","Repair"],"petro-salina"],["TA Garden City","1265 Solar Avenue","Garden City","KS","67846","620-644-3844","150 truck parking spaces. 10 showers. 2 service bays. 6 diesel lanes. On site: Black Bear Diner; Dunkin'', Sbarro. Weigh scale on site (brand unconfirmed)",38.00534,-100.88425,150,["Showers","Food","Fuel","Laundry","Repair"],"ta-garden-city"],["TA Express Fairview","801 W. 1st Street","Fairview","KS","66425","785-288-8089","67 truck parking spaces. 3 showers. 1 service bays. 6 diesel lanes. On site: A&W All American Food, Dunkin'', Hunt Brothers Pizza, Miss J\u2019s Caf\u00e9. Truck wash: Truck Wash",39.84123,-95.73311,67,["Showers","Food","Fuel","Laundry","Repair"],"ta-express-fairview"],["TA Express Hutchinson","1515 South Main Street","South Hutchinson","KS","67505","620-669-9900","80 truck parking spaces. 4 showers. 5 diesel lanes. On site: Applewood Restaurant; Sbarro. Weigh scale on site (brand unconfirmed)",38.00858,-97.94209,80,["Showers","Food","Fuel","Laundry"],"ta-express-hutchinson"],["TA Wellsville","1021 Poplar Street","Wellsville","KS","66092","785-800-5229","76 truck parking spaces. 4 showers. 6 diesel lanes. On site: A&W All American Food, Blu Taco, Hunt Brothers Pizza, Miss J''s",38.7076,-95.07404,76,["Showers","Food","Fuel","Laundry"],"ta-wellsville"]]'::jsonb) e),
-i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,
-  (e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
+i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,(e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
 f as (select i.* from i
   where not exists (select 1 from public.locations l where l.deleted_at is null
       and trim(regexp_replace(lower(l.name),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.name),'[^a-z0-9]+',' ','g')) and trim(regexp_replace(lower(l.city),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.city),'[^a-z0-9]+',' ','g')) and upper(l.state)=upper(i.state))
     and not exists (select 1 from public.locations l2 where l2.deleted_at is null
       and l2.type='truck_stop' and upper(l2.state)=upper(i.state) and l2.city=i.city and l2.slug=i.slug))
-insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
-select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false
-from f on conflict do nothing
-returning id::text, state, slug;
+insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
+select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false from f on conflict do nothing;
+get diagnostics n = row_count;
+if n <> 10 then raise exception 'KS: expected 10 inserted, got % - rolling back this state', n; end if;
+raise notice 'KS: inserted % of 10', n;
+end $g$;
 commit;

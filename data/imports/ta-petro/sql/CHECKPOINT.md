@@ -72,17 +72,38 @@ Read-only verified. Update after every pass.
 
 **Remaining total: 167**
 
-## How to resume
+## How to finish — one command
 
-Run the pending per-state files in this directory (those without a `DONE-`
-prefix). Each is one transaction, insert-only, with the dual-key duplicate
-re-check and a `GET DIAGNOSTICS` count guard that raises and rolls back that
-state on any mismatch. Every file is **idempotent** — re-running a completed
-state inserts nothing.
+No database connection is configured in the agent environment (no `DATABASE_URL`,
+`POSTGRES_URL`, `SUPABASE_DB_URL`, service-role key, `PG*` vars, `.pgpass` or
+`.pg_service.conf` — only the public `NEXT_PUBLIC_SUPABASE_ANON_KEY`, which
+cannot write through RLS). So the remaining work ships as a single runner.
+
+**Configure `DATABASE_URL` securely** (shell export from a secret manager, or a
+`.pgpass` entry — never committed, never echoed), then run:
 
 ```bash
-for f in data/imports/ta-petro/sql/[A-Z][A-Z].sql; do psql "$DATABASE_URL" -f "$f"; done
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f data/imports/ta-petro/sql/RUN-ALL-PENDING.sql
 ```
+
+`RUN-ALL-PENDING.sql` contains, in order: a preflight gate, all **24** pending
+states (one guarded transaction each, 167 rows), and the complete **304-row
+audit** (8 checks). `ON_ERROR_STOP=1` means the first failing state rolls back
+and nothing after it runs.
+
+Individual per-state files remain available; those already applied carry a
+`DONE-` prefix. Every file is **idempotent** — re-running inserts nothing.
+
+### Guards in every state block (statically verified)
+
+| Property | Count in runner |
+|---|--:|
+| `begin;` / one transaction per state | 24 |
+| `insert into public.locations` | 24 |
+| `raise exception` (24 state count guards + 2 preflight) | 26 |
+| `not exists` dual-key duplicate re-checks (2 per state) | 48 |
+| Unpublished flag sets | 24 |
+| `update` / upsert / `merge` / `truncate` / `alter` | **0** |
 
 ## Verification SQL
 

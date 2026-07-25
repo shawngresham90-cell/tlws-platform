@@ -1,21 +1,22 @@
--- TA/Petro authorized import — state NM (9 rows)
--- ONE transaction, INSERT-ONLY. Idempotent: the NOT EXISTS guards re-check
--- duplicates at execution time, so re-running inserts nothing extra and a row
--- that became a duplicate since planning is SKIPPED, never updated.
--- source is stamped 'official-ta-petro-20260725-5ebe0e9f'.
+-- TA/Petro authorized import - state NM (9 rows)
+-- ONE transaction, INSERT-ONLY. Live dual-key duplicate re-check runs
+-- ATOMICALLY inside this transaction; GET DIAGNOSTICS compares the actual
+-- inserted count with the expected payload count and RAISES on any mismatch,
+-- rolling back this entire state. Idempotent: re-running inserts nothing.
+-- source stamped 'official-ta-petro-20260725-5ebe0e9f'. geo is never written.
 begin;
+do $g$ declare n int; begin
 with s as (select jsonb_array_elements('[["TA Gallup","3404 W Historical Highway 66","Gallup","NM","87301-6841","505-863-6801","76 truck parking spaces. 9 showers. 6 service bays. 8 diesel lanes. On site: Country Pride. Weigh scale on site (brand unconfirmed)",35.5059,-108.8359,76,["Showers","Food","Fuel","Laundry","Repair"],"ta-gallup"],["TA Las Cruces","202 N. Motel Blvd","Las Cruces","NM","88007","575-527-7400","201 truck parking spaces. 10 showers. 6 service bays. 8 diesel lanes. On site: Burger King, Pizza Hut Express, Taco Bell. Weigh scale on site (brand unconfirmed)",32.2977,-106.8115,201,["Showers","Food","Fuel","Laundry","Repair"],"ta-las-cruces"],["TA Santa Rosa","2634 Historic Route 66","Santa Rosa","NM","88435-0372","575-935-9939","116 truck parking spaces. 9 showers. 3 service bays. 11 diesel lanes. On site: Popeyes, Subway. Weigh scale on site (brand unconfirmed)",34.9443,-104.6407,116,["Showers","Food","Fuel","Laundry","Repair"],"ta-santa-rosa"],["TA Albuquerque","2501 University Blvd., NE","Albuquerque","NM","87107","505-884-1066","150 truck parking spaces. 10 showers. 3 service bays. 8 diesel lanes. On site: Country Pride. Weigh scale on site (brand unconfirmed)",35.1111,-106.6247,150,["Showers","Food","Fuel","Laundry","Repair"],"ta-albuquerque"],["TA Moriarty","1700 U.S. Route 66 West","Moriarty","NM","87035","505-832-4421","245 truck parking spaces. 10 showers. 4 service bays. 10 diesel lanes. On site: Country Pride; Burger King, Pizza Hut Express. Weigh scale on site (brand unconfirmed)",35.0095,-106.065,245,["Showers","Food","Fuel","Laundry","Repair"],"ta-moriarty"],["Petro Milan","1430 Motel Drive","Milan","NM","87021","505-285-6648","200 truck parking spaces. 13 showers. 3 service bays. 12 diesel lanes. On site: Iron Skillet. Weigh scale on site (brand unconfirmed)",35.181,-107.9038,200,["Showers","Food","Fuel","Laundry","Repair"],"petro-milan"],["Petro Deming","14150 STE C Hwy 418 SW","Deming","NM","88030","575-546-7070","150 truck parking spaces. 9 showers. 3 service bays. 10 diesel lanes. On site: Iron Skillet; Starbucks. Weigh scale on site (brand unconfirmed)",32.2386,-107.9927,150,["Showers","Food","Fuel","Laundry","Repair"],"petro-deming"],["TA Springer","18 Old French Rd.","Springer","NM","87747","575-483-5004","100 truck parking spaces. 12 showers. 2 service bays. 6 diesel lanes. On site: Russell''s Restaurant; Subway. Weigh scale on site (brand unconfirmed)",36.4499710346809,-104.592856021367,100,["Showers","Food","Fuel","Laundry","Repair"],"ta-springer"],["TA Glenrio","1583 Frontage Rd 4132","Glenrio","NM","88434","575-288-9968","175 truck parking spaces. 8 showers. 10 diesel lanes. On site: Russell''s Route 66 Caf\u00e9; Subway. Weigh scale on site (brand unconfirmed)",35.1752464706606,-103.104072865847,175,["Showers","Food","Fuel","Laundry"],"ta-glenrio"]]'::jsonb) e),
-i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,
-  (e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
+i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,(e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
 f as (select i.* from i
   where not exists (select 1 from public.locations l where l.deleted_at is null
       and trim(regexp_replace(lower(l.name),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.name),'[^a-z0-9]+',' ','g')) and trim(regexp_replace(lower(l.city),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.city),'[^a-z0-9]+',' ','g')) and upper(l.state)=upper(i.state))
     and not exists (select 1 from public.locations l2 where l2.deleted_at is null
       and l2.type='truck_stop' and upper(l2.state)=upper(i.state) and l2.city=i.city and l2.slug=i.slug))
-insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
-select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,
-  'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false
-from f on conflict do nothing
-returning id::text, state, slug;
+insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
+select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false from f on conflict do nothing;
+get diagnostics n = row_count;
+if n <> 9 then raise exception 'NM: expected 9 inserted, got % - rolling back this state', n; end if;
+raise notice 'NM: inserted % of 9', n;
+end $g$;
 commit;
