@@ -401,6 +401,59 @@ preview URL, so dispatch-only is the honest shape.
 
 ---
 
+## M9 — `/login` was a dead-end sign-in, live in production
+
+**Problem.** `/login` served a working Supabase email+password form. On success
+its server action redirected to `/admin`. But the dashboard is not gated by
+Supabase: `admin/(dashboard)/layout.tsx` calls `requireAdmin()` from
+`lib/admin/auth.ts`, which checks the shared-password HMAC cookie set only by
+`/admin/login`. A Supabase session never sets it.
+
+So a correctly-authenticated admin was bounced straight back out and asked for
+a different credential — with no explanation, from a page whose own comment
+claimed "middleware routes to /admin" (middleware only refreshes the Supabase
+session; it performs no redirects at all).
+
+Observed on the running build:
+
+```
+/login        200      ← live Supabase sign-in form
+/admin        307  →  /admin/login      ← where a successful /login lands
+/admin/login  200      ← the gate that actually opens the dashboard
+```
+
+`lib/admin/auth.ts` already documents the split: *"intentionally separate from
+the Supabase-auth system in src/lib/auth.ts, which the dashboard does not
+use."* The Supabase path was superseded in Milestone 10; `/login` was left
+behind.
+
+**Change.**
+
+- `next.config.mjs`: `/login → /admin/login`, permanent. Old bookmarks keep
+  working and land on the sign-in that opens the dashboard.
+- Deleted `src/app/login/page.tsx` and `src/app/auth/actions.ts`. The action
+  file existed only for that page, and a dangling `'use server'` export is a
+  surface with no purpose.
+- **Kept** `src/lib/auth.ts` — nothing imports it, but it is the role model that
+  migrations 013/014 provision. It now carries a `DORMANT` header explaining the
+  split and pointing a future implementer at
+  `admin/(dashboard)/layout.tsx`, and its own redirects go straight to
+  `/admin/login` rather than relying on the hop. **No migration, table, or RLS
+  policy was touched.**
+
+After: `/login` → 308 → `/admin/login` → 200.
+
+**Test.** `scripts/test-route-redirects.ts` (33 checks) imports the real
+`next.config.mjs` table and resolves every destination against the App Router
+tree on disk (route groups collapsed, `[param]` segments treated as wildcards):
+no self-redirect, no redirect whose source is shadowed by a real page, no
+redirect pointing at another redirect's source, external destinations https
+only, and every internal destination resolves to a route that exists. Plus the
+specific case: `/login` is permanent, points at `/admin/login`, no page shadows
+it, and the orphaned action directory is gone.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -410,7 +463,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 53 harnesses passed |
+| `npm test` | All 54 harnesses passed |
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |

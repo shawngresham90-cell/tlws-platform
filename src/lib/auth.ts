@@ -1,6 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
+/**
+ * DORMANT — the Supabase email+password admin path, kept for the `admin_users`
+ * role model that migrations 013/014 provision. Nothing imports it today: the
+ * dashboard is gated by the shared-password HMAC cookie in `lib/admin/auth.ts`
+ * (Milestone 10), whose own header says as much. Its former front door,
+ * `/login`, now redirects to `/admin/login`.
+ *
+ * If this path is revived, wire it into `admin/(dashboard)/layout.tsx` — do not
+ * assume a Supabase session alone opens the dashboard, because it does not.
+ */
+
 export type AdminRole = 'owner' | 'admin' | 'staff';
 
 export type AdminUser = {
@@ -22,7 +33,7 @@ export async function requireAdmin(minRole: AdminRole = 'staff'): Promise<AdminU
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login');
+  if (!user) redirect('/admin/login');
 
   const { data: adminRow } = await supabase
     .from('admin_users')
@@ -32,7 +43,7 @@ export async function requireAdmin(minRole: AdminRole = 'staff'): Promise<AdminU
 
   if (!adminRow || !adminRow.is_active) {
     // Signed in but not an admin — do not reveal /admin exists.
-    redirect('/login?error=not_authorized');
+    redirect('/admin/login?error=not_authorized');
   }
 
   const rank: Record<AdminRole, number> = { staff: 1, admin: 2, owner: 3 };
