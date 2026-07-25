@@ -80,7 +80,7 @@ restart. Key entry points:
 | `advance(state, status, minutes)` | Simulate one duty segment → new state + violations |
 | `remainingClocks(state)` | 11/14/break/cycle remaining + binding constraint |
 | `legalDrivingMin(state)` | Minutes legally drivable right now |
-| `planDrive(state, driveMin)` | Auto-inserts 30-min breaks + 10-hr resets → violation-free schedule |
+| `planDrive(state, driveMin)` | Auto-inserts 30-min breaks, 10-hr resets, and a 34-hr restart when the cycle is the binding constraint → violation-free schedule |
 | `earliestArrivalMs(...)` | Arrival-time calculation |
 | `validateClockState(state)` | API-boundary validation |
 

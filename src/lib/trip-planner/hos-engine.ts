@@ -208,7 +208,7 @@ export function legalDrivingMin(state: ClockState): number {
 }
 
 export type DrivePlanRest = {
-  kind: '30-minute-break' | '10-hour-reset';
+  kind: '30-minute-break' | '10-hour-reset' | '34-hour-restart';
   /** Offset minutes from plan start when the rest begins. */
   startOffsetMin: number;
   minutes: number;
@@ -226,9 +226,9 @@ export type DrivePlan = {
 
 /**
  * Arrival-time calculation: schedule `driveMinutes` of driving from `state`,
- * automatically inserting 30-minute breaks and 10-hour resets whenever a
- * clock runs dry. Deterministic and violation-free by construction.
- * `breakMinutes`/`resetMinutes` let planners model longer dwell.
+ * automatically inserting 30-minute breaks, 10-hour resets, and 34-hour
+ * restarts whenever a clock runs dry. Deterministic and violation-free by
+ * construction. `breakMinutes`/`resetMinutes` let planners model longer dwell.
  */
 export function planDrive(
   state: ClockState,
@@ -264,6 +264,24 @@ export function planDrive(
           note: '30-minute break',
         });
         cur = advance(cur, 'off-duty', breakMinutes).state;
+      } else if (rc.limitedBy === 'cycle') {
+        // §395.3(c): the rolling 60/70-hour cycle is restored ONLY by 34
+        // consecutive hours off duty. A 10-hour reset does nothing for it, so
+        // chaining them just stacked 10-hour blocks until they happened to
+        // total 34 — quoting 40 hours of rest for a 34-hour rule and printing
+        // an itinerary (four back-to-back 10-hour resets) no driver would run.
+        // Rest exactly long enough to complete the restart, crediting any
+        // consecutive off-duty time the driver has already banked.
+        const restartMinutes = Math.max(HOS.RESTART_MIN - cur.restStreakMin, HOS.MIN_BREAK_MIN);
+        const offset = Math.round((cur.atMs - startMs) / 60_000);
+        rests.push({ kind: '34-hour-restart', startOffsetMin: offset, minutes: restartMinutes });
+        segments.push({
+          status: 'sleeper',
+          startMs: cur.atMs,
+          minutes: restartMinutes,
+          note: '34-hour restart',
+        });
+        cur = advance(cur, 'sleeper', restartMinutes).state;
       } else {
         const offset = Math.round((cur.atMs - startMs) / 60_000);
         rests.push({ kind: '10-hour-reset', startOffsetMin: offset, minutes: resetMinutes });

@@ -186,6 +186,47 @@ directly again.
 
 ---
 
+## M4 — Trip Planner quoted 42 hours for a 34-hour rule
+
+**Problem.** `planDrive()` in `lib/trip-planner/hos-engine.ts` answered *every*
+exhausted clock with a 10-hour reset. A 10-hour reset does nothing for the
+rolling 60/70-hour cycle — §395.3(c) restores it only after **34 consecutive
+hours** off duty. So a cycle-exhausted driver got 10-hour blocks chained until
+they happened to add up past 34 hours.
+
+Reachable straight from the UI: `TripPlannerApp` has a "Cycle used (of 70h)"
+slider that runs to 70, and `clockStateFromSimple` sets `restStreakMin: 0`.
+
+Repro through the real entry point (`clockStateFromSimple` → `planDrive`),
+driver at 70/70 with fresh 11/14 clocks asking for a 2-hour drive:
+
+```
+before:  quoted total: 42.0 h
+         rests: 10-hour-reset 600m @0 | 10-hour-reset 600m @600
+              | 10-hour-reset 600m @1200 | 10-hour-reset 600m @1800
+after:   quoted total: 36.0 h
+         rests: 34-hour-restart 2040m @0
+```
+
+Six hours of phantom delay on the quote, and an itinerary of four back-to-back
+10-hour resets that no driver would run.
+
+**Change.** `planDrive` gains a `cycle` branch that emits a single
+`34-hour-restart` rest sized to *complete* the restart —
+`max(RESTART_MIN - restStreakMin, MIN_BREAK_MIN)` — so off-duty hours the
+driver has already banked are credited instead of restarting the clock.
+`DrivePlanRest['kind']` gains `'34-hour-restart'`; the only consumer of `rests`
+is `optimizer.ts`, which counts them.
+
+**Tests.** `scripts/test-hos-hardening.ts` gains a cycle-exhaustion block (11
+new checks): exactly one rest and it is the restart, sized exactly 34 h, total
+= 34 h + drive, cycle restored on arrival, no 10-hour resets stacked in,
+`earliestArrivalMs` agrees, banked off-duty time credited, an 11-hour-*and*-
+cycle-dry driver still takes the 10-hour reset first, and no restart is ever
+injected when the cycle has room.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
