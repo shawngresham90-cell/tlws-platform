@@ -66,7 +66,10 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
     entry({ category: 'cat-scales' }),
   ];
   const groups = groupByCategory(es);
-  check('groupByCategory splits by slug', groups['truck-stops'].length === 2 && groups['cat-scales'].length === 1);
+  check(
+    'groupByCategory splits by slug',
+    groups['truck-stops'].length === 2 && groups['cat-scales'].length === 1,
+  );
 
   const corridor = [
     entry({ name: 'AtTarget', exitNumber: '81', state: 'TN' }),
@@ -81,7 +84,11 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
   check('window excludes far exits', !near.some((e) => e.name === 'TooFar'));
   check('state filter applies', !near.some((e) => e.name === 'WrongState'));
   check('exitless entries dropped', !near.some((e) => e.name === 'NoExit'));
-  check('sorted by exit distance', near.map((e) => e.name).join() === 'Nearer,Near', near.map((e) => e.name));
+  check(
+    'sorted by exit distance',
+    near.map((e) => e.name).join() === 'Nearer,Near',
+    near.map((e) => e.name),
+  );
   check('non-numeric target exit → []', entriesNearExit(corridor, 'ramp', ['TN']).length === 0);
 
   const adj = adjacentExits(['2', '11', '20', '81', '110'], '20');
@@ -89,9 +96,18 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
   check('adjacent next', adj.next.join() === '81,110');
   const edge = adjacentExits(['2', '11', '20'], '2');
   check('first exit has no previous', edge.previous.length === 0 && edge.next.join() === '11,20');
-  check('unknown exit → empty both ways', adjacentExits(['2', '11'], '99').previous.length === 0 && adjacentExits(['2', '11'], '99').next.length === 0);
+  check(
+    'unknown exit → empty both ways',
+    adjacentExits(['2', '11'], '99').previous.length === 0 &&
+      adjacentExits(['2', '11'], '99').next.length === 0,
+  );
 
-  const mixed = [entry({ interstate: 'I-75' }), entry({ interstate: 'I-24' }), entry({ interstate: 'I-75' }), entry({})];
+  const mixed = [
+    entry({ interstate: 'I-75' }),
+    entry({ interstate: 'I-24' }),
+    entry({ interstate: 'I-75' }),
+    entry({}),
+  ];
   check('interstatesIn distinct + sorted', interstatesIn(mixed).join() === 'I-24,I-75');
 }
 
@@ -103,11 +119,27 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
   ];
   const groups = stateScopeLinks('Tennessee', 'TN', tnEntries, FACETS);
   const links = allLinks(groups);
-  check('state scope links corridors through the state', links.some((l) => l.href === '/directory/i24') && links.some((l) => l.href === '/directory/i75'));
-  check('state scope links in-state categories with counts', links.some((l) => l.href.includes('truck-stops') && l.label.includes('1 in Tennessee')));
-  check('state scope excludes own state from others', !links.some((l) => l.href === '/directory/tennessee'));
-  check('state scope links other covered states with counts', links.some((l) => l.href === '/directory/georgia' && l.label === 'Georgia (78)'));
-  check('community links present', links.some((l) => l.href === '/directory/submit'));
+  check(
+    'state scope links corridors through the state',
+    links.some((l) => l.href === '/directory/i24') &&
+      links.some((l) => l.href === '/directory/i75'),
+  );
+  check(
+    'state scope links in-state categories with counts',
+    links.some((l) => l.href.includes('truck-stops') && l.label.includes('1 in Tennessee')),
+  );
+  check(
+    'state scope excludes own state from others',
+    !links.some((l) => l.href === '/directory/tennessee'),
+  );
+  check(
+    'state scope links other covered states with counts',
+    links.some((l) => l.href === '/directory/georgia' && l.label === 'Georgia (78)'),
+  );
+  check(
+    'community links present',
+    links.some((l) => l.href === '/directory/submit'),
+  );
 
   const corridorEntries = [
     entry({ state: 'GA', interstate: 'I-75' }),
@@ -115,21 +147,55 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
   ];
   const igroups = interstateScopeLinks('I-75', ['FL', 'GA', 'TN', 'KY'], corridorEntries, FACETS);
   const stateByState = igroups[0];
-  check('corridor states follow stateOrder and only covered states', stateByState.links.map((l) => l.href).join() === '/directory/georgia,/directory/tennessee', stateByState.links);
+  check(
+    'corridor states follow stateOrder and only covered states',
+    stateByState.links.map((l) => l.href).join() === '/directory/georgia,/directory/tennessee',
+    stateByState.links,
+  );
   const ilinks = allLinks(igroups);
-  check('corridor excludes itself from other corridors', !ilinks.some((l) => l.href === '/directory/i75' && l.label.includes('corridor')));
-  check('corridor links sibling corridor with count', ilinks.some((l) => l.label === 'I-24 corridor (43)'));
+  check(
+    'corridor excludes itself from other corridors',
+    !ilinks.some((l) => l.href === '/directory/i75' && l.label.includes('corridor')),
+  );
+  check(
+    'corridor links sibling corridor with count',
+    ilinks.some((l) => l.label === 'I-24 corridor (43)'),
+  );
 
-  const egroups = exitScopeLinks('I-75', 'i75', '20', FACETS.exitsByInterstate['I-75'], ['TN'], FACETS);
+  const egroups = exitScopeLinks(
+    'I-75',
+    'i75',
+    '20',
+    FACETS.exitsByInterstate['I-75'],
+    ['TN'],
+    FACETS,
+  );
   const elinks = allLinks(egroups);
-  check('exit page links neighboring exits both ways', elinks.some((l) => l.label === '← Exit 11') && elinks.some((l) => l.label === 'Exit 81 →'));
-  check('exit neighbor hrefs use exit slugs', elinks.some((l) => l.href === '/directory/i75/exit-11'));
-  check('exit page zooms out to corridor + state', elinks.some((l) => l.href === '/directory/i75') && elinks.some((l) => l.href === '/directory/tennessee'));
+  check(
+    'exit page links neighboring exits both ways',
+    elinks.some((l) => l.label === '← Exit 11') && elinks.some((l) => l.label === 'Exit 81 →'),
+  );
+  check(
+    'exit neighbor hrefs use exit slugs',
+    elinks.some((l) => l.href === '/directory/i75/exit-11'),
+  );
+  check(
+    'exit page zooms out to corridor + state',
+    elinks.some((l) => l.href === '/directory/i75') &&
+      elinks.some((l) => l.href === '/directory/tennessee'),
+  );
 
   const cgroups = categoryScopeLinks(FACETS);
   const clinks = allLinks(cgroups);
-  check('category scope lists every covered state', clinks.some((l) => l.href === '/directory/georgia') && clinks.some((l) => l.href === '/directory/tennessee'));
-  check('category scope lists every corridor with counts', clinks.some((l) => l.label === 'I-75 corridor (300)'));
+  check(
+    'category scope lists every covered state',
+    clinks.some((l) => l.href === '/directory/georgia') &&
+      clinks.some((l) => l.href === '/directory/tennessee'),
+  );
+  check(
+    'category scope lists every corridor with counts',
+    clinks.some((l) => l.label === 'I-75 corridor (300)'),
+  );
 }
 
 /* ---------------------- graph invariants ---------------------- */
@@ -137,12 +203,23 @@ const allLinks = (groups: { links: { href: string; label: string }[] }[]) =>
   // Every emitted href is a rooted internal path — no external or relative links.
   const everything = [
     ...allLinks(stateScopeLinks('Tennessee', 'TN', [entry({ interstate: 'I-24' })], FACETS)),
-    ...allLinks(interstateScopeLinks('I-75', ['GA', 'TN'], [entry({ interstate: 'I-75' })], FACETS)),
-    ...allLinks(exitScopeLinks('I-75', 'i75', '20', FACETS.exitsByInterstate['I-75'], ['TN'], FACETS)),
+    ...allLinks(
+      interstateScopeLinks('I-75', ['GA', 'TN'], [entry({ interstate: 'I-75' })], FACETS),
+    ),
+    ...allLinks(
+      exitScopeLinks('I-75', 'i75', '20', FACETS.exitsByInterstate['I-75'], ['TN'], FACETS),
+    ),
     ...allLinks(categoryScopeLinks(FACETS)),
   ];
-  check('all hrefs internal + rooted', everything.every((l) => l.href.startsWith('/')), everything.filter((l) => !l.href.startsWith('/')));
-  check('no empty labels', everything.every((l) => l.label.trim().length > 0));
+  check(
+    'all hrefs internal + rooted',
+    everything.every((l) => l.href.startsWith('/')),
+    everything.filter((l) => !l.href.startsWith('/')),
+  );
+  check(
+    'no empty labels',
+    everything.every((l) => l.label.trim().length > 0),
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

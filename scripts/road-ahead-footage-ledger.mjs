@@ -27,29 +27,58 @@ const OUT = join(ROOT, 'docs', 'road-ahead-footage-ledger.md');
 // first slot per scene is the hero backdrop; the rest are B-roll/montage.
 const SCENES = [
   {
-    n: '01', name: 'Night Drive', act: 'The open road', video: true,
+    n: '01',
+    name: 'Night Drive',
+    act: 'The open road',
+    video: true,
     slots: ['dark-highway', 'night-driving', 'headlights', 'windshield-rain'],
     need: 'Night highway, headlights on wet asphalt, windshield POV, rain',
   },
   {
-    n: '02', name: 'The Pre-Trip', act: 'The craft', video: true,
+    n: '02',
+    name: 'The Pre-Trip',
+    act: 'The craft',
+    video: true,
     slots: ['pretrip', 'truck-walkaround', 'backing', 'climb-into-cab', 'air-brake-check'],
     need: 'Inspection, walk-around, backing, climbing into the cab, air-brake check',
   },
   {
-    n: '03', name: 'The Grind', act: 'Sacrifice', video: true,
+    n: '03',
+    name: 'The Grind',
+    act: 'Sacrifice',
+    video: true,
     slots: ['truck-stop', 'empty-highway', 'rain-driving', 'late-night-driving'],
     need: 'Truck stop at night, rain on glass, empty highway, late-night miles',
   },
   {
-    n: '04', name: 'First Light', act: 'The future', video: true,
+    n: '04',
+    name: 'First Light',
+    act: 'The future',
+    video: true,
     slots: ['sunrise', 'hero-shot', 'drone-shot', 'academy-footage'],
     need: 'Sunrise, truck hero/beauty shot, aerial/drone flyover, academy',
   },
-  { n: '05', name: 'The Founder Wall', act: 'Legacy', video: false, slots: [], need: '— (3D exhibit, no footage)' },
-  { n: '06', name: 'Your Name', act: 'Passing the torch', video: false, slots: [], need: '— (name induction, no footage)' },
   {
-    n: '07', name: 'Legacy', act: 'Bigger than yourself', video: true,
+    n: '05',
+    name: 'The Founder Wall',
+    act: 'Legacy',
+    video: false,
+    slots: [],
+    need: '— (3D exhibit, no footage)',
+  },
+  {
+    n: '06',
+    name: 'Your Name',
+    act: 'Passing the torch',
+    video: false,
+    slots: [],
+    need: '— (name induction, no footage)',
+  },
+  {
+    n: '07',
+    name: 'Legacy',
+    act: 'Bigger than yourself',
+    video: true,
     slots: ['student-training', 'key-handoff', 'student-success', 'truck-driving-away'],
     need: 'Student training, handshake/keys, success, truck driving into the distance',
   },
@@ -112,9 +141,7 @@ for (const scene of SCENES) {
     );
   }
 }
-const pendingRows = pending.map(
-  (id) => `| \`${id}\` | — | — | — | — | _pending_ |`,
-);
+const pendingRows = pending.map((id) => `| \`${id}\` | — | — | — | — | _pending_ |`);
 
 // ---- Report 2: Remaining slots --------------------------------------------
 // Priority: video scenes with NO backdrop first, then B-roll gaps.
@@ -154,11 +181,16 @@ for (const [slot, m] of Object.entries(moments)) {
 }
 const dupRows = Object.entries(idUse)
   .filter(([, slots]) => slots.length > 1)
-  .map(([id, slots]) => `| \`${id}\` | used in ${slots.map((s) => `\`${s}\``).join(', ')} | reusing one clip across scenes — confirm it fits each, or diversify |`);
+  .map(
+    ([id, slots]) =>
+      `| \`${id}\` | used in ${slots.map((s) => `\`${s}\``).join(', ')} | reusing one clip across scenes — confirm it fits each, or diversify |`,
+  );
 
 function extractId(v) {
   if (/^[A-Za-z0-9_-]{11}$/.test(v)) return v;
-  const m = v.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/);
+  const m = v.match(
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{11})/,
+  );
   return m ? m[1] : null;
 }
 
@@ -237,14 +269,16 @@ ${dupRows.join('\n') || '| _(none — no clip is used in more than one slot)_ | 
 
 ### Acquisition targets — what to shoot/pick next (by priority)
 
-${ranked.length
+${
+  ranked.length
     ? ranked
         .map(
           (o) =>
             `- **Scene ${o.scene.n} · ${o.scene.name}** (${o.filled ? 'has a backdrop — needs B-roll' : 'NO backdrop yet — highest'}) — ${o.scene.need}`,
         )
         .join('\n')
-    : '- All footage scenes have a backdrop. Only replace on a significantly better moment.'}
+    : '- All footage scenes have a backdrop. Only replace on a significantly better moment.'
+}
 `;
 
 writeFileSync(OUT, md);

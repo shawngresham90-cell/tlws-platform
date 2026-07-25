@@ -1,9 +1,5 @@
 import { SITE } from '@/lib/seo/site';
-import {
-  PRESCHOOL_PATH,
-  PRESCHOOL_PRICE_USD,
-  PRESCHOOL_PURCHASE_URL,
-} from './constants';
+import { PRESCHOOL_PATH, PRESCHOOL_PRICE_USD, PRESCHOOL_PURCHASE_URL } from './constants';
 import { PRESCHOOL_TAGLINE } from './content';
 
 /**

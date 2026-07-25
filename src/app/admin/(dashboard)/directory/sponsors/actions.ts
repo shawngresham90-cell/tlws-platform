@@ -3,7 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isSafeSponsorUrl, SPONSOR_PLACEMENTS, type SponsorPlacement } from '@/lib/directory/sponsors';
+import {
+  isSafeSponsorUrl,
+  SPONSOR_PLACEMENTS,
+  type SponsorPlacement,
+} from '@/lib/directory/sponsors';
 
 /**
  * Sponsor management writes (Milestone 25). Admin-gated. Every write goes

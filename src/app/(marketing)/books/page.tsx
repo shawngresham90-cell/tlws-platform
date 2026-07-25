@@ -128,9 +128,7 @@ function RelatedBooks({ current }: { current: Book }) {
   const related = BOOKS.filter((b) => b.slug !== current.slug);
   return (
     <div className="mt-6">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-        Related books
-      </h3>
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Related books</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         {related.map((b) => (
           <Link
@@ -187,7 +185,16 @@ function BookShelf({ book, featured = false }: { book: Book; featured?: boolean 
         </div>
 
         <div className="mt-7">
-          <Button href={book.href}>Buy on Amazon</Button>
+          {/* external + rel="sponsored": this is an affiliate link (the URLs
+              carry the associate tag), so it must be disclosed to search
+              engines and open in a new tab like every other money link on the
+              site. Button appends noopener. Associates attribution comes from
+              the ?tag=truckinglif0d-20 URL parameter, not the referrer, so it
+              holds either way — AMAZON_REL, used by the store CTAs, sends
+              noreferrer for the same reason. */}
+          <Button href={book.href} external rel="sponsored">
+            Buy on Amazon
+          </Button>
         </div>
 
         <ReviewsBlock book={book} />
@@ -240,8 +247,8 @@ export default function BooksPage() {
           <Eyebrow>The Trucker Bookstore</Eyebrow>
           <h1 className="display-section">Driver-built books</h1>
           <p className="mt-4 text-muted">
-            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff,
-            just the stuff that keeps you legal, healthy, and earning.
+            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff, just
+            the stuff that keeps you legal, healthy, and earning.
           </p>
         </div>
         <div className="mt-12">
@@ -277,6 +284,8 @@ export default function BooksPage() {
             <Button
               variant="ghost"
               href="https://stan.store/TRUCKINGLIFEWITHSHAWN"
+              external
+              rel="sponsored"
               className="whitespace-nowrap"
             >
               Visit the Stan Store

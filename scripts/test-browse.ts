@@ -39,21 +39,66 @@ const base = { query: '', state: '', city: '', sort: 'featured' as const, origin
 /* ---------------------- filtering ---------------------- */
 {
   const es = [
-    entry({ name: 'Pilot #404', city: 'Murfreesboro', state: 'TN', interstate: 'I-24', exitNumber: '81' }),
-    entry({ name: "Love's #348", city: 'Calvert City', state: 'KY', category: 'cat-scales', amenities: ['CAT Scale'] }),
-    entry({ name: 'Blue Beacon', city: 'Nashville', state: 'TN', category: 'truck-washes', zip: '37207' }),
+    entry({
+      name: 'Pilot #404',
+      city: 'Murfreesboro',
+      state: 'TN',
+      interstate: 'I-24',
+      exitNumber: '81',
+    }),
+    entry({
+      name: "Love's #348",
+      city: 'Calvert City',
+      state: 'KY',
+      category: 'cat-scales',
+      amenities: ['CAT Scale'],
+    }),
+    entry({
+      name: 'Blue Beacon',
+      city: 'Nashville',
+      state: 'TN',
+      category: 'truck-washes',
+      zip: '37207',
+    }),
   ];
-  check('state filter', names(filterAndSortEntries(es, { ...base, state: 'KY' })).join() === "Love's #348");
-  check('city filter', names(filterAndSortEntries(es, { ...base, city: 'Murfreesboro' })).join() === 'Pilot #404');
+  check(
+    'state filter',
+    names(filterAndSortEntries(es, { ...base, state: 'KY' })).join() === "Love's #348",
+  );
+  check(
+    'city filter',
+    names(filterAndSortEntries(es, { ...base, city: 'Murfreesboro' })).join() === 'Pilot #404',
+  );
   check('empty query returns all', filterAndSortEntries(es, base).length === 3);
-  check('query matches business name', names(filterAndSortEntries(es, { ...base, query: 'pilot' })).join() === 'Pilot #404');
-  check('query matches city', names(filterAndSortEntries(es, { ...base, query: 'calvert' })).join() === "Love's #348");
-  check('query matches ZIP', names(filterAndSortEntries(es, { ...base, query: '37207' })).join() === 'Blue Beacon');
-  check('query "exit 81" matches exit haystack token', names(filterAndSortEntries(es, { ...base, query: 'exit 81' })).join() === 'Pilot #404');
-  check('query matches category title', names(filterAndSortEntries(es, { ...base, query: 'cat scale' })).join() === "Love's #348");
-  check('query matches interstate', names(filterAndSortEntries(es, { ...base, query: 'i-24' })).join() === 'Pilot #404');
+  check(
+    'query matches business name',
+    names(filterAndSortEntries(es, { ...base, query: 'pilot' })).join() === 'Pilot #404',
+  );
+  check(
+    'query matches city',
+    names(filterAndSortEntries(es, { ...base, query: 'calvert' })).join() === "Love's #348",
+  );
+  check(
+    'query matches ZIP',
+    names(filterAndSortEntries(es, { ...base, query: '37207' })).join() === 'Blue Beacon',
+  );
+  check(
+    'query "exit 81" matches exit haystack token',
+    names(filterAndSortEntries(es, { ...base, query: 'exit 81' })).join() === 'Pilot #404',
+  );
+  check(
+    'query matches category title',
+    names(filterAndSortEntries(es, { ...base, query: 'cat scale' })).join() === "Love's #348",
+  );
+  check(
+    'query matches interstate',
+    names(filterAndSortEntries(es, { ...base, query: 'i-24' })).join() === 'Pilot #404',
+  );
   check('no match → empty', filterAndSortEntries(es, { ...base, query: 'zzzz' }).length === 0);
-  check('state + query combine (AND)', filterAndSortEntries(es, { ...base, state: 'KY', query: 'pilot' }).length === 0);
+  check(
+    'state + query combine (AND)',
+    filterAndSortEntries(es, { ...base, state: 'KY', query: 'pilot' }).length === 0,
+  );
 }
 
 /* ---------------------- sorting ---------------------- */
@@ -63,9 +108,18 @@ const base = { query: '', state: '', city: '', sort: 'featured' as const, origin
     entry({ name: 'alpha', featured: true, createdAt: '2026-01-01' }),
     entry({ name: 'Bravo', featured: false, createdAt: '2026-05-01' }),
   ];
-  check('alpha sort (locale, case-insensitive)', names(filterAndSortEntries(es, { ...base, sort: 'alpha' })).join() === 'alpha,Bravo,Charlie');
-  check('newest sort (createdAt desc)', names(filterAndSortEntries(es, { ...base, sort: 'newest' })).join() === 'Bravo,Charlie,alpha');
-  check('featured sort (featured first, then name)', names(filterAndSortEntries(es, { ...base, sort: 'featured' }))[0] === 'alpha');
+  check(
+    'alpha sort (locale, case-insensitive)',
+    names(filterAndSortEntries(es, { ...base, sort: 'alpha' })).join() === 'alpha,Bravo,Charlie',
+  );
+  check(
+    'newest sort (createdAt desc)',
+    names(filterAndSortEntries(es, { ...base, sort: 'newest' })).join() === 'Bravo,Charlie,alpha',
+  );
+  check(
+    'featured sort (featured first, then name)',
+    names(filterAndSortEntries(es, { ...base, sort: 'featured' }))[0] === 'alpha',
+  );
 }
 
 /* ---------------------- distance sort ---------------------- */
@@ -76,8 +130,16 @@ const base = { query: '', state: '', city: '', sort: 'featured' as const, origin
     entry({ name: 'Near', lat: 36.1, lng: -86.0 }),
     entry({ name: 'NoCoords' }),
   ];
-  check('distance sort nearest-first, coordless last', names(filterAndSortEntries(es, { ...base, sort: 'distance', origin })).join() === 'Near,Far,NoCoords');
-  check('distance sort without origin falls back to alpha', names(filterAndSortEntries(es, { ...base, sort: 'distance', origin: null })).join() === 'Far,Near,NoCoords');
+  check(
+    'distance sort nearest-first, coordless last',
+    names(filterAndSortEntries(es, { ...base, sort: 'distance', origin })).join() ===
+      'Near,Far,NoCoords',
+  );
+  check(
+    'distance sort without origin falls back to alpha',
+    names(filterAndSortEntries(es, { ...base, sort: 'distance', origin: null })).join() ===
+      'Far,Near,NoCoords',
+  );
 }
 
 /* ---------------------- purity ---------------------- */
@@ -90,7 +152,10 @@ const base = { query: '', state: '', city: '', sort: 'featured' as const, origin
 
 /* ---------------------- distanceMiles ---------------------- */
 {
-  check('distanceMiles zero for same point', distanceMiles({ lat: 36, lng: -86 }, { lat: 36, lng: -86 }) === 0);
+  check(
+    'distanceMiles zero for same point',
+    distanceMiles({ lat: 36, lng: -86 }, { lat: 36, lng: -86 }) === 0,
+  );
   const d = distanceMiles({ lat: 36, lng: -86 }, { lat: 37, lng: -86 });
   check('distanceMiles ~69 mi per degree latitude', Math.abs(d - 69.09) < 0.6, d);
 }

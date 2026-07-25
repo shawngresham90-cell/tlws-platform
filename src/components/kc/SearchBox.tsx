@@ -15,11 +15,15 @@ export function SearchBox({ defaultValue = '' }: { defaultValue?: string }) {
         type="search"
         defaultValue={defaultValue}
         placeholder="Search DOT rules, HOS, CDL prep…"
-        className="flex-1 rounded-card border border-line bg-asphalt px-4 py-3 text-ink outline-none focus:border-signal"
+        // min-w-0: a flex item defaults to `min-width: auto`, and a text input's
+        // intrinsic width (~200px) is wider than the space left on a 320px
+        // screen — without this the button was pushed off-screen and the whole
+        // page scrolled sideways by 59px.
+        className="min-w-0 flex-1 rounded-card border border-line bg-asphalt px-4 py-3 text-ink outline-none focus:border-signal"
       />
       <button
         type="submit"
-        className="rounded-card bg-signal px-5 py-3 font-display text-sm uppercase text-asphalt transition-colors hover:bg-signal-600"
+        className="shrink-0 rounded-card bg-signal px-5 py-3 font-display text-sm uppercase text-asphalt transition-colors hover:bg-signal-600"
       >
         Search
       </button>

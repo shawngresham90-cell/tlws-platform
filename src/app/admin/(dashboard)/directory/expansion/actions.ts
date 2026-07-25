@@ -39,7 +39,9 @@ export async function previewExpansionAction(
       getExistingImportKeys(),
       supabase
         .from('locations')
-        .select('id, name, category_slug, address, city, state, phone, website, lat, lng, interstate, exit_number, detail_slug')
+        .select(
+          'id, name, category_slug, address, city, state, phone, website, lat, lng, interstate, exit_number, detail_slug',
+        )
         .is('deleted_at', null)
         .limit(5000),
     ]);

@@ -231,7 +231,7 @@ export default async function PreSchoolPage() {
               <TrackedNavLink
                 href={FOUNDING_WALL_PATH}
                 placement="offer"
-                className="text-signal underline-offset-4 hover:underline"
+                className="link-inline text-signal"
               >
                 Founding Student Wall
               </TrackedNavLink>{' '}
@@ -266,12 +266,12 @@ export default async function PreSchoolPage() {
         </ul>
         <p className="mt-6 max-w-2xl text-sm text-muted">
           CDL Pre-School is the on-ramp.{' '}
-          <Link href="/academy" className="text-signal underline-offset-4 hover:underline">
+          <Link href="/academy" className="link-inline text-signal">
             Trucking Life Academy
           </Link>{' '}
           — ELDT-compliant CDL-A training in Dalton, GA — is the destination. When you&apos;re ready
           to kit out the cab, the{' '}
-          <Link href="/store" className="text-signal underline-offset-4 hover:underline">
+          <Link href="/store" className="link-inline text-signal">
             Trucking Life Store
           </Link>{' '}
           has the road-tested gear.

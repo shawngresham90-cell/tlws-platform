@@ -97,7 +97,8 @@ export async function previewCorrectionsAction(
   if (error || !text) return { error: error ?? 'No file.', fileErrors: [], rows: null };
 
   const parsed = parseCorrectionsCsv(text);
-  if (!parsed.ok) return { error: 'The file cannot be processed.', fileErrors: parsed.errors, rows: null };
+  if (!parsed.ok)
+    return { error: 'The file cannot be processed.', fileErrors: parsed.errors, rows: null };
   try {
     const live = await getLiveRows();
     return {

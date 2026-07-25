@@ -103,6 +103,11 @@ export function SubmitLocationForm({
   const [submitterContact, setSubmitterContact] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [token, setToken] = useState('');
+  // Single-use Turnstile tokens are spent once the guard stack verifies them,
+  // so after a failed submit the held token is dead: without a fresh challenge
+  // every retry answers 403 and the driver is stuck until they reload the page.
+  // Remount the widget (key bump) so the retry gets a new token.
+  const [challengeKey, setChallengeKey] = useState(0);
   const [turnstileError, setTurnstileError] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState('');
@@ -206,11 +211,15 @@ export function SubmitLocationForm({
       const body = await res.json();
       if (!res.ok || !body.ok) {
         setFormError(body.error ?? 'Something went wrong. Please try again.');
+        setToken('');
+        setChallengeKey((k) => k + 1);
         return;
       }
       setDone(true);
     } catch {
       setFormError('Network error. Check your connection and try again.');
+      setToken('');
+      setChallengeKey((k) => k + 1);
     } finally {
       setSubmitting(false);
     }
@@ -492,7 +501,12 @@ export function SubmitLocationForm({
       </div>
 
       <div className="mt-6">
-        <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
+        <TurnstileWidget
+          key={challengeKey}
+          siteKey={siteKey}
+          onToken={setToken}
+          onError={setTurnstileError}
+        />
       </div>
 
       <p className="mt-6 text-xs text-muted">

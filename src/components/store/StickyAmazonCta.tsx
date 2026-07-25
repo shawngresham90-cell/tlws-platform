@@ -35,7 +35,10 @@ export function StickyAmazonCta({ product }: { product: StoreProduct }) {
         target="_blank"
         rel={AMAZON_REL}
         onClick={() =>
-          trackEvent(STORE_EVENTS.amazonCtaClick, { product: product.slug, placement: 'sticky-mobile' })
+          trackEvent(STORE_EVENTS.amazonCtaClick, {
+            product: product.slug,
+            placement: 'sticky-mobile',
+          })
         }
         className="flex w-full items-center justify-center rounded-card bg-signal px-4 py-3 font-display text-base uppercase tracking-wide text-asphalt"
       >

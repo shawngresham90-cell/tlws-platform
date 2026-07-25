@@ -8,7 +8,10 @@ import { z } from 'zod';
 
 /** Empty strings from form fields count as absent. */
 const optional = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema.optional());
+  z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    schema.optional(),
+  );
 
 /** Public website links must be https — anything else never renders. */
 const httpsUrl = z

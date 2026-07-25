@@ -71,7 +71,11 @@ export function interstateBySlug(slug: string): DirectoryInterstate | undefined 
 
 /** URL segment for an exit value, e.g. "201" → "exit-201", "7B" → "exit-7b". */
 export function exitSlug(exitNumber: string): string {
-  return `exit-${exitNumber.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
+  return `exit-${exitNumber
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')}`;
 }
 
 /**

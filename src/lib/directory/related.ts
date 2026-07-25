@@ -73,5 +73,7 @@ export function adjacentExits(
 
 /** Distinct interstates present in a set of entries, sorted. */
 export function interstatesIn(entries: DirectoryEntry[]): string[] {
-  return [...new Set(entries.map((e) => e.interstate).filter((i): i is string => Boolean(i)))].sort();
+  return [
+    ...new Set(entries.map((e) => e.interstate).filter((i): i is string => Boolean(i))),
+  ].sort();
 }

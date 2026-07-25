@@ -20,10 +20,17 @@ export function AcademyFaq({
   schema?: boolean;
 }) {
   if (!faqs?.length) return null;
+  // The FAQ page renders one block per topic group. A fixed id would duplicate
+  // both the DOM id and the landmark's accessible name across every block, so
+  // derive it from the heading.
+  const headingId = `faq-${heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}`;
   return (
-    <section aria-labelledby="faq-heading" className="mt-4">
+    <section aria-labelledby={headingId} className="mt-4">
       {schema && <JsonLd schema={faqPageSchema(faqs)} />}
-      <h2 id="faq-heading" className="display-section mb-6">
+      <h2 id={headingId} className="display-section mb-6">
         {heading}
       </h2>
       <div className="divide-y divide-line rounded-card border border-line">

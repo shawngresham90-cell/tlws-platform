@@ -169,10 +169,7 @@ export function topRanked(
   input: RankInput & { limit?: number; minScore?: number } = {},
 ): RankedEntry[] {
   const { limit = 25, minScore = 1, ...rankInput } = input;
-  return rankEntries(
-    entries.filter(isDetailIndexable),
-    rankInput,
-  )
+  return rankEntries(entries.filter(isDetailIndexable), rankInput)
     .filter((r) => r.score >= minScore)
     .slice(0, limit);
 }

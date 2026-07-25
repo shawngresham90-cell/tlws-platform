@@ -112,10 +112,7 @@ function rankCandidate(
  * (published entries in the listing's state and/or corridor). Excludes the
  * listing itself, dedupes by id, caps each section, and drops empty sections.
  */
-export function nearbySections(
-  current: DirectoryEntry,
-  pool: DirectoryEntry[],
-): NearbySection[] {
+export function nearbySections(current: DirectoryEntry, pool: DirectoryEntry[]): NearbySection[] {
   const seen = new Set<string>([current.id]);
   const byCategory = new Map<string, { item: NearbyItem; group: number; key: number }[]>();
 
@@ -138,7 +135,11 @@ export function nearbySections(
       (a, b) =>
         a.group - b.group || a.key - b.key || a.item.entry.name.localeCompare(b.item.entry.name),
     );
-    return { slug: c.slug, heading: c.heading, items: ranked.slice(0, NEARBY_SECTION_CAP).map((r) => r.item) };
+    return {
+      slug: c.slug,
+      heading: c.heading,
+      items: ranked.slice(0, NEARBY_SECTION_CAP).map((r) => r.item),
+    };
   }).filter((s) => s.items.length > 0);
 }
 
@@ -186,7 +187,11 @@ export function detailDescription(entry: DirectoryEntry): string {
   const amenities = (entry.amenities ?? []).slice(0, 3);
   if (amenities.length > 0) parts.push(amenities.join(', '));
   let out = `${parts.join(' · ')}. Address, phone, directions & driver reviews.`;
-  if (out.length > 160) out = `${parts.join(' · ').slice(0, 120).replace(/\s+\S*$/, '')} — address, phone & directions.`;
+  if (out.length > 160)
+    out = `${parts
+      .join(' · ')
+      .slice(0, 120)
+      .replace(/\s+\S*$/, '')} — address, phone & directions.`;
   return out;
 }
 

@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import type { StoreProduct } from '@/lib/store/types';
-import { priceLabel, productHref, productReadiness, ratingLabel, displayName } from '@/lib/store/products';
+import {
+  priceLabel,
+  productHref,
+  productReadiness,
+  ratingLabel,
+  displayName,
+} from '@/lib/store/products';
 import { storeCategory } from '@/lib/store/categories';
 import { ProductImage } from './ProductImage';
 import { AmazonCta } from './AmazonCta';

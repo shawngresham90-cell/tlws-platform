@@ -18,10 +18,7 @@ export function EntryCard({ entry }: { entry: DirectoryEntry }) {
       )}
       <h3 className="font-display text-lg uppercase text-ink">
         {entry.detailSlug ? (
-          <Link
-            href={detailHref(entry.detailSlug)}
-            className="transition-colors hover:text-signal"
-          >
+          <Link href={detailHref(entry.detailSlug)} className="transition-colors hover:text-signal">
             {entry.name}
           </Link>
         ) : (

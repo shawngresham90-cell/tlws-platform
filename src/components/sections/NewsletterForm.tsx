@@ -3,25 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
+import { leadAttribution } from '@/lib/attribution';
 
 /**
  * Newsletter capture island. Posts to the existing guarded lead pipeline
  * (`POST /api/lead`, source "newsletter") — no new email provider, no
  * campaign machinery. Repeat submits are safe (the API upserts by email).
- * UTM parameters present on the page URL ride along so the owner can see
- * which video/post produced each signup.
+ *
+ * Attribution comes from `leadAttribution()` — the session's FIRST-touch utm,
+ * not just the current URL. A driver who arrives on a `/go/...` short link and
+ * then browses to the page holding this form still carries the campaign that
+ * sent them.
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** utm_* params from the current URL, bounded to the schema's string map. */
-export function collectUtm(): Record<string, string> {
-  const utm: Record<string, string> = {};
-  const params = new URLSearchParams(window.location.search);
-  for (const [key, value] of params) {
-    if (/^utm_[a-z]+$/i.test(key) && value) utm[key.toLowerCase()] = value.slice(0, 200);
-  }
-  return utm;
-}
 
 export function NewsletterForm({ siteKey }: { siteKey: string }) {
   const [email, setEmail] = useState('');
@@ -63,7 +57,7 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
         body: JSON.stringify({
           email: email.trim(),
           source: 'newsletter',
-          utm: collectUtm(),
+          utm: leadAttribution(),
           turnstileToken: token,
         }),
       });

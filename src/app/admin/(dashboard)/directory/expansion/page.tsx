@@ -7,7 +7,10 @@ import { DownloadCsvButton } from '@/components/admin/directory/DownloadCsvButto
 import { ExpansionTool } from '@/components/admin/directory/ExpansionTool';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Admin — Expansion Readiness', robots: { index: false, follow: false } };
+export const metadata = {
+  title: 'Admin — Expansion Readiness',
+  robots: { index: false, follow: false },
+};
 
 /**
  * Expansion readiness (Milestone 21): everything the next interstate/state
@@ -32,7 +35,9 @@ export default function AdminExpansionPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-card border border-line bg-asphalt-800 p-5 text-sm text-muted">
-          <h2 className="font-display text-lg uppercase text-ink">Required fields &amp; normalization</h2>
+          <h2 className="font-display text-lg uppercase text-ink">
+            Required fields &amp; normalization
+          </h2>
           <ul className="mt-3 grid list-disc gap-1.5 pl-5">
             <li>
               <strong className="text-ink">Business Name</strong> and{' '}
@@ -40,14 +45,20 @@ export default function AdminExpansionPage() {
               are required by validation.
             </li>
             <li>State: two-letter code, uppercased automatically (ga → GA).</li>
-            <li>Interstate: store as the designation drivers know — “I-75” (page slugs derive automatically).</li>
+            <li>
+              Interstate: store as the designation drivers know — “I-75” (page slugs derive
+              automatically).
+            </li>
             <li>Exit number: the posted exit, as text (“306”, “7B”) — mile-based numbering.</li>
             <li>Phone: digits and ()+-. only; Website: full http(s):// URL.</li>
             <li>
               Truck Parking Club URL: https://truckparkingclub.com only — anything else is rejected.
               Never guess one.
             </li>
-            <li>Coordinates: decimal degrees, only when verified — the geocoding workflow adds them later otherwise.</li>
+            <li>
+              Coordinates: decimal degrees, only when verified — the geocoding workflow adds them
+              later otherwise.
+            </li>
             <li>Booleans (Published/Featured/parking flags/amenities): yes / y / true / 1 / x.</li>
           </ul>
         </section>

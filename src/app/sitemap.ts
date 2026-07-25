@@ -48,12 +48,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // Top-level public destinations that had no sitemap entry: THE ROAD AHEAD,
-  // Trip Planner, the static Truck Parking landing, Books, Apps, the sponsor
-  // front door, the DOT Tools informational landing, and the legal pages.
+  // Trip Planner, Books, Apps, the sponsor front door, the DOT Tools
+  // informational landing, and the legal pages.
+  //
+  // `/directory/parking` deliberately is NOT here: it is the `parking`
+  // category's `customHref`, so the DIRECTORY_CATEGORIES loop below already
+  // emits it. Listing it twice put a duplicate <url> in the sitemap.
   const topLevelPaths: Array<[string, number]> = [
     ['/road-ahead', 0.7],
     ['/trip-planner', 0.8],
-    ['/directory/parking', 0.7],
     ['/books', 0.8],
     ['/apps', 0.6],
     ['/sponsors', 0.6],
@@ -311,5 +314,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If the DB is unreachable at build, still ship the static sitemap.
   }
 
-  return entries;
+  // One <url> per URL. Entries come from a static list, four registries, and
+  // two database queries, so the same page can legitimately be reached from
+  // more than one of them (a category's `customHref` and a hand-added
+  // top-level path, say). First writer wins — the earlier blocks are the more
+  // specific ones.
+  return dedupeByUrl(entries);
+}
+
+function dedupeByUrl(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
+  const seen = new Set<string>();
+  const out: MetadataRoute.Sitemap = [];
+  for (const entry of entries) {
+    if (seen.has(entry.url)) continue;
+    seen.add(entry.url);
+    out.push(entry);
+  }
+  return out;
 }

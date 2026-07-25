@@ -38,7 +38,12 @@ export default function AdminDirectoryExportPage() {
           <label htmlFor="x-category" className="mb-1 block text-xs font-semibold text-muted">
             Category
           </label>
-          <select id="x-category" name="category" defaultValue="" className={`${inputClasses} w-full`}>
+          <select
+            id="x-category"
+            name="category"
+            defaultValue=""
+            className={`${inputClasses} w-full`}
+          >
             <option value="">All categories</option>
             {DIRECTORY_CATEGORIES.map((c) => (
               <option key={c.slug} value={c.slug}>
@@ -63,7 +68,12 @@ export default function AdminDirectoryExportPage() {
           <label htmlFor="x-published" className="mb-1 block text-xs font-semibold text-muted">
             Status
           </label>
-          <select id="x-published" name="published" defaultValue="" className={`${inputClasses} w-full`}>
+          <select
+            id="x-published"
+            name="published"
+            defaultValue=""
+            className={`${inputClasses} w-full`}
+          >
             <option value="">All</option>
             <option value="published">Published only</option>
             <option value="unpublished">Unpublished only</option>
@@ -73,7 +83,12 @@ export default function AdminDirectoryExportPage() {
           <label htmlFor="x-featured" className="mb-1 block text-xs font-semibold text-muted">
             Featured
           </label>
-          <select id="x-featured" name="featured" defaultValue="" className={`${inputClasses} w-full`}>
+          <select
+            id="x-featured"
+            name="featured"
+            defaultValue=""
+            className={`${inputClasses} w-full`}
+          >
             <option value="">All</option>
             <option value="1">Featured only</option>
           </select>

@@ -28,7 +28,10 @@ const LINKS = [
 export function DirectoryToolsNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Directory tools" className="mb-6 flex flex-wrap gap-1 border-b border-line pb-3">
+    <nav
+      aria-label="Directory tools"
+      className="mb-6 flex flex-wrap gap-1 border-b border-line pb-3"
+    >
       {LINKS.map((l) => {
         const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
         return (

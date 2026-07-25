@@ -20,13 +20,16 @@ export const revalidate = 300;
 export default async function TripPlannerPage() {
   const anchors = await loadPlannerAnchors();
   return (
-    <main className="mx-auto w-full max-w-xl px-4 py-6">
+    // The root layout already provides the page's main landmark; nesting a
+    // second one here gave the document two mains and no unique name for
+    // either. A plain wrapper is all this needs.
+    <div className="mx-auto w-full max-w-xl px-4 py-6">
       <h1 className="font-display text-3xl uppercase tracking-wide text-ink">Trip Planner</h1>
       <p className="mt-1 text-sm text-muted">
         HOS-aware planning: where your clocks run out, where to take the break, and where to park —
         anchored to verified directory locations.
       </p>
       <TripPlannerApp anchors={anchors} />
-    </main>
+    </div>
   );
 }

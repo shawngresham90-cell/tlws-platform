@@ -38,7 +38,7 @@ async function load(): Promise<{ enabled: boolean; rows: Row[] }> {
   }
 }
 
-const input = 'w-full rounded-card border border-line bg-asphalt-900 px-3 py-2 text-sm text-ink';
+const input = 'w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
 
 export default async function SponsorsAdminPage() {
   const { enabled, rows } = await load();
@@ -48,8 +48,8 @@ export default async function SponsorsAdminPage() {
       <h1 className="font-display text-2xl uppercase text-ink">Sponsors</h1>
       <p className="mt-2 text-sm text-muted">
         Admin-configurable sponsor placements. Blocks are clearly labeled “Sponsored”, use
-        <code className="mx-1">rel=&quot;sponsored noopener noreferrer&quot;</code>, and only render where
-        a matching active sponsor exists. Leave a targeting field blank to match everywhere.
+        <code className="mx-1">rel=&quot;sponsored noopener noreferrer&quot;</code>, and only render
+        where a matching active sponsor exists. Leave a targeting field blank to match everywhere.
       </p>
 
       {!enabled && (
@@ -60,15 +60,27 @@ export default async function SponsorsAdminPage() {
         </div>
       )}
 
-      <form action={createSponsorAction} className="mt-6 space-y-3 rounded-card border border-line bg-asphalt-800 p-5">
+      <form
+        action={createSponsorAction}
+        className="mt-6 space-y-3 rounded-card border border-line bg-asphalt-800 p-5"
+      >
         <h2 className="font-display text-lg uppercase text-ink">Add a sponsor</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-muted">Name *<input name="name" required className={input} /></label>
-          <label className="text-sm text-muted">Logo (emoji)<input name="logo" maxLength={4} className={input} /></label>
+          <label className="text-sm text-muted">
+            Name *<input name="name" required className={input} />
+          </label>
+          <label className="text-sm text-muted">
+            Logo (emoji)
+            <input name="logo" maxLength={4} className={input} />
+          </label>
         </div>
-        <label className="block text-sm text-muted">Tagline<input name="tagline" className={input} /></label>
         <label className="block text-sm text-muted">
-          URL * (https://…)<input name="url" type="url" required className={input} />
+          Tagline
+          <input name="tagline" className={input} />
+        </label>
+        <label className="block text-sm text-muted">
+          URL * (https://…)
+          <input name="url" type="url" required className={input} />
         </label>
         <fieldset className="text-sm text-muted">
           <legend className="mb-1">Placements</legend>
@@ -81,9 +93,18 @@ export default async function SponsorsAdminPage() {
           </div>
         </fieldset>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="text-sm text-muted">States (e.g. GA, TN)<input name="states" className={input} /></label>
-          <label className="text-sm text-muted">Interstates (e.g. I-75)<input name="interstates" className={input} /></label>
-          <label className="text-sm text-muted">Categories<input name="categories" className={input} /></label>
+          <label className="text-sm text-muted">
+            States (e.g. GA, TN)
+            <input name="states" className={input} />
+          </label>
+          <label className="text-sm text-muted">
+            Interstates (e.g. I-75)
+            <input name="interstates" className={input} />
+          </label>
+          <label className="text-sm text-muted">
+            Categories
+            <input name="categories" className={input} />
+          </label>
         </div>
         <button
           type="submit"
@@ -93,7 +114,9 @@ export default async function SponsorsAdminPage() {
         </button>
       </form>
 
-      <h2 className="mt-10 font-display text-lg uppercase text-ink">Current sponsors ({rows.length})</h2>
+      <h2 className="mt-10 font-display text-lg uppercase text-ink">
+        Current sponsors ({rows.length})
+      </h2>
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-muted">None yet.</p>
       ) : (

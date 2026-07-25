@@ -6,7 +6,12 @@ import type * as Leaflet from 'leaflet';
 import { getCategory } from '@/lib/directory/categories';
 import { clusterMarkers, markersFromEntries } from '@/lib/map/cluster';
 import { boundsForPoints } from '@/lib/map/bounds';
-import { gridSizeForZoom, directionsUrl, type ExploreResult, type ExploreOrigin } from '@/lib/map/explore';
+import {
+  gridSizeForZoom,
+  directionsUrl,
+  type ExploreResult,
+  type ExploreOrigin,
+} from '@/lib/map/explore';
 import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
@@ -21,7 +26,8 @@ import { detailHref } from '@/lib/directory/detail-slug';
 type LeafletModule = typeof Leaflet;
 
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 /** Hard cap on rendered markers, over and above clustering. */
 const MAX_MARKERS = 500;
@@ -102,7 +108,10 @@ export function LeafletMap({
     };
     add('div', entry.name, true);
     const cat = getCategory(entry.category);
-    add('div', `${cat ? `${cat.icon} ${cat.title}` : entry.category} · ${entry.city}, ${entry.state}`);
+    add(
+      'div',
+      `${cat ? `${cat.icon} ${cat.title}` : entry.category} · ${entry.city}, ${entry.state}`,
+    );
     if (entry.distanceMiles != null) add('div', `${entry.distanceMiles} mi away`);
     if (entry.phone) add('div', `☎ ${entry.phone}`);
     if (entry.amenities?.length) add('div', entry.amenities.slice(0, 6).join(' · '));
@@ -197,7 +206,12 @@ export function LeafletMap({
         marker.on('click', () => stateRef.current.onSelect(m.id));
         if (selected) marker.openPopup();
       } else {
-        const icon = L.divIcon({ className: '', html: '', iconSize: [36, 36], iconAnchor: [18, 18] });
+        const icon = L.divIcon({
+          className: '',
+          html: '',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
         const marker = L.marker([cluster.lat, cluster.lng], {
           icon,
           keyboard: true,
@@ -227,7 +241,10 @@ export function LeafletMap({
     layer.clearLayers();
     if (!origin) return;
     const icon = L.divIcon({ className: '', html: '', iconSize: [30, 30], iconAnchor: [15, 15] });
-    const marker = L.marker([origin.lat, origin.lng], { icon, alt: `Search origin: ${origin.label}` });
+    const marker = L.marker([origin.lat, origin.lng], {
+      icon,
+      alt: `Search origin: ${origin.label}`,
+    });
     marker.addTo(layer);
     const el = marker.getElement();
     if (el) {
@@ -256,7 +273,14 @@ export function LeafletMap({
       return;
     }
     const b = boundsForPoints(points);
-    if (b) map.fitBounds([[b.south, b.west], [b.north, b.east]], { padding: [24, 24] });
+    if (b)
+      map.fitBounds(
+        [
+          [b.south, b.west],
+          [b.north, b.east],
+        ],
+        { padding: [24, 24] },
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey, ready, focus]);
 
@@ -279,7 +303,10 @@ export function LeafletMap({
       className="h-[420px] w-full rounded-card border border-line bg-asphalt-800 sm:h-[540px]"
     >
       {!ready && (
-        <div className="flex h-full items-center justify-center text-sm text-muted" aria-hidden="true">
+        <div
+          className="flex h-full items-center justify-center text-sm text-muted"
+          aria-hidden="true"
+        >
           Loading map…
         </div>
       )}

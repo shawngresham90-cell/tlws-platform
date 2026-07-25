@@ -45,8 +45,15 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
     const c = interstateBySlug(slug);
     check(`${slug} has registry entry`, !!c);
     check(`${slug} keeps its designation`, c?.designation === `I-${slug.slice(1)}`);
-    check(`${slug} has hand-written intro (not generated fallback)`, !!c && !c.intro.startsWith('Truck stops, parking, scales'));
-    check(`${slug} state order matches corridor geography`, c?.stateOrder.join() === states.join(), c?.stateOrder);
+    check(
+      `${slug} has hand-written intro (not generated fallback)`,
+      !!c && !c.intro.startsWith('Truck stops, parking, scales'),
+    );
+    check(
+      `${slug} state order matches corridor geography`,
+      c?.stateOrder.join() === states.join(),
+      c?.stateOrder,
+    );
     for (const code of c?.stateOrder ?? []) {
       check(`${slug} state code ${code} is a real state`, !!stateByCode(code));
     }
@@ -58,7 +65,10 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
   const c = interstateBySlug('i81');
   check('unknown corridor still resolves', !!c && c.designation === 'I-81');
   check('unknown corridor gets generated copy', !!c && c.intro.includes('I-81'));
-  check('unknown corridor has empty state order (alphabetical fallback)', c?.stateOrder.length === 0);
+  check(
+    'unknown corridor has empty state order (alphabetical fallback)',
+    c?.stateOrder.length === 0,
+  );
   check('non-interstate slug rejected', interstateBySlug('georgia') === undefined);
   check('bare "i" rejected', interstateBySlug('i') === undefined);
 }

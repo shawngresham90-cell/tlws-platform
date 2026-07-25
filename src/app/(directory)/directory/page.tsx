@@ -170,7 +170,7 @@ export default async function DirectoryPage() {
 
         <p className="mt-14 border-t border-line pt-8 text-sm text-muted">
           Stopped for the night?{' '}
-          <Link href="/store" className="font-semibold text-signal hover:underline">
+          <Link href="/store" className="link-inline font-semibold text-signal">
             The Trucking Life Store
           </Link>{' '}
           has the dash cams, 12V coolers, and bunk gear drivers actually recommend.

@@ -130,7 +130,7 @@ export function SavedTripsPanel({
                     autoFocus
                     value={renameText}
                     onChange={(e) => setRenameText(e.target.value)}
-                    className="w-full rounded-card border border-line bg-asphalt-900 px-3 py-2 text-sm text-ink focus:border-signal focus:outline-none"
+                    className="w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink focus:border-signal focus:outline-none"
                   />
                   <button type="submit" className={btnPrimary}>
                     Save

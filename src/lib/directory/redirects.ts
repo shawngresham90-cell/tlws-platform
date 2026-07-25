@@ -37,7 +37,8 @@ export async function resolveSlugRedirect(oldSlug: string): Promise<RedirectTarg
         locations: { detail_slug: string | null; is_published: boolean; deleted_at: string | null };
       }
     ).locations;
-    if (!listing || !listing.is_published || listing.deleted_at || !listing.detail_slug) return null;
+    if (!listing || !listing.is_published || listing.deleted_at || !listing.detail_slug)
+      return null;
     if (listing.detail_slug === oldSlug) return null; // self-loop guard
     return { currentSlug: listing.detail_slug };
   } catch {
@@ -75,8 +76,10 @@ export type RedirectPlan =
  */
 export function planSlugRedirect(input: RedirectPlanInput): RedirectPlan {
   const { currentSlug, nextSlug, existingOldSlugs } = input;
-  if (!isValidDetailSlug(currentSlug)) return { ok: false, reason: `current slug "${currentSlug}" is not valid` };
-  if (!isValidDetailSlug(nextSlug)) return { ok: false, reason: `next slug "${nextSlug}" is not valid` };
+  if (!isValidDetailSlug(currentSlug))
+    return { ok: false, reason: `current slug "${currentSlug}" is not valid` };
+  if (!isValidDetailSlug(nextSlug))
+    return { ok: false, reason: `next slug "${nextSlug}" is not valid` };
   if (currentSlug === nextSlug) {
     return { ok: false, reason: 'slug is unchanged — nothing to redirect' };
   }

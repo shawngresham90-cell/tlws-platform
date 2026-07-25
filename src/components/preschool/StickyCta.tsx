@@ -34,7 +34,9 @@ export function StickyCta() {
         href={PRESCHOOL_PURCHASE_URL}
         target="_blank"
         rel={PRESCHOOL_PURCHASE_REL}
-        onClick={() => trackEvent(PRESCHOOL_EVENTS.purchaseCtaClick, { placement: 'sticky-mobile' })}
+        onClick={() =>
+          trackEvent(PRESCHOOL_EVENTS.purchaseCtaClick, { placement: 'sticky-mobile' })
+        }
         className="flex w-full items-center justify-center rounded-card bg-signal px-4 py-3 font-display text-base uppercase tracking-wide text-asphalt"
       >
         Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}

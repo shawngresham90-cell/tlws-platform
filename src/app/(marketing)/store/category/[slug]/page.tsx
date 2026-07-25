@@ -65,8 +65,8 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
           <div className="rounded-card border border-line bg-asphalt p-8 text-center">
             <p className="text-lg text-ink">Picks for this category are on the way.</p>
             <p className="mt-2 text-muted">
-              We only list gear we&apos;d actually put in the cab, so this shelf fills in as we
-              vet it.
+              We only list gear we&apos;d actually put in the cab, so this shelf fills in as we vet
+              it.
             </p>
             <Link
               href="/store"

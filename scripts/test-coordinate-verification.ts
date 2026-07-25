@@ -32,7 +32,10 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
   check('inside bounds → 0', milesOutsideBounds(tn, { lat: 36.16, lng: -86.78 }) === 0);
   const oneDegNorth = milesOutsideBounds(tn, { lat: tn.north + 1, lng: -86.78 });
   check('1° north of bounds ≈ 69 mi', Math.abs(oneDegNorth - 69.09) < 0.7, oneDegNorth);
-  check('corner distance uses nearest point', milesOutsideBounds(tn, { lat: tn.north + 1, lng: tn.east + 1 }) > oneDegNorth);
+  check(
+    'corner distance uses nearest point',
+    milesOutsideBounds(tn, { lat: tn.north + 1, lng: tn.east + 1 }) > oneDegNorth,
+  );
 }
 
 /* ---------------------- normalizeInterstate ---------------------- */
@@ -47,30 +50,63 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
 /* ---------------------- verifyListingCoordinate ---------------------- */
 {
   // Nashville TN on I-24: inside state + corridor
-  const ok = verifyListingCoordinate({ id: '1', name: 'A', city: 'Nashville', state: 'TN', interstate: 'I-24', lat: 36.16, lng: -86.78 });
+  const ok = verifyListingCoordinate({
+    id: '1',
+    name: 'A',
+    city: 'Nashville',
+    state: 'TN',
+    interstate: 'I-24',
+    lat: 36.16,
+    lng: -86.78,
+  });
   check('valid TN point → ok', ok.severity === 'ok' && ok.findings.length === 0, ok);
 
   // No coordinates: the normal pre-geocode case, not an error
   const none = verifyListingCoordinate({ state: 'TN', lat: null, lng: null });
-  check('missing coords → no-coordinates', none.severity === 'no-coordinates' && none.findings.join() === 'no-coordinates');
+  check(
+    'missing coords → no-coordinates',
+    none.severity === 'no-coordinates' && none.findings.join() === 'no-coordinates',
+  );
 
   // Hard-invalid short-circuits (null island)
   const inv = verifyListingCoordinate({ state: 'TN', lat: 0, lng: 0 });
-  check('0,0 → invalid via coordinateIssues', inv.severity === 'invalid' && inv.findings.includes('zero-zero'));
+  check(
+    '0,0 → invalid via coordinateIssues',
+    inv.severity === 'invalid' && inv.findings.includes('zero-zero'),
+  );
 
   // Wrong state: an Atlanta GA point on a "TN" listing
   const wrong = verifyListingCoordinate({ state: 'TN', lat: 33.75, lng: -84.39 });
-  check('GA point on TN listing → suspect', wrong.severity === 'suspect' && wrong.findings.includes('outside-state-bounds'));
-  check('wrong-state distance is meaningful (>50mi)', wrong.milesOutsideState > 50, wrong.milesOutsideState);
+  check(
+    'GA point on TN listing → suspect',
+    wrong.severity === 'suspect' && wrong.findings.includes('outside-state-bounds'),
+  );
+  check(
+    'wrong-state distance is meaningful (>50mi)',
+    wrong.milesOutsideState > 50,
+    wrong.milesOutsideState,
+  );
 
   // Corridor check: a Memphis point (fine for TN) on an "I-75" listing is far off the I-75 corridor
-  const corr = verifyListingCoordinate({ state: 'TN', interstate: 'I-75', lat: 35.15, lng: -90.05 });
-  check('Memphis on I-75 listing → suspect corridor', corr.severity === 'suspect' && corr.findings.includes('outside-interstate-corridor'), corr);
+  const corr = verifyListingCoordinate({
+    state: 'TN',
+    interstate: 'I-75',
+    lat: 35.15,
+    lng: -90.05,
+  });
+  check(
+    'Memphis on I-75 listing → suspect corridor',
+    corr.severity === 'suspect' && corr.findings.includes('outside-interstate-corridor'),
+    corr,
+  );
   check('corridor miss but state ok has milesOutsideState 0', corr.milesOutsideState === 0);
 
   // Unknown state code → flagged, never crashes
   const unk = verifyListingCoordinate({ state: 'XX', lat: 36.0, lng: -86.0 });
-  check('unknown state → state-unknown finding, ok severity', unk.findings.includes('state-unknown') && unk.severity === 'ok');
+  check(
+    'unknown state → state-unknown finding, ok severity',
+    unk.findings.includes('state-unknown') && unk.severity === 'ok',
+  );
 
   // All 8 live-data states have bounds coverage
   for (const st of ['GA', 'TN', 'FL', 'KY', 'OH', 'MI', 'AL', 'IN', 'IL']) {
@@ -98,7 +134,11 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
   const csv = verificationReportCsv(results);
   const lines = csv.split('\r\n');
   check('report has header + 3 non-ok rows', lines.length === 4, lines.length);
-  check('invalid sorts before suspect', lines[1].includes('NullIsland') && lines[2].includes('WrongState'), lines);
+  check(
+    'invalid sorts before suspect',
+    lines[1].includes('NullIsland') && lines[2].includes('WrongState'),
+    lines,
+  );
   check('report omits ok rows', !csv.includes('Good'));
 }
 

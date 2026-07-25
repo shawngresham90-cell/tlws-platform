@@ -30,7 +30,10 @@ export const TRUCK_TYPES = [
 
 /** Empty strings from form fields count as absent. */
 const optional = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema.optional());
+  z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    schema.optional(),
+  );
 
 const httpUrl = z
   .string()
@@ -72,7 +75,12 @@ export const submissionSchema = z
         .toUpperCase()
         .regex(/^[A-Z]{2}$/, 'State must be a 2-letter code.'),
     ),
-    zip: optional(z.string().trim().regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789.')),
+    zip: optional(
+      z
+        .string()
+        .trim()
+        .regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789.'),
+    ),
     phone: optional(
       z
         .string()

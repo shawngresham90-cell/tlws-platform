@@ -174,7 +174,9 @@ export async function saveReviewAction(id: string, formData: FormData): Promise<
     })
     .eq('id', id);
   if (error)
-    redirect(`/admin/reviews/${id}?error=${encodeURIComponent(`Could not save: ${error.message}`)}`);
+    redirect(
+      `/admin/reviews/${id}?error=${encodeURIComponent(`Could not save: ${error.message}`)}`,
+    );
 
   // An edited already-approved review changes public content.
   if (row!.status === 'approved') revalidateReviews(row!.locations?.category_slug);

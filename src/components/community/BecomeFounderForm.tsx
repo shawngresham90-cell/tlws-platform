@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { SmsConsentField } from '@/components/conversion/SmsConsentField';
+import { leadAttribution } from '@/lib/attribution';
 import { FOUNDER_TIERS } from './tiers';
 
 /**
@@ -12,7 +13,8 @@ import { FOUNDER_TIERS } from './tiers';
  * are a later milestone) — this records intent through the existing guarded,
  * Turnstile-protected lead pipeline (`POST /api/lead`, source "founder") so
  * Shawn can follow up personally to arrange the contribution. The selected tier
- * rides along in `utm.founder_tier` (no schema change). Email/SMS stay off.
+ * rides along in `utm.founder_tier` (no schema change), alongside the
+ * session's first-touch campaign attribution. Email/SMS stay off.
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
@@ -31,6 +33,11 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
   const [formError, setFormError] = useState('');
   const [turnstileError, setTurnstileError] = useState('');
   const [token, setToken] = useState('');
+  // Single-use Turnstile tokens are spent once the guard stack verifies them,
+  // so after a failed submit the held token is dead: without a fresh challenge
+  // every retry answers 403 and the driver is stuck until they reload the page.
+  // Remount the widget (key bump) so the retry gets a new token.
+  const [challengeKey, setChallengeKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   // Per-submission idempotency token. Generated once per submit attempt and
@@ -81,13 +88,15 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
           sms_consent: smsConsent,
           source: 'founder',
           submission_id: submissionId.current,
-          utm: tier ? { founder_tier: tier } : {},
+          utm: leadAttribution(tier ? { founder_tier: tier } : {}),
           turnstileToken: token,
         }),
       });
       const body = await res.json();
       if (!res.ok || !body.ok) {
         setFormError(body.error ?? 'Something went wrong. Please try again.');
+        setToken('');
+        setChallengeKey((k) => k + 1);
         return;
       }
       // Fresh token for any subsequent (distinct) submission.
@@ -95,6 +104,8 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
       setDone(true);
     } catch {
       setFormError('Network error. Check your connection and try again.');
+      setToken('');
+      setChallengeKey((k) => k + 1);
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +193,12 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
       </div>
 
       <div className="mt-6">
-        <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
+        <TurnstileWidget
+          key={challengeKey}
+          siteKey={siteKey}
+          onToken={setToken}
+          onError={setTurnstileError}
+        />
       </div>
 
       <p className="mt-6 text-xs text-muted">

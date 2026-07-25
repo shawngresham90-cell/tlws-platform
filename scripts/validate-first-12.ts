@@ -37,9 +37,20 @@ const EXPECTED_IDS = [
 ];
 
 const COLUMNS = [
-  'product_id', 'product_name', 'asin', 'verified_amazon_title', 'price_usd',
-  'price_checked_at', 'rating', 'review_count', 'main_image_path',
-  'alt_image_1_path', 'alt_image_2_path', 'shawns_pick', 'driver_tested', 'notes',
+  'product_id',
+  'product_name',
+  'asin',
+  'verified_amazon_title',
+  'price_usd',
+  'price_checked_at',
+  'rating',
+  'review_count',
+  'main_image_path',
+  'alt_image_1_path',
+  'alt_image_2_path',
+  'shawns_pick',
+  'driver_tested',
+  'notes',
 ];
 
 // ── minimal RFC-4180-ish CSV parser (handles quoted fields) ────────────────
@@ -52,15 +63,28 @@ function parseCsv(text: string): string[][] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false;
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else inQuotes = false;
       } else field += c;
     } else if (c === '"') inQuotes = true;
-    else if (c === ',') { row.push(field); field = ''; }
-    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (c === '\r') { /* skip */ }
-    else field += c;
+    else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (c === '\r') {
+      /* skip */
+    } else field += c;
   }
-  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
   return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
 }
 
@@ -80,7 +104,8 @@ if (header.join(',') !== COLUMNS.join(',')) {
 }
 
 // Row count
-if (dataRows.length !== 12) err('count', `expected exactly 12 product rows, found ${dataRows.length}`);
+if (dataRows.length !== 12)
+  err('count', `expected exactly 12 product rows, found ${dataRows.length}`);
 
 const seenIds = new Set<string>();
 const seenAsins = new Map<string, string>();
@@ -93,19 +118,30 @@ for (const cols of dataRows) {
   const id = row.product_id || '(blank id)';
 
   // wrong column count
-  if (cols.length !== COLUMNS.length) err(id, `has ${cols.length} columns, expected ${COLUMNS.length}`);
+  if (cols.length !== COLUMNS.length)
+    err(id, `has ${cols.length} columns, expected ${COLUMNS.length}`);
 
   // known id + no dup
   if (!EXPECTED_IDS.includes(row.product_id)) err(id, 'product_id is not one of the expected 12');
-  if (seenIds.has(row.product_id)) err(id, 'duplicate product_id'); else seenIds.add(row.product_id);
+  if (seenIds.has(row.product_id)) err(id, 'duplicate product_id');
+  else seenIds.add(row.product_id);
   if (!row.product_name) err(id, 'product_name is blank');
 
   // formula-injection + amazon-url + manual-tag scan on every cell
   for (const c of COLUMNS) {
     const v = row[c];
-    if (v && FORMULA.test(v)) err(id, `cell "${c}" looks like a formula-injection value: ${JSON.stringify(v)}`);
-    if (v && c !== 'notes' && AMAZON_URLISH.test(v)) err(id, `cell "${c}" contains an Amazon URL / tag — links are generated from the ASIN, never entered: ${JSON.stringify(v)}`);
-    if (v && /truckinglif0d-20/.test(v)) err(id, `cell "${c}" contains the affiliate tag manually — never enter it; it is applied centrally`);
+    if (v && FORMULA.test(v))
+      err(id, `cell "${c}" looks like a formula-injection value: ${JSON.stringify(v)}`);
+    if (v && c !== 'notes' && AMAZON_URLISH.test(v))
+      err(
+        id,
+        `cell "${c}" contains an Amazon URL / tag — links are generated from the ASIN, never entered: ${JSON.stringify(v)}`,
+      );
+    if (v && /truckinglif0d-20/.test(v))
+      err(
+        id,
+        `cell "${c}" contains the affiliate tag manually — never enter it; it is applied centrally`,
+      );
   }
 
   // ASIN
@@ -121,17 +157,20 @@ for (const cols of dataRows) {
   // price optional + positive
   if (row.price_usd) {
     const p = Number(row.price_usd);
-    if (!Number.isFinite(p) || p <= 0) err(id, `price_usd must be a positive number: ${JSON.stringify(row.price_usd)}`);
+    if (!Number.isFinite(p) || p <= 0)
+      err(id, `price_usd must be a positive number: ${JSON.stringify(row.price_usd)}`);
   }
   // rating optional 0..5
   if (row.rating) {
     const r = Number(row.rating);
-    if (!Number.isFinite(r) || r < 0 || r > 5) err(id, `rating must be between 0 and 5: ${JSON.stringify(row.rating)}`);
+    if (!Number.isFinite(r) || r < 0 || r > 5)
+      err(id, `rating must be between 0 and 5: ${JSON.stringify(row.rating)}`);
   }
   // review_count optional, non-negative integer
   if (row.review_count) {
     const rc = Number(row.review_count);
-    if (!Number.isInteger(rc) || rc < 0) err(id, `review_count must be a non-negative integer: ${JSON.stringify(row.review_count)}`);
+    if (!Number.isInteger(rc) || rc < 0)
+      err(id, `review_count must be a non-negative integer: ${JSON.stringify(row.review_count)}`);
   }
 
   // image paths must live inside the approved dir for THIS product
@@ -149,12 +188,18 @@ for (const cols of dataRows) {
   // yes/no fields
   for (const c of ['shawns_pick', 'driver_tested']) {
     const v = row[c].toLowerCase();
-    if (v && v !== 'yes' && v !== 'no') err(id, `${c} must be "yes" or "no" (or blank): ${JSON.stringify(row[c])}`);
+    if (v && v !== 'yes' && v !== 'no')
+      err(id, `${c} must be "yes" or "no" (or blank): ${JSON.stringify(row[c])}`);
   }
 
   // price_checked_at should look like a date when a price is present
-  if (row.price_usd && !row.price_checked_at) warn(id, 'price_usd set but price_checked_at is blank — record when you checked it');
-  if (row.price_checked_at && !/^\d{4}-\d{2}-\d{2}/.test(row.price_checked_at)) warn(id, `price_checked_at should be an ISO date (YYYY-MM-DD): ${JSON.stringify(row.price_checked_at)}`);
+  if (row.price_usd && !row.price_checked_at)
+    warn(id, 'price_usd set but price_checked_at is blank — record when you checked it');
+  if (row.price_checked_at && !/^\d{4}-\d{2}-\d{2}/.test(row.price_checked_at))
+    warn(
+      id,
+      `price_checked_at should be an ISO date (YYYY-MM-DD): ${JSON.stringify(row.price_checked_at)}`,
+    );
 
   // Preview: what the generated affiliate URL WOULD be (never stored here)
   if (isValidAsin(row.asin)) {
@@ -164,7 +209,8 @@ for (const cols of dataRows) {
 }
 
 // Missing expected ids
-for (const id of EXPECTED_IDS) if (!seenIds.has(id)) err(id, 'expected product missing from the CSV');
+for (const id of EXPECTED_IDS)
+  if (!seenIds.has(id)) err(id, 'expected product missing from the CSV');
 
 // ── Activation readiness summary (informational; nothing is activated here) ─
 console.log(`\nAffiliate tag (central, never in CSV): ${AMAZON_ASSOCIATE_TAG}`);

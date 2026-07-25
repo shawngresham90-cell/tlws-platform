@@ -57,7 +57,12 @@ export function MapPreview({ lat, lng, name }: { lat: number; lng: number; name:
           dragging: true,
         });
         L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map);
-        const icon = L.divIcon({ className: '', html: '', iconSize: [34, 34], iconAnchor: [17, 17] });
+        const icon = L.divIcon({
+          className: '',
+          html: '',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+        });
         const marker = L.marker([lat, lng], { icon, keyboard: true, title: name, alt: name });
         marker.addTo(map);
         // Style the divIcon element directly (no HTML string interpolation).
@@ -91,7 +96,10 @@ export function MapPreview({ lat, lng, name }: { lat: number; lng: number; name:
       className="h-64 w-full overflow-hidden rounded-card border border-line bg-asphalt-800 sm:h-80"
     >
       {!ready && (
-        <div className="flex h-full items-center justify-center text-sm text-muted" aria-hidden="true">
+        <div
+          className="flex h-full items-center justify-center text-sm text-muted"
+          aria-hidden="true"
+        >
           Loading map preview…
         </div>
       )}

@@ -120,7 +120,8 @@ export function CinematicVideo({
   const edit = effectiveEdit(slot, isMobile);
 
   const canPlayVideo = !reduced && hasFootage(slot) && !failed && !lightMedia;
-  const canPlayYouTube = !reduced && !hasFootage(slot) && hasYouTube(slot) && !failed && !lightMedia;
+  const canPlayYouTube =
+    !reduced && !hasFootage(slot) && hasYouTube(slot) && !failed && !lightMedia;
   const { ref, inView } = useInView<HTMLDivElement>(canPlayVideo || canPlayYouTube);
   const showVideo = canPlayVideo && (inView || priority);
   const showYouTube = canPlayYouTube && (inView || priority);

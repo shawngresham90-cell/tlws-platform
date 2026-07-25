@@ -25,25 +25,55 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
 
 /* ------------------------- planning ------------------------- */
 {
-  const plan = planSlugRedirect({ currentSlug: 'old-name-dalton-ga', nextSlug: 'new-name-dalton-ga', existingOldSlugs: new Set() });
-  check('plan: simple rename ok', plan.ok && plan.insert.oldSlug === 'old-name-dalton-ga' && plan.insert.newSlug === 'new-name-dalton-ga');
+  const plan = planSlugRedirect({
+    currentSlug: 'old-name-dalton-ga',
+    nextSlug: 'new-name-dalton-ga',
+    existingOldSlugs: new Set(),
+  });
+  check(
+    'plan: simple rename ok',
+    plan.ok &&
+      plan.insert.oldSlug === 'old-name-dalton-ga' &&
+      plan.insert.newSlug === 'new-name-dalton-ga',
+  );
   check('plan: no deletes when nothing conflicts', plan.ok && plan.deleteOldSlugs.length === 0);
 
-  const noop = planSlugRedirect({ currentSlug: 'same-slug', nextSlug: 'same-slug', existingOldSlugs: new Set() });
+  const noop = planSlugRedirect({
+    currentSlug: 'same-slug',
+    nextSlug: 'same-slug',
+    existingOldSlugs: new Set(),
+  });
   check('plan: unchanged slug refused (self-loop prevention)', !noop.ok);
 
   // Reclaim: the listing had A, was renamed to B (row A→B exists), and is now
   // renamed back to A. The stale A→B row MUST be deleted or the reclaimed URL
   // would redirect away from its own listing.
-  const reclaim = planSlugRedirect({ currentSlug: 'b-slug', nextSlug: 'a-slug', existingOldSlugs: new Set(['a-slug']) });
+  const reclaim = planSlugRedirect({
+    currentSlug: 'b-slug',
+    nextSlug: 'a-slug',
+    existingOldSlugs: new Set(['a-slug']),
+  });
   check('plan: reclaimed slug row pruned', reclaim.ok && reclaim.deleteOldSlugs.includes('a-slug'));
 
   // Ping-pong: renaming back and forth must replace the old row for
   // currentSlug rather than violating old_slug uniqueness.
-  const pingPong = planSlugRedirect({ currentSlug: 'b-slug', nextSlug: 'a-slug', existingOldSlugs: new Set(['a-slug', 'b-slug']) });
-  check('plan: existing old_slug row replaced (collision prevention)', pingPong.ok && pingPong.deleteOldSlugs.includes('b-slug') && pingPong.deleteOldSlugs.includes('a-slug'));
+  const pingPong = planSlugRedirect({
+    currentSlug: 'b-slug',
+    nextSlug: 'a-slug',
+    existingOldSlugs: new Set(['a-slug', 'b-slug']),
+  });
+  check(
+    'plan: existing old_slug row replaced (collision prevention)',
+    pingPong.ok &&
+      pingPong.deleteOldSlugs.includes('b-slug') &&
+      pingPong.deleteOldSlugs.includes('a-slug'),
+  );
 
-  const badInput = planSlugRedirect({ currentSlug: 'UPPER-Case', nextSlug: 'fine-slug', existingOldSlugs: new Set() });
+  const badInput = planSlugRedirect({
+    currentSlug: 'UPPER-Case',
+    nextSlug: 'fine-slug',
+    existingOldSlugs: new Set(),
+  });
   check('plan: invalid slug refused', !badInput.ok);
 }
 
@@ -79,17 +109,35 @@ function resolveFixture(
     ['retired-deleted', 'L3'],
   ]);
 
-  check('resolve: old slug → current canonical', resolveFixture('mid-slug', redirects, listings) === 'current-slug');
-  check('resolve: two-generation chain collapses to one hop', resolveFixture('oldest-slug', redirects, listings) === 'current-slug');
-  check('resolve: unknown slug → null (404)', resolveFixture('never-existed', redirects, listings) === null);
-  check('resolve: unpublished target → null (404)', resolveFixture('retired-unpub', redirects, listings) === null);
-  check('resolve: deleted target → null (404)', resolveFixture('retired-deleted', redirects, listings) === null);
+  check(
+    'resolve: old slug → current canonical',
+    resolveFixture('mid-slug', redirects, listings) === 'current-slug',
+  );
+  check(
+    'resolve: two-generation chain collapses to one hop',
+    resolveFixture('oldest-slug', redirects, listings) === 'current-slug',
+  );
+  check(
+    'resolve: unknown slug → null (404)',
+    resolveFixture('never-existed', redirects, listings) === null,
+  );
+  check(
+    'resolve: unpublished target → null (404)',
+    resolveFixture('retired-unpub', redirects, listings) === null,
+  );
+  check(
+    'resolve: deleted target → null (404)',
+    resolveFixture('retired-deleted', redirects, listings) === null,
+  );
   check('resolve: malformed slug → null', resolveFixture('../etc', redirects, listings) === null);
 
   // Self-loop guard: a redirect row whose old_slug equals the listing's
   // current slug must resolve to null, not to itself.
   const selfLoop = new Map<string, string>([['current-slug', 'L1']]);
-  check('resolve: self-loop row → null', resolveFixture('current-slug', selfLoop, listings) === null);
+  check(
+    'resolve: self-loop row → null',
+    resolveFixture('current-slug', selfLoop, listings) === null,
+  );
 
   // Canonical invariant: whatever hop you enter from, the destination is the
   // listing's CURRENT slug — the sitemap contains only current slugs, so
@@ -97,8 +145,14 @@ function resolveFixture(
   const destinations = ['oldest-slug', 'mid-slug']
     .map((s) => resolveFixture(s, redirects, listings))
     .filter((s): s is string => Boolean(s));
-  check('resolve: every destination is the current slug (sitemap-safe)', destinations.every((d) => d === 'current-slug'));
-  check('resolve: destinations never re-redirect', destinations.every((d) => resolveFixture(d, redirects, listings) === null));
+  check(
+    'resolve: every destination is the current slug (sitemap-safe)',
+    destinations.every((d) => d === 'current-slug'),
+  );
+  check(
+    'resolve: destinations never re-redirect',
+    destinations.every((d) => resolveFixture(d, redirects, listings) === null),
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

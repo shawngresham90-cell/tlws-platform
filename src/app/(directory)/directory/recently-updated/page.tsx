@@ -32,9 +32,11 @@ function fmt(iso?: string): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
-  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(
-    new Date(t),
-  );
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(t));
 }
 
 export default async function RecentlyUpdatedPage() {
@@ -82,11 +84,17 @@ export default async function RecentlyUpdatedPage() {
           </ul>
         ) : (
           <p className="rounded-card border border-line bg-asphalt-800 p-6 text-muted">
-            No recently updated listings to show yet. <Link href="/directory" className="text-signal underline-offset-4 hover:underline">Browse the directory →</Link>
+            No recently updated listings to show yet.{' '}
+            <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
+              Browse the directory →
+            </Link>
           </p>
         )}
         <p className="mt-10 text-sm text-muted">
-          <Link href="/directory/new-locations" className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href="/directory/new-locations"
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Newest listings →
           </Link>{' '}
           ·{' '}

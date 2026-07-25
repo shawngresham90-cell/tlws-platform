@@ -52,7 +52,10 @@ const httpUrl = z
 
 /** Empty form fields arrive as '' — treat as absent. */
 const optional = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema.optional());
+  z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    schema.optional(),
+  );
 
 export const listingSchema = z.object({
   name: z.string().trim().min(2, 'Name is required').max(120),
@@ -66,7 +69,12 @@ export const listingSchema = z.object({
     .trim()
     .toUpperCase()
     .regex(/^[A-Z]{2}$/, 'State must be a 2-letter code'),
-  zip: optional(z.string().trim().regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789')),
+  zip: optional(
+    z
+      .string()
+      .trim()
+      .regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789'),
+  ),
   lat: optional(z.coerce.number().min(-90).max(90)),
   lng: optional(z.coerce.number().min(-180).max(180)),
   phone: optional(
@@ -91,7 +99,11 @@ export const listingSchema = z.object({
     }),
   tpc_url: optional(httpUrl),
   affiliate_code: optional(
-    z.string().trim().max(60).regex(/^[\w-]+$/, 'Letters, numbers, - and _ only'),
+    z
+      .string()
+      .trim()
+      .max(60)
+      .regex(/^[\w-]+$/, 'Letters, numbers, - and _ only'),
   ),
   image_url: optional(httpUrl),
   interstate: optional(z.string().trim().max(20)),
@@ -176,6 +188,8 @@ export function toRow(input: ListingInput) {
     is_published: input.is_published,
     is_featured: input.is_featured,
     is_indexable: input.is_indexable,
-    verified_at: input.verified_on ? new Date(`${input.verified_on}T00:00:00Z`).toISOString() : null,
+    verified_at: input.verified_on
+      ? new Date(`${input.verified_on}T00:00:00Z`).toISOString()
+      : null,
   };
 }

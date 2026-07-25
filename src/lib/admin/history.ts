@@ -54,10 +54,7 @@ export type HistoryRow = {
 };
 
 /** Newest-first change history for one listing (admin detail surfaces). */
-export async function getHistoryForLocation(
-  locationId: string,
-  limit = 20,
-): Promise<HistoryRow[]> {
+export async function getHistoryForLocation(locationId: string, limit = 20): Promise<HistoryRow[]> {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase

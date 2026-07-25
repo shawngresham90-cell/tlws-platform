@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { guardedPost } from '@/lib/api/handler';
-import { getNearbyListings, NEARBY_MAX_RADIUS_MILES, NEARBY_MAX_LIMIT } from '@/lib/directory/nearby';
+import {
+  getNearbyListings,
+  NEARBY_MAX_RADIUS_MILES,
+  NEARBY_MAX_LIMIT,
+} from '@/lib/directory/nearby';
 import { ok } from '@/lib/api/responses';
 
 export const runtime = 'nodejs';

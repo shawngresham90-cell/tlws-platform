@@ -45,8 +45,8 @@ export default function FoundingClaimPage() {
         <p className="mt-4 max-w-2xl text-muted">
           Purchased CDL Pre-School as one of the first {FOUNDING_STUDENT_CAPACITY}? Tell us the
           email you used at Stan Store checkout and the name you want on the wall. We verify every
-          purchase by hand — nothing is published automatically, your email is never shown, and
-          you can stay anonymous.
+          purchase by hand — nothing is published automatically, your email is never shown, and you
+          can stay anonymous.
         </p>
       </Section>
       <Section className="bg-asphalt-800">

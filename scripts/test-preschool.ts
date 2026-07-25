@@ -429,15 +429,45 @@ check(
   !/countdown|only today|recently purchased/i.test(fourSrc2),
 );
 
+/* ------------------------------------------------------------------------
+ * Homepage beat 1 vs beat 3.
+ *
+ * These two checks used to assert the Pre-School CTA sat in the hero. The
+ * cinematic homepage (docs/design/homepage-story-framework.md, beat 1: "1
+ * primary CTA") deliberately moved the paid offer down to THE FOUR DOORS,
+ * where the CDL door "pairs the school CTA with the live Pre-School
+ * purchase" — so the hero assertion was stale. Worse, the ordering check
+ * compared indexOf results, and `-1 < anything` is true: once the string was
+ * gone the check passed *because* it was gone. Both are rewritten to assert
+ * the shipped design, and the ordering guard now proves presence first.
+ * ---------------------------------------------------------------------- */
 const heroSrc = src('src/components/sections/Hero.tsx');
 check(
-  'hero leads with Pre-School CTA',
-  heroSrc.indexOf('/cdl-pre-school') < heroSrc.indexOf('/academy'),
+  'hero keeps a single primary CTA (the Academy application)',
+  (heroSrc.match(/<Button href="/g) ?? []).length === 1 &&
+    heroSrc.includes('<Button href="/academy/apply">'),
 );
 check(
-  'hero Pre-School CTA renders the single-source price constant',
-  heroSrc.includes('Start CDL Pre-School — {PRESCHOOL_PRICE_LABEL}'),
+  'Pre-School price on the homepage comes from the single-source constant',
+  fourSrc2.includes('PRESCHOOL_PRICE_LABEL') && !/\$\d/.test(fourSrc2),
 );
+{
+  // Compare rendered JSX, not imports or module-scope data — an import line
+  // would otherwise satisfy the ordering no matter what the component renders.
+  const purchaseIdx = fourSrc2.indexOf('<PurchaseCta');
+  const freeDoorsIdx = fourSrc2.indexOf('FREE_DOORS.map');
+  check(
+    'four doors: the money door renders the purchase CTA',
+    purchaseIdx >= 0,
+    `index ${purchaseIdx}`,
+  );
+  check('four doors: the free doors are rendered', freeDoorsIdx >= 0, `index ${freeDoorsIdx}`);
+  check(
+    'four doors: the money door renders before the free doors',
+    purchaseIdx >= 0 && freeDoorsIdx >= 0 && purchaseIdx < freeDoorsIdx,
+    `purchase ${purchaseIdx}, free doors ${freeDoorsIdx}`,
+  );
+}
 
 const ogSrc = src('src/app/(marketing)/cdl-pre-school/opengraph-image.tsx');
 check('og image exists and uses price constant', ogSrc.includes('PRESCHOOL_PRICE_LABEL'));

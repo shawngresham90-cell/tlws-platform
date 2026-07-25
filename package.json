@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-tests.mjs",
     "prebuild": "node scripts/generate-road-ahead-manifest.mjs"
   },
   "dependencies": {

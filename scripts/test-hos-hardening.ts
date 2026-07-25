@@ -252,6 +252,92 @@ function main() {
     check('partial: remaining reflects use', remainingClocks(partial).drivingMin === 460);
   }
 
+  /* ------------------------------- cycle exhaustion → 34-hour restart */
+  {
+    // §395.3(c): only 34 consecutive hours off duty restores the rolling
+    // cycle. planDrive used to answer cycle exhaustion with chained 10-hour
+    // resets, which do nothing for the cycle — they merely stacked until they
+    // happened to total 34 hours. For a driver at 70/70 with fresh 11/14
+    // clocks that quoted 40 hours of rest for a 2-hour drive (42h total) and
+    // listed four back-to-back 10-hour resets no driver would run.
+    const exhausted: ClockState = {
+      ...freshClockState(T0, '70/8'),
+      restStreakMin: 0,
+      onDutyByDayMin: [600, 600, 600, 600, 600, 600, 600, 0],
+    };
+    check(
+      'restart: setup is genuinely cycle-limited',
+      remainingClocks(exhausted).limitedBy === 'cycle' && remainingClocks(exhausted).cycleMin === 0,
+      remainingClocks(exhausted),
+    );
+
+    const plan = planDrive(exhausted, 120);
+    check(
+      'restart: exactly one rest, and it is the 34-hour restart',
+      plan.rests.length === 1 && plan.rests[0].kind === '34-hour-restart',
+      plan.rests,
+    );
+    check(
+      'restart: rest is exactly 34 hours',
+      plan.rests[0].minutes === HOS.RESTART_MIN,
+      plan.rests[0].minutes,
+    );
+    check(
+      'restart: total is 34h rest + the requested drive',
+      plan.totalMinutes === HOS.RESTART_MIN + 120,
+      plan.totalMinutes,
+    );
+    check('restart: the full drive is scheduled', plan.driveMinutes === 120);
+    check(
+      'restart: arrival clocks show a restored cycle',
+      cycleUsedMin(plan.arrivalState) <= 120,
+      cycleUsedMin(plan.arrivalState),
+    );
+    check(
+      'restart: no 10-hour resets stacked in',
+      !plan.rests.some((r) => r.kind === '10-hour-reset'),
+      plan.rests,
+    );
+    check(
+      'restart: earliestArrivalMs agrees',
+      earliestArrivalMs(exhausted, 120) === T0 + plan.totalMinutes * 60_000,
+    );
+
+    // Off-duty hours already banked count toward the 34 — the driver does not
+    // start the restart over.
+    const banked = { ...exhausted, restStreakMin: 600 };
+    const bankedPlan = planDrive(banked, 120);
+    check(
+      'restart: banked off-duty time is credited',
+      bankedPlan.rests.length === 1 && bankedPlan.rests[0].minutes === HOS.RESTART_MIN - 600,
+      bankedPlan.rests,
+    );
+
+    // A driver who is out of 11-hour driving time AND cycle time still takes
+    // the 10-hour reset first (the 11-hour clock binds earlier in the sort).
+    const bothDry: ClockState = {
+      ...exhausted,
+      drivingUsedMin: HOS.MAX_DRIVING_MIN,
+      windowElapsedMin: HOS.MAX_WINDOW_MIN,
+      drivingSinceBreakMin: 0,
+    };
+    const kinds = planDrive(bothDry, 60).rests.map((r) => r.kind);
+    check(
+      'restart: 11-hour exhaustion still resolved by a 10-hour reset',
+      kinds.includes('10-hour-reset') && kinds.includes('34-hour-restart'),
+      kinds,
+    );
+
+    // Never regress the common case: a driver with cycle time left never sees
+    // a restart injected.
+    const healthy = planDrive(freshClockState(T0, '70/8'), 20 * 60);
+    check(
+      'restart: not injected when the cycle has room',
+      !healthy.rests.some((r) => r.kind === '34-hour-restart'),
+      healthy.rests,
+    );
+  }
+
   /* ----------------------------------------- seeded property invariants */
   {
     // Deterministic LCG so failures are reproducible.
