@@ -558,6 +558,69 @@ the `ApplyForm` step-1 reset fails the check naming the exact branch.
 
 ---
 
+## M12 — The map's search box collapsed to 26 pixels on a small phone
+
+**Problem.** On `/directory/map`, the search field shares a `flex-wrap` toolbar
+row with the "📍 Use my location" button. `flex-wrap` only wraps an item that
+asks for the full width, and `flex-1` (basis 0) never does — so instead of
+wrapping onto its own line, the input just shrank.
+
+Measured on the production build:
+
+| Viewport | `#map-search` width |
+| --- | --- |
+| 320 px | **26 px** |
+| 390 px | 89 px |
+
+26 px is narrower than a single character of its own placeholder ("City, state,
+ZIP, or business…"). This is the primary control for finding a stop on the map.
+
+**Change.** The form is `w-full` below `sm` (so it wraps to its own line) and
+`sm:w-auto sm:flex-1` from `sm` up (unchanged behaviour on wider screens). Also
+confirms the earlier `min-w-0` sweep was necessary but not sufficient — that
+lets a control shrink; this stops it having to.
+
+**After.** No control under 120 px on any of 11 routes at 320 px or 390 px,
+except two `<select>`s at ~102–107 px, which are sized to their own content and
+fully usable.
+
+**Test.** `scripts/test-design-tokens.ts` asserts the map search form claims a
+full row below `sm` and still shares the toolbar row from `sm` up.
+
+---
+
+## Checked and found clean (no change made)
+
+Recording these so the next pass does not re-investigate them.
+
+- **Runtime errors.** 32 routes loaded at 390×844 with console + `pageerror`
+  capture: zero application errors. The only console output is the deliberate
+  `[Turnstile] NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set` diagnostic and
+  sandbox-only network/WebGL noise.
+- **Performance.** LCP 124–668 ms, **CLS 0.000 on all 11 routes measured**,
+  114–141 KB transferred, ≤3 long tasks. `three`, `@react-three/fiber`, `gsap`,
+  and `leaflet` are all behind `next/dynamic` or dynamic `import()` and never
+  reach a route-initial bundle. There is no evidence-supported performance work
+  to do, so none was invented.
+- **API boundary.** Every guarded POST route answers malformed JSON with 400,
+  an empty object / array / null body with 422, over-length and malformed
+  fields with 422, and burst traffic with 429 — all through the shared envelope,
+  nothing leaking internals. Turnstile fails closed in production.
+- **Structured data.** Every page's JSON-LD parses. `/academy/cdl-school-dalton-ga`
+  emits two `EducationalOrganization` nodes, correctly disambiguated by `@id` +
+  `parentOrganization`.
+- **Admin auth.** HMAC session cookie, constant-time compare, fails closed when
+  either env var is missing.
+- **Placeholder endpoints.** `/api/revalidate` and `/api/stripe/webhook` both
+  no-op safely when their secret is unset and never act on an unverified body.
+- **Header menu.** Closes on route change, on Escape (returning focus to the
+  trigger), and on an outside tap.
+- **Empty states.** Practice-test runners and the map both render honest,
+  branded empty states without a database ("This test isn't open yet", "No
+  mapped locations match these filters" + Clear filters).
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.

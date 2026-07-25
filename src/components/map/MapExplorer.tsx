@@ -236,7 +236,15 @@ export function MapExplorer({
           <button type="button" onClick={useMyLocation} disabled={locating} className={btnClasses}>
             {locating ? 'Locating…' : '📍 Use my location'}
           </button>
-          <form onSubmit={runSearch} className="flex min-w-0 flex-1 items-center gap-2">
+          {/* w-full below sm so the search takes its own line: sharing the row
+              with "Use my location" left `flex-1` to shrink the input to 26px
+              on a 320px screen — narrower than a single character of its own
+              placeholder. flex-wrap only wraps an item that asks for the full
+              width; `flex-1` (basis 0) never does. */}
+          <form
+            onSubmit={runSearch}
+            className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:flex-1"
+          >
             <label htmlFor="map-search" className="sr-only">
               Search by city, state, ZIP, or business name
             </label>

@@ -156,6 +156,25 @@ check(
     /min-w-0[^"]*flex-1|flex-1[^"]*min-w-0/.test(search),
   );
   check('layout: KC search button does not shrink away', search.includes('shrink-0'));
+
+  // Same class of bug one level up: `min-w-0` lets a control shrink, but a
+  // `flex-1` item in a wrapping row shrinks instead of wrapping. The map
+  // toolbar's search shared a row with "Use my location" and collapsed to 26px
+  // on a 320px screen. It has to claim the full width below `sm` to wrap.
+  const mapForm =
+    /<form[^>]*onSubmit=\{runSearch\}[\s\S]*?>/.exec(
+      readFileSync(join(ROOT, 'src/components/map/MapExplorer.tsx'), 'utf8'),
+    )?.[0] ?? '';
+  check(
+    'layout: map search takes its own row on small screens',
+    /\bw-full\b/.test(mapForm),
+    mapForm,
+  );
+  check(
+    'layout: map search still shares the toolbar row from sm up',
+    /\bsm:flex-1\b/.test(mapForm),
+    mapForm,
+  );
 }
 
 /* ------------------------- keyboard focus is visible on date/time fields - */
