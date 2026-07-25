@@ -512,6 +512,52 @@ flagging it rather than deciding it.
 
 ---
 
+## M11 — Five forms could never be retried after a failed submit
+
+**Problem.** A Turnstile token is single-use, and `guardedPost` verifies it
+*before* the handler runs — so once a submit reaches the handler the token is
+spent. If the handler then fails (500, database error, anything
+post-verification), the widget is still holding the dead token. In "managed"
+mode it has already auto-solved and will not re-issue on its own, so **every
+retry answers 403 "Verification failed. Reload and try again."** The driver is
+stuck until they manually reload, losing whatever they typed.
+
+Three forms handled this — clear the token, bump a React `key` on the widget so
+the retry gets a fresh challenge. `NewsletterForm` even documents why:
+
+> Turnstile tokens are single-use and verified server-side before the handler
+> runs, so after ANY failed submit the held token is spent. Bumping this key
+> remounts the widget for a fresh challenge.
+
+Five did not:
+
+| Form | Path it blocks |
+| --- | --- |
+| `ApplyForm` (step 1) | **the Academy application** — the primary enrollment funnel |
+| `ClaimForm` | **CDL Pre-School Founding Student claim** — a paid product |
+| `BecomeFounderForm` | Founders funding |
+| `SubmitLocationForm` | driver location submissions |
+| `ReviewForm` | driver reviews |
+
+The two most valuable conversions on the site were in that list.
+
+**Change.** Applied the existing pattern to all five: `setToken('')` plus a
+`challengeKey` bump on both the error-response leg and the `catch` leg, and
+`key={challengeKey}` on the widget. `ApplyForm` step 2 sends no token (the
+server owns that leg — `applicationStep2Schema` has no `turnstileToken`), so it
+is deliberately left alone.
+
+**Test.** `scripts/test-turnstile-recovery.ts` (67 checks) enumerates every
+component that renders `<TurnstileWidget>` — no hard-coded list, so a new form
+is covered the day it is written — and for each: the widget carries a `key`
+driven by React state, and inside the submit handler that actually *sends* a
+token, every `!res.ok` branch either resets or rethrows, and every `catch` leg
+resets. `TestResults` throws into a single catch rather than resetting inline;
+that is equally correct and the test accepts it. Verified to bite — removing
+the `ApplyForm` step-1 reset fails the check naming the exact branch.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -521,7 +567,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 55 harnesses passed |
+| `npm test` | All 56 harnesses passed |
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |

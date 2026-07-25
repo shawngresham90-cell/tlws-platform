@@ -27,6 +27,11 @@ export function ClaimForm({ siteKey }: { siteKey: string }) {
   const [consent, setConsent] = useState(false);
   const [honeypot, setHoneypot] = useState('');
   const [token, setToken] = useState('');
+  // Single-use Turnstile tokens are spent once the guard stack verifies them,
+  // so after a failed submit the held token is dead: without a fresh challenge
+  // every retry answers 403 and the driver is stuck until they reload the page.
+  // Remount the widget (key bump) so the retry gets a new token.
+  const [challengeKey, setChallengeKey] = useState(0);
   const [turnstileError, setTurnstileError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -70,9 +75,13 @@ export function ClaimForm({ siteKey }: { siteKey: string }) {
         trackEvent(PRESCHOOL_EVENTS.claimSubmitted);
       } else {
         setError(body?.error ?? 'Could not submit your claim. Try again.');
+        setToken('');
+        setChallengeKey((k) => k + 1);
       }
     } catch {
       setError('Network problem — check your connection and try again.');
+      setToken('');
+      setChallengeKey((k) => k + 1);
     } finally {
       setSubmitting(false);
     }
@@ -172,7 +181,12 @@ export function ClaimForm({ siteKey }: { siteKey: string }) {
           onChange={setConsent}
         />
 
-        <TurnstileWidget siteKey={siteKey} onToken={setToken} onError={setTurnstileError} />
+        <TurnstileWidget
+          key={challengeKey}
+          siteKey={siteKey}
+          onToken={setToken}
+          onError={setTurnstileError}
+        />
 
         {error && (
           <p
