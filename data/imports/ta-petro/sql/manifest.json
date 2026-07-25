@@ -1,0 +1,217 @@
+{
+ "AL": {
+  "file": "DONE-AL.sql",
+  "rows": 8,
+  "status": "applied"
+ },
+ "AR": {
+  "file": "DONE-AR.sql",
+  "rows": 3,
+  "status": "applied"
+ },
+ "AZ": {
+  "file": "DONE-AZ.sql",
+  "rows": 10,
+  "status": "applied"
+ },
+ "CA": {
+  "file": "CA.sql",
+  "rows": 14,
+  "status": "pending"
+ },
+ "CO": {
+  "file": "CO.sql",
+  "rows": 9,
+  "status": "pending"
+ },
+ "CT": {
+  "file": "CT.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "FL": {
+  "file": "FL.sql",
+  "rows": 5,
+  "status": "pending"
+ },
+ "GA": {
+  "file": "GA.sql",
+  "rows": 8,
+  "status": "pending"
+ },
+ "IA": {
+  "file": "IA.sql",
+  "rows": 6,
+  "status": "pending"
+ },
+ "ID": {
+  "file": "ID.sql",
+  "rows": 2,
+  "status": "pending"
+ },
+ "IL": {
+  "file": "IL.sql",
+  "rows": 12,
+  "status": "pending"
+ },
+ "IN": {
+  "file": "IN.sql",
+  "rows": 10,
+  "status": "pending"
+ },
+ "KS": {
+  "file": "KS.sql",
+  "rows": 10,
+  "status": "pending"
+ },
+ "KY": {
+  "file": "KY.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "LA": {
+  "file": "LA.sql",
+  "rows": 12,
+  "status": "pending"
+ },
+ "MI": {
+  "file": "MI.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "MN": {
+  "file": "MN.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "MO": {
+  "file": "MO.sql",
+  "rows": 13,
+  "status": "pending"
+ },
+ "MS": {
+  "file": "MS.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "MT": {
+  "file": "MT.sql",
+  "rows": 2,
+  "status": "pending"
+ },
+ "NC": {
+  "file": "NC.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "ND": {
+  "file": "ND.sql",
+  "rows": 5,
+  "status": "pending"
+ },
+ "NE": {
+  "file": "NE.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "NH": {
+  "file": "DONE-NH.sql",
+  "rows": 1,
+  "status": "applied"
+ },
+ "NJ": {
+  "file": "NJ.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "NM": {
+  "file": "NM.sql",
+  "rows": 9,
+  "status": "pending"
+ },
+ "NV": {
+  "file": "NV.sql",
+  "rows": 10,
+  "status": "pending"
+ },
+ "NY": {
+  "file": "NY.sql",
+  "rows": 7,
+  "status": "pending"
+ },
+ "OH": {
+  "file": "OH.sql",
+  "rows": 14,
+  "status": "pending"
+ },
+ "OK": {
+  "file": "OK.sql",
+  "rows": 7,
+  "status": "pending"
+ },
+ "OR": {
+  "file": "OR.sql",
+  "rows": 6,
+  "status": "pending"
+ },
+ "PA": {
+  "file": "PA.sql",
+  "rows": 14,
+  "status": "pending"
+ },
+ "RI": {
+  "file": "RI.sql",
+  "rows": 1,
+  "status": "pending"
+ },
+ "SC": {
+  "file": "SC.sql",
+  "rows": 5,
+  "status": "pending"
+ },
+ "SD": {
+  "file": "SD.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "TN": {
+  "file": "TN.sql",
+  "rows": 2,
+  "status": "pending"
+ },
+ "TX": {
+  "file": "TX.sql",
+  "rows": 40,
+  "status": "pending"
+ },
+ "UT": {
+  "file": "UT.sql",
+  "rows": 3,
+  "status": "pending"
+ },
+ "VA": {
+  "file": "VA.sql",
+  "rows": 5,
+  "status": "pending"
+ },
+ "WA": {
+  "file": "WA.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "WI": {
+  "file": "WI.sql",
+  "rows": 7,
+  "status": "pending"
+ },
+ "WV": {
+  "file": "WV.sql",
+  "rows": 4,
+  "status": "pending"
+ },
+ "WY": {
+  "file": "WY.sql",
+  "rows": 5,
+  "status": "pending"
+ }
+}
