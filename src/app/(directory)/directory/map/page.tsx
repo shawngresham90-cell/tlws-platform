@@ -51,7 +51,7 @@ export default async function DirectoryMapPage() {
             washes, and weigh stations. Filter by what you need, search near you, and get
             directions. Coordinates are verified batch by batch, so this map grows with the
             directory;{' '}
-            <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
+            <Link href="/directory" className="link-inline text-signal">
               the full list view
             </Link>{' '}
             always shows everything.

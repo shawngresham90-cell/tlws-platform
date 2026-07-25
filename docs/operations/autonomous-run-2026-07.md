@@ -288,8 +288,15 @@ accessible name. The id is now derived from the block's heading.
 `HeroShirtPromo` used `<aside>`, which claims a top-level complementary
 landmark it is not. Now a named `<section>`; the accessible name is unchanged.
 
-**Result:** `axe-core` reports **0 violations** across all 19 routes at both
-viewports (was 5 distinct rules / 13 nodes).
+### 5g. One more in-prose link, found on the final sweep
+
+Widening the sweep from 19 to **all 36 public routes** turned up a last
+`link-in-text-block` on `/directory/map` ("…the full list view always shows
+everything"). Same fix, same `.link-inline` utility, added to the harness list.
+
+**Result:** `axe-core` reports **0 violations across all 36 public routes** at
+both 1280×900 and 375×812 — including the new 404 page (was 6 distinct rules /
+15 nodes).
 
 ---
 
@@ -700,7 +707,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |
-| axe-core 4.10, 19 routes × {1280×900, 375×812} | 0 violations (was 5 rules / 13 nodes) |
+| axe-core 4.10, **36 routes** × {1280×900, 375×812} | 0 violations (was 6 rules / 15 nodes) |
 
 ## Known limitations
 

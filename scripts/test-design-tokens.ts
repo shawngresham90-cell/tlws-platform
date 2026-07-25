@@ -226,6 +226,7 @@ check(
     'src/app/(marketing)/cdl-pre-school/page.tsx',
     'src/app/(directory)/directory/page.tsx',
     'src/app/(marketing)/knowledge/page.tsx',
+    'src/app/(directory)/directory/map/page.tsx',
     'src/components/layout/Footer.tsx',
   ]) {
     check(
