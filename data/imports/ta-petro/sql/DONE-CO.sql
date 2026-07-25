@@ -1,0 +1,22 @@
+-- TA/Petro authorized import - state CO (9 rows)
+-- ONE transaction, INSERT-ONLY. Live dual-key duplicate re-check runs
+-- ATOMICALLY inside this transaction; GET DIAGNOSTICS compares the actual
+-- inserted count with the expected payload count and RAISES on any mismatch,
+-- rolling back this entire state. Idempotent: re-running inserts nothing.
+-- source stamped 'official-ta-petro-20260725-5ebe0e9f'. geo is never written.
+begin;
+do $g$ declare n int; begin
+with s as (select jsonb_array_elements('[["TA Commerce City","5101 Quebec Street","Commerce City","CO","80022","303-286-0123","224 truck parking spaces. 10 showers. 6 service bays. 8 diesel lanes. On site: Burger King, Pizza Hut Express, Popeyes. Weigh scale on site (brand unconfirmed)",39.7901,-104.9043,224,["Showers","Food","Fuel","Laundry","Repair"],"ta-commerce-city"],["TA Wheat Ridge","12151 West 44th Avenue","Wheat Ridge","CO","80033-2448","303-423-8250","116 truck parking spaces. 7 showers. 2 service bays. 8 diesel lanes. On site: Highway Kitchen. Weigh scale on site (brand unconfirmed)",39.7793,-105.1349,116,["Showers","Food","Fuel","Laundry","Repair"],"ta-wheat-ridge"],["TA Limon","2200 Ninth Street","Limon","CO","80828","719-775-2811","104 truck parking spaces. 8 showers. 5 service bays. 8 diesel lanes. On site: Country Pride; Subway. Weigh scale on site (brand unconfirmed)",39.271,-103.7067,104,["Showers","Food","Fuel","Laundry","Repair"],"ta-limon"],["Petro Johnson''s Corner","2842 SE Frontage Road","Johnstown","CO","80534","970-667-2069","110 truck parking spaces. 6 showers. 6 diesel lanes. On site: Black Bear Diner. Weigh scale on site (brand unconfirmed)",40.363,-104.984,110,["Showers","Food","Fuel","Laundry"],"petro-johnson-s-corner"],["TA Express Brush","1041 N. Colorado Avenue","Brush","CO","80723","970-842-3122","15 truck parking spaces. 4 diesel lanes",40.2665,-103.621,15,["Fuel"],"ta-express-brush"],["TA Express Walsenburg","455 US-85","Walsenburg","CO","81089","719-738-5733","35 truck parking spaces. 3 showers. 4 diesel lanes. On site: A&W All American Food",37.6537,-104.7938,35,["Showers","Food","Fuel","Laundry"],"ta-express-walsenburg"],["TA Express Lamar","708 N. Main Street","Lamar","CO","81052","719-688-4024","40 truck parking spaces. 3 showers. 5 diesel lanes. On site: Arby''s, Charleys Philly Steaks, Dunkin'', KFC. Weigh scale on site (brand unconfirmed)",38.09699,-102.61914,40,["Showers","Food","Fuel"],"ta-express-lamar"],["TA Pueblo","1275 Drew Dix Parkway","Pueblo","CO","81008","719-877-2453","210 truck parking spaces. 9 showers. 3 service bays. 9 diesel lanes. On site: Black Bear Diner; Bojangles, Del Taco, Sbarro. Weigh scale on site (brand unconfirmed)",38.34439,-104.6217,210,["Showers","Food","Fuel","Laundry","Repair"],"ta-pueblo"],["TA Express Grand Junction","2222 Highway 6","Grand Junction","CO","81505","970-901-1445","65 truck parking spaces. 8 showers. 5 diesel lanes. On site: Miss J\u2019s Caf\u00e9",39.109,-108.64079,65,["Showers","Food","Fuel","Laundry"],"ta-express-grand-junction"]]'::jsonb) e),
+i as (select e->>0 name,e->>1 address,e->>2 city,e->>3 state,e->>4 zip,e->>5 phone,e->>6 description,(e->>7)::double precision lat,(e->>8)::double precision lng,(e->>9)::int parking_spaces,e->10 amenities,e->>11 slug from s),
+f as (select i.* from i
+  where not exists (select 1 from public.locations l where l.deleted_at is null
+      and trim(regexp_replace(lower(l.name),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.name),'[^a-z0-9]+',' ','g')) and trim(regexp_replace(lower(l.city),'[^a-z0-9]+',' ','g'))=trim(regexp_replace(lower(i.city),'[^a-z0-9]+',' ','g')) and upper(l.state)=upper(i.state))
+    and not exists (select 1 from public.locations l2 where l2.deleted_at is null
+      and l2.type='truck_stop' and upper(l2.state)=upper(i.state) and l2.city=i.city and l2.slug=i.slug))
+insert into public.locations (name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,category_slug,type,source,is_published,is_featured,is_indexable,free_parking,paid_parking,reserved_parking,overnight_parking)
+select name,address,city,state,zip,phone,description,lat,lng,parking_spaces,amenities,slug,'truck-stops','truck_stop','official-ta-petro-20260725-5ebe0e9f',false,false,false,false,false,false,false from f on conflict do nothing;
+get diagnostics n = row_count;
+if n <> 9 then raise exception 'CO: expected 9 inserted, got % - rolling back this state', n; end if;
+raise notice 'CO: inserted % of 9', n;
+end $g$;
+commit;
