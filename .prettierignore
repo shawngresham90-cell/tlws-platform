@@ -5,3 +5,12 @@ build
 *.md
 pnpm-lock.yaml
 package-lock.json
+
+# One-off import/geocoding artifacts. These are dated evidence snapshots, not
+# source: reformatting them rewrites tens of thousands of lines and makes the
+# provenance of an import batch impossible to diff.
+data/
+
+# Rewritten from scratch by `prebuild`; formatting it only guarantees the next
+# build makes the working tree dirty again.
+src/lib/road-ahead/asset-presence.generated.ts
