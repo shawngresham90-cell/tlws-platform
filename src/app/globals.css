@@ -27,7 +27,17 @@
      matching the ring buttons/links already get from focus-visible:ring-2. */
   input:focus-visible,
   select:focus-visible,
-  textarea:focus-visible {
+  textarea:focus-visible,
+  /* Date/time inputs delegate focus to their internal sub-fields, so the host
+     element never matches :focus-visible even when the user tabbed to it —
+     and `focus:outline-none` on the field removed the browser's own ring.
+     Tabbing to the Trip Planner's departure time left no indicator at all.
+     :focus is the right hook for these types. */
+  input[type='date']:focus,
+  input[type='datetime-local']:focus,
+  input[type='month']:focus,
+  input[type='time']:focus,
+  input[type='week']:focus {
     /* Transparent (not none): forced-colors mode strips box-shadows but
        repaints transparent outlines, so High Contrast keeps a focus ring. */
     outline: 2px solid transparent;

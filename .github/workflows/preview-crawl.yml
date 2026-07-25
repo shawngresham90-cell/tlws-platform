@@ -3,16 +3,18 @@ name: preview-crawl
 # Authoritative internal-link crawl against the Netlify deploy preview.
 # The development sandbox cannot reach *.netlify.app, so the crawl of
 # DB-backed routes (e.g. /knowledge/<category>) runs here instead.
+#
+# Dispatch-only: the crawl needs a deploy-preview URL, which exists per pull
+# request. There used to be a `push` trigger pinned to one long-finished
+# branch, and `base_url` defaulted to the preview for PR #161 — dispatching
+# without an explicit URL crawled a stale, unrelated deploy and reported a
+# meaningless pass. The input is required now, with no default to fall back on.
 on:
-  push:
-    branches: [claude/platform-activation]
-    paths: ['.github/workflows/preview-crawl.yml', 'scripts/crawl-links.mjs']
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'Base URL to crawl'
-        required: false
-        default: 'https://deploy-preview-161--lighthearted-clafoutis-144512.netlify.app'
+        description: 'Deploy-preview URL to crawl (e.g. https://deploy-preview-<n>--<site>.netlify.app)'
+        required: true
 
 jobs:
   crawl:
@@ -25,7 +27,11 @@ jobs:
           node-version: 22
       - name: Wait for preview to serve this commit
         run: |
-          URL="${{ github.event.inputs.base_url || 'https://deploy-preview-161--lighthearted-clafoutis-144512.netlify.app' }}"
+          URL="${{ github.event.inputs.base_url }}"
+          case "$URL" in
+            https://*) ;;
+            *) echo "base_url must be an https URL, got: $URL"; exit 1 ;;
+          esac
           echo "BASE_URL=$URL" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")

@@ -158,6 +158,36 @@ check(
   check('layout: KC search button does not shrink away', search.includes('shrink-0'));
 }
 
+/* ------------------------- keyboard focus is visible on date/time fields - */
+{
+  const css = readFileSync(join(ROOT, 'src/app/globals.css'), 'utf8');
+  // Chromium delegates focus inside a date/time input to its sub-fields, so the
+  // host never matches :focus-visible. Combined with the codebase's usual
+  // `focus:outline-none` field styling, tabbing to the Trip Planner's departure
+  // time left no focus indicator at all (WCAG 2.4.7).
+  const focusBlock = css.match(/input:focus-visible[\s\S]*?\}/)?.[0] ?? '';
+  for (const type of ['date', 'datetime-local', 'month', 'time', 'week']) {
+    check(
+      `focus: input[type='${type}'] gets a ring on :focus`,
+      focusBlock.includes(`input[type='${type}']:focus`),
+      focusBlock.slice(0, 200),
+    );
+  }
+  check(
+    'focus: the ring is a box-shadow, so focus:outline-none cannot cancel it',
+    /box-shadow:[\s\S]*colors\.signal/.test(focusBlock),
+  );
+
+  // Every date/time field in the codebase relies on that rule.
+  const dateFields: string[] = [];
+  for (const file of files.filter((f) => f.endsWith('.tsx'))) {
+    const src = readFileSync(file, 'utf8');
+    if (/type="(date|datetime-local|month|time|week)"/.test(src))
+      dateFields.push(relative(ROOT, file));
+  }
+  check('focus: date/time fields exist to be covered', dateFields.length > 0, dateFields);
+}
+
 /* --------------------------- in-prose links carry a resting underline ---- */
 {
   const css = readFileSync(join(ROOT, 'src/app/globals.css'), 'utf8');

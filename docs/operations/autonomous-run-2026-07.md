@@ -360,6 +360,47 @@ page's JSON-LD parses, and `/academy/cdl-school-dalton-ga`'s two
 
 ---
 
+## M8 — Keyboard focus + workflow hygiene
+
+### 8a. No focus indicator on date/time fields (WCAG 2.4.7)
+
+Tabbed through 11 routes (up to full wrap of the tab order) checking that every
+stop paints an outline or a box-shadow. Everything passed except the Trip
+Planner's departure field:
+
+```
+/trip-planner    48 stops, 1 without a focus indicator
+                 input "tp-depart" (type=datetime-local)
+```
+
+Chromium delegates focus inside a `date`/`datetime-local`/`time` input to its
+internal sub-fields, so the **host element never matches `:focus-visible`** —
+the `input:focus-visible` ring in `globals.css` did not apply. The field's own
+`focus:outline-none` removed the browser's ring too, so tabbing to it left no
+indicator at all.
+
+Extended the `globals.css` focus rule to also match `:focus` for `date`,
+`datetime-local`, `month`, `time`, and `week`. The ring is a box-shadow, so the
+codebase's usual `focus:outline-none` field styling cannot cancel it (the same
+reasoning the original rule already documents). Verified by keyboard-tabbing to
+the field and screenshotting the ring.
+
+Also checked and clean, no change needed: no positive `tabindex` anywhere, no
+click handler on a non-focusable element, and every other tab stop on those 11
+routes paints an indicator.
+
+### 8b. `preview-crawl.yml` pointed at a finished pull request
+
+The workflow's `base_url` input defaulted to
+`deploy-preview-161--…netlify.app`, and its only `push` trigger was pinned to a
+long-finished branch with a two-file path filter. Dispatching it without an
+explicit URL therefore crawled a **stale, unrelated deploy** and reported a
+meaningless pass. `base_url` is now required with no default, validated as an
+`https` URL, and the dead push trigger is gone — the crawl needs a per-PR
+preview URL, so dispatch-only is the honest shape.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
