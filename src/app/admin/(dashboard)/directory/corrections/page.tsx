@@ -1,11 +1,18 @@
 import { requireAdmin } from '@/lib/admin/auth';
-import { CORRECTION_FIELDS, correctionsTemplateCsv, CLEAR_TOKEN } from '@/lib/directory/corrections';
+import {
+  CORRECTION_FIELDS,
+  correctionsTemplateCsv,
+  CLEAR_TOKEN,
+} from '@/lib/directory/corrections';
 import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNav';
 import { DownloadCsvButton } from '@/components/admin/directory/DownloadCsvButton';
 import { CorrectionsTool } from '@/components/admin/directory/CorrectionsTool';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Admin — Bulk Corrections', robots: { index: false, follow: false } };
+export const metadata = {
+  title: 'Admin — Bulk Corrections',
+  robots: { index: false, follow: false },
+};
 
 /**
  * Bulk-correction workflow (Milestone 21): CSV in, dry-run diff preview,
@@ -34,7 +41,8 @@ export default function AdminCorrectionsPage() {
         <ul className="mt-3 grid list-disc gap-1.5 pl-5">
           <li>
             Identity columns are required: <code className="text-ink">listing_id</code>,{' '}
-            <code className="text-ink">match_name</code>, <code className="text-ink">match_city</code>,{' '}
+            <code className="text-ink">match_name</code>,{' '}
+            <code className="text-ink">match_city</code>,{' '}
             <code className="text-ink">match_state</code> — the match columns must equal the
             listing’s CURRENT values or the row is rejected.
           </li>
@@ -43,7 +51,9 @@ export default function AdminCorrectionsPage() {
             The literal <code className="text-ink">{CLEAR_TOKEN}</code> blanks a field — flagged as
             destructive and requires per-row confirmation.
           </li>
-          <li>Unknown columns are rejected outright. Publication status can never be changed here.</li>
+          <li>
+            Unknown columns are rejected outright. Publication status can never be changed here.
+          </li>
           <li>Every applied row writes a change-history record before the update.</li>
         </ul>
         <h3 className="mt-4 font-display text-base uppercase text-ink">Editable fields</h3>

@@ -33,7 +33,11 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
 
 // Authoritative roster (mirror of migration 027 seed) ----------------------
 type Row = { display_name: string; business_name: string | null; tier: string };
-const mk = (display_name: string, tier: string): Row => ({ display_name, business_name: null, tier });
+const mk = (display_name: string, tier: string): Row => ({
+  display_name,
+  business_name: null,
+  tier,
+});
 const ROSTER: Row[] = [
   mk('David Gresham', 'iron'),
   mk('Thomas Fields', 'iron'),
@@ -68,7 +72,10 @@ const RAISED = 710_000; // $7,100
 /* ---------------------- aggregate campaign math ---------------------- */
 {
   check('remaining: goal − raised', remainingCents(GOAL, RAISED) === 490_000);
-  check('totals reconcile: raised + remaining = goal', RAISED + remainingCents(GOAL, RAISED) === GOAL);
+  check(
+    'totals reconcile: raised + remaining = goal',
+    RAISED + remainingCents(GOAL, RAISED) === GOAL,
+  );
   check('remaining never negative (over-goal)', remainingCents(GOAL, 1_500_000) === 0);
   check('pct: 7100/12000 → 59.2', pctToGoal(GOAL, RAISED) === 59.2);
   check('pct clamps to 100 when over-goal', pctToGoal(GOAL, 1_500_000) === 100);
@@ -82,8 +89,7 @@ const RAISED = 710_000; // $7,100
 /* ---------------------- privacy: no individual amounts ---------------------- */
 // Scan CODE only (comments stripped) so a doc comment mentioning "amounts"
 // doesn't trip the privacy checks — we care about rendered/queried values.
-const stripComments = (s: string) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 {
   const reader = readFileSync('src/lib/community/founders.ts', 'utf8');
   // The public-founders SELECT must not pull amount_cents.
@@ -94,11 +100,16 @@ const stripComments = (s: string) =>
     !!selectMatch && !/amount/i.test(selectMatch[1]),
     selectMatch?.[1],
   );
-  check('PublicFounder type has no amount field', !/amount/i.test(reader.split('PublicFounder = {')[1]?.split('}')[0] ?? ''));
+  check(
+    'PublicFounder type has no amount field',
+    !/amount/i.test(reader.split('PublicFounder = {')[1]?.split('}')[0] ?? ''),
+  );
 
   const card = stripComments(readFileSync('src/components/community/FounderCard.tsx', 'utf8'));
   check('FounderCard code never references an amount', !/amount/i.test(card), card);
-  const thermo = stripComments(readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8'));
+  const thermo = stripComments(
+    readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8'),
+  );
   check('Thermometer code never references a per-founder amount', !/amount/i.test(thermo), thermo);
 }
 
@@ -107,9 +118,7 @@ const stripComments = (s: string) =>
   const card = readFileSync('src/components/community/FounderCard.tsx', 'utf8');
   // The rendered external link (not the doc comment) carries the full rel.
   const relMatches = [...card.matchAll(/rel="([^"]*)"/g)].map((m) => m[1]);
-  const safeRel = relMatches.find(
-    (r) => r.includes('noopener') && r.includes('noreferrer'),
-  );
+  const safeRel = relMatches.find((r) => r.includes('noopener') && r.includes('noreferrer'));
   check('FounderCard external link sets a rel', relMatches.length > 0, card);
   check('rel includes noopener', !!safeRel, relMatches);
   check('rel includes noreferrer', !!safeRel, relMatches);
@@ -127,22 +136,42 @@ const stripComments = (s: string) =>
   // Jose Cotto holds 2 spots on purpose — surfaced as a repeated name, not an error.
   const repeats = repeatedFounderNames(ROSTER);
   check('exactly one repeated name', repeats.length === 1, repeats);
-  check('repeated name is Jose Cotto', repeats[0] === founderDupKey('Jose Cotto', null), repeats[0]);
-  check('spots minus unique names = extra spots (1)', ROSTER.length - uniqueFounderCount(ROSTER) === 1);
-  check('normalizeName is case/punctuation-insensitive', normalizeName('Jose  Cotto!') === normalizeName('jose cotto'));
-  check('distinct names are not flagged as repeats', repeatedFounderNames([mk('A', 'iron'), mk('B', 'iron')]).length === 0);
+  check(
+    'repeated name is Jose Cotto',
+    repeats[0] === founderDupKey('Jose Cotto', null),
+    repeats[0],
+  );
+  check(
+    'spots minus unique names = extra spots (1)',
+    ROSTER.length - uniqueFounderCount(ROSTER) === 1,
+  );
+  check(
+    'normalizeName is case/punctuation-insensitive',
+    normalizeName('Jose  Cotto!') === normalizeName('jose cotto'),
+  );
+  check(
+    'distinct names are not flagged as repeats',
+    repeatedFounderNames([mk('A', 'iron'), mk('B', 'iron')]).length === 0,
+  );
 }
 
 /* ---------------------- tier grouping + order ---------------------- */
 {
-  check('tier order is recognition order', JSON.stringify(TIER_ORDER) === JSON.stringify(['equipment_sponsor', 'student_sponsor', 'iron', 'steel', 'brick']));
+  check(
+    'tier order is recognition order',
+    JSON.stringify(TIER_ORDER) ===
+      JSON.stringify(['equipment_sponsor', 'student_sponsor', 'iron', 'steel', 'brick']),
+  );
   const usage = tierUsage(ROSTER as { tier: 'iron' | 'steel' | 'brick' }[]);
   check('iron usage = 2', usage.iron === 2, usage);
   check('steel usage = 7', usage.steel === 7, usage);
   check('brick usage = 16', usage.brick === 16, usage);
   check('sponsor tiers empty', usage.equipment_sponsor === 0 && usage.student_sponsor === 0);
   check('tier count sums to roster', usage.iron + usage.steel + usage.brick === ROSTER.length);
-  check('every FOUNDER_TIERS entry has a capacity field', FOUNDER_TIERS.every((t) => 'capacity' in t));
+  check(
+    'every FOUNDER_TIERS entry has a capacity field',
+    FOUNDER_TIERS.every((t) => 'capacity' in t),
+  );
 }
 
 /* ---------------------- remaining tier capacity ---------------------- */
@@ -162,7 +191,12 @@ const stripComments = (s: string) =>
   check('total open spots = 60', totalOpen === 60, totalOpen);
   check('remaining never negative (over-subscribed)', tierRemaining(10, 12) === 0);
   check('uncapped tier → null', tierRemaining(TIER_CAPACITY.equipment_sponsor, 3) === null);
-  check('all capped tiers have non-negative remaining', (['iron', 'steel', 'brick'] as const).every((t) => (tierRemaining(TIER_CAPACITY[t], usage[t]) ?? 0) >= 0));
+  check(
+    'all capped tiers have non-negative remaining',
+    (['iron', 'steel', 'brick'] as const).every(
+      (t) => (tierRemaining(TIER_CAPACITY[t], usage[t]) ?? 0) >= 0,
+    ),
+  );
 }
 
 /* ---------------------- confirmed report reconciliation ---------------------- */
@@ -171,10 +205,16 @@ const stripComments = (s: string) =>
   const usage = tierUsage(ROSTER as { tier: 'iron' | 'steel' | 'brick' }[]);
   check('spots sold = 25', ROSTER.length === 25);
   check('unique names = 24', uniqueFounderCount(ROSTER) === 24);
-  check('tier occupancy Iron 2 / Steel 7 / Brick 16', usage.iron === 2 && usage.steel === 7 && usage.brick === 16);
+  check(
+    'tier occupancy Iron 2 / Steel 7 / Brick 16',
+    usage.iron === 2 && usage.steel === 7 && usage.brick === 16,
+  );
   check('raised = $7,100', dollars(RAISED) === '$7,100' && RAISED === 710_000);
   check('goal = $12,000', dollars(GOAL) === '$12,000' && GOAL === 1_200_000);
-  check('remaining = $4,900', dollars(remainingCents(GOAL, RAISED)) === '$4,900' && remainingCents(GOAL, RAISED) === 490_000);
+  check(
+    'remaining = $4,900',
+    dollars(remainingCents(GOAL, RAISED)) === '$4,900' && remainingCents(GOAL, RAISED) === 490_000,
+  );
   check('percent renders 59.2 (project 1-decimal convention)', pctToGoal(GOAL, RAISED) === 59.2);
 }
 
@@ -194,7 +234,8 @@ const stripComments = (s: string) =>
   check('zero goal → 0%', pctToGoal(0, 500) === 0);
 
   // dollars → cents admin parsing
-  const { dollarsToCents } = require('@/lib/admin/founders') as typeof import('@/lib/admin/founders');
+  const { dollarsToCents } =
+    require('@/lib/admin/founders') as typeof import('@/lib/admin/founders');
   check('dollarsToCents "7,100" = 710000', dollarsToCents('7,100') === 710_000);
   check('dollarsToCents "$500" = 50000', dollarsToCents('$500') === 50_000);
   check('dollarsToCents rejects negatives', dollarsToCents('-5') === null);
@@ -204,7 +245,10 @@ const stripComments = (s: string) =>
   const thermo = readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8');
   check('thermometer has progressbar role', thermo.includes('role="progressbar"'));
   check('thermometer has aria-valuetext sentence', thermo.includes('aria-valuetext'));
-  check('thermometer clamps via shared math', thermo.includes('pctToGoal') && thermo.includes('remainingCents'));
+  check(
+    'thermometer clamps via shared math',
+    thermo.includes('pctToGoal') && thermo.includes('remainingCents'),
+  );
   check('thermometer has visible % text (not color alone)', thermo.includes('% funded'));
   check('thermometer handles goal reached', thermo.includes('Goal reached'));
   for (const [label, path] of [
@@ -223,8 +267,17 @@ const stripComments = (s: string) =>
   // Admin actions never touch Pre-School tables
   const actions = readFileSync('src/app/admin/(dashboard)/founders/actions.ts', 'utf8');
   check('founders admin never touches preschool tables', !actions.includes('preschool'));
-  check('every founders admin action gated', (actions.match(/export async function/g) ?? []).length === (actions.match(/requireAdmin\(\);/g) ?? []).length);
-  check('actions revalidate all public surfaces', actions.includes("revalidatePath('/founders')") && actions.includes("revalidatePath('/academy')") && actions.includes("revalidatePath('/')"));
+  check(
+    'every founders admin action gated',
+    (actions.match(/export async function/g) ?? []).length ===
+      (actions.match(/requireAdmin\(\);/g) ?? []).length,
+  );
+  check(
+    'actions revalidate all public surfaces',
+    actions.includes("revalidatePath('/founders')") &&
+      actions.includes("revalidatePath('/academy')") &&
+      actions.includes("revalidatePath('/')"),
+  );
 }
 
 /* ---- SSR render check: the shared thermometer with the real campaign values ---- */
@@ -254,16 +307,31 @@ const stripComments = (s: string) =>
   check('render: 25 founders', html.includes('25 founders on the wall'));
   const zero = renderToStaticMarkup(
     React.createElement(CampaignThermometer, {
-      progress: { raised_cents: 0, goal_cents: 1_200_000, remaining_cents: 0, pct_to_goal: 0, founder_count: 0 },
+      progress: {
+        raised_cents: 0,
+        goal_cents: 1_200_000,
+        remaining_cents: 0,
+        pct_to_goal: 0,
+        founder_count: 0,
+      },
     }),
   );
   check('render $0: 0% funded', zero.includes('0% funded') && zero.includes('$0 raised'));
   const over = renderToStaticMarkup(
     React.createElement(CampaignThermometer, {
-      progress: { raised_cents: 1_500_000, goal_cents: 1_200_000, remaining_cents: 0, pct_to_goal: 0, founder_count: 25 },
+      progress: {
+        raised_cents: 1_500_000,
+        goal_cents: 1_200_000,
+        remaining_cents: 0,
+        pct_to_goal: 0,
+        founder_count: 25,
+      },
     }),
   );
-  check('render over-goal: capped 100%, goal reached', over.includes('100% funded') && over.includes('Goal reached') && over.includes('width:100%'));
+  check(
+    'render over-goal: capped 100%, goal reached',
+    over.includes('100% funded') && over.includes('Goal reached') && over.includes('width:100%'),
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -47,9 +47,7 @@ export function AmazonCta({
       href={url}
       target="_blank"
       rel={AMAZON_REL}
-      onClick={() =>
-        trackEvent(STORE_EVENTS.amazonCtaClick, { product: product.slug, placement })
-      }
+      onClick={() => trackEvent(STORE_EVENTS.amazonCtaClick, { product: product.slug, placement })}
       className={cn(
         'inline-flex items-center justify-center rounded-card bg-signal px-5 py-2.5 font-display text-sm uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt',
         className,

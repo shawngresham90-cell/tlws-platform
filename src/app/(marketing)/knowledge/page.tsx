@@ -91,8 +91,8 @@ export default async function KnowledgeHome() {
             <Link href="/store" className="font-semibold text-signal hover:underline">
               The Trucking Life Store
             </Link>{' '}
-            rounds up the road-tested gear that goes with the guides — dash cams, bunk
-            upgrades, and cab essentials.
+            rounds up the road-tested gear that goes with the guides — dash cams, bunk upgrades, and
+            cab essentials.
           </p>
         </Container>
       </Section>

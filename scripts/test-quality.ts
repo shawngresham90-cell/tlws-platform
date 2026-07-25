@@ -8,8 +8,17 @@
  *   npx esbuild scripts/test-quality.ts --bundle --platform=node --format=cjs \
  *     --alias:@=./src --outfile=/tmp/test-quality.cjs && node /tmp/test-quality.cjs
  */
-import { scoreCompleteness, completenessLabel, completenessDistribution } from '@/lib/directory/completeness';
-import { detectIssues, isThinListing, issuesCsv, type QualityListing } from '@/lib/directory/issues';
+import {
+  scoreCompleteness,
+  completenessLabel,
+  completenessDistribution,
+} from '@/lib/directory/completeness';
+import {
+  detectIssues,
+  isThinListing,
+  issuesCsv,
+  type QualityListing,
+} from '@/lib/directory/issues';
 import { trustStatus } from '@/lib/directory/trust';
 
 let passed = 0;
@@ -92,13 +101,34 @@ const NOW = new Date('2026-07-11T00:00:00Z');
   };
   const weigh = scoreCompleteness(weighFields);
   const sameAsTruckStop = scoreCompleteness({ ...weighFields, category: 'truck-stops' });
-  check('score: weigh station not punished for phone/website', weigh.score > sameAsTruckStop.score, `${weigh.score} vs ${sameAsTruckStop.score}`);
-  check('score: weigh station missing list has no phone/website', !weigh.missing.includes('Phone') && !weigh.missing.includes('Website'));
-  check('score: truck stop DOES get phone in missing list', sameAsTruckStop.missing.includes('Phone'));
+  check(
+    'score: weigh station not punished for phone/website',
+    weigh.score > sameAsTruckStop.score,
+    `${weigh.score} vs ${sameAsTruckStop.score}`,
+  );
+  check(
+    'score: weigh station missing list has no phone/website',
+    !weigh.missing.includes('Phone') && !weigh.missing.includes('Website'),
+  );
+  check(
+    'score: truck stop DOES get phone in missing list',
+    sameAsTruckStop.missing.includes('Phone'),
+  );
 
-  check('label boundaries', completenessLabel(85) === 'Excellent' && completenessLabel(84) === 'Good' && completenessLabel(65) === 'Good' && completenessLabel(64) === 'Needs work' && completenessLabel(40) === 'Needs work' && completenessLabel(39) === 'Incomplete');
+  check(
+    'label boundaries',
+    completenessLabel(85) === 'Excellent' &&
+      completenessLabel(84) === 'Good' &&
+      completenessLabel(65) === 'Good' &&
+      completenessLabel(64) === 'Needs work' &&
+      completenessLabel(40) === 'Needs work' &&
+      completenessLabel(39) === 'Incomplete',
+  );
   const dist = completenessDistribution([90, 70, 50, 10]);
-  check('distribution buckets', dist.Excellent === 1 && dist.Good === 1 && dist['Needs work'] === 1 && dist.Incomplete === 1);
+  check(
+    'distribution buckets',
+    dist.Excellent === 1 && dist.Good === 1 && dist['Needs work'] === 1 && dist.Incomplete === 1,
+  );
 }
 
 /* ------------------------- issue detection ------------------------- */
@@ -134,39 +164,116 @@ const q = (over: Partial<QualityListing>): QualityListing => ({
 {
   const clean = q({ name: 'Stop', detailSlug: 'stop-dalton-ga' });
   const cleanIssues = detectIssues([clean], NOW);
-  check('issues: clean listing has none', cleanIssues.length === 0, cleanIssues.map((i) => i.type));
+  check(
+    'issues: clean listing has none',
+    cleanIssues.length === 0,
+    cleanIssues.map((i) => i.type),
+  );
 
   const types = (row: QualityListing) => detectIssues([row], NOW).map((i) => i.type);
-  check('issues: malformed phone', types(q({ phone: 'call me maybe' })).includes('malformed-phone'));
-  check('issues: malformed website', types(q({ website: 'javascript:alert(1)' })).includes('malformed-website'));
-  check('issues: malformed tpc url', types(q({ tpcUrl: 'https://evil.com/x' })).includes('malformed-tpc-url'));
+  check(
+    'issues: malformed phone',
+    types(q({ phone: 'call me maybe' })).includes('malformed-phone'),
+  );
+  check(
+    'issues: malformed website',
+    types(q({ website: 'javascript:alert(1)' })).includes('malformed-website'),
+  );
+  check(
+    'issues: malformed tpc url',
+    types(q({ tpcUrl: 'https://evil.com/x' })).includes('malformed-tpc-url'),
+  );
   check('issues: half coordinates', types(q({ lng: null })).includes('malformed-coordinates'));
-  check('issues: swapped coordinates', types(q({ lat: -84.9, lng: 34.7 })).includes('malformed-coordinates'));
-  check('issues: missing address (published high)', detectIssues([q({ address: null })], NOW).some((i) => i.type === 'missing-address' && i.severity === 'high'));
+  check(
+    'issues: swapped coordinates',
+    types(q({ lat: -84.9, lng: 34.7 })).includes('malformed-coordinates'),
+  );
+  check(
+    'issues: missing address (published high)',
+    detectIssues([q({ address: null })], NOW).some(
+      (i) => i.type === 'missing-address' && i.severity === 'high',
+    ),
+  );
   check('issues: missing zip', types(q({ zip: null })).includes('missing-zip'));
   check('issues: exit without number', types(q({ exitNumber: null })).includes('missing-exit'));
-  check('issues: stale verification (>365d)', types(q({ verifiedAt: '2024-01-01T00:00:00Z' })).includes('stale-verification'));
-  check('issues: fresh verification silent', !types(q({ verifiedAt: '2026-06-01T00:00:00Z' })).includes('stale-verification'));
-  check('issues: stale slug after rename', types(q({ detailSlug: 'old-name-dalton-ga' })).includes('stale-slug'));
-  check('issues: collision-suffix slug is fine', !types(q({ detailSlug: 'stop-dalton-ga-2' })).includes('stale-slug'));
-  check('issues: tpc candidate (parking category)', types(q({ categorySlug: 'parking' })).includes('tpc-candidate'));
-  check('issues: weigh station skips phone/website', !types(q({ categorySlug: 'weigh-stations', phone: null, website: null })).some((t) => t === 'missing-phone' || t === 'missing-website'));
+  check(
+    'issues: stale verification (>365d)',
+    types(q({ verifiedAt: '2024-01-01T00:00:00Z' })).includes('stale-verification'),
+  );
+  check(
+    'issues: fresh verification silent',
+    !types(q({ verifiedAt: '2026-06-01T00:00:00Z' })).includes('stale-verification'),
+  );
+  check(
+    'issues: stale slug after rename',
+    types(q({ detailSlug: 'old-name-dalton-ga' })).includes('stale-slug'),
+  );
+  check(
+    'issues: collision-suffix slug is fine',
+    !types(q({ detailSlug: 'stop-dalton-ga-2' })).includes('stale-slug'),
+  );
+  check(
+    'issues: tpc candidate (parking category)',
+    types(q({ categorySlug: 'parking' })).includes('tpc-candidate'),
+  );
+  check(
+    'issues: weigh station skips phone/website',
+    !types(q({ categorySlug: 'weigh-stations', phone: null, website: null })).some(
+      (t) => t === 'missing-phone' || t === 'missing-website',
+    ),
+  );
 
   // thin listing
-  check('thin: no address → thin', isThinListing(q({ address: null, phone: null, website: null, description: null, amenities: [], lat: null, lng: null, parkingSpaces: null, freeParking: false, overnightParking: false })));
+  check(
+    'thin: no address → thin',
+    isThinListing(
+      q({
+        address: null,
+        phone: null,
+        website: null,
+        description: null,
+        amenities: [],
+        lat: null,
+        lng: null,
+        parkingSpaces: null,
+        freeParking: false,
+        overnightParking: false,
+      }),
+    ),
+  );
   check('thin: rich listing not thin', !isThinListing(q({})));
-  check('thin: unpublished never thin-flagged', !isThinListing(q({ published: false, address: null })));
+  check(
+    'thin: unpublished never thin-flagged',
+    !isThinListing(q({ published: false, address: null })),
+  );
 
   // duplicates vs co-location
   const dupA = q({ id: 'a', name: 'TA Dalton', address: '100 Connector 3', lat: 34.7, lng: -84.9 });
   const dupB = q({ id: 'b', name: 'TA Dalton', address: '100 Connector 3', lat: 34.7, lng: -84.9 });
   const dupIssues = detectIssues([dupA, dupB], NOW);
-  check('issues: exact duplicate suspect', dupIssues.filter((i) => i.type === 'duplicate-suspect').length === 2);
+  check(
+    'issues: exact duplicate suspect',
+    dupIssues.filter((i) => i.type === 'duplicate-suspect').length === 2,
+  );
 
-  const coA = q({ id: 'c', name: 'Petro Stopping Center', address: '200 Highway 41', categorySlug: 'truck-stops' });
-  const coB = q({ id: 'd', name: 'CAT Scale — Petro', address: '200 Highway 41', categorySlug: 'cat-scales' });
+  const coA = q({
+    id: 'c',
+    name: 'Petro Stopping Center',
+    address: '200 Highway 41',
+    categorySlug: 'truck-stops',
+  });
+  const coB = q({
+    id: 'd',
+    name: 'CAT Scale — Petro',
+    address: '200 Highway 41',
+    categorySlug: 'cat-scales',
+  });
   const coIssues = detectIssues([coA, coB], NOW);
-  check('issues: co-location is info, not duplicate', coIssues.some((i) => i.type === 'possible-co-location' && i.severity === 'info') && !coIssues.some((i) => i.type === 'duplicate-suspect'));
+  check(
+    'issues: co-location is info, not duplicate',
+    coIssues.some((i) => i.type === 'possible-co-location' && i.severity === 'info') &&
+      !coIssues.some((i) => i.type === 'duplicate-suspect'),
+  );
 
   const csv = issuesCsv(detectIssues([q({ name: '=EVIL()', phone: 'bad' })], NOW));
   check('issues: CSV formula-guarded', csv.includes("'=EVIL()"));
@@ -174,13 +281,31 @@ const q = (over: Partial<QualityListing>): QualityListing => ({
 
 /* ------------------------- trust ------------------------- */
 {
-  check('trust: recent verification', trustStatus({ verifiedAt: '2026-06-01T00:00:00Z' }, NOW) === 'recently-verified');
-  check('trust: older verification', trustStatus({ verifiedAt: '2025-12-01T00:00:00Z' }, NOW) === 'verified');
-  check('trust: stale needs re-verification', trustStatus({ verifiedAt: '2024-01-01T00:00:00Z' }, NOW) === 'needs-reverification');
-  check('trust: community confirmed via approved review', trustStatus({ approvedReviews: 1 }, NOW) === 'community-confirmed');
-  check('trust: community confirmed via approved correction', trustStatus({ approvedCorrections: 2 }, NOW) === 'community-confirmed');
+  check(
+    'trust: recent verification',
+    trustStatus({ verifiedAt: '2026-06-01T00:00:00Z' }, NOW) === 'recently-verified',
+  );
+  check(
+    'trust: older verification',
+    trustStatus({ verifiedAt: '2025-12-01T00:00:00Z' }, NOW) === 'verified',
+  );
+  check(
+    'trust: stale needs re-verification',
+    trustStatus({ verifiedAt: '2024-01-01T00:00:00Z' }, NOW) === 'needs-reverification',
+  );
+  check(
+    'trust: community confirmed via approved review',
+    trustStatus({ approvedReviews: 1 }, NOW) === 'community-confirmed',
+  );
+  check(
+    'trust: community confirmed via approved correction',
+    trustStatus({ approvedCorrections: 2 }, NOW) === 'community-confirmed',
+  );
   check('trust: nothing → unverified', trustStatus({}, NOW) === 'unverified');
-  check('trust: popularity is not evidence', trustStatus({ approvedReviews: 0 }, NOW) === 'unverified');
+  check(
+    'trust: popularity is not evidence',
+    trustStatus({ approvedReviews: 0 }, NOW) === 'unverified',
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

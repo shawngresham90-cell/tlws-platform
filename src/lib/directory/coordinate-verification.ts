@@ -125,7 +125,8 @@ export function verifyListingCoordinate(l: VerifiableListing): VerificationResul
     milesOutsideCorridor = milesOutsideBounds(corridorBounds, p);
     if (milesOutsideCorridor > 0) findings.push('outside-interstate-corridor');
   }
-  const suspect = findings.includes('outside-state-bounds') || findings.includes('outside-interstate-corridor');
+  const suspect =
+    findings.includes('outside-state-bounds') || findings.includes('outside-interstate-corridor');
   return {
     ...base,
     severity: suspect ? 'suspect' : 'ok',
@@ -198,7 +199,19 @@ export function verificationReportCsv(results: VerificationResult[]): string {
       r.milesOutsideCorridor || '',
     ]);
   return toCsv([
-    ['listing_id', 'business_name', 'city', 'state', 'interstate', 'lat', 'lng', 'severity', 'findings', 'miles_outside_state', 'miles_outside_corridor'],
+    [
+      'listing_id',
+      'business_name',
+      'city',
+      'state',
+      'interstate',
+      'lat',
+      'lng',
+      'severity',
+      'findings',
+      'miles_outside_state',
+      'miles_outside_corridor',
+    ],
     ...rows,
   ]);
 }

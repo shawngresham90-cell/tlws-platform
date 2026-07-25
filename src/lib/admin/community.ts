@@ -367,9 +367,7 @@ export function submissionPatch(
     if (amenities.length > 0) {
       if (fillOnly) {
         // Fill-only: union — never drop an amenity the listing already has.
-        const union = [
-          ...new Set([...((current.amenities as string[]) ?? []), ...amenities]),
-        ];
+        const union = [...new Set([...((current.amenities as string[]) ?? []), ...amenities])];
         if (!sameAmenities(current.amenities, union)) put('amenities', union);
       } else if (!sameAmenities(current.amenities, amenities)) {
         put('amenities', amenities);

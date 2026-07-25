@@ -93,13 +93,7 @@ export function ProductCard({ product }: { product: Product }) {
   );
 }
 
-export function ProductGrid({
-  products,
-  columns = 3,
-}: {
-  products: Product[];
-  columns?: 2 | 3;
-}) {
+export function ProductGrid({ products, columns = 3 }: { products: Product[]; columns?: 2 | 3 }) {
   const cols = columns === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3';
   return (
     <div className={`grid gap-5 ${cols}`}>

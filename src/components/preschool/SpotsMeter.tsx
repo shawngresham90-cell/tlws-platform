@@ -23,9 +23,7 @@ export function SpotsMeter({
       : `${filled} of ${FOUNDING_STUDENT_CAPACITY} spots filled · ${remaining} remaining`;
 
   if (compact) {
-    return (
-      <p className="text-xs font-semibold uppercase tracking-wide text-signal">{label}</p>
-    );
+    return <p className="text-xs font-semibold uppercase tracking-wide text-signal">{label}</p>;
   }
 
   return (

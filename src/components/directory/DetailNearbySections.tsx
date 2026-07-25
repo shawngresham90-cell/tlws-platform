@@ -29,7 +29,11 @@ export function DetailNearbySections({
               {s.items.map(({ entry, distanceMiles }) => (
                 <li key={entry.id} className="text-sm">
                   <Link
-                    href={entry.detailSlug ? detailHref(entry.detailSlug) : `/directory/${entry.category}`}
+                    href={
+                      entry.detailSlug
+                        ? detailHref(entry.detailSlug)
+                        : `/directory/${entry.category}`
+                    }
                     className="font-semibold text-ink transition-colors hover:text-signal"
                   >
                     {entry.name}

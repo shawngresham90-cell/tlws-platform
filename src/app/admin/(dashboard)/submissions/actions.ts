@@ -140,7 +140,11 @@ export async function approveSubmissionAction(id: string): Promise<void> {
   const error = await approveOne(id);
   const { row } = await getSubmission(id);
   revalidateDirectory(row?.locations?.category_slug ?? row?.category_slug);
-  redirect(error ? `/admin/submissions?error=${encodeURIComponent(error)}` : '/admin/submissions?ok=approved');
+  redirect(
+    error
+      ? `/admin/submissions?error=${encodeURIComponent(error)}`
+      : '/admin/submissions?ok=approved',
+  );
 }
 
 export async function rejectSubmissionAction(id: string): Promise<void> {
@@ -216,7 +220,9 @@ export async function bulkSubmissionsAction(formData: FormData): Promise<void> {
       )}`,
     );
   }
-  redirect(`/admin/submissions?ok=${op === 'approve' ? 'bulk-approved' : 'bulk-rejected'}&n=${done}`);
+  redirect(
+    `/admin/submissions?ok=${op === 'approve' ? 'bulk-approved' : 'bulk-rejected'}&n=${done}`,
+  );
 }
 
 /** Save edits to a pending submission (edit-before-approve). */
@@ -313,7 +319,10 @@ export async function mergeSubmissionAction(id: string, formData: FormData): Pro
     });
     if (historyError)
       redirect(`/admin/submissions/${id}?error=${encodeURIComponent(historyError)}`);
-    const { error: updateError } = await supabase.from('locations').update(patch).eq('id', targetId);
+    const { error: updateError } = await supabase
+      .from('locations')
+      .update(patch)
+      .eq('id', targetId);
     if (updateError)
       redirect(`/admin/submissions/${id}?error=${encodeURIComponent(updateError.message)}`);
   }

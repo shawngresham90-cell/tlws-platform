@@ -122,9 +122,7 @@ export function MultiCategoryBrowser({
       const i = stateOrder.indexOf(key);
       return i === -1 ? 999 : i;
     };
-    return [...map.entries()].sort(
-      (a, b) => order(a[0]) - order(b[0]) || a[0].localeCompare(b[0]),
-    );
+    return [...map.entries()].sort((a, b) => order(a[0]) - order(b[0]) || a[0].localeCompare(b[0]));
   }, [results, groupBy, stateOrder]);
 
   const hasFilters = Boolean(query.trim() || activeCategory);

@@ -100,7 +100,10 @@ export async function approveClaimAction(id: string): Promise<void> {
     .from('preschool_founding_claims')
     .update({ status: 'approved', ...reviewedNow() })
     .eq('id', id);
-  finish(error ? 'Wall entry created but the claim status update failed — fix manually.' : null, 'approved');
+  finish(
+    error ? 'Wall entry created but the claim status update failed — fix manually.' : null,
+    'approved',
+  );
 }
 
 export async function rejectClaimAction(id: string): Promise<void> {

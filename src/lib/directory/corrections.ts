@@ -24,7 +24,11 @@ export const CLEAR_TOKEN = '__CLEAR__';
 
 export const IDENTITY_COLUMNS = ['listing_id', 'match_name', 'match_city', 'match_state'] as const;
 
-const state2 = z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, 'must be a 2-letter code');
+const state2 = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{2}$/, 'must be a 2-letter code');
 const httpUrl = z
   .string()
   .trim()
@@ -69,39 +73,171 @@ const zodCheck = (schema: z.ZodTypeAny) => (value: string) => {
 
 /** THE allowlist. Nothing outside this table can be modified by a correction CSV. */
 export const CORRECTION_FIELDS: FieldSpec[] = [
-  { column: 'name', dbColumn: 'name', label: 'Name', validate: zodCheck(z.string().trim().min(2).max(120)), toDb: (v) => v.trim(), clearable: false },
-  { column: 'address', dbColumn: 'address', label: 'Address', validate: zodCheck(z.string().trim().max(200)), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'city', dbColumn: 'city', label: 'City', validate: zodCheck(z.string().trim().min(1).max(80)), toDb: (v) => v.trim(), clearable: false },
-  { column: 'state', dbColumn: 'state', label: 'State', validate: zodCheck(state2), toDb: (v) => v.trim().toUpperCase(), clearable: false },
-  { column: 'zip', dbColumn: 'zip', label: 'ZIP', validate: zodCheck(z.string().trim().regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789')), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'phone', dbColumn: 'phone', label: 'Phone', validate: zodCheck(z.string().trim().max(30).regex(/^[0-9()+.\-\s ext]*$/i, 'digits and ()+-. only')), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'website', dbColumn: 'website', label: 'Website', validate: zodCheck(httpUrl), toDb: (v) => v.trim(), clearable: true, clearValue: null },
+  {
+    column: 'name',
+    dbColumn: 'name',
+    label: 'Name',
+    validate: zodCheck(z.string().trim().min(2).max(120)),
+    toDb: (v) => v.trim(),
+    clearable: false,
+  },
+  {
+    column: 'address',
+    dbColumn: 'address',
+    label: 'Address',
+    validate: zodCheck(z.string().trim().max(200)),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'city',
+    dbColumn: 'city',
+    label: 'City',
+    validate: zodCheck(z.string().trim().min(1).max(80)),
+    toDb: (v) => v.trim(),
+    clearable: false,
+  },
+  {
+    column: 'state',
+    dbColumn: 'state',
+    label: 'State',
+    validate: zodCheck(state2),
+    toDb: (v) => v.trim().toUpperCase(),
+    clearable: false,
+  },
+  {
+    column: 'zip',
+    dbColumn: 'zip',
+    label: 'ZIP',
+    validate: zodCheck(
+      z
+        .string()
+        .trim()
+        .regex(/^\d{5}(-\d{4})?$/, 'ZIP must be 12345 or 12345-6789'),
+    ),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'phone',
+    dbColumn: 'phone',
+    label: 'Phone',
+    validate: zodCheck(
+      z
+        .string()
+        .trim()
+        .max(30)
+        .regex(/^[0-9()+.\-\s ext]*$/i, 'digits and ()+-. only'),
+    ),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'website',
+    dbColumn: 'website',
+    label: 'Website',
+    validate: zodCheck(httpUrl),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
   {
     column: 'category',
     dbColumn: 'category_slug',
     label: 'Category',
-    validate: (v) => ((CATEGORY_SLUGS as string[]).includes(v.trim()) ? null : `unknown category "${v.trim()}"`),
+    validate: (v) =>
+      (CATEGORY_SLUGS as string[]).includes(v.trim()) ? null : `unknown category "${v.trim()}"`,
     toDb: (v) => v.trim(),
     clearable: false,
   },
-  { column: 'interstate', dbColumn: 'interstate', label: 'Interstate', validate: zodCheck(z.string().trim().max(20)), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'exit_number', dbColumn: 'exit_number', label: 'Exit number', validate: zodCheck(z.string().trim().max(20)), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'description', dbColumn: 'description', label: 'Description', validate: zodCheck(z.string().trim().max(2000)), toDb: (v) => v.trim(), clearable: true, clearValue: null },
-  { column: 'free_parking', dbColumn: 'free_parking', label: 'Free parking', validate: zodCheck(yesNo), toDb: yesNoToBool, clearable: false },
-  { column: 'paid_parking', dbColumn: 'paid_parking', label: 'Paid parking', validate: zodCheck(yesNo), toDb: yesNoToBool, clearable: false },
-  { column: 'reserved_parking', dbColumn: 'reserved_parking', label: 'Reserved parking', validate: zodCheck(yesNo), toDb: yesNoToBool, clearable: false },
-  { column: 'overnight_parking', dbColumn: 'overnight_parking', label: 'Overnight parking', validate: zodCheck(yesNo), toDb: yesNoToBool, clearable: false },
-  { column: 'parking_spaces', dbColumn: 'parking_spaces', label: 'Truck spaces', validate: zodCheck(z.coerce.number().int().min(0).max(10000)), toDb: (v) => Number(v), clearable: true, clearValue: null },
+  {
+    column: 'interstate',
+    dbColumn: 'interstate',
+    label: 'Interstate',
+    validate: zodCheck(z.string().trim().max(20)),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'exit_number',
+    dbColumn: 'exit_number',
+    label: 'Exit number',
+    validate: zodCheck(z.string().trim().max(20)),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'description',
+    dbColumn: 'description',
+    label: 'Description',
+    validate: zodCheck(z.string().trim().max(2000)),
+    toDb: (v) => v.trim(),
+    clearable: true,
+    clearValue: null,
+  },
+  {
+    column: 'free_parking',
+    dbColumn: 'free_parking',
+    label: 'Free parking',
+    validate: zodCheck(yesNo),
+    toDb: yesNoToBool,
+    clearable: false,
+  },
+  {
+    column: 'paid_parking',
+    dbColumn: 'paid_parking',
+    label: 'Paid parking',
+    validate: zodCheck(yesNo),
+    toDb: yesNoToBool,
+    clearable: false,
+  },
+  {
+    column: 'reserved_parking',
+    dbColumn: 'reserved_parking',
+    label: 'Reserved parking',
+    validate: zodCheck(yesNo),
+    toDb: yesNoToBool,
+    clearable: false,
+  },
+  {
+    column: 'overnight_parking',
+    dbColumn: 'overnight_parking',
+    label: 'Overnight parking',
+    validate: zodCheck(yesNo),
+    toDb: yesNoToBool,
+    clearable: false,
+  },
+  {
+    column: 'parking_spaces',
+    dbColumn: 'parking_spaces',
+    label: 'Truck spaces',
+    validate: zodCheck(z.coerce.number().int().min(0).max(10000)),
+    toDb: (v) => Number(v),
+    clearable: true,
+    clearValue: null,
+  },
   {
     column: 'amenities',
     dbColumn: 'amenities',
     label: 'Amenities',
     validate: (v) => {
-      const items = v.split('|').map((a) => a.trim()).filter(Boolean);
+      const items = v
+        .split('|')
+        .map((a) => a.trim())
+        .filter(Boolean);
       const bad = items.filter((a) => !(AMENITIES as readonly string[]).includes(a));
       return bad.length === 0 ? null : `unknown amenity: ${bad.join(', ')}`;
     },
-    toDb: (v) => v.split('|').map((a) => a.trim()).filter(Boolean),
+    toDb: (v) =>
+      v
+        .split('|')
+        .map((a) => a.trim())
+        .filter(Boolean),
     clearable: true,
     clearValue: [],
   },
@@ -121,7 +257,12 @@ export const CORRECTION_FIELDS: FieldSpec[] = [
     column: 'verified_on',
     dbColumn: 'verified_at',
     label: 'Verified date',
-    validate: zodCheck(z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'use YYYY-MM-DD')),
+    validate: zodCheck(
+      z
+        .string()
+        .trim()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'use YYYY-MM-DD'),
+    ),
     toDb: (v) => new Date(`${v.trim()}T00:00:00Z`).toISOString(),
     clearable: true,
     clearValue: null,
@@ -181,7 +322,10 @@ export function parseCorrectionsCsv(text: string): CorrectionsParseResult {
   const table = parseCsv(text);
   if (table.length === 0) return { ok: false, errors: ['The file is empty.'] };
   if (table.length - 1 > CORRECTIONS_MAX_ROWS) {
-    return { ok: false, errors: [`Too many rows (${table.length - 1}; max ${CORRECTIONS_MAX_ROWS}).`] };
+    return {
+      ok: false,
+      errors: [`Too many rows (${table.length - 1}; max ${CORRECTIONS_MAX_ROWS}).`],
+    };
   }
 
   const header = table[0].map((h) => h.trim().toLowerCase());
@@ -215,10 +359,12 @@ export function parseCorrectionsCsv(text: string): CorrectionsParseResult {
 }
 
 const norm = (s: string | null | undefined) =>
-  (s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  (s ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 
-const isBlankish = (v: unknown) =>
-  v == null || v === '' || (Array.isArray(v) && v.length === 0);
+const isBlankish = (v: unknown) => v == null || v === '' || (Array.isArray(v) && v.length === 0);
 
 function valuesEqual(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) || Array.isArray(b)) {

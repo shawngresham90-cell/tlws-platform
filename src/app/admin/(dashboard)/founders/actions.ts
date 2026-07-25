@@ -4,11 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/admin/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
-import {
-  dollarsToCents,
-  FOUNDER_TIER_VALUES,
-  isValidBusinessUrl,
-} from '@/lib/admin/founders';
+import { dollarsToCents, FOUNDER_TIER_VALUES, isValidBusinessUrl } from '@/lib/admin/founders';
 
 /**
  * Academy Founders Wall admin actions. Every action: requireAdmin() →
@@ -110,10 +106,7 @@ export async function setFounderPublishedAction(id: string, publish: boolean): P
   requireAdmin();
   const supabase = createAdminClient();
   const { error } = await supabase.from('founders').update({ is_public: publish }).eq('id', id);
-  finish(
-    error ? 'Could not update visibility.' : null,
-    publish ? 'published' : 'unpublished',
-  );
+  finish(error ? 'Could not update visibility.' : null, publish ? 'published' : 'unpublished');
 }
 
 /** Change the campaign goal (singleton row) — guarded by an explicit confirm in the UI. */

@@ -104,8 +104,10 @@ export function activeSponsorsFor(sponsors: Sponsor[], ctx: SponsorContext): Spo
         isSafeSponsorUrl(s.url) &&
         s.placements.includes(ctx.placement) &&
         withinWindow(s, now) &&
-        (!s.states?.length || (state != null && s.states.map((x) => x.toUpperCase()).includes(state))) &&
-        (!s.interstates?.length || (ctx.interstate != null && s.interstates.includes(ctx.interstate))) &&
+        (!s.states?.length ||
+          (state != null && s.states.map((x) => x.toUpperCase()).includes(state))) &&
+        (!s.interstates?.length ||
+          (ctx.interstate != null && s.interstates.includes(ctx.interstate))) &&
         (!s.categories?.length || (ctx.category != null && s.categories.includes(ctx.category))),
     )
     .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));

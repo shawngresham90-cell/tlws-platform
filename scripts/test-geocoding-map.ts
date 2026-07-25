@@ -50,7 +50,11 @@ const approx = (a: number, b: number, tol: number) => Math.abs(a - b) <= tol;
 // Atlanta ⇄ Chattanooga is ~106 miles great-circle.
 const ATL = { lat: 33.749, lng: -84.388 };
 const CHA = { lat: 35.0456, lng: -85.3097 };
-check('haversine: ATL–CHA ≈ 106 mi', approx(haversineMiles(ATL, CHA), 106, 4), haversineMiles(ATL, CHA));
+check(
+  'haversine: ATL–CHA ≈ 106 mi',
+  approx(haversineMiles(ATL, CHA), 106, 4),
+  haversineMiles(ATL, CHA),
+);
 check('haversine: zero distance', haversineMiles(ATL, ATL) === 0);
 check('haversine: symmetric', haversineMiles(ATL, CHA) === haversineMiles(CHA, ATL));
 // One degree of latitude ≈ 69 miles.
@@ -121,7 +125,14 @@ const entry = (over: Partial<DirectoryEntry>): DirectoryEntry => ({
 {
   const entries = [
     entry({ id: '1', state: 'GA', interstate: 'I-75', lat: 34.7, lng: -84.9 }),
-    entry({ id: '2', state: 'TN', interstate: 'I-75', category: 'cat-scales', lat: 35.2, lng: -84.8 }),
+    entry({
+      id: '2',
+      state: 'TN',
+      interstate: 'I-75',
+      category: 'cat-scales',
+      lat: 35.2,
+      lng: -84.8,
+    }),
     entry({ id: '3', state: 'TN', interstate: 'I-40', lat: 35.9, lng: -83.9 }),
     entry({ id: '4', state: 'GA' }), // no coords
   ];
@@ -130,7 +141,9 @@ const entry = (over: Partial<DirectoryEntry>): DirectoryEntry => ({
   check('filter: by category', filterEntriesByCategory(entries, 'cat-scales').length === 1);
   check(
     'filter: combined scope',
-    applyScope(entries, { state: 'TN', interstate: 'I-75' }).map((e) => e.id).join() === '2',
+    applyScope(entries, { state: 'TN', interstate: 'I-75' })
+      .map((e) => e.id)
+      .join() === '2',
   );
 
   const markers = markersFromEntries(entries);
@@ -161,18 +174,37 @@ const entry = (over: Partial<DirectoryEntry>): DirectoryEntry => ({
 
   // Empty scope with a named state falls back to that state's preset bounds.
   const empty = boundsForScope([], { state: 'GA' });
-  check('dataset: empty GA scope uses preset bounds', boundsContain(empty, { lat: 32.6, lng: -83.4 }));
+  check(
+    'dataset: empty GA scope uses preset bounds',
+    boundsContain(empty, { lat: 32.6, lng: -83.4 }),
+  );
 }
 
 /* ------------------------------------------------ geocoding CSV */
 const LIVE = new Map<string, LiveListingRef>([
   [
     '11111111-1111-4111-8111-111111111111',
-    { id: '11111111-1111-4111-8111-111111111111', name: 'Adel Truck Plaza', address: '1503 W 4th St', city: 'Adel', state: 'GA', lat: null, lng: null },
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Adel Truck Plaza',
+      address: '1503 W 4th St',
+      city: 'Adel',
+      state: 'GA',
+      lat: null,
+      lng: null,
+    },
   ],
   [
     '22222222-2222-4222-8222-222222222222',
-    { id: '22222222-2222-4222-8222-222222222222', name: 'TA Cartersville', address: '981 Cassville-White Rd', city: 'Cartersville', state: 'GA', lat: 34.244, lng: -84.82 },
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      name: 'TA Cartersville',
+      address: '981 Cassville-White Rd',
+      city: 'Cartersville',
+      state: 'GA',
+      lat: 34.244,
+      lng: -84.82,
+    },
   ],
 ]);
 
@@ -194,7 +226,9 @@ const goodRow =
   check('csv: missing columns fatal', noHeader.rows.length === 0 && noHeader.errors.length === 1);
 
   // Bad UUID is a row error.
-  const badId = parseGeocodingCsv(`${HEADER}\n${goodRow.replace('11111111-1111-4111-8111-111111111111', 'not-a-uuid')}`);
+  const badId = parseGeocodingCsv(
+    `${HEADER}\n${goodRow.replace('11111111-1111-4111-8111-111111111111', 'not-a-uuid')}`,
+  );
   check('csv: bad uuid rejected', badId.rows.length === 0 && badId.errors.length === 1);
 
   // Unknown id blocks.
@@ -202,7 +236,10 @@ const goodRow =
     parseGeocodingCsv(`${HEADER}\n${goodRow.replace(/^1{8}/, '99999999')}`).rows,
     LIVE,
   );
-  check('validate: unknown id blocked', !unknown[0].applicable && unknown[0].problems.includes('unknown-listing-id'));
+  check(
+    'validate: unknown id blocked',
+    !unknown[0].applicable && unknown[0].problems.includes('unknown-listing-id'),
+  );
 
   // Identity mismatch: right id, wrong city (name matching alone must not pass).
   const mismatch = validateBatch(
@@ -216,14 +253,20 @@ const goodRow =
     parseGeocodingCsv(`${HEADER}\n${goodRow.replace(',high,', ',medium,')}`).rows,
     LIVE,
   );
-  check('validate: medium blocked', !medium[0].applicable && medium[0].problems.includes('not-high-confidence'));
+  check(
+    'validate: medium blocked',
+    !medium[0].applicable && medium[0].problems.includes('not-high-confidence'),
+  );
 
   // manual-review action blocked.
   const review = validateBatch(
     parseGeocodingCsv(`${HEADER}\n${goodRow.replace(/,ready$/, ',manual-review')}`).rows,
     LIVE,
   );
-  check('validate: manual-review blocked', !review[0].applicable && review[0].problems.includes('not-ready'));
+  check(
+    'validate: manual-review blocked',
+    !review[0].applicable && review[0].problems.includes('not-ready'),
+  );
 
   // 0/0 and swapped coordinates blocked.
   const zero = validateBatch(
@@ -232,7 +275,8 @@ const goodRow =
   );
   check('validate: 0/0 blocked', zero[0].problems.includes('invalid-coordinates'));
   const swapped = validateBatch(
-    parseGeocodingCsv(`${HEADER}\n${goodRow.replace('31.13871,-83.44229', '-83.44229,31.13871')}`).rows,
+    parseGeocodingCsv(`${HEADER}\n${goodRow.replace('31.13871,-83.44229', '-83.44229,31.13871')}`)
+      .rows,
     LIVE,
   );
   check('validate: swapped lat/lng blocked', swapped[0].problems.includes('invalid-coordinates'));
@@ -246,16 +290,25 @@ const goodRow =
 
   // Duplicate listing_id blocks both.
   const dup = validateBatch(parseGeocodingCsv(`${HEADER}\n${goodRow}\n${goodRow}`).rows, LIVE);
-  check('validate: duplicates blocked', dup.every((r) => r.problems.includes('duplicate-listing-id')));
+  check(
+    'validate: duplicates blocked',
+    dup.every((r) => r.problems.includes('duplicate-listing-id')),
+  );
 
   // Overwrite detection on a listing that already has coords.
   const overwriteRow =
     '22222222-2222-4222-8222-222222222222,TA Cartersville,truck-stops,981 Cassville-White Rd,Cartersville,GA,30121,,,34.2441,-84.8305,high,https://example.com,verified,ready';
   const over = validateBatch(parseGeocodingCsv(`${HEADER}\n${overwriteRow}`).rows, LIVE);
-  check('validate: overwrite flagged + still applicable', over[0].applicable && over[0].wouldOverwrite);
+  check(
+    'validate: overwrite flagged + still applicable',
+    over[0].applicable && over[0].wouldOverwrite,
+  );
 
   // Rejected CSV includes only blocked rows plus a problems column.
-  const mixed = validateBatch(parseGeocodingCsv(`${HEADER}\n${goodRow}\n${goodRow.replace(',high,', ',low,')}`).rows, LIVE);
+  const mixed = validateBatch(
+    parseGeocodingCsv(`${HEADER}\n${goodRow}\n${goodRow.replace(',high,', ',low,')}`).rows,
+    LIVE,
+  );
   const rejectedCsv = rejectedRowsCsv(mixed);
   check(
     'rejected csv: blocked rows only, with problems column',

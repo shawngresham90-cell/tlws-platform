@@ -128,9 +128,7 @@ function RelatedBooks({ current }: { current: Book }) {
   const related = BOOKS.filter((b) => b.slug !== current.slug);
   return (
     <div className="mt-6">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">
-        Related books
-      </h3>
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Related books</h3>
       <div className="mt-2 flex flex-wrap gap-2">
         {related.map((b) => (
           <Link
@@ -240,8 +238,8 @@ export default function BooksPage() {
           <Eyebrow>The Trucker Bookstore</Eyebrow>
           <h1 className="display-section">Driver-built books</h1>
           <p className="mt-4 text-muted">
-            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff,
-            just the stuff that keeps you legal, healthy, and earning.
+            Written by a driver, for drivers — 17 years on the road, zero violations. No fluff, just
+            the stuff that keeps you legal, healthy, and earning.
           </p>
         </div>
         <div className="mt-12">

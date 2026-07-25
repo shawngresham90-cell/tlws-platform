@@ -76,10 +76,7 @@ export async function setPublishedAction(
 ): Promise<void> {
   requireAdmin();
   const supabase = createAdminClient();
-  const { error } = await supabase
-    .from('locations')
-    .update({ is_published: publish })
-    .eq('id', id);
+  const { error } = await supabase.from('locations').update({ is_published: publish }).eq('id', id);
   if (error) redirect('/admin/directory?error=update');
   revalidateListing(categorySlug);
   redirect(`/admin/directory?ok=${publish ? 'published' : 'unpublished'}`);
@@ -93,10 +90,7 @@ export async function setFeaturedAction(
 ): Promise<void> {
   requireAdmin();
   const supabase = createAdminClient();
-  const { error } = await supabase
-    .from('locations')
-    .update({ is_featured: feature })
-    .eq('id', id);
+  const { error } = await supabase.from('locations').update({ is_featured: feature }).eq('id', id);
   if (error) redirect('/admin/directory?error=update');
   revalidateListing(categorySlug);
   redirect(`/admin/directory?ok=${feature ? 'featured' : 'unfeatured'}`);
@@ -188,7 +182,10 @@ export async function regenerateDetailSlugAction(id: string): Promise<void> {
     source: 'admin-edit',
     admin: MODERATION_ADMIN,
     changed_fields: { detail_slug: { from: current, to: next } },
-    note: `slug-regenerate: /directory/location/${current} → /directory/location/${next}`.slice(0, 500),
+    note: `slug-regenerate: /directory/location/${current} → /directory/location/${next}`.slice(
+      0,
+      500,
+    ),
   });
   if (historyError) redirect(`/admin/directory/${id}/edit?error=slug`);
 
@@ -308,8 +305,20 @@ export async function mergeDuplicateAction(keepId: string, dropId: string): Prom
   const drop = rows.find((r) => r.id === dropId)!;
 
   const FILLABLE = [
-    'address', 'zip', 'lat', 'lng', 'phone', 'website', 'description', 'parking_spaces',
-    'tpc_url', 'affiliate_code', 'image_url', 'interstate', 'exit_number', 'verified_at',
+    'address',
+    'zip',
+    'lat',
+    'lng',
+    'phone',
+    'website',
+    'description',
+    'parking_spaces',
+    'tpc_url',
+    'affiliate_code',
+    'image_url',
+    'interstate',
+    'exit_number',
+    'verified_at',
   ];
   const patch: Record<string, unknown> = {};
   for (const f of FILLABLE) {

@@ -15,10 +15,7 @@ import { toCsv, safeCsvCell } from './csv';
  * Pure — no inserts anywhere.
  */
 
-export type ExpansionVerdict =
-  | 'ready-to-publish'
-  | 'import-unpublished'
-  | 'manual-review';
+export type ExpansionVerdict = 'ready-to-publish' | 'import-unpublished' | 'manual-review';
 
 export type ExpansionRow = {
   name: string;
@@ -53,7 +50,8 @@ function chipsOf(row: PreparedRow): string[] {
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
   if (row.overnight_parking) chips.push('Overnight OK');
-  if (Array.isArray(row.amenities)) for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
+  if (Array.isArray(row.amenities))
+    for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
   return chips;
 }
 
@@ -197,7 +195,21 @@ export function assessExpansion(
 /** Readiness report as a formula-safe CSV. */
 export function expansionReportCsv(report: ExpansionReport): string {
   return toCsv([
-    ['name', 'category', 'city', 'state', 'slug_preview', 'slug_collision', 'completeness', 'label', 'geocoding', 'duplicate_hits', 'verdict', 'reason', 'missing_fields'],
+    [
+      'name',
+      'category',
+      'city',
+      'state',
+      'slug_preview',
+      'slug_collision',
+      'completeness',
+      'label',
+      'geocoding',
+      'duplicate_hits',
+      'verdict',
+      'reason',
+      'missing_fields',
+    ],
     ...report.rows.map((r) => [
       safeCsvCell(r.name),
       r.category,
@@ -220,11 +232,36 @@ export function expansionReportCsv(report: ExpansionReport): string {
 export function expansionTemplateCsv(): string {
   return toCsv([
     [
-      'Business Name', 'Category', 'Address', 'City', 'State', 'Zip', 'Latitude', 'Longitude',
-      'Phone', 'Website', 'Description', 'Truck Spaces', 'Free Parking', 'Paid Parking',
-      'Reserved Parking', 'Overnight Parking', 'Showers', 'Food', 'Fuel', 'Laundry', 'Restrooms',
-      'Repair', 'CAT Scale', 'WiFi', 'Security', 'Truck Parking Club URL', 'Interstate',
-      'Exit Number', 'Published', 'Featured',
+      'Business Name',
+      'Category',
+      'Address',
+      'City',
+      'State',
+      'Zip',
+      'Latitude',
+      'Longitude',
+      'Phone',
+      'Website',
+      'Description',
+      'Truck Spaces',
+      'Free Parking',
+      'Paid Parking',
+      'Reserved Parking',
+      'Overnight Parking',
+      'Showers',
+      'Food',
+      'Fuel',
+      'Laundry',
+      'Restrooms',
+      'Repair',
+      'CAT Scale',
+      'WiFi',
+      'Security',
+      'Truck Parking Club URL',
+      'Interstate',
+      'Exit Number',
+      'Published',
+      'Featured',
     ],
   ]);
 }

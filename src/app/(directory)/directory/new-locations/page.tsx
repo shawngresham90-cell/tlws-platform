@@ -32,9 +32,11 @@ function fmt(iso?: string): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
-  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(
-    new Date(t),
-  );
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(t));
 }
 
 export default async function NewLocationsPage({
@@ -92,7 +94,10 @@ export default async function NewLocationsPage({
                 );
               })}
             </ul>
-            <nav className="mt-10 flex items-center justify-between text-sm" aria-label="Pagination">
+            <nav
+              className="mt-10 flex items-center justify-between text-sm"
+              aria-label="Pagination"
+            >
               {page > 1 ? (
                 <Link
                   href={page - 1 === 1 ? PATH : `${PATH}?page=${page - 1}`}
@@ -127,7 +132,10 @@ export default async function NewLocationsPage({
           </p>
         )}
         <p className="mt-10 text-sm text-muted">
-          <Link href="/directory/recently-updated" className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href="/directory/recently-updated"
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Recently updated →
           </Link>{' '}
           ·{' '}

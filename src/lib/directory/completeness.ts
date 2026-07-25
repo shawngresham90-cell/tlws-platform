@@ -94,13 +94,37 @@ export function scoreCompleteness(entry: CompletenessInput): CompletenessResult 
     // Core identity
     { key: 'name', label: 'Name', points: has(entry.name) ? 6 : 0, max: 6, applicable: true },
     { key: 'category', label: 'Category', points: knownCategory ? 6 : 0, max: 6, applicable: true },
-    { key: 'address', label: 'Street address', points: has(entry.address) ? 8 : 0, max: 8, applicable: true },
+    {
+      key: 'address',
+      label: 'Street address',
+      points: has(entry.address) ? 8 : 0,
+      max: 8,
+      applicable: true,
+    },
     { key: 'city', label: 'City', points: has(entry.city) ? 4 : 0, max: 4, applicable: true },
-    { key: 'state', label: 'State', points: /^[A-Z]{2}$/.test(entry.state ?? '') ? 2 : 0, max: 2, applicable: true },
+    {
+      key: 'state',
+      label: 'State',
+      points: /^[A-Z]{2}$/.test(entry.state ?? '') ? 2 : 0,
+      max: 2,
+      applicable: true,
+    },
     { key: 'zip', label: 'ZIP', points: has(entry.zip) ? 4 : 0, max: 4, applicable: true },
     // Routing
-    { key: 'interstate', label: 'Interstate', points: has(entry.interstate) ? 6 : 0, max: 6, applicable: true },
-    { key: 'exit', label: 'Exit number', points: has(entry.exitNumber) ? 6 : 0, max: 6, applicable: true },
+    {
+      key: 'interstate',
+      label: 'Interstate',
+      points: has(entry.interstate) ? 6 : 0,
+      max: 6,
+      applicable: true,
+    },
+    {
+      key: 'exit',
+      label: 'Exit number',
+      points: has(entry.exitNumber) ? 6 : 0,
+      max: 6,
+      applicable: true,
+    },
     {
       key: 'coordinates',
       label: 'Verified coordinates',
@@ -109,8 +133,20 @@ export function scoreCompleteness(entry: CompletenessInput): CompletenessResult 
       applicable: true,
     },
     // Contact (not applicable to public infrastructure)
-    { key: 'phone', label: 'Phone', points: has(entry.phone) ? 7 : 0, max: 7, applicable: !isPlace },
-    { key: 'website', label: 'Website', points: has(entry.website) ? 7 : 0, max: 7, applicable: !isPlace },
+    {
+      key: 'phone',
+      label: 'Phone',
+      points: has(entry.phone) ? 7 : 0,
+      max: 7,
+      applicable: !isPlace,
+    },
+    {
+      key: 'website',
+      label: 'Website',
+      points: has(entry.website) ? 7 : 0,
+      max: 7,
+      applicable: !isPlace,
+    },
     // Driver usefulness
     {
       key: 'parking-type',
@@ -129,18 +165,30 @@ export function scoreCompleteness(entry: CompletenessInput): CompletenessResult 
     {
       key: 'amenities',
       label: 'Amenities',
-      points: (entry.amenities ?? []).length >= 2 ? 7 : (entry.amenities ?? []).length === 1 ? 4 : 0,
+      points:
+        (entry.amenities ?? []).length >= 2 ? 7 : (entry.amenities ?? []).length === 1 ? 4 : 0,
       max: 7,
       applicable: !isPlace,
     },
     {
       key: 'description',
       label: 'Description',
-      points: (entry.description ?? '').trim().length >= 60 ? 8 : (entry.description ?? '').trim().length >= 20 ? 4 : 0,
+      points:
+        (entry.description ?? '').trim().length >= 60
+          ? 8
+          : (entry.description ?? '').trim().length >= 20
+            ? 4
+            : 0,
       max: 8,
       applicable: true,
     },
-    { key: 'tpc', label: 'TPC reservation link', points: validTpc ? 2 : 0, max: 2, applicable: tpcApplies },
+    {
+      key: 'tpc',
+      label: 'TPC reservation link',
+      points: validTpc ? 2 : 0,
+      max: 2,
+      applicable: tpcApplies,
+    },
     // Trust
     {
       key: 'verified',
@@ -172,7 +220,9 @@ export function scoreCompleteness(entry: CompletenessInput): CompletenessResult 
 }
 
 /** Distribution buckets for the quality dashboard. */
-export function completenessDistribution(scores: number[]): Record<CompletenessResult['label'], number> {
+export function completenessDistribution(
+  scores: number[],
+): Record<CompletenessResult['label'], number> {
   const out: Record<CompletenessResult['label'], number> = {
     Excellent: 0,
     Good: 0,

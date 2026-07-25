@@ -1,5 +1,10 @@
 import { createStaticClient } from '@/lib/supabase/static';
-import { activeSponsorsFor, type Sponsor, type SponsorContext, type SponsorPlacement } from './sponsors';
+import {
+  activeSponsorsFor,
+  type Sponsor,
+  type SponsorContext,
+  type SponsorPlacement,
+} from './sponsors';
 
 /**
  * Sponsor data reader (Milestone 25). Reads only ACTIVE rows via the cookieless
@@ -46,7 +51,9 @@ export async function getSponsorsFor(ctx: SponsorContext): Promise<Sponsor[]> {
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('directory_sponsors')
-      .select('id, name, tagline, url, logo, placements, states, interstates, categories, active, starts_at, ends_at')
+      .select(
+        'id, name, tagline, url, logo, placements, states, interstates, categories, active, starts_at, ends_at',
+      )
       .eq('active', true)
       .limit(100);
     if (error || !data) return [];

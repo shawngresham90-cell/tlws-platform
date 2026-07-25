@@ -58,9 +58,9 @@ export default function ShawnsPicksPage() {
         <Eyebrow>Shawn&apos;s Picks</Eyebrow>
         <h1 className="display-hero max-w-3xl">The gear I&apos;d buy first</h1>
         <p className="mt-4 max-w-2xl text-lg text-muted">
-          If you&apos;re outfitting the truck and don&apos;t know where to start, start here. This is
-          the short list — the stuff that earns its spot before anything else, with a straight reason
-          for each.
+          If you&apos;re outfitting the truck and don&apos;t know where to start, start here. This
+          is the short list — the stuff that earns its spot before anything else, with a straight
+          reason for each.
         </p>
         <div className="mt-6">
           <AmazonDisclosure />
@@ -99,7 +99,7 @@ export default function ShawnsPicksPage() {
                         <span aria-hidden="true" className="text-signal">
                           ★
                         </span>{' '}
-                        {rating} · {' '}
+                        {rating} ·{' '}
                       </>
                     ) : null}
                     {price ?? 'Price at Amazon'}

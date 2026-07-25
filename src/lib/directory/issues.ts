@@ -86,7 +86,12 @@ function missingFieldIssues(row: QualityListing): QualityIssue[] {
   ) => issues.push({ ...base, type, severity, detail, suggestedAction });
 
   if (!row.categorySlug || !getCategory(row.categorySlug)) {
-    missing('missing-category', 'high', 'No recognized directory category', 'Pick a category in the editor');
+    missing(
+      'missing-category',
+      'high',
+      'No recognized directory category',
+      'Pick a category in the editor',
+    );
   }
   if (!row.address) {
     missing(
@@ -98,20 +103,37 @@ function missingFieldIssues(row: QualityListing): QualityIssue[] {
   }
   if (!row.zip) missing('missing-zip', 'low', 'No ZIP code', 'Add the ZIP');
   const isPlace = row.categorySlug === 'weigh-stations';
-  if (!row.phone && !isPlace) missing('missing-phone', 'medium', 'No phone number', 'Add a phone number');
+  if (!row.phone && !isPlace)
+    missing('missing-phone', 'medium', 'No phone number', 'Add a phone number');
   if (!row.website && !isPlace) missing('missing-website', 'low', 'No website', 'Add the website');
-  if (!row.interstate) missing('missing-interstate', 'low', 'No interstate', 'Set the interstate if it serves one');
+  if (!row.interstate)
+    missing('missing-interstate', 'low', 'No interstate', 'Set the interstate if it serves one');
   if (row.interstate && !row.exitNumber) {
     missing('missing-exit', 'low', 'Interstate set but no exit number', 'Add the exit number');
   }
   if (row.amenities.length === 0 && !isPlace) {
-    missing('missing-amenities', 'low', 'No amenities recorded', 'Record amenities drivers care about');
+    missing(
+      'missing-amenities',
+      'low',
+      'No amenities recorded',
+      'Record amenities drivers care about',
+    );
   }
   if (!row.description || row.description.trim().length < 20) {
-    missing('missing-description', 'low', 'No usable description', 'Write a short driver-focused description');
+    missing(
+      'missing-description',
+      'low',
+      'No usable description',
+      'Write a short driver-focused description',
+    );
   }
   if (row.lat == null || row.lng == null) {
-    missing('missing-coordinates', 'medium', 'No verified coordinates', 'Queue for a geocoding batch');
+    missing(
+      'missing-coordinates',
+      'medium',
+      'No verified coordinates',
+      'Queue for a geocoding batch',
+    );
   }
   return issues;
 }
@@ -226,7 +248,14 @@ export function isThinListing(row: QualityListing): boolean {
   if (row.phone) signals += 1;
   if (row.website) signals += 1;
   if ((row.description ?? '').trim().length >= 30) signals += 1;
-  if (row.amenities.length >= 1 || row.freeParking || row.paidParking || row.reservedParking || row.overnightParking) signals += 1;
+  if (
+    row.amenities.length >= 1 ||
+    row.freeParking ||
+    row.paidParking ||
+    row.reservedParking ||
+    row.overnightParking
+  )
+    signals += 1;
   if (row.lat != null && row.lng != null) signals += 1;
   if (row.parkingSpaces != null) signals += 1;
   return signals < 2;
@@ -338,7 +367,18 @@ export function sortIssues(issues: QualityIssue[]): QualityIssue[] {
 /** Issue report as a downloadable, formula-safe CSV. */
 export function issuesCsv(issues: QualityIssue[]): string {
   return toCsv([
-    ['listing_id', 'name', 'published', 'category', 'city', 'state', 'issue', 'severity', 'detail', 'suggested_action'],
+    [
+      'listing_id',
+      'name',
+      'published',
+      'category',
+      'city',
+      'state',
+      'issue',
+      'severity',
+      'detail',
+      'suggested_action',
+    ],
     ...sortIssues(issues).map((i) => [
       i.listingId,
       safeCsvCell(i.name),

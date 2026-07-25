@@ -261,7 +261,10 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) <= eps;
   // file still outranks it.
   {
     const mapped = { ...slots[0], youtubeId: 'dQw4w9WgXcQ' };
-    check('youtube: mapped id makes hasYouTube/hasAnyFootage true', hasYouTube(mapped) && hasAnyFootage(mapped));
+    check(
+      'youtube: mapped id makes hasYouTube/hasAnyFootage true',
+      hasYouTube(mapped) && hasAnyFootage(mapped),
+    );
     check('youtube: mapped id is not a native file', !hasFootage(mapped));
     const withFile = { ...slots[1], src: '/road-ahead/video/x.mp4' };
     check(

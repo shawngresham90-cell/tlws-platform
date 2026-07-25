@@ -130,7 +130,10 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
           <h2 className="display-section mb-6">Common questions</h2>
           <div className="max-w-3xl space-y-3">
             {guide.faq.map((f) => (
-              <details key={f.question} className="group rounded-card border border-line bg-asphalt-800">
+              <details
+                key={f.question}
+                className="group rounded-card border border-line bg-asphalt-800"
+              >
                 <summary className="cursor-pointer list-none px-5 py-4 font-display text-lg uppercase tracking-wide text-ink transition-colors hover:text-signal [&::-webkit-details-marker]:hidden">
                   <span
                     aria-hidden="true"
@@ -158,7 +161,10 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
           >
             Shop all {meta.label.toLowerCase()} →
           </Link>
-          <Link href="/store/shawns-picks" className="text-signal underline-offset-4 hover:underline">
+          <Link
+            href="/store/shawns-picks"
+            className="text-signal underline-offset-4 hover:underline"
+          >
             Shawn&apos;s Picks →
           </Link>
         </div>

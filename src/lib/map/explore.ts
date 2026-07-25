@@ -84,14 +84,13 @@ export function applyExploreFilters(
           : undefined,
     }));
     if (filters.radiusMiles > 0) {
-      out = out.filter(
-        (e) => e.distanceMiles != null && e.distanceMiles <= filters.radiusMiles,
-      );
+      out = out.filter((e) => e.distanceMiles != null && e.distanceMiles <= filters.radiusMiles);
     }
     out.sort((a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
   } else {
     out.sort(
-      (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false) || a.name.localeCompare(b.name),
+      (a, b) =>
+        Number(b.featured ?? false) - Number(a.featured ?? false) || a.name.localeCompare(b.name),
     );
   }
   return out;

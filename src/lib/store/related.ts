@@ -59,7 +59,8 @@ export function frequentlyBoughtTogether(product: StoreProduct, limit = 3): Stor
   const pickFrom = (type: StoreProductType) => {
     // Prefer a featured item of the type, else the first that isn't the product itself.
     const pool = productsOfType(type);
-    const choice = pool.find((p) => p.featured && !seen.has(p.slug)) ?? pool.find((p) => !seen.has(p.slug));
+    const choice =
+      pool.find((p) => p.featured && !seen.has(p.slug)) ?? pool.find((p) => !seen.has(p.slug));
     if (choice) {
       seen.add(choice.slug);
       out.push(choice);

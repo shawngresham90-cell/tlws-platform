@@ -77,9 +77,8 @@ export default async function DirectoryMapPage() {
           >
             OpenStreetMap
           </a>{' '}
-          contributors. Facet counts refresh as new coordinates are verified:{' '}
-          {facets.states.length} state{facets.states.length === 1 ? '' : 's'} covered in the
-          directory so far.
+          contributors. Facet counts refresh as new coordinates are verified: {facets.states.length}{' '}
+          state{facets.states.length === 1 ? '' : 's'} covered in the directory so far.
         </p>
       </Section>
     </>

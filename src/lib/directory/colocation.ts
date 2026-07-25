@@ -106,14 +106,16 @@ export function classifyPair(a: PairListing, b: PairListing): ClassifiedPair {
     b.lng != null &&
     haversineMiles({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng }) <= COORDS_CLOSE_MILES;
   const samePhone = digits(a.phone).length >= 10 && digits(a.phone) === digits(b.phone);
-  const sameWebsite = websiteHost(a.website) !== '' && websiteHost(a.website) === websiteHost(b.website);
+  const sameWebsite =
+    websiteHost(a.website) !== '' && websiteHost(a.website) === websiteHost(b.website);
   const sameCategory = (a.category ?? '') === (b.category ?? '');
   const sameExit =
     Boolean(a.interstate && a.exitNumber) &&
     a.interstate === b.interstate &&
     (a.exitNumber ?? '') === (b.exitNumber ?? '');
   const sameCityState =
-    normalizeText(a.city) === normalizeText(b.city) && a.state.toUpperCase() === b.state.toUpperCase();
+    normalizeText(a.city) === normalizeText(b.city) &&
+    a.state.toUpperCase() === b.state.toUpperCase();
 
   if (nameExact) {
     score += 35;
@@ -166,7 +168,11 @@ export function classifyPair(a: PairListing, b: PairListing): ClassifiedPair {
     cls = 'same-coords-diff-category';
   } else if (!sameCategory && samePlace) {
     cls = 'co-located';
-  } else if ((nameExact || sameBrand) && !samePlace && (a.exitNumber ?? '') !== (b.exitNumber ?? '')) {
+  } else if (
+    (nameExact || sameBrand) &&
+    !samePlace &&
+    (a.exitNumber ?? '') !== (b.exitNumber ?? '')
+  ) {
     cls = 'brand-multi-exit';
   } else if ((nameExact || nameSimilar) && !samePlace) {
     cls = 'similar-name-diff-address';
@@ -251,7 +257,10 @@ export function findClassifiedPairs(
 }
 
 /** Classified pairs as a formula-safe CSV export. */
-export function classifiedPairsCsv(pairs: ClassifiedPair[], byId: Map<string, PairListing>): string {
+export function classifiedPairsCsv(
+  pairs: ClassifiedPair[],
+  byId: Map<string, PairListing>,
+): string {
   return toCsv([
     ['a_id', 'a_name', 'b_id', 'b_name', 'class', 'score', 'reasons'],
     ...pairs.map((p) => [

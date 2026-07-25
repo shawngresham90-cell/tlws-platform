@@ -176,7 +176,11 @@ export async function applyTpcAction(
       note: `tpc-bulk: ${row.action} via correction CSV`.slice(0, 500),
     });
     if (historyError) {
-      failures.push({ id, name: row.business_name, error: `History write failed: ${historyError}` });
+      failures.push({
+        id,
+        name: row.business_name,
+        error: `History write failed: ${historyError}`,
+      });
       continue;
     }
 

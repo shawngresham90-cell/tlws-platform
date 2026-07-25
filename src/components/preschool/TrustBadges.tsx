@@ -15,7 +15,10 @@ export function TrustBadges({ className = '' }: { className?: string }) {
   return (
     <ul className={`flex flex-wrap gap-x-6 gap-y-2 ${className}`}>
       {BADGES.map((b) => (
-        <li key={b.label} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
+        <li
+          key={b.label}
+          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted"
+        >
           <span aria-hidden="true">{b.icon}</span>
           {b.label}
         </li>

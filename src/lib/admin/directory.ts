@@ -79,9 +79,7 @@ function applyFilters<T extends { eq: (c: string, v: unknown) => T; or: (s: stri
   if (filters.featured) out = out.eq('is_featured', true);
   const q = sanitizeSearchTerm(filters.q ?? '');
   if (q) {
-    out = out.or(
-      `name.ilike.%${q}%,city.ilike.%${q}%,zip.ilike.%${q}%,interstate.ilike.%${q}%`,
-    );
+    out = out.or(`name.ilike.%${q}%,city.ilike.%${q}%,zip.ilike.%${q}%,interstate.ilike.%${q}%`);
   }
   return out;
 }

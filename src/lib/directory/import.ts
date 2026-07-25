@@ -71,9 +71,7 @@ function asBool(v: string | undefined): boolean {
 /** Category cell accepts the display title ("Truck Parking") or the slug. */
 function resolveCategory(value: string): string | null {
   const v = value.trim().toLowerCase();
-  const hit = DIRECTORY_CATEGORIES.find(
-    (c) => c.slug === v || c.title.toLowerCase() === v,
-  );
+  const hit = DIRECTORY_CATEGORIES.find((c) => c.slug === v || c.title.toLowerCase() === v);
   return hit?.slug ?? null;
 }
 

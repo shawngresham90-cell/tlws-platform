@@ -22,7 +22,10 @@ export function FaqItem({ question, answer }: { question: string; answer: string
       }}
     >
       <summary className="cursor-pointer list-none px-5 py-4 font-display text-lg uppercase tracking-wide text-ink transition-colors hover:text-signal [&::-webkit-details-marker]:hidden">
-        <span aria-hidden="true" className="mr-2 inline-block text-signal transition-transform group-open:rotate-90">
+        <span
+          aria-hidden="true"
+          className="mr-2 inline-block text-signal transition-transform group-open:rotate-90"
+        >
           ›
         </span>
         {question}

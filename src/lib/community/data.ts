@@ -111,9 +111,9 @@ export async function getRecentApprovedReviews(limit = 20): Promise<ApprovedRevi
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error || !data) return [];
-    return (data as unknown as ReviewRow[]).map(toApproved).filter((r): r is ApprovedReview =>
-      Boolean(r),
-    );
+    return (data as unknown as ReviewRow[])
+      .map(toApproved)
+      .filter((r): r is ApprovedReview => Boolean(r));
   } catch {
     return [];
   }
@@ -249,9 +249,9 @@ export async function getApprovedReviewsForLocation(
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error || !data) return [];
-    return (data as unknown as ReviewRow[]).map(toApproved).filter((r): r is ApprovedReview =>
-      Boolean(r),
-    );
+    return (data as unknown as ReviewRow[])
+      .map(toApproved)
+      .filter((r): r is ApprovedReview => Boolean(r));
   } catch {
     return [];
   }

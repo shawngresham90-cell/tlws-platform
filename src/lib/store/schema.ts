@@ -39,7 +39,12 @@ export function productSchema(p: StoreProduct): object {
     };
   }
   // Only ever emit a rating the owner has actually verified from the listing.
-  if (hasRating && hasReviewCount && typeof p.rating === 'number' && typeof p.reviewCount === 'number') {
+  if (
+    hasRating &&
+    hasReviewCount &&
+    typeof p.rating === 'number' &&
+    typeof p.reviewCount === 'number'
+  ) {
     base.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: p.rating.toFixed(1),

@@ -41,15 +41,14 @@ async function loadTop(): Promise<{ enabled: boolean; rows: { id: string; views:
   }
 }
 
-async function namesFor(ids: string[]): Promise<Map<string, { name: string; detailSlug: string | null }>> {
+async function namesFor(
+  ids: string[],
+): Promise<Map<string, { name: string; detailSlug: string | null }>> {
   const out = new Map<string, { name: string; detailSlug: string | null }>();
   if (!ids.length) return out;
   try {
     const supabase = createAdminClient();
-    const { data } = await supabase
-      .from('locations')
-      .select('id, name, detail_slug')
-      .in('id', ids);
+    const { data } = await supabase.from('locations').select('id, name, detail_slug').in('id', ids);
     for (const r of (data ?? []) as { id: string; name: string; detail_slug: string | null }[]) {
       out.set(r.id, { name: r.name, detailSlug: r.detail_slug });
     }
@@ -65,10 +64,12 @@ export default async function PopularAdminPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-2xl uppercase text-ink">Most viewed (last {WINDOW_DAYS} days)</h1>
+      <h1 className="font-display text-2xl uppercase text-ink">
+        Most viewed (last {WINDOW_DAYS} days)
+      </h1>
       <p className="mt-2 text-sm text-muted">
-        Aggregate view counts from the privacy-preserving foundation (no personal data). Admin-only —
-        no public ranking ships until the data is sufficient and that call is made deliberately.
+        Aggregate view counts from the privacy-preserving foundation (no personal data). Admin-only
+        — no public ranking ships until the data is sufficient and that call is made deliberately.
       </p>
 
       {!enabled ? (
@@ -96,11 +97,14 @@ export default async function PopularAdminPage() {
                 <span className="text-ink">
                   <span className="mr-2 text-muted">{i + 1}.</span>
                   {meta?.detailSlug ? (
-                    <Link href={detailHref(meta.detailSlug)} className="text-signal hover:underline">
+                    <Link
+                      href={detailHref(meta.detailSlug)}
+                      className="text-signal hover:underline"
+                    >
                       {meta.name}
                     </Link>
                   ) : (
-                    meta?.name ?? r.id
+                    (meta?.name ?? r.id)
                   )}
                 </span>
                 <span className="font-semibold text-ink">{r.views}</span>

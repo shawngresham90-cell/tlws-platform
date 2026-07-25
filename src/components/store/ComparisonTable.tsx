@@ -66,7 +66,9 @@ export function ComparisonTable({ products }: { products: StoreProduct[] }) {
                     <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className="p-3 text-ink">{price ?? <span className="text-muted">Coming soon</span>}</td>
+                <td className="p-3 text-ink">
+                  {price ?? <span className="text-muted">Coming soon</span>}
+                </td>
                 <td className="p-3">
                   {live ? (
                     <AmazonCta product={p} placement="comparison" className="px-3 py-1.5 text-xs" />

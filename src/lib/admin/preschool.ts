@@ -58,7 +58,9 @@ export async function getModerationState(): Promise<{
       .order('created_at', { ascending: true }),
     supabase
       .from('preschool_founding_students')
-      .select('id, claim_id, spot_number, display_name, is_anonymous, business_name, website_url, is_published, created_at')
+      .select(
+        'id, claim_id, spot_number, display_name, is_anonymous, business_name, website_url, is_published, created_at',
+      )
       .order('spot_number', { ascending: true, nullsFirst: false }),
   ]);
   const missing = claimsRes.error?.code === '42P01' || studentsRes.error?.code === '42P01';
@@ -71,7 +73,14 @@ export async function getModerationState(): Promise<{
 
 type HistoryEntry = {
   claim_id: string;
-  action: 'approve' | 'reject' | 'publish' | 'unpublish' | 'edit' | 'assign-spot' | 'verify-purchase';
+  action:
+    | 'approve'
+    | 'reject'
+    | 'publish'
+    | 'unpublish'
+    | 'edit'
+    | 'assign-spot'
+    | 'verify-purchase';
   changed_fields?: Record<string, unknown>;
   note?: string;
 };

@@ -1,8 +1,5 @@
 import { ImageResponse } from 'next/og';
-import {
-  FOUNDING_STUDENT_CAPACITY,
-  PRESCHOOL_PRICE_LABEL,
-} from '@/lib/preschool/constants';
+import { FOUNDING_STUDENT_CAPACITY, PRESCHOOL_PRICE_LABEL } from '@/lib/preschool/constants';
 
 /**
  * Open Graph / Twitter card for /cdl-pre-school — the first social image on
@@ -30,10 +27,27 @@ export default function OpenGraphImage() {
           fontFamily: 'sans-serif',
         }}
       >
-        <div style={{ display: 'flex', color: '#FFEB00', fontSize: 28, letterSpacing: 6, textTransform: 'uppercase' }}>
+        <div
+          style={{
+            display: 'flex',
+            color: '#FFEB00',
+            fontSize: 28,
+            letterSpacing: 6,
+            textTransform: 'uppercase',
+          }}
+        >
           Trucking Life with Shawn
         </div>
-        <div style={{ display: 'flex', marginTop: 24, fontSize: 96, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            marginTop: 24,
+            fontSize: 96,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            lineHeight: 1,
+          }}
+        >
           CDL Pre-School
         </div>
         <div style={{ display: 'flex', marginTop: 24, fontSize: 36, color: '#A3A3A3' }}>

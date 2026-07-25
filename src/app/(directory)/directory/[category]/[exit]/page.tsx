@@ -84,11 +84,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function ExitPage({
-  params,
-}: {
-  params: { category: string; exit: string };
-}) {
+export default async function ExitPage({ params }: { params: { category: string; exit: string } }) {
   const resolved = await resolveExit(params);
   if (!resolved) notFound();
   const { interstate, exit } = resolved;
