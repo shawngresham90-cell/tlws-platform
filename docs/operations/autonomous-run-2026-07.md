@@ -293,6 +293,33 @@ viewports (was 5 distinct rules / 13 nodes).
 
 ---
 
+## M6 — Knowledge Center search box broke the page layout on small phones
+
+**Problem.** `/knowledge` and `/knowledge/search` scrolled sideways on a 320px
+screen. The Knowledge Center search box is `flex`, with the input `flex-1` and
+the Search button beside it. A flex item defaults to `min-width: auto`, and a
+text input's intrinsic width is ~200px, so the input refused to shrink: the
+button was pushed off-screen and the whole document overflowed.
+
+Measured (production build, Chromium):
+
+| Viewport | `document.scrollWidth` overflow, before |
+| --- | --- |
+| 320 px | **+59 px** |
+| 375 px | **+4 px** |
+
+**Change.** `min-w-0` on the input (the canonical flex fix) and `shrink-0` on
+the button so it keeps its label instead of collapsing.
+
+**After.** A sweep of **36 routes × 7 viewport widths** (320, 360, 375, 414,
+640, 768, 1024) reports **zero horizontal overflow** anywhere.
+
+**Test.** `scripts/test-design-tokens.ts` gains a generic guard: any
+`<input>`/`<select>`/`<textarea>` carrying `flex-1` must also carry `min-w-0`,
+plus explicit checks on the search box itself.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -303,6 +330,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
 | `npm test` | All 52 harnesses passed |
+| 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |
 | axe-core 4.10, 19 routes × {1280×900, 375×812} | 0 violations (was 5 rules / 13 nodes) |

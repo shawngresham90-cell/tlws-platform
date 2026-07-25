@@ -132,6 +132,32 @@ check(
   check('faq: the landmark label points at that id', faq.includes('aria-labelledby={headingId}'));
 }
 
+/* ------------------------------ flex form fields can actually shrink ----- */
+{
+  // A flex item defaults to `min-width: auto`, and a text input's intrinsic
+  // width is ~200px. `flex-1` without `min-w-0` therefore refuses to shrink:
+  // the Knowledge Center search box pushed its Search button off a 320px
+  // screen and scrolled the whole page sideways by 59px.
+  const offenders: string[] = [];
+  for (const file of files.filter((f) => f.endsWith('.tsx'))) {
+    const src = readFileSync(file, 'utf8');
+    for (const m of src.matchAll(/<(input|select|textarea)\b[^>]*>/gs)) {
+      const tag = m[0];
+      if (/\bflex-1\b/.test(tag) && !/\bmin-w-0\b/.test(tag)) {
+        offenders.push(`${relative(ROOT, file)} → <${m[1]} … flex-1> without min-w-0`);
+      }
+    }
+  }
+  check('layout: every flex-1 form field can shrink (min-w-0)', offenders.length === 0, offenders);
+
+  const search = readFileSync(join(ROOT, 'src/components/kc/SearchBox.tsx'), 'utf8');
+  check(
+    'layout: KC search input carries min-w-0',
+    /min-w-0[^"]*flex-1|flex-1[^"]*min-w-0/.test(search),
+  );
+  check('layout: KC search button does not shrink away', search.includes('shrink-0'));
+}
+
 /* --------------------------- in-prose links carry a resting underline ---- */
 {
   const css = readFileSync(join(ROOT, 'src/app/globals.css'), 'utf8');
