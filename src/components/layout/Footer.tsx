@@ -107,10 +107,10 @@ export function Footer() {
           links. Sponsorship never changes directory rankings. Keep the shiny side up. 🚛
         </p>
         <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
-          <Link href="/privacy" className="text-muted hover:text-signal">
+          <Link href="/privacy" className="link-inline text-muted hover:text-signal">
             Privacy Policy
           </Link>
-          <Link href="/sms-terms" className="text-muted hover:text-signal">
+          <Link href="/sms-terms" className="link-inline text-muted hover:text-signal">
             SMS Terms &amp; Conditions
           </Link>
         </p>

@@ -367,7 +367,7 @@ export default async function AcademyPage() {
             plain-English guides on the CDL permit, the pre-trip inspection, DOT medical cards, and
             Hours of Service — all verified against the regs by a 17-year driver. Want the full head
             start — permit knowledge plus the money, family, and lifestyle prep? That’s{' '}
-            <Link href="/cdl-pre-school" className="text-signal underline-offset-4 hover:underline">
+            <Link href="/cdl-pre-school" className="link-inline text-signal">
               CDL Pre-School
             </Link>
             .
@@ -391,7 +391,7 @@ export default async function AcademyPage() {
         <AcademyFaq faqs={FAQS} />
         <p className="mt-6 text-sm text-muted">
           More questions?{' '}
-          <Link href="/academy/faq" className="font-semibold text-signal hover:underline">
+          <Link href="/academy/faq" className="link-inline font-semibold text-signal">
             Read the full Academy FAQ →
           </Link>
         </p>

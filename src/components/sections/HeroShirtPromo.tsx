@@ -23,7 +23,10 @@ const SHIRTS_LEFT = 65;
 
 export function HeroShirtPromo({ className }: { className?: string }) {
   return (
-    <aside
+    // A named <section> rather than <aside>: this placard sits inside the hero
+    // region, and a nested <aside> is not the top-level complementary landmark
+    // that role implies.
+    <section
       aria-label={`Founding Supporter T-shirt — limited release, only ${SHIRTS_LEFT} left`}
       className={cn('placard placard-money w-full max-w-sm p-4 sm:p-5', className)}
     >
@@ -58,6 +61,6 @@ export function HeroShirtPromo({ className }: { className?: string }) {
         Get Yours
         <span className="sr-only"> — opens the store in a new tab</span>
       </a>
-    </aside>
+    </section>
   );
 }

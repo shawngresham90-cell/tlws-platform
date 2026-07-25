@@ -45,15 +45,15 @@ export default function Error({
         </div>
         <p className="mt-8 text-sm text-muted">
           Looking for something specific? Try the{' '}
-          <Link href="/knowledge" className="text-signal underline-offset-4 hover:underline">
+          <Link href="/knowledge" className="link-inline text-signal">
             Knowledge Center
           </Link>
           ,{' '}
-          <Link href="/practice-tests" className="text-signal underline-offset-4 hover:underline">
+          <Link href="/practice-tests" className="link-inline text-signal">
             Practice Tests
           </Link>
           , or the{' '}
-          <Link href="/directory" className="text-signal underline-offset-4 hover:underline">
+          <Link href="/directory" className="link-inline text-signal">
             Directory
           </Link>
           .

@@ -227,6 +227,72 @@ injected when the cycle has room.
 
 ---
 
+## M5 — Accessibility sweep (axe-core, 19 routes × 2 viewports)
+
+Ran axe-core 4.10 (`wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice`) against
+the production build at 1280×900 and 375×812. Findings, all fixed:
+
+### 5a. `bg-asphalt-900` is not a class — serious, and not only cosmetic
+
+The asphalt ramp is `DEFAULT / 600 / 700 / 800`. There is **no 900**, so
+Tailwind emitted no rule at all and every element using it fell back to the
+browser default: **white**. Four occurrences:
+
+| File | Element | Effect |
+| --- | --- | --- |
+| `trip-planner/AccountPanel.tsx` | sign-in email input | `text-ink` on white — axe measured **1.13:1**; what the driver types is invisible |
+| `trip-planner/SavedTripsPanel.tsx` | rename-trip input | same |
+| `directory/SponsorSlot.tsx` | sponsor card | white card inside a dark placard |
+| `admin/directory/sponsors/page.tsx` | admin inputs | same |
+
+All four → `bg-asphalt`, matching every other form input in the codebase
+(`admin/founders/page.tsx`, `NewsletterForm`). Nothing in lint, typecheck, or
+the build complains about a class that matches no rule, so
+`scripts/test-design-tokens.ts` now does — it reads the colour families out of
+`tailwind.config.ts` itself and fails on any `bg-/text-/border-/ring-…` utility
+whose shade the theme does not define. Adding a shade to the config
+automatically permits it.
+
+### 5b. Two `main` landmarks on `/trip-planner`
+
+The page wrapped itself in a second `main` inside the root layout's, producing
+three violations (`landmark-no-duplicate-main`, `landmark-main-is-top-level`,
+`landmark-unique`). Now a plain wrapper.
+
+### 5c. `link-in-text-block` — links indistinguishable without colour
+
+Sodium amber measures **1.25:1** against muted body copy (3:1 is the floor for
+colour carrying the signal alone) and the links had `hover:underline`, i.e. no
+underline at rest. The footer's Privacy Policy / SMS Terms links were worse —
+`text-muted`, exactly the colour of the sentence around them.
+
+Added a `.link-inline` utility (resting underline, same shape as the existing
+`.legal-prose a` rule) and applied it to the eight links that genuinely sit
+inside running text, plus the two footer legal links. Standalone links (cards,
+nav, link lists) are not "in a text block" and keep the hover-only treatment.
+
+### 5d. `heading-order` on `/practice-tests`
+
+`TestCard` and the two saved-work cards used `h3` directly under the page `h1`.
+Both are the first level under the `h1`, so both are now `h2` — styling is
+unchanged (explicit classes, not heading defaults).
+
+### 5e. Duplicate DOM ids on `/academy/faq`
+
+`AcademyFaq` hard-coded `id="faq-heading"`, and the FAQ page renders one block
+per topic group — four elements sharing one id, and four landmarks sharing one
+accessible name. The id is now derived from the block's heading.
+
+### 5f. `<aside>` nested inside the hero region
+
+`HeroShirtPromo` used `<aside>`, which claims a top-level complementary
+landmark it is not. Now a named `<section>`; the accessible name is unchanged.
+
+**Result:** `axe-core` reports **0 violations** across all 19 routes at both
+viewports (was 5 distinct rules / 13 nodes).
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -236,9 +302,10 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 51 harnesses passed |
+| `npm test` | All 52 harnesses passed |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |
+| axe-core 4.10, 19 routes × {1280×900, 375×812} | 0 violations (was 5 rules / 13 nodes) |
 
 ## Known limitations
 

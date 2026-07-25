@@ -28,7 +28,7 @@ export async function SponsorSlot({ className, ...ctx }: SponsorContext & { clas
               href={s.url}
               target="_blank"
               rel={SPONSOR_REL}
-              className="flex items-start gap-3 rounded-card border border-line bg-asphalt-900 p-3 transition-colors hover:border-signal"
+              className="flex items-start gap-3 rounded-card border border-line bg-asphalt p-3 transition-colors hover:border-signal"
             >
               {s.logo && (
                 <span aria-hidden className="text-2xl leading-none">

@@ -91,6 +91,16 @@
   .legal-prose strong {
     @apply font-semibold text-ink;
   }
+  /* WCAG 1.4.1 — a link sitting INSIDE a block of running text has to be
+     distinguishable without relying on colour. Sodium amber measures 1.25:1
+     against muted body copy (3:1 is the floor for colour alone), and the
+     footer's legal links are the same colour as the sentence around them, so
+     both carried no signal at all until hover. Links in running text use this;
+     standalone links (cards, nav, link lists) are not "in a text block" and
+     keep the hover-only treatment. */
+  .link-inline {
+    @apply underline underline-offset-4;
+  }
   /* Film grain — SVG data-URI (zero network requests), decorative only.
      Apply to an absolutely-positioned aria-hidden div; opacity stays ≤ .06
      so text contrast is never affected. */

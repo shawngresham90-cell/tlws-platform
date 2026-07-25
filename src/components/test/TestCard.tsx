@@ -30,9 +30,11 @@ export function TestCard({
           </span>
         )}
       </div>
-      <h3 className="mt-4 font-display text-xl uppercase text-ink group-hover:text-signal">
+      {/* h2: these cards are the first level under the page h1 — an h3 here
+          skipped a level for screen-reader heading navigation. */}
+      <h2 className="mt-4 font-display text-xl uppercase text-ink group-hover:text-signal">
         {test.title}
-      </h3>
+      </h2>
       <p className="mt-2 flex-1 text-sm text-muted">{test.shortDescription}</p>
       <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-signal">
         {live

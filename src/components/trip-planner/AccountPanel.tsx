@@ -13,7 +13,7 @@ import type { AuthStatus, SyncStatus } from './useCloudSync';
 
 const card = 'mt-6 rounded-card border border-line bg-asphalt-800 p-4';
 const input =
-  'w-full rounded-card border border-line bg-asphalt-900 px-4 py-3 text-base text-ink ' +
+  'w-full rounded-card border border-line bg-asphalt px-4 py-3 text-base text-ink ' +
   'focus:border-signal focus:outline-none';
 const btnPrimary =
   'min-h-[44px] rounded-card bg-signal px-4 py-3 text-sm font-semibold uppercase tracking-wide ' +

@@ -88,7 +88,7 @@ export default async function KnowledgeHome() {
         <Container>
           <p className="text-sm text-muted">
             Reading up before you roll?{' '}
-            <Link href="/store" className="font-semibold text-signal hover:underline">
+            <Link href="/store" className="link-inline font-semibold text-signal">
               The Trucking Life Store
             </Link>{' '}
             rounds up the road-tested gear that goes with the guides — dash cams, bunk upgrades, and

@@ -136,7 +136,7 @@ export default function FaqPage() {
         <div className="max-w-2xl">
           <p className="text-muted">
             Looking for free trucking and CDL guides?{' '}
-            <Link href="/knowledge" className="font-semibold text-signal hover:underline">
+            <Link href="/knowledge" className="link-inline font-semibold text-signal">
               Visit the Knowledge Center →
             </Link>
           </p>
