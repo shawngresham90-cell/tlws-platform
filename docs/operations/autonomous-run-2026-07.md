@@ -320,6 +320,46 @@ plus explicit checks on the search box itself.
 
 ---
 
+## M7 — `/directory/parking` shipped twice in the sitemap
+
+**Problem.** `sitemap.xml` carried 170 URLs, one of them duplicated:
+
+```
+$ node sitemap-check.mjs
+sitemap entries: 170
+duplicates: 1 [ [ 'https://truckinglifewithshawn.com/directory/parking', 2 ] ]
+non-200 sitemap entries: 0
+```
+
+`/directory/parking` is the `parking` category's `customHref`, so the
+`DIRECTORY_CATEGORIES` loop already emitted it. It was then added a second time
+to the hand-maintained top-level path list (whose comment claims those paths
+"had no sitemap entry" — true for the other eight, not for this one).
+
+**Change.** Removed the redundant entry, and — because entries come from a
+static list, four registries, and two database queries, so any of them can
+collide again — the generator now dedupes by URL before returning, first writer
+wins.
+
+**Test.** `scripts/test-sitemap.ts` (21 checks) runs the generator offline (its
+Supabase reads are already inside a try/catch, so it yields the static entries).
+Asserts no duplicate URL, `/directory/parking` exactly once, every URL on the
+canonical origin with no query/fragment/trailing slash, priorities in range,
+both `noindex` practice-test tools excluded, no `/admin`, `/api`, or `/login`
+URL listed, and every directory category reachable.
+
+Both layers were verified to bite: with the dedupe removed **and** the duplicate
+reinstated, the harness fails on exactly the original defect
+(`every URL appears exactly once → [/directory/parking, 2]`); with the dedupe in
+place, a reinstated duplicate is absorbed.
+
+Also confirmed clean, no change needed: all 170 sitemap URLs answer 200; every
+page's JSON-LD parses, and `/academy/cdl-school-dalton-ga`'s two
+`EducationalOrganization` nodes are correctly disambiguated by `@id` +
+`parentOrganization`; `robots.txt` disallows `/admin`, `/api`, `/login`.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.
@@ -329,7 +369,7 @@ Every command below was run on this branch, from a clean `npm ci`.
 | `npm run format:check` | All matched files use Prettier code style |
 | `npm run lint` | No ESLint warnings or errors |
 | `npm run typecheck` | pass |
-| `npm test` | All 52 harnesses passed |
+| `npm test` | All 53 harnesses passed |
 | 36 routes × 7 viewport widths (320–1024) | 0 horizontal overflow |
 | `npm run build` | pass |
 | `WARN_ONLY_PREFIXES=/knowledge,/directory node scripts/crawl-links.mjs http://localhost:3000` | No broken internal links (3 warn-only 404s under `/knowledge`, all DB-backed and expected without a database) |
