@@ -9,6 +9,7 @@ import {
   mapRow,
   auditRows,
   disposeRows,
+  normalizeAddressForMatch,
   OTHER_BRANDS,
   type ProdRow,
   type WorkbookRow,
@@ -278,6 +279,121 @@ check(
   'dispose: deterministic',
   JSON.stringify(disposeRows(auditRows([{ ...dbase, Location: 'TA Somewhere' }], dprod), dmap)) ===
     JSON.stringify(disposeRows(auditRows([{ ...dbase, Location: 'TA Somewhere' }], dprod), dmap)),
+);
+
+/* ---- regression: abbreviation-aware address matching (caught 29 real duplicates) ---- */
+check(
+  'addr-match: "2301 W. Lucas Street" == "2301 W Lucas St"',
+  normalizeAddressForMatch('2301 W. Lucas Street') === normalizeAddressForMatch('2301 W Lucas St'),
+);
+check(
+  'addr-match: Highway/Hwy equivalent',
+  normalizeAddressForMatch('3014 Paxville Highway') ===
+    normalizeAddressForMatch('3014 Paxville Hwy'),
+);
+check(
+  'addr-match: Road/Rd equivalent',
+  normalizeAddressForMatch('153 Wiggins Road') === normalizeAddressForMatch('153 Wiggins Rd'),
+);
+check(
+  'addr-match: directional West/W equivalent',
+  normalizeAddressForMatch('980 West South Blvd') ===
+    normalizeAddressForMatch('980 W South Boulevard'),
+);
+check(
+  'addr-match: genuinely different addresses stay different',
+  normalizeAddressForMatch('185 S Port Pkwy') !== normalizeAddressForMatch('185 Dungeness Dr'),
+);
+
+const abbrProd: ProdRow[] = [
+  {
+    id: 'a1',
+    name: 'TA Somewhere #010',
+    address: '2510 Burr St',
+    city: 'Gary',
+    state: 'IN',
+    lat: null,
+    lng: null,
+    type: 'truck_stop',
+  },
+];
+const abbrRes = auditRows(
+  [
+    {
+      Brand: 'TA',
+      'Site ID': 'A',
+      Location: 'TA Somewhere',
+      Address: '2510 Burr Street',
+      City: 'Gary',
+      State: 'Indiana',
+      Zipcode: '46406',
+      Latitude: 41.6,
+      Longitude: -87.3,
+      'Total Diesel Dispensers/Lanes': 8,
+    },
+  ],
+  abbrProd,
+);
+check(
+  'addr-match: abbreviation variant is caught as probable-duplicate (not net-new)',
+  abbrRes[0].verdict === 'probable-duplicate' &&
+    abbrRes[0].reasons.includes('same-address|city|state'),
+  abbrRes[0].reasons,
+);
+
+/* ---- regression: same-category preference (a co-located CAT Scale must not mask the travel centre) ---- */
+const prefProd: ProdRow[] = [
+  {
+    id: 'c1',
+    name: 'CAT Scale at TA Somewhere',
+    address: '',
+    city: 'Gary',
+    state: 'IN',
+    lat: null,
+    lng: null,
+    type: 'other',
+  },
+  {
+    id: 'c2',
+    name: 'TA Somewhere #010',
+    address: '999 Different Rd',
+    city: 'Gary',
+    state: 'IN',
+    lat: null,
+    lng: null,
+    type: 'truck_stop',
+  },
+];
+const prefRes = auditRows(
+  [
+    {
+      Brand: 'TA',
+      'Site ID': 'P',
+      Location: 'TA Somewhere Else',
+      Address: '1 Unmatched Rd',
+      City: 'Gary',
+      State: 'Indiana',
+      Zipcode: '46406',
+      Latitude: 41.6,
+      Longitude: -87.3,
+      'Total Diesel Dispensers/Lanes': 8,
+    },
+  ],
+  prefProd,
+);
+check(
+  'same-category preference: matches the truck_stop, not the co-located CAT Scale',
+  prefRes[0].matchedId === 'c2',
+  prefRes[0].matchedName,
+);
+const prefDisposed = disposeRows(
+  prefRes,
+  new Map(prefProd.map((p) => [p.id, { ...p, blanks: [] }])),
+);
+check(
+  'same-category preference: routes to manual review, not keep-separate',
+  prefDisposed[0].disposition === 'manual-review-merge',
+  prefDisposed[0].disposition,
 );
 
 console.log(`\nta-petro-audit: ${passed} passed, ${failed} failed`);

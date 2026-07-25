@@ -150,6 +150,54 @@ function looksLikeSameOperator(prodName: string): boolean {
   return TA_TOKENS.some((t) => n.includes(t.trim() === 'ta' ? ' ta ' : t));
 }
 
+/**
+ * Street-type / directional abbreviation expansion used ONLY for duplicate
+ * DETECTION. This does not replace or alter the canonical `normalizeText` — it
+ * is an extra matching heuristic layered on top, because "2301 W. Lucas Street"
+ * and "2301 W Lucas St" are the same address but differ under plain
+ * normalization. Both forms collapse to the same short canonical token.
+ */
+const ADDR_ABBREV: Record<string, string> = {
+  street: 'st',
+  avenue: 'ave',
+  road: 'rd',
+  highway: 'hwy',
+  parkway: 'pkwy',
+  drive: 'dr',
+  boulevard: 'blvd',
+  lane: 'ln',
+  court: 'ct',
+  circle: 'cir',
+  place: 'pl',
+  square: 'sq',
+  terrace: 'ter',
+  trail: 'trl',
+  expressway: 'expy',
+  freeway: 'fwy',
+  route: 'rte',
+  turnpike: 'tpke',
+  crossing: 'xing',
+  north: 'n',
+  south: 's',
+  east: 'e',
+  west: 'w',
+  northeast: 'ne',
+  northwest: 'nw',
+  southeast: 'se',
+  southwest: 'sw',
+  suite: 'ste',
+  mount: 'mt',
+  saint: 'st',
+};
+
+export function normalizeAddressForMatch(v: string): string {
+  return normalizeText(v ?? '')
+    .split(' ')
+    .map((t) => ADDR_ABBREV[t] ?? t)
+    .filter(Boolean)
+    .join(' ');
+}
+
 const PROXIMITY_MILES = 0.25;
 
 /**
@@ -167,7 +215,11 @@ export function auditRows(wbRows: WorkbookRow[], prod: ProdRow[]): MappedRow[] {
   for (const p of prod) {
     byDupKey.set(importDupKey(p.name, p.city, p.state), p);
     if (p.address) {
-      byAddr.set(`${normalizeText(p.address)}|${normalizeText(p.city)}|${p.state}`, p);
+      // Prefer a same-category (truck_stop) row when two production rows share
+      // an address, so a co-located CAT Scale never masks the real travel centre.
+      const key = `${normalizeAddressForMatch(p.address)}|${normalizeText(p.city)}|${p.state}`;
+      const prev = byAddr.get(key);
+      if (!prev || (prev.type !== 'truck_stop' && p.type === 'truck_stop')) byAddr.set(key, p);
     }
   }
   const prodWithCoords = prod.filter((p) => p.lat != null && p.lng != null);
@@ -211,7 +263,7 @@ export function auditRows(wbRows: WorkbookRow[], prod: ProdRow[]): MappedRow[] {
       } else {
         // ---- signal 2: same normalized address+city+state
         const addrHit = m.address
-          ? byAddr.get(`${normalizeText(m.address)}|${normalizeText(m.city)}|${m.state}`)
+          ? byAddr.get(`${normalizeAddressForMatch(m.address)}|${normalizeText(m.city)}|${m.state}`)
           : undefined;
         // ---- signal 3: coordinate proximity to a same-operator production row
         let near: ProdRow | undefined;
@@ -228,12 +280,16 @@ export function auditRows(wbRows: WorkbookRow[], prod: ProdRow[]): MappedRow[] {
           }
         }
         // ---- signal 4: same-operator name in same city+state
-        const sameCityOperator = prod.find(
+        // Prefer a same-category (truck_stop) candidate; only fall back to a
+        // different-category co-located row when no travel-centre row exists.
+        const cityCandidates = prod.filter(
           (p) =>
             p.state === m.state &&
             normalizeText(p.city) === normalizeText(m.city) &&
             looksLikeSameOperator(p.name),
         );
+        const sameCityOperator =
+          cityCandidates.find((p) => p.type === 'truck_stop') ?? cityCandidates[0];
 
         if (addrHit) {
           verdict = 'probable-duplicate';

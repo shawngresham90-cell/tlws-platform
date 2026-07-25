@@ -361,3 +361,199 @@ Tests **41 passed, 0 failed**; `tsc` clean; prettier clean.
    transactional, with rollback).
 
 **Sapp Bros and the Pilot-network file remain not started**, as instructed.
+
+---
+
+# Insert plan for final authorization (2026-07-25) — REVISED COUNT
+
+**Nothing applied. This is the pre-write plan you asked to see. No insert, no
+update, no field overwritten, `geo` not populated, PR #177 not merged.**
+
+## ⚠️ Two corrections to the numbers you approved
+
+**1. The 6 held rows were never inside the 333.** Verified against the files:
+`import-ready` contained 0 Goasis/Thorntons rows and 0 manual-review rows
+(brands were TA 181 / Petro 74 / TA Express 78). The 354 split as
+333 + 6 + 8 + 7. So `333 − 6 = 327` double-subtracts, and 327 would have meant
+dropping 6 legitimate truck stops chosen arbitrarily.
+
+**2. More importantly — the 333 itself was wrong.** Preparing this plan I found
+two defects in my own duplicate matcher and fixed them:
+
+- **Street-abbreviation blindness.** The canonical `normalizeText` does not
+  expand abbreviations, so `2301 W. Lucas Street` ≠ `2301 W Lucas St`. Genuine
+  same-address pairs were missed. Fixed with an additional
+  `normalizeAddressForMatch` heuristic used **only for duplicate detection** —
+  the canonical `normalizeText` is unchanged.
+- **Co-located CAT Scale masking the travel centre.** The same-operator-in-city
+  search returned the *first* match, often a `CAT Scale at …` (`type=other`)
+  row, instead of the actual `truck_stop` record. Now a same-category match is
+  always preferred.
+
+Together these caught **29 additional duplicates** that the earlier 333 would
+have inserted — for example `TA Gary` vs existing `TA Gary #010 (Burr Street)`
+at an identical address, `TA Elkton` vs `TA Elkton #019`, `Petro Kenly` vs
+`Petro Kenly 95 #395`, and `TA Florence` vs `Petro / TA Florence (#195)`.
+Regression tests now cover both fixes.
+
+### Corrected dispositions (354 rows)
+
+| Disposition | Was | **Now** |
+|---|--:|--:|
+| Net-new | 303 | **303** |
+| Keep separate (co-located, different category) | 30 | **1** |
+| Manual review — merge candidate | 8 | **37** |
+| Existing match (importer drops) | 7 | **7** |
+| Other, pending category | 6 | **6** |
+| **Insert-eligible total** | ~~333~~ | **304** |
+
+**The verified safe insert count is 304**, not 327 or 333. I have not inserted
+anything; please confirm 304 in your final authorization.
+
+## Decisions applied
+
+- **No "Fuel Stops" category created.** Agreed — mapping it to `dbType: 'other'`
+  would sweep in the 364 existing `other` rows (207 cat-scales, 101 hotels,
+  56 truck-washes). The 6 Goasis/Thorntons rows are **held** in
+  `ta-petro-other-pending-category.csv` until a genuine `fuel_stop` subtype
+  exists. Coordinates and fuel details preserved.
+- **All manual-review rows excluded** — now 37, not 8.
+- **`Weigh Scale` never promoted to `CAT Scale`** — verified 0 assertions;
+  `scale_present` retained as evidence on 308 rows.
+
+## 1. Final per-state counts — 304 rows across 43 states
+
+| ST | Insert |
+|---|--:|
+| AL | 8 |
+| AR | 3 |
+| AZ | 10 |
+| CA | 14 |
+| CO | 9 |
+| CT | 3 |
+| FL | 5 |
+| GA | 8 |
+| IA | 6 |
+| ID | 2 |
+| IL | 12 |
+| IN | 10 |
+| KS | 10 |
+| KY | 3 |
+| LA | 12 |
+| MI | 4 |
+| MN | 4 |
+| MO | 13 |
+| MS | 4 |
+| MT | 2 |
+| NC | 3 |
+| ND | 5 |
+| NE | 3 |
+| NH | 1 |
+| NJ | 4 |
+| NM | 9 |
+| NV | 10 |
+| NY | 7 |
+| OH | 14 |
+| OK | 7 |
+| OR | 6 |
+| PA | 14 |
+| RI | 1 |
+| SC | 5 |
+| SD | 3 |
+| TN | 2 |
+| TX | 40 |
+| UT | 3 |
+| VA | 5 |
+| WA | 4 |
+| WI | 7 |
+| WV | 4 |
+| WY | 5 |
+
+**Total: 304.** (MD drops to 0 — all 3 Maryland rows are now manual review.)
+Largest net gains are states with no coverage today: **TX 40, CA 14, PA 14,
+IL 12, LA 12, MO 13, AZ/KS/NV 10**.
+
+## 2. Transaction / rollback mechanism
+
+Per state, three artefacts (from `buildInsertPlan`, M5 harness):
+
+1. **Before-count** — `select count(*) from public.locations where state=$ and deleted_at is null;`
+   captured and recorded before the state's transaction.
+2. **Insert transaction** — `begin;` → one `INSERT` per row → a **slug-collision
+   guard** that `raise exception`s (aborting that state) if any incoming slug
+   already exists for the state → `commit;`. **Insert-only: the plan contains no
+   `UPDATE`**, so no existing row can be touched.
+3. **Rollback** — `delete from public.locations where source=$batch and state=$ and slug in (…);`
+   removing exactly this batch's rows.
+
+State-by-state isolation: one state's failure aborts only that state.
+After each state, the before-count must equal `before + inserted`.
+
+### ⚠️ Required fix before execution
+
+`prepareImport` hard-codes **`source = 'csv-import'`**, but the rollback keys on
+`source = 'ta-petro-locmaster-20260725'`. **As generated, the rollback would
+match zero rows and silently do nothing.** Before any authorized run, the insert
+step must stamp `source` with the batch label (preferred — it also makes the
+batch identifiable later). I have not changed `prepareImport`, since that is a
+shared production module and the change belongs in the authorized write step.
+
+Sample for the first state:
+
+```sql
+-- BEFORE count (AL)
+select count(*) from public.locations where state='AL' and deleted_at is null;
+```
+
+```sql
+-- INSERT (AL, 8 rows) — INSERT-ONLY, do NOT run without separate authorization
+...
+-- ROLLBACK (AL) — removes exactly this batch's inserted rows
+begin;
+delete from public.locations where source='ta-petro-locmaster-20260725' and state='AL' and slug in ('ta-tuscaloosa', 'ta-mobile', 'petro-bucksville', 'petro-gadsden', 'petro-shorter', 'ta-lincoln', 'ta-express-birmingham', 'ta-robertsdale');
+commit;
+```
+
+## 3. Duplicate recheck (run against live 1,252 just now)
+
+```
+csv rows 304 | insertable 304 | dropped as duplicate 0 | skipped 0 | errors 0
+coordinates preserved 304/304 | 'CAT Scale' asserted 0
+within-state slug collisions 0
+```
+
+Two slugs (`ta-madison`, `ta-mt-vernon`) repeat across the batch, but in
+**different states** (GA/WI and IL/MO). The live unique key is
+`(type, state, city, slug)`, so real collisions are **0** — verified, not assumed.
+
+**The recheck must be re-run immediately before execution**, since production may
+change between now and then.
+
+## 4. Exact columns to be inserted — 29
+
+Produced by the canonical `toRow()` plus the importer's three additions
+(`type`, `slug`, `source`). No column outside this list is written; **`geo` is
+never written**.
+
+| Column | Value on this batch |
+|---|---|
+| `name`, `address`, `city`, `state`, `zip`, `phone` | from the operator workbook |
+| `lat`, `lng` | **operator-supplied coordinates, 304/304 rows** |
+| `description` | composed from parking/showers/bays/diesel/food/wash + "Weigh scale on site (brand unconfirmed)" |
+| `amenities` | canonical subset only — Showers/Food/Fuel/Laundry/Repair. **Never** Wi-Fi, Restrooms, Security or CAT Scale |
+| `parking_spaces` | workbook truck-parking count |
+| `category_slug` / `type` | `truck-stops` / `truck_stop` (single value across the batch) |
+| `slug` | `slugify(name)` |
+| `source` | ⚠️ currently `csv-import` — must be the batch label (see above) |
+| `is_published` | **false** on all rows — imports land unpublished for review |
+| `is_indexable`, `is_featured` | false on all rows |
+| `free_parking`, `paid_parking`, `reserved_parking`, `overnight_parking` | false (workbook has no such fields) |
+| `website`, `interstate`, `exit_number`, `tpc_url`, `affiliate_code`, `image_url`, `verified_at` | NULL on all rows (not supplied) |
+
+## Awaiting your separate final authorization
+
+Confirm the **304** count (or tell me to adjust), approve stamping `source` with
+the batch label, and I will then — and only then — execute state by state with
+before/after counts and the rollback file in hand.
+
+**Sapp Bros and the Pilot-network file remain not started.**
