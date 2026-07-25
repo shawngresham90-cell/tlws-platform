@@ -11,7 +11,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { leadCaptureSchema } from '@/lib/api/schemas';
-import { NewsletterForm, collectUtm } from '@/components/sections/NewsletterForm';
+import { NewsletterForm } from '@/components/sections/NewsletterForm';
+import { currentUrlUtm, leadAttribution } from '@/lib/attribution';
 
 let passed = 0;
 let failed = 0;
@@ -62,9 +63,19 @@ function check(name: string, cond: boolean, detail?: unknown): void {
 
 /* --------------------------------------------------------- UTM collection */
 {
-  const g = globalThis as unknown as { window?: { location: { search: string } } };
+  type FakeStore = { getItem(k: string): string | null; setItem(k: string, v: string): void };
+  const g = globalThis as unknown as {
+    window?: { location: { search: string } };
+    sessionStorage?: FakeStore;
+  };
+  const store = new Map<string, string>();
+  g.sessionStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => void store.set(k, v),
+  };
+
   g.window = { location: { search: '?utm_source=youtube&utm_campaign=Winter&ref=x&page=2' } };
-  const utm = collectUtm();
+  const utm = currentUrlUtm();
   check(
     'utm: utm_* params captured',
     utm.utm_source === 'youtube' && utm.utm_campaign === 'Winter',
@@ -72,11 +83,65 @@ function check(name: string, cond: boolean, detail?: unknown): void {
   check('utm: non-utm params excluded', !('ref' in utm) && !('page' in utm));
 
   g.window = { location: { search: '' } };
-  check('utm: empty query → empty map', Object.keys(collectUtm()).length === 0);
+  check('utm: empty query → empty map', Object.keys(currentUrlUtm()).length === 0);
 
   g.window = { location: { search: '?utm_source=' + 'y'.repeat(500) } };
-  check('utm: values bounded to 200 chars', collectUtm().utm_source.length === 200);
+  check('utm: values bounded to 200 chars', currentUrlUtm().utm_source.length === 200);
+
+  /* The regression this form actually had: reading only the current URL meant
+     a visitor who arrived on a /go/... short link and then navigated to the
+     page holding the form submitted an untagged lead. leadAttribution() reads
+     the session's first touch, so the campaign survives the navigation. */
+  store.set(
+    'tlws-utm-first-touch',
+    JSON.stringify({ utm_source: 'youtube', utm_medium: 'video', utm_campaign: 'academy' }),
+  );
+  g.window = { location: { search: '' } };
+  const carried = leadAttribution();
+  check(
+    'utm: first touch survives navigation to an untagged page',
+    carried.utm_source === 'youtube' && carried.utm_campaign === 'academy',
+    JSON.stringify(carried),
+  );
+
+  /* First touch wins over a later tagged URL (the documented model). */
+  g.window = { location: { search: '?utm_source=facebook' } };
+  check('utm: first touch beats a later tag', leadAttribution().utm_source === 'youtube');
+
+  /* Caller context (the founder tier) rides along and is never dropped. */
+  const withTier = leadAttribution({ founder_tier: 'road-captain' });
+  check(
+    'utm: caller context preserved alongside attribution',
+    withTier.founder_tier === 'road-captain' && withTier.utm_source === 'youtube',
+    JSON.stringify(withTier),
+  );
+
+  /* Storage blocked: fall back to whatever the current URL carries. */
+  delete g.sessionStorage;
+  g.window = { location: { search: '?utm_source=tiktok' } };
+  check(
+    'utm: falls back to the current URL when storage is blocked',
+    leadAttribution().utm_source === 'tiktok',
+  );
+
+  /* The API contract: at most 20 keys, and caller context survives the cap. */
+  g.sessionStorage = {
+    getItem: () =>
+      JSON.stringify(
+        Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`utm_k${i}`, String(i)])),
+      ),
+    setItem: () => {},
+  };
+  const capped = leadAttribution({ founder_tier: 'wheelman' });
+  check(
+    'utm: bounded to 20 keys',
+    Object.keys(capped).length === 20,
+    String(Object.keys(capped).length),
+  );
+  check('utm: caller context survives the 20-key cap', capped.founder_tier === 'wheelman');
+
   delete g.window;
+  delete g.sessionStorage;
 }
 
 /* ------------------------------------------- server-rendered a11y shell */

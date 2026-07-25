@@ -142,6 +142,50 @@ manual.
 
 ---
 
+## M3 — Lead forms dropped the campaign that produced them
+
+**Problem.** `/go/<slug>` short links exist specifically so YouTube arrivals
+segment in analytics — they 302 with
+`utm_source=youtube&utm_medium=video&utm_campaign=<slug>`. `AttributionCapture`
+persists that first touch site-wide, and `ApplyForm` reads it. But:
+
+- `NewsletterForm` — the site's primary email capture — built its `utm` map
+  from `window.location.search` **only**. A driver who arrives on
+  `/go/academy`, reads the page, and then signs up on any untagged page
+  submitted `utm: {}`. The campaign that produced the lead was gone.
+- `BecomeFounderForm` sent `{ founder_tier }` and **no attribution at all**.
+
+Repro (client trace, no database needed):
+
+```
+/go/academy  →  302 /academy?utm_source=youtube&utm_medium=video&utm_campaign=academy
+AttributionCapture stores it in sessionStorage
+visitor clicks "Home"  →  location.search === ''
+collectUtm()  →  {}          ← the lead is stored untagged
+```
+
+**Change.** `src/lib/attribution.ts` gains `currentUrlUtm()` and
+`leadAttribution(extra?)`. `leadAttribution` merges, in precedence order,
+caller context > session first touch > current URL, then enforces the API's
+`utm` contract (≤20 keys, key ≤40, value ≤200) with caller context pinned so it
+can never be the entry dropped by the cap. `NewsletterForm` and
+`BecomeFounderForm` now both post `leadAttribution()`; the founder tier still
+rides along as `utm.founder_tier`.
+
+No schema change, no migration, no new event, no server change — the API
+already accepted this shape and `/admin/leads` already renders it through
+`utmSummary`.
+
+**Tests.** `scripts/test-newsletter.ts` replaces its `collectUtm` block with
+`currentUrlUtm`/`leadAttribution` coverage: first touch survives navigation to
+an untagged page, first touch beats a later tag, caller context is preserved,
+storage-blocked sessions fall back to the current URL, and the 20-key cap keeps
+caller context. `scripts/test-lead-funnel.ts` adds source-level guards that both
+forms post `leadAttribution()` and neither reads `window.location.search`
+directly again.
+
+---
+
 ## Validation
 
 Every command below was run on this branch, from a clean `npm ci`.

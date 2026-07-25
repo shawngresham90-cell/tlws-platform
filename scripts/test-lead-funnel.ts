@@ -10,7 +10,11 @@
  *   npx esbuild scripts/test-lead-funnel.ts --bundle --platform=node --format=cjs \
  *     --alias:@=./src --outfile=/tmp/test-lead-funnel.cjs && node /tmp/test-lead-funnel.cjs
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { segmentFor, utmSummary, LEAD_SOURCES } from '@/lib/leads/funnel';
+
+const src = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 
 let passed = 0;
 let failed = 0;
@@ -67,6 +71,27 @@ check(
   'foreign keys ignored',
   utmSummary({ ref: 'x', foo: 'bar' }) === null,
   utmSummary({ ref: 'x', foo: 'bar' }),
+);
+
+/* ── every lead-capture form sends first-touch attribution ─────────────
+   Reading the current URL alone dropped the campaign the moment a visitor
+   navigated: someone arriving on a /go/... short link and signing up one page
+   later produced an untagged lead, and the founder form sent no attribution at
+   all. Both now go through leadAttribution(). */
+for (const [label, path] of [
+  ['newsletter', 'src/components/sections/NewsletterForm.tsx'],
+  ['founder', 'src/components/community/BecomeFounderForm.tsx'],
+] as const) {
+  const form = src(path);
+  check(`${label} form: posts leadAttribution()`, /utm: leadAttribution\(/.test(form));
+  check(
+    `${label} form: does not read the current URL directly`,
+    !form.includes('window.location.search'),
+  );
+}
+check(
+  'founder form: still carries the selected tier',
+  src('src/components/community/BecomeFounderForm.tsx').includes('founder_tier: tier'),
 );
 
 console.log(`\nlead-funnel: ${passed} passed, ${failed} failed`);

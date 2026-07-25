@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { SmsConsentField } from '@/components/conversion/SmsConsentField';
+import { leadAttribution } from '@/lib/attribution';
 import { FOUNDER_TIERS } from './tiers';
 
 /**
@@ -12,7 +13,8 @@ import { FOUNDER_TIERS } from './tiers';
  * are a later milestone) — this records intent through the existing guarded,
  * Turnstile-protected lead pipeline (`POST /api/lead`, source "founder") so
  * Shawn can follow up personally to arrange the contribution. The selected tier
- * rides along in `utm.founder_tier` (no schema change). Email/SMS stay off.
+ * rides along in `utm.founder_tier` (no schema change), alongside the
+ * session's first-touch campaign attribution. Email/SMS stay off.
  */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
@@ -81,7 +83,7 @@ export function BecomeFounderForm({ siteKey }: { siteKey: string }) {
           sms_consent: smsConsent,
           source: 'founder',
           submission_id: submissionId.current,
-          utm: tier ? { founder_tier: tier } : {},
+          utm: leadAttribution(tier ? { founder_tier: tier } : {}),
           turnstileToken: token,
         }),
       });
