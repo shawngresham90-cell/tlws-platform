@@ -42,6 +42,28 @@ npm run dev          # http://localhost:3000
 | `npm run typecheck`    | `tsc --noEmit`                        |
 | `npm run format`       | Prettier write                        |
 | `npm run format:check` | Prettier check (CI)                   |
+| `npm test`             | Offline test harnesses (see below)     |
+
+## Tests + CI
+
+`scripts/test-*.ts` holds the offline test harnesses — pure, no database, no
+network. Each documents its own `esbuild` invocation in a header comment and
+exits non-zero on failure.
+
+```bash
+npm test                 # every harness
+npm test -- go-links     # only harnesses whose name matches
+```
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`:
+`format:check` → `lint` → `typecheck` → `npm test` → `build` →
+`git diff --exit-code` (which catches drift in the `prebuild`-generated Road
+Ahead manifest). It is offline and read-only — no database, no deploy, no
+secrets.
+
+The other three workflows need a live URL and stay dispatch-only:
+`preview-crawl` (internal-link crawl of a deploy preview — pass the preview URL
+as `base_url`), `preview-smoke`, and `prod-health-check`.
 
 ## Folder structure
 
@@ -68,7 +90,7 @@ src/
     supabase/       browser + server clients (env-only)
     utils/          helpers
 content/            MDX content
-scripts/            content-sync, sitemap-gen, etc.
+scripts/            offline test harnesses (test-*.ts), import validators, tooling
 supabase/           migrations + edge functions
 public/             static assets, fonts
 ```
@@ -78,7 +100,10 @@ public/             static assets, fonts
 - **RLS locked**: anon reads public rows only, zero anon writes. All writes go through
   server routes / Edge Functions.
 - **No secrets in git**: `.env.local` is ignored; `.env.example` ships placeholders only.
-- **Paid links** on the Founders Wall render `rel="sponsored"` (Google-compliant).
+- **Paid links** — every affiliate and store link renders `rel="sponsored"` and
+  opens in a new tab (Google-compliant; enforced by
+  `scripts/test-outbound-links.ts`). `lib/store/amazon.ts` is the only place an
+  Amazon affiliate URL is built, so the associate tag is applied exactly once.
 - **Forms** gate through Cloudflare Turnstile before touching the database.
 
 ## Build order (milestones)

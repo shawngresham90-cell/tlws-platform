@@ -634,6 +634,27 @@ path — an unguarded throwing call inside an effect — not from a live repro.
 
 ---
 
+## M14 — README caught up with the changed behaviour
+
+The README's Scripts table predated `npm test`, and nothing in it mentioned CI —
+so the workflow added in M2, the harness suite it runs, and the dispatch-only
+nature of the three preview workflows were all undiscoverable from the front
+door. Added a **Tests + CI** section covering the harness convention, the
+`npm test -- <filter>` form, exactly what `ci.yml` runs and in what order, and
+which workflows need a live URL.
+
+Also corrected two statements that the code had moved past:
+
+- *"Paid links on the Founders Wall render `rel="sponsored"`"* — as of M10 that
+  is true of **every** affiliate and store link, enforced by
+  `scripts/test-outbound-links.ts`, with `lib/store/amazon.ts` the single place
+  an Amazon URL is built.
+- The `scripts/` folder description said "content-sync, sitemap-gen, etc.",
+  neither of which exists there; it is the offline harnesses, the import
+  validators, and tooling.
+
+---
+
 ## Checked and found clean (no change made)
 
 Recording these so the next pass does not re-investigate them.
