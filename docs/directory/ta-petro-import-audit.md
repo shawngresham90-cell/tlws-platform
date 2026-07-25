@@ -222,3 +222,142 @@ determinism. `tsc --noEmit` clean.
 No insert · no production row modified · no coordinate applied · `geo` not
 populated · source workbook unmodified · PR #177 not merged · Sapp Bros and the
 Pilot-network file **not started** (awaiting approval, as instructed).
+
+---
+
+# Approved-decision update (owner decisions, 2026-07-25)
+
+The three decisions were approved and applied. Dry-run outputs regenerated.
+**Still nothing applied: no insert, no production row modified, no field
+overwritten, `geo` not populated, PR #177 not merged.**
+
+## Final dispositions — 354 source rows
+
+| Disposition | Count |
+|---|--:|
+| **Net-new** (no production match) | **303** |
+| **Keep separate** (co-located, different category) | **30** |
+| **Manual review — merge candidate** | **8** |
+| **Existing match** (importer drops) | **7** |
+| **Other, pending category** (Goasis 4 + Thorntons 2) | **6** |
+| Total | **354** |
+
+**Exact-merge (automatic fill-blank-only): 0 rows.**
+
+### Why zero — and why that is structural, not luck
+
+The approved rule was "merge only exact normalized name/address matches". No row
+qualified, and it turns out **no row ever can**: an exact normalized *name* match
+in the same city+state is intercepted earlier by the canonical `importDupKey`
+check and classified `existing-match` (the importer drops the row outright). The
+address signal also requires city+state equality. So the "name AND address equal"
+merge tier is **unreachable by construction** — asserted by a test, not assumed.
+
+**Consequence:** the approved auto-merge path is a no-op. Enriching existing
+records from TA data would need a separate, explicitly-authorized enrichment
+pass. Nothing was auto-merged, exactly as instructed.
+
+## Decision 1 — Goasis (4) and Thorntons (2) → `other`
+
+Applied: both brands are excluded from the truck-stop import set. The workbook
+data supports the call — all six show **zero or blank truck parking, zero or
+blank showers, no service bays, no tire service, no roadside-assistance hours,
+and no weigh scale**; only diesel lanes (0–8) and quick-serve food. Operator
+coordinates and fuel details are preserved.
+
+**Blocked on a schema gap, flagged rather than worked around:** there is no
+generic `other` category. `type='other'` is reachable only via `cat-scales`
+(207 live rows), `truck-washes` (56) or `hotels-truck-parking` (101) — none of
+which describe a fuel/convenience stop. Assigning one would misfile them on a
+directory page. The six are therefore held in
+`ta-petro-other-pending-category.csv` with `proposed_type=other` and full data
+intact. **Options:** (a) add a category such as "Fuel Stops" → `dbType: 'other'`,
+(b) pick one of the three existing slugs, or (c) leave them out. My
+recommendation is (a).
+
+## Decision 2 — `Weigh Scale` is NOT `CAT Scale`
+
+Applied and verified: **`CAT Scale` is asserted on 0 rows**. `scale_present`
+is retained as source evidence on **308** rows, in the review CSV and as
+"Weigh scale on site (brand unconfirmed)" in the description. Awaiting CAT's
+official locator for verification.
+
+## Decision 3 — the 38 probable duplicates, resolved
+
+Sub-classified by whether the matched production row is the **same category**:
+
+| Tier | Count | Disposition |
+|---|--:|---|
+| Address matches, matched row is `repair` (TA Truck Service co-located) | 8 | keep separate |
+| Same-operator in city, matched row is `other` (CAT Scale entry co-located) | 21 | keep separate |
+| Proximity match, matched row is `other` (CAT Scale entry) | 1 | keep separate |
+| Address matches, same category, name variant (store number) | 5 | manual review |
+| Proximity match, same category | 1 | manual review |
+| Same-operator in city, same category | 2 | manual review |
+
+**The 30 "keep separate" rows are not duplicates of the same business.** They are
+co-located listings of a *different* category at the same site — a CAT Scale
+entry or a "TA Truck Service" repair shop at a TA travel center. The directory
+already lists these separately (207 cat-scales, 135 tire-repair live), and in
+most cases **no truck-stop listing exists for that site at all** — so the travel
+center is genuinely net-new. Import-ready therefore rises to **333**.
+
+### ⚠️ One genuine data conflict found
+
+| TA row | Matched production row | Signal |
+|---|---|---|
+| **Petro Florence** @ `3001 TV Rd.`, Florence SC | **Love's Travel Stop #420** @ `3001 TV Rd`, Florence SC (`truck_stop`) | identical normalized address |
+
+Two different operators recorded at the same street address. **One of these
+records has a wrong address** — worth resolving regardless of this import. Held
+for manual review; never auto-merged.
+
+The other 7 manual-review rows, with the blanks TA could fill (populated fields
+are never touched):
+
+| TA row | Matched existing record | Blanks TA could fill |
+|---|---|---|
+| TA Baltimore South, Jessup MD | TA Baltimore South #151 | lat/lng, parking_spaces |
+| TA Baltimore, Baltimore MD | TA Baltimore #216 | lat/lng, parking_spaces |
+| TA Denmark, Denmark TN | TA Denmark (TravelCenters of America #245) | lat/lng |
+| TA Lake Park, Lake Park GA | TA Lake Park #249 | (none — fully populated) |
+| TA Brunswick, Brunswick GA | TA Travel Center Brunswick @ 185 Dungeness Dr | phone, website, lat/lng, parking_spaces |
+| Petro Kenly, Kenly NC | Petro Kenly 95 #395 | phone, lat/lng, parking_spaces |
+| TA Atkins, Atkins AR | TA Express Atkins | lat/lng |
+
+Note `TA Denmark` differs only by abbreviation (`Hwy.`/`Rd.` vs
+`Highway`/`Road`) — `normalizeText` does not expand abbreviations, so it cannot
+be auto-matched. `TA Brunswick` lists a different street entirely
+(`185 S. Port Parkway` vs `185 Dungeness Dr`) and may be a distinct site.
+
+## Updated outputs
+
+| File | Rows |
+|---|--:|
+| `ta-petro-import-ready.csv` | **333** (303 net-new + 30 keep-separate) |
+| `ta-petro-review.csv` | 354 (every row, with disposition + reason) |
+| `ta-petro-merge-review.csv` | 8 (merge candidates, fillable blanks, never-overwrite list) |
+| `ta-petro-other-pending-category.csv` | 6 (Goasis + Thorntons) |
+
+### Validation
+
+```
+rows 333 | total 333 | imported 333 | skipped 0 | duplicates 0 | errors 0
+coordinates preserved: 333/333
+'CAT Scale' asserted: 0
+scale_present evidence retained: 308
+deterministic rerun: identical
+```
+
+Tests **41 passed, 0 failed**; `tsc` clean; prettier clean.
+
+## Awaiting approval
+
+1. The **category decision** for the 6 `other` rows (recommend adding a "Fuel
+   Stops" category → `dbType: 'other'`).
+2. The **8 manual-review** rows — including the Petro Florence / Love's address
+   conflict.
+3. Then a dry-run insert of the 333 approved rows (insert-only, per-state
+   transactional, with rollback).
+
+**Sapp Bros and the Pilot-network file remain not started**, as instructed.

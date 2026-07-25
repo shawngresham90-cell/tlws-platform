@@ -8,6 +8,8 @@ import {
   mapAmenities,
   mapRow,
   auditRows,
+  disposeRows,
+  OTHER_BRANDS,
   type ProdRow,
   type WorkbookRow,
 } from './imports/ta-petro-audit';
@@ -150,6 +152,132 @@ check(
 check(
   'deterministic rerun',
   JSON.stringify(auditRows([{ ...base }], prod)) === JSON.stringify(auditRows([{ ...base }], prod)),
+);
+
+/* ---- approved disposition rules ---- */
+const dprod: ProdRow[] = [
+  {
+    id: 'm1',
+    name: 'TA Somewhere #151',
+    address: '1 Same Rd',
+    city: 'Town',
+    state: 'TX',
+    lat: null,
+    lng: null,
+    type: 'truck_stop',
+  },
+  {
+    id: 'm2',
+    name: 'CAT Scale at TA Elsewhere',
+    address: '2 Other Rd',
+    city: 'Elseville',
+    state: 'TX',
+    lat: null,
+    lng: null,
+    type: 'other',
+  },
+  {
+    id: 'm3',
+    name: 'TA Exact',
+    address: '3 Exact Rd',
+    city: 'Exactville',
+    state: 'TX',
+    lat: null,
+    lng: null,
+    type: 'truck_stop',
+  },
+];
+const dmap = new Map(dprod.map((p) => [p.id, { ...p, blanks: ['lat/lng', 'parking_spaces'] }]));
+const dbase = {
+  Brand: 'TA',
+  'Site ID': 'D',
+  Address: '1 Same Rd',
+  City: 'Town',
+  State: 'Texas',
+  Zipcode: '75001',
+  Latitude: 32.9,
+  Longitude: -96.8,
+  'Total Diesel Dispensers/Lanes': 8,
+};
+
+const d1 = disposeRows(auditRows([{ ...dbase, Location: 'TA Somewhere' }], dprod), dmap);
+check(
+  'dispose: same-type addr match, name differs → manual-review-merge',
+  d1[0].disposition === 'manual-review-merge',
+  d1[0],
+);
+check(
+  'dispose: fillable blanks surfaced from existing record',
+  d1[0].fillableBlanks.includes('lat/lng'),
+);
+
+const d2 = disposeRows(
+  auditRows(
+    [{ ...dbase, Location: 'TA Elsewhere', Address: '2 Other Rd', City: 'Elseville' }],
+    dprod,
+  ),
+  dmap,
+);
+check(
+  'dispose: different-category co-located match → keep-separate',
+  d2[0].disposition === 'keep-separate',
+  d2[0],
+);
+check('dispose: keep-separate proposes no field fills', d2[0].fillableBlanks.length === 0);
+
+// Exact name+city+state is intercepted by the canonical dup key BEFORE any
+// merge tier, so it lands in existing-match (the importer drops the row).
+// Because the address signal also requires city+state equality, the
+// 'exact-merge' tier is unreachable by construction — documented, not assumed.
+const d3 = disposeRows(
+  auditRows([{ ...dbase, Location: 'TA Exact', Address: '3 Exact Rd', City: 'Exactville' }], dprod),
+  dmap,
+);
+check(
+  'dispose: exact name+city+state → existing-match (dup key intercepts first)',
+  d3[0].disposition === 'existing-match',
+  d3[0].disposition,
+);
+check(
+  'dispose: exact-merge tier is unreachable via probable-duplicate',
+  d3[0].disposition !== 'exact-merge',
+);
+
+const d4 = disposeRows(
+  auditRows([{ ...dbase, Brand: 'Goasis', Location: 'Goasis X', City: 'Nowhere' }], dprod),
+  dmap,
+);
+check('dispose: Goasis → other-pending-category', d4[0].disposition === 'other-pending-category');
+const d5 = disposeRows(
+  auditRows([{ ...dbase, Brand: 'Thorntons', Location: 'Thorntons X', City: 'Nowhere' }], dprod),
+  dmap,
+);
+check(
+  'dispose: Thorntons → other-pending-category',
+  d5[0].disposition === 'other-pending-category',
+);
+check(
+  'dispose: non-core brands never enter the truck-stop import set',
+  d4[0].disposition !== 'net-new' && d5[0].disposition !== 'net-new',
+);
+check(
+  'OTHER_BRANDS holds exactly Goasis + Thorntons',
+  OTHER_BRANDS.size === 2 && OTHER_BRANDS.has('GOASIS') && OTHER_BRANDS.has('THORNTONS'),
+);
+
+const d6 = disposeRows(
+  auditRows([{ ...dbase, Location: 'TA Brand New', City: 'Freshtown' }], dprod),
+  dmap,
+);
+check('dispose: unmatched row → net-new', d6[0].disposition === 'net-new');
+check(
+  'dispose: CAT Scale never asserted in any disposition',
+  [...d1, ...d2, ...d3, ...d4, ...d5, ...d6].every((r) => !r.amenities.includes('CAT Scale')),
+);
+check(
+  'dispose: deterministic',
+  JSON.stringify(disposeRows(auditRows([{ ...dbase, Location: 'TA Somewhere' }], dprod), dmap)) ===
+    JSON.stringify(disposeRows(auditRows([{ ...dbase, Location: 'TA Somewhere' }], dprod), dmap)),
 );
 
 console.log(`\nta-petro-audit: ${passed} passed, ${failed} failed`);

@@ -259,3 +259,140 @@ export function auditRows(wbRows: WorkbookRow[], prod: ProdRow[]): MappedRow[] {
     return { ...m, verdict, reasons, matchedId, matchedName, matchDistanceMiles };
   });
 }
+
+// ---------------------------------------------------------------------------
+// Approved disposition rules (owner decision, 2026-07-25)
+// ---------------------------------------------------------------------------
+
+/**
+ * Final disposition of a source row, per the approved policy:
+ *  - exact-merge          : normalized name AND address both identical → the only
+ *                           case eligible for automatic fill-blank-only merge.
+ *  - manual-review-merge  : same-category candidate whose name/address agree only
+ *                           partially (abbreviation variants, store numbers), or
+ *                           matched on coordinate proximity alone. Never auto-merged.
+ *  - keep-separate        : matched row is a DIFFERENT directory category at the
+ *                           same site (a co-located CAT Scale entry or TA Truck
+ *                           Service repair shop). The travel center is its own
+ *                           listing, so this is a net-new candidate.
+ *  - existing-match       : canonical dup key hit; the importer drops it.
+ *  - other-pending-category : non-core brand classified `other`, held because no
+ *                           generic `other` category slug exists.
+ */
+export type Disposition =
+  | 'exact-merge'
+  | 'manual-review-merge'
+  | 'keep-separate'
+  | 'net-new'
+  | 'existing-match'
+  | 'other-pending-category';
+
+/** Brands the owner classified as `other` (not truck stops). */
+export const OTHER_BRANDS = new Set(['GOASIS', 'THORNTONS']);
+
+export type Disposed = MappedRow & {
+  disposition: Disposition;
+  dispositionReason: string;
+  matchedType: string;
+  /** Fields blank on the matched production row that TA could fill (never overwrite). */
+  fillableBlanks: string[];
+};
+
+/**
+ * Apply the approved policy. `prodById` supplies the matched row's category and
+ * the fields that are currently blank, so a fill-blank-only plan can be shown
+ * without ever proposing an overwrite.
+ */
+export function disposeRows(
+  rows: MappedRow[],
+  prodById: Map<string, ProdRow & { blanks?: string[] }>,
+): Disposed[] {
+  return rows.map((r) => {
+    const p = r.matchedId ? prodById.get(r.matchedId) : undefined;
+    const matchedType = p?.type ?? '';
+    const blanks = p?.blanks ?? [];
+
+    // Non-core brands → `other`, held for a category decision.
+    if (OTHER_BRANDS.has(r.brand.toUpperCase())) {
+      return {
+        ...r,
+        disposition: 'other-pending-category' as Disposition,
+        dispositionReason: `brand ${r.brand} classified 'other' (not truck_stop); no generic 'other' category slug exists`,
+        matchedType,
+        fillableBlanks: [],
+      };
+    }
+
+    if (r.verdict === 'existing-match') {
+      return {
+        ...r,
+        disposition: 'existing-match' as Disposition,
+        dispositionReason: 'canonical dup key — importer drops',
+        matchedType,
+        fillableBlanks: blanks,
+      };
+    }
+
+    if (r.verdict === 'rejected-or-ambiguous') {
+      return {
+        ...r,
+        disposition: 'manual-review-merge' as Disposition,
+        dispositionReason: r.reasons.join('; '),
+        matchedType,
+        fillableBlanks: [],
+      };
+    }
+
+    if (r.verdict === 'net-new-candidate') {
+      return {
+        ...r,
+        disposition: 'net-new' as Disposition,
+        dispositionReason: 'no production match',
+        matchedType,
+        fillableBlanks: [],
+      };
+    }
+
+    // probable-duplicate → split by whether the match is the same category.
+    if (!p) {
+      return {
+        ...r,
+        disposition: 'manual-review-merge' as Disposition,
+        dispositionReason: 'matched row unavailable',
+        matchedType,
+        fillableBlanks: [],
+      };
+    }
+    if (p.type !== 'truck_stop') {
+      return {
+        ...r,
+        disposition: 'keep-separate' as Disposition,
+        dispositionReason: `co-located but different category (matched ${p.type}: "${p.name}") — travel center is its own listing`,
+        matchedType,
+        fillableBlanks: [],
+      };
+    }
+    const nameEq = normalizeText(p.name) === normalizeText(r.name);
+    const addrEq = normalizeText(p.address) === normalizeText(r.address);
+    if (nameEq && addrEq) {
+      return {
+        ...r,
+        disposition: 'exact-merge' as Disposition,
+        dispositionReason: 'exact normalized name AND address match — fill-blank-only enrichment',
+        matchedType,
+        fillableBlanks: blanks,
+      };
+    }
+    return {
+      ...r,
+      disposition: 'manual-review-merge' as Disposition,
+      dispositionReason: addrEq
+        ? `address identical, name differs ("${p.name}") — confirm same business`
+        : nameEq
+          ? `name identical, address differs ("${p.address}") — confirm same site`
+          : `partial/proximity match only ("${p.name}", "${p.address}") — confirm`,
+      matchedType,
+      fillableBlanks: blanks,
+    };
+  });
+}
