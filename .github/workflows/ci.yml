@@ -1,0 +1,65 @@
+name: CI
+
+# The gate every pull request has to clear. Until this existed nothing ran on a
+# PR: `format:check`, `lint`, `typecheck`, `build`, and the 51 offline harnesses
+# in scripts/test-*.ts were all manual, so a regression only surfaced if someone
+# happened to run that exact command. (It did: the CDL Pre-School hero
+# assertion in scripts/test-preschool.ts had been failing on main since the
+# cinematic homepage landed.)
+#
+# Everything here is offline and read-only — no database, no deploy, no
+# secrets. Build-time env vars are throwaway placeholders so `next build` can
+# resolve its client modules; nothing connects.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Placeholders only. The build never contacts these; the client modules
+      # just refuse to construct without a syntactically valid URL/key.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: https://truckinglifewithshawn.com
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Offline test harnesses
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Generated files are unchanged after build
+        # `prebuild` regenerates src/lib/road-ahead/asset-presence.generated.ts.
+        # If the committed copy has drifted from what the generator produces,
+        # the working tree is dirty here — catch it in CI, not in a deploy.
+        run: git diff --exit-code
