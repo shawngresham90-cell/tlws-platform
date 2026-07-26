@@ -334,5 +334,85 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   );
 }
 
+/* ------------- the live Founders Wall figures (Lauren Gresham) ------------- */
+// The wall is entirely database-backed — no figure on it exists in the
+// codebase — so these lock the ARITHMETIC the site derives from the two stored
+// numbers (campaign_settings.goal_cents and .raised_cents_override), using the
+// same helpers the page uses. They are true the moment the prepared statement
+// in data/founders/lauren-gresham-2026-07-26/ADD-FOUNDER.sql is run, and they
+// fail if anyone ever changes the derivation.
+{
+  const LIVE_GOAL = 1_155_000; // $11,550 — unchanged
+  const RAISED_BEFORE = 905_500; // $9,055 — 26 founders
+  const LAUREN = 50_000; // $500 — Steel
+  const RAISED_AFTER = 955_500; // $9,555 — 27 founders
+
+  check('Lauren adds $500 exactly', RAISED_BEFORE + LAUREN === RAISED_AFTER);
+  check('new raised renders $9,555', dollars(RAISED_AFTER) === '$9,555');
+  check('goal is unchanged at $11,550', dollars(LIVE_GOAL) === '$11,550');
+  check(
+    'new remaining is $1,995',
+    remainingCents(LIVE_GOAL, RAISED_AFTER) === 199_500 &&
+      dollars(remainingCents(LIVE_GOAL, RAISED_AFTER)) === '$1,995',
+  );
+  check(
+    'the fundraising math reconciles: $9,555 + $1,995 = $11,550',
+    RAISED_AFTER + remainingCents(LIVE_GOAL, RAISED_AFTER) === LIVE_GOAL,
+  );
+  check(
+    'progress moves forward, not backward',
+    pctToGoal(LIVE_GOAL, RAISED_AFTER) > pctToGoal(LIVE_GOAL, RAISED_BEFORE),
+  );
+  check(
+    'progress stays under 100% (goal not yet reached)',
+    pctToGoal(LIVE_GOAL, RAISED_AFTER) < 100,
+  );
+
+  // The superseded figures must never be reachable from the new total.
+  check('old raised $9,055 is not the new total', dollars(RAISED_AFTER) !== '$9,055');
+  check(
+    'old remaining $2,495 is not the new remainder',
+    dollars(remainingCents(LIVE_GOAL, RAISED_AFTER)) !== '$2,495',
+  );
+  // And $2,495 was only ever correct for the old raised figure.
+  check(
+    '$2,495 was the remainder before Lauren',
+    dollars(remainingCents(LIVE_GOAL, RAISED_BEFORE)) === '$2,495',
+  );
+
+  // Exactly one founder added: 26 → 27.
+  check('founder count increments by exactly one', 26 + 1 === 27);
+}
+
+/* ------- the prepared statement matches the figures asserted above ------- */
+// The SQL is the only thing that can actually move the wall, so it is checked
+// against the same numbers rather than trusted to agree with them.
+{
+  const sql = readFileSync('data/founders/lauren-gresham-2026-07-26/ADD-FOUNDER.sql', 'utf8');
+  check('statement names Lauren Gresham', sql.includes("'Lauren Gresham'"));
+  check('statement sets the Steel tier', /'Lauren Gresham',\s*'steel'/.test(sql));
+  check('statement appends at position 9, after the existing eight', /'steel',\s*9\b/.test(sql));
+  check('statement publishes the row', /'steel',\s*9,\s*true/.test(sql));
+  check('statement moves raised to 955500', sql.includes('raised_cents_override = 955500'));
+  check('statement asserts the 905500 starting point', sql.includes('905500'));
+  check('statement asserts the 26-founder starting point', /expected 26 founders/.test(sql));
+  check('statement refuses if a Lauren row already exists', /already match "lauren"/.test(sql));
+  check('statement asserts 27 public founders afterwards', /expected 27 public founders/.test(sql));
+  check('statement reconciles the arithmetic before committing', sql.includes('199500'));
+  check('statement inserts exactly one founder', /Expected to insert exactly 1 founder/.test(sql));
+  check('statement is transactional', /^begin;/m.test(sql) && /^commit;/m.test(sql));
+  check('statement does not touch the goal', !/set\s+goal_cents/i.test(sql));
+  check('statement touches no other founder row', !/update public\.founders/i.test(sql));
+
+  const rollback = readFileSync('data/founders/lauren-gresham-2026-07-26/ROLLBACK.sql', 'utf8');
+  check('a rollback exists', rollback.includes('Lauren Gresham'));
+  check(
+    'rollback restores the previous total',
+    rollback.includes('raised_cents_override = 905500'),
+  );
+  check('rollback returns to 26 founders', /expected 26 founders/.test(rollback));
+  check('rollback deletes exactly one row', /Expected to delete exactly 1 row/.test(rollback));
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
