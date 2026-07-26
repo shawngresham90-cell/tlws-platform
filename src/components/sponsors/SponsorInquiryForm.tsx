@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
+import { trackEvent } from '@/lib/analytics';
+import { DIRECTORY_EVENTS, listingContextLine } from '@/lib/directory/funnel';
 
 /**
  * Sponsor inquiry form. Posts to the existing guarded, Turnstile-protected
@@ -17,9 +19,18 @@ const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
 const INTEREST_OPTIONS = [
   { value: 'founding-sponsor', label: 'Founding Sponsor' },
   { value: 'directory-placement', label: 'Directory placement' },
+  { value: 'listing-claim', label: 'Claim my directory listing' },
   { value: 'equipment-or-students', label: 'Equipment / sponsor a student' },
   { value: 'other', label: 'Something else' },
 ];
+
+/** Listing a directory CTA deep-linked from. Bounded params only — no PII. */
+export type InquiryListing = {
+  slug?: string;
+  name?: string;
+  category?: string;
+  state?: string;
+};
 
 type Errors = Record<string, string>;
 
@@ -28,11 +39,15 @@ const INTEREST_VALUES = new Set(INTEREST_OPTIONS.map((o) => o.value));
 export function SponsorInquiryForm({
   siteKey,
   defaultInterest,
+  listing,
 }: {
   siteKey: string;
   /** Preselects the interest dropdown when a directory CTA deep-links in.
    * Only an existing allowed option is honored; anything else is ignored. */
   defaultInterest?: string;
+  /** Listing this inquiry is about, when it came from a directory CTA. Shown
+   * back to the sender and appended as one labelled line to the message. */
+  listing?: InquiryListing;
 }) {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
@@ -59,8 +74,25 @@ export function SponsorInquiryForm({
     if (done) doneRef.current?.focus();
   }, [done]);
 
+  // Analytics context: bounded, non-personal. Never the email, phone, company
+  // name as typed, or the message body.
+  const eventProps: Record<string, string> = {};
+  if (listing?.slug) eventProps.slug = listing.slug;
+  if (listing?.category) eventProps.category = listing.category;
+  if (listing?.state) eventProps.state = listing.state;
+  if (interest) eventProps.interest = interest;
+
+  // One "form started" event on first real interaction.
+  const startedRef = useRef(false);
+  function markStarted() {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackEvent(DIRECTORY_EVENTS.formStart, eventProps);
+  }
+
   function set<T>(setter: (v: T) => void, key: string) {
     return (v: T) => {
+      markStarted();
       setter(v);
       setErrors((p) => ({ ...p, [key]: '' }));
     };
@@ -73,6 +105,12 @@ export function SponsorInquiryForm({
     if (phone.trim() && !PHONE_RE.test(phone.trim())) e.phone = 'Enter a valid phone number.';
     return e;
   }
+
+  // The listing line is shown in the panel above and appended once, so the
+  // inquiry that reaches the CRM says which listing it is about. Nothing is
+  // hidden from the sender and nothing personal is added.
+  const contextLine = listingContextLine(listing ?? {});
+  const composedMessage = [contextLine, message.trim()].filter(Boolean).join('\n\n');
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -100,7 +138,7 @@ export function SponsorInquiryForm({
           email: email.trim(),
           phone: phone.trim(),
           tier_interest: interest || undefined,
-          message: message.trim() || undefined,
+          message: composedMessage || undefined,
           turnstileToken: token,
         }),
       });
@@ -109,13 +147,17 @@ export function SponsorInquiryForm({
         setFormError(body.error ?? 'Something went wrong. Please try again.');
         setToken('');
         setChallengeKey((k) => k + 1);
+        // A rejected submit is a failure, never counted as a success.
+        trackEvent(DIRECTORY_EVENTS.formFail, { ...eventProps, reason: 'rejected' });
         return;
       }
+      trackEvent(DIRECTORY_EVENTS.formSubmit, eventProps);
       setDone(true);
     } catch {
       setFormError('Network error. Check your connection and try again.');
       setToken('');
       setChallengeKey((k) => k + 1);
+      trackEvent(DIRECTORY_EVENTS.formFail, { ...eventProps, reason: 'network' });
     } finally {
       setSubmitting(false);
     }
@@ -146,6 +188,19 @@ export function SponsorInquiryForm({
       noValidate
       className="rounded-card border border-line bg-asphalt-800 p-8"
     >
+      {contextLine && (
+        <div className="mb-6 rounded-card border border-line bg-asphalt px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            About this listing
+          </p>
+          <p className="mt-1 text-sm text-ink">{contextLine}</p>
+          <p className="mt-2 text-xs text-muted">
+            This line is sent with your inquiry. Sending it does not verify ownership or change the
+            listing — Shawn reviews every request.
+          </p>
+        </div>
+      )}
+
       <div aria-live="assertive">
         {formError && (
           <p className="mb-5 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300">
