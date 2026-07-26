@@ -155,6 +155,21 @@ export function listingContextLine(ctx: {
   return `Regarding directory listing: ${bits.join(' · ')} (/directory/location/${slug})`;
 }
 
+/**
+ * The labelled line that carries where an inquiry came from — a directory CTA,
+ * or a campaign token on a link Shawn posted. Shown to the sender before they
+ * send, never hidden.
+ *
+ * This is the ONLY campaign attribution the CRM has. Analytics carries the same
+ * value as an event property, but analytics is not switched on, so without this
+ * line a launch post is unmeasurable. Bounded to a slug, so a link cannot
+ * smuggle anything into the message.
+ */
+export function sourceContextLine(from: string | null | undefined): string {
+  const token = boundToken(from, 40);
+  return token ? `Came from: ${token}` : '';
+}
+
 /** Human label for the two paths. No promises, no pricing. */
 export function intentLabel(intent: FunnelIntent): string {
   if (intent === 'claim') return 'Claim this listing';

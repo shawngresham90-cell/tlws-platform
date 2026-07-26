@@ -16,7 +16,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { isDirectoryInquiry, parseDirectoryInquiry } from '@/lib/admin/directory-inquiry';
-import { FUNNEL_INTEREST, corridorLabel, listingContextLine } from '@/lib/directory/funnel';
+import {
+  FUNNEL_INTEREST,
+  corridorLabel,
+  listingContextLine,
+  sourceContextLine,
+} from '@/lib/directory/funnel';
 import { OFFERS } from '@/lib/directory/offers';
 
 let passed = 0;
@@ -156,6 +161,50 @@ const mention = parseDirectoryInquiry(
   'I was reading directory listing: stuff (/directory/location/x)',
 );
 check('mid-line mention is not parsed', mention.listingPath === null, String(mention.listingPath));
+
+// ---- campaign attribution: the only one the CRM has ----
+check(
+  'source line is written from a token',
+  sourceContextLine('fb-launch-1') === 'Came from: fb-launch-1',
+);
+check(
+  'source line is bounded to a slug',
+  sourceContextLine('FB Launch #1!!') === 'Came from: fb-launch-1',
+);
+check(
+  'no source token yields no line',
+  sourceContextLine('') === '' && sourceContextLine(null) === '',
+);
+check(
+  'an over-long token is truncated, not rejected',
+  sourceContextLine('a'.repeat(80)) === `Came from: ${'a'.repeat(40)}`,
+);
+const sourced = parseDirectoryInquiry(
+  FUNNEL_INTEREST.claim,
+  [
+    listingContextLine({ slug: 'ok-stop-md', name: 'OK Stop' }),
+    sourceContextLine('fb-launch-1'),
+    'hello',
+  ].join('\n\n'),
+);
+check('source round-trips', sourced.source === 'fb-launch-1', String(sourced.source));
+check(
+  'source line is stripped from the message',
+  sourced.message === 'hello',
+  String(sourced.message),
+);
+check(
+  'a campaign visit with no listing is still a directory inquiry',
+  isDirectoryInquiry(parseDirectoryInquiry(null, sourceContextLine('yt-community-2'))),
+);
+check(
+  'no source line means unknown, never a guess',
+  parseDirectoryInquiry(FUNNEL_INTEREST.claim, 'plain message').source === null,
+);
+check(
+  'a hostile source line is not parsed',
+  parseDirectoryInquiry(null, 'Came from: <script>alert(1)</script>').source === null,
+);
 
 // ---- corridorLabel round-trips only real corridor tokens ----
 check('corridorLabel i95', corridorLabel('i95') === 'I-95');

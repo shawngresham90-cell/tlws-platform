@@ -7,6 +7,7 @@
  *
  *   Regarding directory listing: Name · category · ST · I-95 (/directory/location/slug)
  *   Billing preference: Annual (preference only — no payment was taken)
+ *   Came from: fb-launch-1
  *
  * This module reads those back out so the inbox can show inquiry type, listing,
  * category, state, corridor and billing preference as their own columns. It is
@@ -28,6 +29,8 @@ export type ParsedDirectoryInquiry = {
   /** Display form, e.g. `I-95`. Null when the listing is not on a corridor. */
   corridor: string | null;
   billing: 'monthly' | 'annual' | null;
+  /** Campaign or CTA surface the inquiry came from. The CRM's only attribution. */
+  source: string | null;
   /** The message with the machine-written lines removed, for readability. */
   message: string | null;
 };
@@ -43,6 +46,7 @@ const TYPES = new Set(Object.keys(TYPE_LABEL) as DirectoryInquiryType[]);
 const LISTING_RE =
   /^Regarding directory listing:\s*(.+?)\s*\((\/directory\/location\/[a-z0-9-]+)\)\s*$/im;
 const BILLING_RE = /^Billing preference:\s*(Monthly|Annual)\b/im;
+const SOURCE_RE = /^Came from:\s*([a-z0-9-]{1,40})\s*$/im;
 
 export function parseDirectoryInquiry(
   tierInterest: string | null | undefined,
@@ -58,6 +62,7 @@ export function parseDirectoryInquiry(
     state: null,
     corridor: null,
     billing: null,
+    source: null,
     message: notes?.trim() || null,
   };
 
@@ -67,9 +72,11 @@ export function parseDirectoryInquiry(
   const text = notes ?? '';
   const listing = LISTING_RE.exec(text);
   const billingMatch = BILLING_RE.exec(text);
+  const sourceMatch = SOURCE_RE.exec(text);
 
-  // Not a directory inquiry at all — return the note untouched.
-  if (!type && !listing) return empty;
+  // Not a directory inquiry at all — return the note untouched. A source line
+  // alone is enough: a campaign link lands on /sponsors with no listing.
+  if (!type && !listing && !sourceMatch) return empty;
 
   let listingName: string | null = null;
   let category: string | null = null;
@@ -103,7 +110,8 @@ export function parseDirectoryInquiry(
         (block) =>
           block &&
           !/^Regarding directory listing:/i.test(block) &&
-          !/^Billing preference:/i.test(block),
+          !/^Billing preference:/i.test(block) &&
+          !/^Came from:/i.test(block),
       )
       .join('\n\n')
       .trim() || null;
@@ -118,11 +126,12 @@ export function parseDirectoryInquiry(
     state,
     corridor,
     billing: billingMatch ? (billingMatch[1].toLowerCase() as 'monthly' | 'annual') : null,
+    source: sourceMatch ? sourceMatch[1] : null,
     message,
   };
 }
 
 /** True when the row came through the directory funnel. */
 export function isDirectoryInquiry(parsed: ParsedDirectoryInquiry): boolean {
-  return parsed.type !== null || parsed.listingSlug !== null;
+  return parsed.type !== null || parsed.listingSlug !== null || parsed.source !== null;
 }

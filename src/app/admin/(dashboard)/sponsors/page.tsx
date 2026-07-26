@@ -169,6 +169,9 @@ export default async function AdminSponsorsPage({
                             ? `${dir.billing === 'annual' ? 'Annual' : 'Monthly'} preferred`
                             : 'No billing preference'}
                         </div>
+                        <div className="mt-1 whitespace-nowrap text-xs text-muted">
+                          {dir.source ? `Source: ${dir.source}` : 'Source: unknown'}
+                        </div>
                       </td>
 
                       <td className="px-4 py-3 align-top">
