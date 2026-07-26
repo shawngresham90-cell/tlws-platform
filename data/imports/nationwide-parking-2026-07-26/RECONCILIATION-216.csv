@@ -1,0 +1,217 @@
+id,state,interstate,category_slug,facility_type,direction,source_class,truck_parking_evidence,tier_disposition,name
+cbd5d136-9f13-4141-b126-9e0d8d414157,AL,I-65,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,Entec Station #105
+f7aeb412-6df9-459d-b662-a68cf00f3f42,AL,I-65,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,J Mart #1305
+edec532e-6c37-48e3-938d-064666b181fd,AL,I-65,hotels-truck-parking,non_parking_business,,none,yes,C:out-of-scope-not-parking,Quality Inn Cullman I-65 Exit 310
+16b6c4e2-49bc-47f6-89de-cd8db48e1427,AR,I-40,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Bethal Diesel Service
+581dc977-7484-4a7c-a5a8-651dba638261,AR,I-40,hotels-truck-parking,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Express Inn West Memphis
+d63266c7-1e06-4353-9ee9-5f5bb7775346,AR,I-40,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Highway 64 Truck & Trailer Repair
+902453cb-99ec-47e4-9a2a-45b1502c85f3,AR,I-40,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Quality Inn & Suites Alma I-40
+3d8ca37c-b13f-4f2b-847e-7365440ac123,AR,I-40,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Reddy's Super Stop
+cac9d520-9a63-441f-866f-d2de402affe6,AR,I-40,hotels-truck-parking,non_parking_business,,none,yes,C:out-of-scope-not-parking,Super 8 by Wyndham Russellville
+77957a3c-8092-4517-8b33-2e50e4047ed4,AR,I-40,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Van Buren Travel Center
+4e7f48fa-e247-4722-bc76-34f269cde7f3,DE,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,B & F Towing Co.
+77f995a5-8ff3-46d9-a772-c1731bd609ba,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Albert's Road Service
+6b484fca-b4c5-41aa-bf35-2560cb161aff,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,All Truck Service - Jacksonville
+0ea22351-f61f-4716-adf4-d44bb53de66a,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,American Towing Service - Miami
+45b986e7-6555-41bc-9735-4ce59bfae89d,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,ASAP Towing & Storage
+b9c3bccf-a9fd-4aff-a7b1-57cca6f58b63,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,C&P Towing and Transport
+47af659e-3b29-419f-a723-21d6bcd4f152,FL,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,JAX24 Mobile Semi Truck Repair
+fdaa1660-b2bb-4d97-bd0f-7be6287ec055,FL,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Roadmaster Drivers School of Jacksonville
+a01a4518-ce97-4894-8d57-674209395e9e,FL,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,SAGE Truck Driving School - Jacksonville
+0fa0d81a-c5bf-427b-9015-3a607768f25b,GA,I-95,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,El Cheapo (Richmond Hill)
+b7154959-9416-47c5-8665-52458bdd0de3,GA,I-24,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Mapco Express #3524
+9668985d-0c95-4ec6-9d8f-55c3a0e4b034,GA,I-95,truck-stops,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Parker's Kitchen #69
+6df953c3-9071-4d79-9238-a770b8948f8a,GA,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Sapp's Wrecker Service
+456620fc-23bd-4cf1-a984-21ec9138b774,GA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Savannah Technical College - Commercial Truck Driving (CDL)
+ca6444ea-5194-40de-a7a4-5f3428c4f36e,IL,I-24,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Holiday Inn Express Metropolis
+d4b5471d-8f4e-4668-b659-bf7c6e00c353,IL,I-24,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Keen's Truck & Trailer Repair (at Metropolis Truck Plaza)
+71be62b4-a262-4f8d-b1df-481f987e5298,IL,I-24,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,On-Site Truck and Trailer Services
+6a17477e-60fd-4cb3-86e2-9bdb93546852,IL,I-24,tire-repair,non_parking_business,,none,no,C:out-of-scope-not-parking,Plaza Tire Service - Metropolis
+4ab44bf3-6b50-4ff0-b5d6-7161536c8563,IL,I-24,tire-repair,non_parking_business,,none,no,C:out-of-scope-not-parking,Vienna Automotive Center
+471132d2-2361-4f71-a7c8-23c836f28f02,IN,I-65,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Interstate Fleet Services
+f975e826-2c84-4032-ae61-177240dec9fb,IN,I-65,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Mike's Diesel Tech
+cd150996-dea1-4ec3-82aa-268f08bf0ba2,IN,I-65,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Road X Truck Repair (Greenwood)
+13facf37-f06a-48ef-acb8-b73b634a4505,IN,I-65,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Sam's Roadside Service (mobile)
+01141f13-1417-494d-a94d-1445b4261451,KY,I-75,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,HOB-CO LLC Mobile Truck & Trailer Repair
+424c3177-2768-489b-914b-cff1d01ef43f,KY,I-75,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Littrell Truck & Tractor
+fa0a4d6a-3627-4d84-b35d-f39e8a2ba94b,KY,I-75,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Snider Fleet Solutions
+5495d58c-7ab4-4954-af09-7e7d9a6b6804,KY,I-75,truck-washes,non_parking_business,,third_party,no,C:out-of-scope-not-parking,TNT Services (Fleet Washing / Drive-Thru Truck Wash)
+f4ede9a9-960e-46a2-a8e7-8251b45405d2,KY,I-75,truck-washes,non_parking_business,,none,no,C:out-of-scope-not-parking,Triple G Truck Wash
+7397efa7-9bc0-4be1-8b78-6e3e8e2d39a0,KY,I-75,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Ziegler Tire
+59355245-49a7-4da9-b672-e7e257c8e1e9,MD,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,A.B. CDL Training
+b690a7a6-401c-47ad-8c8b-7c4a63306b33,MD,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Heavy Towing Baltimore (BBT & Recovery)
+12dde434-b831-4783-97f6-f524314da838,MD,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Menendez Road Service
+22a4681b-6a31-4b56-a959-f4b3fe40ab2f,MD,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,North American Trade Schools (CDL Program)
+8adc84ed-7d07-4b43-8225-6ff185121d86,MD,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Vintage Wrecker Service
+18ded510-87c5-4865-86e6-b043c6768486,MI,I-75,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,"BP Truck Stop (I-75 Exit 47A, Detroit)"
+810e3a7f-2fb7-4966-be83-faa58fbc5407,MI,I-75,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Truck and Trailer Mobile Repair - Flint
+455fc247-b84b-46fe-91fe-29749283ab41,MI,I-75,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,US Fuel Mart (US Petro Mart)
+9a6d740d-debc-4f90-b5fc-e9daae0d3986,NC,I-95,truck-washes,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Blue Beacon Truck Wash of Kenly
+b106bf49-e8d4-4e65-96c0-d9124ddf49fc,NC,I-95,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Central Carolina Diesel Repair
+8b02e14f-6692-4781-9589-8b907c49850f,NC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Coastal Towing (Coastal Wrecker)
+3f5861a1-e8dd-4b4a-8f04-bd0f52d5d5e0,NC,I-95,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Discount Tire Sales & Service (Lumberton)
+f4d3f9bc-301b-4c9d-bdf5-843989754796,NC,I-40,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Handy Pantry (3360 Crabtree Rd)
+9e06c3ca-5ad6-4e47-b42c-583b6befe935,NC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Mangum's Towing & Road Service (Fayetteville)
+7efc409a-2666-417c-8c11-38fe30e02d21,NC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Mangum's Towing & Road Service (Rocky Mount)
+fdbe5898-24a8-4743-a127-a5a1769e3ef9,NC,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Royal Inn Lumberton
+bef99f45-641b-4410-b4a8-9b261b2b1c72,NC,I-95,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,"Tire Sales & Service, Inc. (Commercial Tires)"
+7e5d2317-5854-4dbb-8ebd-dad61a06f0c4,NC,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,TransTech CDL Training (Fayetteville)
+06883341-0452-4e42-ac4a-110e3c75596d,NC,I-40,tire-repair,non_parking_business,,none,no,C:out-of-scope-not-parking,Waynesville Tire Inc
+7d8b58e5-05b3-43bc-8ce7-2ec4e660fc2e,OH,I-75,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Ed's 24 Hour Service
+0fdb9170-a4db-4d78-9139-2772e54dc673,OH,I-75,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,"Englewood Truck (SW Ohio Towing, Recovery & Mobile Truck Repair)"
+ef9a0053-4768-456f-a747-0e383547a97a,OH,I-75,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Speedway #9383
+944b49c4-30dd-432f-bdd3-c137cf827e86,OH,I-75,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Ziegler Tire
+f71dfc37-7d4f-4693-a5d8-964a03945701,SC,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Baymont by Wyndham Ridgeland I-95
+9ba81ef1-4451-4a4d-83fe-93baa59df27c,SC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Circle C 24/7 Truck Repair
+238eeba1-8e9e-4260-99e9-907013e3acd2,SC,I-95,truck-washes,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Circle C 24/7 Truck Wash
+60eb6009-2034-4200-b1ea-da4d5bd0fe73,SC,I-95,truck-stops,non_parking_business,,none,yes,C:out-of-scope-not-parking,Circle K Travel Center - Walterboro
+86e0949e-2d59-46d6-96f2-7d23539bdc3e,SC,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Hampton Inn Santee I-95
+344a08fa-8320-4f25-95b6-1519225ca8b4,SC,I-95,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,I-95 Truck Stop - Santee
+4c5cc4c2-5394-4b3e-900e-ab729ab8bc54,SC,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Red Roof Inn Yemassee
+1933b8ea-539e-40c2-a8c1-3b177375cc7a,SC,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Sleep Inn Walterboro I-95
+a9a6b5c2-d0aa-4f0b-bce6-0feba95184e7,SC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,"Tommie's Auto, Diesel Repair & Towing"
+d759e929-70d5-47a8-a632-081f53f3a93f,SC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Truck Service of Florence
+3392e09d-00c0-4f3d-b676-752172385b76,SC,I-95,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,"Wayne's Towing, Recovery and Transport"
+a10529de-1b68-4339-b067-ecbb6b3e9fd5,SC,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Xtreme Towing Parts and Service
+3b66bf1e-4b38-46c8-8b27-b1945714c544,TN,I-40,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Arlington Truck and Trailer Repair
+d1a0677b-70ad-4022-ad21-d629f8373457,TN,I-40,hotels-truck-parking,non_parking_business,,none,yes,C:out-of-scope-not-parking,Days Inn by Wyndham Newport
+ce99eb50-9aef-4eef-b2a6-022e4f902a17,TN,I-40,truck-stops,non_parking_business,,none,no,C:out-of-scope-not-parking,Mapco Express #3316 (5325 Summer Ave)
+3a2d2598-0016-4b6e-a4c8-78a0e542015d,VA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,2020 CDL Training (Fredericksburg)
+73fe0660-9015-47b0-8a05-d0a5dc71160a,VA,I-95,tire-repair,non_parking_business,,third_party,no,C:out-of-scope-not-parking,2020 Truck and Trailer Repair
+a10bc9c5-3119-4a79-bb06-906f09e4d234,VA,I-95,cat-scales,non_parking_business,,third_party,no,C:out-of-scope-not-parking,CAT Scale at TA Ashland
+37a7f0ab-cf4f-4a92-8bc2-22b25dfdbfec,VA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,CDS Tractor Trailer Training - Richmond
+af0c8334-1b41-4f45-a2ed-8969463fb763,VA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,CDS Tractor Trailer Training (Fredericksburg)
+e963cb04-0c2f-4b9e-aecf-f914523faefd,VA,I-95,hotels-truck-parking,non_parking_business,,none,no,C:out-of-scope-not-parking,Days Inn Carmel Church / Ruther Glen
+51038905-7826-4be7-83d8-b1ef23a9b7f6,VA,I-95,roadside-service,non_parking_business,,none,no,C:out-of-scope-not-parking,Franco Road Service Inc
+c6dca596-3afa-47c7-8ece-e1c653234879,VA,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Jinks Motor Carriers Heavy Towing & Recovery
+8095c618-daf7-49a4-ad3d-4a4cd02617e3,VA,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Liberty Fleet Solutions (Liberty Equipment)
+a7dbd110-935e-4a13-ba6f-0596c4c20676,VA,I-95,truck-stops,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Sheetz #672 (Woodford/Thornburg)
+5e324390-1d0f-44c0-a290-adba7b6310fe,VA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Shippers' Choice Truck Driving School - Petersburg
+e36e07df-2f06-48a6-9494-8cf3b0f4cc15,VA,I-95,truck-stops,non_parking_business,,third_party,yes,C:out-of-scope-not-parking,TA Ashland (TravelCenters of America)
+7a03c1f5-6b4d-4951-98a2-a3e752d2270b,VA,I-95,truck-stops,non_parking_business,,third_party,yes,C:out-of-scope-not-parking,TA Richmond (TravelCenters of America)
+837b89e1-93fb-456c-9c38-ec7e3f0a8cef,VA,I-95,roadside-service,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Tri-City Wrecker & Auto Repair
+642f5b91-976b-4b31-aee9-c9dec2f544e8,VA,I-95,cdl-schools,non_parking_business,,third_party,no,C:out-of-scope-not-parking,Truck N Learn CDL Training
+87f37135-0d5e-4f02-9889-537c3adc6bd3,AL,I-65,parking,rest_area,,official,no,C:quarantine-truck-parking-unconfirmed,Cullman County Rest Area (I-65 MM 301)
+6f4f6754-96fb-4fe2-be0a-9e1c2f7358d8,AL,I-65,parking,rest_area,NB,official,no,C:quarantine-truck-parking-unconfirmed,I-65 Butler County Rest Area (Northbound)
+9b5a7530-2901-474a-ad32-b53c84cbd478,AL,I-65,parking,rest_area,SB,official,no,C:quarantine-truck-parking-unconfirmed,I-65 Butler County Rest Area (Southbound)
+34d6ae7a-216e-46fa-986d-81d0a47ea7e4,AL,I-65,parking,rest_area,NB,official,no,C:quarantine-truck-parking-unconfirmed,I-65 Conecuh County Rest Area (Northbound)
+f3c46c18-6a34-496a-8f0b-b36901142096,AL,I-65,parking,rest_area,SB,official,no,C:quarantine-truck-parking-unconfirmed,I-65 Conecuh County Rest Area (Southbound)
+d284bab0-f773-43c5-9c3e-20b4580c5c0a,AR,I-40,parking,rest_area,EB,official,yes,A-PENDING-COORDINATE,Forrest City Rest Area - I-40 Eastbound (MM 235)
+7e1b02c3-b62d-490a-9974-eafe3428f02a,AR,I-40,parking,rest_area,WB,official,yes,A-PENDING-COORDINATE,Forrest City Rest Area - I-40 Westbound (MM 242.6)
+3f69b705-f6fc-4802-bea2-68c7bd838ed7,AR,I-40,parking,rest_area,EB,none,no,C:quarantine-no-official-source,"White River Rest Area (I-40 MM 199, EB and WB)"
+688309bc-4aac-48a4-97ce-0b3db43d8d33,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,"Brevard County Rest Area (I-95 MM 168, Palm Bay)"
+2336b0fe-5981-4520-b61b-5bfa9d81fced,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,"Brevard County Rest Area (I-95 MM 225, Titusville)"
+e58cf487-aa6f-4583-b627-f3cf1528ad49,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,Martin County Rest Area (I-95 MM 106)
+b90d812b-1e76-445c-bb73-779032a1a4c3,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,St. Johns County Rest Area (I-95 MM 302)
+1e7a6551-2a7e-4d32-a04f-400c8ed8db63,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,St. Johns County Rest Area (I-95 MM 331)
+80e720ca-5925-46a8-a9a1-005528f34f4c,FL,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,St. Lucie County Rest Area (I-95 MM 133)
+49bf9a34-856c-4427-b94b-c8af02009a4c,GA,I-95,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,Carson Safety Rest Area - I-95 NB
+270b3a0e-3826-4c85-8c3d-d1dd311b1c71,GA,I-95,parking,rest_area,SB,official,no,C:quarantine-truck-parking-unconfirmed,GA I-95 Glynn County Rest Area (Southbound)
+580ad9fe-73e7-4c6a-bac4-72d30e46f2f7,IN,I-65,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,Henryville Rest Area (Northbound)
+e9f9100d-6132-4979-a13e-bc3f90a6df1f,IN,I-65,parking,rest_area,,none,yes,C:quarantine-no-official-source,Taylorsville Rest Area (I-65)
+789edf6c-1440-44ca-8034-2d2a483a651d,KY,I-75,parking,rest_area,NB,third_party,no,C:quarantine-no-official-source,Scott County Rest Area Northbound (MM 127)
+d7e9da52-4a01-4b3d-9c14-86f59343ca7c,KY,I-75,parking,rest_area,SB,third_party,yes,C:quarantine-no-official-source,Scott County Rest Area Southbound (MM 127)
+a3bd4ae7-8628-43ac-ba05-c03028eb215c,MI,I-75,parking,rest_area,NB,third_party,no,C:quarantine-no-official-source,"Sault Ste. Marie Rest Area (I-75 NB, MM 389)"
+9d0f39c3-4609-4b0b-8051-7ca9b53f97b0,MI,I-75,parking,rest_area,SB,third_party,no,C:quarantine-no-official-source,"St. Ignace Rest Area (I-75 SB, MM 348)"
+d8c8b88a-0af7-4faf-838f-5288eef85239,NC,I-95,parking,rest_area,NB,official,no,C:quarantine-truck-parking-unconfirmed,I-95 Cumberland County Rest Area (Northbound)
+25dea13e-8d96-411a-8945-782f2b5694d4,NC,I-95,parking,rest_area,SB,official,no,C:quarantine-truck-parking-unconfirmed,I-95 Cumberland County Rest Area (Southbound)
+a55fe534-cdce-4fa2-946f-7e54ac747462,NC,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,I-95 Johnston County Rest Area (MM 99)
+f2ee667c-a7d7-4e9d-9f9d-b3333d69bb73,NC,I-95,parking,rest_area,,official,no,C:quarantine-truck-parking-unconfirmed,I-95 Nash County Rest Area (MM 142)
+754ad6c5-67c3-471c-a1f0-a2add44818fa,NC,I-40,parking,rest_area,EB,official,no,C:quarantine-truck-parking-unconfirmed,McDowell County Rest Area I-40 Eastbound (MM 82)
+ff910909-fb85-4078-89de-733cdf1b24f3,NC,I-40,parking,rest_area,WB,official,no,C:quarantine-truck-parking-unconfirmed,McDowell County Rest Area I-40 Westbound (MM 82)
+e7edb2b3-ca16-40d5-b412-7435c59bd132,OH,I-75,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,I-75 Rest Area — Northbound (Miami County)
+97a91141-ec4d-49fb-b8d2-4c30a90c308a,OH,I-75,parking,rest_area,SB,official,yes,A-PENDING-COORDINATE,I-75 Rest Area — Southbound (Miami County)
+a78733d7-c361-4bb9-b33b-fce85430accb,SC,I-95,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,Santee Rest Area (Northbound)
+f06d1393-166a-44a7-8ea1-9bb9ffdf749a,SC,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,Turbeville Rest Area (I-95 MM 139)
+a57aadf4-496b-4065-83e8-5c87885bf2b0,TN,I-40,parking,rest_area,EB,official,no,C:quarantine-truck-parking-unconfirmed,Benton County I-40 Eastbound Rest Area (Loretta Lynn / Hank Williams Rest Area)
+188b983c-bfc5-4d1d-9027-02850775a06a,TN,I-40,parking,rest_area,WB,official,yes,A-PENDING-COORDINATE,Benton County I-40 Westbound Rest Area
+39d8b991-c7a4-4631-82f9-23f3e3947ae9,TN,I-40,parking,rest_area,EB,official,yes,A-PENDING-COORDINATE,Dickson County Rest Area - I-40 Eastbound (MM 170)
+c4c53150-93d8-46e4-a4a5-8a5ede62e6ec,TN,I-40,parking,rest_area,WB,official,yes,A-PENDING-COORDINATE,Dickson County Rest Area - I-40 Westbound (MM 170)
+f2afcd23-d5f0-4a59-b8b0-00b83e24da33,TN,I-40,parking,rest_area,EB,third_party,no,C:quarantine-no-official-source,"I-40 Cumberland County Rest Area (Eastbound, MM 324.4)"
+9294ef9c-0e44-440c-a480-81bc00da21e5,TN,I-40,parking,rest_area,WB,third_party,no,C:quarantine-no-official-source,"I-40 Cumberland County Rest Area (Westbound, MM 326.6)"
+79b23309-1563-43cb-9657-4edb9d990acb,TN,I-40,parking,rest_area,EB,official,no,C:quarantine-truck-parking-unconfirmed,"TDOT Madison County Rest Area (I-40 Eastbound, MM 73)"
+0b924a84-cb2d-4876-b433-f63fdfa47c78,VA,I-95,parking,rest_area,,official,yes,A-PENDING-COORDINATE,Carson Safety Rest Area
+20527ca4-925d-432f-a857-1150c2a09ba8,VA,I-95,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,Dale City Safety Rest Area (Northbound)
+b440fb9a-6e87-485e-8279-680b862a8f0b,VA,I-95,parking,rest_area,SB,official,yes,A-PENDING-COORDINATE,Dale City Truck Rest Area (Southbound)
+fe637d31-d4dc-4482-9e3c-2b196a38335c,VA,I-95,parking,rest_area,NB,official,yes,A-PENDING-COORDINATE,Ladysmith Safety Rest Area (Northbound)
+0ef95380-098c-4503-9bc9-74781c544195,VA,I-95,parking,rest_area,SB,official,yes,A-PENDING-COORDINATE,Ladysmith Safety Rest Area (Southbound)
+89e875dc-9852-4f4d-9a5e-0265fd2f564c,AR,I-40,truck-stops,service_plaza,,none,no,C:quarantine-no-official-source,Ozark Truck & Travel Plaza
+80786332-ef51-4045-9f28-a33abfbf56bd,MD,I-95,truck-stops,service_plaza,,official,yes,A-PENDING-COORDINATE,Chesapeake House Travel Plaza
+6bc0c663-fe39-4d71-b270-4b4d3d04b651,MD,I-95,parking,service_plaza,,official,yes,A-PENDING-COORDINATE,Chesapeake House Travel Plaza Truck Parking
+0c8f2702-18ba-465d-ad9f-7222b3db2744,MD,I-95,truck-stops,service_plaza,,official,yes,A-PENDING-COORDINATE,Maryland House Travel Plaza
+208bb775-28c3-4123-8bd8-6eaaeac77ad4,MD,I-95,parking,service_plaza,,official,yes,A-PENDING-COORDINATE,Maryland House Travel Plaza Truck Parking
+84fa50b8-a334-4d48-a35e-094013ae1772,AR,I-40,parking,truck_parking,EB,none,no,C:quarantine-no-official-source,I-40 Truck Turnout - Mile 134 Eastbound (Mayflower/Conway)
+13fbe19d-84fb-4f7b-b4e4-f40b556c3235,AR,I-40,parking,truck_parking,,third_party,no,C:quarantine-no-official-source,Little Rock Truck Parking - Conway Lot
+110ba438-bcf5-4d06-892f-4c107be0581f,AR,I-40,parking,truck_parking,,none,no,C:quarantine-no-official-source,Truck Parking Club - Pence Ln lot behind Workman's Travel Center
+5cb0eddc-0234-4964-8e45-0cb9980b9c8b,IL,I-24,parking,truck_parking,,none,no,C:quarantine-no-official-source,Truck Parking Club lot - 2409 IL-145 Metropolis
+bdc8b533-9542-4312-b7da-1a39a2f6d297,IL,I-24,parking,truck_parking,,none,no,C:quarantine-no-official-source,Truck parking only lot - 5570 S US Route 45 (former truck stop)
+b3c32523-9238-4888-a80f-48c89bb738ea,KY,I-75,parking,truck_parking,,third_party,yes,C:quarantine-no-official-source,Shed Lot Truck Parking
+56a93068-45d4-4033-ba20-a00d3fe66ba6,MI,I-75,parking,truck_parking,,third_party,yes,C:quarantine-no-official-source,Truck Parking Club - Auburn Hills
+c7f25b2f-f452-4eb3-b77d-7f74097bd34e,MI,I-75,parking,truck_parking,,third_party,yes,C:quarantine-no-official-source,Truck Parking Club - Madison Heights
+d111217f-786e-4b71-b57e-ffa4dca9f3b2,NC,I-40,parking,truck_parking,,none,no,C:quarantine-no-official-source,Truck Parking Club - 47 Walker Way
+640d6b42-4c71-4eb9-b734-da42ae182bab,OH,I-75,parking,truck_parking,,third_party,no,C:quarantine-no-official-source,My Parking Hub - Toledo (Sam's Hub Access)
+e1730d2e-0567-43bc-a3db-6e15a0f8cb11,OH,I-75,parking,truck_parking,,third_party,no,C:quarantine-no-official-source,Toledo Truck Hub
+5f8a9e1f-6fd6-411f-83aa-6a56f2cb8c97,TN,I-65,parking,truck_parking,NB,official,yes,A-PENDING-COORDINATE,"I-65 Northbound Truck Parking Area (former weigh station, Robertson County)"
+d375452a-670c-4a2e-8d3e-92fc53756210,TN,I-65,parking,truck_parking,NB,official,yes,A-PENDING-COORDINATE,"TDOT I-65 Truck Parking Area (former Northbound Weigh Station, Giles County)"
+291f4ba9-2de3-4f95-a81d-642f0bf0ac93,TN,I-40,parking,truck_parking,WB,third_party,yes,C:quarantine-no-official-source,"Westbound Truck Parking Area, I-40 WB near Monterey"
+0c12c406-4c2e-44e8-9782-2a153284e104,AL,I-65,weigh-stations,weigh_inspection,NB,third_party,no,C:quarantine-inspection-only-no-parking-evidence,I-65 Athens Weigh Station (Northbound)
+7e23df57-04ed-4904-a5ca-c80c5ecbbdd7,AL,I-65,weigh-stations,weigh_inspection,SB,third_party,no,C:quarantine-inspection-only-no-parking-evidence,I-65 Athens Weigh Station (Southbound)
+9fe701ff-4960-4778-89fa-3c7602733ca0,AR,I-40,weigh-stations,weigh_inspection,EB,none,no,C:quarantine-inspection-only-no-parking-evidence,Alma I-40 Weigh Station (Eastbound)
+362fcb47-e547-41fc-906c-0e919a652678,AR,I-40,weigh-stations,weigh_inspection,WB,none,no,C:quarantine-inspection-only-no-parking-evidence,Alma I-40 Weigh Station (Westbound)
+32e6a809-fac2-4ed9-9b6f-466bd58dbd12,AR,I-40,weigh-stations,weigh_inspection,EB,official,no,C:quarantine-inspection-only-no-parking-evidence,Arkansas Highway Police Weigh Station - I-40 Eastbound (Lehi / West Memphis)
+06e42540-a961-466c-8a92-b323201f9410,AR,I-40,weigh-stations,weigh_inspection,WB,official,no,C:quarantine-inspection-only-no-parking-evidence,Arkansas Highway Police Weigh Station - I-40 Westbound (Riverside / West Memphis)
+54a502b2-9b7d-49be-ba59-e2a4ef38ce72,FL,I-95,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,Agricultural Inspection Station No. 16B (I-95)
+13be8788-04e4-4034-ade5-45061a9c25ec,FL,I-75,weigh-stations,weigh_inspection,NB,official,no,C:quarantine-inspection-only-no-parking-evidence,Florida Weigh Station - I-75 Northbound (Punta Gorda)
+d07bf85c-8a1e-4f99-b194-19e7307a8889,FL,I-75,weigh-stations,weigh_inspection,,third_party,no,C:quarantine-inspection-only-no-parking-evidence,Marion County Truck Comfort / Weigh Station (I-75 MM 338)
+80a397c9-f16f-4be8-a819-bfc96ca43746,FL,I-95,weigh-stations,weigh_inspection,SB,official,no,C:quarantine-inspection-only-no-parking-evidence,Martin County Weigh Station (I-95 Southbound)
+74aacea6-d2b2-4040-88d9-dbbb25571af5,FL,I-95,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,Nassau County Weigh Station (I-95)
+7e3bf39e-aaad-40cc-b496-182450fb2ffe,FL,I-75,weigh-stations,weigh_inspection,,none,no,C:quarantine-inspection-only-no-parking-evidence,White Springs Weigh Station (I-75)
+6e3a9268-d9ac-4350-9e70-6f1c9a9d1964,GA,I-95,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,"GA DPS Weigh Station (I-95 Northbound, Townsend)"
+780cc3cf-1b89-490d-b3f8-676a93f4c6f9,GA,I-95,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,"GA DPS Weigh Station (I-95 Southbound, Townsend)"
+58062585-dc00-475c-a72f-3ca3df99520e,GA,I-24,weigh-stations,weigh_inspection,,none,no,C:quarantine-inspection-only-no-parking-evidence,Georgia I-24 Weigh / Inspection Station (Dade County)
+eaf18864-af61-48b8-bbeb-edee81021740,GA,I-95,weigh-stations,weigh_inspection,,none,no,C:quarantine-inspection-only-no-parking-evidence,I-95 Weigh Station - Port Wentworth
+94480a62-6e45-41d9-ab9c-ddaf9d084ca8,IN,I-65,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,I-65 Southbound Weigh Station (Lowell)
+b56d0a14-0fd0-4b65-aa19-9af1edb59f4b,IN,I-65,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,Seymour Weigh Station (Northbound)
+e637db12-eba1-494a-a73a-aa86545cf6bc,IN,I-65,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,Seymour Weigh Station (Southbound)
+2a3d7c32-e385-41db-9b12-6111d7fa91fc,MD,I-95,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,I-95/I-495 Commercial Vehicle Weigh & Inspection Station (MSP CVED)
+73a2d986-6a30-41a4-83b8-e396fb3b71e1,MI,I-75,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,Michigan Weigh Station - I-75 Northbound (Mackinac Bridge / St. Ignace)
+f272ad94-84b1-4088-8ce0-b1efa77a4230,MI,I-75,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,"Michigan Weigh Station - I-75 Northbound (Oakland County, Baldwin Rd)"
+d0b37299-61ff-49e7-bcc9-46d9ce6616ab,MI,I-75,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,Michigan Weigh Station - I-75 Southbound (Birch Run)
+87de1008-5deb-4d36-a871-6b48dd5ddf9f,MI,I-75,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,"Weigh Station — I-75 Northbound, Luna Pier"
+a5cf4099-551f-4a7b-b4e2-344446b62a4c,MI,I-75,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,"Weigh Station — I-75 Southbound, Monroe/Erie"
+bd45a0c6-862a-4c3b-a2ae-8ef2a07781c2,NC,I-40,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,Asheville Weigh Station (NC State Highway Patrol)
+0b4195b4-4e0a-4192-99a0-dea2c6eb0d9e,NC,I-95,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,Halifax County I-95 Weigh Station (SHP)
+50f05436-a429-44f6-829e-630075daec0d,NC,I-95,weigh-stations,weigh_inspection,NB,official,no,C:quarantine-inspection-only-no-parking-evidence,I-95 Robeson County Weigh Station (Northbound)
+99f4a8cf-a977-46a5-8226-ad8721be76b9,NC,I-95,weigh-stations,weigh_inspection,SB,official,no,C:quarantine-inspection-only-no-parking-evidence,I-95 Robeson County Weigh Station (Southbound)
+9d5a2272-c6dd-4da0-bebb-cefcb166dbca,OH,I-75,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,Ohio Weigh Station - I-75 Northbound (Wood County)
+9c02196d-c003-4a1c-8d12-900557e6c70f,OH,I-75,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,Ohio Weigh Station - I-75 Southbound (Hancock County)
+b6e214a9-642b-4f97-a844-fe869483a318,SC,I-95,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,I-95 Weigh / Inspection Station (Hardeeville)
+7bddc0f4-c215-42e9-958a-82260e323ba5,TN,I-40,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,I-40 Weigh/Inspection Station - Cocke County (near NC line)
+b0e52e2c-764d-4cfb-a8bb-2d785e119711,TN,I-65,weigh-stations,weigh_inspection,NB,official,yes,C:quarantine-weigh-needs-parking-confirmation,"I-65 Giles County Weigh Station (Northbound, Ardmore)"
+128a2d09-7f2f-42f0-81cc-1f714b61b3d7,TN,I-75,weigh-stations,weigh_inspection,NB,none,no,C:quarantine-inspection-only-no-parking-evidence,Tennessee Weigh Station - I-75 Northbound (Bradley County)
+34f173ec-5520-4e3b-aa7e-41cd6bb9de9d,TN,I-75,weigh-stations,weigh_inspection,SB,none,no,C:quarantine-inspection-only-no-parking-evidence,Tennessee Weigh Station - I-75 Southbound (Bradley County)
+132a8918-4b7b-429b-b420-ce69e9ecb151,TN,I-65,weigh-stations,weigh_inspection,SB,official,no,C:quarantine-inspection-only-no-parking-evidence,"Tennessee Weigh Station — I-65 Southbound (Robertson County, near KY line)"
+89e8f796-d286-4e0e-b0d3-327b03d76cfa,TN,I-40,weigh-stations,weigh_inspection,,official,no,C:quarantine-inspection-only-no-parking-evidence,"THP Check Station - Poplar Springs (Lexington area, portable scales)"
+db877e00-74cc-4667-b567-9cc8df78f72b,TN,I-40,weigh-stations,weigh_inspection,WB,official,no,C:quarantine-inspection-only-no-parking-evidence,THP Commercial Vehicle Scale Complex - Haywood County (I-40 Westbound)
+ee07dd11-b979-45e2-90a1-9ba14254ba28,VA,I-95,weigh-stations,weigh_inspection,NB,official,no,C:quarantine-inspection-only-no-parking-evidence,Carson Weigh Station Northbound
+7af1a802-82f1-4501-a026-986e8230ccfb,VA,I-95,weigh-stations,weigh_inspection,SB,official,no,C:quarantine-inspection-only-no-parking-evidence,Carson Weigh Station Southbound
+c7d92966-ddcd-4536-8992-193b66e21c6f,VA,I-95,weigh-stations,weigh_inspection,NB,official,no,C:quarantine-inspection-only-no-parking-evidence,Dumfries Weigh Station (Northbound)
+f4089b87-a23d-4210-bb67-5485d5a6447d,VA,I-95,weigh-stations,weigh_inspection,SB,official,no,C:quarantine-inspection-only-no-parking-evidence,Dumfries Weigh Station (Southbound)
+4f21b0d2-18b1-46a0-9a7e-a11b3922f9a7,AL,I-65,parking,welcome_center,SB,official,no,C:quarantine-truck-parking-unconfirmed,Ardmore Welcome Center (I-65 Southbound)
+99c486f6-7e9b-4c26-b6da-b7219cc694c6,AR,I-40,parking,welcome_center,EB,none,no,C:quarantine-no-official-source,"Arkansas Welcome Center at Van Buren/Fort Smith (I-40 EB, MM 2)"
+c33d248f-de4a-48ce-8b98-555d7b1f92ad,FL,I-95,parking,welcome_center,,official,no,C:quarantine-truck-parking-unconfirmed,Florida Welcome Center (I-95)
+2533368e-1ea7-4a8f-b73e-a6c79eec61c5,GA,I-95,parking,welcome_center,NB,official,no,C:quarantine-truck-parking-unconfirmed,Georgia Welcome Center (I-95 Northbound)
+45a1cbfc-d6ab-4797-9708-e993055412e4,GA,I-95,parking,welcome_center,SB,third_party,no,C:quarantine-no-official-source,Georgia Welcome Center (Savannah) - I-95 SB
+431feb1a-211c-4ca1-9c3c-d6b9e32cba5f,IL,I-24,parking,welcome_center,,none,no,C:quarantine-no-official-source,Fort Massac Welcome Center / Rest Area (I-24 MM 37)
+b5d0079f-4f1b-4399-a662-e881a2059892,KY,I-75,parking,welcome_center,,none,no,C:quarantine-no-official-source,"Kentucky Welcome Center / Rest Area (I-71/75, Boone County)"
+6c6a902c-51f9-4aee-859d-3eb835664f64,MD,I-95,parking,welcome_center,,third_party,no,C:quarantine-no-official-source,Maryland I-95 North Welcome Center & Rest Area
+9ee0d88b-f880-4157-81ec-2453ef1f37ed,MD,I-95,parking,welcome_center,,third_party,yes,C:quarantine-no-official-source,Maryland I-95 South Welcome Center & Rest Area
+d4a2a4fa-6bf3-407f-a16d-eb56851d1818,NC,I-95,parking,welcome_center,,third_party,yes,C:quarantine-no-official-source,I-95 South N.C. Welcome Center
+046b382e-6805-4be0-867d-d919b6cedadb,NC,I-95,parking,welcome_center,,official,yes,A-PENDING-COORDINATE,North Carolina Welcome Center - I-95 Northampton
+6ad4784a-e243-424d-add0-f86c493522d8,SC,I-95,parking,welcome_center,SB,official,yes,A-PENDING-COORDINATE,"Hamer Welcome Center (I-95 SB, NC line)"
+b0bc8564-8366-420d-ae6b-5e7beba07881,SC,I-95,parking,welcome_center,SB,official,yes,A-PENDING-COORDINATE,Santee Welcome Center (Southbound)
+992872b0-b0e0-4f51-867c-1460666822b7,SC,I-95,parking,welcome_center,NB,third_party,yes,C:quarantine-no-official-source,South Carolina Welcome Center (I-95 NB)
+84220419-b8f4-47eb-bae1-d9fb3dc20040,TN,I-40,parking,welcome_center,WB,official,yes,A-PENDING-COORDINATE,"TDOT Haywood County Welcome Center / Rest Area (I-40 Westbound, MM 44-45)"
+c1b2faaa-1b77-420d-88ce-d1d2d36f7a5b,TN,I-65,parking,welcome_center,NB,official,no,C:quarantine-truck-parking-unconfirmed,"Tennessee Welcome Center - I-65 (Ardmore, Northbound)"
+1b0ef012-d5cf-4550-8723-3c19fa283ddb,VA,I-95,parking,welcome_center,SB,official,yes,A-PENDING-COORDINATE,Fredericksburg Welcome Center (Southbound)
+9a0ac97f-90d6-4f60-a96d-d51791049ffe,VA,I-95,parking,welcome_center,,official,yes,A-PENDING-COORDINATE,Virginia Welcome Center (Skippers)
