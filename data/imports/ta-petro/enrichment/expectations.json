@@ -1,0 +1,273 @@
+{
+ "passes": {
+  "1": {
+   "states": [
+    "AL",
+    "AR",
+    "AZ",
+    "CA",
+    "CO",
+    "CT",
+    "FL",
+    "GA",
+    "IA",
+    "ID"
+   ],
+   "interstate": 48,
+   "exit": 42
+  },
+  "2": {
+   "states": [
+    "IL",
+    "IN",
+    "KS",
+    "KY",
+    "LA",
+    "MI",
+    "MN"
+   ],
+   "interstate": 48,
+   "exit": 45
+  },
+  "3": {
+   "states": [
+    "MO",
+    "MS",
+    "MT",
+    "NC",
+    "ND",
+    "NE",
+    "NH",
+    "NJ",
+    "NM",
+    "NV"
+   ],
+   "interstate": 49,
+   "exit": 42
+  },
+  "4": {
+   "states": [
+    "NY",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC"
+   ],
+   "interstate": 49,
+   "exit": 45
+  },
+  "5": {
+   "states": [
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "WA"
+   ],
+   "interstate": 44,
+   "exit": 39
+  },
+  "6": {
+   "states": [
+    "WI",
+    "WV",
+    "WY"
+   ],
+   "interstate": 16,
+   "exit": 16
+  }
+ },
+ "per_state": {
+  "AL": {
+   "interstate": 7,
+   "exit": 7
+  },
+  "AR": {
+   "interstate": 2,
+   "exit": 2
+  },
+  "AZ": {
+   "interstate": 8,
+   "exit": 8
+  },
+  "CA": {
+   "interstate": 9,
+   "exit": 4
+  },
+  "CO": {
+   "interstate": 6,
+   "exit": 6
+  },
+  "CT": {
+   "interstate": 2,
+   "exit": 2
+  },
+  "FL": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "GA": {
+   "interstate": 7,
+   "exit": 7
+  },
+  "IA": {
+   "interstate": 3,
+   "exit": 2
+  },
+  "ID": {
+   "interstate": 1,
+   "exit": 1
+  },
+  "IL": {
+   "interstate": 12,
+   "exit": 11
+  },
+  "IN": {
+   "interstate": 10,
+   "exit": 10
+  },
+  "KS": {
+   "interstate": 5,
+   "exit": 5
+  },
+  "KY": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "LA": {
+   "interstate": 11,
+   "exit": 10
+  },
+  "MI": {
+   "interstate": 4,
+   "exit": 4
+  },
+  "MN": {
+   "interstate": 3,
+   "exit": 2
+  },
+  "MO": {
+   "interstate": 10,
+   "exit": 10
+  },
+  "MS": {
+   "interstate": 4,
+   "exit": 3
+  },
+  "MT": {
+   "interstate": 2,
+   "exit": 2
+  },
+  "NC": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "ND": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "NE": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "NH": {
+   "interstate": 1,
+   "exit": 0
+  },
+  "NJ": {
+   "interstate": 4,
+   "exit": 2
+  },
+  "NM": {
+   "interstate": 9,
+   "exit": 7
+  },
+  "NV": {
+   "interstate": 10,
+   "exit": 9
+  },
+  "NY": {
+   "interstate": 7,
+   "exit": 6
+  },
+  "OH": {
+   "interstate": 12,
+   "exit": 11
+  },
+  "OK": {
+   "interstate": 5,
+   "exit": 4
+  },
+  "OR": {
+   "interstate": 6,
+   "exit": 6
+  },
+  "PA": {
+   "interstate": 13,
+   "exit": 12
+  },
+  "RI": {
+   "interstate": 1,
+   "exit": 1
+  },
+  "SC": {
+   "interstate": 5,
+   "exit": 5
+  },
+  "SD": {
+   "interstate": 2,
+   "exit": 2
+  },
+  "TN": {
+   "interstate": 2,
+   "exit": 2
+  },
+  "TX": {
+   "interstate": 28,
+   "exit": 24
+  },
+  "UT": {
+   "interstate": 3,
+   "exit": 3
+  },
+  "VA": {
+   "interstate": 5,
+   "exit": 4
+  },
+  "WA": {
+   "interstate": 4,
+   "exit": 4
+  },
+  "WI": {
+   "interstate": 7,
+   "exit": 7
+  },
+  "WV": {
+   "interstate": 4,
+   "exit": 4
+  },
+  "WY": {
+   "interstate": 5,
+   "exit": 5
+  }
+ },
+ "canary_ids": [
+  "4d83a5f4-3a68-4047-a6b3-cc2724e32ea3",
+  "09c2f55b-774e-4670-8120-e8f282978c00",
+  "1722ae34-d370-4a32-b4d0-3ef0f6a1e6ba",
+  "5853847c-19b3-4623-912f-4d965355ea1e",
+  "1af7e56a-9913-49a4-99c2-9ab5af0dcdb3",
+  "b1a810d9-fa26-4b9f-a829-7ff3a327a6ed",
+  "354bc376-dbe6-4584-b8a5-1b4ec6e55c70",
+  "15de1227-c048-4efc-9434-ac55e17356f1",
+  "3e8796c6-77f4-4c8c-9832-e46e040689c5",
+  "8b16110b-263b-41f1-81f7-f05a3c028b11"
+ ],
+ "totals": {
+  "interstate": 264,
+  "exit": 239
+ }
+}

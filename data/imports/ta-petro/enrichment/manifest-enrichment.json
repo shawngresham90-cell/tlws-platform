@@ -1,0 +1,5436 @@
+{
+ "source_label": "official-ta-petro-20260725-5ebe0e9f",
+ "evidence_source": {
+  "file": "data/imports/locmaster20260725.xlsx",
+  "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+  "column": "Directions",
+  "master_date": "2026-07-25",
+  "note": "Official TA/Petro operator location master; interstate+exit read verbatim from the Directions field. sha256 matches the provenance recorded in ta-petro-review.csv for the original import."
+ },
+ "counts": {
+  "batch": 304,
+  "interstate_approved": 264,
+  "exit_approved": 239,
+  "both_approved": 239,
+  "interstate_only": 25,
+  "not_applicable_interstate": 40,
+  "unresolved": 11
+ },
+ "rows": [
+  {
+   "id": "4d83a5f4-3a68-4047-a6b3-cc2724e32ea3",
+   "name": "TA Lincoln",
+   "brand": "TA",
+   "city": "lincoln",
+   "state": "AL",
+   "interstate": "I-20",
+   "exit_number": "168",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 168",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "572fb3e7-00db-4124-be14-1973179305b1",
+   "name": "TA Mobile",
+   "brand": "TA",
+   "city": "grand bay",
+   "state": "AL",
+   "interstate": "I-10",
+   "exit_number": "4",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 4",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6f59cf8c-3082-4665-b028-278e5cabb48a",
+   "name": "Petro Gadsden",
+   "brand": "Petro",
+   "city": "gadsden",
+   "state": "AL",
+   "interstate": "I-59",
+   "exit_number": "181",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-59"
+   ],
+   "evidence": "I-59, Exit 181",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "83ce88cc-b0ba-48dc-b375-068ee3ffc107",
+   "name": "TA Tuscaloosa",
+   "brand": "TA",
+   "city": "tuscaloosa",
+   "state": "AL",
+   "interstate": "I-20",
+   "exit_number": "77",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20/159 & Buttermilk Rd., Exit 77",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "89efc304-db46-447a-8b9a-b83ab93b9d9c",
+   "name": "TA Express Birmingham",
+   "brand": "TA",
+   "city": "birmingham",
+   "state": "AL",
+   "interstate": "I-20",
+   "exit_number": "123",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 123",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "95a8fd44-581d-4dbc-b4db-0a12cfa04cbb",
+   "name": "TA Robertsdale",
+   "brand": "TA",
+   "city": "robertsdale",
+   "state": "AL",
+   "interstate": "I-10",
+   "exit_number": "53",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit  53",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "aa22aebc-827d-4c44-afb4-98dd3be03ff1",
+   "name": "Petro Bucksville",
+   "brand": "Petro",
+   "city": "mccalla",
+   "state": "AL",
+   "interstate": "I-20",
+   "exit_number": "100",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 & 1-59, Exit 100",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "aa7af198-e51a-4d6a-ac33-dc29291321e4",
+   "name": "Petro Shorter",
+   "brand": "Petro",
+   "city": "shorter",
+   "state": "AL",
+   "interstate": "I-85",
+   "exit_number": "22",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 22",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "09c2f55b-774e-4670-8120-e8f282978c00",
+   "name": "TA Express Judsonia",
+   "brand": "TA",
+   "city": "judsonia",
+   "state": "AR",
+   "interstate": "I-57",
+   "exit_number": "48",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-57"
+   ],
+   "evidence": "I-57, Exit 48",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6032ab89-70c9-4df4-9c05-9e2d1eee2485",
+   "name": "TA Prescott",
+   "brand": "TA",
+   "city": "prescott",
+   "state": "AR",
+   "interstate": "I-30",
+   "exit_number": "44",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-30"
+   ],
+   "evidence": "I-30, Exit 44",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "eac91b9e-1cf4-491a-82b0-4441bbd6f045",
+   "name": "TA Express Jonesboro",
+   "brand": "TA",
+   "city": "jonesboro",
+   "state": "AR",
+   "interstate": "I-555",
+   "exit_number": "39",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-555"
+   ],
+   "evidence": "I-555, Exit 39",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "1722ae34-d370-4a32-b4d0-3ef0f6a1e6ba",
+   "name": "TA Willcox",
+   "brand": "TA",
+   "city": "willcox",
+   "state": "AZ",
+   "interstate": "I-10",
+   "exit_number": "340",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, 1501 Fort Grant Rd., Exit 340",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "249a5cf2-c5e2-44f1-9acf-b2bf69642433",
+   "name": "Petro Eloy",
+   "brand": "Petro",
+   "city": "casa grande",
+   "state": "AZ",
+   "interstate": "I-10",
+   "exit_number": "200",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 200 at Sunland Gin Rd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3a717f8d-0255-42a0-980d-65edf384ee7b",
+   "name": "TA Tonopah",
+   "brand": "TA",
+   "city": "tonopah",
+   "state": "AZ",
+   "interstate": "I-10",
+   "exit_number": "103",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 & 339th Ave., Exit 103",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "53eac1be-8c71-41fe-852b-d6515f065b06",
+   "name": "TA Express Littlefield",
+   "brand": "TA",
+   "city": "littlefield",
+   "state": "AZ",
+   "interstate": "I-15",
+   "exit_number": "8",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15, Exit 8",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5868c989-c250-447d-85cf-a9838893ac86",
+   "name": "TA Ash Fork",
+   "brand": "TA",
+   "city": "ash fork",
+   "state": "AZ",
+   "interstate": "I-40",
+   "exit_number": "144",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 144, Northwest Corner",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "acb31a81-5cf6-43e8-b150-6625dfa38988",
+   "name": "Petro Kingman",
+   "brand": "Petro",
+   "city": "kingman",
+   "state": "AZ",
+   "interstate": "I-40",
+   "exit_number": "66",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40 at Blake Ranch Rd., Exit 66",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "de5add61-864c-41ee-9997-341c3c60a9b6",
+   "name": "TA Holbrook",
+   "brand": "TA",
+   "city": "holbrook",
+   "state": "AZ",
+   "interstate": "I-40",
+   "exit_number": "283",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 283",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "dee1ea0a-e155-45cc-9d3c-6ef2af3bb10d",
+   "name": "TA Express White Hills",
+   "brand": "TA",
+   "city": "white hills",
+   "state": "AZ",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 93, MM 29",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ed302d2a-630e-48b8-8f94-7b9e75351624",
+   "name": "TA Kingman",
+   "brand": "TA",
+   "city": "kingman",
+   "state": "AZ",
+   "interstate": "I-40",
+   "exit_number": "48",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 48",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fbc89448-ea08-4d8c-8dfb-5aee3008f490",
+   "name": "TA Eloy",
+   "brand": "TA",
+   "city": "eloy",
+   "state": "AZ",
+   "interstate": "I-10",
+   "exit_number": "203",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 203, Toltec Rd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "17842fd0-024e-4687-b3d9-64fa8002cb9d",
+   "name": "TA Express Olancha",
+   "brand": "TA",
+   "city": "olancha",
+   "state": "CA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 395",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "20753bae-652d-4356-a30a-35aa1e2ade7e",
+   "name": "TA Madera",
+   "brand": "TA",
+   "city": "madera",
+   "state": "CA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "State Hwy 99, Exit 144",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2b385a1b-f950-4410-8f87-2ee4a7d5fb71",
+   "name": "TA Wheeler Ridge",
+   "brand": "TA",
+   "city": "arvin",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5 @ Lake Isabella or Laval Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "38b62428-c1d8-4e5c-9f84-22a9adb17469",
+   "name": "TA Livingston",
+   "brand": "TA",
+   "city": "livingston",
+   "state": "CA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "SR 99 at Exit 203 Winton Parkway",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3e9bf81d-9821-459a-83c6-2f4a11b1cdd8",
+   "name": "Petro Santa Nella",
+   "brand": "Petro",
+   "city": "santa nella",
+   "state": "CA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "State Hwy 152 & State Hwy 33",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5853847c-19b3-4623-912f-4d965355ea1e",
+   "name": "Petro Corning",
+   "brand": "Petro",
+   "city": "corning",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": "630",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5 at South Avenue, Exit 630",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5c4f1bd6-e79e-48b2-8d3c-b0cf4b91b934",
+   "name": "TA Barstow",
+   "brand": "TA",
+   "city": "barstow",
+   "state": "CA",
+   "interstate": "I-15",
+   "exit_number": "178",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15 Exit 178/Lenwood Rd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7220877f-0b69-4559-a7aa-175ab7e82c6e",
+   "name": "Petro Wheeler Ridge",
+   "brand": "Petro",
+   "city": "lebec",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5 at Laval Road West",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8a92c12c-7f82-40ca-8244-38a54f195999",
+   "name": "TA Santa Nella",
+   "brand": "TA",
+   "city": "santa nella",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5 & Hwy 33, Santa Nella Exit",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9c7bdf1a-fe83-41ef-a925-a73eb3c4d4a4",
+   "name": "Petro Ontario",
+   "brand": "Petro",
+   "city": "ontario",
+   "state": "CA",
+   "interstate": "I-10",
+   "exit_number": "57",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 & Milliken Ave. Exit 57",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ac2fb202-c39a-49e4-a1ae-fc78ab554009",
+   "name": "TA Coachella",
+   "brand": "TA",
+   "city": "coachella",
+   "state": "CA",
+   "interstate": "I-10",
+   "exit_number": "146",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 at Exit 146 (Dillon Rd.)",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d58dbde6-582b-4601-8bbf-bd8999741f2f",
+   "name": "TA Redding",
+   "brand": "TA",
+   "city": "redding",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5, Knighton Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f522cc1a-d3b9-4b42-8e57-55f35c07fa69",
+   "name": "TA Ontario",
+   "brand": "TA",
+   "city": "ontario",
+   "state": "CA",
+   "interstate": "I-10",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 at Milliken Avenue",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fb50e64a-1887-4db8-9415-2059d8b7ae88",
+   "name": "TA Buttonwillow",
+   "brand": "TA",
+   "city": "buttonwillow",
+   "state": "CA",
+   "interstate": "I-5",
+   "exit_number": "257",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5, Exit 257, Highway 58",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "1af7e56a-9913-49a4-99c2-9ab5af0dcdb3",
+   "name": "Petro Johnson's Corner",
+   "brand": "Petro",
+   "city": "johnstown",
+   "state": "CO",
+   "interstate": "I-25",
+   "exit_number": "254",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-25"
+   ],
+   "evidence": "I-25, Exit 254",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5d30b5eb-cba8-4759-af08-66c1a63dced3",
+   "name": "TA Commerce City",
+   "brand": "TA",
+   "city": "commerce city",
+   "state": "CO",
+   "interstate": "I-70",
+   "exit_number": "278",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-70",
+    "I-270"
+   ],
+   "evidence": "I-70/I-270, Exit 278 (Quebec St. Exit)",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6005b068-702b-42c9-9fcd-43c73359591d",
+   "name": "TA Pueblo",
+   "brand": "TA",
+   "city": "pueblo",
+   "state": "CO",
+   "interstate": "I-25",
+   "exit_number": "104",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-25"
+   ],
+   "evidence": "I-25 Exit 104",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "67812e7e-dcd5-4673-954d-4f4d783ba708",
+   "name": "TA Express Brush",
+   "brand": "TA",
+   "city": "brush",
+   "state": "CO",
+   "interstate": "I-76",
+   "exit_number": "90",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-76"
+   ],
+   "evidence": "I-76, Exit 90",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "72b9f7a6-7ee8-4498-b53e-6d3ef73fbfe1",
+   "name": "TA Limon",
+   "brand": "TA",
+   "city": "limon",
+   "state": "CO",
+   "interstate": "I-70",
+   "exit_number": "359",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & Hwy 24, Exit 359",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "84c4403f-64c2-46e5-b2a5-bd39557d8f80",
+   "name": "TA Wheat Ridge",
+   "brand": "TA",
+   "city": "wheat ridge",
+   "state": "CO",
+   "interstate": "I-70",
+   "exit_number": "266",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70, Exit 266",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "bf0d01cb-2d92-4e53-9ccd-340cff7bfb4a",
+   "name": "TA Express Walsenburg",
+   "brand": "TA",
+   "city": "walsenburg",
+   "state": "CO",
+   "interstate": "I-25",
+   "exit_number": "52",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-25"
+   ],
+   "evidence": "I-25, Exit 52",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c1b150a8-ae13-45ae-befe-b0b88dc676cc",
+   "name": "TA Express Grand Junction",
+   "brand": "TA",
+   "city": "grand junction",
+   "state": "CO",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US 6, 50",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fdaa5d66-468c-4c9d-b7a9-98f4b976aba6",
+   "name": "TA Express Lamar",
+   "brand": "TA",
+   "city": "lamar",
+   "state": "CO",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US HWY 50",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b1a810d9-fa26-4b9f-a829-7ff3a327a6ed",
+   "name": "TA Southington",
+   "brand": "TA",
+   "city": "milldale",
+   "state": "CT",
+   "interstate": "I-84",
+   "exit_number": "28",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 28, Highway 322",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e2294476-d094-44fa-85f2-88464d6fad92",
+   "name": "TA Express New Haven",
+   "brand": "TA",
+   "city": "branford",
+   "state": "CT",
+   "interstate": "I-95",
+   "exit_number": "56",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-95"
+   ],
+   "evidence": "I-95, Exit 56",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fa09d896-cd19-4d18-8362-ef5fa21d84be",
+   "name": "TA Willington",
+   "brand": "TA",
+   "city": "willington",
+   "state": "CT",
+   "interstate": "I-84",
+   "exit_number": "71",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 71 Ruby Rd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "354bc376-dbe6-4584-b8a5-1b4ec6e55c70",
+   "name": "TA Express Tampa",
+   "brand": "TA",
+   "city": "seffner",
+   "state": "FL",
+   "interstate": "I-4",
+   "exit_number": "10",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-4"
+   ],
+   "evidence": "I-4, Exit 10",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8961b7bf-e704-4c95-b7aa-13e323b7feb5",
+   "name": "TA Baldwin",
+   "brand": "TA",
+   "city": "baldwin",
+   "state": "FL",
+   "interstate": "I-10",
+   "exit_number": "343",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 343",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c8d42a99-8adc-4143-9db1-61eed3e986d6",
+   "name": "TA Marianna",
+   "brand": "TA",
+   "city": "marianna",
+   "state": "FL",
+   "interstate": "I-10",
+   "exit_number": "142",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 142",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e73a19c9-8ec7-417b-9347-6df1177804ba",
+   "name": "TA Express Medley",
+   "brand": "TA",
+   "city": "medley",
+   "state": "FL",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f3ec3f7f-ca2e-48b0-9cbc-113b78a155ba",
+   "name": "TA Jacksonville South",
+   "brand": "TA",
+   "city": "jacksonville",
+   "state": "FL",
+   "interstate": "I-95",
+   "exit_number": "329",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-95"
+   ],
+   "evidence": "I-95, Exit 329",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "15de1227-c048-4efc-9434-ac55e17356f1",
+   "name": "TA Atlanta South",
+   "brand": "TA",
+   "city": "jackson",
+   "state": "GA",
+   "interstate": "I-75",
+   "exit_number": "201",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-75"
+   ],
+   "evidence": "I-75 & Georgia Hwy 36, Exit 201",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "248c8882-cbfb-4e69-92a8-b229a54dceac",
+   "name": "TA Express Thomson",
+   "brand": "TA",
+   "city": "thomson",
+   "state": "GA",
+   "interstate": "I-20",
+   "exit_number": "175",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20; Exit 175",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "3315aec6-1457-457d-a928-f2ac60c9601f",
+   "name": "TA Express West Point",
+   "brand": "TA",
+   "city": "west point",
+   "state": "GA",
+   "interstate": "I-85",
+   "exit_number": "6",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 6",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "524f9828-f30b-4fd0-8c19-517ca2a94810",
+   "name": "Petro Carnesville",
+   "brand": "Petro",
+   "city": "carnesville",
+   "state": "GA",
+   "interstate": "I-85",
+   "exit_number": "160",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 160",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5ef4d83d-9b81-40cc-b362-014183b69595",
+   "name": "TA Commerce",
+   "brand": "TA",
+   "city": "commerce",
+   "state": "GA",
+   "interstate": "I-85",
+   "exit_number": "149",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85 at U.S. 441, Exit 149",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8f93fd04-a71e-4c59-8bbe-9c6bcd23f1fe",
+   "name": "TA Madison",
+   "brand": "TA",
+   "city": "madison",
+   "state": "GA",
+   "interstate": "I-20",
+   "exit_number": "114",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 & U.S. 441, Exit 114",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "95054be6-8ab3-4994-a0bf-92f85087cf2f",
+   "name": "Petro Atlanta",
+   "brand": "Petro",
+   "city": "atlanta",
+   "state": "GA",
+   "interstate": "I-285",
+   "exit_number": "12",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-285"
+   ],
+   "evidence": "I-285, Exit 12 at Donald Lee Hollowell Hwy",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e32efb95-b1ab-4a54-a931-c6eb071a8448",
+   "name": "TA Express Statesboro",
+   "brand": "TA",
+   "city": "register",
+   "state": "GA",
+   "interstate": "I-16",
+   "exit_number": "116",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-16"
+   ],
+   "evidence": "I-16, US-301, Exit 116",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2ffca043-b2bc-4895-b9fa-0453057840c4",
+   "name": "TA Express Holstein",
+   "brand": "TA",
+   "city": "holstein",
+   "state": "IA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 20",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3e8796c6-77f4-4c8c-9832-e46e040689c5",
+   "name": "TA Brooklyn",
+   "brand": "TA",
+   "city": "brooklyn",
+   "state": "IA",
+   "interstate": "I-80",
+   "exit_number": "197",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 197",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "56e288be-090e-435c-982a-7d7355c5e464",
+   "name": "TA Council Bluffs",
+   "brand": "TA",
+   "city": "council bluffs",
+   "state": "IA",
+   "interstate": "I-29",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-29",
+    "I-80"
+   ],
+   "evidence": "I-29(NB)/I-80(EB), Exit 48 I-29(SB)/I-80(WB), Exit 3 S. Expwy, Exit 49",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "cf1c022a-77d9-42a4-996a-4f012c353ed0",
+   "name": "TA Walcott",
+   "brand": "TA",
+   "city": "walcott",
+   "state": "IA",
+   "interstate": "I-80",
+   "exit_number": "284",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 284",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e2956773-d29a-4270-8bc7-f041a78c34f8",
+   "name": "TA Express Holland",
+   "brand": "TA",
+   "city": "holland",
+   "state": "IA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 20, Exit 208",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f97e88cd-9e27-4e36-9b20-777bd710ed92",
+   "name": "TA Williams",
+   "brand": "TA",
+   "city": "williams",
+   "state": "IA",
+   "interstate": "I-35",
+   "exit_number": "144",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35, Exit 144",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0c347f93-9185-4cd7-89d6-a411df092ced",
+   "name": "TA Boise",
+   "brand": "TA",
+   "city": "boise",
+   "state": "ID",
+   "interstate": "I-84",
+   "exit_number": "54",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 54",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8b16110b-263b-41f1-81f7-f05a3c028b11",
+   "name": "TA Express Dubois",
+   "brand": "TA",
+   "city": "dubois",
+   "state": "ID",
+   "interstate": "I-15",
+   "exit_number": "137",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15, exit 137",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2b72144a-269f-4d29-b6fe-0b9068ee7a37",
+   "name": "Petro Effingham",
+   "brand": "Petro",
+   "city": "effingham",
+   "state": "IL",
+   "interstate": "I-70",
+   "exit_number": "159",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-70",
+    "I-57"
+   ],
+   "evidence": "I-70/I-57, Exit 159 at West Fayette Ave.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2e1fe245-218d-4632-bdd4-4b320d69eba1",
+   "name": "TA Bloomington",
+   "brand": "TA",
+   "city": "bloomington",
+   "state": "IL",
+   "interstate": "I-55",
+   "exit_number": "160",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-55",
+    "I-74",
+    "I-39"
+   ],
+   "evidence": "I-55, I-74, I-39 at Route 9, Exit 160",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3e613b47-7f44-420d-b839-01e19ad138ab",
+   "name": "TA Elgin",
+   "brand": "TA",
+   "city": "hampshire",
+   "state": "IL",
+   "interstate": "I-90",
+   "exit_number": "42",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 42",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "670336d0-8400-4a92-a882-d5be882b83cc",
+   "name": "TA Effingham",
+   "brand": "TA",
+   "city": "effingham",
+   "state": "IL",
+   "interstate": "I-57",
+   "exit_number": "160",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-57",
+    "I-70"
+   ],
+   "evidence": "I-57 & I-70 State Route 32 & 33, Exit 160",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7910dd09-6b8f-41da-a86b-1bbf6d07ee5c",
+   "name": "TA Chicago North",
+   "brand": "TA",
+   "city": "zion",
+   "state": "IL",
+   "interstate": "I-94",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94 & Russell, Illinois/Wisconsin Line",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8cb6b807-56bd-4e9a-8602-614ce19e1fc1",
+   "name": "Petro Rochelle",
+   "brand": "Petro",
+   "city": "rochelle",
+   "state": "IL",
+   "interstate": "I-39",
+   "exit_number": "99",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-39"
+   ],
+   "evidence": "I-39 at Route 38, Exit 99",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8cf8aaf4-ffe0-46b7-b6b7-2965c93d4ba4",
+   "name": "TA Express Riverton",
+   "brand": "TA",
+   "city": "riverton",
+   "state": "IL",
+   "interstate": "I-72",
+   "exit_number": "108",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-72"
+   ],
+   "evidence": "I-72, Exit 108",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b4676e5b-415d-49ad-89fc-54093a291c67",
+   "name": "Petro Monee",
+   "brand": "Petro",
+   "city": "monee",
+   "state": "IL",
+   "interstate": "I-57",
+   "exit_number": "335",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-57"
+   ],
+   "evidence": "I-57, Exit 335",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b98f412b-81ce-42ac-8977-adec80ca53ec",
+   "name": "TA Mt Vernon",
+   "brand": "TA",
+   "city": "mt. vernon",
+   "state": "IL",
+   "interstate": "I-57",
+   "exit_number": "95",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-57",
+    "I-64"
+   ],
+   "evidence": "I-57 & I-64, Exit 95",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c2856021-e58e-432f-a0e1-b909d41f2ce9",
+   "name": "TA Morris",
+   "brand": "TA",
+   "city": "morris",
+   "state": "IL",
+   "interstate": "I-80",
+   "exit_number": "112B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 & Route 47, Exit 112B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c5ec9b22-8675-4047-8b0f-f80dbfc0b218",
+   "name": "Petro Wilmington",
+   "brand": "Petro",
+   "city": "wilmington",
+   "state": "IL",
+   "interstate": "I-55",
+   "exit_number": "240",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-55"
+   ],
+   "evidence": "I-55, Exit 240",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "cbd7c985-75b5-4368-8bad-35d4c52784b0",
+   "name": "TA Troy",
+   "brand": "TA",
+   "city": "troy",
+   "state": "IL",
+   "interstate": "I-55",
+   "exit_number": "18",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-55",
+    "I-70"
+   ],
+   "evidence": "I-55/I-70 at State Route 162, Exit 18",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "02564379-d8e9-432b-813a-607b86ce9dc6",
+   "name": "TA Lake Station",
+   "brand": "TA",
+   "city": "lake station",
+   "state": "IN",
+   "interstate": "I-80",
+   "exit_number": "15B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-80",
+    "I-94"
+   ],
+   "evidence": "I-80/I-94, Exit 15B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "27a3e6fd-17cb-4f9d-8047-c0170c2d5783",
+   "name": "TA Porter",
+   "brand": "TA",
+   "city": "porter",
+   "state": "IN",
+   "interstate": "I-94",
+   "exit_number": "22B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 22B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "27d37d5d-0313-44e4-9f0e-86cb7f2b0db5",
+   "name": "TA DeMotte",
+   "brand": "TA",
+   "city": "demotte",
+   "state": "IN",
+   "interstate": "I-65",
+   "exit_number": "230",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-65"
+   ],
+   "evidence": "I-65, Exit 230",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "34a70d3b-0b4b-46d5-8bbf-50053ee3e4de",
+   "name": "TA Express Dale",
+   "brand": "TA",
+   "city": "dale",
+   "state": "IN",
+   "interstate": "I-64",
+   "exit_number": "57A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-64"
+   ],
+   "evidence": "I-64, Exit 57A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3c7f74fd-3ec0-4334-866d-21185e736f28",
+   "name": "Petro Brazil",
+   "brand": "Petro",
+   "city": "brazil",
+   "state": "IN",
+   "interstate": "I-70",
+   "exit_number": "23",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70, Exit 23",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5b9f3833-3c26-446a-9911-2a2470d265f5",
+   "name": "Petro Gaston",
+   "brand": "Petro",
+   "city": "gaston",
+   "state": "IN",
+   "interstate": "I-69",
+   "exit_number": "245",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-69"
+   ],
+   "evidence": "I-69, Exit 245",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7e566af4-17cc-41e7-844b-7dcb0f755df3",
+   "name": "TA Clayton",
+   "brand": "TA",
+   "city": "clayton",
+   "state": "IN",
+   "interstate": "I-70",
+   "exit_number": "59",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & State Road 39, Exit 59",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "cad3881e-22a2-46e5-a77d-84dd18c7d261",
+   "name": "Petro Greensburg",
+   "brand": "Petro",
+   "city": "greensburg",
+   "state": "IN",
+   "interstate": "I-74",
+   "exit_number": "143",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-74"
+   ],
+   "evidence": "I-74, Exit 143",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e5a53a41-d491-48fa-a73f-00c545239b16",
+   "name": "TA Express Fort Wayne",
+   "brand": "TA",
+   "city": "fort wayne",
+   "state": "IN",
+   "interstate": "I-69",
+   "exit_number": "309",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-69"
+   ],
+   "evidence": "I-69, exit 309",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f4cbbe52-930d-4e01-8359-f695d521df60",
+   "name": "Petro Angola",
+   "brand": "Petro",
+   "city": "fremont",
+   "state": "IN",
+   "interstate": "I-69",
+   "exit_number": "157",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-69"
+   ],
+   "evidence": "I-69, Exit 157/357(new)",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3b91ee32-c27c-4e8e-a560-e3f10a921715",
+   "name": "TA Wellsville",
+   "brand": "TA",
+   "city": "wellsville",
+   "state": "KS",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US 33,",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4490055a-aec0-4b26-bfb7-6fbcabf72904",
+   "name": "TA Express Hutchinson",
+   "brand": "TA",
+   "city": "south hutchinson",
+   "state": "KS",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 50",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "676a342f-b814-4485-8538-4c9c01069ab2",
+   "name": "Petro Colby",
+   "brand": "Petro",
+   "city": "colby",
+   "state": "KS",
+   "interstate": "I-70",
+   "exit_number": "53",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70, Exit 53",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6f7a664a-0574-4de1-8acc-7de5a8371ba8",
+   "name": "TA Beto Junction",
+   "brand": "TA",
+   "city": "lebo",
+   "state": "KS",
+   "interstate": "I-35",
+   "exit_number": "155",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "U.S. 75 & I-35, Exit 155",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "821c8dbb-5e52-4920-96a1-9d98bbeeaa8b",
+   "name": "TA Express Edgerton",
+   "brand": "TA",
+   "city": "edgerton",
+   "state": "KS",
+   "interstate": "I-35",
+   "exit_number": "205",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35, Exit 205",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8bdfa9b4-b6d9-4ad3-b282-c310238260a6",
+   "name": "TA Oakley",
+   "brand": "TA",
+   "city": "oakley",
+   "state": "KS",
+   "interstate": "I-70",
+   "exit_number": "76",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 and U.S. 40, Exit 76",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "98bf5e1e-ec9e-4632-8c0e-637117ea9e4a",
+   "name": "Petro Salina",
+   "brand": "Petro",
+   "city": "salina",
+   "state": "KS",
+   "interstate": "I-70",
+   "exit_number": "252",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70, Exit 252",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a5223dac-4a03-472b-bf5b-166870745bce",
+   "name": "TA Garden City",
+   "brand": "TA",
+   "city": "garden city",
+   "state": "KS",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 400",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "b388395a-7ff7-4a2f-b6d9-7d5451513972",
+   "name": "TA Express Kansas City",
+   "brand": "TA",
+   "city": "kansas city",
+   "state": "KS",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "HWY 635, Exit 3",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ed7e8f37-c9cb-43dd-a4bd-0d2f7edc1d46",
+   "name": "TA Express Fairview",
+   "brand": "TA",
+   "city": "fairview",
+   "state": "KS",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 75",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2bde784a-0feb-43ca-bd29-8bb461612903",
+   "name": "Petro Glendale",
+   "brand": "Petro",
+   "city": "glendale",
+   "state": "KY",
+   "interstate": "I-65",
+   "exit_number": "86",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-65"
+   ],
+   "evidence": "I-65, Exit 86",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "409390ee-aca9-4f0f-8f46-56675e324adc",
+   "name": "TA Smiths Grove",
+   "brand": "TA",
+   "city": "smiths grove",
+   "state": "KY",
+   "interstate": "I-65",
+   "exit_number": "38",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-65"
+   ],
+   "evidence": "I-65, Exit 38",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ce461491-1e00-4179-92b7-126cd264a7f3",
+   "name": "TA Truck Service Franklin",
+   "brand": "TA",
+   "city": "franklin",
+   "state": "KY",
+   "interstate": "I-65",
+   "exit_number": "6",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-65"
+   ],
+   "evidence": "I-65, Exit 6",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "04ba7dbb-2a5b-4a1c-8b2a-f55a2025e4ad",
+   "name": "Petro Shreveport",
+   "brand": "Petro",
+   "city": "shreveport",
+   "state": "LA",
+   "interstate": "I-20",
+   "exit_number": "8",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 8 at Industrial Loop",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0d926d31-2fa5-4ef2-9101-1b9e074c8495",
+   "name": "Petro Hammond",
+   "brand": "Petro",
+   "city": "hammond",
+   "state": "LA",
+   "interstate": "I-12",
+   "exit_number": "40",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-12"
+   ],
+   "evidence": "I-12, Exit 40 at Hwy 51",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "1e8f2e34-9b2b-40a2-9ae6-40a2062651b5",
+   "name": "TA Express Hosston",
+   "brand": "TA",
+   "city": "hosston",
+   "state": "LA",
+   "interstate": "I-49",
+   "exit_number": "237",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-49"
+   ],
+   "evidence": "I-49, exit 237",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "32031c1e-0d62-46a2-94e5-7f0d4ea4a6e9",
+   "name": "Petro Egan",
+   "brand": "Petro",
+   "city": "egan",
+   "state": "LA",
+   "interstate": "I-10",
+   "exit_number": "76",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 76",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "467704e4-9578-4109-a37c-6f035359f6b4",
+   "name": "TA Greenwood",
+   "brand": "TA",
+   "city": "greenwood",
+   "state": "LA",
+   "interstate": "I-20",
+   "exit_number": "5",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 5",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4ba96d81-95a1-46a5-afaf-78678c45d232",
+   "name": "TA Express Grambling",
+   "brand": "TA",
+   "city": "grambling",
+   "state": "LA",
+   "interstate": "I-20",
+   "exit_number": "81",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 81",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5a3d5ca7-5e82-4e44-a1c3-725da6ecfeb4",
+   "name": "TA Lafayette",
+   "brand": "TA",
+   "city": "lafayette",
+   "state": "LA",
+   "interstate": "I-10",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 & State Road 182, MM 101",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6f39b35c-812e-4818-b251-8470c223e06f",
+   "name": "TA Express Minden",
+   "brand": "TA",
+   "city": "minden",
+   "state": "LA",
+   "interstate": "I-20",
+   "exit_number": "52",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 52",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8ebaa65f-063e-4c52-abeb-a3a53820927c",
+   "name": "TA Tallulah",
+   "brand": "TA",
+   "city": "tallulah",
+   "state": "LA",
+   "interstate": "I-20",
+   "exit_number": "171",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 & U.S. 65, Exit 171",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d252527d-20a8-4459-a44d-63c668ff30b9",
+   "name": "TA Express Laplace",
+   "brand": "TA",
+   "city": "laplace",
+   "state": "LA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d964745d-fcae-4925-88bb-52ba116e655d",
+   "name": "TA Express St. Rose",
+   "brand": "TA",
+   "city": "st. rose",
+   "state": "LA",
+   "interstate": "I-310",
+   "exit_number": "2",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-310"
+   ],
+   "evidence": "I-310 Exit 2",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "db388573-84aa-42ca-ba18-40922752d573",
+   "name": "TA Slidell",
+   "brand": "TA",
+   "city": "slidell",
+   "state": "LA",
+   "interstate": "I-10",
+   "exit_number": "266",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 266",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "92690d91-86e8-47bf-9a48-647aaa6140d0",
+   "name": "TA Battle Creek",
+   "brand": "TA",
+   "city": "battle creek",
+   "state": "MI",
+   "interstate": "I-94",
+   "exit_number": "104",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 104",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ba06c4b9-ca65-4489-92df-4f01e1643299",
+   "name": "TA Ann Arbor",
+   "brand": "TA",
+   "city": "dexter",
+   "state": "MI",
+   "interstate": "I-94",
+   "exit_number": "167",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 167",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "bef45037-3843-49ae-9a3a-31ad5f47857e",
+   "name": "TA Tekonsha",
+   "brand": "TA",
+   "city": "tekonsha",
+   "state": "MI",
+   "interstate": "I-69",
+   "exit_number": "25",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-69"
+   ],
+   "evidence": "I-69, Exit 25",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e7e9af27-8e8d-4c63-9c1d-ea303d8773df",
+   "name": "TA Sawyer",
+   "brand": "TA",
+   "city": "sawyer",
+   "state": "MI",
+   "interstate": "I-94",
+   "exit_number": "12",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 12",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2b5ef8ac-3b7a-430e-b750-ba5603f2d016",
+   "name": "Petro Albert Lea",
+   "brand": "Petro",
+   "city": "albert lea",
+   "state": "MN",
+   "interstate": "I-90",
+   "exit_number": "11",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-90",
+    "I-35"
+   ],
+   "evidence": "I-90 & I-35, Exit 11",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9fc68613-b774-4b5e-bee0-ad9bf1893a65",
+   "name": "TA Rogers",
+   "brand": "TA",
+   "city": "rogers",
+   "state": "MN",
+   "interstate": "I-94",
+   "exit_number": "207",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94 & Hwy 101, Exit 207",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "def9df5b-c34e-4689-91fb-2f00a07df238",
+   "name": "TA Express Mankato",
+   "brand": "TA",
+   "city": "mankato",
+   "state": "MN",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 14",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "df1df6b9-0dc3-4928-a66d-6c84da588283",
+   "name": "Petro Clearwater",
+   "brand": "Petro",
+   "city": "clearwater",
+   "state": "MN",
+   "interstate": "I-94",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94 & Hwy 24",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0b73fd3d-ca53-46a7-a467-e8441d4437a4",
+   "name": "TA Express Palmyra",
+   "brand": "TA",
+   "city": "palmyra",
+   "state": "MO",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 61",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "136b5207-6f2a-41bf-8132-0896ddb2a9ae",
+   "name": "TA Strafford",
+   "brand": "TA",
+   "city": "strafford",
+   "state": "MO",
+   "interstate": "I-44",
+   "exit_number": "88",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-44"
+   ],
+   "evidence": "I-44 , Exit 88",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "17af745f-ea45-4e29-aaee-bd16903a3748",
+   "name": "TA Cuba",
+   "brand": "TA",
+   "city": "cuba",
+   "state": "MO",
+   "interstate": "I-44",
+   "exit_number": "208",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-44"
+   ],
+   "evidence": "I-44, Exit 208",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "41b1adce-ca72-4792-bbfc-ddacda862291",
+   "name": "TA Express Eagleville",
+   "brand": "TA",
+   "city": "eagleville",
+   "state": "MO",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "1-35; Exit 106",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "486d3f65-047c-4625-a09a-b18aacde7cb8",
+   "name": "Petro Kingdom City",
+   "brand": "Petro",
+   "city": "kingdom city",
+   "state": "MO",
+   "interstate": "I-70",
+   "exit_number": "148",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & Hwy 54, Exit 148",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4cb52e15-221b-4692-b8b7-7d079d2abafb",
+   "name": "TA Express Norwood",
+   "brand": "TA",
+   "city": "norwood",
+   "state": "MO",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 60 & North Hwy E",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6a98e38a-7607-4995-a6a0-0223bea186e5",
+   "name": "TA Oak Grove",
+   "brand": "TA",
+   "city": "oak grove",
+   "state": "MO",
+   "interstate": "I-70",
+   "exit_number": "28",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & Route H, Exit 28",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8354b718-2894-40f8-aab9-f41d85b5e6af",
+   "name": "Petro Joplin",
+   "brand": "Petro",
+   "city": "joplin",
+   "state": "MO",
+   "interstate": "I-44",
+   "exit_number": "4",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-44"
+   ],
+   "evidence": "I-44 & Hwy 43, Exit 4",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a6a22e48-5661-4c5c-a35c-719586116621",
+   "name": "Petro Oak Grove",
+   "brand": "Petro",
+   "city": "oak grove",
+   "state": "MO",
+   "interstate": "I-70",
+   "exit_number": "28",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70, Exit 28",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b67f5fd5-e9ff-40a9-b666-a2ed01b51dd1",
+   "name": "TA Mt. Vernon",
+   "brand": "TA",
+   "city": "mt vernon",
+   "state": "MO",
+   "interstate": "I-44",
+   "exit_number": "46",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-44"
+   ],
+   "evidence": "I-44 , exit 46",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c5babc9e-53d3-491c-94d4-e2f426743d95",
+   "name": "TA Foristell",
+   "brand": "TA",
+   "city": "foristell",
+   "state": "MO",
+   "interstate": "I-70",
+   "exit_number": "203",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & Route W, Exit 203",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d99bc2b5-9cd1-44ac-ac35-a50d38e140db",
+   "name": "TA Matthews",
+   "brand": "TA",
+   "city": "matthews",
+   "state": "MO",
+   "interstate": "I-55",
+   "exit_number": "58",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-55"
+   ],
+   "evidence": "I-55 & Hwy 80, Exit 58",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e6c7f853-921d-4df2-bddc-992a821a8ac1",
+   "name": "TA Concordia",
+   "brand": "TA",
+   "city": "concordia",
+   "state": "MO",
+   "interstate": "I-70",
+   "exit_number": "58",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & Rt. 23, Exit 58",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "13a6bfd0-c9b2-408e-b422-5135086846a9",
+   "name": "TA Express Mooreville",
+   "brand": "TA",
+   "city": "mooreville",
+   "state": "MS",
+   "interstate": "I-22",
+   "exit_number": "94",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-22"
+   ],
+   "evidence": "I-22, Exit 94",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "18e05b55-8bc4-41bc-85e1-7175d735559a",
+   "name": "TA McComb",
+   "brand": "TA",
+   "city": "mccomb",
+   "state": "MS",
+   "interstate": "I-55",
+   "exit_number": "13",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-55"
+   ],
+   "evidence": "I-55, exit 13",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "79ed9b27-cfef-49ff-acd0-04e7965ba5e4",
+   "name": "Petro Jackson",
+   "brand": "Petro",
+   "city": "jackson",
+   "state": "MS",
+   "interstate": "I-20",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8fa6268e-9d60-4ae3-aa8e-e48541e0c976",
+   "name": "TA Meridian",
+   "brand": "TA",
+   "city": "meridian",
+   "state": "MS",
+   "interstate": "I-20",
+   "exit_number": "160",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-20",
+    "I-59"
+   ],
+   "evidence": "I-20 & I-59, Exit 160",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0e36423d-5940-4c06-b144-7635400be38f",
+   "name": "TA Missoula",
+   "brand": "TA",
+   "city": "missoula",
+   "state": "MT",
+   "interstate": "I-90",
+   "exit_number": "96",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 96 (Hwy 93)",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d416036c-c939-45db-81ab-fb282cbe0383",
+   "name": "TA Laurel",
+   "brand": "TA",
+   "city": "laurel",
+   "state": "MT",
+   "interstate": "I-90",
+   "exit_number": "437",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 437",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "216cd4e6-5b52-4658-82dd-9e781d935166",
+   "name": "TA Greensboro",
+   "brand": "TA",
+   "city": "whitsett",
+   "state": "NC",
+   "interstate": "I-85",
+   "exit_number": "138",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-85",
+    "I-40"
+   ],
+   "evidence": "I-85/I-40 & Hwy 61, Exit 138",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "22e0f5b9-e72b-44aa-b29e-8f453e4501a7",
+   "name": "TA Mocksville",
+   "brand": "TA",
+   "city": "mocksville",
+   "state": "NC",
+   "interstate": "I-40",
+   "exit_number": "170",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 170",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d3adcae1-fdab-496c-8b41-6a7d1333603b",
+   "name": "Petro Mebane",
+   "brand": "Petro",
+   "city": "mebane",
+   "state": "NC",
+   "interstate": "I-40",
+   "exit_number": "157",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40/85, Exit 157",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0873b4fe-f874-49a0-a217-7fe10dd3370a",
+   "name": "TA Express Steele",
+   "brand": "TA",
+   "city": "steele",
+   "state": "ND",
+   "interstate": "I-94",
+   "exit_number": "200",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 200",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2e035156-5cb9-4463-a8c6-b92c92af911e",
+   "name": "Petro Fargo",
+   "brand": "Petro",
+   "city": "fargo",
+   "state": "ND",
+   "interstate": "I-94",
+   "exit_number": "348",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 348",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d879ad53-039a-453f-bdc4-45286e20988f",
+   "name": "TA Express Williston",
+   "brand": "TA",
+   "city": "williston",
+   "state": "ND",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 2",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ea832d1e-20f8-4404-be52-d29baaea1404",
+   "name": "TA Express Grand Forks",
+   "brand": "TA",
+   "city": "grand forks",
+   "state": "ND",
+   "interstate": "I-29",
+   "exit_number": "141",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-29"
+   ],
+   "evidence": "I-29, exit 141",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ffa7bd90-81ef-43a2-a224-fa5c520503ad",
+   "name": "TA Express Alexander",
+   "brand": "TA",
+   "city": "alexander",
+   "state": "ND",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 85 & SR 68",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "28318499-0eaf-4b76-9f4f-ae01cb8396a0",
+   "name": "TA Ogallala",
+   "brand": "TA",
+   "city": "ogallala",
+   "state": "NE",
+   "interstate": "I-80",
+   "exit_number": "126",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 126",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b510ec16-bc73-41d0-a0ef-9ebd47ffc3da",
+   "name": "Petro York",
+   "brand": "Petro",
+   "city": "york",
+   "state": "NE",
+   "interstate": "I-80",
+   "exit_number": "353",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 and US HWY 81, Exit 353",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b5d08f45-45b1-4a20-8fc0-f1b829117674",
+   "name": "TA Grand Island",
+   "brand": "TA",
+   "city": "alda",
+   "state": "NE",
+   "interstate": "I-80",
+   "exit_number": "305",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 305",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f3940f82-c33c-4372-b2bb-ce4a1be2cb88",
+   "name": "TA Greenland",
+   "brand": "TA",
+   "city": "greenland",
+   "state": "NH",
+   "interstate": "I-95",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-95"
+   ],
+   "evidence": "I-95, Exit 3 Northbound; Exit 3B Southbound",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "00142022-f6dc-4fed-a554-306eec23afe7",
+   "name": "TA Paulsboro",
+   "brand": "TA",
+   "city": "paulsboro",
+   "state": "NJ",
+   "interstate": "I-295",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-295"
+   ],
+   "evidence": "I-295, 18A, Mt. Royal Exit",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9199ed34-10fc-4c7e-b97e-1f4064d0563d",
+   "name": "TA Columbia",
+   "brand": "TA",
+   "city": "columbia",
+   "state": "NJ",
+   "interstate": "I-80",
+   "exit_number": "4A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 at Rt. 94, Exit 4A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a68a2f81-f86a-4a31-9d44-bd984bd5cc4f",
+   "name": "TA Bloomsbury",
+   "brand": "TA",
+   "city": "bloomsbury",
+   "state": "NJ",
+   "interstate": "I-78",
+   "exit_number": "7",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-78"
+   ],
+   "evidence": "I-78, Bloomsbury Exit 7",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ab9e6216-ab0e-4061-9e9d-4ec995e335dc",
+   "name": "Petro Bordentown",
+   "brand": "Petro",
+   "city": "bordentown",
+   "state": "NJ",
+   "interstate": "I-295",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-295"
+   ],
+   "evidence": "I-295, Exit 57; NJ Turnpike, Exit 7",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "143b958b-df45-4a6b-aca0-533fc2ffc3c4",
+   "name": "Petro Deming",
+   "brand": "Petro",
+   "city": "deming",
+   "state": "NM",
+   "interstate": "I-10",
+   "exit_number": "68",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 68",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "171981b9-7bdd-4511-ad0f-1aa1601e647a",
+   "name": "TA Springer",
+   "brand": "TA",
+   "city": "springer",
+   "state": "NM",
+   "interstate": "I-25",
+   "exit_number": "419",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-25"
+   ],
+   "evidence": "I-25 Exit 419",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "55e1fb1c-c301-4318-b159-5bae49b9388d",
+   "name": "Petro Milan",
+   "brand": "Petro",
+   "city": "milan",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": "79",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 79 at Horizon Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "811fb0fb-5059-42cf-a5e6-6f4bf08cd8c2",
+   "name": "TA Las Cruces",
+   "brand": "TA",
+   "city": "las cruces",
+   "state": "NM",
+   "interstate": "I-10",
+   "exit_number": "139",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 139, Hwy 292",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9242379f-96b4-406f-a847-ed6a71d2a0f7",
+   "name": "TA Albuquerque",
+   "brand": "TA",
+   "city": "albuquerque",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-40",
+    "I-25"
+   ],
+   "evidence": "I-40, Exit 159A,D/I-25,Exit 225(Nthbnd):Exit 227(Sthbnd)",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "94e95243-640b-413e-8a5a-788c0a0852ca",
+   "name": "TA Moriarty",
+   "brand": "TA",
+   "city": "moriarty",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": "194",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40 & Central Avenue., Exit 194",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "96c08424-b705-4f6f-8a87-b3fb4ad8d89c",
+   "name": "TA Gallup",
+   "brand": "TA",
+   "city": "gallup",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": "16",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40 & Hwy 66, Exit 16",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ec2a4c60-2aaa-4b5c-b4d2-e04d8307cbce",
+   "name": "TA Glenrio",
+   "brand": "TA",
+   "city": "glenrio",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, 369",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fb867211-3593-446d-9cc9-4928efef2181",
+   "name": "TA Santa Rosa",
+   "brand": "TA",
+   "city": "santa rosa",
+   "state": "NM",
+   "interstate": "I-40",
+   "exit_number": "277",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40 & U.S. 66, 54 & 84, Exit 277",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "1f675baa-f7da-4b99-a416-a43d9e88d9f4",
+   "name": "Petro Wells",
+   "brand": "Petro",
+   "city": "wells",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": "352A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 352A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2c6c4a86-6341-4e33-9bd2-bb3734f18f2c",
+   "name": "Petro North Las Vegas",
+   "brand": "Petro",
+   "city": "north las vegas",
+   "state": "NV",
+   "interstate": "I-15",
+   "exit_number": "54",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15 at Speedway Blvd., Exit 54",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4f266277-7d26-4c13-a2da-ca6f912ae326",
+   "name": "Petro Henderson",
+   "brand": "Petro",
+   "city": "henderson",
+   "state": "NV",
+   "interstate": "I-11",
+   "exit_number": "15A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-11"
+   ],
+   "evidence": "I-11, exit 15A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "55c93d34-4a3e-4b19-9dd3-0dfc01ad5886",
+   "name": "TA Mill City",
+   "brand": "TA",
+   "city": "mill city",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 151 (West) Exit 149 (East)",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "66ceee09-494c-4084-b160-7df39a9a0370",
+   "name": "TA Sparks",
+   "brand": "TA",
+   "city": "sparks",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": "19",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 19",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "704ccbb5-06de-46c0-9df7-88bcb9230865",
+   "name": "TA Express Carlin",
+   "brand": "TA",
+   "city": "carlin",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": "280",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80; Exit 280",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7d1a9974-1ea2-4db1-aa2e-d2588cc9a771",
+   "name": "TA Express Henderson",
+   "brand": "TA",
+   "city": "henderson",
+   "state": "NV",
+   "interstate": "I-11",
+   "exit_number": "15A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-11"
+   ],
+   "evidence": "I-11, exit 15A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8e8fa590-7cde-453b-a475-2c491bdef58c",
+   "name": "TA Las Vegas",
+   "brand": "TA",
+   "city": "las vegas",
+   "state": "NV",
+   "interstate": "I-15",
+   "exit_number": "33",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15, Blue Diamond Exit 33",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c67c28f5-002d-453e-bda9-c110ce9999db",
+   "name": "Petro Sparks",
+   "brand": "Petro",
+   "city": "sparks",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": "21",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 21",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e28ef446-e1d5-4cc4-bef5-a83cf583e4bb",
+   "name": "TA Express Wendover",
+   "brand": "TA",
+   "city": "west wendover",
+   "state": "NV",
+   "interstate": "I-80",
+   "exit_number": "410",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 410",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0ac6d1c9-ce7e-4b42-ac1f-53c4d65b2cc3",
+   "name": "TA Express Niagara Falls",
+   "brand": "TA",
+   "city": "niagara falls",
+   "state": "NY",
+   "interstate": "I-190",
+   "exit_number": "23",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-190"
+   ],
+   "evidence": "I-190; Exit 23",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "2d1fa3cc-ebe8-42a5-9754-540224c38300",
+   "name": "TA Pembroke",
+   "brand": "TA",
+   "city": "corfu",
+   "state": "NY",
+   "interstate": "I-90",
+   "exit_number": "48A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90 & SR 77, Exit 48A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6da62e0d-e7be-40ef-bb6f-e75f81eb9054",
+   "name": "Petro Waterloo",
+   "brand": "Petro",
+   "city": "waterloo",
+   "state": "NY",
+   "interstate": "I-90",
+   "exit_number": "41",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 41",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "774f19f9-32b2-49e8-b951-5d6c6be8cd42",
+   "name": "TA Binghamton",
+   "brand": "TA",
+   "city": "binghamton",
+   "state": "NY",
+   "interstate": "I-81",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81 N. Exit 2W, NY Route 17 or I-81 S., Exit 3",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "880237bc-4555-463c-af2c-d3ab372abadd",
+   "name": "TA Maybrook",
+   "brand": "TA",
+   "city": "montgomery",
+   "state": "NY",
+   "interstate": "I-84",
+   "exit_number": "28",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 28",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9e057575-35d7-461f-81f6-6f21f12bae73",
+   "name": "TA Fultonville",
+   "brand": "TA",
+   "city": "fultonville",
+   "state": "NY",
+   "interstate": "I-90",
+   "exit_number": "28",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, exit 28",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "defd2a11-d531-4614-90fe-c21b5b852864",
+   "name": "TA Dansville",
+   "brand": "TA",
+   "city": "dansville",
+   "state": "NY",
+   "interstate": "I-390",
+   "exit_number": "5",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-390"
+   ],
+   "evidence": "I-390, Exit 5",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "04ebc594-6cbb-4dfb-8412-18fbfdcdda8e",
+   "name": "Petro Perrysburg",
+   "brand": "Petro",
+   "city": "perrysburg",
+   "state": "OH",
+   "interstate": "I-280",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-280"
+   ],
+   "evidence": "Ohio Turnpike, Exit 71, I-280 Exit 1B",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "05b1d3b3-93d3-42f7-a0d5-1b45868350f0",
+   "name": "TA North Canton",
+   "brand": "TA",
+   "city": "canton",
+   "state": "OH",
+   "interstate": "I-77",
+   "exit_number": "111",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-77"
+   ],
+   "evidence": "I-77, Exit 111",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3032b5f3-fdf5-498d-92bc-25bf2b05dfda",
+   "name": "TA Toledo",
+   "brand": "TA",
+   "city": "perrysburg",
+   "state": "OH",
+   "interstate": "I-80",
+   "exit_number": "71",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-80",
+    "I-280"
+   ],
+   "evidence": "I-80 & I-280, Exit 71, Ohio Turnpike",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "46df0896-0192-4056-b62d-de7b1eb9fc7b",
+   "name": "TA London",
+   "brand": "TA",
+   "city": "london",
+   "state": "OH",
+   "interstate": "I-70",
+   "exit_number": "79",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & U.S. 42, Exit 79",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5d0a8618-d22f-4b27-85d5-f9f034e0a566",
+   "name": "Petro Napoleon",
+   "brand": "Petro",
+   "city": "napoleon",
+   "state": "OH",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 6 & 24, Industrial Dr. Exit 41",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "652d5e4b-4230-4be2-bee5-b1eaae5100d9",
+   "name": "TA Jeffersonville",
+   "brand": "TA",
+   "city": "jeffersonville",
+   "state": "OH",
+   "interstate": "I-71",
+   "exit_number": "65",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-71"
+   ],
+   "evidence": "I-71 & U.S. 35, Exit 65",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "67913b24-ea64-44e3-96ae-50bd2cad8211",
+   "name": "Petro Girard",
+   "brand": "Petro",
+   "city": "girard",
+   "state": "OH",
+   "interstate": "I-80",
+   "exit_number": "226",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 226 & Salt Spring Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7b4584a4-a7d4-442f-8a7c-c6c669f77792",
+   "name": "TA Hebron",
+   "brand": "TA",
+   "city": "hebron",
+   "state": "OH",
+   "interstate": "I-70",
+   "exit_number": "126",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 at Ohio 37, Exit 126",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9cd8d49c-66ba-4b0c-8949-9b7b4630c5c5",
+   "name": "TA Dayton",
+   "brand": "TA",
+   "city": "eaton",
+   "state": "OH",
+   "interstate": "I-70",
+   "exit_number": "10",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 & U.S. 127, Exit 10",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b41b468e-60f2-4ddd-a09e-1c94fd8ff498",
+   "name": "Petro New Paris",
+   "brand": "Petro",
+   "city": "new paris",
+   "state": "OH",
+   "interstate": "I-70",
+   "exit_number": "156B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 at Indiana Exit 156B & US 40",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b844db40-161f-40fd-8acb-36724c188e8c",
+   "name": "TA Lodi",
+   "brand": "TA",
+   "city": "seville",
+   "state": "OH",
+   "interstate": "I-71",
+   "exit_number": "209",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-71",
+    "I-76"
+   ],
+   "evidence": "I-71 & I-76 at Rt. 224, Exit 209",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "bc4f3d5f-2d97-4d63-a7d1-54319568d691",
+   "name": "TA Youngstown",
+   "brand": "TA",
+   "city": "youngstown",
+   "state": "OH",
+   "interstate": "I-80",
+   "exit_number": "223A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Route 46, Exit 223A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "be303508-8e10-4e3f-8a20-d2921e976019",
+   "name": "TA Kingsville",
+   "brand": "TA",
+   "city": "kingsville",
+   "state": "OH",
+   "interstate": "I-90",
+   "exit_number": "235",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 235",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c6501867-ea15-4d24-974f-b8ccd6bd22da",
+   "name": "TA Jackson",
+   "brand": "TA",
+   "city": "jackson",
+   "state": "OH",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 35",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "14ce47e2-b0a6-496c-b609-c42de9de30bf",
+   "name": "TA Oklahoma City East",
+   "brand": "TA",
+   "city": "oklahoma city",
+   "state": "OK",
+   "interstate": "I-40",
+   "exit_number": "142",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 142",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3729868d-bde5-4715-a127-21130d19ef10",
+   "name": "TA Oklahoma City West",
+   "brand": "TA",
+   "city": "oklahoma city",
+   "state": "OK",
+   "interstate": "I-40",
+   "exit_number": "140",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 140",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "6f153a3e-d48c-4d1f-a797-d429eacf7cf7",
+   "name": "TA Express Savanna",
+   "brand": "TA",
+   "city": "savanna",
+   "state": "OK",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US HWY 69",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "910e886c-8f9e-49c9-915e-1309a65ef8cc",
+   "name": "TA Express South Coffeyville",
+   "brand": "TA",
+   "city": "south coffeyville",
+   "state": "OK",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US HWY 169",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "950f61ef-9576-43b2-a466-67f1dc72f17e",
+   "name": "TA Express Tonkawa",
+   "brand": "TA",
+   "city": "tonkawa",
+   "state": "OK",
+   "interstate": "I-35",
+   "exit_number": "214",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35; exit 214",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "97ac5fed-e286-4c86-92eb-d74680569d7c",
+   "name": "TA Sayre",
+   "brand": "TA",
+   "city": "sayre",
+   "state": "OK",
+   "interstate": "I-40",
+   "exit_number": "26",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 26",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f6ed705a-0762-4c1d-8e1b-6ae6ff283649",
+   "name": "Petro Oklahoma City",
+   "brand": "Petro",
+   "city": "oklahoma city",
+   "state": "OK",
+   "interstate": "I-35",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-40E / I-35, Exit 127/I-40W, Exit 154",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "1c2e6308-f237-48f2-9a75-45b9ec4ad747",
+   "name": "TA Express Biggs Junction",
+   "brand": "TA",
+   "city": "wasco",
+   "state": "OR",
+   "interstate": "I-84",
+   "exit_number": "104",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84 Exit 104",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3930709c-24ab-4805-946a-070fa9753645",
+   "name": "TA Aurora",
+   "brand": "TA",
+   "city": "aurora",
+   "state": "OR",
+   "interstate": "I-5",
+   "exit_number": "278",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5, Exit 278",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "812e90fb-f2de-4a3d-b608-6c180fb49ccd",
+   "name": "TA Huntington",
+   "brand": "TA",
+   "city": "huntington",
+   "state": "OR",
+   "interstate": "I-84",
+   "exit_number": "353",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 353",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "91a2474c-f971-4634-97a0-da712ea5a073",
+   "name": "TA Coburg",
+   "brand": "TA",
+   "city": "coburg",
+   "state": "OR",
+   "interstate": "I-5",
+   "exit_number": "199",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5, Exit 199",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "976ccdf0-4db6-4fec-a760-0aecfcadb309",
+   "name": "TA Troutdale",
+   "brand": "TA",
+   "city": "troutdale",
+   "state": "OR",
+   "interstate": "I-84",
+   "exit_number": "17",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-84"
+   ],
+   "evidence": "I-84, Exit 17",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f541220b-09e6-4690-bc0c-ec7e19fc6a5b",
+   "name": "Petro Phoenix",
+   "brand": "Petro",
+   "city": "phoenix",
+   "state": "OR",
+   "interstate": "I-5",
+   "exit_number": "24",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5, Exit 24",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0481b552-960a-4de2-8de1-194eeb097d46",
+   "name": "TA Barkeyville",
+   "brand": "TA",
+   "city": "harrisville",
+   "state": "PA",
+   "interstate": "I-80",
+   "exit_number": "29",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 & S.R. 8, Exit 29",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0a9be4f1-72f1-46e8-8858-c4096156df61",
+   "name": "Petro Carlisle",
+   "brand": "Petro",
+   "city": "carlisle",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-81",
+    "I-76"
+   ],
+   "evidence": "I-81, Exit 52; I-76, Exit 226",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "18af7741-cdbf-49dc-82e2-b4cb9eb93868",
+   "name": "TA Harrisburg",
+   "brand": "TA",
+   "city": "harrisburg",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": "77",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81 & S.R. 39, Manada Hill Exit 77",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "28e8ed02-5c3b-47ec-962b-a10303cca0dc",
+   "name": "TA Brookville",
+   "brand": "TA",
+   "city": "brookville",
+   "state": "PA",
+   "interstate": "I-80",
+   "exit_number": "78",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 & Rt. 36, Exit 78",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "332e4737-2cd9-4f02-b7c1-d1e62f2f60fa",
+   "name": "TA Express Pine Grove",
+   "brand": "TA",
+   "city": "pine grove",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": "100",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, Exit 100",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "58eed292-c064-47fe-bcae-3c53e1759038",
+   "name": "TA Bloomsburg",
+   "brand": "TA",
+   "city": "bloomsburg",
+   "state": "PA",
+   "interstate": "I-80",
+   "exit_number": "232",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 232",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5a3d40c4-0ae9-4858-88d1-c6587f3cc128",
+   "name": "Petro Scranton",
+   "brand": "Petro",
+   "city": "dupont",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": "178B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, Exit 178B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "73687504-efb0-413a-8866-f2c767134470",
+   "name": "TA Lamar",
+   "brand": "TA",
+   "city": "lamar",
+   "state": "PA",
+   "interstate": "I-80",
+   "exit_number": "173",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 & S.R. 64, Exit 173",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "73b74559-cfa0-4283-b8b7-4cf7bd99ab46",
+   "name": "TA Harborcreek",
+   "brand": "TA",
+   "city": "erie",
+   "state": "PA",
+   "interstate": "I-90",
+   "exit_number": "35",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 35",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "800e86f8-a7f5-4761-9a77-6b6a12ee662d",
+   "name": "TA Breezewood",
+   "brand": "TA",
+   "city": "breezewood",
+   "state": "PA",
+   "interstate": "I-76",
+   "exit_number": "161",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-76",
+    "I-70"
+   ],
+   "evidence": "I-76, Exit 161/I-70, Exit US 30",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "90c056f0-049f-4625-9a86-839e13a27380",
+   "name": "TA Greencastle",
+   "brand": "TA",
+   "city": "greencastle",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": "5",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, Exit 5",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "bca82ad8-d579-48ac-a7bd-a8d6aa6ee5e6",
+   "name": "TA Express Hazleton",
+   "brand": "TA",
+   "city": "hazleton",
+   "state": "PA",
+   "interstate": "I-81",
+   "exit_number": "143",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, exit 143",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c5a3c53e-3f30-4902-b41c-3d2fd1745c0d",
+   "name": "TA Milesburg",
+   "brand": "TA",
+   "city": "milesburg",
+   "state": "PA",
+   "interstate": "I-80",
+   "exit_number": "158",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 158",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fee3dcbf-8796-498d-9abc-a42c240a1443",
+   "name": "TA Express Ronks",
+   "brand": "TA",
+   "city": "ronks",
+   "state": "PA",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "NULL",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d65aef14-449b-4f7d-8e58-07ac6dfb1350",
+   "name": "TA West Greenwich",
+   "brand": "TA",
+   "city": "west greenwich",
+   "state": "RI",
+   "interstate": "I-95",
+   "exit_number": "5B",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-95"
+   ],
+   "evidence": "I-95, Exit 5B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "081aef9c-5527-4c10-b1af-d2d753c4d14e",
+   "name": "TA Columbia North",
+   "brand": "TA",
+   "city": "columbia",
+   "state": "SC",
+   "interstate": "I-20",
+   "exit_number": "71",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 71",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4cbcf0de-5ef2-4609-9c62-7eb9014508b5",
+   "name": "TA Cowpens",
+   "brand": "TA",
+   "city": "cowpens",
+   "state": "SC",
+   "interstate": "I-85",
+   "exit_number": "83",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 83",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ad4f8b95-806b-4915-8c0f-b3891d426bba",
+   "name": "TA Spartanburg",
+   "brand": "TA",
+   "city": "duncan",
+   "state": "SC",
+   "interstate": "I-85",
+   "exit_number": "63",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85 & S.R. 290, Exit 63",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b218282d-ef85-4141-a735-625a10f3f181",
+   "name": "TA Express Fair Play",
+   "brand": "TA",
+   "city": "fair play",
+   "state": "SC",
+   "interstate": "I-85",
+   "exit_number": "4",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 4",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d44c1a38-3b26-41ae-85b4-1eca0df8cfeb",
+   "name": "Petro Columbia",
+   "brand": "Petro",
+   "city": "columbia",
+   "state": "SC",
+   "interstate": "I-77",
+   "exit_number": "5",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-77"
+   ],
+   "evidence": "I-77, Exit 5",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "461f0ad8-e0b1-472e-a740-d8a31dd83d2a",
+   "name": "TA Express Hot Springs",
+   "brand": "TA",
+   "city": "hot springs",
+   "state": "SD",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 385 / 18 and 79",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "779e8a21-0220-4f69-9af5-b2d7f2c53830",
+   "name": "TA Express Vermillion",
+   "brand": "TA",
+   "city": "burbank",
+   "state": "SD",
+   "interstate": "I-29",
+   "exit_number": "26",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-29"
+   ],
+   "evidence": "I-29, Exit 26",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "881711e7-c677-4935-99e2-f241d0138914",
+   "name": "TA Express Summit",
+   "brand": "TA",
+   "city": "summit",
+   "state": "SD",
+   "interstate": "I-29",
+   "exit_number": "207",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-29"
+   ],
+   "evidence": "I-29, Exit 207",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "24a18b2d-3432-48a7-91ea-9e6986c566ed",
+   "name": "TA Antioch",
+   "brand": "TA",
+   "city": "antioch",
+   "state": "TN",
+   "interstate": "I-24",
+   "exit_number": "62",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-24"
+   ],
+   "evidence": "I-24, Exit 62",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d4f0ad44-9364-4e50-9f8f-0e47a6637cf0",
+   "name": "TA Davy Crockett Travel Center",
+   "brand": "TA",
+   "city": "greeneville",
+   "state": "TN",
+   "interstate": "I-81",
+   "exit_number": "36",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, Exit 36",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "03244367-3119-4814-87e4-053e41911e9f",
+   "name": "TA Express Mount Vernon",
+   "brand": "TA",
+   "city": "mount vernon",
+   "state": "TX",
+   "interstate": "I-30",
+   "exit_number": "147",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-30"
+   ],
+   "evidence": "I-30, exit 147",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "03b29085-9803-43d1-969a-60f9d0013202",
+   "name": "TA Express Houston",
+   "brand": "TA",
+   "city": "houston",
+   "state": "TX",
+   "interstate": "I-610",
+   "exit_number": "24",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-610"
+   ],
+   "evidence": "I-610; Exit24",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "084a6d0f-99c9-445c-a4d6-eebf25906a95",
+   "name": "Petro North Hillsboro",
+   "brand": "Petro",
+   "city": "hillsboro",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "I-35E, Exit 374",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0d485be0-bd40-49ad-9ad5-763719c9e05b",
+   "name": "Petro Amarillo",
+   "brand": "Petro",
+   "city": "amarillo",
+   "state": "TX",
+   "interstate": "I-40",
+   "exit_number": "75",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40, Exit 75 at Lakeside Drive",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0e68e425-6312-4c84-8e84-f91e0fa03696",
+   "name": "TA Sweetwater",
+   "brand": "TA",
+   "city": "sweetwater",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "242",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 242",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "0f6185fb-0880-4b6a-8ffa-8e49d42dbb1c",
+   "name": "Petro Weatherford",
+   "brand": "Petro",
+   "city": "weatherford",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "409",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20, Exit 409 at Clear Lake Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "28731d9f-ea62-46be-8652-75aa1c6cea5f",
+   "name": "Petro Beaumont",
+   "brand": "Petro",
+   "city": "beaumont",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "848",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 848 at Walden Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2c0bdf31-3c30-4841-b0e4-04f6c577b11a",
+   "name": "TA Shepherd",
+   "brand": "TA",
+   "city": "shepherd",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US 59",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "2eeab937-c31d-4291-af4d-6980dddfe85e",
+   "name": "TA Terrell",
+   "brand": "TA",
+   "city": "terrell",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "503",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 & Wilson Rd., Exit 503",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3b3f3419-87b3-41c4-ab43-0f6ea76caca5",
+   "name": "TA Express Huntsville",
+   "brand": "TA",
+   "city": "huntsville",
+   "state": "TX",
+   "interstate": "I-45",
+   "exit_number": "118",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-45"
+   ],
+   "evidence": "I-45 , Exit 118",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3b62fd6b-6f93-4293-a098-7444d1dfab12",
+   "name": "TA Express Baytown South",
+   "brand": "TA",
+   "city": "baytown",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "Null",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3bb601de-cc55-456a-9b47-f2858fc61139",
+   "name": "TA Rockwall",
+   "brand": "TA",
+   "city": "rockwall",
+   "state": "TX",
+   "interstate": "I-30",
+   "exit_number": "68",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-30"
+   ],
+   "evidence": "I-30 at Route 205, Exit 68",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "46e2a1b3-e880-49d5-8c06-56a0c86775ab",
+   "name": "TA Express Pleasanton",
+   "brand": "TA",
+   "city": "pleasanton",
+   "state": "TX",
+   "interstate": "I-37",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-37"
+   ],
+   "evidence": "I-37/Hwy 97",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "487fc933-b573-4576-92b6-e8afa9e772fd",
+   "name": "TA Express Kilgore",
+   "brand": "TA",
+   "city": "kilgore",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "587",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 Exit 587",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4de4fa9f-d845-4da4-811a-9143d0510533",
+   "name": "TA Express Belton",
+   "brand": "TA",
+   "city": "belton",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": "289",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35; Exit 289",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4e2f34ee-9123-47fd-8479-60fea56bdd8b",
+   "name": "TA Express North Houston",
+   "brand": "TA",
+   "city": "houston",
+   "state": "TX",
+   "interstate": "I-8",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-8"
+   ],
+   "evidence": "I-8,",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "51523c99-d4c4-4da6-afb4-6be3c338472b",
+   "name": "TA Vernon, TX",
+   "brand": "TA",
+   "city": "vernon",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US 287",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "54898d88-9b51-4d99-b92c-fc4170d68faf",
+   "name": "TA Dallas South",
+   "brand": "TA",
+   "city": "dallas",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "472",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-20",
+    "I-635"
+   ],
+   "evidence": "I-20 & I-635, Exit 472",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "5c4e6e30-8e3f-4744-9ebf-492e1133a2d0",
+   "name": "TA Hillsboro",
+   "brand": "TA",
+   "city": "hillsboro",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": "370",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35, Exit 370",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "61dfec81-1296-4a53-a4b0-e2c3aa1c3175",
+   "name": "TA New Braunfels",
+   "brand": "TA",
+   "city": "new braunfels",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": "193",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35, Exit 193",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "731b7615-d350-4d42-aa87-6ae2d0754ff4",
+   "name": "TA San Antonio",
+   "brand": "TA",
+   "city": "san antonio",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "583",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 583, Foster Rd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7c063466-49a8-4354-b20a-dfcaf86e524d",
+   "name": "TA Express Fairfield",
+   "brand": "TA",
+   "city": "fairfield",
+   "state": "TX",
+   "interstate": "I-45",
+   "exit_number": "198",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-45"
+   ],
+   "evidence": "I-45, Exit 198",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7e00b614-a4ca-4769-ad75-27a663684329",
+   "name": "TA Amarillo",
+   "brand": "TA",
+   "city": "amarillo",
+   "state": "TX",
+   "interstate": "I-40",
+   "exit_number": "74",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-40"
+   ],
+   "evidence": "I-40 & Whitaker, Exit 74",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "834a29f2-963b-4f55-8567-9bd99ac5f806",
+   "name": "TA Express Carthage",
+   "brand": "TA",
+   "city": "carthage",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 59",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "89a0194f-b908-46bd-87d7-722f881e16d6",
+   "name": "Petro El Paso",
+   "brand": "Petro",
+   "city": "el paso",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "37",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 37 at Horizon Blvd.",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9827b776-6ef7-4853-aa88-b0989dee9ddf",
+   "name": "TA Express Decatur",
+   "brand": "TA",
+   "city": "decatur",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 287 & 81",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a1dd255a-8a8b-4dc0-8568-ba8ac37ee80e",
+   "name": "TA Bernardo",
+   "brand": "TA",
+   "city": "sealy",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "709",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 709",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a25b0c0d-12c7-49ad-b03b-fbc75c382244",
+   "name": "TA Baytown",
+   "brand": "TA",
+   "city": "baytown",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "789",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10 & Thompson Rd., Exit 789",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a352788b-7de6-4a22-b4db-a0579f467d2c",
+   "name": "TA Express Almeda",
+   "brand": "TA",
+   "city": "almeda",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "State Hwy 288, Almeda Genoa Rd\u00a0exit",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "a793c66a-9219-4646-b295-ee6bee94cae5",
+   "name": "Petro Pearsall",
+   "brand": "Petro",
+   "city": "pearsall",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35, Exit 101(Southbound) I-35, Exit 100(Northbound)",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "b80df7c1-c1ce-4031-bb79-e597454cd22e",
+   "name": "Petro San Antonio",
+   "brand": "Petro",
+   "city": "san antonio",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "581",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 581 at Ackerman Road",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "b940af68-43e4-4fa6-b56c-8b4636b66149",
+   "name": "TA Laredo",
+   "brand": "TA",
+   "city": "laredo",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35 and Beltway Parkway",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c930f79c-58e6-4108-8aab-2c3ef3ed512c",
+   "name": "TA Denton",
+   "brand": "TA",
+   "city": "denton",
+   "state": "TX",
+   "interstate": "I-35",
+   "exit_number": "471",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-35"
+   ],
+   "evidence": "I-35 & U.S. 77, Exit 471, MM 471",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d38955c0-2208-4277-a897-473f8b73d677",
+   "name": "TA Big Spring",
+   "brand": "TA",
+   "city": "big spring",
+   "state": "TX",
+   "interstate": "I-20",
+   "exit_number": "177",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-20"
+   ],
+   "evidence": "I-20 & Hwy 87, Exit 177",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d5617606-2f27-451a-b250-a2e9ca0dc58b",
+   "name": "TA Express Junction",
+   "brand": "TA",
+   "city": "junction",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "de8176bc-1fa0-493b-b0f9-15a307b0b746",
+   "name": "TA Express Nacogdoches",
+   "brand": "TA",
+   "city": "nacogdoches",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "Tx-224 Loop E, Stalling Dr, Westward Dr, Hospital",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e205c7b8-8a50-4443-a26b-7a955788b922",
+   "name": "TA Express Kingsville",
+   "brand": "TA",
+   "city": "kingsville",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "US Hwy 77",
+   "match": "addr",
+   "note": null
+  },
+  {
+   "id": "f1ac4d06-e831-4614-9338-a5a5f1d36e39",
+   "name": "TA Express Vinton",
+   "brand": "TA",
+   "city": "canutillo",
+   "state": "TX",
+   "interstate": "I-10",
+   "exit_number": "2",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-10"
+   ],
+   "evidence": "I-10, Exit 2 at Vinton",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "f4352f4d-70ef-4383-b568-1294d1887a5c",
+   "name": "TA Edinburg",
+   "brand": "TA",
+   "city": "edinburg",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "Hwy. 281, Exit FM 2812",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "fb7c5f36-922e-47d6-b322-957aa069090f",
+   "name": "TA Ganado",
+   "brand": "TA",
+   "city": "ganado",
+   "state": "TX",
+   "interstate": null,
+   "exit_number": null,
+   "interstate_decision": "not-applicable",
+   "exit_decision": "not-applicable",
+   "concurrency": false,
+   "all_interstates": [],
+   "evidence": "Hwy 59, Exit 522E",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "1f2fce58-e15f-45e8-986c-989e8116ad30",
+   "name": "TA Tooele",
+   "brand": "TA",
+   "city": "salt lake city",
+   "state": "UT",
+   "interstate": "I-80",
+   "exit_number": "99",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 99",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "8d8e01b6-06fe-4775-957d-4c24d49500a2",
+   "name": "TA Express Parowan",
+   "brand": "TA",
+   "city": "parowan",
+   "state": "UT",
+   "interstate": "I-15",
+   "exit_number": "78",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15, Exit 78",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e363ff42-1221-47e2-8ad5-43d1003fd317",
+   "name": "TA Fillmore",
+   "brand": "TA",
+   "city": "fillmore",
+   "state": "UT",
+   "interstate": "I-15",
+   "exit_number": "163",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-15"
+   ],
+   "evidence": "I-15, Exit 163",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "3926b89c-55a6-4de4-9a5e-d867729e0304",
+   "name": "TA Wytheville",
+   "brand": "TA",
+   "city": "wytheville",
+   "state": "VA",
+   "interstate": "I-77",
+   "exit_number": null,
+   "interstate_decision": "approved",
+   "exit_decision": "unresolved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-77",
+    "I-81"
+   ],
+   "evidence": "I-77, Exit 41, I-81, Exit 72",
+   "match": "coord",
+   "note": "multiple exits listed"
+  },
+  {
+   "id": "655676ad-c86b-483c-9df8-e80dd24e90d7",
+   "name": "Petro Glade Spring",
+   "brand": "Petro",
+   "city": "glade spring",
+   "state": "VA",
+   "interstate": "I-81",
+   "exit_number": "29",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-81"
+   ],
+   "evidence": "I-81, Exit 29",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "85b076b4-dccc-48d5-b119-5b1d2843b358",
+   "name": "TA Express Warfield",
+   "brand": "TA",
+   "city": "warfield",
+   "state": "VA",
+   "interstate": "I-85",
+   "exit_number": "39",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-85"
+   ],
+   "evidence": "I-85, Exit 39",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9f0e3d73-4329-4da6-8417-454d3f65bec9",
+   "name": "Petro Raphine",
+   "brand": "Petro",
+   "city": "raphine",
+   "state": "VA",
+   "interstate": "I-81",
+   "exit_number": "205",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-81",
+    "I-64"
+   ],
+   "evidence": "I-81 & I-64; Exit 205",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "9f855b14-f665-4612-af50-2e6d14ab0216",
+   "name": "TA Lexington",
+   "brand": "TA",
+   "city": "lexington",
+   "state": "VA",
+   "interstate": "I-81",
+   "exit_number": "195",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-81",
+    "I-64"
+   ],
+   "evidence": "I-81 & I-64; Exit 195",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7eda1356-1bc5-42c9-831a-bf5205ae4ef4",
+   "name": "TA Seattle East",
+   "brand": "TA",
+   "city": "north bend",
+   "state": "WA",
+   "interstate": "I-90",
+   "exit_number": "34",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 34",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "ac439c50-e673-403d-ba71-2cc121f66204",
+   "name": "Petro Spokane",
+   "brand": "Petro",
+   "city": "spokane",
+   "state": "WA",
+   "interstate": "I-90",
+   "exit_number": "272",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90 at Medical Lake Road, Exit 272",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c9e79215-06cd-4057-9563-8ebee52f3f63",
+   "name": "TA Grandview",
+   "brand": "TA",
+   "city": "grandview",
+   "state": "WA",
+   "interstate": "I-82",
+   "exit_number": "73",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-82"
+   ],
+   "evidence": "I-82, exit 73",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "faa6f12f-84f6-49ff-93c6-f2edd5248ccc",
+   "name": "TA Express Blaine",
+   "brand": "TA",
+   "city": "blaine",
+   "state": "WA",
+   "interstate": "I-5",
+   "exit_number": "275",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-5"
+   ],
+   "evidence": "I-5 Exit 275",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "103277c8-ef2d-4c03-8454-49020ed7d271",
+   "name": "Petro Racine",
+   "brand": "Petro",
+   "city": "sturtevant",
+   "state": "WI",
+   "interstate": "I-94",
+   "exit_number": "333",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94 & Hwy 20 Exit 333",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "33639f44-8f76-491b-8a0f-4feeccb24cb7",
+   "name": "TA Janesville",
+   "brand": "TA",
+   "city": "janesville",
+   "state": "WI",
+   "interstate": "I-90",
+   "exit_number": "171",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90 & Hwy 14, Exit 171-B",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "4edbc14a-d5b7-4a30-bba9-3eb99ed2a3b7",
+   "name": "TA Express Osseo",
+   "brand": "TA",
+   "city": "osseo",
+   "state": "WI",
+   "interstate": "I-94",
+   "exit_number": "88",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 88",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c1b46983-d4cb-4a2d-ac4b-6db925770586",
+   "name": "TA Express New Lisbon",
+   "brand": "TA",
+   "city": "new lisbon",
+   "state": "WI",
+   "interstate": "I-90",
+   "exit_number": "61",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-90"
+   ],
+   "evidence": "I-90, Exit 61",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "cf841c5e-1e5a-49e5-927e-190fae5d6c05",
+   "name": "Petro Portage",
+   "brand": "Petro",
+   "city": "portage",
+   "state": "WI",
+   "interstate": "I-90",
+   "exit_number": "108A",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-90",
+    "I-94"
+   ],
+   "evidence": "I-90 & I-94 Hwy 78 South, Exit 108A",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d2a9add5-27c1-412f-8635-fe85fd97f812",
+   "name": "TA Madison",
+   "brand": "TA",
+   "city": "deforest",
+   "state": "WI",
+   "interstate": "I-90",
+   "exit_number": "132",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": true,
+   "all_interstates": [
+    "I-90",
+    "I-94"
+   ],
+   "evidence": "I-90 & I-94, Exit 132",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "d95026e2-c51b-4d0e-b5f7-fec32c63fdc3",
+   "name": "TA Hudson",
+   "brand": "TA",
+   "city": "hudson",
+   "state": "WI",
+   "interstate": "I-94",
+   "exit_number": "4",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-94"
+   ],
+   "evidence": "I-94, Exit 4",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "83d598f6-d049-46d5-8a43-2fff1d2edb5b",
+   "name": "TA Mineral Wells",
+   "brand": "TA",
+   "city": "mineral wells",
+   "state": "WV",
+   "interstate": "I-77",
+   "exit_number": "170",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-77"
+   ],
+   "evidence": "I-77, Exit 170",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "98d364ee-a930-4e1d-94d3-aabf020ba0b5",
+   "name": "TA Wheeling",
+   "brand": "TA",
+   "city": "valley grove",
+   "state": "WV",
+   "interstate": "I-70",
+   "exit_number": "11",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-70"
+   ],
+   "evidence": "I-70 at Dallas Pike, Exit 11",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "c6daf923-a5f7-43fe-8809-2fc32bb9267c",
+   "name": "TA Hurricane",
+   "brand": "TA",
+   "city": "hurricane",
+   "state": "WV",
+   "interstate": "I-64",
+   "exit_number": "39",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-64"
+   ],
+   "evidence": "I-64 , Exit 39",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "dd8d6960-1a16-4612-9482-71c3f8966f0a",
+   "name": "TA Jane Lew",
+   "brand": "TA",
+   "city": "jane lew",
+   "state": "WV",
+   "interstate": "I-79",
+   "exit_number": "105",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-79"
+   ],
+   "evidence": "I-79, Exit 105",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "04fe8734-4e5c-446e-9bc3-a9f0ca276035",
+   "name": "TA Rawlins",
+   "brand": "TA",
+   "city": "rawlins",
+   "state": "WY",
+   "interstate": "I-80",
+   "exit_number": "214",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 & Higley Blvd., Exit 214",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "270ef64e-2759-404f-a315-9762341e1f80",
+   "name": "Petro Laramie",
+   "brand": "Petro",
+   "city": "laramie",
+   "state": "WY",
+   "interstate": "I-80",
+   "exit_number": "310",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80 at Curtis, Exit 310",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "416175cb-4cf3-41b8-a73a-faf66a24d238",
+   "name": "TA Ft. Bridger",
+   "brand": "TA",
+   "city": "ft. bridger",
+   "state": "WY",
+   "interstate": "I-80",
+   "exit_number": "30",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 30",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "7e4cb477-0965-4353-94b1-b2702a5bf302",
+   "name": "TA Express Rock Springs",
+   "brand": "TA",
+   "city": "rock springs",
+   "state": "WY",
+   "interstate": "I-80",
+   "exit_number": "104",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 104",
+   "match": "coord",
+   "note": null
+  },
+  {
+   "id": "e990a211-f23e-4ab1-b747-52a3b1f998da",
+   "name": "TA Cheyenne",
+   "brand": "TA",
+   "city": "burns",
+   "state": "WY",
+   "interstate": "I-80",
+   "exit_number": "377",
+   "interstate_decision": "approved",
+   "exit_decision": "approved",
+   "concurrency": false,
+   "all_interstates": [
+    "I-80"
+   ],
+   "evidence": "I-80, Exit 377",
+   "match": "coord",
+   "note": null
+  }
+ ]
+}
