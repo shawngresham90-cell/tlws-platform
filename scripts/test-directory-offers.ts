@@ -172,6 +172,33 @@ check(
   /measurement is\s+still being set up/i.test(src.offerTable.replace(/\s+/g, ' ')),
 );
 
+// ---- a paid placement must read as paid, everywhere it appears ----
+// `locations.is_featured` is the switch a purchased featured listing turns on,
+// and there is no second column distinguishing an editorial pick from a paid
+// one. So every surface that renders it must disclose it as sponsored — an
+// unqualified "Featured" badge on a placement someone paid for is undisclosed
+// advertising.
+const placementSurfaces = {
+  card: 'src/components/directory/EntryCard.tsx',
+  detail: 'src/app/(directory)/directory/location/[slug]/page.tsx',
+  multi: 'src/components/directory/MultiCategoryBrowser.tsx',
+  browser: 'src/components/directory/DirectoryBrowser.tsx',
+};
+for (const [name, path] of Object.entries(placementSurfaces)) {
+  const text = stripComments(readFileSync(path, 'utf8'));
+  check(`${name}: discloses paid placement as Sponsored`, /Sponsored/.test(text));
+  check(
+    `${name}: no bare "Featured" label on the paid badge`,
+    !/>\s*Featured\s*</.test(text) && !/label="Featured"/.test(text),
+  );
+}
+// The sort key itself stays `featured` — dashboards and saved URLs depend on
+// the value; only the human label changed.
+check(
+  'sort value is still the stable `featured` token',
+  /value="featured"/.test(readFileSync(placementSurfaces.browser, 'utf8')),
+);
+
 // ---- no payment integration anywhere in the funnel ----
 for (const [name, text] of Object.entries(src)) {
   check(

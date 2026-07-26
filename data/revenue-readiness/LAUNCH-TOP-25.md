@@ -1,3 +1,18 @@
+> **Superseded.** Pricing, capacity, and the claim policy have since been
+> approved, so the ranked list now lives in `TOP-25-PROSPECTS.md` /
+> `TOP-25-PROSPECTS.csv` and the messaging in `SALES-PLAYBOOK.md`. This file is
+> kept for the record. Two things in it are now known to be wrong:
+>
+> 1. "None of these businesses has a phone or email in our data" — **incorrect
+>    for phone.** 39 of the 75 have a phone and 47 have a website in the
+>    directory record. None has an email. The corrected reachability is in
+>    `TOP-25-PROSPECTS.csv`; the 12 with neither are in `SOURCING-QUEUE.csv`.
+> 2. The list below includes TA/Petro sites and CAT scales colocated at them.
+>    Those are correct listings but not prospects — nobody at the site can buy a
+>    placement. They are now in `EXCLUDED-FROM-OUTREACH.csv` with the reason.
+>
+> Every `[NEEDS SHAWN'S APPROVAL]` marker below has since been answered.
+
 # Directory revenue launch — top 25, templates, tracking
 
 Read-only preparation. **No outreach was sent, no contact details were looked

@@ -185,7 +185,7 @@ export function DirectoryBrowser({
             onChange={(e) => chooseSort(e.target.value as SortKey)}
             className={`${inputClasses} lg:w-44`}
           >
-            <option value="featured">Featured first</option>
+            <option value="featured">Sponsored first</option>
             <option value="alpha">A–Z</option>
             <option value="newest">Newest</option>
             <option value="distance">Nearest to me</option>
