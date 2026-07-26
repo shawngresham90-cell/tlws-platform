@@ -1,6 +1,9 @@
 # Founders Wall — add Lauren Gresham (Steel Founder)
 
-**Status: prepared, verified, NOT RUN.** Awaiting Shawn's go-ahead.
+**Status: EXECUTED 2026-07-26, verified.** See the execution audit at the bottom.
+
+The section immediately below was written before execution and is kept as the
+record of what was proposed and why.
 
 ## The thing to know first
 
@@ -90,6 +93,108 @@ exactly.
 
 | File | |
 | --- | --- |
-| `ADD-FOUNDER.sql` | the guarded forward statement — **not run** |
+| `ADD-FOUNDER.sql` | the guarded forward statement — **run once, 2026-07-26** |
 | `VERIFY.sql` | read-only checks, safe before and after |
-| `ROLLBACK.sql` | guarded reversal to 26 founders / $9,055 |
+| `ROLLBACK.sql` | guarded reversal to 26 founders / $9,055 — **not run** |
+
+---
+
+# EXECUTED — 2026-07-26
+
+Authorized by Shawn and run exactly once. CI on PR #193 was green
+(`verify` success, Netlify header + redirect rules success on `bd3692f`)
+before execution.
+
+## Preconditions re-confirmed immediately before running
+
+| Guard | Required | Found |
+| --- | --- | --- |
+| Founders on the wall | 26 | **26** ✓ |
+| Rows matching `lauren` | 0 | **0** ✓ |
+| Steel position 9 | free | **free** (steel 1–8 filled) ✓ |
+| `raised_cents_override` | 905500 | **905500** ✓ |
+| `goal_cents` | 1155000 ($11,550) | **1155000** ✓ |
+
+Pre-state digest of all 26 founder rows:
+`f0b1346a90caca328d8fcc19a7d18331`
+
+## Execution
+
+The transaction ran once. No guard raised, so nothing rolled back and no guard
+was modified or weakened. The rollback was **not** run.
+
+## Verification (VERIFY.sql)
+
+| Check | Result |
+| --- | --- |
+| Founders total | **27** ✓ |
+| Lauren Gresham rows | **exactly 1** ✓ |
+| Tier / position / published | **steel / 9 / true** ✓ |
+| Status | `approved` |
+| Stored contribution | `amount_cents = 50000` (**$500**) ✓ |
+| Raised | **955500 = $9,555** ✓ |
+| Remaining | **199500 = $1,995** ✓ |
+| Goal | **1155000 = $11,550** — unchanged ✓ |
+| Progress | **82.7%** ✓ |
+| `raised + remaining = goal` | **true** ✓ |
+
+## Nothing else moved
+
+Digest of the 26 pre-existing founder rows **after** execution:
+`f0b1346a90caca328d8fcc19a7d18331` — **byte-identical to the pre-state digest.**
+David Gresham (Iron #1), J.A. Gresham (Brick #5) and all 24 others are
+provably unchanged: same values, same order, same visibility.
+
+Steel tier after: 1 Gary Ford · 2 Jose Cotto · 3 Greg Walker · 4 Mario Capston ·
+5 Jon Blankenship · 6 Ricky M. Rosenbalm · 7 Idle Demon · 8 RUSH ·
+**9 Lauren Gresham**. Positions 1–8 untouched.
+
+Unrelated tables unchanged: `locations` 1556 rows, digest
+`911773b876a3a93897401406a14616e2` (identical to before); `sponsors` 0;
+`sponsor_touches` 0; `directory_sponsors` 0.
+
+## Live page
+
+`https://truckinglifewithshawn.com/founders` could **not** be fetched from this
+environment — the network policy blocks the production domain and the
+`*.netlify.app` alias, and that was not bypassed. Verified instead against the
+production database plus the page's data contract:
+
+- `/founders` has `export const revalidate = 60`, so the ISR cache refreshes
+  within 60 seconds of the write. No on-demand purge was needed.
+- `getPublicFounders()` selects `is_public = true` rows ordered by position —
+  Lauren qualifies and sorts last in Steel.
+- `getCampaignProgress()` reads `campaign_progress`, which now returns
+  founder_count 27, raised 955500, remaining 199500, 82.7%.
+
+Shawn should confirm the rendered wall himself; the data behind it is verified.
+
+## One honest nuance about the $500
+
+**Not displayed — confirmed.** `getPublicFounders()` selects
+`id, display_name, business_name, business_url, tier, position, message,
+logo_url, paid_at`. `amount_cents` is not in the projection, so no individual
+amount reaches the page, for Lauren or anyone.
+
+**Not *exposed* — not strictly true, and it predates this change.** At the
+database grant level the `anon` role holds SELECT on the whole `founders` table
+for public rows, `amount_cents` included (also `payment_ref`,
+`payment_provider`, `status`). Anyone querying the public Supabase REST API
+directly with the anon key could read it. That is exactly as true for RUSH's
+$500 Steel spot, stored the same way since 2026-07-14, as it now is for
+Lauren's.
+
+This was **not** introduced here and closing it is a schema decision for Shawn,
+because it affects every founder row:
+
+```sql
+-- Not run. Narrows the public projection to what the site actually reads.
+revoke select on public.founders from anon;
+grant select (id, display_name, business_name, business_url, tier,
+              position, message, logo_url, paid_at, is_public)
+  on public.founders to anon;
+```
+
+The alternative is to store `amount_cents = null` for Lauren, matching the 24
+seeded founders — but that discards the record of an authorized contribution
+that Shawn asked to be captured, so it was not done unilaterally.
