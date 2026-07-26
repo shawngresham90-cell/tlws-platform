@@ -4,9 +4,13 @@ import { createSponsorAction, setSponsorActiveAction, deleteSponsorAction } from
 
 /**
  * Admin sponsor manager (Milestone 25). Create, activate/deactivate, and delete
- * sponsor placements. Reads via the service role and fails soft: if migration
- * 024 is unapplied it shows a clear "not enabled" notice and the form still
- * validates. URL safety is enforced server-side in the actions.
+ * sponsor placements. Reads via the service role and fails soft: if the table
+ * cannot be read it shows a clear notice and the form still validates. URL
+ * safety is enforced server-side in the actions.
+ *
+ * The approved corridor-sponsor offer is sold and activated on the placements
+ * console instead, which enforces the one-primary-per-corridor limit. This page
+ * remains the general manager for every other placement type.
  */
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +25,8 @@ type Row = {
   interstates: string[] | null;
   categories: string[] | null;
   active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
 };
 
 async function load(): Promise<{ enabled: boolean; rows: Row[] }> {
@@ -28,7 +34,9 @@ async function load(): Promise<{ enabled: boolean; rows: Row[] }> {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('directory_sponsors')
-      .select('id, name, tagline, url, placements, states, interstates, categories, active')
+      .select(
+        'id, name, tagline, url, placements, states, interstates, categories, active, starts_at, ends_at',
+      )
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) return { enabled: false, rows: [] };
@@ -52,11 +60,20 @@ export default async function SponsorsAdminPage() {
         where a matching active sponsor exists. Leave a targeting field blank to match everywhere.
       </p>
 
+      <p className="mt-2 text-sm text-muted">
+        For the approved <span className="font-semibold text-ink">corridor sponsor</span> offer, use{' '}
+        <a href="/admin/directory/placements" className="text-signal underline">
+          the placements console
+        </a>{' '}
+        instead — it enforces one primary sponsor per corridor page and records the term. This page
+        is the general manager for every other placement.
+      </p>
+
       {!enabled && (
         <div className="mt-4 rounded-card border border-dashed border-line bg-asphalt-800 p-4 text-sm text-muted">
-          <span className="font-semibold text-ink">Not enabled yet.</span> Migration{' '}
-          <code>024_directory_sponsors.sql</code> is committed but not applied — saving is a no-op
-          until it is applied. The public sponsor slots show nothing in the meantime.
+          <span className="font-semibold text-ink">Sponsor table unreachable.</span> Saving is a
+          no-op until it can be read again, and the public sponsor slots show nothing in the
+          meantime.
         </div>
       )}
 
@@ -106,6 +123,24 @@ export default async function SponsorsAdminPage() {
             <input name="categories" className={input} />
           </label>
         </div>
+        {/* starts_at / ends_at already exist and are enforced at render time —
+            they were simply never exposed, so every sponsor created here used
+            to run forever. */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm text-muted">
+            Starts (optional)
+            <input name="starts_on" type="date" className={input} />
+          </label>
+          <label className="text-sm text-muted">
+            Ends (optional)
+            <input name="ends_on" type="date" className={input} />
+          </label>
+        </div>
+        <p className="text-xs text-muted">
+          A sponsor with no end date runs until someone stops it. With an end date it stops showing
+          on its own the moment the date passes. Leaving a targeting field blank means{' '}
+          <span className="font-semibold text-ink">everywhere</span>, not nowhere.
+        </p>
         <button
           type="submit"
           className="rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt hover:bg-signal-600"
@@ -133,7 +168,9 @@ export default async function SponsorsAdminPage() {
                   <p className="mt-1 text-xs text-muted">
                     Placements: {(s.placements ?? []).join(', ') || '—'} · States:{' '}
                     {(s.states ?? []).join(', ') || 'all'} · Interstates:{' '}
-                    {(s.interstates ?? []).join(', ') || 'all'}
+                    {(s.interstates ?? []).join(', ') || 'all'} · Term:{' '}
+                    {s.starts_at ? s.starts_at.slice(0, 10) : 'open'} →{' '}
+                    {s.ends_at ? s.ends_at.slice(0, 10) : 'open'}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">

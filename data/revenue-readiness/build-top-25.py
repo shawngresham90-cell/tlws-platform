@@ -19,6 +19,11 @@ docs/directory/crm-directory-inquiries.md terms if the data changes.
 """
 
 import csv
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from openings import OPENINGS  # noqa: E402
 
 
 FLAGS_RAW = "096dd2fe:-W-B3 0a0c7a0d:-W-B8 0e24e007:P--B0 12fa9201:P--B3 27a1a923:-W-B0 28c41568:---B5 36d48fe4:PW-B8 38aadae7:PW-B0 3ec4da2b:-W-B1 4212adfe:P--B0 43a04cd8:-W-B1 469dadae:PW-B1 48f3af5a:P--B0 4be0bff5:PW-B1 4c1a72f9:-W-B1 4e347a10:P--B0 4e5234b6:-W-B1 50c54637:-W-B1 53bc511f:-W-B1 595de56a:-W-B1 5ad2354d:---B1 5b586188:P--B0 5ff9ec4c:PW-B0 605eb2aa:PW-B1 63337a0c:---B3 6bad6451:-W-B8 6da51cc0:PW-B1 738937f9:PW-B1 7c5326e4:-W-B1 7d2aff0a:---B2 7d74bb54:PW-B8 7dd25bf6:PW-B1 7de48d80:---B1 7f5d9778:-W-B0 7fd02b6b:PW-B1 85a4e108:PW-B1 8954f3e6:-W-B1 8bb903e1:-W-B2 8bf6630b:PW-B8 8e79a54d:PW-B1 8f2aedd7:PW-B1 910b954b:-W-B1 9659739b:PW-B1 9acc0450:P--B0 9f3e2546:-W-B1 b1a240d4:PW-B0 b25603ec:-W-B1 b329619c:-W-B0 b440672c:---B1 b621363d:PW-B8 b9f278be:---B0 be40a471:-W-B1 c46096bc:---B1 c8a6032f:---B1 ca06adc7:P--B0 cb0165c3:-W-B0 cd88c617:---B1 cf54cfb5:-W-B0 d4513e91:PW-B1 d6097cf6:PW-B0 d7bc6a17:-W-B0 e2d59ea7:P--B4 e808cd20:PW-B1 e945424b:P--B1 ebb8ad22:P--B7 ee7f6f07:P--B5 f12efc5b:---B3 f1d1bc65:PW-B1 f393fa83:P--B0 f4967041:---B0 f89415ea:P--B4 f972d0f0:P--B2 fa924e2a:PW-B0 fc04797c:---B3 fef1dd1a:PW-B1"
@@ -144,6 +149,7 @@ for r in rows:
         'confidence': confidence,
         'first_contact_channel': channel,
         'multi_site_in_our_data': 'yes' if multi else 'no',
+        'opening_sentence': OPENINGS.get(sid, ''),
         'page_indexable': 'yes' if (gate[sid]['has_address'] and gate[sid]['signals'] >= 2) else 'no',
         'page_signals': gate[sid]['signals'],
         'listing_id': r['listing_id'],
@@ -171,7 +177,8 @@ cols = ['rank', 'business_name', 'city', 'state', 'category', 'corridor', 'exit_
         'recommended_paid_offer', 'paid_offer_rationale', 'billing_recommendation',
         'billing_rationale', 'category_corridor_value', 'official_website', 'public_phone',
         'public_email', 'evidence_source', 'confidence', 'first_contact_channel',
-        'multi_site_in_our_data', 'page_indexable', 'page_signals', 'score', 'listing_id']
+        'multi_site_in_our_data', 'opening_sentence', 'page_indexable', 'page_signals', 'score',
+        'listing_id']
 
 with open('data/revenue-readiness/TOP-25-PROSPECTS.csv', 'w', newline='') as fh:
     w = csv.DictWriter(fh, fieldnames=cols)

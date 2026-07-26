@@ -25,3 +25,12 @@ npm-debug.log*
 !.vscode/extensions.json
 /coverage
 *.tsbuildinfo
+
+# Sales contact details. This repository is PUBLIC. Business phone numbers and
+# websites for the outreach list are kept out of git entirely — the committed
+# prospect CSV records only whether we hold one, and the values live here,
+# locally, or in the private handoff.
+data/revenue-readiness/local/
+
+# Python bytecode from the data build scripts
+__pycache__/

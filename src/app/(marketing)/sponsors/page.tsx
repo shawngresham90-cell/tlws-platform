@@ -65,6 +65,10 @@ export default function SponsorsPage({
     state: boundState(one(searchParams?.lstate)) ?? undefined,
     interstate: corridorLabel(one(searchParams?.lcorr)) ?? undefined,
   };
+  // Where the visitor came from: a directory CTA surface, or a campaign token
+  // on a link Shawn posted. Bounded, shown back, and the only campaign
+  // attribution the CRM gets while analytics is switched off.
+  const from = boundToken(one(searchParams?.from), 40) ?? undefined;
   return (
     <>
       <JsonLd
@@ -139,6 +143,7 @@ export default function SponsorsPage({
             siteKey={siteKey}
             defaultInterest={defaultInterest}
             listing={listing.slug ? listing : undefined}
+            from={from}
           />
         </div>
       </Section>

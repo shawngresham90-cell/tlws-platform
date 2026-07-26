@@ -16,6 +16,7 @@
  *   node scripts/e2e-directory-revenue.mjs
  */
 import { spawn, execFileSync } from 'node:child_process';
+import { createHmac, randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -136,10 +137,36 @@ const overflows = (page) =>
 
 const funnelUrl = await renderFunnelPage();
 
+/**
+ * The admin gate fails closed when ADMIN_PASSWORD / ADMIN_SESSION_SECRET are
+ * unset, which is the correct behaviour and also means the admin pages cannot
+ * be exercised at all. So this run generates a throwaway pair for the child
+ * server only. They are random per run, never printed, never written to disk,
+ * and never leave this process — a test fixture, not a credential.
+ */
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || randomUUID();
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || randomUUID();
+
+// A server left running by a previous invocation would answer with that run's
+// throwaway password and fail authentication for no real reason. Refuse to
+// start rather than produce a confusing failure.
+try {
+  await fetch(`${BASE}/sponsors`, { signal: AbortSignal.timeout(1500) });
+  console.error(
+    `Port ${PORT} is already serving. Stop the stale server first — this run cannot ` +
+      `authenticate against it.`,
+  );
+  process.exit(2);
+} catch {
+  /* nothing listening, which is what we want */
+}
+
+// `npx` forks the real server, so kill the whole process group at the end.
 const server = spawn('npx', ['next', 'start', '-p', String(PORT)], {
   cwd: process.cwd(),
   stdio: ['ignore', 'pipe', 'pipe'],
-  env: process.env,
+  env: { ...process.env, ADMIN_PASSWORD, ADMIN_SESSION_SECRET },
+  detached: true,
 });
 server.stdout.on('data', () => {});
 server.stderr.on('data', () => {});
@@ -400,6 +427,182 @@ try {
     await ctx.close();
   }
 
+  /* ------------------------------------------- admin: authorization + a11y */
+  {
+    // Unauthenticated first. Every admin route must bounce to the login page.
+    const anon = await browser.newContext();
+    const anonPage = await anon.newPage();
+    for (const path of [
+      '/admin/directory/placements',
+      '/admin/sponsors',
+      '/admin/directory/sponsors',
+      '/admin/directory',
+    ]) {
+      await anonPage.goto(BASE + path, { waitUntil: 'domcontentloaded' });
+      check(
+        `authz: ${path} redirects an anonymous visitor to login`,
+        anonPage.url().includes('/admin/login'),
+        anonPage.url(),
+      );
+    }
+    // And the gate is not merely a redirect on the page — the placements
+    // console must not have leaked any markup before bouncing.
+    const leaked = await anonPage.evaluate(() => document.body.innerText);
+    check(
+      'authz: no admin content leaks to an anonymous visitor',
+      !/Paid placements/i.test(leaked),
+    );
+    await anon.close();
+
+    // The password check itself: a wrong one is bounced with ?error=1, the real
+    // one is not. The issued cookie is Secure, which a browser will not store
+    // over plain http, so the session below is seeded directly rather than by
+    // logging in. That is a local-transport limitation, not an auth bypass —
+    // the value is the same HMAC the app itself would issue, and a forged one
+    // is asserted to fail.
+    const login = await browser.newContext();
+    const loginPage = await login.newPage();
+    for (const [label, pw, expectError] of [
+      ['a wrong password', `${ADMIN_PASSWORD}-wrong`, true],
+      ['the correct password', ADMIN_PASSWORD, false],
+    ]) {
+      await loginPage.goto(`${BASE}/admin/login`, { waitUntil: 'networkidle' });
+      await loginPage.fill('input[name="password"]', pw);
+      await loginPage.locator('button[type="submit"]').click();
+      // A server action navigates via the router, so the load state may already
+      // be idle. Wait for the outcome itself rather than for a page load.
+      const rejected = await loginPage
+        .waitForFunction(
+          () =>
+            location.search.includes('error=1') ||
+            document.body.innerText.includes('Incorrect password'),
+          undefined,
+          { timeout: 8000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      check(
+        `authz: ${label} is ${expectError ? 'rejected' : 'accepted'}`,
+        rejected === expectError,
+        loginPage.url(),
+      );
+    }
+    await login.close();
+
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.addCookies([
+      {
+        name: 'tlws_admin',
+        value: createHmac('sha256', ADMIN_SESSION_SECRET)
+          .update('tlws-admin-session-v1')
+          .digest('hex'),
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/admin/directory/placements`, { waitUntil: 'networkidle' });
+    check(
+      'authz: a valid session reaches the placements console',
+      !page.url().includes('/admin/login'),
+      page.url(),
+    );
+
+    const forged = await browser.newContext();
+    await forged.addCookies([
+      { name: 'tlws_admin', value: 'f'.repeat(64), domain: '127.0.0.1', path: '/', httpOnly: true },
+    ]);
+    const forgedPage = await forged.newPage();
+    await forgedPage.goto(`${BASE}/admin/directory/placements`, { waitUntil: 'domcontentloaded' });
+    check(
+      'authz: a forged session cookie is rejected',
+      forgedPage.url().includes('/admin/login'),
+      forgedPage.url(),
+    );
+    await forged.close();
+
+    for (const [name, path] of [
+      ['placements console', '/admin/directory/placements'],
+      ['sponsor inbox', '/admin/sponsors'],
+    ]) {
+      for (const [w, h] of [
+        [390, 844],
+        [1280, 900],
+      ]) {
+        await page.setViewportSize({ width: w, height: h });
+        const res = await page.goto(BASE + path, { waitUntil: 'networkidle' });
+        check(`${name} @${w}: 200`, res.status() === 200, res.status());
+        const v = await axeViolations(page);
+        check(
+          `${name} @${w}: no serious/critical a11y violations`,
+          v.length === 0,
+          v.map((x) => `${x.id}(${x.nodes.length})`).join(', '),
+        );
+        check(`${name} @${w}: no horizontal overflow`, !(await overflows(page)));
+      }
+    }
+
+    // The placements console says the things it must say. (Without a database
+    // it renders its "could not read" state, so this checks the copy that is
+    // always present, not the live rows.)
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${BASE}/admin/directory/placements`, { waitUntil: 'networkidle' });
+    const console_ = (await page.evaluate(() => document.body.innerText)).replace(/\s+/g, ' ');
+    check(
+      'placements: states the approved featured price',
+      console_.includes('$99/month or $999/year'),
+    );
+    check(
+      'placements: states the approved corridor price',
+      console_.includes('$299/month or $2,999/year'),
+    );
+    check('placements: states the capacity', /1 primary sponsor per corridor page/i.test(console_));
+    check(
+      'placements: states the three-per-page limit',
+      /up to 3 sponsored listings/i.test(console_),
+    );
+    check('placements: states that it takes no payment', /takes no payment/i.test(console_));
+    check(
+      'placements: states that paid placement is labelled Sponsored',
+      /labelled Sponsored/i.test(console_),
+    );
+    check(
+      'placements: admits the capacity check is not a database constraint',
+      /not a database constraint/i.test(console_),
+    );
+    check('placements: requires a typed confirmation', /Type ACTIVATE to confirm/i.test(console_));
+    check(
+      'placements: sends claims elsewhere',
+      /Claims are free and are handled on/i.test(console_),
+    );
+    // Keyboard: the corridor activation form is fully reachable by Tab.
+    await page.locator('body').press('Tab');
+    const ids = [];
+    for (let i = 0; i < 80; i++) {
+      const n = await page.evaluate(() => {
+        const el = document.activeElement;
+        return el && 'name' in el ? String(el.name || '') : '';
+      });
+      if (n) ids.push(n);
+      await page.keyboard.press('Tab');
+    }
+    for (const n of [
+      'name',
+      'corridor',
+      'url',
+      'billing',
+      'starts_on',
+      'ends_on',
+      'reviewer',
+      'confirm',
+    ]) {
+      check(`placements keyboard: ${n} reachable by Tab`, ids.includes(n), ids.join(','));
+    }
+    await ctx.close();
+  }
+
   /* -------------------------------------------------------- internal links */
   {
     const ctx = await browser.newContext();
@@ -434,7 +637,11 @@ try {
   }
 } finally {
   if (browser) await browser.close();
-  server.kill('SIGTERM');
+  try {
+    process.kill(-server.pid, 'SIGTERM');
+  } catch {
+    server.kill('SIGTERM');
+  }
 }
 
 console.log(`\ndirectory-revenue e2e: ${passed} passed, ${failed} failed`);

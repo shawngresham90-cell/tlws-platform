@@ -5,7 +5,12 @@ import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
-import { DIRECTORY_EVENTS, boundCorridor, listingContextLine } from '@/lib/directory/funnel';
+import {
+  DIRECTORY_EVENTS,
+  boundCorridor,
+  listingContextLine,
+  sourceContextLine,
+} from '@/lib/directory/funnel';
 
 /**
  * Sponsor inquiry form. Posts to the existing guarded, Turnstile-protected
@@ -50,6 +55,7 @@ export function SponsorInquiryForm({
   siteKey,
   defaultInterest,
   listing,
+  from,
 }: {
   siteKey: string;
   /** Preselects the interest dropdown when a directory CTA deep-links in.
@@ -58,6 +64,9 @@ export function SponsorInquiryForm({
   /** Listing this inquiry is about, when it came from a directory CTA. Shown
    * back to the sender and appended as one labelled line to the message. */
   listing?: InquiryListing;
+  /** Bounded source token (a CTA surface or a campaign tag). Shown back and
+   * appended as one labelled line — the CRM's only campaign attribution. */
+  from?: string;
 }) {
   const [company, setCompany] = useState('');
   const [contactName, setContactName] = useState('');
@@ -93,6 +102,7 @@ export function SponsorInquiryForm({
   if (listing?.state) eventProps.state = listing.state;
   const corridor = boundCorridor(listing?.interstate);
   if (corridor) eventProps.corridor = corridor;
+  if (from) eventProps.surface = from;
   if (interest) eventProps.interest = interest;
   if (billing) eventProps.billing = billing;
 
@@ -127,7 +137,10 @@ export function SponsorInquiryForm({
   const billingLine = billing
     ? `Billing preference: ${billing === 'annual' ? 'Annual' : 'Monthly'} (preference only — no payment was taken)`
     : '';
-  const composedMessage = [contextLine, billingLine, message.trim()].filter(Boolean).join('\n\n');
+  const sourceLine = sourceContextLine(from);
+  const composedMessage = [contextLine, billingLine, sourceLine, message.trim()]
+    .filter(Boolean)
+    .join('\n\n');
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -205,15 +218,17 @@ export function SponsorInquiryForm({
       noValidate
       className="rounded-card border border-line bg-asphalt-800 p-8"
     >
-      {contextLine && (
+      {(contextLine || sourceLine) && (
         <div className="mb-6 rounded-card border border-line bg-asphalt px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-            About this listing
+            {contextLine ? 'About this listing' : 'Sent with your inquiry'}
           </p>
-          <p className="mt-1 text-sm text-ink">{contextLine}</p>
+          {contextLine && <p className="mt-1 text-sm text-ink">{contextLine}</p>}
+          {sourceLine && <p className="mt-1 text-sm text-muted">{sourceLine}</p>}
           <p className="mt-2 text-xs text-muted">
-            This line is sent with your inquiry. Sending it does not verify ownership or change the
-            listing — Shawn reviews every request.
+            {contextLine
+              ? 'These lines are sent with your inquiry. Sending it does not verify ownership or change the listing — Shawn reviews every request.'
+              : 'This line is sent with your inquiry so Shawn knows which post you came from. Sending it commits you to nothing.'}
           </p>
         </div>
       )}

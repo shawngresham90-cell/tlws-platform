@@ -16,7 +16,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { isDirectoryInquiry, parseDirectoryInquiry } from '@/lib/admin/directory-inquiry';
-import { FUNNEL_INTEREST, corridorLabel, listingContextLine } from '@/lib/directory/funnel';
+import {
+  FUNNEL_INTEREST,
+  corridorLabel,
+  listingContextLine,
+  sourceContextLine,
+} from '@/lib/directory/funnel';
 import { OFFERS } from '@/lib/directory/offers';
 
 let passed = 0;
@@ -157,6 +162,50 @@ const mention = parseDirectoryInquiry(
 );
 check('mid-line mention is not parsed', mention.listingPath === null, String(mention.listingPath));
 
+// ---- campaign attribution: the only one the CRM has ----
+check(
+  'source line is written from a token',
+  sourceContextLine('fb-launch-1') === 'Came from: fb-launch-1',
+);
+check(
+  'source line is bounded to a slug',
+  sourceContextLine('FB Launch #1!!') === 'Came from: fb-launch-1',
+);
+check(
+  'no source token yields no line',
+  sourceContextLine('') === '' && sourceContextLine(null) === '',
+);
+check(
+  'an over-long token is truncated, not rejected',
+  sourceContextLine('a'.repeat(80)) === `Came from: ${'a'.repeat(40)}`,
+);
+const sourced = parseDirectoryInquiry(
+  FUNNEL_INTEREST.claim,
+  [
+    listingContextLine({ slug: 'ok-stop-md', name: 'OK Stop' }),
+    sourceContextLine('fb-launch-1'),
+    'hello',
+  ].join('\n\n'),
+);
+check('source round-trips', sourced.source === 'fb-launch-1', String(sourced.source));
+check(
+  'source line is stripped from the message',
+  sourced.message === 'hello',
+  String(sourced.message),
+);
+check(
+  'a campaign visit with no listing is still a directory inquiry',
+  isDirectoryInquiry(parseDirectoryInquiry(null, sourceContextLine('yt-community-2'))),
+);
+check(
+  'no source line means unknown, never a guess',
+  parseDirectoryInquiry(FUNNEL_INTEREST.claim, 'plain message').source === null,
+);
+check(
+  'a hostile source line is not parsed',
+  parseDirectoryInquiry(null, 'Came from: <script>alert(1)</script>').source === null,
+);
+
 // ---- corridorLabel round-trips only real corridor tokens ----
 check('corridorLabel i95', corridorLabel('i95') === 'I-95');
 check('corridorLabel I-40', corridorLabel('I-40') === 'I-40');
@@ -167,11 +216,22 @@ check('corridorLabel rejects empty', corridorLabel('') === null);
 const page = readFileSync('src/app/admin/(dashboard)/sponsors/page.tsx', 'utf8');
 check('admin page uses the parser', /parseDirectoryInquiry/.test(page));
 check('admin page never updates locations', !/from\('locations'\)|update\(/.test(page));
-// No mutation path exists on this page at all: it is a server component with
-// no server action, no form, and no fetch. The only writable control is the
-// pre-existing lead StatusSelect.
-check('admin page declares no server action', !/'use server'/.test(page));
-check('admin page posts nothing', !/<form|fetch\(|method="post"/i.test(page));
+// The page now posts exactly one thing — a claim review — and nothing else.
+// It is still a server component: it declares no action of its own, imports the
+// single admin-gated one, and has no client fetch. The other writable control
+// is the pre-existing lead StatusSelect.
+check('admin page declares no server action of its own', !/'use server'/.test(page));
+check('admin page makes no client fetch', !/fetch\(/.test(page));
+check(
+  'the only form on the page is the claim review',
+  (page.match(/<form/g) ?? []).length === 1 && /action=\{recordClaimReviewAction\}/.test(page),
+  String((page.match(/<form/g) ?? []).length),
+);
+check(
+  'the claim review action lives in an admin-gated server module',
+  /^'use server';/.test(readFileSync('src/app/admin/(dashboard)/sponsors/actions.ts', 'utf8')) &&
+    /requireAdmin\(\);/.test(readFileSync('src/app/admin/(dashboard)/sponsors/actions.ts', 'utf8')),
+);
 check('admin page says a claim does not change a listing', /never changes a\s+listing/i.test(page));
 
 // ---- no migration was introduced for any of this ----

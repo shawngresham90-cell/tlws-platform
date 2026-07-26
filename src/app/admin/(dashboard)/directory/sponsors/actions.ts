@@ -26,6 +26,14 @@ function list(formData: FormData, key: string): string[] {
     .filter(Boolean);
 }
 
+/** A date input (YYYY-MM-DD) as an ISO instant, or null when blank/invalid. */
+function isoDate(formData: FormData, key: string, endOfDay = false): string | null {
+  const value = String(formData.get(key) ?? '').trim();
+  if (!value) return null;
+  const d = new Date(`${value}T${endOfDay ? '23:59:59' : '00:00:00'}Z`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 export async function createSponsorAction(formData: FormData): Promise<void> {
   requireAdmin();
   const name = String(formData.get('name') ?? '').trim();
@@ -38,6 +46,13 @@ export async function createSponsorAction(formData: FormData): Promise<void> {
   const placements = SPONSOR_PLACEMENTS.map((p) => p.value).filter(
     (v) => formData.get(`placement:${v}`) != null,
   ) as SponsorPlacement[];
+  // A term is optional here, but an inverted one is a mistake, not a choice.
+  const startsAt = isoDate(formData, 'starts_on');
+  const endsAt = isoDate(formData, 'ends_on', true);
+  if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+    revalidatePath(PATH);
+    return;
+  }
   try {
     const supabase = createAdminClient();
     await supabase.from('directory_sponsors').insert({
@@ -50,9 +65,11 @@ export async function createSponsorAction(formData: FormData): Promise<void> {
       interstates: list(formData, 'interstates'),
       categories: list(formData, 'categories'),
       active: true,
+      starts_at: startsAt,
+      ends_at: endsAt,
     });
   } catch {
-    // Migration 024 unapplied or DB hiccup — no-op.
+    // Table unreachable or DB hiccup — no-op.
   }
   revalidatePath(PATH);
 }

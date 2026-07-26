@@ -144,6 +144,9 @@ export default async function AdminDirectoryPage({ searchParams }: { searchParam
           <Link href="/admin/directory/duplicates" className={toolbarBtn}>
             Duplicates
           </Link>
+          <Link href="/admin/directory/placements" className={toolbarBtn}>
+            Placements
+          </Link>
           <Link href="/admin/directory/geocoding" className={toolbarBtn}>
             Geocoding
           </Link>
