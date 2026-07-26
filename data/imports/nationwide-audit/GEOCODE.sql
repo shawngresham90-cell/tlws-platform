@@ -1,0 +1,351 @@
+-- Nationwide audit — geocode approved existing rows from US Census 'Exact' matches.
+-- Only lat/lng + geocode metadata. Blank-only. One state per transaction.
+-- Coordinates verbatim from data/geocoding/census/raw/GeocodeResults.csv.
+
+-- ===== GEOCODE AL (5 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('f972d0f0-b603-4694-824f-36718afa596b'::uuid, 34.11621::double precision, -86.863121::double precision),
+    ('7ca426a1-8f1c-41fd-a721-3c070ccec7c9'::uuid, 33.539483::double precision, -86.828679::double precision),
+    ('dde95330-d441-40ca-8bce-f0361edba20b'::uuid, 32.740021::double precision, -86.539912::double precision),
+    ('48f3af5a-620d-4a44-9dd5-96210e2b3e39'::uuid, 30.809052::double precision, -88.06475::double precision),
+    ('0e24e007-db84-40db-bfc1-222e5d0eebad'::uuid, 34.11621::double precision, -86.863121::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'AL'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 5 THEN RAISE EXCEPTION 'GEOCODE AL guard: expected 5, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE AL: % rows', n;
+END $$;
+
+-- ===== GEOCODE AR (5 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('66f48a5d-4b79-4673-a245-f44828333bca'::uuid, 34.909286::double precision, -91.196807::double precision),
+    ('181dd4e9-f9b8-41ca-9b5d-3d38edf629ab'::uuid, 35.168776::double precision, -90.187229::double precision),
+    ('76c7094c-a57d-4c9f-9232-1343eead5d58'::uuid, 35.332714::double precision, -93.061197::double precision),
+    ('e945424b-b704-4e3e-9eaa-0ed1ba82fb98'::uuid, 34.912278::double precision, -91.195807::double precision),
+    ('b440672c-2cac-41cc-b748-a2c6867dbd67'::uuid, 34.777622::double precision, -92.202309::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'AR'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 5 THEN RAISE EXCEPTION 'GEOCODE AR guard: expected 5, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE AR: % rows', n;
+END $$;
+
+-- ===== GEOCODE FL (13 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('b25603ec-f8d8-415f-a1a6-0ba3d4b616c4'::uuid, 27.639101::double precision, -80.510512::double precision),
+    ('7f5d9778-61ef-40e4-aebb-b4a61d36347f'::uuid, 30.363521::double precision, -81.717712::double precision),
+    ('060c2ac4-6fdf-40d2-83e8-f888143d35dc'::uuid, 30.336378::double precision, -81.67613::double precision),
+    ('65b43b41-ec30-4e6c-bb62-89350773f592'::uuid, 29.197621::double precision, -82.137858::double precision),
+    ('8f2aedd7-e4a2-40b8-98c0-22c027127390'::uuid, 26.926237::double precision, -80.095612::double precision),
+    ('7de48d80-bca0-454b-b71e-71385ae9c6e5'::uuid, 28.840075::double precision, -82.045353::double precision),
+    ('738937f9-3b6d-44d2-9c1e-61ce6e0c43dc'::uuid, 26.665261::double precision, -80.088208::double precision),
+    ('7dd25bf6-0e6b-40f2-b2f8-6f84541b781f'::uuid, 26.705187::double precision, -80.08241::double precision),
+    ('d4513e91-e3b9-43ab-8e65-0d7d1580773f'::uuid, 30.335843::double precision, -81.749336::double precision),
+    ('fc04797c-a678-4c56-b78a-0b8b8ec49cc1'::uuid, 27.639037::double precision, -80.495904::double precision),
+    ('f2dae8e2-4d62-4f12-8765-1d93c1a03f6c'::uuid, 27.99845::double precision, -80.634237::double precision),
+    ('7d74bb54-f22d-4594-8bc8-9d9710f88ac0'::uuid, 27.639101::double precision, -80.510512::double precision),
+    ('6ef81403-6ac8-4aca-8842-8f004d6cbea2'::uuid, 30.374384::double precision, -81.751911::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'FL'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 13 THEN RAISE EXCEPTION 'GEOCODE FL guard: expected 13, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE FL: % rows', n;
+END $$;
+
+-- ===== GEOCODE GA (14 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('4e5234b6-1305-4705-941d-ec5a77370983'::uuid, 30.79386::double precision, -81.667699::double precision),
+    ('9f3e2546-35b1-4aa4-a738-c98b944696e6'::uuid, 31.926549::double precision, -81.332619::double precision),
+    ('a7ec52fe-a86e-44a8-ae48-cd48c12b68bf'::uuid, 32.81364::double precision, -83.725462::double precision),
+    ('c46096bc-5104-421a-8170-22a88bfea17f'::uuid, 31.137779::double precision, -81.580997::double precision),
+    ('27a1a923-bb4b-4022-bdd5-d0397249ed58'::uuid, 32.040634::double precision, -81.147466::double precision),
+    ('7fd02b6b-eeae-4b06-8b67-50c3e9928fec'::uuid, 32.075571::double precision, -81.117273::double precision),
+    ('f1d1bc65-60ea-43df-87b4-266985431b30'::uuid, 33.761334::double precision, -84.53692::double precision),
+    ('f89415ea-400b-4f6a-954b-7e920013cf4a'::uuid, 31.734213::double precision, -83.652527::double precision),
+    ('096dd2fe-80a1-441b-a700-dbea8e1455c2'::uuid, 33.69689::double precision, -84.369806::double precision),
+    ('ee7f6f07-8fff-46dd-9e26-f10766f115a1'::uuid, 31.782477::double precision, -81.385785::double precision),
+    ('36d48fe4-d2ce-4d99-987a-9e8341644b7a'::uuid, 30.79386::double precision, -81.667699::double precision),
+    ('6bad6451-4f76-45b8-9a3b-4a1aad414f83'::uuid, 31.926549::double precision, -81.332619::double precision),
+    ('28c41568-118b-4e1f-aee1-469f8a634af9'::uuid, 31.138555::double precision, -81.580576::double precision),
+    ('4e347a10-336f-40d4-9ef0-e48a91eca38a'::uuid, 32.136182::double precision, -81.167818::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'GA'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 14 THEN RAISE EXCEPTION 'GEOCODE GA guard: expected 14, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE GA: % rows', n;
+END $$;
+
+-- ===== GEOCODE IN (7 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('53bc511f-3b30-4ac3-aed3-597e416f3f38'::uuid, 41.602257::double precision, -87.484102::double precision),
+    ('cf54cfb5-5556-4180-815e-ddeecc159719'::uuid, 41.548843::double precision, -87.375213::double precision),
+    ('d7bc6a17-c3e3-408a-92a1-e403c30794a7'::uuid, 41.523973::double precision, -87.360456::double precision),
+    ('43a04cd8-4924-4c2d-8404-1bb132180ce8'::uuid, 41.59534::double precision, -87.421107::double precision),
+    ('cb0165c3-ad4e-448f-b5ea-7a87baef77a9'::uuid, 41.655433::double precision, -87.510197::double precision),
+    ('b9aaf283-56ff-4714-a122-bff468dfc77c'::uuid, 39.967848::double precision, -86.372455::double precision),
+    ('605eb2aa-f167-4118-b720-5e470775c93d'::uuid, 41.587324::double precision, -87.31077::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'IN'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 7 THEN RAISE EXCEPTION 'GEOCODE IN guard: expected 7, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE IN: % rows', n;
+END $$;
+
+-- ===== GEOCODE KY (14 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('d9b21d1e-9b63-4247-a604-ba390a3bc630'::uuid, 37.56896::double precision, -84.31815::double precision),
+    ('cf7673fe-5039-4d46-a2f3-3e677ab4d546'::uuid, 37.37563::double precision, -84.331169::double precision),
+    ('076b546a-e264-4c18-abfc-bb32380ceaf5'::uuid, 38.275262::double precision, -84.554786::double precision),
+    ('2e9b34a1-7c38-4a1d-92da-d2286d07976d'::uuid, 38.987924::double precision, -84.640354::double precision),
+    ('54011c80-7ce2-44f4-b11a-f2b8985f9794'::uuid, 37.56967::double precision, -84.319763::double precision),
+    ('104adff6-82d2-42b0-9d1b-1a8ef5b55a2a'::uuid, 36.972156::double precision, -84.10796::double precision),
+    ('7d908a8c-749c-4c46-9c03-9c73ad7b7b36'::uuid, 37.731404::double precision, -84.280899::double precision),
+    ('582280fa-d1b8-4e9f-aee1-575fa00b8e8a'::uuid, 38.97747::double precision, -84.65781::double precision),
+    ('c4ad7a64-e08a-4c08-a883-277380ff7226'::uuid, 38.06106::double precision, -84.55107::double precision),
+    ('60782b45-eee6-4dd1-89f2-83b16975bc81'::uuid, 38.28208::double precision, -84.547324::double precision),
+    ('98e68fa9-34aa-446a-b6c4-f8fce0026b24'::uuid, 38.789007::double precision, -84.608182::double precision),
+    ('ca06adc7-efad-41a5-9da7-e074fc99a452'::uuid, 37.882524::double precision, -84.334528::double precision),
+    ('5b586188-4b1d-455f-931c-8157582a9f92'::uuid, 38.277503::double precision, -84.554066::double precision),
+    ('d6097cf6-67ee-4259-bd01-c63af2c6bc0f'::uuid, 38.983648::double precision, -84.595308::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'KY'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 14 THEN RAISE EXCEPTION 'GEOCODE KY guard: expected 14, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE KY: % rows', n;
+END $$;
+
+-- ===== GEOCODE NC (19 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('5ff9ec4c-0bb8-49ad-b411-e84e11644025'::uuid, 35.066544::double precision, -78.924438::double precision),
+    ('b329619c-5f8f-4cdc-97f9-71cc089f535d'::uuid, 35.111041::double precision, -78.879375::double precision),
+    ('38aadae7-1aa0-4cf4-a426-5d7659174852'::uuid, 35.984518::double precision, -77.900916::double precision),
+    ('c01c6383-b1bb-4f29-815a-a9781159e490'::uuid, 35.584228::double precision, -82.462245::double precision),
+    ('b9f278be-2aaa-4588-ba3b-843fe44fe91d'::uuid, 35.684243::double precision, -81.914425::double precision),
+    ('d0b52ba6-cc9b-45c7-878c-ce598cbfaf24'::uuid, 35.511754::double precision, -82.600533::double precision),
+    ('9b1575ec-7faf-47cb-b245-8d261efc12a0'::uuid, 35.706461::double precision, -81.431003::double precision),
+    ('c8a6032f-6f28-430d-acc6-6fb11667529d'::uuid, 34.619627::double precision, -79.058416::double precision),
+    ('cd88c617-b2ec-4c4e-80ba-6ba6f80de3fb'::uuid, 35.709103::double precision, -81.961247::double precision),
+    ('469dadae-9ba0-4f80-aacf-eb83ca8efc25'::uuid, 35.978316::double precision, -77.791112::double precision),
+    ('7c5326e4-da4c-4e5b-a0cd-48b3efd82863'::uuid, 35.58136::double precision, -78.146582::double precision),
+    ('3ec4da2b-9df7-4bba-913c-c6023b9797ca'::uuid, 35.728959::double precision, -81.338048::double precision),
+    ('8bb903e1-31e5-49e4-a4c0-26bfbb21cc7e'::uuid, 35.595809::double precision, -82.591957::double precision),
+    ('7d2aff0a-c2d6-4a14-96d6-6fb5eee5aaa2'::uuid, 35.706826::double precision, -81.422985::double precision),
+    ('e2d59ea7-f110-4411-809a-0cbce128191e'::uuid, 36.365419::double precision, -77.675306::double precision),
+    ('0a0c7a0d-2fb0-4201-a93f-b934e2617b5b'::uuid, 35.58136::double precision, -78.146582::double precision),
+    ('1339b41e-8930-4c32-a99c-832bffae406e'::uuid, 35.637669::double precision, -82.143918::double precision),
+    ('b2bf2309-7ab1-402c-9edf-8d3fcd07cf48'::uuid, 35.008387::double precision, -78.825458::double precision),
+    ('f4967041-7344-4787-9573-c5c7bdf7e538'::uuid, 34.619627::double precision, -79.058416::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'NC'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 19 THEN RAISE EXCEPTION 'GEOCODE NC guard: expected 19, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE NC: % rows', n;
+END $$;
+
+-- ===== GEOCODE OH (23 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('b338afed-6894-4b1b-b116-d1acae79348c'::uuid, 39.440196::double precision, -84.330294::double precision),
+    ('e5b8447a-f9cd-4f17-a967-5531916edd12'::uuid, 41.594587::double precision, -83.668441::double precision),
+    ('261a3522-4245-43c2-98c9-31a3856a7650'::uuid, 41.059724::double precision, -83.661897::double precision),
+    ('bf442593-3ba3-4d1b-b752-64b98bbf4d0f'::uuid, 41.095216::double precision, -83.654126::double precision),
+    ('1fabdfbe-abcc-4db1-b41b-dec1fa3d3fa7'::uuid, 41.709417::double precision, -83.515285::double precision),
+    ('659aef3d-030d-4e6b-b626-74956b50d0b5'::uuid, 39.789573::double precision, -84.208129::double precision),
+    ('8f05b35f-a63f-4345-a04c-fac2729ef302'::uuid, 39.799414::double precision, -84.133146::double precision),
+    ('592fd7e2-c237-4e04-931c-ba3329687ed7'::uuid, 39.114161::double precision, -84.578369::double precision),
+    ('02249e40-0250-4d39-8929-73504935f55f'::uuid, 41.700648::double precision, -83.53694::double precision),
+    ('431cc9de-65e3-48ad-aed1-2bc3794f95ad'::uuid, 41.715149::double precision, -83.527805::double precision),
+    ('00151f69-dcb6-4510-ac9e-19f6c5ba77a2'::uuid, 41.729176::double precision, -83.527249::double precision),
+    ('253d5108-e1f2-4387-ad7d-b82e1a18712a'::uuid, 39.773661::double precision, -84.153002::double precision),
+    ('de70c755-60b8-4e50-bf23-b807d3f7da97'::uuid, 39.100143::double precision, -84.528309::double precision),
+    ('00da872b-f8e1-4216-87b8-2991147f166f'::uuid, 40.708588::double precision, -84.114709::double precision),
+    ('fef1dd1a-90de-48ea-b494-e652fbb84715'::uuid, 39.238688::double precision, -84.464525::double precision),
+    ('4be0bff5-6246-43d0-8501-159b1d07cf32'::uuid, 41.59562::double precision, -83.473995::double precision),
+    ('12fa9201-e925-4e5c-8c73-6f1037cd4082'::uuid, 41.563358::double precision, -83.578897::double precision),
+    ('48d81093-d807-4023-b971-9277d9f47cd8'::uuid, 40.467839::double precision, -84.173607::double precision),
+    ('f12efc5b-1023-449c-b0b6-5b4df2dbadb1'::uuid, 41.6092::double precision, -83.53823::double precision),
+    ('63337a0c-f3e4-4af5-ae0c-ba30923c6f18'::uuid, 40.755757::double precision, -84.08002::double precision),
+    ('8e766083-c9ba-4102-a0f6-3615f14b3b54'::uuid, 40.892388::double precision, -83.871894::double precision),
+    ('9acc0450-cc55-4324-92b7-85d68f4e4b0b'::uuid, 39.272994::double precision, -84.430434::double precision),
+    ('f393fa83-15a7-4d7c-9f98-4440c77db4c8'::uuid, 41.70414::double precision, -83.536621::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'OH'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 23 THEN RAISE EXCEPTION 'GEOCODE OH guard: expected 23, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE OH: % rows', n;
+END $$;
+
+-- ===== GEOCODE SC (8 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('595de56a-aada-4034-882b-60a2fd579ab3'::uuid, 34.23863::double precision, -79.810541::double precision),
+    ('4c1a72f9-a863-484e-ae1d-600e8bd8b7a0'::uuid, 33.703696::double precision, -80.242196::double precision),
+    ('fa924e2a-0ffe-418f-851f-2f784856e91d'::uuid, 34.244212::double precision, -79.817541::double precision),
+    ('9659739b-ba64-409b-9d90-e350b6c250ca'::uuid, 34.226236::double precision, -79.794985::double precision),
+    ('5ad2354d-2ee0-42ab-b983-c07c9716e753'::uuid, 32.488998::double precision, -80.977907::double precision),
+    ('8bf6630b-8c97-45c5-b219-f6b2e21d760a'::uuid, 34.23863::double precision, -79.810541::double precision),
+    ('b621363d-e4d4-40c6-a04d-09e950264b12'::uuid, 33.703696::double precision, -80.242196::double precision),
+    ('33dd16f0-9cfc-486e-822f-83fe6ecf8197'::uuid, 34.266664::double precision, -79.730662::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'SC'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 8 THEN RAISE EXCEPTION 'GEOCODE SC guard: expected 8, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE SC: % rows', n;
+END $$;
+
+-- ===== GEOCODE TN (15 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('54e7735a-85fc-48e7-89ab-3b4e5eeaa514'::uuid, 36.140448::double precision, -85.501158::double precision),
+    ('b22dba94-110c-4d51-8302-f220ef34a43c'::uuid, 36.152337::double precision, -86.632873::double precision),
+    ('5d4edba9-0200-41ea-9b33-43cb436d42c4'::uuid, 36.581323::double precision, -84.114426::double precision),
+    ('737b6683-853c-4c7c-9b81-30aadadb627d'::uuid, 35.790125::double precision, -88.391699::double precision),
+    ('910b954b-022b-4076-90dd-ef5e144fa3ef'::uuid, 36.14617::double precision, -85.503324::double precision),
+    ('50c54637-cbc4-4afc-95f4-10e946870d06'::uuid, 36.07401::double precision, -85.506388::double precision),
+    ('e808cd20-757a-42c2-b9ed-fbf02e964b3e'::uuid, 35.956978::double precision, -84.004029::double precision),
+    ('8954f3e6-074f-40a5-b8b5-d960808ab94d'::uuid, 35.023731::double precision, -85.29587::double precision),
+    ('85a4e108-aa86-4a0f-8bd2-aa595ed5c6a2'::uuid, 36.035215::double precision, -83.840158::double precision),
+    ('c041cd41-88dc-4a27-9533-4f5d11219fb7'::uuid, 35.817796::double precision, -83.139283::double precision),
+    ('20055899-b195-49e7-ab99-e86cadf665e4'::uuid, 35.908439::double precision, -84.148225::double precision),
+    ('48597a5d-b599-4e11-9826-eae4352b3e51'::uuid, 35.684746::double precision, -88.778482::double precision),
+    ('e8bfa090-96d9-4462-99e7-72f277dce27b'::uuid, 36.322966::double precision, -86.70848::double precision),
+    ('b1a240d4-a067-4094-83b1-6bd6fc63f308'::uuid, 36.169305::double precision, -86.861963::double precision),
+    ('4212adfe-4234-48bc-aa89-73a1d0ca09a8'::uuid, 35.95546::double precision, -84.014543::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'TN'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 15 THEN RAISE EXCEPTION 'GEOCODE TN guard: expected 15, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE TN: % rows', n;
+END $$;
+
+-- ===== GEOCODE VA (5 rows) =====
+DO $$
+DECLARE n integer;
+BEGIN
+  UPDATE public.locations AS l SET
+    lat = v.lat, lng = v.lng,
+    geocode_source = 'batch-csv', geocode_confidence = 'high',
+    coord_verification_status = 'machine-checked', last_geocoded_at = now()
+  FROM (VALUES
+    ('8e79a54d-cad6-460c-9fd5-d5d118342bd3'::uuid, 36.978252::double precision, -77.395402::double precision),
+    ('6da51cc0-fd95-4dd9-b43e-a677ea9ccec3'::uuid, 36.702183::double precision, -77.535605::double precision),
+    ('be40a471-cbe3-4486-9c3d-daa610788abd'::uuid, 38.262105::double precision, -77.506322::double precision),
+    ('f425a11a-845c-4f88-81d6-d805ee8ee0e7'::uuid, 37.190038::double precision, -77.364816::double precision),
+    ('ebb8ad22-3283-4fc6-9918-66a8ef8ef9dd'::uuid, 36.978252::double precision, -77.395402::double precision)
+  ) AS v(id, lat, lng)
+  WHERE l.id = v.id
+    AND l.state = 'VA'
+    AND l.source = 'csv-import'
+    AND l.lat IS NULL AND l.lng IS NULL      -- blank-only; never overwrite
+    AND l.is_published = false;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 5 THEN RAISE EXCEPTION 'GEOCODE VA guard: expected 5, got %', n; END IF;
+  RAISE NOTICE 'GEOCODE VA: % rows', n;
+END $$;
