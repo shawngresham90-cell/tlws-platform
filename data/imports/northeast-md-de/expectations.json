@@ -1,0 +1,35 @@
+{
+  "geocode_ids": [
+    "ff19357b-eb93-4483-9e4e-ebb40e07fe36",
+    "e102d6bd-874c-43d0-b9f6-c8a9dbbe4832",
+    "f35c37d4-6118-40c1-8380-1edf8e79777d"
+  ],
+  "geocode_row_count": 3,
+  "publish_ids": [
+    "ff19357b-eb93-4483-9e4e-ebb40e07fe36",
+    "e102d6bd-874c-43d0-b9f6-c8a9dbbe4832",
+    "f35c37d4-6118-40c1-8380-1edf8e79777d"
+  ],
+  "publish_row_count": 3,
+  "deferred_ids": [
+    "0c8f2702-18ba-465d-ad9f-7222b3db2744",
+    "80786332-ef51-4045-9f28-a33abfbf56bd",
+    "7d3ead5b-1237-474f-9154-06b410f7b410"
+  ],
+  "held_excluded_ids": [
+    "f65fd2ef-14d5-456f-a937-bbf3750c87b9",
+    "d56cff01-0dcb-4610-82aa-920d1214a828",
+    "39a7ad06-c801-4b4f-8ea1-3d847839a62c"
+  ],
+  "cross_check_max_distance_m": 409,
+  "live_before": {
+    "total": 1556,
+    "has_latlng": 389,
+    "published": 1020
+  },
+  "live_after": {
+    "total": 1556,
+    "has_latlng": 392,
+    "published": 1023
+  }
+}

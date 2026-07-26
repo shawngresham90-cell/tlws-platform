@@ -1,0 +1,193 @@
+{
+  "milestone": "Northeast MD/DE geocode-and-publication",
+  "generated": "2026-07-26",
+  "project": "tlws-platform (cgvxwvymkembftznhcdl)",
+  "authoritative_sources": {
+    "operator_master": {
+      "file": "data/imports/locmaster20260725.xlsx",
+      "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+      "columns": [
+        "Latitude",
+        "Longitude",
+        "Directions"
+      ],
+      "master_date": "2026-07-25"
+    },
+    "census_batch": {
+      "pipeline": "data/geocoding/census/",
+      "review_file": "data/geocoding/census/review/full-run-coordinate-review.csv",
+      "tool": "US Census Geocoder (public batch address geocoder)"
+    }
+  },
+  "authorized_fields": [
+    "lat",
+    "lng",
+    "geocode_source",
+    "geocode_confidence",
+    "coord_verification_status",
+    "last_geocoded_at",
+    "is_published"
+  ],
+  "never_touched": [
+    "name",
+    "address",
+    "city",
+    "state",
+    "slug",
+    "detail_slug",
+    "type",
+    "category_slug",
+    "description",
+    "interstate",
+    "exit_number",
+    "is_indexable",
+    "is_featured",
+    "completeness_score",
+    "geo",
+    "source"
+  ],
+  "held_networks_excluded": [
+    {
+      "id": "f65fd2ef-14d5-456f-a937-bbf3750c87b9",
+      "name": "Pilot Travel Center #290",
+      "state": "MD"
+    },
+    {
+      "id": "d56cff01-0dcb-4610-82aa-920d1214a828",
+      "name": "Flying J Travel Center #784",
+      "state": "MD"
+    },
+    {
+      "id": "39a7ad06-c801-4b4f-8ea1-3d847839a62c",
+      "name": "Flying J Travel Center #875",
+      "state": "MD"
+    }
+  ],
+  "counts": {
+    "candidates": 6,
+    "geocode_and_publish": 3,
+    "deferred": 3,
+    "held_excluded": 3
+  },
+  "geocode_and_publish": [
+    {
+      "id": "ff19357b-eb93-4483-9e4e-ebb40e07fe36",
+      "name": "TA Baltimore South #151",
+      "type": "truck_stop",
+      "city": "Jessup",
+      "state": "MD",
+      "address": "7401 Assateague Drive",
+      "zip": "20794",
+      "interstate": "I-95",
+      "exit_number": "41A",
+      "lat": 39.1667,
+      "lng": -76.7828,
+      "master_directions": "I-95 & Rt. 175, Jessup Exit 41A",
+      "census_matched": "7401 ASSATEAGUE DR, JESSUP, MD, 20794",
+      "cross_check_distance_m": 144,
+      "census_lat": 39.167517548761,
+      "census_lng": -76.78408821128,
+      "geocode_source": "batch-csv",
+      "geocode_confidence": "high",
+      "coord_verification_status": "machine-checked",
+      "interstate_decision": "skip-existing",
+      "exit_decision": "skip-existing",
+      "publish": true
+    },
+    {
+      "id": "e102d6bd-874c-43d0-b9f6-c8a9dbbe4832",
+      "name": "TA Baltimore #216",
+      "type": "truck_stop",
+      "city": "Baltimore",
+      "state": "MD",
+      "address": "5501 O'Donnell Street",
+      "zip": "21224",
+      "interstate": "I-95",
+      "exit_number": "57",
+      "lat": 39.2775,
+      "lng": -76.5488,
+      "master_directions": "I-95, Exit 57",
+      "census_matched": "5501 ODONNELL ST, BALTIMORE, MD, 21224",
+      "cross_check_distance_m": 409,
+      "census_lat": 39.281166436071,
+      "census_lng": -76.549107697835,
+      "geocode_source": "batch-csv",
+      "geocode_confidence": "high",
+      "coord_verification_status": "machine-checked",
+      "interstate_decision": "skip-existing",
+      "exit_decision": "skip-existing",
+      "publish": true
+    },
+    {
+      "id": "f35c37d4-6118-40c1-8380-1edf8e79777d",
+      "name": "TA Elkton #019",
+      "type": "truck_stop",
+      "city": "Elkton",
+      "state": "MD",
+      "address": "1400 Elkton Road",
+      "zip": "21921",
+      "interstate": "I-95",
+      "exit_number": "109B",
+      "lat": 39.6436,
+      "lng": -75.7974,
+      "master_directions": "I-95, Exit 109B",
+      "census_matched": "1400 ELKTON RD, ELKTON, MD, 21921",
+      "cross_check_distance_m": 171,
+      "census_lat": 39.645112591971,
+      "census_lng": -75.797781715872,
+      "geocode_source": "batch-csv",
+      "geocode_confidence": "high",
+      "coord_verification_status": "machine-checked",
+      "interstate_decision": "skip-existing",
+      "exit_decision": "skip-existing",
+      "publish": true
+    }
+  ],
+  "deferred": [
+    {
+      "id": "0c8f2702-18ba-465d-ad9f-7222b3db2744",
+      "name": "Maryland House Travel Plaza",
+      "type": "truck_stop",
+      "city": "Aberdeen",
+      "state": "MD",
+      "address": "I-95 Median Service Plaza, Mile Marker 82",
+      "zip": "21001",
+      "interstate": "I-95",
+      "exit_number": null,
+      "geocode_decision": "deferred",
+      "reason": "census-no-match: median service plaza addressed by mile marker (MM82); no street address to geocode. Not in operator master (non-TA/Petro). Web egress blocked.",
+      "geocode_source": null,
+      "publish": false
+    },
+    {
+      "id": "80786332-ef51-4045-9f28-a33abfbf56bd",
+      "name": "Chesapeake House Travel Plaza",
+      "type": "truck_stop",
+      "city": "North East",
+      "state": "MD",
+      "address": "I-95 Median Service Plaza, Mile Marker 97",
+      "zip": "21901",
+      "interstate": "I-95",
+      "exit_number": null,
+      "geocode_decision": "deferred",
+      "reason": "excluded highway-or-insufficient: median service plaza addressed by mile marker (MM97); no street address to geocode. Not in operator master. Web egress blocked.",
+      "geocode_source": null,
+      "publish": false
+    },
+    {
+      "id": "7d3ead5b-1237-474f-9154-06b410f7b410",
+      "name": "Biden Welcome Center (I-95 Service Plaza)",
+      "type": "truck_stop",
+      "city": "Newark",
+      "state": "DE",
+      "address": "530 John F. Kennedy Memorial Hwy",
+      "zip": "19713",
+      "interstate": "I-95",
+      "exit_number": null,
+      "geocode_decision": "deferred",
+      "reason": "single fuzzy census match only (39.664814,-75.688229) at a different zip (matched 19702 vs input 19713); classification census-manual-review, medium at best; no corroborating second source (not in operator master). Held for manual verification.",
+      "geocode_source": null,
+      "publish": false
+    }
+  ]
+}
