@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
-import { GetFeaturedCta } from '@/components/directory';
+import { GetFeaturedCta, DirectorySurfaceEvent } from '@/components/directory';
 import {
   DirectoryHero,
   DirectoryBrowser,
@@ -341,6 +341,7 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
             Browse all directories →
           </Link>
         </p>
+        <DirectorySurfaceEvent surface="category" category={params.category} />
         <GetFeaturedCta surface={params.category} className="mt-8 border-t border-line pt-8" />
       </Section>
     </>

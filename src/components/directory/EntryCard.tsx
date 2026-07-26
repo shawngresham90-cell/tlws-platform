@@ -11,9 +11,11 @@ import { detailHref } from '@/lib/directory/detail-slug';
 export function EntryCard({ entry }: { entry: DirectoryEntry }) {
   return (
     <div className="flex flex-col rounded-card border border-line bg-asphalt-800 p-5">
+      {/* `is_featured` now carries a PAID placement, so the badge discloses it
+          as paid rather than implying an editorial pick. */}
       {entry.featured && (
         <span className="mb-2 self-start rounded-card bg-signal px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-asphalt">
-          Featured
+          Sponsored
         </span>
       )}
       <h3 className="font-display text-lg uppercase text-ink">

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
-import { DIRECTORY_EVENTS, listingContextLine } from '@/lib/directory/funnel';
+import { DIRECTORY_EVENTS, boundCorridor, listingContextLine } from '@/lib/directory/funnel';
 
 /**
  * Sponsor inquiry form. Posts to the existing guarded, Turnstile-protected
@@ -17,11 +17,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
 
 const INTEREST_OPTIONS = [
+  { value: 'listing-claim', label: 'Claim my directory listing (free)' },
+  { value: 'featured-listing', label: 'Featured listing — $99/month or $999/year' },
+  { value: 'corridor-sponsor', label: 'Corridor sponsor — $299/month or $2,999/year' },
   { value: 'founding-sponsor', label: 'Founding Sponsor' },
-  { value: 'directory-placement', label: 'Directory placement' },
-  { value: 'listing-claim', label: 'Claim my directory listing' },
+  { value: 'directory-placement', label: 'Directory placement (not sure which)' },
   { value: 'equipment-or-students', label: 'Equipment / sponsor a student' },
   { value: 'other', label: 'Something else' },
+];
+
+/** Billing preference is recorded on the inquiry — it never charges anything. */
+const BILLING_OPTIONS = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'annual', label: 'Annual' },
 ];
 
 /** Listing a directory CTA deep-linked from. Bounded params only — no PII. */
@@ -30,6 +38,8 @@ export type InquiryListing = {
   name?: string;
   category?: string;
   state?: string;
+  /** Display form of the corridor (`I-95`), when the listing sits on one. */
+  interstate?: string;
 };
 
 type Errors = Record<string, string>;
@@ -56,6 +66,7 @@ export function SponsorInquiryForm({
   const [interest, setInterest] = useState(
     defaultInterest && INTEREST_VALUES.has(defaultInterest) ? defaultInterest : '',
   );
+  const [billing, setBilling] = useState('');
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState('');
@@ -80,7 +91,10 @@ export function SponsorInquiryForm({
   if (listing?.slug) eventProps.slug = listing.slug;
   if (listing?.category) eventProps.category = listing.category;
   if (listing?.state) eventProps.state = listing.state;
+  const corridor = boundCorridor(listing?.interstate);
+  if (corridor) eventProps.corridor = corridor;
   if (interest) eventProps.interest = interest;
+  if (billing) eventProps.billing = billing;
 
   // One "form started" event on first real interaction.
   const startedRef = useRef(false);
@@ -110,7 +124,10 @@ export function SponsorInquiryForm({
   // inquiry that reaches the CRM says which listing it is about. Nothing is
   // hidden from the sender and nothing personal is added.
   const contextLine = listingContextLine(listing ?? {});
-  const composedMessage = [contextLine, message.trim()].filter(Boolean).join('\n\n');
+  const billingLine = billing
+    ? `Billing preference: ${billing === 'annual' ? 'Annual' : 'Monthly'} (preference only — no payment was taken)`
+    : '';
+  const composedMessage = [contextLine, billingLine, message.trim()].filter(Boolean).join('\n\n');
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -256,6 +273,14 @@ export function SponsorInquiryForm({
           onChange={set(setInterest, 'interest')}
           options={INTEREST_OPTIONS}
           placeholder="Not sure yet"
+        />
+        <SelectField
+          id="sponsor_billing"
+          label="If you go ahead, monthly or annual? (optional)"
+          value={billing}
+          onChange={set(setBilling, 'billing')}
+          options={BILLING_OPTIONS}
+          placeholder="No preference"
         />
       </div>
 

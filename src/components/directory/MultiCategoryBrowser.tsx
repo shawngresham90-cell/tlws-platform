@@ -204,7 +204,7 @@ export function MultiCategoryBrowser({
       ) : (
         <>
           {featured.length > 0 && (
-            <Section label="Featured" entries={featured} headingId="group-featured" />
+            <Section label="Sponsored" entries={featured} headingId="group-featured" />
           )}
           {groups.map(([key, groupEntries], i) => (
             <Section

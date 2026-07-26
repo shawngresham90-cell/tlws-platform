@@ -265,7 +265,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
           <>
             {entry.featured && (
               <span className="mr-2 inline-block rounded-card bg-signal px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-asphalt">
-                Featured
+                Sponsored
               </span>
             )}
             {entry.address ? `${entry.address} · ` : ''}

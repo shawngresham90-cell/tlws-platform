@@ -15,7 +15,8 @@
 /** Values written to `sponsors.tier_interest` (free text in the DB, max 60). */
 export const FUNNEL_INTEREST = {
   claim: 'listing-claim',
-  featured: 'directory-placement',
+  featured: 'featured-listing',
+  corridor: 'corridor-sponsor',
 } as const;
 
 export type FunnelIntent = keyof typeof FUNNEL_INTEREST;
@@ -68,6 +69,15 @@ export function boundCorridor(value: string | null | undefined): string | null {
   return m ? `i${Number(m[1])}` : null;
 }
 
+/**
+ * `i40` (or `I-40`) back to the display form `I-40`. Only ever round-trips a
+ * value that already passed `boundCorridor`, so it cannot render free text.
+ */
+export function corridorLabel(value: string | null | undefined): string | null {
+  const c = boundCorridor(value);
+  return c ? `I-${c.slice(1)}` : null;
+}
+
 export type ListingContext = {
   id?: string | null;
   slug?: string | null;
@@ -110,11 +120,13 @@ export function funnelHref(intent: FunnelIntent, ctx: ListingContext, surface?: 
   const name = boundToken(ctx.name, 64);
   const cat = boundToken(ctx.category, 32);
   const st = boundState(ctx.state);
+  const corr = boundCorridor(ctx.interstate);
   const from = boundToken(surface, 32);
   if (slug) params.set('listing', slug);
   if (name) params.set('lname', name);
   if (cat) params.set('lcat', cat);
   if (st) params.set('lstate', st);
+  if (corr) params.set('lcorr', corr);
   if (from) params.set('from', from);
   return `/sponsors?${params.toString()}#inquire`;
 }
@@ -129,18 +141,70 @@ export function listingContextLine(ctx: {
   slug?: string | null;
   category?: string | null;
   state?: string | null;
+  interstate?: string | null;
 }): string {
   const slug = boundToken(ctx.slug, 64);
   if (!slug) return '';
   const bits = [ctx.name?.trim() || slug];
   const cat = boundToken(ctx.category, 32);
   const st = boundState(ctx.state);
+  const corr = corridorLabel(ctx.interstate);
   if (cat) bits.push(cat);
   if (st) bits.push(st);
+  if (corr) bits.push(corr);
   return `Regarding directory listing: ${bits.join(' · ')} (/directory/location/${slug})`;
 }
 
 /** Human label for the two paths. No promises, no pricing. */
 export function intentLabel(intent: FunnelIntent): string {
-  return intent === 'claim' ? 'Claim this listing' : 'Ask about featured placement';
+  if (intent === 'claim') return 'Claim this listing';
+  if (intent === 'corridor') return 'Ask about corridor sponsorship';
+  return 'Ask about featured placement';
+}
+
+/**
+ * Search event payload. The raw query is NEVER sent — a driver can type a
+ * phone number, a person's name, or an address into a search box, so only the
+ * shape of the search leaves the browser: how long it was and how many results
+ * it produced.
+ */
+export function searchEventProps(
+  query: string,
+  resultCount: number,
+  extra?: { category?: string | null; surface?: string | null },
+): Record<string, string> {
+  const out: Record<string, string> = {
+    query_length: String(Math.min(query.trim().length, 200)),
+    results: String(Math.max(0, Math.min(resultCount, 100000))),
+    has_query: query.trim() ? 'true' : 'false',
+  };
+  const cat = boundToken(extra?.category, 32);
+  const surface = boundToken(extra?.surface, 32);
+  if (cat) out.category = cat;
+  if (surface) out.surface = surface;
+  return out;
+}
+
+/** Filter names the directory browser exposes. Anything else is dropped. */
+const FILTER_NAMES = new Set(['state', 'city', 'sort', 'all']);
+
+/**
+ * Filter event payload. Only a known filter name and a bounded value — a city
+ * or state chosen from our own <select>, never free text.
+ */
+export function filterEventProps(
+  name: string,
+  value: string | null,
+  extra?: { category?: string | null; results?: number },
+): Record<string, string> | null {
+  if (!FILTER_NAMES.has(name)) return null;
+  const out: Record<string, string> = { filter: name };
+  const v = name === 'state' ? boundState(value) : boundToken(value, 40);
+  out.value = v ?? '(cleared)';
+  out.cleared = v ? 'false' : 'true';
+  const cat = boundToken(extra?.category, 32);
+  if (cat) out.category = cat;
+  if (typeof extra?.results === 'number')
+    out.results = String(Math.max(0, Math.min(extra.results, 100000)));
+  return out;
 }

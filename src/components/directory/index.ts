@@ -13,3 +13,4 @@ export { ViewBeacon } from './ViewBeacon';
 export { GetFeaturedCta } from './GetFeaturedCta';
 export { ListingFunnelCtas } from './ListingFunnelCtas';
 export { DirectoryEvents, DirectorySurfaceEvent } from './DirectoryEvents';
+export { OfferTable } from './OfferTable';

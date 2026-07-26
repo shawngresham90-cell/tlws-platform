@@ -8,6 +8,7 @@ import {
   listingEventProps,
   type ListingContext,
 } from '@/lib/directory/funnel';
+import { getOffer, priceLabel } from '@/lib/directory/offers';
 
 /**
  * Business-facing funnel on a listing detail page: claim the listing, or ask
@@ -69,8 +70,10 @@ export function ListingFunnelCtas({
       </div>
 
       <p className="mt-4 text-xs text-muted">
-        No payment is collected and no rate is quoted here. Claims and placements are reviewed
-        before anything changes.
+        Claiming is <span className="font-semibold text-ink">free</span>. Featured placement is{' '}
+        {priceLabel(getOffer('featured-listing'))}, with up to three featured businesses per
+        category or corridor page. No payment is collected here — both are inquiries, reviewed
+        before anything changes, and neither promises traffic, leads, ranking, or sales.
       </p>
     </aside>
   );

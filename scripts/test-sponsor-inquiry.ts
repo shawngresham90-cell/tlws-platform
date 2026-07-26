@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { sponsorInquirySchema } from '@/lib/api/schemas';
 import { SponsorInquiryForm } from '@/components/sponsors/SponsorInquiryForm';
 import { SPONSOR_PLACEMENTS } from '@/lib/directory/sponsors';
+import { OFFERS, formatPrice, getOffer, priceLabel } from '@/lib/directory/offers';
 
 let passed = 0;
 let failed = 0;
@@ -74,10 +75,32 @@ function check(name: string, cond: boolean, detail?: unknown): void {
   check('render: message textarea labelled', html.includes('for="sponsor_message"'));
   check('render: submit button present', html.includes('type="submit"'));
   check('render: assertive live region for errors', html.includes('aria-live="assertive"'));
-  check(
-    'render: no committed pricing anywhere',
-    !/\$\d/.test(html) && html.includes('no rate is committed'),
+  // Pricing is now approved, so the interest options DO name a price. The
+  // invariant that still matters: every figure on the form comes from the
+  // offers module (never a hand-typed one that can drift), and the form still
+  // says plainly that sending it commits nothing and collects nothing.
+  const shown = html.match(/\$[\d,]+/g) ?? [];
+  const allowed = new Set(
+    OFFERS.flatMap((o) =>
+      [o.monthlyCents, o.annualCents].filter((c): c is number => c !== null).map(formatPrice),
+    ),
   );
+  check('render: every price on the form comes from the offers module', shown.length > 0, shown);
+  check(
+    'render: no price on the form is unknown to the offers module',
+    shown.every((s) => allowed.has(s)),
+    shown.filter((s) => !allowed.has(s)),
+  );
+  check(
+    'render: featured price matches the module exactly',
+    html.includes(priceLabel(getOffer('featured-listing'))),
+  );
+  check(
+    'render: corridor price matches the module exactly',
+    html.includes(priceLabel(getOffer('corridor-sponsor'))),
+  );
+  check('render: still commits no rate', html.includes('no rate is committed'));
+  check('render: still collects no payment', /No payment is collected/i.test(html));
 }
 
 /* ------------------------------------------------- placement inventory */
