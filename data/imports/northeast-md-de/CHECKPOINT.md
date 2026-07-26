@@ -135,4 +135,31 @@ truck-stop unpublished (1) = Biden Welcome Center (deferred).
 4. **Seed MA/ME/VT** (genuinely empty) from official sources — net-new,
    currently egress-blocked.
 
+A concrete, ranked **second candidate manifest** (read-only, unexecuted) for the
+42 remaining non-held MD/DE rows is at
+`data/imports/northeast-prep/SECOND-CANDIDATE-MANIFEST.md` (+ `.json`): 28 Tier-1
+(street-address geocodable) and 14 Tier-2 (need a rooftop coordinate), grouped
+by category with the same guardrails as this milestone.
+
 Nothing in this section is executed.
+
+## Production / preview URLs (manual review — sandbox egress blocked, HTTP 403)
+
+The three published detail pages, corridor, and exit pages (gated on
+`is_published=true`, which now holds):
+
+- `/directory/location/ta-baltimore-south-151-jessup-md`
+- `/directory/location/ta-baltimore-216-baltimore-md`
+- `/directory/location/ta-elkton-019-elkton-md`
+- Corridor: `/directory/i95` · Exits: `/directory/i95/exit-41a`,
+  `/directory/i95/exit-57`, `/directory/i95/exit-109b`
+- Category: `/directory/truck-stops`
+
+Netlify deploy preview for PR #185 (built green):
+`https://deploy-preview-185--lighthearted-clafoutis-144512.netlify.app`.
+Both the production domain and `*.netlify.app` return 403 from the sandbox, so
+these were verified through the database query paths (`is_published=true` filter,
+`interstate='I-95'` corridor filter, unique `detail_slug`, `category_slug=
+'truck-stops'`) and the app's `interstateSlug()`/`exitSlug()` contracts rather
+than fetched.
+

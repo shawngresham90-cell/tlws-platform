@@ -170,5 +170,128 @@ check(
 );
 check('batch CSV: 6 data rows', dataLines.length === 6, String(dataLines.length));
 
+// ---- guarded SQL: only authorized fields written, guards present, rollback symmetric ----
+const AUTHORIZED_GEOCODE = new Set([
+  'lat',
+  'lng',
+  'geocode_source',
+  'geocode_confidence',
+  'coord_verification_status',
+  'last_geocoded_at',
+]);
+const FORBIDDEN = [
+  'name',
+  'address',
+  'slug',
+  'detail_slug',
+  'type',
+  'category_slug',
+  'description',
+  'interstate',
+  'exit_number',
+  'is_indexable',
+  'geo',
+  'completeness_score',
+  'is_featured',
+  'source',
+];
+const IDS = geo.map((r) => r.id);
+function setColumns(sqlRaw: string): string[] {
+  // capture each SET ... (FROM|WHERE) block and return the assigned column names.
+  // Strip `--` line comments first so the word "set" in prose can't match.
+  const sql = sqlRaw.replace(/--[^\n]*/g, '');
+  const cols: string[] = [];
+  const re = /\bset\b([\s\S]*?)\b(from|where)\b/gi;
+  let mm: RegExpExecArray | null;
+  while ((mm = re.exec(sql)) !== null) {
+    for (const part of mm[1].split(',')) {
+      const lhs = part.split('=')[0].trim().replace(/^l\./, '');
+      if (/^[a-z_]+$/.test(lhs)) cols.push(lhs);
+    }
+  }
+  return cols;
+}
+function read(f: string): string {
+  return readFileSync(`data/imports/northeast-md-de/${f}`, 'utf8');
+}
+const geocodeSql = read('GEOCODE.sql');
+const canarySql = read('CANARY-publish.sql');
+const rbGeo = read('ROLLBACK-geocode.sql');
+const rbPub = read('ROLLBACK-publish.sql');
+
+const geocodeCols = setColumns(geocodeSql);
+check(
+  'GEOCODE.sql sets only authorized fields',
+  geocodeCols.every((c) => AUTHORIZED_GEOCODE.has(c)),
+  geocodeCols.join(','),
+);
+check(
+  'GEOCODE.sql sets all 6 authorized fields',
+  AUTHORIZED_GEOCODE.size === new Set(geocodeCols).size,
+);
+check('GEOCODE.sql blank-only (lat IS NULL)', /lat IS NULL/i.test(geocodeSql));
+check(
+  'GEOCODE.sql has ROW_COUNT guard',
+  /ROW_COUNT/i.test(geocodeSql) && /RAISE EXCEPTION/i.test(geocodeSql),
+);
+check('GEOCODE.sql expects 3', /<>\s*3/.test(geocodeSql));
+
+check(
+  'CANARY sets only is_published',
+  JSON.stringify(setColumns(canarySql)) === JSON.stringify(['is_published']),
+);
+check(
+  'CANARY requires coordinates (lat/lng NOT NULL)',
+  /lat IS NOT NULL/i.test(canarySql) && /lng IS NOT NULL/i.test(canarySql),
+);
+check(
+  'CANARY has ROW_COUNT guard expecting 3',
+  /ROW_COUNT/i.test(canarySql) && /<>\s*3/.test(canarySql),
+);
+
+// rollback symmetry: geocode rollback nulls exactly the authorized fields and matches on value
+const rbCols = setColumns(rbGeo);
+check(
+  'ROLLBACK-geocode nulls exactly the authorized fields',
+  new Set(rbCols).size === AUTHORIZED_GEOCODE.size &&
+    rbCols.every((c) => AUTHORIZED_GEOCODE.has(c)),
+);
+check(
+  'ROLLBACK-geocode matches on written value (l.lat = v.lat)',
+  /l\.lat\s*=\s*v\.lat/i.test(rbGeo) && /l\.lng\s*=\s*v\.lng/i.test(rbGeo),
+);
+check(
+  'ROLLBACK-publish sets only is_published',
+  JSON.stringify(setColumns(rbPub)) === JSON.stringify(['is_published']),
+);
+
+// no forbidden field appears in any SET clause of any write/rollback script
+for (const sql of [geocodeSql, canarySql, rbGeo, rbPub]) {
+  const cols = setColumns(sql);
+  for (const f of FORBIDDEN) check(`no forbidden SET '${f}'`, !cols.includes(f), f);
+}
+// every write/rollback references exactly the 3 geocode ids
+for (const [label, sql] of [
+  ['GEOCODE', geocodeSql],
+  ['CANARY', canarySql],
+  ['ROLLBACK-geocode', rbGeo],
+  ['ROLLBACK-publish', rbPub],
+] as const) {
+  check(
+    `${label} references all 3 ids`,
+    IDS.every((id) => sql.includes(id)),
+  );
+}
+// held-network ids must never appear in any write/rollback script
+for (const [label, sql] of [
+  ['GEOCODE', geocodeSql],
+  ['CANARY', canarySql],
+] as const) {
+  check(
+    `${label} excludes held ids`,
+    exp.held_excluded_ids.every((id) => !sql.includes(id)),
+  );
+}
+
 console.log(`northeast-geocode: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
