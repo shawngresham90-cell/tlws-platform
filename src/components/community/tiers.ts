@@ -1,10 +1,22 @@
+import { dollars } from '@/lib/community/campaign';
 import type { FounderTier } from '@/lib/community/founders';
 
 /**
- * Founder tiers — one source of truth for labels, ordering, and the plain-language
- * promise of each level. Order is wall/recognition order (top of the wall first).
- * Dollar thresholds are intentionally NOT hard-coded here: amounts aren't final,
- * so the page marks them with <Placeholder> rather than shipping a made-up number.
+ * Founder tiers — one source of truth for labels, ordering, the plain-language
+ * promise of each level, and the confirmed contribution amount. Order is
+ * wall/recognition order (top of the wall first).
+ *
+ * `amountCents` is the approved contribution for that tier: Iron $1,000,
+ * Steel $500, Brick $100. Every surface that prints a tier amount derives it
+ * from here, so the cards, the interest form and the FAQ can never disagree.
+ *
+ * The two sponsor tiers are `null` on purpose — no amount has been approved for
+ * them, so they stay contact-based rather than getting an invented number.
+ * `null` means "arranged directly", not "unknown/coming soon".
+ *
+ * Amounts here are what a founder contributes to a tier. They are NOT per-founder
+ * contribution records: what any individual actually gave is private and is never
+ * rendered next to their name (see scripts/test-founders.ts).
  *
  * `capacity` is the number of spots a tier offers, used to derive "open spots"
  * (capacity − founder spots filled in that tier). `null` = uncapped.
@@ -18,6 +30,8 @@ export type TierMeta = {
   label: string;
   blurb: string;
   capacity: number | null;
+  /** Approved contribution in cents. `null` = arranged directly with Shawn. */
+  amountCents: number | null;
 };
 
 export const FOUNDER_TIERS: TierMeta[] = [
@@ -26,32 +40,54 @@ export const FOUNDER_TIERS: TierMeta[] = [
     label: 'Equipment Sponsor',
     blurb: 'Fund a real piece of training equipment that every future class will learn on.',
     capacity: null,
+    amountCents: null,
   },
   {
     value: 'student_sponsor',
     label: 'Student Sponsor',
     blurb: 'Put a driver in the seat — back a student’s path to a CDL and a career.',
     capacity: null,
+    amountCents: null,
   },
   {
     value: 'iron',
     label: 'Iron Founder',
     blurb: 'A cornerstone contribution toward getting the school built and rolling.',
     capacity: 10,
+    amountCents: 100_000,
   },
   {
     value: 'steel',
     label: 'Steel Founder',
     blurb: 'A major boost to the build — your name high on the wall.',
     capacity: 25,
+    amountCents: 50_000,
   },
   {
     value: 'brick',
     label: 'Brick Founder',
     blurb: 'Lay a brick in the foundation. Every founder counts, no matter the size.',
     capacity: 50,
+    amountCents: 10_000,
   },
 ];
+
+/**
+ * What a tier costs, as shown to a visitor. Sponsor tiers have no approved
+ * figure, so they read as contact-based instead of carrying a made-up number.
+ */
+export function tierAmountLabel(t: Pick<TierMeta, 'amountCents'>): string {
+  return t.amountCents === null ? 'Amount arranged directly' : dollars(t.amountCents);
+}
+
+/** Approved contribution by tier, in cents (null = arranged directly). */
+export const TIER_AMOUNT_CENTS: Record<FounderTier, number | null> = FOUNDER_TIERS.reduce(
+  (acc, t) => {
+    acc[t.value] = t.amountCents;
+    return acc;
+  },
+  {} as Record<FounderTier, number | null>,
+);
 
 /** Tier capacity by value (null = uncapped/unknown). */
 export const TIER_CAPACITY: Record<FounderTier, number | null> = FOUNDER_TIERS.reduce(
