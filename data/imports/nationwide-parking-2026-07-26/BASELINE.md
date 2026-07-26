@@ -124,6 +124,43 @@ why it is dangerous: it would have published a plausible, wrong name. It is
 **quarantined pending a name correction from GDOT's own facility list**, and a
 regression test asserts it never enters a canary while the anomaly stands.
 
+## Wider finding: over half the published directory is unmappable
+
+Measuring the parking gap surfaced a much larger one. It is outside this
+milestone's scope and nothing here acts on it, but it would be wrong to find it
+and not write it down.
+
+**635 of the 1,165 published locations — 54.5 % — have no coordinate.**
+
+| Category | Published | Unmappable | % |
+|---|--:|--:|--:|
+| roadside-service | 79 | 67 | **85 %** |
+| cat-scales | 164 | 132 | **80 %** |
+| hotels-truck-parking | 71 | 53 | 75 % |
+| tire-repair | 114 | 82 | 72 % |
+| weigh-stations | 13 | 9 | 69 % |
+| truck-washes | 46 | 30 | 65 % |
+| **parking** | **76** | **45** | **59 %** |
+| truck-stops | 593 | 217 | 37 % |
+| cdl-schools | 9 | 0 | 0 % |
+| **Total** | **1,165** | **635** | **54.5 %** |
+
+Every one of those 635 is a live page a driver can reach, that cannot be placed
+on the map, sorted by distance, or returned by a "near me" query. A CAT scale
+you cannot navigate to is close to useless, and 80 % of them are in that state.
+
+Two things follow:
+
+1. The parking-coordinate work in this package is a **subset of a directory-wide
+   coordinate problem**. The same `ENRICH-TEMPLATE.sql` — blank-only, exact-id,
+   bounds-checked — applies unchanged to any category.
+2. Unlike publication, this needs **no publication authorization at all**. These
+   rows are already live; adding a coordinate only makes an existing page work.
+   It is the highest-value, lowest-risk work available in the directory right
+   now, and it is blocked on the same thing: a reachable source.
+
+Not acted on here. Recorded for a scoped follow-up.
+
 ## What this baseline implies
 
 1. The fastest real coverage win is **not** new records — it is coordinates for
