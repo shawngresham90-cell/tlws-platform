@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from openings import OPENINGS  # noqa: E402
+from openings import OPENINGS, REASONS  # noqa: E402
 
 
 FLAGS_RAW = "096dd2fe:-W-B3 0a0c7a0d:-W-B8 0e24e007:P--B0 12fa9201:P--B3 27a1a923:-W-B0 28c41568:---B5 36d48fe4:PW-B8 38aadae7:PW-B0 3ec4da2b:-W-B1 4212adfe:P--B0 43a04cd8:-W-B1 469dadae:PW-B1 48f3af5a:P--B0 4be0bff5:PW-B1 4c1a72f9:-W-B1 4e347a10:P--B0 4e5234b6:-W-B1 50c54637:-W-B1 53bc511f:-W-B1 595de56a:-W-B1 5ad2354d:---B1 5b586188:P--B0 5ff9ec4c:PW-B0 605eb2aa:PW-B1 63337a0c:---B3 6bad6451:-W-B8 6da51cc0:PW-B1 738937f9:PW-B1 7c5326e4:-W-B1 7d2aff0a:---B2 7d74bb54:PW-B8 7dd25bf6:PW-B1 7de48d80:---B1 7f5d9778:-W-B0 7fd02b6b:PW-B1 85a4e108:PW-B1 8954f3e6:-W-B1 8bb903e1:-W-B2 8bf6630b:PW-B8 8e79a54d:PW-B1 8f2aedd7:PW-B1 910b954b:-W-B1 9659739b:PW-B1 9acc0450:P--B0 9f3e2546:-W-B1 b1a240d4:PW-B0 b25603ec:-W-B1 b329619c:-W-B0 b440672c:---B1 b621363d:PW-B8 b9f278be:---B0 be40a471:-W-B1 c46096bc:---B1 c8a6032f:---B1 ca06adc7:P--B0 cb0165c3:-W-B0 cd88c617:---B1 cf54cfb5:-W-B0 d4513e91:PW-B1 d6097cf6:PW-B0 d7bc6a17:-W-B0 e2d59ea7:P--B4 e808cd20:PW-B1 e945424b:P--B1 ebb8ad22:P--B7 ee7f6f07:P--B5 f12efc5b:---B3 f1d1bc65:PW-B1 f393fa83:P--B0 f4967041:---B0 f89415ea:P--B4 f972d0f0:P--B2 fa924e2a:PW-B0 fc04797c:---B3 fef1dd1a:PW-B1"
@@ -52,15 +52,29 @@ rows = list(csv.DictReader(open('data/revenue-readiness/OUTREACH-CANDIDATES.csv'
 assert len(rows) == 75, len(rows)
 
 # Deterministic score. Every term is a fact we hold, not a guess about them.
+# Weighted by how few new customers it takes to pay for a month of placement.
+# A tire or roadside job is a large single ticket, so the payback threshold is
+# one job. A wash is a smaller ticket bought repeatedly, so it is a handful. A
+# fuel stop earns a thin margin, so it is many — which is why an independent
+# truck stop is a weaker fit for the same $99 even though it is a real business.
 INTENT = {
-    'tire-repair': 5,          # bought at the moment of a blowout
-    'roadside-service': 5,     # same, and the buyer is stationary
-    'truck-washes': 3,         # planned, repeat, local
-    'truck-stops': 3,          # independents only; chains are excluded upstream
-    'cdl-schools': 2,          # different audience, longer cycle
-    'parking': 2,              # often a landlord, not a marketer
-    'cat-scales': 1,           # colocated at a host site; not its own advertiser
+    'tire-repair': 6,          # blowout: bought at the roadside, one job pays the month
+    'roadside-service': 6,     # same, and the buyer cannot move until they choose
+    'truck-washes': 4,         # planned and repeated; a handful of washes pays it
+    'truck-stops': 2,          # thin per-visit margin; many customers to pay it back
+    'cdl-schools': 2,          # real budget, different audience, long cycle
+    'parking': 1,              # usually a landlord, not a marketer
+    'cat-scales': 1,           # colocated at a host site; the host is the advertiser
 }
+
+# Corridor weighting by MEASURED directory depth, not by reputation. A corridor
+# page is only worth sponsoring if there is something on it. Counts are
+# published listings / of which tire-repair, roadside-service or truck-washes,
+# read from the live directory on 2026-07-26:
+#   I-75  404 / 97      I-40  240 / 68      I-65  162 / 41      I-95  65 / 26
+# I-95 is the corridor most often named first and is our THINNEST named one.
+CORRIDOR_DEPTH = {'I-75': 3, 'I-40': 3, 'I-65': 2, 'I-95': 1}
+DEFAULT_CORRIDOR_POINTS = 1
 
 # Operators we already hold more than one published site for. Multi-site is an
 # observation from our own data, not a claim about their size.
@@ -85,7 +99,7 @@ for r in rows:
     multi = counts[name_key(r['business_name'])] > 1
     score = INTENT.get(cat, 1)
     if r['corridor']:
-        score += 2
+        score += CORRIDOR_DEPTH.get(r['corridor'], DEFAULT_CORRIDOR_POINTS)
     if r['exit_number']:
         score += 1
     if f['has_phone'] or f['has_website']:
@@ -207,6 +221,61 @@ with open('data/revenue-readiness/SOURCING-QUEUE.csv', 'w', newline='') as fh:
             'where_to_look': "the business's own site or its own verified profile — not a scraped aggregator",
         })
 
+# The first ten to contact: highest scoring, reachable today, and never more
+# than two from the same operator — ten conversations, not four.
+first10 = []
+seen_operator = {}
+for o in top:
+    if o['confidence'] == 'low':
+        continue  # nothing to contact them with yet
+    key = name_key(o['business_name'])
+    if seen_operator.get(key, 0) >= 2:
+        continue
+    seen_operator[key] = seen_operator.get(key, 0) + 1
+    first10.append(o)
+    if len(first10) == 10:
+        break
+for i, o in enumerate(first10, 1):
+    o['contact_order'] = i
+
+qcols = ['contact_order', 'rank', 'business_name', 'category', 'state', 'corridor',
+         'directory_url', 'recommended_paid_offer', 'billing_recommendation',
+         'commercial_reason', 'opening_sentence', 'attribution_link', 'contact_status',
+         'first_contact_channel', 'listing_id']
+with open('data/revenue-readiness/FIRST-10-QUEUE.csv', 'w', newline='') as fh:
+    w = csv.DictWriter(fh, fieldnames=qcols)
+    w.writeheader()
+    for o in first10:
+        slug = o['directory_url'].rsplit('/', 1)[-1]
+        token = f"p{o['contact_order']:02d}-{o['category']}"
+        interest = 'corridor-sponsor' if o['recommended_paid_offer'] == 'corridor-sponsor' else 'listing-claim'
+        link = (
+            f"/sponsors?interest={interest}&listing={slug}"
+            f"&lcat={o['category']}&lstate={o['state']}"
+            + (f"&lcorr=i{o['corridor'][2:]}" if o['corridor'] else '')
+            + f"&from={token}#inquire"
+        )
+        status = (
+            'available on listing'
+            if o['public_phone'] == 'on listing' or o['official_website'] == 'on listing'
+            else 'still needs sourcing'
+        )
+        w.writerow({
+            'contact_order': o['contact_order'], 'rank': o['rank'],
+            'business_name': o['business_name'], 'category': o['category'],
+            'state': o['state'], 'corridor': o['corridor'],
+            'directory_url': o['directory_url'],
+            'recommended_paid_offer': o['recommended_paid_offer'],
+            'billing_recommendation': o['billing_recommendation'],
+            'commercial_reason': REASONS.get(o['listing_id'][:8], o['category_corridor_value']),
+            'opening_sentence': o['opening_sentence'],
+            'attribution_link': link,
+            'contact_status': status,
+            'first_contact_channel': o['first_contact_channel'],
+            'listing_id': o['listing_id'],
+        })
+
+print('first 10:', [o['business_name'] for o in first10])
 print('excluded (chain):', len(excluded))
 print('sourcing queue:', sum(1 for o in out if o['confidence'] == 'low'))
 
