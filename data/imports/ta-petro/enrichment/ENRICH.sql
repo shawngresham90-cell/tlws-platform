@@ -1,0 +1,1405 @@
+-- TA/Petro interstate + exit enrichment. Writes ONLY interstate and exit_number,
+-- ONLY on rows currently blank in that field (expected-old-value guard), scoped by
+-- exact id AND source label 'official-ta-petro-20260725-5ebe0e9f'. Values come verbatim from the operator master
+-- Directions field (data/imports/locmaster20260725.xlsx, sha256 5ebe0e9f0341...). Each state is one
+-- transaction with GET DIAGNOSTICS ROW_COUNT guards; any mismatch raises and rolls the
+-- state back. Idempotent: a re-run matches 0 blank rows, guard fails, block aborts with
+-- no change. Never touches is_published, is_indexable, geo, coordinates, names, slugs,
+-- categories, descriptions, or completeness_score.
+
+-- ===== PASS 1: AL, AR, AZ, CA, CO, CT, FL, GA, IA, ID (interstate 48, exit 42) =====
+
+-- AL: interstate 7, exit 7
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('572fb3e7-00db-4124-be14-1973179305b1','I-10'),
+    ('6f59cf8c-3082-4665-b028-278e5cabb48a','I-59'),
+    ('83ce88cc-b0ba-48dc-b375-068ee3ffc107','I-20'),
+    ('89efc304-db46-447a-8b9a-b83ab93b9d9c','I-20'),
+    ('95a8fd44-581d-4dbc-b4db-0a12cfa04cbb','I-10'),
+    ('aa22aebc-827d-4c44-afb4-98dd3be03ff1','I-20'),
+    ('aa7af198-e51a-4d6a-ac33-dc29291321e4','I-85')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'AL INTERSTATE guard: expected 7, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('572fb3e7-00db-4124-be14-1973179305b1','4'),
+    ('6f59cf8c-3082-4665-b028-278e5cabb48a','181'),
+    ('83ce88cc-b0ba-48dc-b375-068ee3ffc107','77'),
+    ('89efc304-db46-447a-8b9a-b83ab93b9d9c','123'),
+    ('95a8fd44-581d-4dbc-b4db-0a12cfa04cbb','53'),
+    ('aa22aebc-827d-4c44-afb4-98dd3be03ff1','100'),
+    ('aa7af198-e51a-4d6a-ac33-dc29291321e4','22')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'AL EXIT guard: expected 7, got %',n; end if;
+  raise notice 'AL: interstate 7, exit 7 enriched';
+end $$;
+
+-- AR: interstate 2, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('6032ab89-70c9-4df4-9c05-9e2d1eee2485','I-30'),
+    ('eac91b9e-1cf4-491a-82b0-4441bbd6f045','I-555')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'AR INTERSTATE guard: expected 2, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('6032ab89-70c9-4df4-9c05-9e2d1eee2485','44'),
+    ('eac91b9e-1cf4-491a-82b0-4441bbd6f045','39')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'AR EXIT guard: expected 2, got %',n; end if;
+  raise notice 'AR: interstate 2, exit 2 enriched';
+end $$;
+
+-- AZ: interstate 8, exit 8
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('249a5cf2-c5e2-44f1-9acf-b2bf69642433','I-10'),
+    ('3a717f8d-0255-42a0-980d-65edf384ee7b','I-10'),
+    ('53eac1be-8c71-41fe-852b-d6515f065b06','I-15'),
+    ('5868c989-c250-447d-85cf-a9838893ac86','I-40'),
+    ('acb31a81-5cf6-43e8-b150-6625dfa38988','I-40'),
+    ('de5add61-864c-41ee-9997-341c3c60a9b6','I-40'),
+    ('ed302d2a-630e-48b8-8f94-7b9e75351624','I-40'),
+    ('fbc89448-ea08-4d8c-8dfb-5aee3008f490','I-10')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 8 then raise exception 'AZ INTERSTATE guard: expected 8, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('249a5cf2-c5e2-44f1-9acf-b2bf69642433','200'),
+    ('3a717f8d-0255-42a0-980d-65edf384ee7b','103'),
+    ('53eac1be-8c71-41fe-852b-d6515f065b06','8'),
+    ('5868c989-c250-447d-85cf-a9838893ac86','144'),
+    ('acb31a81-5cf6-43e8-b150-6625dfa38988','66'),
+    ('de5add61-864c-41ee-9997-341c3c60a9b6','283'),
+    ('ed302d2a-630e-48b8-8f94-7b9e75351624','48'),
+    ('fbc89448-ea08-4d8c-8dfb-5aee3008f490','203')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 8 then raise exception 'AZ EXIT guard: expected 8, got %',n; end if;
+  raise notice 'AZ: interstate 8, exit 8 enriched';
+end $$;
+
+-- CA: interstate 9, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('2b385a1b-f950-4410-8f87-2ee4a7d5fb71','I-5'),
+    ('5c4f1bd6-e79e-48b2-8d3c-b0cf4b91b934','I-15'),
+    ('7220877f-0b69-4559-a7aa-175ab7e82c6e','I-5'),
+    ('8a92c12c-7f82-40ca-8244-38a54f195999','I-5'),
+    ('9c7bdf1a-fe83-41ef-a925-a73eb3c4d4a4','I-10'),
+    ('ac2fb202-c39a-49e4-a1ae-fc78ab554009','I-10'),
+    ('d58dbde6-582b-4601-8bbf-bd8999741f2f','I-5'),
+    ('f522cc1a-d3b9-4b42-8e57-55f35c07fa69','I-10'),
+    ('fb50e64a-1887-4db8-9415-2059d8b7ae88','I-5')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 9 then raise exception 'CA INTERSTATE guard: expected 9, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('5c4f1bd6-e79e-48b2-8d3c-b0cf4b91b934','178'),
+    ('9c7bdf1a-fe83-41ef-a925-a73eb3c4d4a4','57'),
+    ('ac2fb202-c39a-49e4-a1ae-fc78ab554009','146'),
+    ('fb50e64a-1887-4db8-9415-2059d8b7ae88','257')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'CA EXIT guard: expected 4, got %',n; end if;
+  raise notice 'CA: interstate 9, exit 4 enriched';
+end $$;
+
+-- CO: interstate 6, exit 6
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('5d30b5eb-cba8-4759-af08-66c1a63dced3','I-70'),
+    ('6005b068-702b-42c9-9fcd-43c73359591d','I-25'),
+    ('67812e7e-dcd5-4673-954d-4f4d783ba708','I-76'),
+    ('72b9f7a6-7ee8-4498-b53e-6d3ef73fbfe1','I-70'),
+    ('84c4403f-64c2-46e5-b2a5-bd39557d8f80','I-70'),
+    ('bf0d01cb-2d92-4e53-9ccd-340cff7bfb4a','I-25')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 6 then raise exception 'CO INTERSTATE guard: expected 6, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('5d30b5eb-cba8-4759-af08-66c1a63dced3','278'),
+    ('6005b068-702b-42c9-9fcd-43c73359591d','104'),
+    ('67812e7e-dcd5-4673-954d-4f4d783ba708','90'),
+    ('72b9f7a6-7ee8-4498-b53e-6d3ef73fbfe1','359'),
+    ('84c4403f-64c2-46e5-b2a5-bd39557d8f80','266'),
+    ('bf0d01cb-2d92-4e53-9ccd-340cff7bfb4a','52')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 6 then raise exception 'CO EXIT guard: expected 6, got %',n; end if;
+  raise notice 'CO: interstate 6, exit 6 enriched';
+end $$;
+
+-- CT: interstate 2, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('e2294476-d094-44fa-85f2-88464d6fad92','I-95'),
+    ('fa09d896-cd19-4d18-8362-ef5fa21d84be','I-84')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'CT INTERSTATE guard: expected 2, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('e2294476-d094-44fa-85f2-88464d6fad92','56'),
+    ('fa09d896-cd19-4d18-8362-ef5fa21d84be','71')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'CT EXIT guard: expected 2, got %',n; end if;
+  raise notice 'CT: interstate 2, exit 2 enriched';
+end $$;
+
+-- FL: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('8961b7bf-e704-4c95-b7aa-13e323b7feb5','I-10'),
+    ('c8d42a99-8adc-4143-9db1-61eed3e986d6','I-10'),
+    ('f3ec3f7f-ca2e-48b0-9cbc-113b78a155ba','I-95')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'FL INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('8961b7bf-e704-4c95-b7aa-13e323b7feb5','343'),
+    ('c8d42a99-8adc-4143-9db1-61eed3e986d6','142'),
+    ('f3ec3f7f-ca2e-48b0-9cbc-113b78a155ba','329')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'FL EXIT guard: expected 3, got %',n; end if;
+  raise notice 'FL: interstate 3, exit 3 enriched';
+end $$;
+
+-- GA: interstate 7, exit 7
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('248c8882-cbfb-4e69-92a8-b229a54dceac','I-20'),
+    ('3315aec6-1457-457d-a928-f2ac60c9601f','I-85'),
+    ('524f9828-f30b-4fd0-8c19-517ca2a94810','I-85'),
+    ('5ef4d83d-9b81-40cc-b362-014183b69595','I-85'),
+    ('8f93fd04-a71e-4c59-8bbe-9c6bcd23f1fe','I-20'),
+    ('95054be6-8ab3-4994-a0bf-92f85087cf2f','I-285'),
+    ('e32efb95-b1ab-4a54-a931-c6eb071a8448','I-16')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'GA INTERSTATE guard: expected 7, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('248c8882-cbfb-4e69-92a8-b229a54dceac','175'),
+    ('3315aec6-1457-457d-a928-f2ac60c9601f','6'),
+    ('524f9828-f30b-4fd0-8c19-517ca2a94810','160'),
+    ('5ef4d83d-9b81-40cc-b362-014183b69595','149'),
+    ('8f93fd04-a71e-4c59-8bbe-9c6bcd23f1fe','114'),
+    ('95054be6-8ab3-4994-a0bf-92f85087cf2f','12'),
+    ('e32efb95-b1ab-4a54-a931-c6eb071a8448','116')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'GA EXIT guard: expected 7, got %',n; end if;
+  raise notice 'GA: interstate 7, exit 7 enriched';
+end $$;
+
+-- IA: interstate 3, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('56e288be-090e-435c-982a-7d7355c5e464','I-29'),
+    ('cf1c022a-77d9-42a4-996a-4f012c353ed0','I-80'),
+    ('f97e88cd-9e27-4e36-9b20-777bd710ed92','I-35')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'IA INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('cf1c022a-77d9-42a4-996a-4f012c353ed0','284'),
+    ('f97e88cd-9e27-4e36-9b20-777bd710ed92','144')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'IA EXIT guard: expected 2, got %',n; end if;
+  raise notice 'IA: interstate 3, exit 2 enriched';
+end $$;
+
+-- ID: interstate 1, exit 1
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('0c347f93-9185-4cd7-89d6-a411df092ced','I-84')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'ID INTERSTATE guard: expected 1, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('0c347f93-9185-4cd7-89d6-a411df092ced','54')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'ID EXIT guard: expected 1, got %',n; end if;
+  raise notice 'ID: interstate 1, exit 1 enriched';
+end $$;
+
+
+-- ===== PASS 2: IL, IN, KS, KY, LA, MI, MN (interstate 48, exit 45) =====
+
+-- IL: interstate 12, exit 11
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('2b72144a-269f-4d29-b6fe-0b9068ee7a37','I-70'),
+    ('2e1fe245-218d-4632-bdd4-4b320d69eba1','I-55'),
+    ('3e613b47-7f44-420d-b839-01e19ad138ab','I-90'),
+    ('670336d0-8400-4a92-a882-d5be882b83cc','I-57'),
+    ('7910dd09-6b8f-41da-a86b-1bbf6d07ee5c','I-94'),
+    ('8cb6b807-56bd-4e9a-8602-614ce19e1fc1','I-39'),
+    ('8cf8aaf4-ffe0-46b7-b6b7-2965c93d4ba4','I-72'),
+    ('b4676e5b-415d-49ad-89fc-54093a291c67','I-57'),
+    ('b98f412b-81ce-42ac-8977-adec80ca53ec','I-57'),
+    ('c2856021-e58e-432f-a0e1-b909d41f2ce9','I-80'),
+    ('c5ec9b22-8675-4047-8b0f-f80dbfc0b218','I-55'),
+    ('cbd7c985-75b5-4368-8bad-35d4c52784b0','I-55')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 12 then raise exception 'IL INTERSTATE guard: expected 12, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('2b72144a-269f-4d29-b6fe-0b9068ee7a37','159'),
+    ('2e1fe245-218d-4632-bdd4-4b320d69eba1','160'),
+    ('3e613b47-7f44-420d-b839-01e19ad138ab','42'),
+    ('670336d0-8400-4a92-a882-d5be882b83cc','160'),
+    ('8cb6b807-56bd-4e9a-8602-614ce19e1fc1','99'),
+    ('8cf8aaf4-ffe0-46b7-b6b7-2965c93d4ba4','108'),
+    ('b4676e5b-415d-49ad-89fc-54093a291c67','335'),
+    ('b98f412b-81ce-42ac-8977-adec80ca53ec','95'),
+    ('c2856021-e58e-432f-a0e1-b909d41f2ce9','112B'),
+    ('c5ec9b22-8675-4047-8b0f-f80dbfc0b218','240'),
+    ('cbd7c985-75b5-4368-8bad-35d4c52784b0','18')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 11 then raise exception 'IL EXIT guard: expected 11, got %',n; end if;
+  raise notice 'IL: interstate 12, exit 11 enriched';
+end $$;
+
+-- IN: interstate 10, exit 10
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('02564379-d8e9-432b-813a-607b86ce9dc6','I-80'),
+    ('27a3e6fd-17cb-4f9d-8047-c0170c2d5783','I-94'),
+    ('27d37d5d-0313-44e4-9f0e-86cb7f2b0db5','I-65'),
+    ('34a70d3b-0b4b-46d5-8bbf-50053ee3e4de','I-64'),
+    ('3c7f74fd-3ec0-4334-866d-21185e736f28','I-70'),
+    ('5b9f3833-3c26-446a-9911-2a2470d265f5','I-69'),
+    ('7e566af4-17cc-41e7-844b-7dcb0f755df3','I-70'),
+    ('cad3881e-22a2-46e5-a77d-84dd18c7d261','I-74'),
+    ('e5a53a41-d491-48fa-a73f-00c545239b16','I-69'),
+    ('f4cbbe52-930d-4e01-8359-f695d521df60','I-69')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'IN INTERSTATE guard: expected 10, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('02564379-d8e9-432b-813a-607b86ce9dc6','15B'),
+    ('27a3e6fd-17cb-4f9d-8047-c0170c2d5783','22B'),
+    ('27d37d5d-0313-44e4-9f0e-86cb7f2b0db5','230'),
+    ('34a70d3b-0b4b-46d5-8bbf-50053ee3e4de','57A'),
+    ('3c7f74fd-3ec0-4334-866d-21185e736f28','23'),
+    ('5b9f3833-3c26-446a-9911-2a2470d265f5','245'),
+    ('7e566af4-17cc-41e7-844b-7dcb0f755df3','59'),
+    ('cad3881e-22a2-46e5-a77d-84dd18c7d261','143'),
+    ('e5a53a41-d491-48fa-a73f-00c545239b16','309'),
+    ('f4cbbe52-930d-4e01-8359-f695d521df60','157')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'IN EXIT guard: expected 10, got %',n; end if;
+  raise notice 'IN: interstate 10, exit 10 enriched';
+end $$;
+
+-- KS: interstate 5, exit 5
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('676a342f-b814-4485-8538-4c9c01069ab2','I-70'),
+    ('6f7a664a-0574-4de1-8acc-7de5a8371ba8','I-35'),
+    ('821c8dbb-5e52-4920-96a1-9d98bbeeaa8b','I-35'),
+    ('8bdfa9b4-b6d9-4ad3-b282-c310238260a6','I-70'),
+    ('98bf5e1e-ec9e-4632-8c0e-637117ea9e4a','I-70')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'KS INTERSTATE guard: expected 5, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('676a342f-b814-4485-8538-4c9c01069ab2','53'),
+    ('6f7a664a-0574-4de1-8acc-7de5a8371ba8','155'),
+    ('821c8dbb-5e52-4920-96a1-9d98bbeeaa8b','205'),
+    ('8bdfa9b4-b6d9-4ad3-b282-c310238260a6','76'),
+    ('98bf5e1e-ec9e-4632-8c0e-637117ea9e4a','252')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'KS EXIT guard: expected 5, got %',n; end if;
+  raise notice 'KS: interstate 5, exit 5 enriched';
+end $$;
+
+-- KY: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('2bde784a-0feb-43ca-bd29-8bb461612903','I-65'),
+    ('409390ee-aca9-4f0f-8f46-56675e324adc','I-65'),
+    ('ce461491-1e00-4179-92b7-126cd264a7f3','I-65')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'KY INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('2bde784a-0feb-43ca-bd29-8bb461612903','86'),
+    ('409390ee-aca9-4f0f-8f46-56675e324adc','38'),
+    ('ce461491-1e00-4179-92b7-126cd264a7f3','6')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'KY EXIT guard: expected 3, got %',n; end if;
+  raise notice 'KY: interstate 3, exit 3 enriched';
+end $$;
+
+-- LA: interstate 11, exit 10
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('04ba7dbb-2a5b-4a1c-8b2a-f55a2025e4ad','I-20'),
+    ('0d926d31-2fa5-4ef2-9101-1b9e074c8495','I-12'),
+    ('1e8f2e34-9b2b-40a2-9ae6-40a2062651b5','I-49'),
+    ('32031c1e-0d62-46a2-94e5-7f0d4ea4a6e9','I-10'),
+    ('467704e4-9578-4109-a37c-6f035359f6b4','I-20'),
+    ('4ba96d81-95a1-46a5-afaf-78678c45d232','I-20'),
+    ('5a3d5ca7-5e82-4e44-a1c3-725da6ecfeb4','I-10'),
+    ('6f39b35c-812e-4818-b251-8470c223e06f','I-20'),
+    ('8ebaa65f-063e-4c52-abeb-a3a53820927c','I-20'),
+    ('d964745d-fcae-4925-88bb-52ba116e655d','I-310'),
+    ('db388573-84aa-42ca-ba18-40922752d573','I-10')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 11 then raise exception 'LA INTERSTATE guard: expected 11, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('04ba7dbb-2a5b-4a1c-8b2a-f55a2025e4ad','8'),
+    ('0d926d31-2fa5-4ef2-9101-1b9e074c8495','40'),
+    ('1e8f2e34-9b2b-40a2-9ae6-40a2062651b5','237'),
+    ('32031c1e-0d62-46a2-94e5-7f0d4ea4a6e9','76'),
+    ('467704e4-9578-4109-a37c-6f035359f6b4','5'),
+    ('4ba96d81-95a1-46a5-afaf-78678c45d232','81'),
+    ('6f39b35c-812e-4818-b251-8470c223e06f','52'),
+    ('8ebaa65f-063e-4c52-abeb-a3a53820927c','171'),
+    ('d964745d-fcae-4925-88bb-52ba116e655d','2'),
+    ('db388573-84aa-42ca-ba18-40922752d573','266')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'LA EXIT guard: expected 10, got %',n; end if;
+  raise notice 'LA: interstate 11, exit 10 enriched';
+end $$;
+
+-- MI: interstate 4, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('92690d91-86e8-47bf-9a48-647aaa6140d0','I-94'),
+    ('ba06c4b9-ca65-4489-92df-4f01e1643299','I-94'),
+    ('bef45037-3843-49ae-9a3a-31ad5f47857e','I-69'),
+    ('e7e9af27-8e8d-4c63-9c1d-ea303d8773df','I-94')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'MI INTERSTATE guard: expected 4, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('92690d91-86e8-47bf-9a48-647aaa6140d0','104'),
+    ('ba06c4b9-ca65-4489-92df-4f01e1643299','167'),
+    ('bef45037-3843-49ae-9a3a-31ad5f47857e','25'),
+    ('e7e9af27-8e8d-4c63-9c1d-ea303d8773df','12')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'MI EXIT guard: expected 4, got %',n; end if;
+  raise notice 'MI: interstate 4, exit 4 enriched';
+end $$;
+
+-- MN: interstate 3, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('2b5ef8ac-3b7a-430e-b750-ba5603f2d016','I-90'),
+    ('9fc68613-b774-4b5e-bee0-ad9bf1893a65','I-94'),
+    ('df1df6b9-0dc3-4928-a66d-6c84da588283','I-94')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'MN INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('2b5ef8ac-3b7a-430e-b750-ba5603f2d016','11'),
+    ('9fc68613-b774-4b5e-bee0-ad9bf1893a65','207')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'MN EXIT guard: expected 2, got %',n; end if;
+  raise notice 'MN: interstate 3, exit 2 enriched';
+end $$;
+
+
+-- ===== PASS 3: MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV (interstate 49, exit 42) =====
+
+-- MO: interstate 10, exit 10
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('136b5207-6f2a-41bf-8132-0896ddb2a9ae','I-44'),
+    ('17af745f-ea45-4e29-aaee-bd16903a3748','I-44'),
+    ('486d3f65-047c-4625-a09a-b18aacde7cb8','I-70'),
+    ('6a98e38a-7607-4995-a6a0-0223bea186e5','I-70'),
+    ('8354b718-2894-40f8-aab9-f41d85b5e6af','I-44'),
+    ('a6a22e48-5661-4c5c-a35c-719586116621','I-70'),
+    ('b67f5fd5-e9ff-40a9-b666-a2ed01b51dd1','I-44'),
+    ('c5babc9e-53d3-491c-94d4-e2f426743d95','I-70'),
+    ('d99bc2b5-9cd1-44ac-ac35-a50d38e140db','I-55'),
+    ('e6c7f853-921d-4df2-bddc-992a821a8ac1','I-70')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'MO INTERSTATE guard: expected 10, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('136b5207-6f2a-41bf-8132-0896ddb2a9ae','88'),
+    ('17af745f-ea45-4e29-aaee-bd16903a3748','208'),
+    ('486d3f65-047c-4625-a09a-b18aacde7cb8','148'),
+    ('6a98e38a-7607-4995-a6a0-0223bea186e5','28'),
+    ('8354b718-2894-40f8-aab9-f41d85b5e6af','4'),
+    ('a6a22e48-5661-4c5c-a35c-719586116621','28'),
+    ('b67f5fd5-e9ff-40a9-b666-a2ed01b51dd1','46'),
+    ('c5babc9e-53d3-491c-94d4-e2f426743d95','203'),
+    ('d99bc2b5-9cd1-44ac-ac35-a50d38e140db','58'),
+    ('e6c7f853-921d-4df2-bddc-992a821a8ac1','58')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'MO EXIT guard: expected 10, got %',n; end if;
+  raise notice 'MO: interstate 10, exit 10 enriched';
+end $$;
+
+-- MS: interstate 4, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('13a6bfd0-c9b2-408e-b422-5135086846a9','I-22'),
+    ('18e05b55-8bc4-41bc-85e1-7175d735559a','I-55'),
+    ('79ed9b27-cfef-49ff-acd0-04e7965ba5e4','I-20'),
+    ('8fa6268e-9d60-4ae3-aa8e-e48541e0c976','I-20')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'MS INTERSTATE guard: expected 4, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('13a6bfd0-c9b2-408e-b422-5135086846a9','94'),
+    ('18e05b55-8bc4-41bc-85e1-7175d735559a','13'),
+    ('8fa6268e-9d60-4ae3-aa8e-e48541e0c976','160')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'MS EXIT guard: expected 3, got %',n; end if;
+  raise notice 'MS: interstate 4, exit 3 enriched';
+end $$;
+
+-- MT: interstate 2, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('0e36423d-5940-4c06-b144-7635400be38f','I-90'),
+    ('d416036c-c939-45db-81ab-fb282cbe0383','I-90')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'MT INTERSTATE guard: expected 2, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('0e36423d-5940-4c06-b144-7635400be38f','96'),
+    ('d416036c-c939-45db-81ab-fb282cbe0383','437')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'MT EXIT guard: expected 2, got %',n; end if;
+  raise notice 'MT: interstate 2, exit 2 enriched';
+end $$;
+
+-- NC: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('216cd4e6-5b52-4658-82dd-9e781d935166','I-85'),
+    ('22e0f5b9-e72b-44aa-b29e-8f453e4501a7','I-40'),
+    ('d3adcae1-fdab-496c-8b41-6a7d1333603b','I-40')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'NC INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('216cd4e6-5b52-4658-82dd-9e781d935166','138'),
+    ('22e0f5b9-e72b-44aa-b29e-8f453e4501a7','170'),
+    ('d3adcae1-fdab-496c-8b41-6a7d1333603b','157')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'NC EXIT guard: expected 3, got %',n; end if;
+  raise notice 'NC: interstate 3, exit 3 enriched';
+end $$;
+
+-- ND: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('0873b4fe-f874-49a0-a217-7fe10dd3370a','I-94'),
+    ('2e035156-5cb9-4463-a8c6-b92c92af911e','I-94'),
+    ('ea832d1e-20f8-4404-be52-d29baaea1404','I-29')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'ND INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('0873b4fe-f874-49a0-a217-7fe10dd3370a','200'),
+    ('2e035156-5cb9-4463-a8c6-b92c92af911e','348'),
+    ('ea832d1e-20f8-4404-be52-d29baaea1404','141')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'ND EXIT guard: expected 3, got %',n; end if;
+  raise notice 'ND: interstate 3, exit 3 enriched';
+end $$;
+
+-- NE: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('28318499-0eaf-4b76-9f4f-ae01cb8396a0','I-80'),
+    ('b510ec16-bc73-41d0-a0ef-9ebd47ffc3da','I-80'),
+    ('b5d08f45-45b1-4a20-8fc0-f1b829117674','I-80')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'NE INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('28318499-0eaf-4b76-9f4f-ae01cb8396a0','126'),
+    ('b510ec16-bc73-41d0-a0ef-9ebd47ffc3da','353'),
+    ('b5d08f45-45b1-4a20-8fc0-f1b829117674','305')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'NE EXIT guard: expected 3, got %',n; end if;
+  raise notice 'NE: interstate 3, exit 3 enriched';
+end $$;
+
+-- NH: interstate 1, exit 0
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('f3940f82-c33c-4372-b2bb-ce4a1be2cb88','I-95')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'NH INTERSTATE guard: expected 1, got %',n; end if;
+  raise notice 'NH: interstate 1, exit 0 enriched';
+end $$;
+
+-- NJ: interstate 4, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('00142022-f6dc-4fed-a554-306eec23afe7','I-295'),
+    ('9199ed34-10fc-4c7e-b97e-1f4064d0563d','I-80'),
+    ('a68a2f81-f86a-4a31-9d44-bd984bd5cc4f','I-78'),
+    ('ab9e6216-ab0e-4061-9e9d-4ec995e335dc','I-295')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'NJ INTERSTATE guard: expected 4, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('9199ed34-10fc-4c7e-b97e-1f4064d0563d','4A'),
+    ('a68a2f81-f86a-4a31-9d44-bd984bd5cc4f','7')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'NJ EXIT guard: expected 2, got %',n; end if;
+  raise notice 'NJ: interstate 4, exit 2 enriched';
+end $$;
+
+-- NM: interstate 9, exit 7
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('143b958b-df45-4a6b-aca0-533fc2ffc3c4','I-10'),
+    ('171981b9-7bdd-4511-ad0f-1aa1601e647a','I-25'),
+    ('55e1fb1c-c301-4318-b159-5bae49b9388d','I-40'),
+    ('811fb0fb-5059-42cf-a5e6-6f4bf08cd8c2','I-10'),
+    ('9242379f-96b4-406f-a847-ed6a71d2a0f7','I-40'),
+    ('94e95243-640b-413e-8a5a-788c0a0852ca','I-40'),
+    ('96c08424-b705-4f6f-8a87-b3fb4ad8d89c','I-40'),
+    ('ec2a4c60-2aaa-4b5c-b4d2-e04d8307cbce','I-40'),
+    ('fb867211-3593-446d-9cc9-4928efef2181','I-40')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 9 then raise exception 'NM INTERSTATE guard: expected 9, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('143b958b-df45-4a6b-aca0-533fc2ffc3c4','68'),
+    ('171981b9-7bdd-4511-ad0f-1aa1601e647a','419'),
+    ('55e1fb1c-c301-4318-b159-5bae49b9388d','79'),
+    ('811fb0fb-5059-42cf-a5e6-6f4bf08cd8c2','139'),
+    ('94e95243-640b-413e-8a5a-788c0a0852ca','194'),
+    ('96c08424-b705-4f6f-8a87-b3fb4ad8d89c','16'),
+    ('fb867211-3593-446d-9cc9-4928efef2181','277')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'NM EXIT guard: expected 7, got %',n; end if;
+  raise notice 'NM: interstate 9, exit 7 enriched';
+end $$;
+
+-- NV: interstate 10, exit 9
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('1f675baa-f7da-4b99-a416-a43d9e88d9f4','I-80'),
+    ('2c6c4a86-6341-4e33-9bd2-bb3734f18f2c','I-15'),
+    ('4f266277-7d26-4c13-a2da-ca6f912ae326','I-11'),
+    ('55c93d34-4a3e-4b19-9dd3-0dfc01ad5886','I-80'),
+    ('66ceee09-494c-4084-b160-7df39a9a0370','I-80'),
+    ('704ccbb5-06de-46c0-9df7-88bcb9230865','I-80'),
+    ('7d1a9974-1ea2-4db1-aa2e-d2588cc9a771','I-11'),
+    ('8e8fa590-7cde-453b-a475-2c491bdef58c','I-15'),
+    ('c67c28f5-002d-453e-bda9-c110ce9999db','I-80'),
+    ('e28ef446-e1d5-4cc4-bef5-a83cf583e4bb','I-80')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 10 then raise exception 'NV INTERSTATE guard: expected 10, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('1f675baa-f7da-4b99-a416-a43d9e88d9f4','352A'),
+    ('2c6c4a86-6341-4e33-9bd2-bb3734f18f2c','54'),
+    ('4f266277-7d26-4c13-a2da-ca6f912ae326','15A'),
+    ('66ceee09-494c-4084-b160-7df39a9a0370','19'),
+    ('704ccbb5-06de-46c0-9df7-88bcb9230865','280'),
+    ('7d1a9974-1ea2-4db1-aa2e-d2588cc9a771','15A'),
+    ('8e8fa590-7cde-453b-a475-2c491bdef58c','33'),
+    ('c67c28f5-002d-453e-bda9-c110ce9999db','21'),
+    ('e28ef446-e1d5-4cc4-bef5-a83cf583e4bb','410')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 9 then raise exception 'NV EXIT guard: expected 9, got %',n; end if;
+  raise notice 'NV: interstate 10, exit 9 enriched';
+end $$;
+
+
+-- ===== PASS 4: NY, OH, OK, OR, PA, RI, SC (interstate 49, exit 45) =====
+
+-- NY: interstate 7, exit 6
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('0ac6d1c9-ce7e-4b42-ac1f-53c4d65b2cc3','I-190'),
+    ('2d1fa3cc-ebe8-42a5-9754-540224c38300','I-90'),
+    ('6da62e0d-e7be-40ef-bb6f-e75f81eb9054','I-90'),
+    ('774f19f9-32b2-49e8-b951-5d6c6be8cd42','I-81'),
+    ('880237bc-4555-463c-af2c-d3ab372abadd','I-84'),
+    ('9e057575-35d7-461f-81f6-6f21f12bae73','I-90'),
+    ('defd2a11-d531-4614-90fe-c21b5b852864','I-390')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'NY INTERSTATE guard: expected 7, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('0ac6d1c9-ce7e-4b42-ac1f-53c4d65b2cc3','23'),
+    ('2d1fa3cc-ebe8-42a5-9754-540224c38300','48A'),
+    ('6da62e0d-e7be-40ef-bb6f-e75f81eb9054','41'),
+    ('880237bc-4555-463c-af2c-d3ab372abadd','28'),
+    ('9e057575-35d7-461f-81f6-6f21f12bae73','28'),
+    ('defd2a11-d531-4614-90fe-c21b5b852864','5')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 6 then raise exception 'NY EXIT guard: expected 6, got %',n; end if;
+  raise notice 'NY: interstate 7, exit 6 enriched';
+end $$;
+
+-- OH: interstate 12, exit 11
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('04ebc594-6cbb-4dfb-8412-18fbfdcdda8e','I-280'),
+    ('05b1d3b3-93d3-42f7-a0d5-1b45868350f0','I-77'),
+    ('3032b5f3-fdf5-498d-92bc-25bf2b05dfda','I-80'),
+    ('46df0896-0192-4056-b62d-de7b1eb9fc7b','I-70'),
+    ('652d5e4b-4230-4be2-bee5-b1eaae5100d9','I-71'),
+    ('67913b24-ea64-44e3-96ae-50bd2cad8211','I-80'),
+    ('7b4584a4-a7d4-442f-8a7c-c6c669f77792','I-70'),
+    ('9cd8d49c-66ba-4b0c-8949-9b7b4630c5c5','I-70'),
+    ('b41b468e-60f2-4ddd-a09e-1c94fd8ff498','I-70'),
+    ('b844db40-161f-40fd-8acb-36724c188e8c','I-71'),
+    ('bc4f3d5f-2d97-4d63-a7d1-54319568d691','I-80'),
+    ('be303508-8e10-4e3f-8a20-d2921e976019','I-90')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 12 then raise exception 'OH INTERSTATE guard: expected 12, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('05b1d3b3-93d3-42f7-a0d5-1b45868350f0','111'),
+    ('3032b5f3-fdf5-498d-92bc-25bf2b05dfda','71'),
+    ('46df0896-0192-4056-b62d-de7b1eb9fc7b','79'),
+    ('652d5e4b-4230-4be2-bee5-b1eaae5100d9','65'),
+    ('67913b24-ea64-44e3-96ae-50bd2cad8211','226'),
+    ('7b4584a4-a7d4-442f-8a7c-c6c669f77792','126'),
+    ('9cd8d49c-66ba-4b0c-8949-9b7b4630c5c5','10'),
+    ('b41b468e-60f2-4ddd-a09e-1c94fd8ff498','156B'),
+    ('b844db40-161f-40fd-8acb-36724c188e8c','209'),
+    ('bc4f3d5f-2d97-4d63-a7d1-54319568d691','223A'),
+    ('be303508-8e10-4e3f-8a20-d2921e976019','235')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 11 then raise exception 'OH EXIT guard: expected 11, got %',n; end if;
+  raise notice 'OH: interstate 12, exit 11 enriched';
+end $$;
+
+-- OK: interstate 5, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('14ce47e2-b0a6-496c-b609-c42de9de30bf','I-40'),
+    ('3729868d-bde5-4715-a127-21130d19ef10','I-40'),
+    ('950f61ef-9576-43b2-a466-67f1dc72f17e','I-35'),
+    ('97ac5fed-e286-4c86-92eb-d74680569d7c','I-40'),
+    ('f6ed705a-0762-4c1d-8e1b-6ae6ff283649','I-35')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'OK INTERSTATE guard: expected 5, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('14ce47e2-b0a6-496c-b609-c42de9de30bf','142'),
+    ('3729868d-bde5-4715-a127-21130d19ef10','140'),
+    ('950f61ef-9576-43b2-a466-67f1dc72f17e','214'),
+    ('97ac5fed-e286-4c86-92eb-d74680569d7c','26')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'OK EXIT guard: expected 4, got %',n; end if;
+  raise notice 'OK: interstate 5, exit 4 enriched';
+end $$;
+
+-- OR: interstate 6, exit 6
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('1c2e6308-f237-48f2-9a75-45b9ec4ad747','I-84'),
+    ('3930709c-24ab-4805-946a-070fa9753645','I-5'),
+    ('812e90fb-f2de-4a3d-b608-6c180fb49ccd','I-84'),
+    ('91a2474c-f971-4634-97a0-da712ea5a073','I-5'),
+    ('976ccdf0-4db6-4fec-a760-0aecfcadb309','I-84'),
+    ('f541220b-09e6-4690-bc0c-ec7e19fc6a5b','I-5')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 6 then raise exception 'OR INTERSTATE guard: expected 6, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('1c2e6308-f237-48f2-9a75-45b9ec4ad747','104'),
+    ('3930709c-24ab-4805-946a-070fa9753645','278'),
+    ('812e90fb-f2de-4a3d-b608-6c180fb49ccd','353'),
+    ('91a2474c-f971-4634-97a0-da712ea5a073','199'),
+    ('976ccdf0-4db6-4fec-a760-0aecfcadb309','17'),
+    ('f541220b-09e6-4690-bc0c-ec7e19fc6a5b','24')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 6 then raise exception 'OR EXIT guard: expected 6, got %',n; end if;
+  raise notice 'OR: interstate 6, exit 6 enriched';
+end $$;
+
+-- PA: interstate 13, exit 12
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('0481b552-960a-4de2-8de1-194eeb097d46','I-80'),
+    ('0a9be4f1-72f1-46e8-8858-c4096156df61','I-81'),
+    ('18af7741-cdbf-49dc-82e2-b4cb9eb93868','I-81'),
+    ('28e8ed02-5c3b-47ec-962b-a10303cca0dc','I-80'),
+    ('332e4737-2cd9-4f02-b7c1-d1e62f2f60fa','I-81'),
+    ('58eed292-c064-47fe-bcae-3c53e1759038','I-80'),
+    ('5a3d40c4-0ae9-4858-88d1-c6587f3cc128','I-81'),
+    ('73687504-efb0-413a-8866-f2c767134470','I-80'),
+    ('73b74559-cfa0-4283-b8b7-4cf7bd99ab46','I-90'),
+    ('800e86f8-a7f5-4761-9a77-6b6a12ee662d','I-76'),
+    ('90c056f0-049f-4625-9a86-839e13a27380','I-81'),
+    ('bca82ad8-d579-48ac-a7bd-a8d6aa6ee5e6','I-81'),
+    ('c5a3c53e-3f30-4902-b41c-3d2fd1745c0d','I-80')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 13 then raise exception 'PA INTERSTATE guard: expected 13, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('0481b552-960a-4de2-8de1-194eeb097d46','29'),
+    ('18af7741-cdbf-49dc-82e2-b4cb9eb93868','77'),
+    ('28e8ed02-5c3b-47ec-962b-a10303cca0dc','78'),
+    ('332e4737-2cd9-4f02-b7c1-d1e62f2f60fa','100'),
+    ('58eed292-c064-47fe-bcae-3c53e1759038','232'),
+    ('5a3d40c4-0ae9-4858-88d1-c6587f3cc128','178B'),
+    ('73687504-efb0-413a-8866-f2c767134470','173'),
+    ('73b74559-cfa0-4283-b8b7-4cf7bd99ab46','35'),
+    ('800e86f8-a7f5-4761-9a77-6b6a12ee662d','161'),
+    ('90c056f0-049f-4625-9a86-839e13a27380','5'),
+    ('bca82ad8-d579-48ac-a7bd-a8d6aa6ee5e6','143'),
+    ('c5a3c53e-3f30-4902-b41c-3d2fd1745c0d','158')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 12 then raise exception 'PA EXIT guard: expected 12, got %',n; end if;
+  raise notice 'PA: interstate 13, exit 12 enriched';
+end $$;
+
+-- RI: interstate 1, exit 1
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('d65aef14-449b-4f7d-8e58-07ac6dfb1350','I-95')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'RI INTERSTATE guard: expected 1, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('d65aef14-449b-4f7d-8e58-07ac6dfb1350','5B')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'RI EXIT guard: expected 1, got %',n; end if;
+  raise notice 'RI: interstate 1, exit 1 enriched';
+end $$;
+
+-- SC: interstate 5, exit 5
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('081aef9c-5527-4c10-b1af-d2d753c4d14e','I-20'),
+    ('4cbcf0de-5ef2-4609-9c62-7eb9014508b5','I-85'),
+    ('ad4f8b95-806b-4915-8c0f-b3891d426bba','I-85'),
+    ('b218282d-ef85-4141-a735-625a10f3f181','I-85'),
+    ('d44c1a38-3b26-41ae-85b4-1eca0df8cfeb','I-77')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'SC INTERSTATE guard: expected 5, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('081aef9c-5527-4c10-b1af-d2d753c4d14e','71'),
+    ('4cbcf0de-5ef2-4609-9c62-7eb9014508b5','83'),
+    ('ad4f8b95-806b-4915-8c0f-b3891d426bba','63'),
+    ('b218282d-ef85-4141-a735-625a10f3f181','4'),
+    ('d44c1a38-3b26-41ae-85b4-1eca0df8cfeb','5')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'SC EXIT guard: expected 5, got %',n; end if;
+  raise notice 'SC: interstate 5, exit 5 enriched';
+end $$;
+
+
+-- ===== PASS 5: SD, TN, TX, UT, VA, WA (interstate 44, exit 39) =====
+
+-- SD: interstate 2, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('779e8a21-0220-4f69-9af5-b2d7f2c53830','I-29'),
+    ('881711e7-c677-4935-99e2-f241d0138914','I-29')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'SD INTERSTATE guard: expected 2, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('779e8a21-0220-4f69-9af5-b2d7f2c53830','26'),
+    ('881711e7-c677-4935-99e2-f241d0138914','207')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'SD EXIT guard: expected 2, got %',n; end if;
+  raise notice 'SD: interstate 2, exit 2 enriched';
+end $$;
+
+-- TN: interstate 2, exit 2
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('24a18b2d-3432-48a7-91ea-9e6986c566ed','I-24'),
+    ('d4f0ad44-9364-4e50-9f8f-0e47a6637cf0','I-81')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'TN INTERSTATE guard: expected 2, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('24a18b2d-3432-48a7-91ea-9e6986c566ed','62'),
+    ('d4f0ad44-9364-4e50-9f8f-0e47a6637cf0','36')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 2 then raise exception 'TN EXIT guard: expected 2, got %',n; end if;
+  raise notice 'TN: interstate 2, exit 2 enriched';
+end $$;
+
+-- TX: interstate 28, exit 24
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('03244367-3119-4814-87e4-053e41911e9f','I-30'),
+    ('03b29085-9803-43d1-969a-60f9d0013202','I-610'),
+    ('0d485be0-bd40-49ad-9ad5-763719c9e05b','I-40'),
+    ('0e68e425-6312-4c84-8e84-f91e0fa03696','I-20'),
+    ('0f6185fb-0880-4b6a-8ffa-8e49d42dbb1c','I-20'),
+    ('28731d9f-ea62-46be-8652-75aa1c6cea5f','I-10'),
+    ('2eeab937-c31d-4291-af4d-6980dddfe85e','I-20'),
+    ('3b3f3419-87b3-41c4-ab43-0f6ea76caca5','I-45'),
+    ('3bb601de-cc55-456a-9b47-f2858fc61139','I-30'),
+    ('46e2a1b3-e880-49d5-8c06-56a0c86775ab','I-37'),
+    ('487fc933-b573-4576-92b6-e8afa9e772fd','I-20'),
+    ('4de4fa9f-d845-4da4-811a-9143d0510533','I-35'),
+    ('4e2f34ee-9123-47fd-8479-60fea56bdd8b','I-8'),
+    ('54898d88-9b51-4d99-b92c-fc4170d68faf','I-20'),
+    ('5c4e6e30-8e3f-4744-9ebf-492e1133a2d0','I-35'),
+    ('61dfec81-1296-4a53-a4b0-e2c3aa1c3175','I-35'),
+    ('731b7615-d350-4d42-aa87-6ae2d0754ff4','I-10'),
+    ('7c063466-49a8-4354-b20a-dfcaf86e524d','I-45'),
+    ('7e00b614-a4ca-4769-ad75-27a663684329','I-40'),
+    ('89a0194f-b908-46bd-87d7-722f881e16d6','I-10'),
+    ('a1dd255a-8a8b-4dc0-8568-ba8ac37ee80e','I-10'),
+    ('a25b0c0d-12c7-49ad-b03b-fbc75c382244','I-10'),
+    ('a793c66a-9219-4646-b295-ee6bee94cae5','I-35'),
+    ('b80df7c1-c1ce-4031-bb79-e597454cd22e','I-10'),
+    ('b940af68-43e4-4fa6-b56c-8b4636b66149','I-35'),
+    ('c930f79c-58e6-4108-8aab-2c3ef3ed512c','I-35'),
+    ('d38955c0-2208-4277-a897-473f8b73d677','I-20'),
+    ('f1ac4d06-e831-4614-9338-a5a5f1d36e39','I-10')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 28 then raise exception 'TX INTERSTATE guard: expected 28, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('03244367-3119-4814-87e4-053e41911e9f','147'),
+    ('03b29085-9803-43d1-969a-60f9d0013202','24'),
+    ('0d485be0-bd40-49ad-9ad5-763719c9e05b','75'),
+    ('0e68e425-6312-4c84-8e84-f91e0fa03696','242'),
+    ('0f6185fb-0880-4b6a-8ffa-8e49d42dbb1c','409'),
+    ('28731d9f-ea62-46be-8652-75aa1c6cea5f','848'),
+    ('2eeab937-c31d-4291-af4d-6980dddfe85e','503'),
+    ('3b3f3419-87b3-41c4-ab43-0f6ea76caca5','118'),
+    ('3bb601de-cc55-456a-9b47-f2858fc61139','68'),
+    ('487fc933-b573-4576-92b6-e8afa9e772fd','587'),
+    ('4de4fa9f-d845-4da4-811a-9143d0510533','289'),
+    ('54898d88-9b51-4d99-b92c-fc4170d68faf','472'),
+    ('5c4e6e30-8e3f-4744-9ebf-492e1133a2d0','370'),
+    ('61dfec81-1296-4a53-a4b0-e2c3aa1c3175','193'),
+    ('731b7615-d350-4d42-aa87-6ae2d0754ff4','583'),
+    ('7c063466-49a8-4354-b20a-dfcaf86e524d','198'),
+    ('7e00b614-a4ca-4769-ad75-27a663684329','74'),
+    ('89a0194f-b908-46bd-87d7-722f881e16d6','37'),
+    ('a1dd255a-8a8b-4dc0-8568-ba8ac37ee80e','709'),
+    ('a25b0c0d-12c7-49ad-b03b-fbc75c382244','789'),
+    ('b80df7c1-c1ce-4031-bb79-e597454cd22e','581'),
+    ('c930f79c-58e6-4108-8aab-2c3ef3ed512c','471'),
+    ('d38955c0-2208-4277-a897-473f8b73d677','177'),
+    ('f1ac4d06-e831-4614-9338-a5a5f1d36e39','2')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 24 then raise exception 'TX EXIT guard: expected 24, got %',n; end if;
+  raise notice 'TX: interstate 28, exit 24 enriched';
+end $$;
+
+-- UT: interstate 3, exit 3
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('1f2fce58-e15f-45e8-986c-989e8116ad30','I-80'),
+    ('8d8e01b6-06fe-4775-957d-4c24d49500a2','I-15'),
+    ('e363ff42-1221-47e2-8ad5-43d1003fd317','I-15')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'UT INTERSTATE guard: expected 3, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('1f2fce58-e15f-45e8-986c-989e8116ad30','99'),
+    ('8d8e01b6-06fe-4775-957d-4c24d49500a2','78'),
+    ('e363ff42-1221-47e2-8ad5-43d1003fd317','163')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'UT EXIT guard: expected 3, got %',n; end if;
+  raise notice 'UT: interstate 3, exit 3 enriched';
+end $$;
+
+-- VA: interstate 5, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('3926b89c-55a6-4de4-9a5e-d867729e0304','I-77'),
+    ('655676ad-c86b-483c-9df8-e80dd24e90d7','I-81'),
+    ('85b076b4-dccc-48d5-b119-5b1d2843b358','I-85'),
+    ('9f0e3d73-4329-4da6-8417-454d3f65bec9','I-81'),
+    ('9f855b14-f665-4612-af50-2e6d14ab0216','I-81')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'VA INTERSTATE guard: expected 5, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('655676ad-c86b-483c-9df8-e80dd24e90d7','29'),
+    ('85b076b4-dccc-48d5-b119-5b1d2843b358','39'),
+    ('9f0e3d73-4329-4da6-8417-454d3f65bec9','205'),
+    ('9f855b14-f665-4612-af50-2e6d14ab0216','195')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'VA EXIT guard: expected 4, got %',n; end if;
+  raise notice 'VA: interstate 5, exit 4 enriched';
+end $$;
+
+-- WA: interstate 4, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('7eda1356-1bc5-42c9-831a-bf5205ae4ef4','I-90'),
+    ('ac439c50-e673-403d-ba71-2cc121f66204','I-90'),
+    ('c9e79215-06cd-4057-9563-8ebee52f3f63','I-82'),
+    ('faa6f12f-84f6-49ff-93c6-f2edd5248ccc','I-5')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'WA INTERSTATE guard: expected 4, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('7eda1356-1bc5-42c9-831a-bf5205ae4ef4','34'),
+    ('ac439c50-e673-403d-ba71-2cc121f66204','272'),
+    ('c9e79215-06cd-4057-9563-8ebee52f3f63','73'),
+    ('faa6f12f-84f6-49ff-93c6-f2edd5248ccc','275')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'WA EXIT guard: expected 4, got %',n; end if;
+  raise notice 'WA: interstate 4, exit 4 enriched';
+end $$;
+
+
+-- ===== PASS 6: WI, WV, WY (interstate 16, exit 16) =====
+
+-- WI: interstate 7, exit 7
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('103277c8-ef2d-4c03-8454-49020ed7d271','I-94'),
+    ('33639f44-8f76-491b-8a0f-4feeccb24cb7','I-90'),
+    ('4edbc14a-d5b7-4a30-bba9-3eb99ed2a3b7','I-94'),
+    ('c1b46983-d4cb-4a2d-ac4b-6db925770586','I-90'),
+    ('cf841c5e-1e5a-49e5-927e-190fae5d6c05','I-90'),
+    ('d2a9add5-27c1-412f-8635-fe85fd97f812','I-90'),
+    ('d95026e2-c51b-4d0e-b5f7-fec32c63fdc3','I-94')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'WI INTERSTATE guard: expected 7, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('103277c8-ef2d-4c03-8454-49020ed7d271','333'),
+    ('33639f44-8f76-491b-8a0f-4feeccb24cb7','171'),
+    ('4edbc14a-d5b7-4a30-bba9-3eb99ed2a3b7','88'),
+    ('c1b46983-d4cb-4a2d-ac4b-6db925770586','61'),
+    ('cf841c5e-1e5a-49e5-927e-190fae5d6c05','108A'),
+    ('d2a9add5-27c1-412f-8635-fe85fd97f812','132'),
+    ('d95026e2-c51b-4d0e-b5f7-fec32c63fdc3','4')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 7 then raise exception 'WI EXIT guard: expected 7, got %',n; end if;
+  raise notice 'WI: interstate 7, exit 7 enriched';
+end $$;
+
+-- WV: interstate 4, exit 4
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('83d598f6-d049-46d5-8a43-2fff1d2edb5b','I-77'),
+    ('98d364ee-a930-4e1d-94d3-aabf020ba0b5','I-70'),
+    ('c6daf923-a5f7-43fe-8809-2fc32bb9267c','I-64'),
+    ('dd8d6960-1a16-4612-9482-71c3f8966f0a','I-79')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'WV INTERSTATE guard: expected 4, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('83d598f6-d049-46d5-8a43-2fff1d2edb5b','170'),
+    ('98d364ee-a930-4e1d-94d3-aabf020ba0b5','11'),
+    ('c6daf923-a5f7-43fe-8809-2fc32bb9267c','39'),
+    ('dd8d6960-1a16-4612-9482-71c3f8966f0a','105')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 4 then raise exception 'WV EXIT guard: expected 4, got %',n; end if;
+  raise notice 'WV: interstate 4, exit 4 enriched';
+end $$;
+
+-- WY: interstate 5, exit 5
+do $$
+declare n integer;
+begin
+  update public.locations l set interstate = v.val
+  from (values
+    ('04fe8734-4e5c-446e-9bc3-a9f0ca276035','I-80'),
+    ('270ef64e-2759-404f-a315-9762341e1f80','I-80'),
+    ('416175cb-4cf3-41b8-a73a-faf66a24d238','I-80'),
+    ('7e4cb477-0965-4353-94b1-b2702a5bf302','I-80'),
+    ('e990a211-f23e-4ab1-b747-52a3b1f998da','I-80')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.interstate is null or btrim(l.interstate)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'WY INTERSTATE guard: expected 5, got %',n; end if;
+  update public.locations l set exit_number = v.val
+  from (values
+    ('04fe8734-4e5c-446e-9bc3-a9f0ca276035','214'),
+    ('270ef64e-2759-404f-a315-9762341e1f80','310'),
+    ('416175cb-4cf3-41b8-a73a-faf66a24d238','30'),
+    ('7e4cb477-0965-4353-94b1-b2702a5bf302','104'),
+    ('e990a211-f23e-4ab1-b747-52a3b1f998da','377')
+  ) as v(id,val)
+  where l.id = v.id::uuid and l.source='official-ta-petro-20260725-5ebe0e9f'
+    and (l.exit_number is null or btrim(l.exit_number)='');
+  get diagnostics n = row_count;
+  if n <> 5 then raise exception 'WY EXIT guard: expected 5, got %',n; end if;
+  raise notice 'WY: interstate 5, exit 5 enriched';
+end $$;
+
