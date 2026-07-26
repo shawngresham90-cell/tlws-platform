@@ -167,11 +167,22 @@ check('corridorLabel rejects empty', corridorLabel('') === null);
 const page = readFileSync('src/app/admin/(dashboard)/sponsors/page.tsx', 'utf8');
 check('admin page uses the parser', /parseDirectoryInquiry/.test(page));
 check('admin page never updates locations', !/from\('locations'\)|update\(/.test(page));
-// No mutation path exists on this page at all: it is a server component with
-// no server action, no form, and no fetch. The only writable control is the
-// pre-existing lead StatusSelect.
-check('admin page declares no server action', !/'use server'/.test(page));
-check('admin page posts nothing', !/<form|fetch\(|method="post"/i.test(page));
+// The page now posts exactly one thing — a claim review — and nothing else.
+// It is still a server component: it declares no action of its own, imports the
+// single admin-gated one, and has no client fetch. The other writable control
+// is the pre-existing lead StatusSelect.
+check('admin page declares no server action of its own', !/'use server'/.test(page));
+check('admin page makes no client fetch', !/fetch\(/.test(page));
+check(
+  'the only form on the page is the claim review',
+  (page.match(/<form/g) ?? []).length === 1 && /action=\{recordClaimReviewAction\}/.test(page),
+  String((page.match(/<form/g) ?? []).length),
+);
+check(
+  'the claim review action lives in an admin-gated server module',
+  /^'use server';/.test(readFileSync('src/app/admin/(dashboard)/sponsors/actions.ts', 'utf8')) &&
+    /requireAdmin\(\);/.test(readFileSync('src/app/admin/(dashboard)/sponsors/actions.ts', 'utf8')),
+);
 check('admin page says a claim does not change a listing', /never changes a\s+listing/i.test(page));
 
 // ---- no migration was introduced for any of this ----
