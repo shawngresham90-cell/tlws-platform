@@ -1,6 +1,7 @@
 import { Section, Eyebrow } from '@/components/ui';
 import { SponsorInquiryForm } from '@/components/sponsors/SponsorInquiryForm';
-import { boundToken, boundState } from '@/lib/directory/funnel';
+import { boundToken, boundState, corridorLabel } from '@/lib/directory/funnel';
+import { OfferTable } from '@/components/directory';
 import { SPONSOR_PLACEMENTS } from '@/lib/directory/sponsors';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -62,6 +63,7 @@ export default function SponsorsPage({
     name: boundToken(one(searchParams?.lname), 64) ?? undefined,
     category: boundToken(one(searchParams?.lcat), 32) ?? undefined,
     state: boundState(one(searchParams?.lstate)) ?? undefined,
+    interstate: corridorLabel(one(searchParams?.lcorr)) ?? undefined,
   };
   return (
     <>
@@ -120,6 +122,9 @@ export default function SponsorsPage({
           Every sponsored link is disclosed and carries rel=&quot;sponsored&quot; — good for
           drivers, honest for search engines.
         </p>
+
+        <h3 className="display-section mb-4 mt-12">Directory offers</h3>
+        <OfferTable />
       </Section>
 
       <Section id="inquire" className="border-b border-line">

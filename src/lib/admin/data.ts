@@ -36,8 +36,15 @@ export type SponsorRow = {
   tier_interest: string | null;
   /** The inquiry message the prospect submitted (stored in sponsors.notes). */
   notes: string | null;
+  /** Pipeline stage, distinct from the admin `status` toggle. */
+  stage: string | null;
+  next_action: string | null;
+  next_action_date: string | null;
   status: string;
   created_at: string;
+  /** Most recent sponsor_touches row, joined in below. Null when never touched. */
+  last_touch_at?: string | null;
+  last_touch_summary?: string | null;
 };
 
 type Result<T> = { rows: T[]; error: string | null };
@@ -89,11 +96,47 @@ export function getLeads(): Promise<Result<LeadRow>> {
   );
 }
 
-export function getSponsors(): Promise<Result<SponsorRow>> {
-  return fetchRows<SponsorRow>(
+/**
+ * Sponsor inbox rows, with the most recent touch folded in.
+ *
+ * Every column here already exists — `stage`, `next_action`, `next_action_date`
+ * were simply never surfaced, and `sponsor_touches` is read separately and
+ * reduced to a latest-per-sponsor map in JS rather than with a join, because
+ * PostgREST cannot express "newest child row" in a single embedded select. A
+ * failed touch read degrades to no touch data rather than failing the page.
+ */
+export async function getSponsors(): Promise<Result<SponsorRow>> {
+  const base = await fetchRows<SponsorRow>(
     'sponsors',
-    'id, company, contact_name, email, phone, tier_interest, notes, status, created_at',
+    'id, company, contact_name, email, phone, tier_interest, notes, stage, next_action, next_action_date, status, created_at',
   );
+  if (base.error || base.rows.length === 0) return base;
+
+  try {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from('sponsor_touches')
+      .select('sponsor_id, summary, created_at')
+      .order('created_at', { ascending: false });
+    const latest = new Map<string, { created_at: string; summary: string | null }>();
+    for (const t of (data as {
+      sponsor_id: string;
+      summary: string | null;
+      created_at: string;
+    }[]) ?? []) {
+      if (!latest.has(t.sponsor_id)) latest.set(t.sponsor_id, t);
+    }
+    return {
+      rows: base.rows.map((r) => ({
+        ...r,
+        last_touch_at: latest.get(r.id)?.created_at ?? null,
+        last_touch_summary: latest.get(r.id)?.summary ?? null,
+      })),
+      error: null,
+    };
+  } catch {
+    return base;
+  }
 }
 
 export async function getCounts(): Promise<{

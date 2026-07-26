@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { filterAndSortEntries, type SortKey } from '@/lib/directory/browse';
+import { trackEvent } from '@/lib/analytics';
+import { DIRECTORY_EVENTS, filterEventProps, searchEventProps } from '@/lib/directory/funnel';
 import { EntryCard } from './EntryCard';
 import { DirectoryEmptyState } from './DirectoryEmptyState';
 
@@ -49,15 +51,45 @@ export function DirectoryBrowser({
 
   const hasFilters = Boolean(query.trim() || state || city);
 
+  // --- analytics ---------------------------------------------------------
+  // Search is a live filter, so a keystroke is not a "search". Debounce until
+  // typing settles, then emit ONCE per settled query. The query text never
+  // leaves the browser (a driver may type a name or phone number) — only its
+  // length and the result count do.
+  const lastSearchRef = useRef<string | null>(null);
+  useEffect(() => {
+    const q = query.trim();
+    const t = setTimeout(() => {
+      if (lastSearchRef.current === q) return;
+      lastSearchRef.current = q;
+      if (!q) return; // clearing the box is not a search
+      trackEvent(
+        DIRECTORY_EVENTS.search,
+        searchEventProps(q, results.length, {
+          category: categoryTitle,
+          surface: 'directory-browser',
+        }),
+      );
+    }, 700);
+    return () => clearTimeout(t);
+  }, [query, results.length, categoryTitle]);
+
+  function trackFilter(name: string, value: string | null) {
+    const props = filterEventProps(name, value, { category: categoryTitle });
+    if (props) trackEvent(DIRECTORY_EVENTS.filter, props);
+  }
+
   function clearFilters() {
     setQuery('');
     setState('');
     setCity('');
     setVisible(PAGE);
+    trackFilter('all', null);
   }
 
   function chooseSort(next: SortKey) {
     setSort(next);
+    trackFilter('sort', next);
     setVisible(PAGE);
     if (next === 'distance' && !origin && typeof navigator !== 'undefined') {
       if (!navigator.geolocation) {
@@ -107,6 +139,7 @@ export function DirectoryBrowser({
               setState(e.target.value);
               setCity('');
               setVisible(PAGE);
+              trackFilter('state', e.target.value || null);
             }}
             disabled={stateOptions.length === 0}
             className={`${inputClasses} lg:w-40 disabled:opacity-50`}
@@ -129,6 +162,7 @@ export function DirectoryBrowser({
             onChange={(e) => {
               setCity(e.target.value);
               setVisible(PAGE);
+              trackFilter('city', e.target.value || null);
             }}
             disabled={cityOptions.length === 0}
             className={`${inputClasses} lg:w-40 disabled:opacity-50`}

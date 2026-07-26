@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
-import { CategoryCardGrid, SponsorSlot, GetFeaturedCta } from '@/components/directory';
+import {
+  CategoryCardGrid,
+  SponsorSlot,
+  GetFeaturedCta,
+  DirectorySurfaceEvent,
+} from '@/components/directory';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
 import { getDirectoryFacets } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
@@ -175,6 +180,7 @@ export default async function DirectoryPage() {
           </Link>{' '}
           has the dash cams, 12V coolers, and bunk gear drivers actually recommend.
         </p>
+        <DirectorySurfaceEvent surface="hub" />
         <GetFeaturedCta surface="directory-hub" className="mt-6 border-t border-line pt-8" />
       </Section>
     </>

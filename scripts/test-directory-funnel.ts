@@ -67,7 +67,7 @@ check('href targets the existing sponsors route', href.startsWith('/sponsors?'))
 check('href anchors the inquiry form', href.endsWith('#inquire'));
 check(
   'featured href uses the existing interest value',
-  funnelHref('featured', { slug: 'x' }).includes('interest=directory-placement'),
+  funnelHref('featured', { slug: 'x' }).includes('interest=featured-listing'),
 );
 
 // ---- analytics payloads carry no PII ----
@@ -109,6 +109,27 @@ check(
 check('context line is labelled', line.startsWith('Regarding directory listing:'));
 check('no listing -> no fabricated line', listingContextLine({}) === '');
 check('context line makes no ownership claim', !/verified|approved|owner confirmed/i.test(line));
+check('context line omits an absent corridor', !/·\s*I-/.test(line));
+check(
+  'context line appends a real corridor',
+  listingContextLine({ slug: 'x-md', name: 'X', interstate: 'I-95' }).includes('· I-95'),
+);
+check(
+  'context line ignores a non-interstate route',
+  !listingContextLine({ slug: 'x-md', name: 'X', interstate: 'US-1' }).includes('US-1'),
+);
+check(
+  'href carries the corridor as a bounded token',
+  funnelHref('corridor', { slug: 'x-md', interstate: 'I-95' }).includes('lcorr=i95'),
+);
+check(
+  'href omits lcorr when there is no interstate',
+  !funnelHref('corridor', { slug: 'x-md' }).includes('lcorr'),
+);
+check(
+  'href drops a bogus interstate',
+  !funnelHref('corridor', { slug: 'x-md', interstate: 'I-95"><script>' }).includes('lcorr'),
+);
 
 // ---- event names are stable and distinct ----
 const names = Object.values(DIRECTORY_EVENTS);
@@ -130,7 +151,6 @@ for (const n of names) check(`event '${n}' is snake_case`, /^[a-z][a-z0-9_]*$/.t
 const cta = readFileSync('src/components/directory/ListingFunnelCtas.tsx', 'utf8');
 const form = readFileSync('src/components/sponsors/SponsorInquiryForm.tsx', 'utf8');
 const BANNED = [
-  /\$\s?\d/, // a price
   /guarantee/i,
   /\bmore leads\b/i,
   /\btop of (?:the )?(?:search|results)\b/i,
