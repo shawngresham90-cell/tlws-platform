@@ -1,5 +1,6 @@
 import { Section, Eyebrow } from '@/components/ui';
 import { SponsorInquiryForm } from '@/components/sponsors/SponsorInquiryForm';
+import { boundToken, boundState } from '@/lib/directory/funnel';
 import { SPONSOR_PLACEMENTS } from '@/lib/directory/sponsors';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -52,6 +53,16 @@ export default function SponsorsPage({
   // preselected; the form validates it against the allowed options.
   const rawInterest = searchParams?.interest;
   const defaultInterest = Array.isArray(rawInterest) ? rawInterest[0] : rawInterest;
+  // A directory listing CTA (claim / featured placement) also passes the
+  // listing it refers to. Every value is re-bounded here — the query string is
+  // untrusted input — and only ever displayed back and appended to the message.
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const listing = {
+    slug: boundToken(one(searchParams?.listing), 64) ?? undefined,
+    name: boundToken(one(searchParams?.lname), 64) ?? undefined,
+    category: boundToken(one(searchParams?.lcat), 32) ?? undefined,
+    state: boundState(one(searchParams?.lstate)) ?? undefined,
+  };
   return (
     <>
       <JsonLd
@@ -119,7 +130,11 @@ export default function SponsorsPage({
             One short form. Shawn reads every inquiry and replies personally — placements, goals,
             and rates all get sorted in that first conversation.
           </p>
-          <SponsorInquiryForm siteKey={siteKey} defaultInterest={defaultInterest} />
+          <SponsorInquiryForm
+            siteKey={siteKey}
+            defaultInterest={defaultInterest}
+            listing={listing.slug ? listing : undefined}
+          />
         </div>
       </Section>
     </>

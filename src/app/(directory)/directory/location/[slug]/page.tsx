@@ -10,6 +10,8 @@ import {
   SponsorSlot,
   ViewBeacon,
   GetFeaturedCta,
+  ListingFunnelCtas,
+  DirectoryEvents,
 } from '@/components/directory';
 import { MapPreview } from '@/components/map/MapPreview';
 import { ReviewList, Stars } from '@/components/community/ReviewList';
@@ -116,6 +118,16 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
   const path = detailHref(params.slug);
   const hasCoords = entry.lat != null && entry.lng != null;
   const directions = detailDirectionsUrl(entry);
+  // Bounded, non-personal context shared by the analytics events and the
+  // business-facing funnel links. Built once so both stay in sync.
+  const listingCtx = {
+    id: entry.id,
+    slug: params.slug,
+    name: entry.name,
+    category: entry.category,
+    state: entry.state,
+    interstate: entry.interstate,
+  };
   const exitHref = exitPageHref(entry);
   const state = stateByCode(entry.state);
 
@@ -185,7 +197,11 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
     facts.push({
       label: 'Phone',
       value: (
-        <a href={`tel:${entry.phone}`} className="text-signal hover:underline">
+        <a
+          href={`tel:${entry.phone}`}
+          data-dir-event="phone"
+          className="text-signal hover:underline"
+        >
           {entry.phone}
         </a>
       ),
@@ -199,6 +215,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
           href={entry.website}
           target="_blank"
           rel="noopener noreferrer"
+          data-dir-event="website"
           className="text-signal hover:underline"
         >
           Visit website ↗
@@ -263,6 +280,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             href={directions}
             target="_blank"
             rel="noopener noreferrer"
+            data-dir-event="directions"
             aria-label={`Get directions to ${entry.name} (opens in new tab)`}
             className="inline-flex items-center justify-center rounded-card bg-signal px-5 py-2.5 font-display text-base uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600"
           >
@@ -405,6 +423,9 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
         <DetailNearbySections sections={nearby} scopeLabel={entry.name} />
 
         <ViewBeacon id={entry.id} />
+        <DirectoryEvents listing={listingCtx} />
+
+        <ListingFunnelCtas listing={listingCtx} surface="directory-listing" className="mt-10" />
 
         <p className="mt-10 text-sm text-muted">
           {category && (
