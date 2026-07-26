@@ -89,8 +89,75 @@ rows, so their per-state counts are exact.
 
 ## Execution log
 
-<!-- EXECUTION_LOG -->
+Executed 2026-07-25 via the project's authenticated Supabase SQL connection.
+Canary first, then 6 passes; each state its own guarded block (blank-only
+UPDATE, VALUES-join, `GET DIAGNOSTICS ROW_COUNT` per field). **Every guard passed
+on the first attempt — zero exceptions, zero rollbacks, zero quarantines.** After
+each pass a read-only audit confirmed the running totals, formats, and both
+fingerprints.
 
-## Final audit
+| Step | States | interstate | exit | cumulative interstate | cumulative exit |
+|---|---|--:|--:|--:|--:|
+| canary | 10 distinct | 10 | 10 | 10 | 10 |
+| pass 1 | AL AR AZ CA CO CT FL GA IA ID | 48 | 42 | 58 | 52 |
+| pass 2 | IL IN KS KY LA MI MN | 48 | 45 | 106 | 97 |
+| pass 3 | MO MS MT NC ND NE NH NJ NM NV | 49 | 42 | 155 | 139 |
+| pass 4 | NY OH OK OR PA RI SC | 49 | 45 | 204 | 184 |
+| pass 5 | SD TN TX UT VA WA | 44 | 39 | 248 | 223 |
+| pass 6 | WI WV WY | 16 | 16 | 264 | 239 |
 
-<!-- FINAL_AUDIT -->
+At every audit: live 1,556; batch 304; published 304; **is_indexable 0**;
+pre-existing 1,252 with 0 touched; 0 malformed interstate/exit; 0
+exit-without-interstate; 0 duplicate detail_slug; 0 geo writes. The batch
+fingerprint (excl. the two enrichment fields + `updated_at`) held constant at
+`a85163de48e0381348b10a0fb3ee81a5` and the pre-existing full digest at
+`214b7e0586bd5f641e8f5874f2de6b57` through every pass — proving only
+`interstate`/`exit_number` moved, and only on batch rows.
+
+## Final audit (live, read-only)
+
+| Check | Target | Actual |
+|---|--:|--:|
+| Live rows | 1,556 | 1,556 |
+| TA/Petro batch | 304 | 304 |
+| Published | 304 | 304 |
+| **is_indexable** | **0** | **0** |
+| interstate populated | 264 | 264 |
+| exit_number populated | 239 | 239 |
+| malformed interstate / exit | 0 / 0 | 0 / 0 |
+| exit without interstate | 0 | 0 |
+| pre-existing rows | 1,252 | 1,252 |
+| pre-existing rows touched | 0 | 0 |
+| duplicate detail_slug | 0 | 0 |
+| geo writes | 0 | 0 |
+| batch fingerprint excl. interstate/exit/updated_at | `a85163de…` (baseline) | `a85163de…` |
+| pre-existing full fingerprint | `214b7e05…` (baseline) | `214b7e05…` |
+
+Only `interstate` and `exit_number` changed, only on batch rows. `is_indexable`
+was never written. No insert/delete/schema/migration/trigger/policy/app-code
+change. Held/excluded networks untouched.
+
+### Directory value unlocked
+
+- **52 interstate corridors** now carry published TA/Petro rows (top: I-80 ×28,
+  I-10 ×23, I-20 ×20, I-70 ×19, I-40 ×17, I-90 ×15) — up from ~5 interstates
+  present in the whole table before. ~48 new `/directory/i<n>` corridor pages.
+- **239 exit pages** (`/directory/i<n>/exit-<n>`) become resolvable.
+- Corridor/exit pages render on-demand (ISR `revalidate=300`, `dynamicParams`
+  true); `interstateBySlug()` synthesises corridor entries for any `I-<n>`.
+
+### Local checks
+
+`format:check`, `lint`, `typecheck` clean; **`npm test` 61/61 harnesses**
+(incl. the new `test-ta-petro-enrichment` with 2,492 assertions); `npm run build`
+success with no generated-file drift.
+
+### Production reachability
+
+The sandbox egress policy blocks WebFetch to `ta-petro.com`, state DOT sites,
+and Wikipedia (403); the authoritative interstate/exit values came from the
+in-repo operator master (`locmaster20260725.xlsx`), not the live web. The
+production domain is likewise unreachable from here, so corridor/exit pages were
+verified via the database query paths and the app's `interstateSlug()` /
+`exitSlug()` / `isDetailIndexable()` contracts rather than fetched. A
+geographically diverse URL sample is in the PR for manual inspection.
