@@ -33,6 +33,7 @@ const apply = readFileSync(`${DIR}/ENRICH-TEMPLATE.sql`, 'utf8');
 const publish = readFileSync(`${DIR}/PUBLISH-TEMPLATE.sql`, 'utf8');
 const rollback = readFileSync(`${DIR}/ROLLBACK-TEMPLATE.sql`, 'utf8');
 const reconcile = readFileSync(`${DIR}/RECONCILE.sql`, 'utf8');
+const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
 const fingerprint = readFileSync(`${DIR}/FINGERPRINT.sql`, 'utf8');
 
 type Row = Record<string, string>;
@@ -486,8 +487,6 @@ const rows: Row[] = parseCsv(csv.trim());
 // The gate is the launch decision. If these thresholds drift, or the preserved
 // baseline is quietly edited to look better, the build fails.
 {
-  const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
-
   check('the gate declares the product not ready', /NOT READY/.test(gate));
   check(
     'total rows is explicitly rejected as the coverage metric',
@@ -497,8 +496,10 @@ const rows: Row[] = parseCsv(csv.trim());
   // All eight required thresholds, verbatim.
   for (const [label, pattern] of [
     ['Truck Parking Club 100%', /Truck Parking Club feed \|\s*\*\*100 %\*\*/],
-    ["Love's 100%", /Love's Travel Stops \|\s*\*\*100 %\*\*/],
-    ['Pilot/Flying J/ONE9 100%', /Pilot, Flying J and ONE9 \|\s*\*\*100 %\*\*/],
+    ["Love's 2a directory 100% of 615", /directory coverage\*\* \|\s*\*\*100 % of 615\*\*/],
+    ["Love's 2b overnight 100% of 604", /overnight-parking coverage\*\* \|\s*\*\*100 % of 604\*\*/],
+    ['Pilot 3a directory 100% of 820', /U\.S\. directory coverage\*\* \|\s*\*\*100 % of 820\*\*/],
+    ['Pilot 3b parking 100% of 803', /U\.S\. truck-parking coverage\*\* \|\s*\*\*100 % of 803\*\*/],
     ['TA/Petro/TA Express 100%', /TA, Petro and TA Express \|\s*\*\*100 %\*\*/],
     ['rest areas >= 95%', /rest areas, welcome centers, service plazas \|\s*\*\*≥ 95 %\*\*/],
     [
@@ -595,11 +596,13 @@ const rows: Row[] = parseCsv(csv.trim());
     /Obtain \*\*Love's Travel Stops\*\* first/.test(acq),
   );
   check(
-    'every source carries a coordinate/space column requirement or is an operator feed',
-    json.sources.every(
-      (s: { required_columns: string[] }) =>
-        s.required_columns.includes('latitude') && s.required_columns.includes('longitude'),
-    ),
+    'every source requires a latitude and a longitude column',
+    json.sources.every((s: { required_columns: string[] }) => {
+      // An acquired source records the file's REAL header names; an unacquired
+      // one still carries the generic checklist. Both must demand coordinates.
+      const lower = s.required_columns.map((c) => c.toLowerCase());
+      return lower.includes('latitude') && lower.includes('longitude');
+    }),
   );
 
   // Authorization and anti-scraping rules must be explicit and machine-readable.
@@ -854,16 +857,570 @@ const rows: Row[] = parseCsv(csv.trim());
     'completeness is flagged as unproven, not asserted',
     /should not be marked 100 % until Shawn confirms/i.test(findings.replace(/\*\*/g, '')),
   );
-  const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
-  check(
-    "the gate marks Love's in progress, not passed",
-    /Love's Travel Stops \|\s*\*\*100 %\*\*\s*\|\s*\*\*604 eligible in hand\*\*/.test(gate),
-  );
   check('the gate still reports that no line passes', /No gate line passes/.test(gate));
   check(
     'the preserved baseline still reads Tier A = 0',
     /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/.test(gate),
   );
+}
+
+/* ==========================================================================
+ * LOVE'S — the two gates must stay separate, and 11 stores must never be
+ * offered as overnight parking.
+ * ======================================================================== */
+{
+  const S = 'data/sources/loves-master/2026-07-27';
+  const P = 'data/imports/loves-2026-07-27';
+  const dir615 = parseCsv(readFileSync(`${S}/DIRECTORY-615.csv`, 'utf8'));
+  const over604 = parseCsv(readFileSync(`${S}/OVERNIGHT-604.csv`, 'utf8'));
+  const non11 = parseCsv(readFileSync(`${S}/NON-OVERNIGHT-11.csv`, 'utf8'));
+
+  check('gate 2a universe is 615', dir615.length === 615, dir615.length);
+  check('gate 2b universe is 604', over604.length === 604, over604.length);
+  check('11 non-overnight Travel Stops', non11.length === 11, non11.length);
+  check('615 = 604 + 11', over604.length + non11.length === dir615.length);
+
+  /* The two gates are DIFFERENT numbers. A single figure reported for both is
+   * the specific mistake this block exists to catch. */
+  check('2a and 2b are not the same number', over604.length !== dir615.length);
+
+  check(
+    'every one of the 604 is overnight-eligible with a positive space count',
+    over604.every((r) => r.overnight_parking === 'true' && Number(r.parking_spaces) > 0),
+  );
+  check(
+    'no non-overnight store leaks into the 604',
+    !over604.some((r) => non11.some((n) => n.source_ref === r.source_ref)),
+  );
+  check(
+    'every one of the 11 is still represented as a truck stop',
+    non11.every(
+      (r) => r.store_type === 'Travel Stop' && r.directory_representation === 'truck stop',
+    ),
+  );
+  check(
+    'every one of the 11 is explicitly barred from parking',
+    non11.every((r) => /never offered as overnight/i.test(r.parking_representation)),
+  );
+
+  /* #201 Elk City has zero stated spaces and must not qualify as parking. */
+  const elk = non11.find((r) => r.source_ref === '201');
+  check('#201 Elk City is in the non-overnight set', Boolean(elk));
+  check('#201 Elk City states zero spaces', elk?.parking_spaces === '0', elk?.parking_spaces);
+  check('#201 Elk City is in Oklahoma', elk?.state === 'OK', elk?.state);
+  check(
+    '#201 Elk City never appears in the overnight set',
+    !over604.some((r) => r.source_ref === '201'),
+  );
+
+  const publishState = readFileSync(`${P}/PUBLISH-PER-STATE.sql`, 'utf8');
+  const canarySql = readFileSync(`${P}/PUBLISH-CANARY.sql`, 'utf8');
+  const insertSql = readFileSync(`${P}/INSERT-NET-NEW.sql`, 'utf8');
+  const verifySql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+
+  check(
+    'per-state publish filters on the overnight flag',
+    /overnight_parking is true/.test(publishState),
+  );
+  check(
+    'per-state publish asserts no non-overnight row was published',
+    /non-overnight row\(s\) were published/.test(publishState),
+  );
+  check('canary rejects non-overnight rows', /are not overnight-eligible/.test(canarySql));
+  check(
+    'verify carries the non-overnight safety invariant',
+    /overnight_parking is not true/.test(verifySql),
+  );
+
+  /* Nothing may arrive published, featured, or with is_indexable touched. */
+  check('inserts are unpublished and unfeatured', /is_published, is_featured\)/.test(insertSql));
+  check(
+    "is_indexable is never written by the Love's insert",
+    !/is_indexable\s*=/.test(insertSql) && !/is_indexable[,)]/.test(insertSql),
+  );
+  check(
+    'the insert keeps the coordinate-collision guard',
+    /coordinate\(s\) shared by more than one site/.test(insertSql),
+  );
+
+  /* Map-pin rule: colocated service rows are reconciled but get no pin. */
+  const svc = parseCsv(readFileSync(`${S}/COLOCATED-SERVICE-ROWS.csv`, 'utf8'));
+  check('colocated service rows are reconciled', svc.length === 62, svc.length);
+  check(
+    'no colocated service row receives a map pin',
+    svc.every((r) => r.receives_map_pin === 'false'),
+  );
+  const enr = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  check(
+    'every enrichment target receives the pin',
+    enr.every((r) => r.receives_map_pin === 'true'),
+  );
+  check('62 map pins enriched', enr.length === 62, enr.length);
+
+  /* Corrections package: exact IDs, nothing deleted, Florence left alone. */
+  const corr = readFileSync(`${P}/CORRECTIONS.sql`, 'utf8');
+  for (const id of [
+    'c32686ff-6cf3-4422-af97-80b823e07eb9',
+    '485085d9-98c6-4e88-9661-862c3bc0c514',
+    'f6404302-7971-4884-8f37-82f098913d65',
+  ]) {
+    check(`corrections target ${id.slice(0, 8)} by exact id`, corr.includes(id));
+  }
+  check('corrections never delete', !/\bdelete\s+from\b/i.test(corr.replace(/^\s*--.*$/gm, '')));
+  check('corrections guard the exactly-3 row count', /expected 3 published target rows/.test(corr));
+  check('corrections protect the correct KY #618 rows', /Sadieville/.test(corr));
+  check('corrections carry a value-matched rollback', /republish exactly 3 row\(s\)/.test(corr));
+  check(
+    'Florence SC is quarantined with no statement proposed',
+    /beb05d53-db50-49cb-8790-ec01b45c8187/.test(corr) &&
+      !/update[\s\S]{0,400}beb05d53/i.test(corr.replace(/^\s*--.*$/gm, '')),
+  );
+  const quarantineMd = readFileSync(`${P}/QUARANTINE.md`, 'utf8');
+  check('Florence has a quarantine record', /beb05d53/.test(quarantineMd));
+
+  /* The launch gate must split 2a and 2b, and must not mark either passed. */
+  check('gate line 2a names the 615 directory universe', /\*\*2a\*\*[\s\S]{0,200}?615/.test(gate));
+  check('gate line 2b names the 604 overnight universe', /\*\*2b\*\*[\s\S]{0,200}?604/.test(gate));
+  check(
+    "neither Love's gate is marked passed",
+    !/\*\*2a\*\*[^\n]*✅/.test(gate) && !/\*\*2b\*\*[^\n]*✅/.test(gate),
+  );
+  check(
+    'the gate states that a complete source is not coverage',
+    /That closes the acquisition\. It does not move either gate\./.test(gate),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    obtain_next: string;
+  };
+  const loves = acq.sources.find((s) => s.source_id === 'loves-master') as Record<string, unknown>;
+  check("Love's acquisition is complete", loves.acquisition_status === 'COMPLETE');
+  check(
+    "Love's required columns no longer claim a status column",
+    !(loves.required_columns as string[]).includes('status'),
+  );
+  check(
+    "Love's records the absent status column",
+    (loves.columns_absent_from_export as string[]).includes('status'),
+  );
+  const lg = loves.gates as Record<string, number | string>;
+  check("Love's manifest keeps 2a = 615", lg['2a_directory_coverage'] === 615);
+  check("Love's manifest keeps 2b = 604", lg['2b_overnight_parking_coverage'] === 604);
+}
+
+/* ==========================================================================
+ * PILOT / FLYING J / ONE9 — U.S. denominators, brand identity, zero-space
+ * exclusion, and the refusal to invent overnight permission.
+ * ======================================================================== */
+{
+  const S = 'data/sources/pilot-master/2026-07-27';
+  const P = 'data/imports/pilot-2026-07-27';
+  const dir820 = parseCsv(readFileSync(`${S}/DIRECTORY-820.csv`, 'utf8'));
+  const park803 = parseCsv(readFileSync(`${S}/PARKING-803.csv`, 'utf8'));
+  const zero17 = parseCsv(readFileSync(`${S}/ZERO-SPACE-17.csv`, 'utf8'));
+  const canada55 = parseCsv(readFileSync(`${S}/CANADA-55.csv`, 'utf8'));
+  const normUs = parseCsv(readFileSync(`${S}/normalized-us.csv`, 'utf8'));
+
+  /* ---- denominators. 875 is never the U.S. number. ---- */
+  check('gate 3a universe is 820 U.S. locations', dir820.length === 820, dir820.length);
+  check('gate 3b universe is 803', park803.length === 803, park803.length);
+  check('17 zero-space U.S. locations', zero17.length === 17, zero17.length);
+  check('55 Canadian locations held separately', canada55.length === 55, canada55.length);
+  check('820 = 803 + 17', park803.length + zero17.length === dir820.length);
+  check('875 = 820 + 55', dir820.length + canada55.length === 875);
+  check('3a and 3b are not the same number', park803.length !== dir820.length);
+  check('the U.S. file contains no Canadian row', normUs.length === 820);
+  const CA = new Set([
+    'AB',
+    'BC',
+    'MB',
+    'NB',
+    'NL',
+    'NS',
+    'NT',
+    'NU',
+    'ON',
+    'PE',
+    'QC',
+    'SK',
+    'YT',
+  ]);
+  check('no province leaks into the U.S. set', !normUs.some((r) => CA.has(r.state)));
+  check(
+    'every Canadian row really is Canadian',
+    canada55.every((r) => CA.has(r.state)),
+  );
+  check('43 U.S. states', new Set(normUs.map((r) => r.state)).size === 43);
+  check(
+    '72,189 stated U.S. parking spaces',
+    park803.reduce((a, r) => a + Number(r.parking_spaces), 0) === 72189,
+  );
+
+  /* ---- zero-space locations must never be parking ---- */
+  check(
+    'every zero-space row states 0, not blank',
+    zero17.every((r) => r.parking_spaces === '0'),
+  );
+  check(
+    'every zero-space row is barred from parking and last-stop',
+    zero17.every(
+      (r) =>
+        /never returned as parking/i.test(r.parking_representation) &&
+        /never a last-legal-stop recommendation/i.test(r.parking_representation),
+    ),
+  );
+  check(
+    'no zero-space row leaks into the parking set',
+    !park803.some((r) => zero17.some((z) => z.source_ref === r.source_ref)),
+  );
+  check(
+    'every parking row has a positive count',
+    park803.every((r) => Number(r.parking_spaces) > 0),
+  );
+
+  /* ---- overnight permission is never invented ---- */
+  check(
+    'no U.S. row asserts overnight permission',
+    normUs.every((r) => r.overnight_parking === ''),
+  );
+  check(
+    'no U.S. row asserts parking restrictions',
+    normUs.every((r) => r.parking_restrictions === ''),
+  );
+
+  /* ---- brand identity preserved ---- */
+  const brands = new Set(normUs.map((r) => r.official_name));
+  for (const b of [
+    'Pilot Travel Center',
+    'Flying J Travel Center',
+    'ONE9 Travel Center',
+    'ONE9 Dealer',
+    'Pilot Dealer',
+    'Mr. Fuel Travel Center',
+    'Pilot Licensed Location',
+    'Flying J Dealer',
+  ]) {
+    check(`brand preserved: ${b}`, brands.has(b));
+  }
+  check(
+    'both published ONE9 casings are preserved',
+    brands.has('ONE9 Travel Center') && brands.has('One9 Travel Center'),
+  );
+  check('nothing was flattened to a bare "Pilot"', !brands.has('Pilot'));
+  check(
+    'every derived name keeps the official name and the store number',
+    normUs.every((r) => r.name === `${r.official_name} #${r.source_ref}`),
+  );
+
+  /* ---- coordinates are the operator's, never inferred ---- */
+  check(
+    'every U.S. row carries a coordinate',
+    normUs.every((r) => r.lat !== '' && r.lng !== ''),
+  );
+  check(
+    'every coordinate sits in the continental envelope',
+    normUs.every(
+      (r) =>
+        Number(r.lat) >= 24 &&
+        Number(r.lat) <= 49.5 &&
+        Number(r.lng) >= -125 &&
+        Number(r.lng) <= -66.5,
+    ),
+  );
+  check(
+    'no two U.S. locations share a coordinate',
+    new Set(normUs.map((r) => `${r.lat},${r.lng}`)).size === 820,
+  );
+  check('no duplicate store numbers', new Set(normUs.map((r) => r.source_ref)).size === 820);
+
+  /* ---- every row is classified in both directions ---- */
+  const dispo = new Map<string, number>();
+  for (const r of dir820) dispo.set(r.disposition, (dispo.get(r.disposition) ?? 0) + 1);
+  check(
+    'every official row has a disposition',
+    dir820.every((r) => r.disposition !== ''),
+  );
+  check(
+    '705 net-new with parking',
+    dispo.get('net-new-official-location') === 705,
+    dispo.get('net-new-official-location'),
+  );
+  check('87 exact authoritative matches', dispo.get('exact-authoritative-match') === 87);
+  check('14 net-new zero-space', dispo.get('net-new-zero-space-directory-only') === 14);
+  check('8 blank-only enrichments', dispo.get('blank-only-enrichment') === 8);
+  check(
+    '5 matched by address rather than store number',
+    dispo.get('address-matched-enrichment') === 5,
+  );
+  check('1 conflicting record', dispo.get('conflicting-record') === 1);
+
+  const closure = parseCsv(readFileSync(`${S}/CLOSURE-REVIEW.csv`, 'utf8'));
+  const services = parseCsv(readFileSync(`${S}/COLOCATED-SERVICE-ROWS.csv`, 'utf8'));
+  const enrich = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  const conflicts = parseCsv(readFileSync(`${S}/CONFLICTS.csv`, 'utf8'));
+  check('all 222 directory rows are accounted for', 101 + services.length + closure.length === 222);
+  check('92 colocated service rows', services.length === 92, services.length);
+  check('29 rows in closure review', closure.length === 29, closure.length);
+  check('84 enrichment targets', enrich.length === 84, enrich.length);
+  check('5 conflicting records', conflicts.length === 5, conflicts.length);
+
+  /* ---- absence from one export never triggers a delete or an unpublish ---- */
+  check(
+    'every closure-review row records NO action',
+    closure.every((r) => /^NONE\./.test(r.action)),
+  );
+  check(
+    'closure review states that absence is not proof of closure',
+    closure.every((r) => /not proof of closure/.test(r.action)),
+  );
+  const closureSqlLeak = [
+    'INSERT-NET-NEW.sql',
+    'ENRICH-EXISTING.sql',
+    'PUBLISH-CANARY.sql',
+    'PUBLISH-PER-STATE.sql',
+  ].map((f) => readFileSync(`${P}/${f}`, 'utf8').replace(/^\s*--.*$/gm, ''));
+  check(
+    'no forward statement deletes anything',
+    closureSqlLeak.every((s) => !/\bdelete\s+from\b/i.test(s)),
+  );
+  check(
+    'no forward statement unpublishes anything',
+    closureSqlLeak.every((s) => !/is_published\s*=\s*false/i.test(s)),
+  );
+
+  /* ---- matching never relies on a loose business name ---- */
+  check(
+    'every match records its evidence',
+    dir820
+      .filter((r) => !r.disposition.startsWith('net-new'))
+      .every((r) => r.match_evidence !== ''),
+  );
+  check(
+    'no match is justified by name alone',
+    dir820.every((r) => !/^name$/.test(r.match_evidence)),
+  );
+  const addrMatched = parseCsv(readFileSync(`${S}/ADDRESS-MATCHED.csv`, 'utf8'));
+  check(
+    'address matches carry brand and state, not just an address',
+    addrMatched.every((r) => /brand\+state/.test(r.evidence)),
+  );
+  check(
+    'address matches are flagged as weaker than a store-number match',
+    addrMatched.every((r) => /Weaker than a store-number match/.test(r.note)),
+  );
+
+  /* ---- the #749 / #876 address contradiction must stay a conflict ---- */
+  const contradiction = conflicts.find((c) => c.source_ref === '749');
+  check('#749 is held as a conflict', Boolean(contradiction));
+  check(
+    '#749 is a street-number contradiction, not a state mismatch',
+    contradiction?.conflict === 'store-number-matches-but-street-number-contradicts',
+  );
+  check('#749 enrichment is refused', /REFUSED/.test(contradiction?.resolution ?? ''));
+  check(
+    '#749 is not in the enrichment plan',
+    !enrich.some((r) => r.db_id === '9b0bb934-cb3a-499c-b362-8f665e065b81'),
+  );
+
+  /* ---- blank-only really is blank-only, checked against real values ---- */
+  check(
+    'no enrichment row restages a parking count the directory already has',
+    enrich.every((r) => !(r.parking_spaces !== '' && r.existing_parking_spaces !== '')),
+  );
+  check(
+    'overnight_parking is recorded as never written',
+    enrich.every((r) => /overnight_parking/.test(r.never_written)),
+  );
+  check(
+    'is_indexable is recorded as never written',
+    enrich.every((r) => /is_indexable/.test(r.never_written)),
+  );
+  check(
+    'every enrichment target receives the map pin',
+    enrich.every((r) => r.receives_map_pin === 'true'),
+  );
+  check(
+    'no colocated service row receives a map pin',
+    services.every((r) => r.receives_map_pin === 'false'),
+  );
+
+  /* ---- the guarded SQL ---- */
+  const ins = readFileSync(`${P}/INSERT-NET-NEW.sql`, 'utf8');
+  const enrSql = readFileSync(`${P}/ENRICH-EXISTING.sql`, 'utf8');
+  const canSql = readFileSync(`${P}/PUBLISH-CANARY.sql`, 'utf8');
+  const pubSql = readFileSync(`${P}/PUBLISH-PER-STATE.sql`, 'utf8');
+  const verSql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+  const rbSql = readFileSync(`${P}/ROLLBACK.sql`, 'utf8');
+  const fpSql = readFileSync(`${P}/FINGERPRINT.sql`, 'utf8');
+  const insBody = ins.replace(/^\s*--.*$/gm, '');
+
+  check('inserts arrive unpublished and unfeatured', /false, false\s*$/m.test(insBody));
+  // Named in a post-check guard is fine and wanted; WRITTEN is not. Both
+  // columns must be absent from every insert column list and never assigned.
+  const insertColumnLists = insBody.match(/insert into public\.locations[\s\S]*?\)/g) ?? [];
+  check(
+    'the insert names its columns explicitly',
+    insertColumnLists.length === 43,
+    insertColumnLists.length,
+  );
+  check(
+    'is_indexable is never written by the insert',
+    !/is_indexable\s*=/.test(ins) && insertColumnLists.every((c) => !/is_indexable/.test(c)),
+  );
+  check(
+    'overnight_parking is never written by the insert',
+    !/overnight_parking\s*=/.test(ins) &&
+      insertColumnLists.every((c) => !/overnight_parking/.test(c)),
+  );
+  check(
+    'the insert keeps the coordinate-collision guard',
+    /coordinate\(s\) shared by more than one site/.test(ins),
+  );
+  check(
+    'the insert keeps the 150 m proximity guard',
+    /within ~150 m of a published location/.test(ins),
+  );
+  check(
+    'the insert excludes third-party numbering from the store-number check',
+    /southern tire mart\|speedway\|blue beacon\|pro stop/.test(ins),
+  );
+  check('the insert asserts nothing became indexable', /published\/featured\/indexable/.test(ins));
+  check(
+    'the insert asserts no row claims overnight parking',
+    /row\(s\) claim overnight parking/.test(ins),
+  );
+  check(
+    'one transaction per state',
+    (ins.match(/^begin;$/gm) ?? []).length === 43,
+    (ins.match(/^begin;$/gm) ?? []).length,
+  );
+
+  check('enrichment is blank-only per field', /Blank-only violated/.test(enrSql));
+  check('enrichment refuses non truck-stops targets', /are not truck-stops rows/.test(enrSql));
+  check('enrichment keeps the collision guard', /collide with a published pin/.test(enrSql));
+  check(
+    'enrichment never writes overnight_parking',
+    !/set[\s\S]*?overnight_parking\s*=/.test(enrSql),
+  );
+
+  check('the canary requires a positive parking count', /no stated parking spaces/.test(canSql));
+  check('the canary publishes exactly 10', /publish exactly 10 row\(s\)/.test(canSql));
+  check(
+    'per-state publish excludes zero-space rows',
+    /coalesce\(parking_spaces, 0\) > 0/.test(pubSql),
+  );
+  check(
+    'per-state publish asserts no zero-space row was published',
+    /zero-space row\(s\) were published/.test(pubSql),
+  );
+
+  check('verify asserts no Canadian row was imported', /NO CANADIAN ROW WAS IMPORTED/.test(verSql));
+  check('verify carries the zero-space safety invariant', /THE SAFETY INVARIANT/.test(verSql));
+  check(
+    'verify asserts no invented overnight permission',
+    /NO INVENTED OVERNIGHT PERMISSION/.test(verSql),
+  );
+  check('verify checks the map-pin rule', /MAP-PIN RULE/.test(verSql));
+
+  check(
+    'rollback is value-matched and scoped by source tag',
+    /pilot-master-2026-07-27/.test(rbSql),
+  );
+  check('rollback refuses to delete published rows', /Rollback refused/.test(rbSql));
+  check('rollback refuses to delete rows predating the import', /predate this import/.test(rbSql));
+
+  check(
+    'fingerprints record a measured control digest',
+    /576f641146dfdb8ddb0de518acaa100d/.test(fpSql),
+  );
+  check(
+    'fingerprints record the verified snapshot id digest',
+    /130a63b248982b1e7d7977c6c728c484/.test(fpSql),
+  );
+  check('fingerprints assert third-party rows must not change', /MUST NOT CHANGE/.test(fpSql));
+
+  /* ---- the canary is geographically diverse ---- */
+  const canary = JSON.parse(readFileSync(`${P}/canary.json`, 'utf8')) as Record<
+    string,
+    string | number
+  >[];
+  check('canary is 10 locations', canary.length === 10);
+  check('canary spans 10 states', new Set(canary.map((c) => c.state)).size === 10);
+  check('canary spans 10 corridors', new Set(canary.map((c) => c.interstate)).size === 10);
+  check('canary spans at least 4 regions', new Set(canary.map((c) => c.region)).size >= 4);
+  check(
+    'no region holds more than 3 canary sites',
+    [...new Set(canary.map((c) => c.region))].every(
+      (r) => canary.filter((c) => c.region === r).length <= 3,
+    ),
+  );
+  check(
+    'every canary site has a positive space count',
+    canary.every((c) => Number(c.parking_spaces) > 0),
+  );
+  check(
+    'every canary site has a coordinate',
+    canary.every((c) => c.lat !== '' && c.lng !== ''),
+  );
+  check(
+    'the canary does not claim overnight permission',
+    canary.every((c) => /NOT CONFIRMED/.test(String(c.overnight_parking))),
+  );
+
+  /* ---- the launch gate splits 3a / 3b and passes neither ---- */
+  check(
+    'gate line 3a names the 820 U.S. directory universe',
+    /\*\*3a\*\*[\s\S]{0,200}?820/.test(gate),
+  );
+  check('gate line 3b names the 803 parking universe', /\*\*3b\*\*[\s\S]{0,200}?803/.test(gate));
+  check(
+    'neither Pilot gate is marked passed',
+    !/\*\*3a\*\*[^\n]*✅/.test(gate) && !/\*\*3b\*\*[^\n]*✅/.test(gate),
+  );
+  check(
+    'the gate states 875 is never the U.S. number',
+    /875 is never the U\.S\. coverage number/.test(gate),
+  );
+  check(
+    'the gate records that overnight permission is absent from this source',
+    /no overnight-permission field/.test(gate),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    obtain_next: string;
+    rules: Record<string, string>;
+  };
+  const pilot = acq.sources.find((s) => s.source_id === 'pilot-master') as Record<string, unknown>;
+  check('Pilot acquisition is complete', pilot.acquisition_status === 'COMPLETE');
+  check(
+    'Pilot sha256 recorded',
+    pilot.sha256 === 'd39ab57d51999f2468ff2f32790f8ab43a20b859559b0052e353272c9d1e330a',
+  );
+  check('Pilot record count recorded as 875', pilot.record_count === 875);
+  const pg = pilot.gates as Record<string, number | string>;
+  check('manifest keeps 3a = 820', pg['3a_us_directory_coverage'] === 820);
+  check('manifest keeps 3b = 803', pg['3b_us_truck_parking_coverage'] === 803);
+  check('manifest records 55 Canadian exclusions', pg.canadian_locations_excluded === 55);
+  check(
+    'manifest records the absent status column',
+    (pilot.columns_absent_from_export as string[]).includes('status'),
+  );
+  check(
+    'manifest records the absent overnight field',
+    (pilot.columns_absent_from_export as string[]).includes('overnight_permission'),
+  );
+  check('the next source to obtain is the TA master export', acq.obtain_next === 'ta-master');
+  check(
+    'a rule bars counting Canada toward U.S. coverage',
+    Boolean(acq.rules.canada_excluded_from_us_denominator),
+  );
+  check(
+    'a rule bars inventing overnight permission',
+    Boolean(acq.rules.no_invented_overnight_permission),
+  );
+  check('a rule states absence is not closure', Boolean(acq.rules.absence_is_not_closure));
 }
 
 console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);

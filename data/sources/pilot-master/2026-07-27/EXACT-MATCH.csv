@@ -1,0 +1,88 @@
+db_id,source_ref,official_name,db_name,state,city,address,evidence,db_published,db_has_coord
+5cf98762-e51b-4116-8a71-1934fcc47f35,89,ONE9 Travel Center,ONE9 Travel Center (Pilot #89) - Ellenton,FL,Ellenton,1526 51st Ave E,store_number+address+brand,true,false
+5fc5e9a4-17f9-40c7-9c65-d3904e90140f,226,ONE9 Travel Center,ONE9 Travel Center #226,TN,Dandridge,505 Patriot Dr,store_number+address+brand,true,false
+32188e16-75ce-477c-b671-a22f8606b139,319,ONE9 Travel Center,ONE9 Travel Center #319,GA,Dalton,243 Connector 3 SW,store_number+address+coordinate_0m+brand,true,true
+7e79bd38-6884-4e0c-a05e-0303faa8514e,457,Pilot Travel Center,Pilot Travel Center #457,OH,Beaver Dam,427 East Main Street,store_number+address+brand,true,false
+f6a155cc-c10c-455a-b854-a3643c00535d,4561,Pilot Travel Center,Pilot Travel Center #4561,GA,Valdosta,3460 Madison Hwy,store_number+address+coordinate_71m+brand,true,true
+a77f9fde-3b52-4f86-961d-91e168d388d5,62,Pilot Travel Center,Pilot Travel Center #62,SC,Florence,3006 N Williston Rd,store_number+address+brand,false,false
+f9e3ec91-4b3f-4c36-a174-96eafb9e907e,403,ONE9 Travel Center,ONE9 Travel Center #403,TN,Heiskell,1915 E Raccoon Valley Dr,store_number+address+coordinate_0m+brand,true,true
+28ed1b57-596a-42e2-bcb7-55434d32fe02,441,Pilot Travel Center,Pilot Travel Center #441,AL,Decatur,3240 Point Mallard Parkway,store_number+address+brand,true,false
+9172f64e-0836-45fd-a136-3e9c914b7097,653,Flying J Travel Center,Flying J Travel Center #653 (Hebron),IN,Hebron,3231 E 181st Ave,store_number+address+brand,true,false
+989e6437-46b1-45ce-a5b2-7f7d4d0cb18a,4584,Pilot Travel Center,Pilot Travel Center #4584,SC,Latta,1504 SC-38,store_number+address+brand,false,false
+e5c73805-b895-443e-ad46-5b33992106d6,90,Pilot Travel Center,Pilot Travel Center #90,FL,Fort Pierce,7300 Okeechobee Rd,store_number+address+brand,false,false
+b7a1bf29-998f-498a-a44a-0974411802b6,231,Pilot Travel Center,Pilot Travel Center #231,KY,Corbin,249 W Cumberland Gap Pkwy,store_number+address+brand,true,false
+2e036deb-3b94-41b3-9fcb-fd5b71923e44,254,ONE9 Travel Center,ONE9 Travel Center (former Pilot Travel Center #254),GA,Wildwood,650 GA-299,store_number+address+brand,true,false
+5527d376-b806-4a10-bc75-0478c35672d0,284,Pilot Travel Center,Pilot Travel Center #284 - Monroe,MI,Monroe,1200 Nadeau Rd,store_number+address+brand,true,false
+4f77aa49-f11e-4ebd-a86e-9c6290ec1ec1,114,Pilot Travel Center,Pilot Travel Center #114,TN,Crossville,2449 Genesis Rd,store_number+address+brand,true,false
+1f226de3-a16d-434e-9db3-2cb86dbf9e31,91,Pilot Travel Center,Pilot Travel Center #91,FL,Saint Johns,1625 County Road 210 West,store_number+address+brand,false,false
+b3c074e4-06a3-4cb4-b205-6ad5ddae3476,219,Pilot Travel Center,Pilot Travel Center #219,TN,Knoxville,7210 Strawberry Plains Pike,store_number+address+brand,true,false
+96b417a9-ff26-480a-bdea-4ce572470bd7,631,Flying J Travel Center,Flying J Travel Center #631,GA,Lake Park,7001 Bellville Rd,store_number+address+coordinate_78m+brand,true,true
+8cb6aa2b-13c3-4f79-8b1b-ee434bb8cee8,4651,Pilot Travel Center,Pilot Travel Center #4651,VA,Skippers,781 Moore's Ferry Rd,store_number+address+brand,false,false
+a8a32662-d389-4d96-9653-6fde235726d0,353,Pilot Travel Center,Pilot Travel Center #353,KY,Georgetown,110 Triport Rd,store_number+address+brand,true,false
+49310225-476e-403f-bc11-b296444ee454,1063,Pilot Travel Center,Pilot Travel Center #1063,NC,Marion,3365 Sugar Hill Rd,store_number+address+brand,true,false
+4c7eff4b-4b93-4969-8d19-5fb1d388779b,4597,Pilot Travel Center,Pilot Travel Center #4597,TN,Gordonsville,502 Gordonsville Hwy,store_number+address+brand,true,false
+da315672-4e7f-4389-a555-4e4b7aa1d94a,71,Pilot Travel Center,Pilot Travel Center #71,GA,Port Wentworth,7001 GA-21,store_number+address+brand,false,false
+781f82b8-a9a0-4264-bebf-044a9aba151f,67,Pilot Travel Center,Pilot Travel Center #67,GA,Cartersville,968 Cassville White Rd,store_number+address+coordinate_0m+brand,true,true
+444e4c77-93aa-4cbc-a8f7-825079fac2f3,481,Pilot Travel Center,Pilot Travel Center #481,TN,McDonald,281 Pleasant Grove Road SW,store_number+address+coordinate_0m+brand,true,true
+c251431a-ff37-4d55-9b22-1fd126b525aa,602,Pilot Travel Center,Pilot Travel Center #602,AL,Birmingham,224 Daniel Payne Dr,store_number+address+brand,true,false
+f77f6c23-384f-4f64-af4d-2b73d30dbfbb,604,Flying J Travel Center,Flying J Travel Center #604,AL,Hope Hull,900 Tyson Rd,store_number+address+brand,true,false
+4b07b610-8186-4ad2-b037-cb9c402928a9,34,Pilot Travel Center,Pilot Travel Center #34,IN,Remington,4154 US-24,store_number+address+brand,true,false
+e780ec0a-3a95-42b8-b7bd-eca1cadf2a72,265,ONE9 Travel Center,ONE9 Travel Center (Pilot #265),TN,Cookeville,1111 S Jefferson Ave,store_number+address+brand,true,false
+6e1f345b-b3fd-42bb-848c-acfb5573ebc8,366,Pilot Travel Center,Pilot Travel Center #366,TN,Jackson,30 Sand Pebble Dr,store_number+address+brand,true,false
+455f776b-7681-45be-8604-fdb9593beb44,493,Flying J Travel Center,Flying J Travel Center #493,SC,Saint George,113 Motel Dr,store_number+address+brand,false,false
+1beb847b-eca9-4b86-a151-558340292504,624,Flying J Travel Center,Flying J Travel Plaza #624 (Dade City / San Antonio),FL,San Antonio,29933 State Rd 52,store_number+address+brand,true,false
+54eb73aa-b523-42b7-bb42-be43bfe1e235,664,Flying J Travel Center,Flying J Travel Center #664,KY,Walton,13019 Walton Verona Rd,store_number+address+brand,true,false
+a109cc92-378c-4d57-ac39-da50a5c2a2c6,713,ONE9 Travel Center,Flying J / ONE9 Travel Center #713,SC,Latta,111 Mill Branch Rd,store_number+address+brand,false,false
+48942c6d-d58b-46ad-8a29-906278fceb35,75,Pilot Travel Center,Pilot Travel Center #75,AL,Satsuma,6109 US-43 S,store_number+address+brand,true,false
+ac64dd0e-2288-4bb0-85b8-2f1913dfd9f6,384,Pilot Travel Center,Pilot Travel Center #384,VA,Colonial Heights,2126 Ruffin Mill Rd,store_number+address+brand,false,false
+7d43f079-09a4-4f73-a484-93682b5e28aa,429,Pilot Travel Center,Pilot Travel Center #429,AR,West Memphis,1100 Martin Luther King Jr Dr,store_number+address+brand,true,false
+1dac7271-b06e-47a7-9845-3ea235276d79,656,Flying J Travel Center,Flying J Travel Center #656,IN,Whiteland,82 White St,store_number+address+brand,true,false
+7edab277-0c0b-4498-a04d-3389926b0fe4,37,Pilot Travel Center,Pilot Travel Center #37,IN,Whiteland,2962 E 500 N,store_number+address+brand,true,false
+321b8c5c-5c9f-48e1-aa9c-fd0332dee69e,24,Pilot Travel Center,Pilot Travel Center #24 - Monroe,MI,Monroe,1100 N Dixie Hwy,store_number+address+brand,true,false
+4f23643b-4ec9-471a-beac-7a7538e73adf,337,Pilot Travel Center,Pilot Travel Center #337,SC,Florence,2015 W Lucas St,store_number+address+brand,false,false
+c944296e-5c8f-4346-9755-b470a9aafe77,630,Flying J Travel Center,Flying J Travel Center #630,GA,Jackson,1125 Bucksnort Rd,store_number+address+coordinate_69m+brand,true,true
+b8bff6ef-fb37-4415-9966-9e0ef40bbb4d,1047,Pilot Travel Center,Pilot Travel Center #1047,FL,Jacksonville,4075 Jones Branch Rd,store_number+address+brand,false,false
+062c24f7-7145-41f3-97f7-431b2d8965b3,6990,Pilot Travel Center,Pilot Travel Center #6990,NC,Kenly,1000 Truckstop Rd,store_number+address+brand,false,false
+d7265e8b-ae0a-4d0b-84f1-de75c9f7a70d,430,Pilot Travel Center,Pilot Travel Center #430,AR,Russellville,215 AR-331 N,store_number+address+brand,true,false
+a178c35e-73ba-4c23-bbe4-605dc4a365c4,632,Flying J Travel Center,Flying J Travel Center #632,GA,Resaca,288 Resaca Beach Blvd NW,store_number+address+coordinate_67m+brand,true,true
+4e95994e-db22-4b01-9b6e-0af55d277eec,722,Pilot Travel Center,Flying J Travel Center #722,TN,Knoxville,800 Watt Rd,store_number+address+coordinate_57m+brand,true,true
+ca4da6a3-c18d-4f65-88ec-1076319eb6c5,88,ONE9 Travel Center,Pilot / ONE9 Travel Center #88,FL,Cocoa,4455 W King St,store_number+address+brand,false,false
+894798c3-0460-4016-b5a1-ca4505143ee5,92,Pilot Travel Center,Pilot Travel Center #92 (Ocala),FL,Ocala,4255 W Hwy 326,store_number+address+brand,true,false
+ef42e8a8-4ee1-4ece-a100-ba17bfe15200,267,Pilot Travel Center,Pilot Travel Center #267,GA,Byron,2965 Highway 247C,store_number+address+coordinate_0m+brand,true,true
+362f1bd5-2789-488a-8652-ffa580d9737a,411,Pilot Travel Center,Pilot Travel Center #411,TN,Lebanon,921 Murfreesboro Rd,store_number+address+brand,true,false
+9d5b4987-bd0e-4332-ae57-b774ca5ee801,622,Flying J Travel Center,Flying J Travel Center #622,FL,Fort Pierce,100 N Kings Hwy,store_number+address+brand,false,false
+39a7ad06-c801-4b4f-8ea1-3d847839a62c,875,Flying J Travel Center,Flying J Travel Center #875,MD,Elkton,221 Belle Hill Rd,store_number+address+brand,false,false
+7d145a52-2a8c-420b-87c8-5c8668bca4d9,293,Pilot Travel Center,"Pilot Travel Center #293 (Ocala, SR 484)",FL,Ocala,2020 SW Hwy 484,store_number+address+brand,true,false
+599cf7a7-eb06-4527-bcdb-69daa62e11c7,421,Pilot Travel Center,Pilot Travel Center #421,GA,Dalton,142 Carbondale Rd SW,store_number+address+coordinate_69m+brand,true,true
+3e2d7707-cfa9-4fff-a6e1-b564b40bfc32,895,Flying J Travel Center,Flying J Travel Center #895 - Woodhaven,MI,Woodhaven,21055 West Rd,store_number+address+brand,true,false
+d4d6ed3b-3e72-4011-b0cc-29783bc21dd0,47,Pilot Travel Center,Pilot Travel Center #47,KY,Georgetown,259 Cherry Blossom Way,store_number+address+brand,true,false
+d806f887-5291-49e4-8e36-4e7ae97c3996,271,Pilot Travel Center,Pilot Travel Center #271 (Burr Street),IN,Gary,2501 Burr St,store_number+address+brand,true,false
+6d8f6cd0-78e1-489f-9f94-7878cba55e77,500,Pilot Travel Center,Pilot Travel Center #500 (Jasper),FL,Jasper,8067 FL-6,store_number+address+brand,true,false
+f0129700-18d1-49cf-b92f-0be14a549686,627,Flying J Travel Center,Flying J Travel Center #627,GA,Brunswick,2990 US-17,store_number+address+brand,false,false
+9689ab8c-c937-4676-8fa4-de202ec699d7,4558,Pilot Travel Center,Pilot Travel Center #4558,GA,Calhoun,2111 US-41,store_number+address+coordinate_30m+brand,true,true
+07d998a5-79fa-4b95-b63f-7bbeb29ca62e,406,Pilot Travel Center,Pilot Travel Center #406,TN,Cornersville,9211 Lewisburg Hwy,store_number+address+brand,true,false
+9eaf0102-674a-4c29-a360-b2de6807e4f1,424,Pilot Travel Center,"Pilot Travel Center #424 (Ocala, 4032 Hwy 326)",FL,Ocala,4032 W Hwy 326,store_number+address+brand,true,false
+f7f69a6a-d032-46ee-9ce6-52796f556a07,448,Pilot Travel Center,Pilot Travel Center #448 (Hebron),IN,Hebron,18011 Colorado St,store_number+address+brand,true,false
+da698161-6d20-4069-9e12-64db6fb9cf21,9,Pilot Travel Center,Pilot Travel Center #9,OH,Franklin,6830 Franklin Lebanon Rd,store_number+address+brand,true,false
+6c2078f9-7d25-48bf-8e8f-10d24ac2b372,393,Pilot Travel Center,Pilot Travel Center #393,NC,Waynesville,3712 Crabtree Rd,store_number+address+brand,true,false
+a70da55a-2a2e-420a-953c-4b6d46e1c435,652,Flying J Travel Center,Flying J Travel Center #652,IN,Lebanon,520 S State Rd 39,store_number+address+brand,true,false
+0ecffefe-7964-4da6-9052-c230adc0a249,695,Flying J Travel Center,Flying J Travel Center #695,OH,Beaverdam,420 E Main St,store_number+address+brand,true,false
+d7247403-1ed3-49de-83a5-af2862cdbd9f,1550,Pilot Travel Center,Pilot Travel Center #1550 (Good Hope),AL,Cullman,1600 County Road 437,store_number+address+brand,true,false
+5aecf10b-8e95-48a4-a815-da033b1d7cf4,1577,Pilot Travel Center,Pilot Travel Center #1577,TN,Pioneer,106 Comfort Ln,store_number+address+coordinate_0m+brand,true,true
+f68a555f-f314-4506-91bc-db780f009c31,97,Flying J Travel Center,Flying J Travel Center #97,OH,Vandalia,175 Northwoods Blvd,store_number+address+brand,true,false
+7500cfb3-d609-4280-9869-356cb5588398,94,Pilot Travel Center,Pilot Travel Center #94,FL,Punta Gorda,26505 Jones Loop Rd,store_number+address+brand,true,false
+50cf9353-443d-406e-b1d2-9889112e116c,575,Pilot Travel Center,Pilot Travel Center #575,GA,St. Mary's,491 St Mary's Rd,store_number+address+brand,false,false
+99e14e2c-5498-4df1-b60b-7ff743aec8ae,605,Flying J Travel Center,Flying J Travel Center #605,AR,Russellville,42 Bradley Cove Rd,store_number+address+brand,true,false
+b89a9bb7-6833-4f23-8466-1d6660615cd3,58,ONE9 Travel Center,Pilot Travel Center #58 (ONE9),NC,Pleasant Hill,2032 NC-48,store_number+address+brand,false,false
+944a23e3-93b6-4f19-a43a-8879c89ae09a,192,Pilot Travel Center,Pilot Travel Center #192,GA,Tifton,4431 Union Rd,store_number+address+coordinate_93m+brand,true,true
+5c42f488-24de-40af-a67d-88e61d627d64,321,Pilot Travel Center,Pilot Travel Center #321,KY,Walton,11229 Frontage Rd,store_number+address+brand,true,false
+8a9e2301-b793-454f-85e6-c01e98b715c7,416,Pilot Travel Center,Pilot Travel Center #416,GA,Cordele,2201 16th Ave E,store_number+address+coordinate_52m+brand,true,true
+c372a30e-8b6d-44db-b71f-1a3621ef7a7e,626,Flying J Travel Center,Flying J Travel Center #626,FL,Saint Augustine,950 FL-206 W,store_number+address+brand,false,false
+effb0793-cbed-44f7-b05c-3645ccfdda21,668,Flying J Travel Center,Flying J Travel Center #668 (Saginaw),MI,Saginaw,3475 E Washington Rd,store_number+address+brand,true,false
+d56cff01-0dcb-4610-82aa-920d1214a828,784,Flying J Travel Center,Flying J Travel Center #784,MD,North East,1 Center Dr,store_number+address+brand,false,false
+394f5b7a-2970-453b-91d4-fc87c30a51a0,607,Flying J Travel Center,Flying J Travel Center #607,AR,West Memphis,3400 Service Loop Rd,store_number+address+brand,true,false
+f97ef111-f094-422a-bc61-7362a0a27d26,683,Flying J Travel Center,Flying J Travel Center #683,NC,Kenly,1800 Princeton Kenly Rd,store_number+address+brand,false,false
+0fda85a9-364c-4541-99d7-fac38c8f755e,4562,Pilot Travel Center,Pilot Travel Center #4562,GA,Kingsland,2607 Scrubby Bluff Rd,store_number+address+brand,false,false
+9ac45310-ac8c-4885-a5aa-ebf787c2f13a,4569,Pilot Travel Center,Pilot Travel Center #4569,SC,Hardeeville,15976 Whyte Hardee Blvd,store_number+address+brand,false,false
+5adb811d-9b49-4829-a08f-75481f80a864,4598,Pilot Travel Center,Pilot Travel Center #4598,TN,Niota,507 Hwy 309,store_number+address+coordinate_27m+brand,true,true
+cc5fe530-72f9-4f40-82de-bb55487a82cc,1366,ONE9 Travel Center,ONE9 Travel Center #1366,TN,Holladay,15060 US-641 S,store_number+address+brand,true,false

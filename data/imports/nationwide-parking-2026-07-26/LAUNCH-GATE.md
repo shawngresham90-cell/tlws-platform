@@ -1,8 +1,10 @@
 # Launch gate — public directory and trip planner
 
-**Status: NOT READY. No gate line passes.** One line (Love's) is in progress
-as of 2026-07-27 — 604 Tier-A locations are in hand, pending a completeness
-confirmation. The other seven are unstarted.
+**Status: NOT READY. No gate line passes.** Two operator lines are in motion as
+of 2026-07-27 — Love's and Pilot / Flying J / ONE9. Both sources are **complete
+and independently confirmed**, but that is acquisition, not coverage: all four
+of their database gates are still open and nothing has been written to
+production. The other five lines are unstarted.
 
 This is the formal, binding coverage gate for launching the public directory
 and trip planner. It supersedes any earlier informal readiness language. A
@@ -35,20 +37,15 @@ Every line must pass. There is no partial launch.
 | # | Requirement | Threshold | Current | Pass |
 |---|---|---|---|:--:|
 | 1 | Authorized current Truck Parking Club feed | **100 %** | no authorized feed held | ❌ |
-| 2 | Love's Travel Stops | **100 %** | **604 eligible in hand** — pending completeness confirmation | ⏳ |
-| 3 | Pilot, Flying J and ONE9 | **100 %** | not sourced | ❌ |
+| **2a** | Love's Travel Stops — **directory coverage** | **100 % of 615** | 62 reconciled, 552 prepared, **0 applied** | ⏳ |
+| **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
+| **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | 101 reconciled, 719 prepared, **0 applied** | ⏳ |
+| **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | 0 route-usable, 803 prepared, **0 applied** | ⏳ |
 | 4 | TA, Petro and TA Express | **100 %** | not sourced | ❌ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
 | 8 | Route-segment coverage, all Interstates | **≥ 85 %** | not measurable | ❌ |
-
-Line 2 moved on 2026-07-27: the Love's export arrived and yielded **604
-Tier-A truck-parking locations across 42 states and 64 corridors** — see
-`data/sources/loves-master/2026-07-27/FINDINGS.md`. It is marked ⏳ rather than
-✅ because the file is named `LovesSearchResults` and there is no independent
-count to prove it is the full national export rather than a filtered search.
-Confirm that, and line 2 passes.
 
 **Every threshold is measured against an authorized source of record**, not
 against what the database happens to contain. A category is at 100 % only when
@@ -57,6 +54,91 @@ the count reconciles to the official export for that operator or agency.
 Lines 7 and 8 are marked *not measurable* rather than 0 %: route-segment
 coverage cannot be computed at all until facilities carry coordinates, because
 a segment is only "covered" if a mappable facility sits on it.
+
+### Line 2 is two gates, and neither is source acquisition
+
+Love's is the first line where a source of record actually exists, which
+exposes a distinction the rest of the table will hit in turn.
+
+**Source acquisition for Love's is 100 % and complete as of 2026-07-27.** The
+export holds 731 of 731 locations — Love's own results page reports 731, across
+all five location types and 42 operating states, and the workbook matches
+exactly. Recorded in `SOURCE-ACQUISITION.md` and `source-acquisition.json` with
+sha256 `ec5146ee…a89ab2`.
+
+**That closes the acquisition. It does not move either gate.** A complete file
+says nothing about whether the database represents it. The gate measures the
+database.
+
+| Gate | Universe | Passes when |
+|---|--:|---|
+| **2a — directory coverage** | **615** active Travel Stops | all 615 are correctly reconciled and represented in the directory |
+| **2b — overnight-parking coverage** | **604** Travel Stops with `overnightparking = Y` | all 604 are represented **and route-usable** — mappable, on a corridor, surfaceable as parking |
+
+`615 = 604 + 11`. These are two different numbers measuring two different
+things, and **neither may be reported as the other**. Quoting 604 against the
+directory gate overstates it; quoting 615 against the parking gate overstates
+it worse, because 11 of those locations must never be offered as parking at
+all.
+
+Both read ⏳. Insertion, enrichment and publication are three separate
+authorizations and **none has been given**; the guarded package sits unexecuted
+in `data/imports/loves-2026-07-27/`. Two store numbers (#618, #420) are held
+back pending exact-ID verification — see that package's `CORRECTIONS.sql` and
+`QUARANTINE.md`.
+
+#### The 11 non-overnight Travel Stops
+
+Eleven active Love's Travel Stops carry `overnightparking = N`. They are real
+locations and **belong in the directory as truck stops** — they count toward
+2a. They must **never** be offered as overnight or HOS-rest parking, and they
+do not count toward 2b.
+
+**Store #201, Elk City, Oklahoma** states **zero spaces**. It does not qualify
+as parking of any kind under any circumstance — directory record only.
+
+This is the same principle as the weigh-station rule below: presence in the
+directory is not a claim that a driver can sleep there.
+
+### Line 3 splits the same way, on a different axis
+
+**Source acquisition for Pilot / Flying J / ONE9 is 100 % and complete as of
+2026-07-27.** The export holds **875** official-network locations, sha256
+`d39ab57d…e330a`. Every independently reported figure reproduces exactly.
+
+| Gate | Universe | Passes when |
+|---|--:|---|
+| **3a — U.S. directory coverage** | **820** U.S. network locations | all 820 are correctly reconciled and represented |
+| **3b — U.S. truck-parking coverage** | **803** with a positive official parking-space count | all 803 are represented **and route-usable** |
+
+`820 = 803 + 17`. Both read ⏳; the guarded package sits unexecuted in
+`data/imports/pilot-2026-07-27/`.
+
+**875 is never the U.S. coverage number.** 55 of the locations are Canadian
+(AB, ON, BC, SK, MB). They are preserved separately in `CANADA-55.csv`, are
+**excluded from every U.S. denominator**, and are never imported.
+
+The **17 zero-space** U.S. locations are real network listings and count toward
+3a. The operator states 0 spaces, so they must **never** be returned as parking
+and **never** as a last-legal-stop recommendation. They do not count toward 3b.
+
+#### Overnight permission is not in this source, and is not invented
+
+Unlike Love's, this export carries **no overnight-permission field**. A positive
+operator space count confirms truck parking for directory and map purposes only.
+It does not confirm that overnight rest is permitted, and parking restrictions
+and duration limits stay **unknown**.
+
+`locations.overnight_parking` is `NOT NULL DEFAULT false` and cannot hold
+"unknown", so every Pilot row lands at `false` — meaning *not confirmed*, not
+*prohibited*. That under-claims, which is the safe direction. **No Pilot-network
+row may be offered as overnight or HOS-rest parking** until a second
+authoritative source states it.
+
+Five directory rows conflict with the export and twelve are probable-closure
+candidates, six of them published today. **Nothing is deleted or unpublished on
+that basis** — absence from a single export is not proof of closure, and closure
+review is a separate exercise with its own authorization.
 
 ### Weigh stations are not parking
 
@@ -109,21 +191,48 @@ Reference points that follow from the same audit:
   not a tier.
 
 **Movement since the baseline** (recorded here, not merged into the table
-above — the baseline stays fixed): the Love's export of 2026-07-27 produced the
-project's first Tier-A set, **604 locations across 42 states and 64 corridors**,
-541 of them net-new. None is published; publication needs separate
-authorization. It also exposed three **published** directory rows for Love's
-locations the operator does not list — see
-`data/sources/loves-master/2026-07-27/FINDINGS.md`.
+above — the baseline stays fixed, and none of the following has been applied):
+
+The Love's export of 2026-07-27 produced the project's first Tier-A set,
+**604 overnight-eligible locations across 42 states and 64 corridors**, 541 of
+them net-new, 62 enrichments of existing rows, 1 held. All 604 arrive with an
+operator-authoritative coordinate, so the 635 unmappable published rows would
+not grow. **Zero rows are published by the package**; publication is a separate
+authorization that has not been given.
+
+Were 2b to close, 32 states would gain their first published parking and I-95,
+I-80, I-90, I-94, I-10 and I-15 would each go from **zero** to covered. That is
+the prepared effect, not an achieved one. Figures in
+`data/imports/loves-2026-07-27/COVERAGE.md`.
+
+The export also contradicted four existing directory rows, three of them
+**published** — Love's #618 recorded in Michigan (it is Kentucky), #306
+recorded in Tennessee (absent from the export), and #420 recorded in South
+Carolina (it is Mississippi). The first three are proposed for unpublishing
+pending exact-ID verification; the fourth stays unpublished and quarantined.
+Nothing is deleted. See `data/imports/loves-2026-07-27/CORRECTIONS.sql` and
+`QUARANTINE.md`, and `data/sources/loves-master/2026-07-27/FINDINGS.md`.
 
 ---
 
 ## What the gate implies about sequencing
 
-The gate cannot be approached by publishing what is already held. Lines 1–4 are
-operator feeds the project does not have, and lines 5–6 need agency datasets
-that are unreachable. **The binding constraint is source acquisition, not
-engineering.**
+The gate cannot be approached by publishing what is already held. Line 1 is an
+authorized feed the project does not have, line 4 is an operator export not yet
+obtained, and lines 5–6 need agency datasets that are unreachable. **The binding
+constraint is source acquisition, not engineering.**
+
+Love's and Pilot are the exceptions that prove the shape of the rest: both
+sources are now held in full, and gates 2a, 2b, 3a and 3b *still* do not pass.
+Acquiring a file moves a line from "cannot be worked" to "can be worked".
+Closing a gate takes reconciliation, representation and an explicit
+authorization to write.
+
+Two operator exports also cover **1,435 U.S. locations between them** (615
+Love's Travel Stops + 820 Pilot-network) while the rest-area baseline below
+stays at 76. That contrast is the point: operator data
+is obtainable and agency data is not, so lines 2–4 will close long before line 5
+moves at all. **Line 5 is the launch's real critical path.**
 
 The order that unblocks the most gate lines per file obtained is in
 `SOURCE-ACQUISITION.md`. The process to run the moment a file lands is in

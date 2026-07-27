@@ -128,24 +128,53 @@ const normalized = rows.map((r) => ({
   // minute and they would be stale before the page rendered.
 }));
 
-/* --------------------------------------------- eligibility (the parking gate) */
-// Truck parking requires BOTH an explicit space count > 0 AND the operator's
-// own overnight-parking flag. Neither alone is sufficient, and a store type
-// that is not a Travel Stop is not truck parking however it is flagged.
-const quarantine = [];
-const eligible = [];
-for (const n of normalized) {
-  const reasons = [];
-  if (n.store_type !== 'Travel Stop') reasons.push(`store-type-not-travel-stop:${n.store_type}`);
-  if (!(n.parking_spaces > 0)) reasons.push('no-stated-truck-parking-spaces');
-  if (n.overnight_parking !== true) reasons.push('overnight-parking-not-confirmed');
-  if (n.lat === null || n.lng === null || n.lat === 0 || n.lng === 0)
-    reasons.push('no-usable-coordinate');
-  if (n.lat < 24 || n.lat > 49.5 || n.lng < -125 || n.lng > -66.5)
-    reasons.push('coordinate-outside-continental-envelope');
-  if (reasons.length) quarantine.push({ ...n, quarantine_reason: reasons.join('; ') });
-  else eligible.push(n);
-}
+/* ============================ THE TWO SEPARATE GATES ======================= */
+//
+// Gate 2a — DIRECTORY coverage:  615 active Travel Stops.
+// Gate 2b — OVERNIGHT coverage:  604 of those with overnightparking = Y.
+//
+// They are deliberately not the same number and must never be reported as one.
+// The 11 Travel Stops flagged overnightparking = N are real Love's locations
+// and belong in the directory as truck stops — but must NEVER be offered as
+// overnight / HOS-rest parking. #201 Elk City also states 0 spaces, so it does
+// not qualify as parking of any kind.
+//
+// Everything that is not a Travel Stop (Country Store, Truck Service, Car Stop,
+// Service Center) is outside the directory-coverage universe for this gate and
+// is quarantined with a reason.
+
+const travelStops = normalized.filter((n) => n.store_type === 'Travel Stop');
+const nonDirectory = normalized.filter((n) => n.store_type !== 'Travel Stop');
+
+const coordOk = (n) =>
+  n.lat !== null &&
+  n.lng !== null &&
+  n.lat !== 0 &&
+  n.lng !== 0 &&
+  n.lat >= 24 &&
+  n.lat <= 49.5 &&
+  n.lng >= -125 &&
+  n.lng <= -66.5;
+
+const overnightEligible = (n) => n.overnight_parking === true && n.parking_spaces > 0;
+
+const overnight = travelStops.filter((n) => overnightEligible(n) && coordOk(n));
+const nonOvernight = travelStops.filter((n) => !overnightEligible(n));
+
+// Quarantine: never silently dropped, always with an exact reason.
+const quarantine = [
+  ...nonDirectory.map((n) => ({
+    ...n,
+    quarantine_reason: `not-a-travel-stop:${n.store_type}; outside-loves-directory-coverage-gate`,
+  })),
+  ...nonOvernight.map((n) => ({
+    ...n,
+    quarantine_reason:
+      n.parking_spaces === 0
+        ? 'overnight-parking-not-permitted; zero-stated-spaces; IN DIRECTORY as truck stop, NEVER as parking'
+        : 'overnight-parking-not-permitted; IN DIRECTORY as truck stop, NEVER as overnight parking',
+  })),
+];
 
 /* --------------------------- reconcile against the committed DB snapshot */
 // Snapshot columns: id, store_number, state, city, category_slug, published, has_coord, name
@@ -159,41 +188,112 @@ const snap = readFileSync(`${DIR}/DB-SNAPSHOT.tsv`, 'utf8')
     return { id, store_number, state, city, category_slug, published, has_coord, name };
   });
 
+// Rows whose name starts with another brand carry that brand's numbering, not
+// a Love's store number (e.g. "Boss Truck Shop #40 (at Love's)"). Excluded from
+// the store-number join so they cannot produce a phantom match.
+const FOREIGN_BRAND = /^(boss truck shop|speedco)\b/i;
 const byStore = new Map();
 for (const s of snap) {
-  if (!s.store_number) continue;
+  if (!s.store_number || FOREIGN_BRAND.test(s.name)) continue;
   byStore.set(s.store_number, [...(byStore.get(s.store_number) ?? []), s]);
 }
 
-const recon = [];
+// THE MAP-PIN RULE. Exactly one DB row per physical Love's carries the
+// coordinate: the `truck-stops` row. CAT scale, truck care, truck wash and
+// roadside rows at the same address are reconciled as service records and get
+// NO coordinate, so the coordinate-collision guard is never weakened and the
+// map never shows two pins for one site.
+const MAP_PIN_CATEGORY = 'truck-stops';
+
+const directory = [];
 const conflicts = [];
-for (const e of eligible) {
-  const hits = byStore.get(e.source_ref) ?? [];
+const enrichment = []; // matched truck-stops row -> gets the coordinate
+const serviceRows = []; // colocated service rows -> reconciled, no coordinate
+const netNew = [];
+
+for (const t of travelStops) {
+  const hits = byStore.get(t.source_ref) ?? [];
+  const overnight_ok = overnightEligible(t);
+
   if (!hits.length) {
-    recon.push({ ...e, disposition: 'net-new', db_ids: '', note: '' });
+    directory.push({
+      ...t,
+      overnight_eligible: overnight_ok,
+      disposition: 'net-new',
+      db_ids: '',
+      note: '',
+    });
+    netNew.push({ ...t, overnight_eligible: overnight_ok });
     continue;
   }
-  // A store number that resolves to more than one state is a defect in OUR
-  // data: Love's store numbers are globally unique.
+
   const states = [...new Set(hits.map((h) => h.state))];
-  if (states.length > 1 || !states.includes(e.state)) {
+  if (states.length > 1 || !states.includes(t.state)) {
     conflicts.push({
-      source_ref: e.source_ref,
-      source_state: e.state,
-      source_city: e.city,
+      source_ref: t.source_ref,
+      source_state: t.state,
+      source_city: t.city,
       db_states: states.join('+'),
       db_rows: hits.map((h) => `${h.id}:${h.state}/${h.city}:${h.name}`).join(' || '),
-      conflict: states.includes(e.state)
+      conflict: states.includes(t.state)
         ? 'store-number-used-in-multiple-states'
         : 'store-number-state-mismatch',
     });
   }
-  const matched = hits.filter((h) => h.state === e.state);
-  recon.push({
-    ...e,
-    disposition: matched.length ? 'update-existing' : 'net-new-state-conflict',
+
+  const matched = hits.filter((h) => h.state === t.state);
+  if (!matched.length) {
+    directory.push({
+      ...t,
+      overnight_eligible: overnight_ok,
+      disposition: 'net-new-state-conflict',
+      db_ids: '',
+      note: 'store number resolves to a different state in the DB',
+    });
+    continue;
+  }
+
+  const pin = matched.filter((h) => h.category_slug === MAP_PIN_CATEGORY);
+  const services = matched.filter((h) => h.category_slug !== MAP_PIN_CATEGORY);
+
+  for (const p of pin) {
+    enrichment.push({
+      db_id: p.id,
+      source_ref: t.source_ref,
+      name: p.name,
+      state: t.state,
+      city: t.city,
+      lat: t.lat,
+      lng: t.lng,
+      interstate: t.interstate ?? '',
+      exit_number: t.exit_number ?? '',
+      parking_spaces: t.parking_spaces,
+      overnight_eligible: overnight_ok,
+      currently_published: p.published,
+      currently_has_coord: p.has_coord,
+      receives_map_pin: true,
+    });
+  }
+  for (const sv of services) {
+    serviceRows.push({
+      db_id: sv.id,
+      source_ref: t.source_ref,
+      name: sv.name,
+      category_slug: sv.category_slug,
+      state: sv.state,
+      city: sv.city,
+      currently_published: sv.published,
+      receives_map_pin: false,
+      note: "colocated service record at the same Love's site — reconciled, no coordinate, no second map pin",
+    });
+  }
+
+  directory.push({
+    ...t,
+    overnight_eligible: overnight_ok,
+    disposition: pin.length ? 'update-existing' : 'net-new-pin-missing',
     db_ids: matched.map((h) => h.id).join(' '),
-    note: matched.length > 1 ? `${matched.length} colocated DB rows share this site` : '',
+    note: services.length ? `${services.length} colocated service row(s), no map pin` : '',
   });
 }
 
@@ -234,8 +334,54 @@ writeFileSync(`${DIR}/PROFILE.json`, JSON.stringify(profile, null, 2) + '\n');
 writeFileSync(`${DIR}/normalized.csv`, csv(normalized, NORM_COLS));
 writeFileSync(`${DIR}/quarantine.csv`, csv(quarantine, [...NORM_COLS, 'quarantine_reason']));
 writeFileSync(
-  `${DIR}/RECONCILIATION.csv`,
-  csv(recon, [...NORM_COLS, 'disposition', 'db_ids', 'note']),
+  `${DIR}/DIRECTORY-615.csv`,
+  csv(directory, [...NORM_COLS, 'overnight_eligible', 'disposition', 'db_ids', 'note']),
+);
+writeFileSync(`${DIR}/OVERNIGHT-604.csv`, csv(overnight, NORM_COLS));
+writeFileSync(
+  `${DIR}/NON-OVERNIGHT-11.csv`,
+  csv(
+    nonOvernight.map((n) => ({
+      ...n,
+      directory_representation: 'truck stop',
+      parking_representation: 'NONE — never offered as overnight/HOS-rest parking',
+    })),
+    [...NORM_COLS, 'directory_representation', 'parking_representation'],
+  ),
+);
+writeFileSync(`${DIR}/NET-NEW.csv`, csv(netNew, [...NORM_COLS, 'overnight_eligible']));
+writeFileSync(
+  `${DIR}/ENRICHMENT-PLAN.csv`,
+  csv(enrichment, [
+    'db_id',
+    'source_ref',
+    'name',
+    'state',
+    'city',
+    'lat',
+    'lng',
+    'interstate',
+    'exit_number',
+    'parking_spaces',
+    'overnight_eligible',
+    'currently_published',
+    'currently_has_coord',
+    'receives_map_pin',
+  ]),
+);
+writeFileSync(
+  `${DIR}/COLOCATED-SERVICE-ROWS.csv`,
+  csv(serviceRows, [
+    'db_id',
+    'source_ref',
+    'name',
+    'category_slug',
+    'state',
+    'city',
+    'currently_published',
+    'receives_map_pin',
+    'note',
+  ]),
 );
 writeFileSync(
   `${DIR}/CONFLICTS.csv`,
@@ -244,21 +390,39 @@ writeFileSync(
 
 /* ------------------------------------------------------------------ report */
 const by = (xs, f) => Object.fromEntries([...counter(xs.map(f))].sort((a, b) => b[1] - a[1]));
-console.log(`source rows          ${normalized.length}`);
-console.log(`eligible truck parking ${eligible.length}`);
-console.log(`quarantined          ${quarantine.length}`);
-console.log(`\nquarantine reasons:`);
-for (const [k, v] of Object.entries(by(quarantine, (q) => q.quarantine_reason)))
-  console.log(`  ${v.toString().padStart(4)}  ${k}`);
-console.log(`\ndispositions:`);
-for (const [k, v] of Object.entries(by(recon, (r) => r.disposition)))
-  console.log(`  ${v.toString().padStart(4)}  ${k}`);
+const sum = (xs, f) => xs.reduce((a, x) => a + f(x), 0);
+
+console.log(`source rows                       ${normalized.length}`);
+console.log(`GATE 2a directory (Travel Stops)  ${travelStops.length}`);
+console.log(`GATE 2b overnight-parking         ${overnight.length}`);
+console.log(
+  `  non-overnight Travel Stops      ${nonOvernight.length}  (directory yes, parking never)`,
+);
+console.log(`  outside directory gate          ${nonDirectory.length}`);
+console.log(`quarantined (with reason)         ${quarantine.length}`);
+console.log(`\ndirectory dispositions:`);
+for (const [k, v] of Object.entries(by(directory, (r) => r.disposition)))
+  console.log(`  ${String(v).padStart(4)}  ${k}`);
+console.log(`\nenrichment plan (map pins)        ${enrichment.length}`);
+console.log(`colocated service rows (no pin)   ${serviceRows.length}`);
+console.log(`net-new                           ${netNew.length}`);
 console.log(`\nconflicts: ${conflicts.length}`);
 for (const c of conflicts)
   console.log(
     `  #${c.source_ref} source=${c.source_state}/${c.source_city} db=${c.db_states} [${c.conflict}]`,
   );
-console.log(`\ncolocated sites (>1 DB row): ${recon.filter((r) => r.note).length}`);
-console.log(`states in eligible set: ${new Set(eligible.map((e) => e.state)).size}`);
-console.log(`corridors: ${new Set(eligible.map((e) => e.interstate).filter(Boolean)).size}`);
-console.log(`total stated truck spaces: ${eligible.reduce((a, e) => a + e.parking_spaces, 0)}`);
+console.log(`\ncoverage:`);
+console.log(`  states (directory)   ${new Set(travelStops.map((t) => t.state)).size}`);
+console.log(`  states (overnight)   ${new Set(overnight.map((t) => t.state)).size}`);
+console.log(
+  `  corridors (overnight)${new Set(overnight.map((t) => t.interstate).filter(Boolean)).size}`,
+);
+console.log(`  stated spaces        ${sum(overnight, (t) => t.parking_spaces)}`);
+console.log(
+  `\nintegrity: ${travelStops.length} = ${overnight.length} overnight + ${nonOvernight.length} non-overnight ` +
+    `-> ${overnight.length + nonOvernight.length === travelStops.length ? 'OK' : 'MISMATCH'}`,
+);
+console.log(
+  `           ${normalized.length} = ${travelStops.length} travel stops + ${nonDirectory.length} other ` +
+    `-> ${travelStops.length + nonDirectory.length === normalized.length ? 'OK' : 'MISMATCH'}`,
+);

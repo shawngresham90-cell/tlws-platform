@@ -1,0 +1,12 @@
+source_ref,name,store_type,address,city,state,zip,lat,lng,interstate,exit_number,parking_spaces,overnight_parking,showers,cat_scale,directory_representation,parking_representation
+167,Love's Travel Stop #167,Travel Stop,1896 H.E. Bailey Turnpike,Chickasha,OK,73018,35.081871,-97.889421,I-44,HE Bailey Tpke / Mile 85,24,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+170,Love's Travel Stop #170,Travel Stop,169E Turner Turnpike,Chandler,OK,74834,35.72777,-96.83464,I-44,Mile 169 (Eastbound Only),140,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+168,Love's Travel Stop #168,Travel Stop,Mile 21 H.E. Bailey Turnpike,Walters,OK,73572,34.370171,-98.409611,I-44,Mile 21,20,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+201,Love's Travel Stop #201,Travel Stop,2703 East Highway 66,Elk City,OK,73644,35.423039,-99.372528,I-40,41,0,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+171,Love's Travel Stop #171,Travel Stop,Mile 66 Indian Nation Turnpike,McAlester,OK,74501,34.907161,-95.825601,,,30,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+166,Love's Travel Stop #166,Travel Stop,498 Muskogee Turnpike,Muskogee,OK,74401,35.852881,-95.421201,,,24,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+176,Love's Travel Stop #176,Travel Stop,Mile 97 Kansas Turnpike,Cassoday,KS,66842,38.095391,-96.579511,I-35,Mile 97,17,false,false,false,truck stop,NONE — never offered as overnight/HOS-rest parking
+233,Love's Travel Stop #233,Travel Stop,30710 FM 2920 Rd,Waller,TX,77484,30.064458,-95.905556,,,50,false,true,true,truck stop,NONE — never offered as overnight/HOS-rest parking
+234,Love's Travel Stop #234,Travel Stop,612 Pederson Rd.,Katy,TX,77494,29.779813,-95.881907,I-10,737,77,false,true,true,truck stop,NONE — never offered as overnight/HOS-rest parking
+419,Love's Travel Stop #419,Travel Stop,210 Patton St.,Houston,TX,77009,29.797437,-95.369817,I-45,50 SB/50A NB,250,false,true,true,truck stop,NONE — never offered as overnight/HOS-rest parking
+315,Love's Travel Stop #315,Travel Stop,3940 N McCarty St,Houston,TX,77013,29.798591,-95.269023,,,100,false,true,true,truck stop,NONE — never offered as overnight/HOS-rest parking
