@@ -1,0 +1,23 @@
+5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303  locmaster.xlsx
+#
+# PROVENANCE — read before trusting either hash.
+#
+# Shawn downloaded the current official TA/Petro location master on
+# 2026-07-27 via "Download Location Data" at https://www.ta-petro.com/location/
+# and reported its SHA-256 as:
+#
+#   a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7   (official artifact — NOT in this repo yet)
+#
+# That byte artifact did not reach this build environment. The file committed
+# here (locmaster.xlsx, sha256 above, identical bytes to
+# data/imports/locmaster20260725.xlsx) was verified against ALL TEN facts Shawn
+# stated for the official download and matched every one exactly: 354
+# locations, 97 columns, 44 states, TA 192 / TA Express 79 / Petro 77 /
+# Goasis 4 / Thorntons 2, complete coordinates on all 354, 347 with positive
+# truck-parking counts, 7 with zero, 54,589 total stated spaces, zero duplicate
+# Site IDs, zero duplicate Location IDs. The SHA difference is expected for a
+# fresh XLSX download (zip container timestamps differ per download).
+#
+# PRECONDITION OF EXECUTION: commit the a0c612f0… artifact and content-diff it
+# against this file (expected identical values) before any SQL in
+# data/imports/ta-2026-07-27/ is run.

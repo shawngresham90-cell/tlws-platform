@@ -1,11 +1,11 @@
 # Launch gate — public directory and trip planner
 
-**Status: NOT READY. No gate line passes.** Two operator lines are in motion as
-of 2026-07-27 — Love's and Pilot / Flying J / ONE9. Both sources are **complete
-and independently confirmed**, but that is acquisition, not coverage: all four
-of their database gates are still open and nothing has been written to
-production. TA is **blocked at the network policy**, not merely unstarted. The
-remaining lines need agency data that is equally unreachable.
+**Status: NOT READY. No gate line passes.** All three operator lines are now in
+motion as of 2026-07-27 — Love's, Pilot / Flying J / ONE9, and TA / Petro /
+TA Express. All three sources are **complete and verified**, but that is
+acquisition, not coverage: every operator database gate is still open and
+nothing has been written to production. The remaining lines need agency data
+that is unreachable from this environment.
 
 This is the formal, binding coverage gate for launching the public directory
 and trip planner. It supersedes any earlier informal readiness language. A
@@ -42,8 +42,8 @@ Every line must pass. There is no partial launch.
 | **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
 | **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | 101 reconciled, 719 prepared, **0 applied** | ⏳ |
 | **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | 0 route-usable, 803 prepared, **0 applied** | ⏳ |
-| **4a** | TA / Petro / TA Express — **directory coverage** | **100 %** | source **BLOCKED**, denominator unknown | ❌ |
-| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 %** | 310 route-usable, denominator unknown | ❌ |
+| **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **347 represented** — 1 mislabeled row pending correction | ⏳ |
+| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **306 route-usable**, 38 enrichments prepared, **0 applied** | ⏳ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
@@ -160,18 +160,22 @@ whatever the acquisition percentage says.
 |---|--:|--:|--:|
 | **2 — Love's** | **100 %** (731 held, 615 U.S. Travel Stops) | **0** of 604 | 604 |
 | **3 — Pilot / Flying J / ONE9** | **100 %** (875 held, 820 U.S.) | **0** of 803 | 803 |
-| **4 — TA / Petro / TA Express** | **0 %** — blocked | **310** measured | denominator unknown |
+| **4 — TA / Petro / TA Express** | **100 %** (354 held; 348 TA-brand) | **306** of 347 | 41 |
 
-TA is the inverse of the other two and the shape is instructive: it has the
-**most** route-usable rows of any operator network (310 published, mappable,
-with parking) and the **least** authority behind them. 387 TA-network rows sit
-in the directory against a reference list of 354 — the directory holds *more*
-rows than the operator appears to have locations, and 383 of them are live. See
-`data/sources/ta-master/2026-07-27/GAP-ANALYSIS.md`.
+TA's shape is the inverse of the other two, because most of its data landed on
+2026-07-25: 304 of its sites already have published, digest-verified rows. The
+full Site-ID reconciliation (`data/sources/ta-master/2026-07-27/FINDINGS.md`)
+resolved the "~30 questionable rows" of the earlier gap analysis into exactly
+**2 duplicates (1 published), 0 closures** — the rest were colocated service
+records and the sites' own pre-existing rows. One TA provenance caveat stands:
+Shawn's official download artifact (`a0c612f0…`) is content-verified against
+the committed copy but not yet committed itself; committing it is a
+precondition of executing the TA package.
 
 **Acquisition coverage without route-usable coverage is a file on a disk.
-Route-usable coverage without acquisition coverage is unverified claims in front
-of drivers.** Line 4 is currently the second kind, which is the worse kind.
+Route-usable coverage without acquisition coverage is unverified claims in
+front of drivers.** With TA's master in hand, line 4 has become the program's
+best line: 88 % route-usable today, 99 % after the prepared enrichment.
 
 ### Weigh stations are not parking
 

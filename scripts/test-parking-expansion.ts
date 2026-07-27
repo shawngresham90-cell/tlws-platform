@@ -500,8 +500,14 @@ const rows: Row[] = parseCsv(csv.trim());
     ["Love's 2b overnight 100% of 604", /overnight-parking coverage\*\* \|\s*\*\*100 % of 604\*\*/],
     ['Pilot 3a directory 100% of 820', /U\.S\. directory coverage\*\* \|\s*\*\*100 % of 820\*\*/],
     ['Pilot 3b parking 100% of 803', /U\.S\. truck-parking coverage\*\* \|\s*\*\*100 % of 803\*\*/],
-    ['TA 4a directory 100%', /TA Express — \*\*directory coverage\*\* \|\s*\*\*100 %\*\*/],
-    ['TA 4b route-usable 100%', /TA Express — \*\*route-usable coverage\*\* \|\s*\*\*100 %\*\*/],
+    [
+      'TA 4a directory 100% of 348',
+      /TA Express — \*\*directory coverage\*\* \|\s*\*\*100 % of 348\*\*/,
+    ],
+    [
+      'TA 4b route-usable 100% of 347',
+      /TA Express — \*\*route-usable coverage\*\* \|\s*\*\*100 % of 347\*\*/,
+    ],
     ['rest areas >= 95%', /rest areas, welcome centers, service plazas \|\s*\*\*≥ 95 %\*\*/],
     [
       'weigh stations 100% separate',
@@ -1422,7 +1428,7 @@ const rows: Row[] = parseCsv(csv.trim());
     'manifest records the absent overnight field',
     (pilot.columns_absent_from_export as string[]).includes('overnight_permission'),
   );
-  check('the next source to obtain is the TA master export', acq.obtain_next === 'ta-master');
+  check('the next source to obtain is the FHWA layer', acq.obtain_next === 'fhwa-truck-parking');
   check(
     'a rule bars counting Canada toward U.S. coverage',
     Boolean(acq.rules.canada_excluded_from_us_denominator),
@@ -1634,13 +1640,17 @@ const rows: Row[] = parseCsv(csv.trim());
   );
 
   const ta = acq.sources.find((s) => s.source_id === 'ta-master') as Record<string, unknown>;
-  check('TA acquisition status is BLOCKED', ta.acquisition_status === 'BLOCKED');
+  check(
+    'TA acquisition is complete with the artifact caveat recorded',
+    /^COMPLETE/.test(String(ta.acquisition_status)) &&
+      /pending commit/.test(String(ta.acquisition_status)),
+  );
   check('TA records ten attempted hosts', (ta.hosts_attempted as string[]).length === 10);
   check(
     'TA stale reference records 0 approved rows',
     (ta.stale_reference as Record<string, number>).approved_rows === 0,
   );
-  check('the next source to obtain is TA', acq.obtain_next === 'ta-master');
+  check('the next source to obtain is the FHWA layer', acq.obtain_next === 'fhwa-truck-parking');
 }
 
 /* ==========================================================================
@@ -1799,7 +1809,7 @@ const rows: Row[] = parseCsv(csv.trim());
     'gate line 4b is route-usable coverage',
     /\*\*4b\*\*[^\n]*route-usable coverage/.test(gate),
   );
-  check('TA is marked blocked in the gate table', /\*\*4a\*\*[^\n]*BLOCKED/.test(gate));
+  check('TA 4a shows the mislabeled-row deficit', /\*\*4a\*\*[^\n]*347 represented/.test(gate));
   check(
     'neither TA gate is marked passed',
     !/\*\*4a\*\*[^\n]*✅/.test(gate) && !/\*\*4b\*\*[^\n]*✅/.test(gate),
@@ -1815,14 +1825,285 @@ const rows: Row[] = parseCsv(csv.trim());
     /published\*\*, \*\*mappable\*\*, and carry confirmed truck parking/.test(gate),
   );
   check(
-    'the gate records TA as the inverse case',
-    /most\*\* route-usable rows[\s\S]{0,120}least\*\* authority/.test(gate),
+    'the gate records the ~30-questionable-rows resolution',
+    /2 duplicates \(1 published\), 0 closures/.test(gate),
   );
   check(
     'the gate warns acquisition without route-usable is a file on a disk',
     /a file on a disk/.test(gate),
   );
   check('the gate points at the computed agency registry', /AGENCY-REGISTRY\.md/.test(gate));
+}
+
+/* ==========================================================================
+ * TA / PETRO / TA EXPRESS — the master arrived. Site-ID reconciliation,
+ * digest-proven inputs, and a package with no inserts.
+ * ======================================================================== */
+{
+  const S = 'data/sources/ta-master/2026-07-27';
+  const P = 'data/imports/ta-2026-07-27';
+  const crypto = require('node:crypto') as typeof import('node:crypto');
+
+  /* ---- provenance: both hashes recorded, execution gated on the artifact */
+  const checksum = readFileSync(`${S}/CHECKSUM.txt`, 'utf8');
+  check(
+    'working-copy sha256 recorded',
+    /5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303/.test(checksum),
+  );
+  check(
+    'official artifact sha256 recorded',
+    /a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7/.test(checksum),
+  );
+  check(
+    'artifact commit is a stated execution precondition',
+    /PRECONDITION OF EXECUTION/.test(checksum),
+  );
+
+  /* ---- digest-proven inputs re-proven offline, not trusted from comments */
+  const legacyRaw = readFileSync(`${S}/LEGACY-91.tsv`, 'utf8');
+  const legacyBody = legacyRaw.replace(/\n$/, '').split('\n').slice(1).join('\n');
+  check(
+    'LEGACY-91.tsv still matches the production digest',
+    crypto.createHash('md5').update(legacyBody).digest('hex') ===
+      '4aabb580c32b3959b196d4c2b8e0aa34',
+  );
+  const importRows = parseCsv(
+    readFileSync('data/imports/ta-petro/ta-petro-import-ready.csv', 'utf8'),
+  );
+  const sorted = [...importRows].sort(
+    (a, b) => a.name.localeCompare(b.name) || a.state.localeCompare(b.state),
+  );
+  const nsDigest = crypto
+    .createHash('md5')
+    .update(sorted.map((r) => `${r.name}|${r.state}`).join('\n'))
+    .digest('hex');
+  const valDigest = crypto
+    .createHash('md5')
+    .update(
+      sorted
+        .map((r) =>
+          [r.name, r.state, r.city, r.address, r.zip, r.latitude, r.longitude, r.truckspaces].join(
+            '|',
+          ),
+        )
+        .join('\n'),
+    )
+    .digest('hex');
+  check(
+    'import CSV name+state digest equals production',
+    nsDigest === 'e7843f7412c831ca5eb0687b37ab6018',
+    nsDigest,
+  );
+  check(
+    'import CSV value digest equals production',
+    valDigest === '2ac6c65968f6da9013ee0896b377003b',
+    valDigest,
+  );
+  check('304 imported rows', importRows.length === 304);
+
+  /* Note: sort order must match Postgres "order by name, state" (C-ish);
+   * localeCompare can disagree on punctuation. If the two digest checks above
+   * ever fail while production is unchanged, suspect the comparator first. */
+
+  /* ---- both ledgers complete, buckets exact ---- */
+  const rec = parseCsv(readFileSync(`${S}/RECONCILIATION-354.csv`, 'utf8'));
+  const db = parseCsv(readFileSync(`${S}/DB-ACCOUNTING-395.csv`, 'utf8'));
+  const buckets = (xs: Row[]) => {
+    const m = new Map<string, number>();
+    for (const r of xs) m.set(r.bucket, (m.get(r.bucket) ?? 0) + 1);
+    return Object.fromEntries(m);
+  };
+  check('official ledger holds all 354', rec.length === 354, rec.length);
+  check('db ledger holds all 395', db.length === 395, db.length);
+  const ob = buckets(rec);
+  check('306 exact matches', ob['exact-match'] === 306, ob['exact-match']);
+  check('40 safe enrichments', ob['safe-enrichment'] === 40);
+  check('6 held (Goasis + Thorntons)', ob['held'] === 6);
+  check('1 zero-parking TA-brand site', ob['zero-parking'] === 1);
+  check('1 cross-brand conflict', ob['conflict'] === 1);
+  check('ZERO missing / net-new', !('missing-net-new' in ob), ob['missing-net-new']);
+  const dbb = buckets(db);
+  check('db: 307 exact', dbb['exact-match'] === 307);
+  check('db: 46 service-only', dbb['service-only'] === 46);
+  check('db: 40 enrichment targets', dbb['safe-enrichment'] === 40);
+  check('db: exactly 2 duplicates', dbb['duplicate'] === 2);
+  check('db: ZERO probable closures', !('probable-closure' in dbb));
+
+  /* the ~30 questionable rows resolve to exactly these two */
+  const dups = parseCsv(readFileSync(`${S}/DUPLICATES.csv`, 'utf8'));
+  check(
+    'duplicate 1 is TA Atlanta South #268 (published)',
+    dups.some(
+      (d) =>
+        d.duplicate_db_id === '33e41d22-1dac-425b-a17d-c9b6affcda21' && d.is_published === 'true',
+    ),
+  );
+  check(
+    'duplicate 2 is TA Jacksonville South #248 (unpublished)',
+    dups.some(
+      (d) =>
+        d.duplicate_db_id === '74398e08-61e6-41b8-b3fd-e22c6c6cf6d0' && d.is_published === 'false',
+    ),
+  );
+  const closures = parseCsv(readFileSync(`${S}/CLOSURE-REVIEW.csv`, 'utf8'));
+  check('closure review is empty', closures.length === 0, closures.length);
+
+  /* ---- held brands stay held, zero-parking stays out of coverage ---- */
+  const held = rec.filter((r) => r.bucket === 'held');
+  check(
+    'held rows are exactly Goasis and Thorntons',
+    held.every((r) => r.brand === 'Goasis' || r.brand === 'Thorntons'),
+  );
+  check(
+    'held rows carry no db id and no plan',
+    held.every((r) => r.db_id === ''),
+  );
+  const zero = rec.find((r) => r.bucket === 'zero-parking');
+  check(
+    'the zero-parking site is 0347 TA Truck Service Franklin',
+    zero?.site_id === '0347' && /Truck Service Franklin/.test(zero?.name ?? ''),
+  );
+
+  /* ---- enrichment plan: blank-only, anchored, never the held brands ---- */
+  const plan = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  check('40 enrichment rows', plan.length === 40);
+  check(
+    '38 address-anchored + 2 name-anchored holds',
+    plan.filter((p) => p.confidence === 'address-anchored').length === 38,
+  );
+  check(
+    'every plan row names an exact db id',
+    plan.every((p) => /^[0-9a-f-]{36}$/.test(p.db_id)),
+  );
+  check(
+    'no plan row touches a Goasis or Thorntons',
+    plan.every((p) => !/goasis|thorntons/i.test(p.db_name)),
+  );
+  check(
+    'the two holds are the Ashland VA pair',
+    plan
+      .filter((p) => p.confidence !== 'address-anchored')
+      .every((p) =>
+        ['e36e07df-2f06-48a6-9494-8cf3b0f4cc15', '7a03c1f5-6b4d-4951-98a2-a3e752d2270b'].includes(
+          p.db_id,
+        ),
+      ),
+  );
+
+  /* ---- the SQL package ---- */
+  const enrSql = readFileSync(`${P}/ENRICH-EXISTING.sql`, 'utf8');
+  const holdSql = readFileSync(`${P}/HOLD-NAME-ANCHORED.sql`, 'utf8');
+  const canSql = readFileSync(`${P}/CANARY-ENRICH.sql`, 'utf8');
+  const corrSql = readFileSync(`${P}/CORRECTIONS-PROPOSALS.sql`, 'utf8');
+  const rbSql = readFileSync(`${P}/ROLLBACK.sql`, 'utf8');
+  const fpSql = readFileSync(`${P}/FINGERPRINT.sql`, 'utf8');
+  const verSql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+  const noComments = (t: string) => t.replace(/^\s*--.*$/gm, '');
+
+  for (const [label, sql] of [
+    ['enrich', enrSql],
+    ['hold', holdSql],
+    ['canary', canSql],
+    ['rollback', rbSql],
+  ] as const) {
+    check(
+      `${label} never inserts into locations`,
+      !/insert\s+into\s+public\.locations/i.test(noComments(sql)),
+    );
+    check(`${label} never deletes`, !/\bdelete\s+from\b/i.test(noComments(sql)));
+    check(`${label} never writes is_published`, !/is_published\s*=/.test(noComments(sql)));
+    check(
+      `${label} never writes is_featured or is_indexable`,
+      !/is_(featured|indexable)\s*=/.test(noComments(sql)),
+    );
+    check(
+      `${label} never writes overnight_parking`,
+      !/overnight_parking\s*=/.test(noComments(sql)),
+    );
+  }
+  check(
+    'enrich runs one transaction per state (13)',
+    (enrSql.match(/^begin;$/gm) ?? []).length === 13,
+  );
+  check('enrich carries the exact-name identity guard', /name = e\.expected_name/.test(enrSql));
+  check('enrich is blank-only per field', /Blank-only violated/.test(enrSql));
+  check('enrich keeps the collision guard', /collide with a published pin/.test(enrSql));
+  check('hold is marked do-not-run', /DO NOT RUN until identity is verified/.test(holdSql));
+  check('hold contains exactly 2 statements', (holdSql.match(/^begin;$/gm) ?? []).length === 2);
+
+  const canaryJson = JSON.parse(readFileSync(`${P}/canary.json`, 'utf8')) as Record<
+    string,
+    string
+  >[];
+  check('canary is 10 rows', canaryJson.length === 10);
+  check('canary spans 10 states', new Set(canaryJson.map((c) => c.state)).size === 10);
+  check(
+    'canary rows are a subset of the address-anchored plan',
+    canaryJson.every((c) =>
+      plan.some((p) => p.db_id === c.db_id && p.confidence === 'address-anchored'),
+    ),
+  );
+
+  /* corrections: exact ids, guarded, nothing deleted, C has no SQL */
+  for (const id of [
+    '33e41d22-1dac-425b-a17d-c9b6affcda21',
+    '15de1227-c048-4efc-9434-ac55e17356f1',
+    'beb05d53-db50-49cb-8790-ec01b45c8187',
+    '74398e08-61e6-41b8-b3fd-e22c6c6cf6d0',
+  ]) {
+    check(`corrections reference ${id.slice(0, 8)} by exact id`, corrSql.includes(id));
+  }
+  check('corrections never delete', !/\bdelete\s+from\b/i.test(noComments(corrSql)));
+  check(
+    'correction A refuses to remove the only live pin',
+    /do NOT remove the only live pin/.test(corrSql),
+  );
+  check(
+    'correction B keeps the row unpublished',
+    /STAYS UNPUBLISHED/.test(corrSql) && /changed publication state/.test(corrSql),
+  );
+  check(
+    'correction B is anchored to the quarantined state',
+    /name = 'Love''s Travel Stop #420'/.test(corrSql) && /address = '3001 TV Rd'/.test(corrSql),
+  );
+  check(
+    'correction C proposes no SQL for the Jacksonville row',
+    !/update[\s\S]{0,300}?74398e08-61e6-41b8-b3fd-e22c6c6cf6d0/i.test(noComments(corrSql)),
+  );
+  check(
+    'rollback is scoped by the package tag',
+    /geocode_source = 'ta-master-2026-07-27'/.test(rbSql),
+  );
+  check('rollback refuses edited targets', /Rollback refused/.test(rbSql));
+  check(
+    'fingerprints record the measured control digest',
+    /64d573283c8c0e35bd39c73bb63819d3/.test(fpSql),
+  );
+  check('fingerprints record the scope id digest', /52d4c84e71b50adcecc2956a51c58274/.test(fpSql));
+  check('fingerprints flag the beb05d53 control-set caveat', /re-baseline/.test(fpSql));
+  check('verify carries the zero-parking invariant', /ZERO-PARKING INVARIANT/.test(verSql));
+  check('verify asserts Goasis/Thorntons untouched', /GOASIS AND THORNTONS UNTOUCHED/.test(verSql));
+  check('verify asserts overnight is never invented', /OVERNIGHT IS NEVER INVENTED/.test(verSql));
+
+  /* ---- the acquisition manifest and gate agree with the reconciliation ---- */
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+  };
+  const ta = acq.sources.find((x) => x.source_id === 'ta-master') as Record<string, unknown>;
+  const gates = ta.gates as Record<string, number | string>;
+  check('manifest gate 4a = 348', gates['4a_directory_coverage'] === 348);
+  check('manifest gate 4b = 347', gates['4b_route_usable_coverage'] === 347);
+  check('manifest holds 6 held-brand locations', gates.held_goasis_thorntons === 6);
+  check(
+    'manifest records the execution precondition',
+    /a0c612f0/.test(String(ta.execution_precondition)),
+  );
+  const recon = ta.reconciliation as Record<string, unknown>;
+  check('manifest reconciliation shows 0 missing', recon.missing_net_new === 0);
+  check(
+    'gate: TA acquisition complete does not mark 4a/4b passed',
+    !/\*\*4a\*\*[^\n]*✅/.test(gate) && !/\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
 }
 
 console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);

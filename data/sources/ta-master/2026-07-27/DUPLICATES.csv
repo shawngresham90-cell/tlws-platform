@@ -1,0 +1,3 @@
+duplicate_db_id,duplicate_name,state,city,is_published,has_coord,shadows_official_site,resolution
+33e41d22-1dac-425b-a17d-c9b6affcda21,TA Atlanta South #268,GA,Jackson,true,true,TA Atlanta South,second production row for one official site. PROPOSED for guarded unpublish pending exact-ID verification — never deleted. The imported row is the site of record.
+74398e08-61e6-41b8-b3fd-e22c6c6cf6d0,TA Jacksonville South #248,FL,Saint Johns,false,false,TA Jacksonville South,second production row for one official site. PROPOSED for guarded unpublish pending exact-ID verification — never deleted. The imported row is the site of record.

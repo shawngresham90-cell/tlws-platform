@@ -186,7 +186,7 @@
         "scales",
         "status"
       ],
-      "stable_source_id_field": "site_number",
+      "stable_source_id_field": "Site ID (with Location ID as secondary)",
       "attribution": "Operator data — confirm redistribution terms.",
       "update_frequency": "monthly",
       "closure_signal": "status column, or absence between full exports",
@@ -196,7 +196,7 @@
         "canonical_name_city_state"
       ],
       "notes": "data/imports/locmaster20260725.xlsx is an older copy of unknown provenance. Treat it as stale and reconcile against a fresh official export rather than trusting it. A status column and a stable site_id are both ESSENTIAL for this source: without status, closures are undetectable except as absence between dated exports.",
-      "acquisition_status": "BLOCKED",
+      "acquisition_status": "COMPLETE — content-verified; official byte artifact pending commit",
       "attempted_on": "2026-07-27",
       "blocked_reason": "Every ta-petro.com and tatravelcenters.com host returns connect_rejected (403 to CONNECT) at this environment egress proxy, before TLS. Not a credentials problem. Whether TA publishes a developer API or requires credentials could not be determined from here.",
       "hosts_attempted": [
@@ -230,7 +230,50 @@
         "route_usable": 310,
         "states": 44,
         "finding": "The directory holds MORE TA-network rows (387) than the reference lists (354). Roughly 30 rows are duplicates, closures or non-network, and 383 of 387 are published."
-      }
+      },
+      "acquired_on": "2026-07-27",
+      "official_download_path": "https://www.ta-petro.com/location/ — \"Download Location Data\"",
+      "official_sha256": "a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7",
+      "file": "data/sources/ta-master/2026-07-27/locmaster.xlsx",
+      "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+      "record_count": 354,
+      "completeness_evidence": "All ten independently stated facts of the official 2026-07-27 download reproduce exactly from the committed copy: 354 locations, 97 columns, 44 states, TA 192 / TA Express 79 / Petro 77 / Goasis 4 / Thorntons 2, complete coordinates, 347 positive parking counts, 7 zero, 54,589 stated spaces, zero duplicate Site IDs, zero duplicate Location IDs.",
+      "execution_precondition": "Commit the official a0c612f0 artifact and content-diff it against the working copy before running any SQL in data/imports/ta-2026-07-27/.",
+      "columns_absent_from_export": [
+        "status",
+        "overnight_permission"
+      ],
+      "gates": {
+        "4a_directory_coverage": 348,
+        "4b_route_usable_coverage": 347,
+        "held_goasis_thorntons": 6,
+        "zero_parking_ta_brand": 1,
+        "note": "354 = 348 TA-brand + 6 held. 348 = 347 with positive official parking + 1 zero-parking (site 0347). Route-usable today: 306 of 347. Goasis and Thorntons stay separate and untouched unless explicitly authorized; zero-parking locations never count as truck-parking coverage."
+      },
+      "reconciliation": {
+        "exact_match": 306,
+        "safe_enrichment": 40,
+        "held": 6,
+        "zero_parking": 1,
+        "cross_brand_conflict": 1,
+        "missing_net_new": 0,
+        "db_side": {
+          "exact_match": 307,
+          "service_only": 46,
+          "safe_enrichment_targets": 40,
+          "duplicate": 2,
+          "probable_closure": 0
+        },
+        "match_order": [
+          "Site ID",
+          "prior-review exact production id",
+          "row name cites site number",
+          "street number / address",
+          "name tokens + city + state + zip5"
+        ],
+        "note": "Ambiguity refused, not guessed. One site, one row — enforced in ordered phases."
+      },
+      "package": "data/imports/ta-2026-07-27/"
     },
     {
       "source_id": "fhwa-truck-parking",
@@ -432,7 +475,7 @@
       "notes": "discovery_only means it may inform WHICH question to ask an authoritative source. It may never supply a value that lands in the directory. Contributes nothing to any gate line until a written licence exists."
     }
   ],
-  "obtain_next": "ta-master",
+  "obtain_next": "fhwa-truck-parking",
   "acquisition_log": [
     {
       "source_id": "loves-master",
@@ -459,6 +502,14 @@
       "status": "REGISTERED discovery_only",
       "date": "2026-07-27",
       "detail": "license_required; nothing fetched, scraped or purchased"
+    },
+    {
+      "source_id": "ta-master",
+      "status": "COMPLETE (content-verified; artifact pending commit)",
+      "date": "2026-07-27",
+      "records": 354,
+      "ta_brand": 348,
+      "held": 6
     }
   ],
   "agency_registry": "data/imports/nationwide-parking-2026-07-26/agency-registry.json"

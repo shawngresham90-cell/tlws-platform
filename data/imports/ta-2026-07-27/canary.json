@@ -1,0 +1,122 @@
+[
+  {
+    "db_id": "ff19357b-eb93-4483-9e4e-ebb40e07fe36",
+    "site_id": "0151",
+    "name": "TA Baltimore South #151",
+    "state": "MD",
+    "city": "Jessup",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 436,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "0a0c7a0d-2fb0-4201-a93f-b934e2617b5b",
+    "site_id": "0395",
+    "name": "Petro Kenly 95 #395",
+    "state": "NC",
+    "city": "Kenly",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 350,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "6bad6451-4f76-45b8-9a3b-4a1aad414f83",
+    "site_id": "0177",
+    "name": "TA Savannah (TravelCenters of America #177)",
+    "state": "GA",
+    "city": "Richmond Hill",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 222,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "7d74bb54-f22d-4594-8bc8-9d9710f88ac0",
+    "site_id": "0197",
+    "name": "TA Vero Beach #197",
+    "state": "FL",
+    "city": "Vero Beach",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 162,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "3e5fef77-bc72-4174-b45d-04f6096c8fde",
+    "site_id": "0033",
+    "name": "TA Earle (TravelCenters of America #033)",
+    "state": "AR",
+    "city": "Earle",
+    "fills": "lat+lng+parking_spaces",
+    "lat": 35.1364,
+    "lng": -90.488,
+    "parking_spaces": 137,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "b621363d-e4d4-40c6-a04d-09e950264b12",
+    "site_id": "0179",
+    "name": "TA Manning (TravelCenters of America #179)",
+    "state": "SC",
+    "city": "Manning",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 84,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "ebb8ad22-3283-4fc6-9918-66a8ef8ef9dd",
+    "site_id": "0486",
+    "name": "TA Express Stony Creek (former Davis Travel Center)",
+    "state": "VA",
+    "city": "Stony Creek",
+    "fills": "parking_spaces",
+    "lat": null,
+    "lng": null,
+    "parking_spaces": 80,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "8018aa5b-c428-465d-9809-fde4e03cd4a2",
+    "site_id": "0349",
+    "name": "Petro Stopping Center Kingston Springs #349",
+    "state": "TN",
+    "city": "Kingston Springs",
+    "fills": "lat+lng+parking_spaces",
+    "lat": 36.0824,
+    "lng": -87.0955,
+    "parking_spaces": 68,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "783d1792-e352-4fb3-bd2b-fc38951c19c8",
+    "site_id": "0010",
+    "name": "TA Gary #010 (Burr Street)",
+    "state": "IN",
+    "city": "Gary",
+    "fills": "lat+lng",
+    "lat": 41.573,
+    "lng": -87.4045,
+    "parking_spaces": null,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  },
+  {
+    "db_id": "dee17bfa-a6bf-4da0-8d48-95a9231de439",
+    "site_id": "0028",
+    "name": "TA Walton",
+    "state": "KY",
+    "city": "Walton",
+    "fills": "lat+lng",
+    "lat": 38.9172,
+    "lng": -84.6266,
+    "parking_spaces": null,
+    "note": "enrichment canary — no publication state changes anywhere in this package"
+  }
+]
