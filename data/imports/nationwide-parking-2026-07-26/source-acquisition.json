@@ -251,7 +251,7 @@
         "4b_route_usable_coverage": 347,
         "held_goasis_thorntons": 6,
         "zero_parking_ta_brand": 1,
-        "note": "354 = 348 TA-brand + 6 held. 348 = 347 with positive official parking + 1 zero-parking (site 0347). Route-usable after the 2026-07-27 execution + closeout: 344 of 347 by distinct official Site ID (0269 applied via exact-ID same-site exception; Atlanta duplicate unpublished; remaining: 0001 and 0142 with no address anchor, 0393 blocked by the Blue Beacon pin). Goasis and Thorntons stay separate and untouched unless explicitly authorized; zero-parking locations never count as truck-parking coverage."
+        "note": "354 = 348 TA-brand + 6 held. 348 = 347 with positive official parking + 1 zero-parking (site 0347). GATES CLOSED 2026-07-27: 4a = 348/348 and 4b = 347/347 by distinct official Site ID after three authorized rounds (37 enrichments; closeout 1: 0269 exact-ID exception + Atlanta dedup; closeout 2: Ashland/Richmond on official public-page evidence + Petro Florence relabel/publish with a one-record Blue Beacon exception). Goasis and Thorntons stay separate and untouched unless explicitly authorized; zero-parking locations never count as truck-parking coverage."
       },
       "reconciliation": {
         "exact_match": 306,

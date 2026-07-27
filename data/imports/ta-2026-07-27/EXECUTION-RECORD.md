@@ -147,3 +147,40 @@ scope digests, imported digests and the overnight count unchanged. The three
 remaining gaps are sites 0001, 0142 (no address anchor on either candidate
 row) and 0393 (Blue Beacon collision — unblocked by a one-record exception
 analogous to 0269's, if authorized).
+
+---
+
+# Closeout 2 addendum — 2026-07-27, the final three gaps
+
+Authorized with independent official TA public-page evidence replacing the
+address-only identity requirement (pages: ta-petro.com/location/va/ta-ashland/
+and /va/ta-richmond/), plus Correction B with a one-record exact-ID exception
+for the Blue Beacon pin. The sha-verified artifact reproduces every cited
+page fact and supplies the coordinates. See `CLOSEOUT2-MANIFEST.md` and
+`CLOSEOUT2-ROLLBACK.sql` (both committed before execution).
+
+- **Site 0001 TA Ashland — APPLIED & PUBLISHED** (`e36e07df…`): address
+  100 North Carter Rd, phone 804-798-6011, 37.7598/−77.4631, 183 spaces,
+  provenance metadata; published in the same transaction after uniqueness,
+  no-contradiction, cross-assignment, unmodified-collision and
+  route/detail-gate checks.
+- **Site 0142 TA Richmond — APPLIED & PUBLISHED** (`7a03c1f5…`): 10134
+  Lewistown Road, 804-798-6021, 37.7237/−77.4479, 317 spaces; same guards,
+  plus proof the Ashland row already held its own distinct 0001 identity
+  (no cross-assignment possible).
+- **Site 0393 Petro Florence — CORRECTED & PUBLISHED** (`beb05d53…`): false
+  Love's identity replaced (name/slug/detail_slug), stale Love's attribution
+  removed (loves.com website nulled; description identity token replaced,
+  remainder verbatim), official 34.2665/−79.7321 + 210 spaces + provenance
+  written; the one-record exception excluded only `33dd16f0…` (Blue Beacon,
+  re-proven published truck wash at its existing coordinate) and any third
+  pin still aborts. Kept unpublished through the correction audit, then
+  published in a separate guarded transaction. The Flowood Love's #420
+  insert was NOT performed.
+
+Final measured state: **Gate 4a 348/348 ✅ · Gate 4b 347/347 ✅** by distinct
+official Site ID (347 route-usable rows, 0 collision pairs). Published
+1164→1167, with_coords 561→564, pub_unmappable 608 unchanged;
+`control_minus_beb` digest `20f4d5e1…` byte-identical; imported digests,
+overnight count, Goasis/Thorntons (0) and deleted-in-scope (0) unchanged.
+**No remaining TA/Petro blocker.**

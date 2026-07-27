@@ -107,11 +107,14 @@ then run `HOLD-NAME-ANCHORED.sql`.
 
 ## Coverage — gates 4a and 4b (after the 2026-07-27 execution)
 
-| Gate | Universe | Before | Applied | Remaining |
+| Gate | Universe | Before | Final | Remaining |
 |---|--:|--:|--:|---|
-| **4a directory** | **348** | **347** | 347 | site 0393 — needs correction B (blocked: Blue Beacon collision, see closeout) |
-| **4b route-usable** | **347** | **306** sites | **344** (closeout applied 0269 via exact-ID exception; Atlanta dup unpublished) | 0001 + 0142 (no address anchor — quarantined) · 0393 (Blue Beacon collision — quarantined) |
+| **4a directory** | **348** | **347** | **348 ✅** (0393 relabeled to Petro Florence, closeout 2) | none |
+| **4b route-usable** | **347** | **306** sites | **347 ✅** by distinct official Site ID | none |
 
-Details and directory-wide movement in `COVERAGE.md`; the full execution
-audit, including the two constraint-vocabulary aborts and the TN quarantine,
-in `EXECUTION-RECORD.md`; the closeout in `CLOSEOUT-MANIFEST.md`.
+The line closed in three authorized rounds on 2026-07-27: 37 enrichments,
+closeout 1 (0269 exact-ID exception + Atlanta dedup), closeout 2 (Ashland /
+Richmond on official public-page evidence; Petro Florence relabel + publish
+with a one-record Blue Beacon exception). Details: `COVERAGE.md`,
+`EXECUTION-RECORD.md` (both addenda), `CLOSEOUT-MANIFEST.md`,
+`CLOSEOUT2-MANIFEST.md`.

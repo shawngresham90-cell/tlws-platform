@@ -25,20 +25,21 @@ admit it). See `EXECUTION-RECORD.md` for the full audit.
 **Route-usable** means all four at once: in the directory, published,
 authoritative coordinate, positive official space count.
 
-## Gate 4a — directory coverage: 347 of 348 today
+## Gate 4a — directory coverage: **348 of 348 ✅**
 
-Every TA-brand site has its own production row except **site 0393
-Petro Florence**, whose row exists but is mislabeled "Love's Travel Stop #420"
-(see `CORRECTIONS-PROPOSALS.sql` §B). Correction B takes 4a to **348 of 348**.
+Every TA-brand site has its own correctly-labeled production row. The last
+one — site 0393, mislabeled "Love's Travel Stop #420" — was relabeled to
+Petro Florence in closeout 2 (2026-07-27) under Correction B's guards.
 
-## Gate 4b — route-usable: was 306 of 347 → **343 applied 2026-07-27**
+## Gate 4b — route-usable: 306 → **347 of 347 ✅** (2026-07-27, three rounds)
 
 | Step | Route-usable sites | Movement |
 |---|--:|---|
 | Before execution | **306** | 303 imported + TA Cartersville #146, TA Caryville, TA Lake Park #249 *(the published TA Atlanta South #268 duplicate also passes the filter but is the same site as its imported twin — 307 rows, 306 sites)* |
 | **After execution (applied)** | **343** | 24 published rows gained their first coordinate, 11 gained their official space count, 2 gained both — 37 rows total |
-| **After closeout (2026-07-27, separate authorization)** | **344** | 0269 applied via a one-record exact-ID same-site exception; the Atlanta South duplicate unpublished (published 1165→1164, zero truck-stop pin collisions remain) |
-| Remaining | 3 | sites 0001 + 0142 (exact-address verification impossible — both candidate rows have `address = NULL`), 0393 (correction B blocked by the published Blue Beacon Truck Wash pin at 3003 TV Rd — needs its own one-record exception) |
+| **After closeout 1 (2026-07-27, separate authorization)** | **344** | 0269 applied via a one-record exact-ID same-site exception; the Atlanta South duplicate unpublished (published 1165→1164, zero truck-stop pin collisions remain) |
+| **After closeout 2 (2026-07-27, official public-page evidence)** | **347 ✅** | 0001 TA Ashland + 0142 TA Richmond enriched and published (page evidence bound each name to its distinct address/phone/coordinate); 0393 relabeled Petro Florence, stale Love's attribution removed, published after audit under a one-record Blue Beacon exception |
+| Remaining | **0** | **Gate 4b closed: 347 of 347 by distinct official Site ID** |
 
 All 38 enrichment targets were **already published** — live pages a driver
 can reach that had no map pin or no capacity figure. The enrichment wrote no
@@ -66,9 +67,12 @@ space-count fills (11 spaces-only + 2 with coordinates) put 2,191 official
 stated spaces onto published pages; the 26 applied coordinate fills made
 4,503 stated spaces mappable for the first time (measured post-execution).
 
-## What still does not pass
+## Both gates pass
 
-Gate 4a passes only at 348/348 — after correction B. Gate 4b passes only at
-347/347 — after HOLD verification, correction B, the publication decisions for
-the three unpublished rows, **and** a decision on quarantined site 0269. Each
-of those steps is a separate authorization, and none has been given.
+Gate 4a = **348/348** and Gate 4b = **347/347**, measured by distinct
+official Site ID with zero duplicate published pins, after three separately
+authorized rounds on 2026-07-27 (enrichment, closeout 1, closeout 2). The
+line's only remaining TA-network work is optional hygiene, not coverage:
+the two unpublished duplicate records (`33e41d22…`, `74398e08…`) stay
+quarantined by design, and the Love's Flowood #420 insert belongs to the
+Love's package authorization.

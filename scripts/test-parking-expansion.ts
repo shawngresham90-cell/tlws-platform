@@ -518,7 +518,14 @@ const rows: Row[] = parseCsv(csv.trim());
   ] as const) {
     check(`gate requires ${label}`, pattern.test(gate), gate.match(/\|.*%.*\|/g)?.slice(0, 8));
   }
-  check('no gate line currently passes', !/\|\s*✅\s*\|/.test(gate));
+  /* 4a and 4b closed 2026-07-27 — the first (and only) passing lines. */
+  check(
+    'exactly two gate lines pass: 4a and 4b',
+    (gate.match(/\|\s*✅\s*\|/g) ?? []).length === 2 &&
+      /\*\*4a\*\*[^\n]*✅/.test(gate) &&
+      /\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
+  check('the gate still reads NOT READY overall', /NOT READY/.test(gate));
 
   // The preserved baseline must keep reporting the real numbers.
   for (const [label, pattern] of [
@@ -874,7 +881,10 @@ const rows: Row[] = parseCsv(csv.trim());
     'completeness is flagged as unproven, not asserted',
     /should not be marked 100 % until Shawn confirms/i.test(findings.replace(/\*\*/g, '')),
   );
-  check('the gate still reports that no line passes', /No gate line passes/.test(gate));
+  check(
+    'the gate reads NOT READY with only the TA lines passed',
+    /NOT READY/.test(gate) && /4a and 4b[^\n]*✅/.test(gate),
+  );
   check(
     'the preserved baseline still reads Tier A = 0',
     /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/.test(gate),
@@ -1810,12 +1820,17 @@ const rows: Row[] = parseCsv(csv.trim());
     'gate line 4b is route-usable coverage',
     /\*\*4b\*\*[^\n]*route-usable coverage/.test(gate),
   );
-  check('TA 4a shows the mislabeled-row deficit', /\*\*4a\*\*[^\n]*347 represented/.test(gate));
+  check('TA 4a passed at full representation', /\*\*4a\*\*[^\n]*348 represented/.test(gate));
   check(
-    'neither TA gate is marked passed',
-    !/\*\*4a\*\*[^\n]*✅/.test(gate) && !/\*\*4b\*\*[^\n]*✅/.test(gate),
+    'both TA gates are marked passed, and only they are',
+    /\*\*4a\*\*[^\n]*✅/.test(gate) &&
+      /\*\*4b\*\*[^\n]*✅/.test(gate) &&
+      (gate.match(/\|\s*✅\s*\|/g) ?? []).length === 2,
   );
-  check('no gate line passes', !/\|\s*✅\s*\|/.test(gate));
+  check(
+    '4b passes by distinct official Site ID',
+    /\*\*4b\*\*[^\n]*distinct official Site ID/.test(gate),
+  );
 
   check(
     'the gate defines the two measurements separately',
@@ -2208,8 +2223,50 @@ const rows: Row[] = parseCsv(csv.trim());
   const recon = ta.reconciliation as Record<string, unknown>;
   check('manifest reconciliation shows 0 missing', recon.missing_net_new === 0);
   check(
-    'gate: TA acquisition complete does not mark 4a/4b passed',
-    !/\*\*4a\*\*[^\n]*✅/.test(gate) && !/\*\*4b\*\*[^\n]*✅/.test(gate),
+    'gate: 4a and 4b are the passing lines',
+    /\*\*4a\*\*[^\n]*✅/.test(gate) && /\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
+
+  /* ---- closeout 2: page-evidence identities, one-record exceptions ---- */
+  const c2Man = readFileSync(`${P}/CLOSEOUT2-MANIFEST.md`, 'utf8');
+  const c2Rb = readFileSync(`${P}/CLOSEOUT2-ROLLBACK.sql`, 'utf8');
+  check(
+    'closeout2 manifest binds each VA site to its official page identity',
+    /ta-petro\.com\/location\/va\/ta-ashland\//.test(c2Man) &&
+      /100 North Carter Rd/.test(c2Man) &&
+      /804-798-6011/.test(c2Man) &&
+      /10134 Lewistown Road/.test(c2Man) &&
+      /804-798-6021/.test(c2Man),
+  );
+  check(
+    'closeout2 manifest carries both official coordinates from the artifact',
+    /37\.7598/.test(c2Man) && /37\.7237/.test(c2Man),
+  );
+  check(
+    'closeout2 removed stale Love’s attribution without inventing a URL',
+    /removed, no invented replacement/.test(c2Man),
+  );
+  check(
+    'closeout2 records both gates closed by distinct Site ID',
+    /348\/348/.test(c2Man) && /347\/347/.test(c2Man) && /distinct\s+official Site ID/i.test(c2Man),
+  );
+  check(
+    'closeout2 rollback restores the exact prior Florence identity',
+    /Love''s Travel Stop #420/.test(c2Rb) &&
+      /loves\.com\/locations\/420/.test(c2Rb) &&
+      /name = 'Petro Florence'/.test(c2Rb),
+  );
+  check(
+    'closeout2 rollback is value-matched per site',
+    /address = '100 North Carter Rd' and phone = '804-798-6011'/.test(c2Rb) &&
+      /address = '10134 Lewistown Road' and phone = '804-798-6021'/.test(c2Rb),
+  );
+  const execRec2 = readFileSync(`${P}/EXECUTION-RECORD.md`, 'utf8');
+  check(
+    'execution record closes the line with no remaining blocker',
+    /No remaining TA\/Petro blocker/.test(execRec2) &&
+      /347\/347/.test(execRec2) &&
+      /348\/348/.test(execRec2),
   );
 }
 

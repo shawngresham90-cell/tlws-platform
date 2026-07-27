@@ -1,11 +1,13 @@
 # Launch gate — public directory and trip planner
 
-**Status: NOT READY. No gate line passes.** All three operator lines are now in
-motion as of 2026-07-27 — Love's, Pilot / Flying J / ONE9, and TA / Petro /
-TA Express. All three sources are **complete and verified**, but that is
-acquisition, not coverage: every operator database gate is still open and
-nothing has been written to production. The remaining lines need agency data
-that is unreachable from this environment.
+**Status: NOT READY.** The gate's first two lines passed on 2026-07-27:
+**4a and 4b — TA / Petro / TA Express — are ✅ at 348/348 and 347/347**,
+reconciled to the sha-verified official master and counted by distinct
+official Site ID. Every other line is still open: Love's and Pilot are
+complete-and-verified acquisitions with unexecuted packages (acquisition is
+not coverage), and the remaining lines need agency data unreachable from
+this environment. There is no partial launch; NOT READY stands until every
+line passes.
 
 This is the formal, binding coverage gate for launching the public directory
 and trip planner. It supersedes any earlier informal readiness language. A
@@ -42,8 +44,8 @@ Every line must pass. There is no partial launch.
 | **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
 | **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | 101 reconciled, 719 prepared, **0 applied** | ⏳ |
 | **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | 0 route-usable, 803 prepared, **0 applied** | ⏳ |
-| **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **347 represented** — 1 mislabeled row pending correction | ⏳ |
-| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **344 route-usable** (by distinct Site ID) — 37 enrichments + closeout applied 2026-07-27 (0269 via exact-ID same-site exception; Atlanta duplicate unpublished); 3 remain: 0001, 0142, 0393 | ⏳ |
+| **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **348 represented** — every official site has its own correctly-labeled row (0393 relabel applied 2026-07-27) | ✅ |
+| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **347 route-usable by distinct official Site ID** — 37 enrichments + closeouts applied 2026-07-27; zero duplicate pins | ✅ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
@@ -160,7 +162,7 @@ whatever the acquisition percentage says.
 |---|--:|--:|--:|
 | **2 — Love's** | **100 %** (731 held, 615 U.S. Travel Stops) | **0** of 604 | 604 |
 | **3 — Pilot / Flying J / ONE9** | **100 %** (875 held, 820 U.S.) | **0** of 803 | 803 |
-| **4 — TA / Petro / TA Express** | **100 %** (354 held; 348 TA-brand) | **344** of 347 | 3 |
+| **4 — TA / Petro / TA Express** | **100 %** (354 held; 348 TA-brand) | **347** of 347 | **0** |
 
 TA's shape is the inverse of the other two, because most of its data landed on
 2026-07-25: 304 of its sites already have published, digest-verified rows. The
@@ -176,10 +178,13 @@ by the coordinate-collision guard).
 **Acquisition coverage without route-usable coverage is a file on a disk.
 Route-usable coverage without acquisition coverage is unverified claims in
 front of drivers.** With TA's master in hand, line 4 has become the program's
-best line: 99 % route-usable (344 of 347) after the 2026-07-27 enrichment run
-and closeout (site 0269 applied via an exact-ID same-site exception; the
-Atlanta South duplicate unpublished — coverage now counts by distinct
-official Site ID with zero double-counted pins).
+first CLOSED line: **100 % route-usable (347 of 347)** after the 2026-07-27
+enrichment run and two closeouts. The last three sites landed on official
+TA public-page evidence (0001 TA Ashland, 0142 TA Richmond — each page
+binding a distinct name to a distinct address, phone and coordinate) and a
+one-record exact-ID collision exception for the co-located Blue Beacon
+truck wash beside Petro Florence (0393). Coverage counts by distinct
+official Site ID with zero double-counted pins.
 
 ### Weigh stations are not parking
 
