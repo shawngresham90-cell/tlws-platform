@@ -9,9 +9,13 @@
 -- Every live row that is neither a Pilot-network row nor created by this
 -- import. This digest MUST be identical before and after all three phases.
 --
--- MEASURED 2026-07-27, read-only:
+-- MEASURED 2026-07-27 AFTER the TA merge (the fresh pre-execution baseline —
+-- the TA work legitimately moved this digest; the Pilot in-scope digests
+-- below are byte-identical to the committed snapshot, proving the TA rounds
+-- touched zero Pilot-network rows):
 --   out_of_scope_rows 1334
---   control_digest    576f641146dfdb8ddb0de518acaa100d
+--   control_digest    4b5aed26cb6cc4ce1597b53d021a4ef4
+-- (superseded pre-TA value: 576f641146dfdb8ddb0de518acaa100d)
 select count(*) as out_of_scope_rows,
        md5(string_agg(md5(to_jsonb(l)::text), '' order by l.id)) as control_digest
 from public.locations l
@@ -40,8 +44,13 @@ where l.deleted_at is null
 -- ===========================================================================
 -- C. THE 138 PRE-EXISTING ROWS THIS IMPORT MUST NOT TOUCH
 -- ===========================================================================
--- Everything Pilot-related that is NOT an enrichment target. This digest must
--- be identical before and after. It covers the 5 conflicting records, the 12
+-- Everything Pilot-related that is NOT a coordinate-enrichment target (the
+-- filter keys on geocode_source='batch-csv', which only coordinate fills
+-- write). Pre-execution: 222 rows, zero carrying batch-csv (measured fresh
+-- 2026-07-27 post-TA-merge). After ENRICH: 140 rows remain in this set —
+-- 138 truly untouched plus the 2 spaces-only targets (#403, #1015-class),
+-- which never receive coordinate metadata and are audited BY VALUE against
+-- ENRICHMENT-PLAN.csv instead. It covers the 5 conflicting records, the 12
 -- probable-closure candidates, the 92 colocated service rows and the rest.
 select count(*) as untouched_rows,
        md5(string_agg(md5(to_jsonb(l)::text), '' order by l.id)) as untouched_digest
@@ -75,14 +84,22 @@ where l.deleted_at is null
 -- ===========================================================================
 -- E. DIRECTORY-WIDE COUNTERS
 -- ===========================================================================
--- Before, measured 2026-07-27:
---   total_live 1556 · published 1165 · with_coords 534 ·
---   published_unmappable 635 · featured 0 · indexable 0 · soft_deleted 0
+-- Before, measured fresh 2026-07-27 AFTER the TA merge:
+--   total_live 1556 · published 1167 · with_coords 564 ·
+--   published_unmappable 608 · featured 0 · indexable 0 · soft_deleted 0
 --
--- After all three phases, expected:
---   total_live 2275 (+719) · published 1870 (+705) · with_coords 1335 (+801)
---   published_unmappable 635 (UNCHANGED — every imported row has a coordinate)
---   featured UNCHANGED · indexable UNCHANGED
+-- As prepared, all three phases were expected to land at 2275 / 1872 / 1365 /
+-- 551. Execution quarantined 10 inserts (all positive-parking) and 4
+-- enrichment targets (guards intact — see EXECUTION-RECORD.md and
+-- QUARANTINE-EXECUTION.csv), so the authoritative measured AFTER values are:
+--   total_live 2265 (+709 inserts) · published 1862 (+695 — only inserted
+--   positive-parking rows are published; enriched pre-existing rows keep
+--   their publication state) · with_coords 1351 (+709 inserts +78 coord
+--   fills) · published_unmappable 555 (−53: the published coordless
+--   enrichment targets gain their first pin; every inserted row arrives
+--   with a coordinate) · featured 0 · indexable 0 · soft_deleted 0
+-- MEASURED 2026-07-27 post-execution: 2265 / 1862 / 1351 / 555 / 0 / 0 / 0,
+-- with the control digest and third-party digest byte-identical.
 select count(*)                                             as total_live,
        count(*) filter (where is_published)                 as published,
        count(*) filter (where lat is not null)              as with_coords,
