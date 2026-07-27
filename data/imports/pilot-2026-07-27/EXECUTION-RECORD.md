@@ -218,3 +218,26 @@ Brand identity was preserved verbatim throughout; nothing was renamed to
 `overnight_parking = false`, which means **not confirmed**, never
 "prohibited" — and no imported row may be offered as overnight or HOS-rest
 parking until an authoritative source states it.
+
+---
+
+## Addendum, 2026-07-27 — closeout Phase A stopped at the count check
+
+A follow-up authorization to publish "the 29 verified matched rows" was
+prepared and then **stopped before any write**, exactly as it instructed
+("Stop if the expected set is not exactly 29"): the measured eligible set is
+**25**. The other 4 unpublished matched rows are the enrichment-quarantined
+records (#1330 AR, #1550 AL, #353 KY, #95 FL) — coordless, never enriched,
+and excluded by the authorization's own "not quarantined" criterion. The §6
+gap wording above ("29 matched positive-parking sites … now hold coordinates
+and/or space counts") over-stated this: only 25 of the 29 hold coordinates.
+
+Prepared and committed, awaiting a corrected 25-row authorization:
+`MATCHED-25-MANIFEST.md` (verified manifest and stop record),
+`PUBLISH-MATCHED-25.sql` (guarded canary + per-state package, publish-only),
+`PUBLISH-MATCHED-25-ROLLBACK.sql` (per-row value-matched reverse). If the 25
+publish: published 1,862 → 1,887 and Gate 3b 763 → **788**/803 — not the
+1,891 / 792 stated for 29.
+
+The read-only review of all 14 quarantined records plus conflicting record
+#749 VA is in `QUARANTINE-REVIEW.md`; no quarantined row was modified.
