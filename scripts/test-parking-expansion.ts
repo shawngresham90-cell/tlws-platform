@@ -500,7 +500,8 @@ const rows: Row[] = parseCsv(csv.trim());
     ["Love's 2b overnight 100% of 604", /overnight-parking coverage\*\* \|\s*\*\*100 % of 604\*\*/],
     ['Pilot 3a directory 100% of 820', /U\.S\. directory coverage\*\* \|\s*\*\*100 % of 820\*\*/],
     ['Pilot 3b parking 100% of 803', /U\.S\. truck-parking coverage\*\* \|\s*\*\*100 % of 803\*\*/],
-    ['TA/Petro/TA Express 100%', /TA, Petro and TA Express \|\s*\*\*100 %\*\*/],
+    ['TA 4a directory 100%', /TA Express — \*\*directory coverage\*\* \|\s*\*\*100 %\*\*/],
+    ['TA 4b route-usable 100%', /TA Express — \*\*route-usable coverage\*\* \|\s*\*\*100 %\*\*/],
     ['rest areas >= 95%', /rest areas, welcome centers, service plazas \|\s*\*\*≥ 95 %\*\*/],
     [
       'weigh stations 100% separate',
@@ -550,7 +551,17 @@ const rows: Row[] = parseCsv(csv.trim());
     'statedot-restareas',
     'weigh-stations',
   ];
-  check('all seven sources are listed', json.sources.length === 7, json.sources.length);
+  // Seven gate-bearing sources, plus AllStays which is registered discovery_only
+  // and deliberately contributes to no gate line.
+  const gateSources = json.sources.filter(
+    (s: { contributes_to_gate?: boolean }) => s.contributes_to_gate !== false,
+  );
+  check('all seven gate-bearing sources are listed', gateSources.length === 7, gateSources.length);
+  check(
+    'AllStays is registered but contributes to no gate',
+    json.sources.length === 8,
+    json.sources.length,
+  );
   for (const id of REQUIRED) {
     check(
       `source ${id} is present`,
@@ -587,8 +598,8 @@ const rows: Row[] = parseCsv(csv.trim());
   }
 
   check(
-    'priorities are unique 1..7',
-    new Set(json.sources.map((s: { priority: number }) => s.priority)).size === 7,
+    'priorities are unique across all registered sources',
+    new Set(json.sources.map((s: { priority: number }) => s.priority)).size === json.sources.length,
   );
   check("Love's is priority 1 and named as obtain-first", json.obtain_first === 'loves-master');
   check(
@@ -1421,6 +1432,397 @@ const rows: Row[] = parseCsv(csv.trim());
     Boolean(acq.rules.no_invented_overnight_permission),
   );
   check('a rule states absence is not closure', Boolean(acq.rules.absence_is_not_closure));
+}
+
+/* ==========================================================================
+ * TA / PETRO / TA EXPRESS — acquisition blocked. Nothing may be approved from
+ * a reference file of unknown provenance, and no live row may be touched on
+ * its evidence.
+ * ======================================================================== */
+{
+  const S = 'data/sources/ta-master';
+  const blocked = readFileSync(`${S}/ACCESS-BLOCKED.md`, 'utf8');
+  const request = readFileSync(`${S}/DATA-ACCESS-REQUEST.md`, 'utf8');
+  const gapMd = readFileSync(`${S}/2026-07-27/GAP-ANALYSIS.md`, 'utf8');
+  const acct = parseCsv(readFileSync(`${S}/2026-07-27/REFERENCE-ACCOUNTING.csv`, 'utf8'));
+  const stateGap = parseCsv(readFileSync(`${S}/2026-07-27/STATE-GAP.csv`, 'utf8'));
+  const refProfile = JSON.parse(readFileSync(`${S}/2026-07-27/reference-profile.json`, 'utf8'));
+
+  /* ---- complete accounting: every reference row lands in exactly one bucket */
+  check('354 reference rows accounted for', acct.length === 354, acct.length);
+  check(
+    'every reference row has a disposition',
+    acct.every((r) => r.disposition !== ''),
+  );
+  check(
+    'every reference row has a reason',
+    acct.every((r) => r.reason !== ''),
+  );
+  const VALID = new Set([
+    'approved',
+    'duplicate',
+    'conflict',
+    'held',
+    'unsupported',
+    'non-us',
+    'service-only',
+    'quarantined',
+  ]);
+  check(
+    'every disposition is one of the eight buckets',
+    acct.every((r) => VALID.has(r.disposition)),
+  );
+
+  /* THE CENTRAL INVARIANT. No source of record means nothing is approved. */
+  check(
+    'ZERO reference rows are approved',
+    acct.filter((r) => r.disposition === 'approved').length === 0,
+    acct.filter((r) => r.disposition === 'approved').length,
+  );
+  check('the profile records approved = 0', refProfile.accounting.approved === 0);
+  check(
+    'the reference file is labelled stale, not a source of record',
+    /STALE REFERENCE ONLY/.test(refProfile.status) && refProfile.may_be_source_of_record !== true,
+  );
+  check('the profile records unknown provenance', /unknown/i.test(refProfile.provenance));
+
+  check('347 unsupported', acct.filter((r) => r.disposition === 'unsupported').length === 347);
+  check('7 service-only', acct.filter((r) => r.disposition === 'service-only').length === 7);
+  check(
+    'every service-only row states no truck parking',
+    acct
+      .filter((r) => r.disposition === 'service-only')
+      .every((r) => Number(r.truck_parking_spaces || 0) === 0),
+  );
+  check(
+    'every unsupported row is refused for lack of an authoritative source',
+    acct
+      .filter((r) => r.disposition === 'unsupported')
+      .every((r) => /no authoritative source of record/.test(r.reason)),
+  );
+
+  /* ---- the analysis produces nothing executable ---- */
+  check(
+    'the gap analysis produces no SQL',
+    /produces no SQL/.test(gapMd) || /This is not an import/.test(gapMd),
+  );
+  check(
+    'the excess directory rows are explicitly NOT actioned',
+    /No row is unpublished, corrected or deleted on this basis/.test(gapMd),
+  );
+  check(
+    'the directory-holds-more finding is recorded',
+    /387/.test(gapMd) && /354/.test(gapMd) && /\+33/.test(gapMd),
+  );
+
+  /* ---- per-state gap arithmetic ---- */
+  check('44 states in the gap table', stateGap.length === 44, stateGap.length);
+  check('db row total is 387', stateGap.reduce((a, r) => a + Number(r.db_rows), 0) === 387);
+  check(
+    'route-usable total is 310',
+    stateGap.reduce((a, r) => a + Number(r.db_route_usable), 0) === 310,
+  );
+  check(
+    'row_delta is db minus reference on every state',
+    stateGap.every((r) => Number(r.row_delta) === Number(r.db_rows) - Number(r.reference_rows)),
+  );
+  check(
+    'route_usable_shortfall is never negative',
+    stateGap.every((r) => Number(r.route_usable_shortfall) >= 0),
+  );
+  check(
+    'Maryland has zero route-usable TA rows',
+    stateGap.find((r) => r.state === 'MD')?.db_route_usable === '0',
+  );
+
+  /* ---- the blocked-access record ---- */
+  check(
+    'the block is recorded as a policy denial, not a credentials problem',
+    /Not a credentials\s*\n?problem/.test(blocked) || /Not a credentials problem/.test(blocked),
+  );
+  check(
+    'all ten attempted hosts are listed',
+    (blocked.match(/connect_rejected/g) ?? []).length >= 10,
+  );
+  check(
+    'scraping ta-petro.com is explicitly forbidden',
+    /No scraping of `ta-petro\.com`/.test(blocked),
+  );
+  check(
+    'the official access path is documented',
+    /developer.*portal/i.test(blocked) && /fleet/i.test(blocked),
+  );
+  check(
+    'a status column is called out as essential',
+    /status/.test(blocked) && /closures are detectable/.test(blocked),
+  );
+
+  /* ---- the request exists and has not been sent ---- */
+  check('the TA data-access request is marked not sent', /\*\*Not sent\.\*\*/.test(request));
+  check('the request asks for a stable site id', /site number or store ID/i.test(request));
+  check('the request asks for redistribution terms', /Redistribution terms/i.test(request));
+  check('the request keeps the three brands distinct', /kept distinct/.test(request));
+}
+
+/* ==========================================================================
+ * ALLSTAYS — discovery_only, license_required. Nothing fetched or copied.
+ * ======================================================================== */
+{
+  const readme = readFileSync('data/sources/allstays/README.md', 'utf8');
+  const licence = readFileSync('data/sources/allstays/LICENSING-REQUEST.md', 'utf8');
+
+  check('AllStays is classified discovery_only', /`discovery_only`/.test(readme));
+  check('AllStays is marked license_required', /`license_required`/.test(readme));
+  check('AllStays authorization is NOT held', /NOT HELD/.test(readme));
+  check(
+    'AllStays may not be a source of record',
+    /May be used as a source of record \| \*\*No\*\*/.test(readme),
+  );
+  check('AllStays may not be scraped', /May be scraped \| \*\*No\*\*/.test(readme));
+  check(
+    'the paid PDF may not be bought for reuse',
+    /Paid PDF may be purchased for reuse \| \*\*No\*\*/.test(readme),
+  );
+  check(
+    'nothing has been fetched from AllStays',
+    /Nothing from AllStays has been fetched, downloaded, scraped or copied/.test(readme),
+  );
+  for (const forbidden of [
+    'names',
+    'coordinates',
+    'parking counts',
+    'amenities',
+    'exclusive locations',
+  ]) {
+    check(
+      `copying ${forbidden} is forbidden`,
+      new RegExp(`\\*\\*${forbidden}\\*\\*|${forbidden}`).test(readme),
+    );
+  }
+  check('the licensing request is marked not sent', /\*\*Not sent\.\*\*/.test(licence));
+  check('the licensing request asks for direction of travel', /direction of travel/i.test(licence));
+  check('the licensing request asks for update rights', /update rights/i.test(licence));
+  check(
+    'declining is handled honestly as a product gap, not a launch blocker',
+    /not a\s+launch blocker/i.test(licence),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    rules: Record<string, string>;
+    obtain_next: string;
+  };
+  const all = acq.sources.find((s) => s.source_id === 'allstays') as Record<string, unknown>;
+  check('AllStays is in the machine-readable registry', Boolean(all));
+  check('registry marks it discovery_only', all.classification === 'discovery_only');
+  check('registry marks authorization not held', all.authorization_held === false);
+  check('registry forbids source-of-record use', all.may_be_source_of_record === false);
+  check('registry forbids scraping', all.may_be_scraped === false);
+  check('registry records it contributes to no gate', all.contributes_to_gate === false);
+  check('registry carries explicit prohibitions', (all.prohibitions as string[]).length >= 5);
+  check(
+    'a rule bars discovery_only sources from supplying values',
+    Boolean(acq.rules.discovery_only_sources_never_supply_values),
+  );
+  check(
+    'a rule states buying a product is not a licence',
+    Boolean(acq.rules.buying_a_product_is_not_a_licence),
+  );
+  check(
+    'a rule bars a stale reference from being a source',
+    Boolean(acq.rules.stale_reference_is_not_a_source),
+  );
+
+  const ta = acq.sources.find((s) => s.source_id === 'ta-master') as Record<string, unknown>;
+  check('TA acquisition status is BLOCKED', ta.acquisition_status === 'BLOCKED');
+  check('TA records ten attempted hosts', (ta.hosts_attempted as string[]).length === 10);
+  check(
+    'TA stale reference records 0 approved rows',
+    (ta.stale_reference as Record<string, number>).approved_rows === 0,
+  );
+  check('the next source to obtain is TA', acq.obtain_next === 'ta-master');
+}
+
+/* ==========================================================================
+ * AGENCY REGISTRY — ranked, computed, corridor-prioritised. Gate lines 5 & 6.
+ * ======================================================================== */
+{
+  const reg = JSON.parse(readFileSync(`${DIR}/agency-registry.json`, 'utf8')) as {
+    states: Record<string, unknown>[];
+    federal: Record<string, unknown>[];
+    rules: Record<string, string>;
+    corridor_published_baseline: Record<string, number>;
+    network_status: string;
+  };
+  const md = readFileSync(`${DIR}/AGENCY-REGISTRY.md`, 'utf8');
+
+  check('39 states ranked', reg.states.length === 39, reg.states.length);
+  check(
+    'every state has an agency named',
+    reg.states.every((s) => String(s.agency).length > 3),
+  );
+  check(
+    'every state carries at least one priority corridor',
+    reg.states.every((s) => (s.priority_corridors as string[]).length >= 1),
+  );
+  check(
+    'ranks are 1..39 with no gaps',
+    reg.states
+      .map((s) => s.rank)
+      .sort((a, b) => Number(a) - Number(b))
+      .every((r, i) => r === i + 1),
+  );
+  check(
+    'ranking is monotonic in score',
+    reg.states.every((s, i) => i === 0 || Number(reg.states[i - 1].score) >= Number(s.score)),
+  );
+
+  /* I-95 must dominate: it publishes the fewest mappable parking rows. */
+  check(
+    'I-95 has the lowest published baseline',
+    Math.min(...Object.values(reg.corridor_published_baseline)) ===
+      reg.corridor_published_baseline['I-95'],
+  );
+  check('I-95 baseline is 4', reg.corridor_published_baseline['I-95'] === 4);
+  check(
+    'every tier-1 state carries more than one priority corridor',
+    reg.states
+      .filter((s) => s.tier === 1)
+      .every((s) => (s.priority_corridors as string[]).length > 1),
+    reg.states
+      .filter((s) => s.tier === 1 && (s.priority_corridors as string[]).length <= 1)
+      .map((s) => s.state),
+  );
+  // The property that matters: I-95 is the starved corridor, so no state that
+  // carries it may be demoted below tier 2.
+  const i95States = reg.states.filter((s) => (s.priority_corridors as string[]).includes('I-95'));
+  check('16 states carry I-95', i95States.length === 16, i95States.length);
+  check(
+    'no I-95 state is ranked below tier 2',
+    i95States.every((s) => Number(s.tier) <= 2),
+    i95States.filter((s) => Number(s.tier) > 2).map((s) => s.state),
+  );
+  check(
+    'every tier-2 state carries I-95 or more than one corridor',
+    reg.states
+      .filter((s) => s.tier === 2)
+      .every(
+        (s) =>
+          (s.priority_corridors as string[]).includes('I-95') ||
+          (s.priority_corridors as string[]).length > 1,
+      ),
+  );
+
+  /* A tie must never be split across a tier boundary. */
+  const byScore = new Map<number, Set<number>>();
+  for (const s of reg.states) {
+    const k = Number(s.score);
+    byScore.set(k, (byScore.get(k) ?? new Set()).add(Number(s.tier)));
+  }
+  check(
+    'no tied score is split across two tiers',
+    [...byScore.values()].every((t) => t.size === 1),
+  );
+
+  /* Weigh stations stay a separate category and a separate request. */
+  check(
+    'every state records a weigh-station custodian',
+    reg.states.every((s) => String(s.weigh_station_custodian).length > 3),
+  );
+  check(
+    'weigh stations are required as a SEPARATE category',
+    reg.states.every((s) =>
+      (s.datasets_required as string[]).some((d) => /SEPARATE category/.test(d)),
+    ),
+  );
+  check(
+    'the weigh-station rule is machine-readable',
+    /never counted as truck parking/.test(reg.rules.weigh_station_is_not_parking),
+  );
+  check(
+    'truck_parking_permitted is a required field',
+    reg.states.every((s) =>
+      (s.required_fields as string[]).some((f) => /truck_parking_permitted/.test(f)),
+    ),
+  );
+
+  /* Toll authorities are separate custodians — the northeast depends on it. */
+  const withToll = reg.states.filter((s) => (s.toll_authorities as string[]).length > 0);
+  check('toll authorities recorded for 10 states', withToll.length === 10, withToll.length);
+  check(
+    'a rule states toll authorities are separate custodians',
+    Boolean(reg.rules.toll_authorities_are_separate_custodians),
+  );
+
+  /* Nothing here claims to have been verified. */
+  check(
+    'the registry records that every agency host is blocked',
+    /BLOCKED/.test(reg.network_status),
+  );
+  check('no URL is claimed as verified', /No URL here was fetched or verified/.test(md));
+  check(
+    'every state records the access block',
+    reg.states.every((s) => /BLOCKED/.test(String(s.access_status))),
+  );
+
+  /* FHWA is asked first but loses to state data on conflict. */
+  check('the federal layer is listed first', reg.federal.length === 1 && reg.federal[0].rank === 0);
+  check(
+    'state DOT data wins over FHWA on conflict',
+    /State DOT data WINS over FHWA/.test(String(reg.federal[0].conflict_rule)),
+  );
+
+  /* The rules that bind every intake. */
+  for (const r of [
+    'no_inferred_coordinates',
+    'no_invented_attributes',
+    'directional_pairs_stay_separate',
+  ]) {
+    check(`registry carries rule ${r}`, Boolean(reg.rules[r]));
+  }
+
+  /* Markdown mirrors the JSON — no drift between the two. */
+  for (const s of reg.states)
+    check(
+      `${s.state} appears in the markdown`,
+      new RegExp(`\\| \\*\\*${s.state}\\*\\* \\|`).test(md),
+    );
+}
+
+/* ==========================================================================
+ * LAUNCH GATE — acquisition coverage and route-usable coverage are two
+ * separate measurements, and line 4 splits like 2 and 3.
+ * ======================================================================== */
+{
+  check('gate line 4a is directory coverage', /\*\*4a\*\*[^\n]*directory coverage/.test(gate));
+  check(
+    'gate line 4b is route-usable coverage',
+    /\*\*4b\*\*[^\n]*route-usable coverage/.test(gate),
+  );
+  check('TA is marked blocked in the gate table', /\*\*4a\*\*[^\n]*BLOCKED/.test(gate));
+  check(
+    'neither TA gate is marked passed',
+    !/\*\*4a\*\*[^\n]*✅/.test(gate) && !/\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
+  check('no gate line passes', !/\|\s*✅\s*\|/.test(gate));
+
+  check(
+    'the gate defines the two measurements separately',
+    /Operator acquisition coverage/.test(gate) && /Route-usable coverage/.test(gate),
+  );
+  check(
+    'route-usable requires all four conditions',
+    /published\*\*, \*\*mappable\*\*, and carry confirmed truck parking/.test(gate),
+  );
+  check(
+    'the gate records TA as the inverse case',
+    /most\*\* route-usable rows[\s\S]{0,120}least\*\* authority/.test(gate),
+  );
+  check(
+    'the gate warns acquisition without route-usable is a file on a disk',
+    /a file on a disk/.test(gate),
+  );
+  check('the gate points at the computed agency registry', /AGENCY-REGISTRY\.md/.test(gate));
 }
 
 console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);

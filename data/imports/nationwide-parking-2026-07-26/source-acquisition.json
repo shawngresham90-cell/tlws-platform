@@ -20,7 +20,10 @@
     "publication_requires_separate_authorization": true,
     "canada_excluded_from_us_denominator": "Canadian locations in an operator export are preserved in a separate manifest and excluded from every U.S. coverage denominator.",
     "no_invented_overnight_permission": "A parking-space count confirms parking, not overnight legality. Where a source carries no overnight field, overnight permission, restrictions and duration stay unknown and no row may be offered as overnight or HOS-rest parking.",
-    "absence_is_not_closure": "A directory row absent from a single export is a closure CANDIDATE. It is never deleted or unpublished on that basis; closure review is a separate exercise with its own authorization."
+    "absence_is_not_closure": "A directory row absent from a single export is a closure CANDIDATE. It is never deleted or unpublished on that basis; closure review is a separate exercise with its own authorization.",
+    "discovery_only_sources_never_supply_values": "A discovery_only source may inform which question to ask an authoritative source. It may never supply a value that lands in the directory, and no gate percentage may count a row that came from it.",
+    "buying_a_product_is_not_a_licence": "Purchasing a paid PDF, app or report does not license redistribution or extraction of its contents.",
+    "stale_reference_is_not_a_source": "A file of unknown provenance may be profiled for shape and magnitude. It may never be imported, and it is never grounds to unpublish, correct or delete a live row."
   },
   "sources": [
     {
@@ -167,7 +170,7 @@
       "contact_note": "If no direct download is offered, request via their fleet contact.",
       "expected_format": "xlsx|csv",
       "represents": "truck_stop",
-      "gate_line": 4,
+      "gate_line": "4a/4b",
       "required_columns": [
         "site_number",
         "brand",
@@ -192,7 +195,42 @@
         "coordinate_proximity_150m",
         "canonical_name_city_state"
       ],
-      "notes": "data/imports/locmaster20260725.xlsx is an older copy. Treat it as stale and reconcile against the fresh export rather than trusting it."
+      "notes": "data/imports/locmaster20260725.xlsx is an older copy of unknown provenance. Treat it as stale and reconcile against a fresh official export rather than trusting it. A status column and a stable site_id are both ESSENTIAL for this source: without status, closures are undetectable except as absence between dated exports.",
+      "acquisition_status": "BLOCKED",
+      "attempted_on": "2026-07-27",
+      "blocked_reason": "Every ta-petro.com and tatravelcenters.com host returns connect_rejected (403 to CONNECT) at this environment egress proxy, before TLS. Not a credentials problem. Whether TA publishes a developer API or requires credentials could not be determined from here.",
+      "hosts_attempted": [
+        "www.ta-petro.com/locations",
+        "www.ta-petro.com",
+        "api.ta-petro.com",
+        "developer.ta-petro.com",
+        "www.ta-petro.com/sitemap.xml",
+        "www.ta-petro.com/robots.txt",
+        "tatravelcenters.com",
+        "www.tatravelcenters.com",
+        "roadsquad.com",
+        "ir.ta-petro.com"
+      ],
+      "access_path_documented": "data/sources/ta-master/ACCESS-BLOCKED.md",
+      "data_access_request": "data/sources/ta-master/DATA-ACCESS-REQUEST.md",
+      "gap_analysis": "data/sources/ta-master/2026-07-27/GAP-ANALYSIS.md",
+      "stale_reference": {
+        "file": "data/imports/locmaster20260725.xlsx",
+        "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+        "status": "STALE REFERENCE ONLY — not a source of record",
+        "provenance": "unknown; no documented official download path, no origin checksum",
+        "rows": 354,
+        "approved_rows": 0,
+        "rule": "Profiled for shape and magnitude only. No value from it may be imported, published or counted toward any gate."
+      },
+      "directory_state_2026_07_27": {
+        "ta_network_rows": 387,
+        "published": 383,
+        "with_coordinate": 325,
+        "route_usable": 310,
+        "states": 44,
+        "finding": "The directory holds MORE TA-network rows (387) than the reference lists (354). Roughly 30 rows are duplicates, closures or non-network, and 383 of 387 are published."
+      }
     },
     {
       "source_id": "fhwa-truck-parking",
@@ -339,6 +377,59 @@
       ],
       "authorization_required": true,
       "notes": "Priority 7 reflects authorization gating, not low value. Existing rows naming this brand (AR, IL, MI x2, NC) are quarantined no-official-source; the feed either confirms and replaces them or they stay quarantined."
+    },
+    {
+      "source_id": "allstays",
+      "priority": 8,
+      "classification": "discovery_only",
+      "name": "AllStays (independent truck stops, rest areas, weigh stations)",
+      "url": "https://www.allstays.com",
+      "represents": "parking|truck_stop|rest_area|weigh_station",
+      "gate_line": null,
+      "license_status": "license_required",
+      "authorization_required": true,
+      "authorization_held": false,
+      "acquisition_status": "NOT A SOURCE OF RECORD",
+      "may_be_source_of_record": false,
+      "may_be_scraped": false,
+      "expected_format": "csv|json-api, under licence only",
+      "contact_note": "Licensing / partnership contact. See data/sources/allstays/LICENSING-REQUEST.md.",
+      "required_columns": [
+        "location_id",
+        "name",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "latitude",
+        "longitude",
+        "direction_of_travel",
+        "exit_or_milepost",
+        "space_count",
+        "access_hours",
+        "duration_limit",
+        "amenities",
+        "status"
+      ],
+      "stable_source_id_field": "location_id",
+      "attribution": "Per agreement — expect prominent attribution and a redistribution limit.",
+      "update_frequency": "per agreement; a scheduled refresh is required, not a one-time dump",
+      "closure_signal": "status flag, per agreement",
+      "deduplication": [
+        "provider_location_id",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "prohibitions": [
+        "Do not scrape the site, its map endpoints or its mobile app APIs.",
+        "Do not purchase the paid PDF for reuse — buying a product does not license redistribution.",
+        "Do not copy names, coordinates, parking counts, amenities, hours, directions or descriptions.",
+        "Do not reproduce exclusive locations that appear nowhere authoritative.",
+        "Do not treat an AllStays listing as evidence that truck parking is permitted."
+      ],
+      "why_registered": "Independent truck stops are the one category with no national operator export. Registering AllStays as discovery_only makes the boundary explicit rather than leaving it to judgement in the moment.",
+      "contributes_to_gate": false,
+      "notes": "discovery_only means it may inform WHICH question to ask an authoritative source. It may never supply a value that lands in the directory. Contributes nothing to any gate line until a written licence exists."
     }
   ],
   "obtain_next": "ta-master",
@@ -356,6 +447,19 @@
       "records": 875,
       "us_records": 820,
       "canadian_records": 55
+    },
+    {
+      "source_id": "ta-master",
+      "status": "BLOCKED",
+      "date": "2026-07-27",
+      "detail": "egress policy denial (403 CONNECT) on all official hosts; access path and request prepared"
+    },
+    {
+      "source_id": "allstays",
+      "status": "REGISTERED discovery_only",
+      "date": "2026-07-27",
+      "detail": "license_required; nothing fetched, scraped or purchased"
     }
-  ]
+  ],
+  "agency_registry": "data/imports/nationwide-parking-2026-07-26/agency-registry.json"
 }

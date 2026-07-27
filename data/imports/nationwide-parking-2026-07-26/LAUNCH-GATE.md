@@ -4,7 +4,8 @@
 of 2026-07-27 — Love's and Pilot / Flying J / ONE9. Both sources are **complete
 and independently confirmed**, but that is acquisition, not coverage: all four
 of their database gates are still open and nothing has been written to
-production. The other five lines are unstarted.
+production. TA is **blocked at the network policy**, not merely unstarted. The
+remaining lines need agency data that is equally unreachable.
 
 This is the formal, binding coverage gate for launching the public directory
 and trip planner. It supersedes any earlier informal readiness language. A
@@ -41,7 +42,8 @@ Every line must pass. There is no partial launch.
 | **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
 | **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | 101 reconciled, 719 prepared, **0 applied** | ⏳ |
 | **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | 0 route-usable, 803 prepared, **0 applied** | ⏳ |
-| 4 | TA, Petro and TA Express | **100 %** | not sourced | ❌ |
+| **4a** | TA / Petro / TA Express — **directory coverage** | **100 %** | source **BLOCKED**, denominator unknown | ❌ |
+| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 %** | 310 route-usable, denominator unknown | ❌ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
@@ -140,6 +142,37 @@ candidates, six of them published today. **Nothing is deleted or unpublished on
 that basis** — absence from a single export is not proof of closure, and closure
 review is a separate exercise with its own authorization.
 
+### Two measurements, never one number
+
+Every operator line is measured **twice**, and the two must never be collapsed:
+
+| Measurement | Question it answers | Passes when |
+|---|---|---|
+| **Operator acquisition coverage** | Do we hold the operator's complete official list? | the file is in hand, checksummed, and its count is independently confirmed |
+| **Route-usable coverage** | Can a driver actually use these on their lane? | the rows are in the database, **published**, **mappable**, and carry confirmed truck parking |
+
+A location is **route-usable** only when all four hold: it exists in the
+directory, it is published, it has an authoritative coordinate, and truck
+parking is confirmed. Missing any one of them and it is not usable on a route,
+whatever the acquisition percentage says.
+
+| Line | Operator acquisition | Route-usable | Gap |
+|---|--:|--:|--:|
+| **2 — Love's** | **100 %** (731 held, 615 U.S. Travel Stops) | **0** of 604 | 604 |
+| **3 — Pilot / Flying J / ONE9** | **100 %** (875 held, 820 U.S.) | **0** of 803 | 803 |
+| **4 — TA / Petro / TA Express** | **0 %** — blocked | **310** measured | denominator unknown |
+
+TA is the inverse of the other two and the shape is instructive: it has the
+**most** route-usable rows of any operator network (310 published, mappable,
+with parking) and the **least** authority behind them. 387 TA-network rows sit
+in the directory against a reference list of 354 — the directory holds *more*
+rows than the operator appears to have locations, and 383 of them are live. See
+`data/sources/ta-master/2026-07-27/GAP-ANALYSIS.md`.
+
+**Acquisition coverage without route-usable coverage is a file on a disk.
+Route-usable coverage without acquisition coverage is unverified claims in front
+of drivers.** Line 4 is currently the second kind, which is the worse kind.
+
 ### Weigh stations are not parking
 
 Binding rule, applying to line 6 and to every future import:
@@ -218,9 +251,15 @@ Nothing is deleted. See `data/imports/loves-2026-07-27/CORRECTIONS.sql` and
 ## What the gate implies about sequencing
 
 The gate cannot be approached by publishing what is already held. Line 1 is an
-authorized feed the project does not have, line 4 is an operator export not yet
-obtained, and lines 5–6 need agency datasets that are unreachable. **The binding
-constraint is source acquisition, not engineering.**
+authorized feed the project does not have, line 4 is an operator export
+**blocked at the network policy**, and lines 5–6 need agency datasets that are
+equally unreachable. **The binding constraint is source acquisition, not
+engineering.**
+
+The ranked order for lines 5 and 6 is now computed, not guessed:
+`AGENCY-REGISTRY.md` scores all 39 states on the five priority corridors,
+weighted inversely by what the directory already publishes on each. I-95
+dominates because it publishes **4** mappable parking rows nationwide.
 
 Love's and Pilot are the exceptions that prove the shape of the rest: both
 sources are now held in full, and gates 2a, 2b, 3a and 3b *still* do not pass.
