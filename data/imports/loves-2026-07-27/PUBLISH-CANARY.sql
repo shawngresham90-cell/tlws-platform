@@ -6,7 +6,7 @@
 -- Ten overnight-eligible Love's Travel Stops, each in a different state and on
 -- a different corridor, weighted to corridors the directory currently has zero
 -- parking on. Every one must already have been inserted by INSERT-NET-NEW.sql
--- and therefore already carries an operator-authoritative coordinate.
+-- and therefore already carries an machine-checked coordinate.
 --
 --   1. #766  Atkinson, IL  I-80   137 spaces
 --   2. #432  Oak Creek, WI  I-94   116 spaces

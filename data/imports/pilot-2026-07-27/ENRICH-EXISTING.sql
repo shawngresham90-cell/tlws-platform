@@ -196,11 +196,11 @@ begin
          interstate = coalesce(l.interstate, e.interstate),
          parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
          geocode_source = case when l.lat is null and e.lat is not null
-                               then 'pilot-master-2026-07-27' else l.geocode_source end,
+                               then 'batch-csv' else l.geocode_source end,
          geocode_confidence = case when l.lat is null and e.lat is not null
                                    then 'high' else l.geocode_confidence end,
          coord_verification_status = case when l.lat is null and e.lat is not null
-                                          then 'operator-authoritative' else l.coord_verification_status end,
+                                          then 'machine-checked' else l.coord_verification_status end,
          last_geocoded_at = case when l.lat is null and e.lat is not null
                                  then now() else l.last_geocoded_at end,
          updated_at = now()

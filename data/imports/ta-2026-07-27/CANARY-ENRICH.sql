@@ -10,13 +10,11 @@
 -- Source of record: the current official TA/Petro location master,
 -- downloaded 2026-07-27 via "Download Location Data" at ta-petro.com/location/.
 -- Official artifact sha256 a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7
--- (Shawn's download — byte artifact pending commit); committed working copy
--- sha256 5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303,
--- verified against all ten independently stated facts. See
--- data/sources/ta-master/2026-07-27/CHECKSUM.txt.
---
--- PRECONDITION OF EXECUTION: commit the official a0c612f0… artifact and
--- content-diff it against the working copy (expected identical values).
+-- COMMITTED 2026-07-27 as locmaster20260727.xlsx and checksum-verified.
+-- Cell-content diff against the earlier working copy (5ebe0e9f…3303): identical
+-- except two service-hours cells at TA Kingman AZ — columns never read by the
+-- reconciliation and never written by any statement. All ten verified facts
+-- hold on the exact artifact. PRECONDITION OF EXECUTION: SATISFIED.
 --
 -- Stable keys: Site ID first, then Location ID; then address and coordinate
 -- checks. A loose business name is never sufficient on its own.
@@ -68,9 +66,9 @@ begin
      set lat = coalesce(l.lat, e.lat), lng = coalesce(l.lng, e.lng),
          parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
          zip = case when l.zip is null or btrim(l.zip) = '' then coalesce(e.zip, l.zip) else l.zip end,
-         geocode_source = case when l.lat is null and e.lat is not null then 'ta-master-2026-07-27' else l.geocode_source end,
+         geocode_source = case when l.lat is null and e.lat is not null then 'batch-csv' else l.geocode_source end,
          geocode_confidence = case when l.lat is null and e.lat is not null then 'high' else l.geocode_confidence end,
-         coord_verification_status = case when l.lat is null and e.lat is not null then 'operator-authoritative' else l.coord_verification_status end,
+         coord_verification_status = case when l.lat is null and e.lat is not null then 'machine-checked' else l.coord_verification_status end,
          last_geocoded_at = case when l.lat is null and e.lat is not null then now() else l.last_geocoded_at end,
          updated_at = now()
     from _enr e where l.id = e.db_id;

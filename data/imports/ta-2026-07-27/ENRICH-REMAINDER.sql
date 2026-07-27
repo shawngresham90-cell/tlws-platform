@@ -1,8 +1,13 @@
--- TA/Petro enrichment of EXISTING rows — GUARDED, blank-only, exact id.
+-- TA/Petro enrichment REMAINDER — the 28 address-anchored rows not in the
+-- canary. Same guards as ENRICH-EXISTING.sql, counts recomputed per state.
+-- Run only after the canary has passed its audit.
 --
--- NOT EXECUTED. 38 address-anchored rows across 13 states, one
--- transaction per state. There are NO inserts in this package: every official
--- site already has a production row.
+-- EXECUTED 2026-07-27: all states committed EXCEPT the TN transaction, which
+-- failed its collision guard and rolled back atomically — site 0269
+-- TA Knoxville West's staged pin exactly matches the site's own published
+-- CAT-scale / truck-service records. 0269 was QUARANTINED (the collision
+-- guard is not to be weakened) and TN re-ran with its 4 independently safe
+-- rows, which committed. Final: 37 of 38 rows applied. See EXECUTION-RECORD.md.
 --
 -- Source of record: the current official TA/Petro location master,
 -- downloaded 2026-07-27 via "Download Location Data" at ta-petro.com/location/.
@@ -20,9 +25,6 @@
 -- The 7 zero-parking locations are never counted as truck-parking coverage.
 -- overnight_parking, is_published, is_featured and is_indexable are NEVER
 -- written by any statement in this package.
---
--- The 2 name-anchored rows (TA Ashland site 0001, TA Richmond site 0142) are
--- NOT here — they are in HOLD-NAME-ANCHORED.sql pending identity verification.
 
 -- ============================================================ AL (2)
 begin;
@@ -42,20 +44,16 @@ begin
   select count(*) into batch from _enr;
   if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -68,7 +66,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -84,7 +81,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -92,7 +88,7 @@ end $$;
 
 commit;
 
--- ============================================================ AR (4)
+-- ============================================================ AR (3)
 begin;
 
 create temporary table _enr (
@@ -101,7 +97,6 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('3e5fef77-bc72-4174-b45d-04f6096c8fde', 'TA Earle (TravelCenters of America #033)', '0033', 35.1364, -90.488, 137, null),
   ('20ea502e-9d1f-43e3-b369-520d35c38c5f', 'Petro Stopping Center #311 (Petro West Memphis)', '0311', 35.1544, -90.136, null, null),
   ('03c39975-0f38-4f41-97e7-d50d95b9edf0', 'Petro Stopping Center #326 (Petro N. Little Rock)', '0326', 34.781, -92.1298, null, null),
   ('366ea2a6-4116-4ce3-bc64-01fdac0dcb60', 'TA Express Atkins', '0954', 35.22162, -92.82594, null, null);
@@ -110,22 +105,18 @@ do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 4 then raise exception 'Expected 4 staged, found %.', batch; end if;
+  if batch <> 3 then raise exception 'Expected 3 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -138,7 +129,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -154,7 +144,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -162,7 +151,7 @@ end $$;
 
 commit;
 
--- ============================================================ FL (4)
+-- ============================================================ FL (3)
 begin;
 
 create temporary table _enr (
@@ -172,7 +161,6 @@ create temporary table _enr (
 
 insert into _enr values
   ('245d9e0f-cb95-461e-822a-e458c03212ed', 'TA Wildwood (TravelCenters of America)', '0053', 28.875, -82.0939, null, null),
-  ('7d74bb54-f22d-4594-8bc8-9d9710f88ac0', 'TA Vero Beach #197', '0197', null, null, 162, null),
   ('687996be-4fd9-4464-a9b3-3df5b2c7f505', 'TA Travel Center #288 (Lake City)', '0288', 29.99558, -82.59672, null, null),
   ('904bda8d-b42d-49ce-88d2-5b2fd4ca4191', 'Petro Stopping Center #323 (Ocala / Reddick)', '0323', 29.409, -82.2462, null, null);
 
@@ -180,22 +168,18 @@ do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 4 then raise exception 'Expected 4 staged, found %.', batch; end if;
+  if batch <> 3 then raise exception 'Expected 3 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -208,7 +192,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -224,7 +207,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -232,7 +214,7 @@ end $$;
 
 commit;
 
--- ============================================================ GA (3)
+-- ============================================================ GA (2)
 begin;
 
 create temporary table _enr (
@@ -241,7 +223,6 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('6bad6451-4f76-45b8-9a3b-4a1aad414f83', 'TA Savannah (TravelCenters of America #177)', '0177', null, null, 222, null),
   ('28c41568-118b-4e1f-aee1-469f8a634af9', 'TA Travel Center Brunswick', '0258', null, null, 107, null),
   ('36d48fe4-d2ce-4d99-987a-9e8341644b7a', 'Petro Stopping Center #344 (TA/Petro Kingsland)', '0344', null, null, 136, null);
 
@@ -249,22 +230,18 @@ do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 3 then raise exception 'Expected 3 staged, found %.', batch; end if;
+  if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -277,7 +254,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -293,7 +269,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -301,7 +276,7 @@ end $$;
 
 commit;
 
--- ============================================================ IN (5)
+-- ============================================================ IN (4)
 begin;
 
 create temporary table _enr (
@@ -310,7 +285,6 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('783d1792-e352-4fb3-bd2b-fc38951c19c8', 'TA Gary #010 (Burr Street)', '0010', 41.573, -87.4045, null, null),
   ('b9b49d33-ae7d-4ca0-b197-6986c17eef18', 'TA Seymour', '0065', 38.9576, -85.8366, null, null),
   ('0fd1e82b-0a8e-410b-9af9-8787d6ab89b8', 'TA Whitestown (TravelCenters of America #173)', '0173', 39.9478, -86.357, null, null),
   ('8578017a-7ea0-4c38-a6ed-abf7b5a39d0f', 'Petro Gary #369 (Grant Street)', '0369', 41.5638, -87.3557, null, null),
@@ -320,22 +294,18 @@ do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 5 then raise exception 'Expected 5 staged, found %.', batch; end if;
+  if batch <> 4 then raise exception 'Expected 4 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -348,7 +318,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -364,7 +333,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -372,7 +340,7 @@ end $$;
 
 commit;
 
--- ============================================================ KY (2)
+-- ============================================================ KY (1)
 begin;
 
 create temporary table _enr (
@@ -381,29 +349,24 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('dee17bfa-a6bf-4da0-8d48-95a9231de439', 'TA Walton', '0028', 38.9172, -84.6266, null, null),
   ('eec1d852-2b50-47f7-a59e-b1238f1ace2d', 'TA Florence', '0093', 39.0001, -84.6447, null, null);
 
 do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
+  if batch <> 1 then raise exception 'Expected 1 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -416,7 +379,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -432,7 +394,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -440,7 +401,7 @@ end $$;
 
 commit;
 
--- ============================================================ MD (3)
+-- ============================================================ MD (2)
 begin;
 
 create temporary table _enr (
@@ -450,29 +411,24 @@ create temporary table _enr (
 
 insert into _enr values
   ('f35c37d4-6118-40c1-8380-1edf8e79777d', 'TA Elkton #019', '0019', null, null, 151, null),
-  ('ff19357b-eb93-4483-9e4e-ebb40e07fe36', 'TA Baltimore South #151', '0151', null, null, 436, null),
   ('e102d6bd-874c-43d0-b9f6-c8a9dbbe4832', 'TA Baltimore #216', '0216', null, null, 181, null);
 
 do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 3 then raise exception 'Expected 3 staged, found %.', batch; end if;
+  if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -485,7 +441,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -501,7 +456,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -527,20 +481,16 @@ begin
   select count(*) into batch from _enr;
   if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -553,7 +503,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -569,7 +518,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -577,7 +525,7 @@ end $$;
 
 commit;
 
--- ============================================================ NC (2)
+-- ============================================================ NC (1)
 begin;
 
 create temporary table _enr (
@@ -586,29 +534,24 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('91b8ddaa-6012-4ab7-839a-ded888eb912d', 'TA Candler (TravelCenters of America #221)', '0221', 35.5432, -82.754, null, null),
-  ('0a0c7a0d-2fb0-4201-a93f-b934e2617b5b', 'Petro Kenly 95 #395', '0395', null, null, 350, null);
+  ('91b8ddaa-6012-4ab7-839a-ded888eb912d', 'TA Candler (TravelCenters of America #221)', '0221', 35.5432, -82.754, null, null);
 
 do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
+  if batch <> 1 then raise exception 'Expected 1 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -621,7 +564,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -637,7 +579,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -663,20 +604,16 @@ begin
   select count(*) into batch from _enr;
   if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -689,7 +626,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -705,7 +641,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -713,7 +648,7 @@ end $$;
 
 commit;
 
--- ============================================================ SC (2)
+-- ============================================================ SC (1)
 begin;
 
 create temporary table _enr (
@@ -722,29 +657,24 @@ create temporary table _enr (
 ) on commit drop;
 
 insert into _enr values
-  ('b621363d-e4d4-40c6-a04d-09e950264b12', 'TA Manning (TravelCenters of America #179)', '0179', null, null, 84, null),
   ('8bf6630b-8c97-45c5-b219-f6b2e21d760a', 'Petro / TA Florence (TravelCenters of America #195)', '0527', null, null, 77, null);
 
 do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 2 then raise exception 'Expected 2 staged, found %.', batch; end if;
+  if batch <> 1 then raise exception 'Expected 1 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -757,7 +687,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -773,7 +702,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
@@ -781,7 +709,7 @@ end $$;
 
 commit;
 
--- ============================================================ TN (6)
+-- ============================================================ TN (5)
 begin;
 
 create temporary table _enr (
@@ -794,29 +722,24 @@ insert into _enr values
   ('cd4783d1-b67c-4c09-b056-6a72f5606229', 'TA Knoxville West', '0269', 35.8731, -84.2379, null, null),
   ('68afff98-8a4c-42be-b099-e87e50b08a38', 'TA Express Cookeville', '0287', 36.1305, -85.4796, null, null),
   ('5e829807-6932-4f13-b44f-e5dea115f755', 'Petro Knoxville', '0312', 35.875, -84.2361, null, null),
-  ('8018aa5b-c428-465d-9809-fde4e03cd4a2', 'Petro Stopping Center Kingston Springs #349', '0349', 36.0824, -87.0955, 68, null),
   ('d19be5c3-65f2-471d-9281-0cfeeaa8ceb0', 'TA Franklin (TravelCenters of America #157)', '0544', 35.8603, -86.8299, null, null);
 
 do $$
 declare n integer; batch integer;
 begin
   select count(*) into batch from _enr;
-  if batch <> 6 then raise exception 'Expected 6 staged, found %.', batch; end if;
+  if batch <> 5 then raise exception 'Expected 5 staged, found %.', batch; end if;
 
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
   if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
 
-  -- 2. BLANK-ONLY, PER FIELD.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where (e.lat is not null and l.lat is not null)
       or (e.parking_spaces is not null and l.parking_spaces is not null)
       or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
   if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
 
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
   select count(*) into n from _enr
    where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
   if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
@@ -829,7 +752,6 @@ begin
    where e.lat is not null;
   if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
 
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
   update public.locations l
      set lat = coalesce(l.lat, e.lat),
          lng = coalesce(l.lng, e.lng),
@@ -845,74 +767,6 @@ begin
   get diagnostics n = row_count;
   if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
 
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
-  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
-   where l.is_featured or l.is_indexable;
-  if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
-end $$;
-
-commit;
-
--- ============================================================ VA (1)
-begin;
-
-create temporary table _enr (
-  db_id uuid primary key, expected_name text, site_id text,
-  lat double precision, lng double precision, parking_spaces int, zip text
-) on commit drop;
-
-insert into _enr values
-  ('ebb8ad22-3283-4fc6-9918-66a8ef8ef9dd', 'TA Express Stony Creek (former Davis Travel Center)', '0486', null, null, 80, null);
-
-do $$
-declare n integer; batch integer;
-begin
-  select count(*) into batch from _enr;
-  if batch <> 1 then raise exception 'Expected 1 staged, found %.', batch; end if;
-
-  -- 1. Every id resolves to a live truck-stops row whose name is EXACTLY the
-  --    name this plan was written against. Identity, not similarity.
-  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
-   where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
-  if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
-
-  -- 2. BLANK-ONLY, PER FIELD.
-  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
-   where (e.lat is not null and l.lat is not null)
-      or (e.parking_spaces is not null and l.parking_spaces is not null)
-      or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
-  if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
-
-  -- 3. Staged coordinates plausible, unique, and colliding with no published pin.
-  select count(*) into n from _enr
-   where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
-  if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
-  select count(*) into n from (select lat, lng from _enr where lat is not null group by lat, lng having count(*) > 1) d;
-  if n <> 0 then raise exception '% coordinate(s) shared inside the batch.', n; end if;
-  select count(*) into n
-    from _enr e join public.locations l
-      on l.deleted_at is null and l.is_published and l.lat is not null and l.id <> e.db_id
-     and abs(l.lat - e.lat) < 0.0015 and abs(l.lng - e.lng) < 0.0015
-   where e.lat is not null;
-  if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
-
-  -- 4. Write. coalesce keeps it blank-only even if step 2 were bypassed.
-  update public.locations l
-     set lat = coalesce(l.lat, e.lat),
-         lng = coalesce(l.lng, e.lng),
-         parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
-         zip = case when l.zip is null or btrim(l.zip) = '' then coalesce(e.zip, l.zip) else l.zip end,
-         geocode_source = case when l.lat is null and e.lat is not null then 'batch-csv' else l.geocode_source end,
-         geocode_confidence = case when l.lat is null and e.lat is not null then 'high' else l.geocode_confidence end,
-         coord_verification_status = case when l.lat is null and e.lat is not null then 'machine-checked' else l.coord_verification_status end,
-         last_geocoded_at = case when l.lat is null and e.lat is not null then now() else l.last_geocoded_at end,
-         updated_at = now()
-    from _enr e
-   where l.id = e.db_id;
-  get diagnostics n = row_count;
-  if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
-
-  -- 5. Nothing published, featured, indexed or overnight-claimed by this.
   select count(*) into n from _enr e join public.locations l on l.id = e.db_id
    where l.is_featured or l.is_indexable;
   if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;

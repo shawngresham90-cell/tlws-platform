@@ -37,30 +37,17 @@ commit;
 -- statement wrote. A row edited since is reported, not clobbered. Every target
 -- had lat IS NULL AND lng IS NULL beforehand — the forward statement's
 -- blank-only guard proves it — so NULL is the exact pre-state.
-begin;
-do $$
-declare n integer; expected integer;
-begin
-  select count(*) into expected from public.locations
-   where geocode_source = 'loves-master-2026-07-27' and deleted_at is null;
-  if expected = 0 then raise exception 'Nothing enriched by this import.'; end if;
-
-  select count(*) into n from public.locations
-   where geocode_source = 'loves-master-2026-07-27' and is_published;
-  if n <> 0 then
-    raise exception 'Rollback refused: % enriched row(s) are published. Run the UNPUBLISH block first.', n;
-  end if;
-
-  update public.locations
-     set lat = null, lng = null,
-         geocode_source = null, geocode_confidence = null,
-         coord_verification_status = null, last_geocoded_at = null,
-         updated_at = now()
-   where geocode_source = 'loves-master-2026-07-27' and deleted_at is null;
-  get diagnostics n = row_count;
-  if n <> expected then raise exception 'Expected to de-enrich %, changed %.', expected, n; end if;
+-- !! REGENERATE BEFORE ANY EXECUTION !!
+-- The schema CHECK constraint locations_geocode_source_check forbids the
+-- bespoke tag 'loves-master-2026-07-27'; the forward statements now write the
+-- shared legal value 'batch-csv', which OTHER packages' rows also carry. A
+-- tag-scoped bulk reversal is therefore impossible here. Before this package
+-- is ever executed, regenerate this block as per-row, id-scoped, value-matched
+-- statements from ENRICHMENT-PLAN.csv — see data/imports/ta-2026-07-27/
+-- ROLLBACK.sql for the exact pattern.
+do $$ begin
+  raise exception 'STALE ROLLBACK: regenerate per-row from ENRICHMENT-PLAN.csv (see ta-2026-07-27/ROLLBACK.sql pattern) before use.';
 end $$;
-commit;
 
 -- NOTE: de-enrichment does not revert interstate / exit_number /
 -- parking_spaces / overnight_parking. The forward statement wrote those with
@@ -79,7 +66,7 @@ do $$
 declare n integer; expected integer;
 begin
   select count(*) into expected from public.locations
-   where source = 'loves-master-2026-07-27' and geocode_source is distinct from 'loves-master-2026-07-27';
+   where source = 'loves-master-2026-07-27' and geocode_source is distinct from 'batch-csv';
   -- inserted rows carry source but were never enriched (they arrived with coords)
 
   select count(*) into n from public.locations

@@ -48,7 +48,7 @@ select count(*) as untouched_rows,
 from public.locations l
 where l.deleted_at is null
   and l.name ~* '(pilot|flying\s*j|one\s*9|one9|mr\.?\s*fuel)'
-  and coalesce(l.geocode_source, '') <> 'pilot-master-2026-07-27';
+  and coalesce(l.geocode_source, '') <> 'batch-csv';
 
 -- ===========================================================================
 -- D. HELD / EXCLUDED NETWORKS MUST NOT CHANGE

@@ -39,8 +39,10 @@ where l.deleted_at is null and l.id not in (select id from scope);
 --   imported value digest 2ac6c65968f6da9013ee0896b377003b   (= import CSV)
 --   legacy row digest     4aabb580c32b3959b196d4c2b8e0aa34   (= LEGACY-91.tsv)
 --
--- After ENRICH: exactly 38 rows change (the address-anchored targets); the
--- imported digests must NOT change — enrichment never touches imported rows.
+-- After ENRICH (executed 2026-07-27): exactly 37 rows changed (site 0269 was
+-- quarantined by the collision guard); the imported digests did NOT change —
+-- enrichment never touches imported rows. Measured after: id_digest and both
+-- imported digests identical to the values above.
 with scope as (
   select l.* from public.locations l
   where l.deleted_at is null
@@ -64,9 +66,11 @@ select
 -- Before, measured 2026-07-27:
 --   live 1556 · published 1165 · with_coords 534 · published_unmappable 635
 --
--- After CANARY (10) + ENRICH (28 more): with_coords 534→572 (+38);
--- published_unmappable 635→597 (−38: all 38 targets are published rows
--- gaining their first coordinate). live and published UNCHANGED — this
+-- After CANARY (10) + ENRICH (27 applied of 28 — site 0269 quarantined by the
+-- collision guard): with_coords 534→560 MEASURED (+26 — 24 lat+lng and 2
+-- lat+lng+spaces fills applied; the 11 spaces-only fills land on
+-- already-mapped pages); published_unmappable 635→609 MEASURED (−26).
+-- live and published UNCHANGED (measured 1556 / 1165) — this
 -- package inserts nothing and publishes nothing. CORRECTIONS §A (if separately
 -- authorized) moves published 1165→1164. HOLD (+2, unpublished rows) moves
 -- with_coords only.
@@ -82,8 +86,50 @@ from public.locations;
 -- ===========================================================================
 -- D. ENRICHMENT SCOPE MARKER
 -- ===========================================================================
--- Only rows this package touched carry the tag. Expected: 0 before; 10 after
--- the canary; 38 after full enrich; 40 if HOLD is verified and run.
-select count(*) as tagged_rows
-from public.locations
-where geocode_source = 'ta-master-2026-07-27';
+-- The schema CHECK constraint locations_geocode_source_check allows only
+-- import | batch-csv | interpolation | external-api | manual — no bespoke
+-- package tag. Coordinate fills therefore write the shared legal value
+-- 'batch-csv' (what every prior committed-file enrichment wrote), and package
+-- membership is tracked by the EXPLICIT coordinate-fill id list from
+-- ENRICHMENT-PLAN.csv, never by tag.
+--   batch_csv_total: 145 before (prior enrichments, 2026-07-26);
+--                    149 after canary (MEASURED); 171 after the executed
+--                    enrich (MEASURED — site 0269 quarantined, so +26 not +27).
+--   enriched_of_27:  0 before; 4 after canary; 26 after the executed enrich
+--                    (both MEASURED; 27 only if 0269 is ever separately
+--                    authorized and applied).
+-- The 11 spaces-only rows never receive coordinate metadata — audit them by
+-- VALUE against ENRICHMENT-PLAN.csv.
+select
+ (select count(*) from public.locations
+   where geocode_source = 'batch-csv') as batch_csv_total,
+ (select count(*) from public.locations
+   where geocode_source = 'batch-csv' and lat is not null
+     and id in (
+     '783d1792-e352-4fb3-bd2b-fc38951c19c8',
+     'dee17bfa-a6bf-4da0-8d48-95a9231de439',
+     '3e5fef77-bc72-4174-b45d-04f6096c8fde',
+     '245d9e0f-cb95-461e-822a-e458c03212ed',
+     'b9b49d33-ae7d-4ca0-b197-6986c17eef18',
+     '7b340f8f-28fc-4bca-83a8-bee8a793a4fb',
+     '51296b6f-d325-4a97-a48f-d7a315a5e7e0',
+     'eec1d852-2b50-47f7-a59e-b1238f1ace2d',
+     '0fd1e82b-0a8e-410b-9af9-8787d6ab89b8',
+     '91b8ddaa-6012-4ab7-839a-ded888eb912d',
+     '09974385-8c93-4bb5-be59-13552b53e2b3',
+     'cd4783d1-b67c-4c09-b056-6a72f5606229',
+     '68afff98-8a4c-42be-b099-e87e50b08a38',
+     '687996be-4fd9-4464-a9b3-3df5b2c7f505',
+     '20ea502e-9d1f-43e3-b369-520d35c38c5f',
+     '5e829807-6932-4f13-b44f-e5dea115f755',
+     '904bda8d-b42d-49ce-88d2-5b2fd4ca4191',
+     'bb4d283f-1f08-4acd-a062-850f5bc309c6',
+     '03c39975-0f38-4f41-97e7-d50d95b9edf0',
+     '8018aa5b-c428-465d-9809-fde4e03cd4a2',
+     '8578017a-7ea0-4c38-a6ed-abf7b5a39d0f',
+     'bd27e9bc-6b14-4810-b20d-26a04702c477',
+     '25721d01-d3ed-4da5-a9cc-448fd166e75b',
+     'eb48d156-9ad9-4fa3-b8eb-cfc7b29a49a4',
+     '2937ca5e-063c-4ac7-b4c4-0e7da286f488',
+     'd19be5c3-65f2-471d-9281-0cfeeaa8ceb0',
+     '366ea2a6-4116-4ce3-bc64-01fdac0dcb60')) as enriched_of_27;

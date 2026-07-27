@@ -33,10 +33,17 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
 const DIR = 'data/sources/ta-master/2026-07-27';
-const XLSX = `${DIR}/locmaster.xlsx`;
+const XLSX = `${DIR}/locmaster20260727.xlsx`; // the EXACT official artifact
 
 /* ---- pin every input to the exact bytes this reconciliation is valid for */
-const PINS = [[XLSX, '5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303']];
+const PINS = [
+  // The exact official artifact (committed 2026-07-27, checksum-verified).
+  [XLSX, 'a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7'],
+  // The earlier working copy, kept for the recorded provenance chain. Cell-diff
+  // against the artifact: identical except TA Kingman AZ's two service-hours
+  // cells — columns this reconciliation never reads.
+  [`${DIR}/locmaster.xlsx`, '5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303'],
+];
 for (const [f, want] of PINS) {
   const got = createHash('sha256').update(readFileSync(f)).digest('hex');
   if (got !== want) {

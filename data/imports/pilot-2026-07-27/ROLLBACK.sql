@@ -3,10 +3,10 @@
 -- Three independent reversals. Run in reverse order of application:
 -- unpublish, then de-enrich, then delete the inserted rows.
 --
--- Everything is scoped by `source = 'pilot-master-2026-07-27'` or
--- `geocode_source = 'pilot-master-2026-07-27'`, which only the forward
--- statements set. A row this import did not create or touch cannot be reached
--- by any block here.
+-- Insert/publish reversals are scoped by `source = 'pilot-master-2026-07-27'`,
+-- which only the forward statements set. The de-enrich block CANNOT be
+-- tag-scoped (the schema CHECK on geocode_source forbids bespoke tags) and is
+-- stubbed below pending per-row regeneration.
 
 -- ===========================================================================
 -- 1. UNPUBLISH — reverses PUBLISH-CANARY.sql / PUBLISH-PER-STATE.sql
@@ -38,30 +38,17 @@ commit;
 -- statement wrote. Every coordinate target had lat IS NULL AND lng IS NULL
 -- beforehand — the forward statement's blank-only guard proves it — so NULL is
 -- the exact pre-state for the coordinate fields.
-begin;
-do $$
-declare n integer; expected integer;
-begin
-  select count(*) into expected from public.locations
-   where geocode_source = 'pilot-master-2026-07-27' and deleted_at is null;
-  if expected = 0 then raise exception 'Nothing enriched by this import.'; end if;
-
-  select count(*) into n from public.locations
-   where geocode_source = 'pilot-master-2026-07-27' and is_published;
-  if n <> 0 then
-    raise exception 'Rollback refused: % enriched row(s) are published. Run the UNPUBLISH block first.', n;
-  end if;
-
-  update public.locations
-     set lat = null, lng = null,
-         geocode_source = null, geocode_confidence = null,
-         coord_verification_status = null, last_geocoded_at = null,
-         updated_at = now()
-   where geocode_source = 'pilot-master-2026-07-27' and deleted_at is null;
-  get diagnostics n = row_count;
-  if n <> expected then raise exception 'Expected to de-enrich %, changed %.', expected, n; end if;
+-- !! REGENERATE BEFORE ANY EXECUTION !!
+-- The schema CHECK constraint locations_geocode_source_check forbids the
+-- bespoke tag 'pilot-master-2026-07-27'; the forward statements now write the
+-- shared legal value 'batch-csv', which OTHER packages' rows also carry. A
+-- tag-scoped bulk reversal is therefore impossible here. Before this package
+-- is ever executed, regenerate this block as per-row, id-scoped, value-matched
+-- statements from ENRICHMENT-PLAN.csv — see data/imports/ta-2026-07-27/
+-- ROLLBACK.sql for the exact pattern.
+do $$ begin
+  raise exception 'STALE ROLLBACK: regenerate per-row from ENRICHMENT-PLAN.csv (see ta-2026-07-27/ROLLBACK.sql pattern) before use.';
 end $$;
-commit;
 
 -- NOTE: de-enrichment does not revert interstate or parking_spaces. The forward
 -- statement wrote those with coalesce(existing, new), so it only ever filled
@@ -97,7 +84,7 @@ begin
   -- by this import. Enriched rows keep their original `source`, so this is a
   -- belt-and-braces check.
   select count(*) into n from public.locations
-   where source = 'pilot-master-2026-07-27' and geocode_source = 'pilot-master-2026-07-27'
+   where source = 'pilot-master-2026-07-27'
      and created_at < '2026-07-27';
   if n <> 0 then raise exception 'Rollback refused: % target(s) predate this import.', n; end if;
 

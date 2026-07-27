@@ -124,9 +124,9 @@ begin
          exit_number = coalesce(l.exit_number, e.exit_number),
          parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
          overnight_parking = e.overnight,
-         geocode_source = 'loves-master-2026-07-27',
+         geocode_source = 'batch-csv',
          geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(), updated_at = now()
     from _enr e
    where l.id = e.db_id and l.lat is null and l.lng is null;

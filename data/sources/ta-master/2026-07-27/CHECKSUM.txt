@@ -21,3 +21,19 @@
 # PRECONDITION OF EXECUTION: commit the a0c612f0… artifact and content-diff it
 # against this file (expected identical values) before any SQL in
 # data/imports/ta-2026-07-27/ is run.
+#
+# 2026-07-27, later: THE OFFICIAL ARTIFACT ARRIVED AND IS COMMITTED.
+#
+#   a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7  locmaster20260727.xlsx
+#
+# Checksum verified against Shawn's stated value: EXACT MATCH. Committed
+# byte-for-byte, unmodified. Cell-content comparison against locmaster.xlsx:
+# 355 rows x 97 columns compared, TWO cells differ — row 62 (site 0094,
+# TA Kingman, Arizona): "In Bay Service Hours" and "Emergency Roadside
+# Assistance Hours" changed from "Mon-Sun: 12:00 AM - 12:00 AM" to
+# "Mon-Sun: 6:00 AM - 11:00 PM". Neither column is read by the reconciliation
+# or written by any SQL. All ten verified facts hold on the exact artifact,
+# and the reconciliation regenerated from it is byte-identical.
+#
+# THE EXECUTION PRECONDITION ABOVE IS SATISFIED. locmaster20260727.xlsx is the
+# canonical source of record; locmaster.xlsx remains as the provenance chain.

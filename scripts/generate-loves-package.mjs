@@ -252,9 +252,9 @@ begin
          exit_number = coalesce(l.exit_number, e.exit_number),
          parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
          overnight_parking = e.overnight,
-         geocode_source = 'loves-master-2026-07-27',
+         geocode_source = 'batch-csv',
          geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(), updated_at = now()
     from _enr e
    where l.id = e.db_id and l.lat is null and l.lng is null;
@@ -309,7 +309,7 @@ let can = `-- Love's publication CANARY — 10 locations, GUARDED.
 -- Ten overnight-eligible Love's Travel Stops, each in a different state and on
 -- a different corridor, weighted to corridors the directory currently has zero
 -- parking on. Every one must already have been inserted by INSERT-NET-NEW.sql
--- and therefore already carries an operator-authoritative coordinate.
+-- and therefore already carries an machine-checked coordinate.
 --
 ${canary.map((r, i) => `--  ${String(i + 1).padStart(2)}. #${r.source_ref.padEnd(4)} ${r.city}, ${r.state}  ${String(r.interstate).padEnd(6)} ${r.parking_spaces} spaces`).join('\n')}
 

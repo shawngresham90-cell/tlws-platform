@@ -1641,9 +1641,10 @@ const rows: Row[] = parseCsv(csv.trim());
 
   const ta = acq.sources.find((s) => s.source_id === 'ta-master') as Record<string, unknown>;
   check(
-    'TA acquisition is complete with the artifact caveat recorded',
+    'TA acquisition is complete with the artifact committed and execution recorded',
     /^COMPLETE/.test(String(ta.acquisition_status)) &&
-      /pending commit/.test(String(ta.acquisition_status)),
+      /committed 2026-07-27/.test(String(ta.acquisition_status)) &&
+      /37 of 38 applied/.test(String(ta.acquisition_status)),
   );
   check('TA records ten attempted hosts', (ta.hosts_attempted as string[]).length === 10);
   check(
@@ -2070,11 +2071,71 @@ const rows: Row[] = parseCsv(csv.trim());
     'correction C proposes no SQL for the Jacksonville row',
     !/update[\s\S]{0,300}?74398e08-61e6-41b8-b3fd-e22c6c6cf6d0/i.test(noComments(corrSql)),
   );
+  /* The schema CHECK on geocode_source forbids bespoke tags, so the rollback
+   * is per-row: every statement names an exact plan id and clears a field
+   * only while it still holds the exact staged value. */
   check(
-    'rollback is scoped by the package tag',
-    /geocode_source = 'ta-master-2026-07-27'/.test(rbSql),
+    'rollback never uses a bespoke geocode_source tag',
+    !/ta-master-2026-07-27/.test(noComments(rbSql)),
   );
-  check('rollback refuses edited targets', /Rollback refused/.test(rbSql));
+  check(
+    'rollback is per-row, id-scoped and value-matched',
+    /id = '783d1792-e352-4fb3-bd2b-fc38951c19c8' and lat = 41\.573/.test(rbSql) &&
+      /geocode_source = 'batch-csv'/.test(rbSql),
+  );
+  check(
+    'rollback carries one active coordinate pair per staged coordinate fill',
+    (noComments(rbSql).match(/and lat = /g) ?? []).length === 27,
+  );
+  check('rollback leaves edited rows alone', /left alone/.test(rbSql));
+
+  /* Constraint-legal vocabulary everywhere — the two values every writing
+   * statement uses must be in the schema's CHECK lists. */
+  for (const [label, sql] of [
+    ['canary', canSql],
+    ['enrich', enrSql],
+    ['hold', holdSql],
+  ] as const) {
+    check(
+      `${label} writes only constraint-legal geocode metadata`,
+      /'batch-csv'/.test(noComments(sql)) &&
+        /'machine-checked'/.test(noComments(sql)) &&
+        !/operator-authoritative|ta-master-2026-07-27'/.test(noComments(sql)),
+    );
+  }
+
+  /* The executed state: remainder file, quarantine, execution record. */
+  const remSql = readFileSync(`${P}/ENRICH-REMAINDER.sql`, 'utf8');
+  check(
+    'remainder runs one transaction per state (12)',
+    (remSql.match(/^begin;$/gm) ?? []).length === 12,
+  );
+  check(
+    'remainder records the TN quarantine of site 0269',
+    /QUARANTINED/.test(remSql) && /0269/.test(remSql),
+  );
+  const execRec = readFileSync(`${P}/EXECUTION-RECORD.md`, 'utf8');
+  check(
+    'execution record: 37 of 38 applied, 1 quarantined',
+    /\*\*Rows applied\*\* \| \*\*37\*\*/.test(execRec) &&
+      /\*\*Quarantined\*\* \| \*\*1\*\*/.test(execRec),
+  );
+  check(
+    'execution record: control digest proven unchanged',
+    /64d573283c8c0e35bd39c73bb63819d3/.test(execRec) && /byte-identical/.test(execRec),
+  );
+  check(
+    'execution record: quarantined site listed with the other three unresolved',
+    /0001/.test(execRec) && /0142/.test(execRec) && /0393/.test(execRec) && /0269/.test(execRec),
+  );
+  check(
+    'execution record: collision guard not weakened',
+    /do not weaken the coordinate-collision guard/i.test(execRec),
+  );
+  check(
+    'execution record: nothing outside the authorization',
+    /Rows written outside the authorization \| 0/.test(execRec),
+  );
   check(
     'fingerprints record the measured control digest',
     /64d573283c8c0e35bd39c73bb63819d3/.test(fpSql),

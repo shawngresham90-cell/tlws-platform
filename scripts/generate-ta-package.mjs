@@ -13,7 +13,11 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
 const SRC = 'data/sources/ta-master/2026-07-27';
 const OUT = 'data/imports/ta-2026-07-27';
-const TAG = 'ta-master-2026-07-27';
+// locations_geocode_source_check allows ONLY: import | batch-csv | interpolation
+// | external-api | manual. 'batch-csv' is what every prior committed-file
+// enrichment wrote, so package membership is tracked by explicit db_id lists
+// (canary.json + ENRICHMENT-PLAN.csv), never by a bespoke geocode_source tag.
+const TAG = 'batch-csv';
 mkdirSync(OUT, { recursive: true });
 
 const parseCsv = (text) => {
@@ -62,13 +66,11 @@ const nq = (v) => (v === '' || v === null || v === undefined ? 'null' : String(v
 const HEAD = `-- Source of record: the current official TA/Petro location master,
 -- downloaded 2026-07-27 via "Download Location Data" at ta-petro.com/location/.
 -- Official artifact sha256 a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7
--- (Shawn's download — byte artifact pending commit); committed working copy
--- sha256 5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303,
--- verified against all ten independently stated facts. See
--- data/sources/ta-master/2026-07-27/CHECKSUM.txt.
---
--- PRECONDITION OF EXECUTION: commit the official a0c612f0… artifact and
--- content-diff it against the working copy (expected identical values).
+-- COMMITTED 2026-07-27 as locmaster20260727.xlsx and checksum-verified.
+-- Cell-content diff against the earlier working copy (5ebe0e9f…3303): identical
+-- except two service-hours cells at TA Kingman AZ — columns never read by the
+-- reconciliation and never written by any statement. All ten verified facts
+-- hold on the exact artifact. PRECONDITION OF EXECUTION: SATISFIED.
 --
 -- Stable keys: Site ID first, then Location ID; then address and coordinate
 -- checks. A loose business name is never sufficient on its own.
@@ -152,7 +154,7 @@ begin
          zip = case when l.zip is null or btrim(l.zip) = '' then coalesce(e.zip, l.zip) else l.zip end,
          geocode_source = case when l.lat is null and e.lat is not null then ${q(TAG)} else l.geocode_source end,
          geocode_confidence = case when l.lat is null and e.lat is not null then 'high' else l.geocode_confidence end,
-         coord_verification_status = case when l.lat is null and e.lat is not null then 'operator-authoritative' else l.coord_verification_status end,
+         coord_verification_status = case when l.lat is null and e.lat is not null then 'machine-checked' else l.coord_verification_status end,
          last_geocoded_at = case when l.lat is null and e.lat is not null then now() else l.last_geocoded_at end,
          updated_at = now()
     from _enr e
@@ -208,7 +210,7 @@ begin
      set lat = ${nq(p.lat)}, lng = ${nq(p.lng)},
          parking_spaces = coalesce(parking_spaces, ${nq(p.parking_spaces)}),
          geocode_source = ${q(TAG)}, geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(), updated_at = now()
    where id = ${q(p.db_id)} and lat is null and lng is null;
   get diagnostics n = row_count;
@@ -304,7 +306,7 @@ begin
          zip = case when l.zip is null or btrim(l.zip) = '' then coalesce(e.zip, l.zip) else l.zip end,
          geocode_source = case when l.lat is null and e.lat is not null then ${q(TAG)} else l.geocode_source end,
          geocode_confidence = case when l.lat is null and e.lat is not null then 'high' else l.geocode_confidence end,
-         coord_verification_status = case when l.lat is null and e.lat is not null then 'operator-authoritative' else l.coord_verification_status end,
+         coord_verification_status = case when l.lat is null and e.lat is not null then 'machine-checked' else l.coord_verification_status end,
          last_geocoded_at = case when l.lat is null and e.lat is not null then now() else l.last_geocoded_at end,
          updated_at = now()
     from _enr e where l.id = e.db_id;
@@ -315,6 +317,177 @@ end $$;
 commit;
 `;
 writeFileSync(`${OUT}/CANARY-ENRICH.sql`, can);
+
+/* ========================== 3b. REMAINDER ================================ */
+/* ENRICH-EXISTING.sql stages all 38 rows, so after the canary its canary-state
+ * transactions fail their expected-count guards by design. The remainder file
+ * is the same statement generated over the 28 non-canary rows only, with
+ * per-state counts recomputed — run it AFTER the canary passes audit. */
+const canaryIds = new Set(canary.map((c) => c.db_id));
+const remainder = anchored.filter((p) => !canaryIds.has(p.db_id));
+const remByState = new Map();
+for (const p of remainder) remByState.set(p.state, [...(remByState.get(p.state) ?? []), p]);
+
+let rem = `-- TA/Petro enrichment REMAINDER — the 28 address-anchored rows not in the
+-- canary. Same guards as ENRICH-EXISTING.sql, counts recomputed per state.
+-- Run only after the canary has passed its audit.
+--
+-- EXECUTED 2026-07-27: all states committed EXCEPT the TN transaction, which
+-- failed its collision guard and rolled back atomically — site 0269
+-- TA Knoxville West's staged pin exactly matches the site's own published
+-- CAT-scale / truck-service records. 0269 was QUARANTINED (the collision
+-- guard is not to be weakened) and TN re-ran with its 4 independently safe
+-- rows, which committed. Final: 37 of 38 rows applied. See EXECUTION-RECORD.md.
+--
+${HEAD}
+`;
+for (const [state, rowsIn] of [...remByState].sort()) {
+  rem += `-- ============================================================ ${state} (${rowsIn.length})
+begin;
+
+create temporary table _enr (
+  db_id uuid primary key, expected_name text, site_id text,
+  lat double precision, lng double precision, parking_spaces int, zip text
+) on commit drop;
+
+insert into _enr values
+${rowsIn
+  .map(
+    (p) =>
+      `  (${q(p.db_id)}, ${q(p.db_name)}, ${q(p.site_id)}, ${nq(p.lat)}, ${nq(p.lng)}, ${nq(p.parking_spaces)}, ${p.zip ? q(p.zip) : 'null'})`,
+  )
+  .join(',\n')};
+
+do $$
+declare n integer; batch integer;
+begin
+  select count(*) into batch from _enr;
+  if batch <> ${rowsIn.length} then raise exception 'Expected ${rowsIn.length} staged, found %.', batch; end if;
+
+  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
+   where l.deleted_at is null and l.category_slug = 'truck-stops' and l.name = e.expected_name;
+  if n <> batch then raise exception '% row(s) failed the identity check.', batch - n; end if;
+
+  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
+   where (e.lat is not null and l.lat is not null)
+      or (e.parking_spaces is not null and l.parking_spaces is not null)
+      or (e.zip is not null and l.zip is not null and btrim(l.zip) <> '');
+  if n <> 0 then raise exception '% row(s) already hold a value this would write. Blank-only violated.', n; end if;
+
+  select count(*) into n from _enr
+   where lat is not null and (lat = 0 or lng = 0 or lat not between 24.0 and 49.5 or lng not between -125.0 and -66.5);
+  if n <> 0 then raise exception '% coordinate(s) unusable.', n; end if;
+  select count(*) into n from (select lat, lng from _enr where lat is not null group by lat, lng having count(*) > 1) d;
+  if n <> 0 then raise exception '% coordinate(s) shared inside the batch.', n; end if;
+  select count(*) into n
+    from _enr e join public.locations l
+      on l.deleted_at is null and l.is_published and l.lat is not null and l.id <> e.db_id
+     and abs(l.lat - e.lat) < 0.0015 and abs(l.lng - e.lng) < 0.0015
+   where e.lat is not null;
+  if n <> 0 then raise exception '% staged coordinate(s) collide with a published pin.', n; end if;
+
+  update public.locations l
+     set lat = coalesce(l.lat, e.lat),
+         lng = coalesce(l.lng, e.lng),
+         parking_spaces = coalesce(l.parking_spaces, e.parking_spaces),
+         zip = case when l.zip is null or btrim(l.zip) = '' then coalesce(e.zip, l.zip) else l.zip end,
+         geocode_source = case when l.lat is null and e.lat is not null then ${q(TAG)} else l.geocode_source end,
+         geocode_confidence = case when l.lat is null and e.lat is not null then 'high' else l.geocode_confidence end,
+         coord_verification_status = case when l.lat is null and e.lat is not null then 'machine-checked' else l.coord_verification_status end,
+         last_geocoded_at = case when l.lat is null and e.lat is not null then now() else l.last_geocoded_at end,
+         updated_at = now()
+    from _enr e
+   where l.id = e.db_id;
+  get diagnostics n = row_count;
+  if n <> batch then raise exception 'Expected to enrich %, updated %.', batch, n; end if;
+
+  select count(*) into n from _enr e join public.locations l on l.id = e.db_id
+   where l.is_featured or l.is_indexable;
+  if n <> 0 then raise exception 'Post-check failed: % row(s) became featured/indexable.', n; end if;
+end $$;
+
+commit;
+
+`;
+}
+writeFileSync(`${OUT}/ENRICH-REMAINDER.sql`, rem);
+console.log(`remainder                 ${remainder.length} rows across ${remByState.size} states`);
+
+/* ============================== 4. ROLLBACK ============================== */
+/* geocode_source now carries the shared legal value 'batch-csv', so a
+ * tag-scoped bulk reversal is impossible — and unnecessary. Every write this
+ * package makes is enumerated in ENRICHMENT-PLAN.csv, so the rollback is
+ * per-row: id-scoped AND value-matched. A row edited since enrichment no
+ * longer matches its staged value and is left alone (and shows up in the
+ * post-rollback count check). No zip is staged anywhere in the plan. */
+const coordPair = (p) => `update public.locations
+   set lat = null, lng = null, geocode_source = null, geocode_confidence = null,
+       coord_verification_status = null, last_geocoded_at = null, updated_at = now()
+ where id = ${q(p.db_id)} and lat = ${nq(p.lat)} and lng = ${nq(p.lng)}
+   and geocode_source = 'batch-csv' and deleted_at is null and not is_featured;`;
+const spacePair = (p) => `update public.locations
+   set parking_spaces = null, updated_at = now()
+ where id = ${q(p.db_id)} and parking_spaces = ${nq(p.parking_spaces)}
+   and deleted_at is null and not is_featured;`;
+
+let rb = `-- TA/Petro package — per-row, id-scoped, value-matched rollback. NOT EXECUTED.
+--
+-- Reverses CANARY-ENRICH.sql / ENRICH-REMAINDER.sql / ENRICH-EXISTING.sql.
+-- geocode_source carries the shared legal value 'batch-csv' (the schema CHECK
+-- constraint allows no bespoke tag), so nothing here is scoped by tag: every
+-- statement names the exact row id from the committed plan and clears a field
+-- only while it still holds the exact staged value. A row someone edited since
+-- enrichment stops matching and is deliberately left alone.
+--
+-- Because every forward write was blank-only (proven by the forward guards),
+-- NULL is the exact pre-state for every field cleared here — this is a full
+-- value-matched reversal, not an approximation. Pre-state of every target row
+-- is also snapshotted in data/sources/ta-master/2026-07-27/DB-STATE-SNAPSHOT.tsv.
+--
+-- Rollbacks for CORRECTIONS-PROPOSALS.sql live inline in that file.
+-- HOLD rows: commented pairs at the bottom — activate only if HOLD was run.
+
+begin;
+`;
+for (const p of anchored) {
+  rb += `\n-- site ${p.site_id} · ${p.db_name} (${p.state}) · fills: ${p.fills}\n`;
+  if (p.lat) rb += coordPair(p) + '\n';
+  if (p.parking_spaces) rb += spacePair(p) + '\n';
+}
+const rbCoords = anchored.filter((p) => p.lat).length;
+const rbSpaces = anchored.filter((p) => p.parking_spaces).length;
+rb += `
+-- Post-check: after a FULL rollback of a FULL enrichment, every pair above
+-- must have matched. Fewer means rows were edited since (investigate those
+-- ids); never re-run blindly.
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.locations
+   where id in (${anchored
+     .filter((p) => p.lat)
+     .map((p) => q(p.db_id))
+     .join(', ')})
+     and lat is not null;
+  raise notice 'coordinate rows still enriched after rollback: % (expect 0 after full reversal of %)', n, ${rbCoords};
+end $$;
+commit;
+
+-- HOLD rows (site 0001 / site 0142) — activate ONLY if HOLD-NAME-ANCHORED.sql
+-- was verified and run:
+${holdRows
+  .map((p) =>
+    (coordPair(p) + '\n' + spacePair(p))
+      .split('\n')
+      .map((l) => '-- ' + l)
+      .join('\n'),
+  )
+  .join('\n')}
+`;
+writeFileSync(`${OUT}/ROLLBACK.sql`, rb);
+console.log(
+  `rollback pairs            ${rbCoords} coord + ${rbSpaces} spaces (per-row, value-matched)`,
+);
 
 /* ------------------------------------------------------------------ report */
 console.log(`enrich (address-anchored) ${anchored.length} across ${byState.size} states`);

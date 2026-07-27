@@ -133,9 +133,9 @@ begin
          detail_slug = 'petro-florence-florence-sc',
          lat = 34.2665, lng = -79.7321,
          parking_spaces = 210,
-         geocode_source = 'ta-master-2026-07-27',
+         geocode_source = 'batch-csv',
          geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(),
          updated_at = now()
    where id = 'beb05d53-db50-49cb-8790-ec01b45c8187'

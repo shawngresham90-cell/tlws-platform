@@ -43,7 +43,7 @@ Every line must pass. There is no partial launch.
 | **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | 101 reconciled, 719 prepared, **0 applied** | ⏳ |
 | **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | 0 route-usable, 803 prepared, **0 applied** | ⏳ |
 | **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **347 represented** — 1 mislabeled row pending correction | ⏳ |
-| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **306 route-usable**, 38 enrichments prepared, **0 applied** | ⏳ |
+| **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **343 route-usable** — 37 of 38 enrichments **applied 2026-07-27**; 1 quarantined (collision guard), 3 await held corrections | ⏳ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
@@ -160,22 +160,23 @@ whatever the acquisition percentage says.
 |---|--:|--:|--:|
 | **2 — Love's** | **100 %** (731 held, 615 U.S. Travel Stops) | **0** of 604 | 604 |
 | **3 — Pilot / Flying J / ONE9** | **100 %** (875 held, 820 U.S.) | **0** of 803 | 803 |
-| **4 — TA / Petro / TA Express** | **100 %** (354 held; 348 TA-brand) | **306** of 347 | 41 |
+| **4 — TA / Petro / TA Express** | **100 %** (354 held; 348 TA-brand) | **343** of 347 | 4 |
 
 TA's shape is the inverse of the other two, because most of its data landed on
 2026-07-25: 304 of its sites already have published, digest-verified rows. The
 full Site-ID reconciliation (`data/sources/ta-master/2026-07-27/FINDINGS.md`)
 resolved the "~30 questionable rows" of the earlier gap analysis into exactly
 **2 duplicates (1 published), 0 closures** — the rest were colocated service
-records and the sites' own pre-existing rows. One TA provenance caveat stands:
-Shawn's official download artifact (`a0c612f0…`) is content-verified against
-the committed copy but not yet committed itself; committing it is a
-precondition of executing the TA package.
+records and the sites' own pre-existing rows. The TA provenance caveat is
+closed: Shawn's official download artifact (`a0c612f0…`) was verified and
+committed 2026-07-27 as `locmaster20260727.xlsx`, and the enrichment package
+was executed against it the same day (37 of 38 applied; site 0269 quarantined
+by the coordinate-collision guard).
 
 **Acquisition coverage without route-usable coverage is a file on a disk.
 Route-usable coverage without acquisition coverage is unverified claims in
 front of drivers.** With TA's master in hand, line 4 has become the program's
-best line: 88 % route-usable today, 99 % after the prepared enrichment.
+best line: 99 % route-usable (343 of 347) after the 2026-07-27 enrichment run.
 
 ### Weigh stations are not parking
 
@@ -233,7 +234,7 @@ above — the baseline stays fixed, and none of the following has been applied):
 The Love's export of 2026-07-27 produced the project's first Tier-A set,
 **604 overnight-eligible locations across 42 states and 64 corridors**, 541 of
 them net-new, 62 enrichments of existing rows, 1 held. All 604 arrive with an
-operator-authoritative coordinate, so the 635 unmappable published rows would
+operator-supplied, machine-checked coordinate, so the unmappable published rows would
 not grow. **Zero rows are published by the package**; publication is a separate
 authorization that has not been given.
 

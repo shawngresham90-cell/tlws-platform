@@ -8,13 +8,11 @@
 -- Source of record: the current official TA/Petro location master,
 -- downloaded 2026-07-27 via "Download Location Data" at ta-petro.com/location/.
 -- Official artifact sha256 a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7
--- (Shawn's download — byte artifact pending commit); committed working copy
--- sha256 5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303,
--- verified against all ten independently stated facts. See
--- data/sources/ta-master/2026-07-27/CHECKSUM.txt.
---
--- PRECONDITION OF EXECUTION: commit the official a0c612f0… artifact and
--- content-diff it against the working copy (expected identical values).
+-- COMMITTED 2026-07-27 as locmaster20260727.xlsx and checksum-verified.
+-- Cell-content diff against the earlier working copy (5ebe0e9f…3303): identical
+-- except two service-hours cells at TA Kingman AZ — columns never read by the
+-- reconciliation and never written by any statement. All ten verified facts
+-- hold on the exact artifact. PRECONDITION OF EXECUTION: SATISFIED.
 --
 -- Stable keys: Site ID first, then Location ID; then address and coordinate
 -- checks. A loose business name is never sufficient on its own.
@@ -47,8 +45,8 @@ begin
   update public.locations
      set lat = 37.7598, lng = -77.4631,
          parking_spaces = coalesce(parking_spaces, 183),
-         geocode_source = 'ta-master-2026-07-27', geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         geocode_source = 'batch-csv', geocode_confidence = 'high',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(), updated_at = now()
    where id = 'e36e07df-2f06-48a6-9494-8cf3b0f4cc15' and lat is null and lng is null;
   get diagnostics n = row_count;
@@ -70,8 +68,8 @@ begin
   update public.locations
      set lat = 37.7237, lng = -77.4479,
          parking_spaces = coalesce(parking_spaces, 317),
-         geocode_source = 'ta-master-2026-07-27', geocode_confidence = 'high',
-         coord_verification_status = 'operator-authoritative',
+         geocode_source = 'batch-csv', geocode_confidence = 'high',
+         coord_verification_status = 'machine-checked',
          last_geocoded_at = now(), updated_at = now()
    where id = '7a03c1f5-6b4d-4951-98a2-a3e752d2270b' and lat is null and lng is null;
   get diagnostics n = row_count;
