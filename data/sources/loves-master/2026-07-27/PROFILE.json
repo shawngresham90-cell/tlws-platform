@@ -1,0 +1,83 @@
+{
+  "source_file": "LovesSearchResults.xlsx",
+  "sha256": "ec5146ee475af473d037ed4913e4f9b4c1059c737581ff93d2b2eefcc5a89ab2",
+  "sheet": "Love's Locations",
+  "header_row_index": 2,
+  "columns": 64,
+  "data_rows": 731,
+  "store_type": {
+    "Car Stop": 4,
+    "Travel Stop": 615,
+    "Truck Service": 52,
+    "Country Store": 59,
+    "Service Center": 1
+  },
+  "states": [
+    "AL",
+    "AR",
+    "AZ",
+    "CA",
+    "CO",
+    "CT",
+    "FL",
+    "GA",
+    "IA",
+    "ID",
+    "IL",
+    "IN",
+    "KS",
+    "KY",
+    "LA",
+    "MD",
+    "MI",
+    "MN",
+    "MO",
+    "MS",
+    "MT",
+    "NC",
+    "ND",
+    "NE",
+    "NJ",
+    "NM",
+    "NV",
+    "NY",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "WA",
+    "WI",
+    "WV",
+    "WY"
+  ],
+  "coordinate_range": {
+    "lat": [
+      25.954858,
+      48.570063
+    ],
+    "lng": [
+      -123.367895,
+      -72.25951
+    ]
+  },
+  "null_rates": {
+    "StoreNumber": 0,
+    "State": 0,
+    "City": 0,
+    "Address": 0,
+    "Zip": 0,
+    "Latitude": 0,
+    "Longitude": 0,
+    "ParkingSpaces": 110
+  },
+  "missing_expected_columns": [
+    "name",
+    "status"
+  ]
+}

@@ -1,0 +1,1440 @@
+{
+  "schema_version": 1,
+  "generated": "2026-07-27",
+  "purpose": "Ranked acquisition order for official rest-area, welcome-center, service-plaza and weigh-station datasets. Gate lines 5 and 6.",
+  "ranking_basis": "Computed from priority-corridor membership weighted inversely by the parking the directory already publishes on each corridor. I-95 dominates because it publishes 4 mappable parking rows nationwide.",
+  "corridor_published_baseline": {
+    "I-95": 4,
+    "I-80": 28,
+    "I-90/I-94": 27,
+    "I-10": 23,
+    "I-15": 7
+  },
+  "network_status": "Every agency host, ArcGIS endpoint, FHWA and USDOT host is BLOCKED at this environment egress proxy. No URL here was fetched or verified. Confirm each entry point on arrival.",
+  "rules": {
+    "weigh_station_is_not_parking": "A weigh, inspection, scale, check station or port of entry is never counted as truck parking unless the authoritative source explicitly confirms legal parking is permitted.",
+    "no_inferred_coordinates": "No coordinate from a road midpoint, ZIP centroid, interpolation or geocoder guess.",
+    "no_invented_attributes": "Space count, hours, restrictions and amenities stay null unless the source states them.",
+    "directional_pairs_stay_separate": "A northbound and a southbound facility are two facilities and need two coordinates.",
+    "toll_authorities_are_separate_custodians": "A state DOT rest-area dataset does not contain turnpike or thruway service plazas. Those must be requested from the authority that operates them."
+  },
+  "federal": [
+    {
+      "rank": 0,
+      "source": "FHWA / BTS national truck parking layer (Jason’s Law survey)",
+      "agency": "Federal Highway Administration / Bureau of Transportation Statistics",
+      "why_first": "One request covers all 50 states at once. Lower resolution and possibly stale, but it is the only single artifact that can move gate line 5 nationally in one step.",
+      "conflict_rule": "State DOT data WINS over FHWA on any conflict — the state is closer to the asset. Record the federal layer vintage and never let it override a fresher state dataset.",
+      "access_status": "BLOCKED at this environment egress proxy",
+      "entry_point": "data.transportation.gov / BTS geospatial catalogue. UNVERIFIED."
+    }
+  ],
+  "states": [
+    {
+      "state": "PA",
+      "agency": "Pennsylvania DOT (PennDOT)",
+      "priority_corridors": [
+        "I-95",
+        "I-80",
+        "I-90/I-94"
+      ],
+      "corridor_count": 3,
+      "score": 18.85,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Pennsylvania State Police — Bureau of Patrol, CVSD",
+      "toll_authorities": [
+        "Pennsylvania Turnpike Commission (I-76 / I-276 service plazas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 1,
+      "tier": 1
+    },
+    {
+      "state": "FL",
+      "agency": "Florida DOT (FDOT)",
+      "priority_corridors": [
+        "I-95",
+        "I-10"
+      ],
+      "corridor_count": 2,
+      "score": 16.2,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Florida Highway Patrol — Office of Commercial Vehicle Enforcement",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 2,
+      "tier": 1
+    },
+    {
+      "state": "CA",
+      "agency": "California DOT (Caltrans)",
+      "priority_corridors": [
+        "I-80",
+        "I-10",
+        "I-15"
+      ],
+      "corridor_count": 3,
+      "score": 15.92,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "California Highway Patrol (CHP) commercial vehicle section",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 3,
+      "tier": 1
+    },
+    {
+      "state": "MA",
+      "agency": "Massachusetts DOT (MassDOT)",
+      "priority_corridors": [
+        "I-95",
+        "I-90/I-94"
+      ],
+      "corridor_count": 2,
+      "score": 15.73,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [
+        "MassDOT — I-90 Mass Pike service plazas"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 4,
+      "tier": 1
+    },
+    {
+      "state": "NY",
+      "agency": "New York State DOT (NYSDOT)",
+      "priority_corridors": [
+        "I-95",
+        "I-90/I-94"
+      ],
+      "corridor_count": 2,
+      "score": 15.73,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "NYSDOT — Motor Carrier Compliance / NY State Police CVEU",
+      "toll_authorities": [
+        "New York State Thruway Authority (I-87 / I-90 service areas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 5,
+      "tier": 1
+    },
+    {
+      "state": "NJ",
+      "agency": "New Jersey DOT (NJDOT)",
+      "priority_corridors": [
+        "I-95",
+        "I-80"
+      ],
+      "corridor_count": 2,
+      "score": 15.63,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [
+        "New Jersey Turnpike Authority (I-95 / NJ Turnpike service areas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 6,
+      "tier": 1
+    },
+    {
+      "state": "AZ",
+      "agency": "Arizona DOT (ADOT)",
+      "priority_corridors": [
+        "I-10",
+        "I-15"
+      ],
+      "corridor_count": 2,
+      "score": 12.79,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 7,
+      "tier": 2
+    },
+    {
+      "state": "CT",
+      "agency": "Connecticut DOT (CTDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 8,
+      "tier": 2
+    },
+    {
+      "state": "DC",
+      "agency": "District DOT (DDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 9,
+      "tier": 2
+    },
+    {
+      "state": "DE",
+      "agency": "Delaware DOT (DelDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [
+        "Delaware DOT — I-95 Delaware Welcome Center"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 10,
+      "tier": 2
+    },
+    {
+      "state": "GA",
+      "agency": "Georgia DOT (GDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Georgia Department of Public Safety — Motor Carrier Compliance Division",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 11,
+      "tier": 2
+    },
+    {
+      "state": "MD",
+      "agency": "Maryland DOT State Highway Administration (MDOT SHA)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Maryland State Police — Commercial Vehicle Enforcement Division",
+      "toll_authorities": [
+        "Maryland Transportation Authority (I-95 JFK Highway travel plazas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 12,
+      "tier": 2
+    },
+    {
+      "state": "ME",
+      "agency": "Maine DOT (MaineDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [
+        "Maine Turnpike Authority (I-95 service plazas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 13,
+      "tier": 2
+    },
+    {
+      "state": "NC",
+      "agency": "North Carolina DOT (NCDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "NCDOT — State Highway Patrol Motor Carrier Enforcement",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 14,
+      "tier": 2
+    },
+    {
+      "state": "NH",
+      "agency": "New Hampshire DOT (NHDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 15,
+      "tier": 2
+    },
+    {
+      "state": "RI",
+      "agency": "Rhode Island DOT (RIDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 16,
+      "tier": 2
+    },
+    {
+      "state": "SC",
+      "agency": "South Carolina DOT (SCDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "SC State Transport Police",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 17,
+      "tier": 2
+    },
+    {
+      "state": "VA",
+      "agency": "Virginia DOT (VDOT)",
+      "priority_corridors": [
+        "I-95"
+      ],
+      "corridor_count": 1,
+      "score": 12.5,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Virginia State Police — Motor Carrier Safety",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 18,
+      "tier": 2
+    },
+    {
+      "state": "ID",
+      "agency": "Idaho Transportation Department (ITD)",
+      "priority_corridors": [
+        "I-90/I-94",
+        "I-15"
+      ],
+      "corridor_count": 2,
+      "score": 12.32,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 19,
+      "tier": 3
+    },
+    {
+      "state": "MT",
+      "agency": "Montana DOT (MDT)",
+      "priority_corridors": [
+        "I-90/I-94",
+        "I-15"
+      ],
+      "corridor_count": 2,
+      "score": 12.32,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 20,
+      "tier": 3
+    },
+    {
+      "state": "NV",
+      "agency": "Nevada DOT (NDOT)",
+      "priority_corridors": [
+        "I-80",
+        "I-15"
+      ],
+      "corridor_count": 2,
+      "score": 12.22,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 21,
+      "tier": 3
+    },
+    {
+      "state": "UT",
+      "agency": "Utah DOT (UDOT)",
+      "priority_corridors": [
+        "I-80",
+        "I-15"
+      ],
+      "corridor_count": 2,
+      "score": 12.22,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 22,
+      "tier": 3
+    },
+    {
+      "state": "IL",
+      "agency": "Illinois DOT (IDOT)",
+      "priority_corridors": [
+        "I-80",
+        "I-90/I-94"
+      ],
+      "corridor_count": 2,
+      "score": 6.35,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Illinois State Police — Commercial Vehicle Enforcement",
+      "toll_authorities": [
+        "Illinois State Toll Highway Authority (I-90 / I-294 oases)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 23,
+      "tier": 3
+    },
+    {
+      "state": "IN",
+      "agency": "Indiana DOT (INDOT)",
+      "priority_corridors": [
+        "I-80",
+        "I-90/I-94"
+      ],
+      "corridor_count": 2,
+      "score": 6.35,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Indiana State Police — Commercial Vehicle Enforcement Division",
+      "toll_authorities": [
+        "Indiana Toll Road Concession Company (I-80 / I-90 service plazas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 24,
+      "tier": 3
+    },
+    {
+      "state": "OH",
+      "agency": "Ohio DOT (ODOT)",
+      "priority_corridors": [
+        "I-80",
+        "I-90/I-94"
+      ],
+      "corridor_count": 2,
+      "score": 6.35,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Ohio State Highway Patrol — Licensing and Commercial Standards",
+      "toll_authorities": [
+        "Ohio Turnpike and Infrastructure Commission (I-80 / I-90 service plazas)"
+      ],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 25,
+      "tier": 3
+    },
+    {
+      "state": "AL",
+      "agency": "Alabama DOT (ALDOT)",
+      "priority_corridors": [
+        "I-10"
+      ],
+      "corridor_count": 1,
+      "score": 3.7,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 26,
+      "tier": 3
+    },
+    {
+      "state": "LA",
+      "agency": "Louisiana DOTD",
+      "priority_corridors": [
+        "I-10"
+      ],
+      "corridor_count": 1,
+      "score": 3.7,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 27,
+      "tier": 3
+    },
+    {
+      "state": "MS",
+      "agency": "Mississippi DOT (MDOT)",
+      "priority_corridors": [
+        "I-10"
+      ],
+      "corridor_count": 1,
+      "score": 3.7,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 28,
+      "tier": 3
+    },
+    {
+      "state": "NM",
+      "agency": "New Mexico DOT (NMDOT)",
+      "priority_corridors": [
+        "I-10"
+      ],
+      "corridor_count": 1,
+      "score": 3.7,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 29,
+      "tier": 3
+    },
+    {
+      "state": "TX",
+      "agency": "Texas DOT (TxDOT)",
+      "priority_corridors": [
+        "I-10"
+      ],
+      "corridor_count": 1,
+      "score": 3.7,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "Texas DPS — Commercial Vehicle Enforcement",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 30,
+      "tier": 3
+    },
+    {
+      "state": "MI",
+      "agency": "Michigan DOT (MDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 31,
+      "tier": 3
+    },
+    {
+      "state": "MN",
+      "agency": "Minnesota DOT (MnDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 32,
+      "tier": 3
+    },
+    {
+      "state": "ND",
+      "agency": "North Dakota DOT (NDDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 33,
+      "tier": 3
+    },
+    {
+      "state": "SD",
+      "agency": "South Dakota DOT (SDDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 34,
+      "tier": 3
+    },
+    {
+      "state": "WA",
+      "agency": "Washington State DOT (WSDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 35,
+      "tier": 3
+    },
+    {
+      "state": "WI",
+      "agency": "Wisconsin DOT (WisDOT)",
+      "priority_corridors": [
+        "I-90/I-94"
+      ],
+      "corridor_count": 1,
+      "score": 3.23,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 36,
+      "tier": 3
+    },
+    {
+      "state": "IA",
+      "agency": "Iowa DOT",
+      "priority_corridors": [
+        "I-80"
+      ],
+      "corridor_count": 1,
+      "score": 3.13,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 37,
+      "tier": 3
+    },
+    {
+      "state": "NE",
+      "agency": "Nebraska DOT (NDOT)",
+      "priority_corridors": [
+        "I-80"
+      ],
+      "corridor_count": 1,
+      "score": 3.13,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 38,
+      "tier": 3
+    },
+    {
+      "state": "WY",
+      "agency": "Wyoming DOT (WYDOT)",
+      "priority_corridors": [
+        "I-80"
+      ],
+      "corridor_count": 1,
+      "score": 3.13,
+      "datasets_required": [
+        "rest areas (truck parking status and space count)",
+        "welcome centers (truck parking status)",
+        "service plazas, where the state or an authority operates them",
+        "weigh / inspection stations, as a SEPARATE category"
+      ],
+      "weigh_station_custodian": "state police / highway patrol CVE division — confirm",
+      "toll_authorities": [],
+      "entry_point": "state open-data / GIS portal, then the DOT GIS or asset-inventory group. UNVERIFIED — confirm on arrival.",
+      "access_status": "BLOCKED at this environment egress proxy (connect_rejected, 403 CONNECT)",
+      "required_fields": [
+        "facility_id (stable, namespaced by state)",
+        "name",
+        "facility_type (rest area | welcome center | service plaza | weigh station)",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "truck_parking_permitted (explicit boolean — REQUIRED for weigh stations)",
+        "hours_or_seasonal_restrictions",
+        "status (open | closed | seasonal | under construction)"
+      ],
+      "rank": 39,
+      "tier": 3
+    }
+  ],
+  "tier_thresholds": {
+    "tier_1": "score >= 13.5 — carries more than one starved priority corridor",
+    "tier_2": "score >= 12.5 — carries I-95",
+    "tier_3": "everything else on a priority corridor"
+  }
+}

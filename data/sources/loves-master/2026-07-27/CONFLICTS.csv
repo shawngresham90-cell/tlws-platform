@@ -1,0 +1,3 @@
+source_ref,source_state,source_city,db_states,conflict,db_rows
+420,MS,Flowood,SC,store-number-state-mismatch,beb05d53-db50-49cb-8790-ec01b45c8187:SC/Florence:Love's Travel Stop #420
+618,KY,Sadieville,KY+MI,store-number-used-in-multiple-states,"0c0c4cac-8771-4987-becf-d13a6fb414e6:KY/Sadieville:CAT Scale — Love's Travel Stop #618, Sadieville || b67852b7-a14e-43d2-b786-b8536fed05d5:KY/Sadieville:Love's Travel Stop #618 || 33c7ebe8-323c-4b35-a654-2ac4076fec1b:KY/Sadieville:Love's Truck Care / Speedco - Love's Travel Stop #618, Sadieville || 485085d9-98c6-4e88-9661-862c3bc0c514:MI/Birch Run:CAT Scale — Love's Travel Stop #618, Birch Run || c32686ff-6cf3-4422-af97-80b823e07eb9:MI/Birch Run:Love's Travel Stop #618 (Birch Run)"

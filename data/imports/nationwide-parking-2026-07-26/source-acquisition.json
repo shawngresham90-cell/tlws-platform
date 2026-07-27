@@ -1,0 +1,519 @@
+{
+  "schema_version": 1,
+  "generated": "2026-07-26",
+  "note": "Machine-readable companion to SOURCE-ACQUISITION.md. No URL here was fetched or verified during this run; agency endpoints are blocked by network policy and operator feeds require authorization. Confirm the exact download path on arrival.",
+  "obtain_first": "loves-master",
+  "represents_values": [
+    "parking",
+    "truck_stop",
+    "rest_area",
+    "welcome_center",
+    "service_plaza",
+    "weigh_station"
+  ],
+  "rules": {
+    "weigh_station_is_not_parking": "A weigh, inspection, scale, check station or port of entry is never counted as truck parking, surfaced on a parking page, or returned by a parking query unless the authoritative source explicitly confirms legal parking is permitted.",
+    "no_scraping": "Truck Parking Club inventory must not be reproduced without an authorized feed. No operator map may be scraped in place of an export.",
+    "no_inferred_coordinates": "No coordinate from a road midpoint, ZIP centroid, interpolation, geocoder guess or search snippet.",
+    "no_invented_attributes": "Space count, hours, restrictions and amenities stay null unless the source states them.",
+    "no_speculative_parsers": "Required columns are a checklist to verify on arrival, not a schema to code against before the file exists.",
+    "publication_requires_separate_authorization": true,
+    "canada_excluded_from_us_denominator": "Canadian locations in an operator export are preserved in a separate manifest and excluded from every U.S. coverage denominator.",
+    "no_invented_overnight_permission": "A parking-space count confirms parking, not overnight legality. Where a source carries no overnight field, overnight permission, restrictions and duration stay unknown and no row may be offered as overnight or HOS-rest parking.",
+    "absence_is_not_closure": "A directory row absent from a single export is a closure CANDIDATE. It is never deleted or unpublished on that basis; closure review is a separate exercise with its own authorization.",
+    "discovery_only_sources_never_supply_values": "A discovery_only source may inform which question to ask an authoritative source. It may never supply a value that lands in the directory, and no gate percentage may count a row that came from it.",
+    "buying_a_product_is_not_a_licence": "Purchasing a paid PDF, app or report does not license redistribution or extraction of its contents.",
+    "stale_reference_is_not_a_source": "A file of unknown provenance may be profiled for shape and magnitude. It may never be imported, and it is never grounds to unpublish, correct or delete a live row."
+  },
+  "sources": [
+    {
+      "source_id": "loves-master",
+      "priority": 1,
+      "name": "Love's Travel Stops official location export",
+      "url": "https://www.loves.com/en/location-search",
+      "contact_note": "If no direct download is offered, request via the Love's fleet/business contact on the same site.",
+      "expected_format": "xlsx",
+      "represents": "truck_stop",
+      "gate_line": 2,
+      "required_columns": [
+        "store_number",
+        "name",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "latitude",
+        "longitude",
+        "truck_parking_spaces",
+        "showers",
+        "scales"
+      ],
+      "stable_source_id_field": "store_number",
+      "attribution": "Operator data — confirm redistribution terms before publishing counts.",
+      "update_frequency": "monthly",
+      "closure_signal": "ABSENCE FROM A LATER FULL EXPORT ONLY — the export carries no status column. Every dated export must be retained or closures become undetectable.",
+      "deduplication": [
+        "store_number",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "notes": "Largest single closable gate line: one file, ~650 sites, no per-state work, and reach onto I-80/I-90/I-94/I-10/I-15 where the directory holds zero rows. Also backs the 369 existing held-brand rows (273 published) that currently have no authoritative source.",
+      "acquisition_status": "COMPLETE",
+      "acquired_on": "2026-07-27",
+      "file": "data/sources/loves-master/2026-07-27/LovesSearchResults.xlsx",
+      "sha256": "ec5146ee475af473d037ed4913e4f9b4c1059c737581ff93d2b2eefcc5a89ab2",
+      "completeness_evidence": "Love's official results page reports 731 locations; the workbook holds exactly 731 records across all five location types and 42 operating states.",
+      "record_count": 731,
+      "columns_absent_from_export": [
+        "name",
+        "status"
+      ],
+      "derived_fields": {
+        "name": "derived from StoreType + StoreNumber (e.g. Love's Travel Stop #245); the export has no name column"
+      },
+      "gates": {
+        "2a_directory_coverage": 615,
+        "2b_overnight_parking_coverage": 604,
+        "non_overnight_travel_stops": 11,
+        "outside_directory_gate": 116,
+        "note": "Source acquisition is 100%. Database coverage passes only when all 615 are reconciled and represented."
+      }
+    },
+    {
+      "source_id": "pilot-master",
+      "priority": 2,
+      "name": "Pilot / Flying J / ONE9 complete-location download",
+      "url": "https://pilotflyingj.com/locations",
+      "contact_note": "If no direct download is offered, request via their fleet contact.",
+      "expected_format": "csv",
+      "represents": "truck_stop",
+      "gate_line": "3a/3b",
+      "required_columns": [
+        "Store #",
+        "Name",
+        "Address",
+        "City",
+        "State",
+        "Zip Code",
+        "Interstate",
+        "Latitude",
+        "Longitude",
+        "Phone Number",
+        "Parking Spaces Count",
+        "Fuel Lane Count",
+        "Shower Count",
+        "Amenities",
+        "Restaurants"
+      ],
+      "stable_source_id_field": "Store #",
+      "attribution": "Operator data — confirm redistribution terms.",
+      "update_frequency": "monthly",
+      "closure_signal": "ABSENCE FROM A LATER FULL EXPORT ONLY — the export carries no status column. Every dated export must be retained or closures become undetectable. Absence from a single export is NOT proof of closure and must never trigger a delete or an unpublish on its own.",
+      "deduplication": [
+        "site_number",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "notes": "Brand must be preserved. ONE9 is a distinct format and must not be flattened into Pilot.",
+      "acquisition_status": "COMPLETE",
+      "acquired_on": "2026-07-27",
+      "file": "data/sources/pilot-master/2026-07-27/all_locations.csv",
+      "sha256": "d39ab57d51999f2468ff2f32790f8ab43a20b859559b0052e353272c9d1e330a",
+      "record_count": 875,
+      "completeness_evidence": "Independently inspected and reproduced exactly from the file: 875 total, 820 U.S., 55 Canadian, 43 U.S. states, 803 U.S. with Parking Spaces Count > 0, 17 with zero, 72,189 stated U.S. spaces, zero duplicate store numbers, coordinates or name/address/state triples.",
+      "columns_absent_from_export": [
+        "status",
+        "overnight_permission",
+        "parking_duration_limit"
+      ],
+      "derived_fields": {
+        "name": "derived as `${Name} #${Store #}`; the operator Name value is stored verbatim and never flattened to \"Pilot\"",
+        "interstate": "parsed from the Interstate column prefix, e.g. \"I-70, Exit 96\" -> I-70; non-Interstate routes yield null",
+        "exit_number": "parsed from the Interstate column suffix after \", Exit \""
+      },
+      "gates": {
+        "3a_us_directory_coverage": 820,
+        "3b_us_truck_parking_coverage": 803,
+        "zero_space_us_locations": 17,
+        "canadian_locations_excluded": 55,
+        "note": "Source acquisition is 100%. Database coverage passes only when all 820 U.S. locations are reconciled and represented. 875 is never the U.S. coverage number: the 55 Canadian locations are preserved separately and excluded from every U.S. denominator."
+      },
+      "parking_rule": "A positive operator-provided parking-space count confirms truck parking for directory and map purposes only. The export has NO overnight-permission field; overnight legality, restrictions and duration limits stay unknown and must not be invented. The 17 zero-space locations may be listed as network truck stops but must never be returned as parking or as a last-legal-stop recommendation.",
+      "brand_rule": "Retain the official Name value and the stable store number. Do not rename records to \"Pilot\". Pilot Travel Center, Flying J Travel Center, ONE9 Travel Center, ONE9 Dealer, Pilot Dealer, Mr. Fuel Travel Center, Pilot Licensed Location, Flying J Dealer, Flying J Cardlock, Flying J Licensed Location, Shell Cardlock, Shell Flying J Dealer, EZ Trip Travel Center, EZ Trip Dealer, Xpress Fuel Travel Center, Pilot Express, Pride Travel Center, Pilot Licensee, Stamart Travel Center and Arco Travel Center are all preserved distinctly, as are both published casings of the ONE9 brand string.",
+      "reconciliation": {
+        "exact_authoritative_match": 87,
+        "blank_only_enrichment": 8,
+        "address_matched_enrichment": 5,
+        "conflicting_record": 5,
+        "duplicate": 0,
+        "probable_closure": 12,
+        "net_new_official_location": 705,
+        "zero_space_directory_only": 17,
+        "unresolved_quarantined": 3,
+        "third_party_at_network_site": 14,
+        "match_order": [
+          "official store number",
+          "address",
+          "coordinate proximity 150m",
+          "brand",
+          "state"
+        ],
+        "note": "Loose business-name matching is never sufficient on its own."
+      },
+      "package": "data/imports/pilot-2026-07-27/"
+    },
+    {
+      "source_id": "ta-master",
+      "priority": 3,
+      "name": "TA / Petro / TA Express master export",
+      "url": "https://www.ta-petro.com/locations",
+      "contact_note": "If no direct download is offered, request via their fleet contact.",
+      "expected_format": "xlsx|csv",
+      "represents": "truck_stop",
+      "gate_line": "4a/4b",
+      "required_columns": [
+        "site_number",
+        "brand",
+        "name",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "latitude",
+        "longitude",
+        "truck_parking_spaces",
+        "showers",
+        "scales",
+        "status"
+      ],
+      "stable_source_id_field": "Site ID (with Location ID as secondary)",
+      "attribution": "Operator data — confirm redistribution terms.",
+      "update_frequency": "monthly",
+      "closure_signal": "status column, or absence between full exports",
+      "deduplication": [
+        "site_number",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "notes": "data/imports/locmaster20260725.xlsx is an older copy of unknown provenance. Treat it as stale and reconcile against a fresh official export rather than trusting it. A status column and a stable site_id are both ESSENTIAL for this source: without status, closures are undetectable except as absence between dated exports.",
+      "acquisition_status": "COMPLETE — official byte artifact committed 2026-07-27 (locmaster20260727.xlsx, sha256-verified); enrichment package executed the same day: 37 of 38 applied, site 0269 quarantined by the collision guard",
+      "attempted_on": "2026-07-27",
+      "blocked_reason": "Every ta-petro.com and tatravelcenters.com host returns connect_rejected (403 to CONNECT) at this environment egress proxy, before TLS. Not a credentials problem. Whether TA publishes a developer API or requires credentials could not be determined from here.",
+      "hosts_attempted": [
+        "www.ta-petro.com/locations",
+        "www.ta-petro.com",
+        "api.ta-petro.com",
+        "developer.ta-petro.com",
+        "www.ta-petro.com/sitemap.xml",
+        "www.ta-petro.com/robots.txt",
+        "tatravelcenters.com",
+        "www.tatravelcenters.com",
+        "roadsquad.com",
+        "ir.ta-petro.com"
+      ],
+      "access_path_documented": "data/sources/ta-master/ACCESS-BLOCKED.md",
+      "data_access_request": "data/sources/ta-master/DATA-ACCESS-REQUEST.md",
+      "gap_analysis": "data/sources/ta-master/2026-07-27/GAP-ANALYSIS.md",
+      "stale_reference": {
+        "file": "data/imports/locmaster20260725.xlsx",
+        "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+        "status": "STALE REFERENCE ONLY — not a source of record",
+        "provenance": "unknown; no documented official download path, no origin checksum",
+        "rows": 354,
+        "approved_rows": 0,
+        "rule": "Profiled for shape and magnitude only. No value from it may be imported, published or counted toward any gate."
+      },
+      "directory_state_2026_07_27": {
+        "ta_network_rows": 387,
+        "published": 383,
+        "with_coordinate": 325,
+        "route_usable": 310,
+        "states": 44,
+        "finding": "The directory holds MORE TA-network rows (387) than the reference lists (354). Roughly 30 rows are duplicates, closures or non-network, and 383 of 387 are published."
+      },
+      "acquired_on": "2026-07-27",
+      "official_download_path": "https://www.ta-petro.com/location/ — \"Download Location Data\"",
+      "official_sha256": "a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7",
+      "file": "data/sources/ta-master/2026-07-27/locmaster20260727.xlsx",
+      "sha256": "a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7",
+      "working_copy": "data/sources/ta-master/2026-07-27/locmaster.xlsx",
+      "working_copy_sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+      "record_count": 354,
+      "completeness_evidence": "All ten independently stated facts of the official 2026-07-27 download reproduce exactly from the committed copy: 354 locations, 97 columns, 44 states, TA 192 / TA Express 79 / Petro 77 / Goasis 4 / Thorntons 2, complete coordinates, 347 positive parking counts, 7 zero, 54,589 stated spaces, zero duplicate Site IDs, zero duplicate Location IDs.",
+      "execution_precondition": "SATISFIED 2026-07-27 — the official a0c612f0 artifact is committed as data/sources/ta-master/2026-07-27/locmaster20260727.xlsx and content-diffed (only two out-of-scope service-hours cells differ from the working copy).",
+      "execution_record": "data/imports/ta-2026-07-27/EXECUTION-RECORD.md",
+      "columns_absent_from_export": [
+        "status",
+        "overnight_permission"
+      ],
+      "gates": {
+        "4a_directory_coverage": 348,
+        "4b_route_usable_coverage": 347,
+        "held_goasis_thorntons": 6,
+        "zero_parking_ta_brand": 1,
+        "note": "354 = 348 TA-brand + 6 held. 348 = 347 with positive official parking + 1 zero-parking (site 0347). GATES CLOSED 2026-07-27: 4a = 348/348 and 4b = 347/347 by distinct official Site ID after three authorized rounds (37 enrichments; closeout 1: 0269 exact-ID exception + Atlanta dedup; closeout 2: Ashland/Richmond on official public-page evidence + Petro Florence relabel/publish with a one-record Blue Beacon exception). Goasis and Thorntons stay separate and untouched unless explicitly authorized; zero-parking locations never count as truck-parking coverage."
+      },
+      "reconciliation": {
+        "exact_match": 306,
+        "safe_enrichment": 40,
+        "held": 6,
+        "zero_parking": 1,
+        "cross_brand_conflict": 1,
+        "missing_net_new": 0,
+        "db_side": {
+          "exact_match": 307,
+          "service_only": 46,
+          "safe_enrichment_targets": 40,
+          "duplicate": 2,
+          "probable_closure": 0
+        },
+        "match_order": [
+          "Site ID",
+          "prior-review exact production id",
+          "row name cites site number",
+          "street number / address",
+          "name tokens + city + state + zip5"
+        ],
+        "note": "Ambiguity refused, not guessed. One site, one row — enforced in ordered phases."
+      },
+      "package": "data/imports/ta-2026-07-27/"
+    },
+    {
+      "source_id": "fhwa-truck-parking",
+      "priority": 4,
+      "name": "FHWA / BTS public truck-parking GIS layer",
+      "url": "https://data.transportation.gov",
+      "contact_note": "National truck parking layer arising from the Jason's Law survey. Blocked from the build environment — download locally.",
+      "expected_format": "shapefile|geojson",
+      "represents": "parking",
+      "gate_line": 5,
+      "required_columns": [
+        "facility_id",
+        "name",
+        "state",
+        "route",
+        "direction",
+        "milepost",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "ownership",
+        "facility_type"
+      ],
+      "stable_source_id_field": "facility_id",
+      "attribution": "US federal government, public domain. Attribute agency and dataset vintage.",
+      "update_frequency": "infrequent, survey-driven",
+      "closure_signal": "none reliable",
+      "deduplication": [
+        "facility_id",
+        "coordinate_proximity_150m"
+      ],
+      "conflict_rule": "State DOT data wins over FHWA on any conflict — it is closer to the asset.",
+      "notes": "Record the vintage. A stale federal layer must never override a fresher state dataset."
+    },
+    {
+      "source_id": "statedot-restareas",
+      "priority": 5,
+      "per_state": true,
+      "name": "State DOT rest area / welcome center / service plaza datasets",
+      "url": "per state — ranked worklist in SOURCING-QUEUE.md",
+      "contact_note": "All state DOT GIS and ArcGIS hosts are blocked from the build environment. Download locally or supply as committed files.",
+      "expected_format": "shapefile|geojson|arcgis-featureserver-json|csv",
+      "represents": "rest_area|welcome_center|service_plaza",
+      "gate_line": 5,
+      "required_columns": [
+        "facility_id",
+        "name",
+        "type",
+        "state",
+        "route",
+        "direction",
+        "milepost_or_exit",
+        "latitude",
+        "longitude",
+        "truck_spaces",
+        "hours_or_seasonal_restrictions",
+        "amenities",
+        "status"
+      ],
+      "stable_source_id_field": "facility_id (namespaced by state)",
+      "attribution": "Usually open state data — check each state's terms.",
+      "update_frequency": "annual, plus construction closures",
+      "closure_signal": "status column; seasonal closures must be carried, not dropped",
+      "deduplication": [
+        "state_facility_id",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "first_states": [
+        "VA",
+        "FL",
+        "TN",
+        "MD",
+        "SC"
+      ],
+      "notes": "Unblocks the 35 A-PENDING-COORDINATE rows and is the only source that can confirm truck-parking status for gate line 5. Directional pairs stay separate: 8 identified, each needs its own coordinate. Facility type must be distinguished, never merged."
+    },
+    {
+      "source_id": "weigh-stations",
+      "priority": 6,
+      "per_state": true,
+      "name": "Official weigh / inspection station datasets",
+      "url": "state DOT or state police / CVE division, per state",
+      "contact_note": "Blocked from the build environment. Download locally or supply as committed files.",
+      "expected_format": "shapefile|geojson|csv",
+      "represents": "weigh_station",
+      "gate_line": 6,
+      "required_columns": [
+        "station_id",
+        "name",
+        "state",
+        "route",
+        "direction",
+        "milepost",
+        "latitude",
+        "longitude",
+        "parking_permitted",
+        "hours_of_operation",
+        "bypass_program",
+        "status"
+      ],
+      "stable_source_id_field": "station_id (namespaced by state)",
+      "attribution": "Usually open state data — check each state's terms.",
+      "update_frequency": "infrequent; conversions and closures do occur",
+      "closure_signal": "status column; a converted site is re-typed as parking, not deleted",
+      "deduplication": [
+        "state_station_id",
+        "coordinate_proximity_150m"
+      ],
+      "notes": "Captured at 100% as a separate category so drivers can see and avoid them. parking_permitted must be explicit before any row is treated as parking. 8 directional weigh pairs already identified."
+    },
+    {
+      "source_id": "tpc-feed",
+      "priority": 7,
+      "name": "Truck Parking Club authorized feed",
+      "url": "https://www.truckparkingclub.com",
+      "contact_note": "Partnership / API contact. AUTHORIZATION REQUIRED BEFORE ANY USE. Do not scrape or reproduce inventory without it.",
+      "expected_format": "csv|json-api",
+      "represents": "parking",
+      "gate_line": 1,
+      "required_columns": [
+        "location_id",
+        "name",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "latitude",
+        "longitude",
+        "space_count",
+        "amenities",
+        "access_hours",
+        "booking_url",
+        "status"
+      ],
+      "stable_source_id_field": "location_id",
+      "attribution": "Per agreement — expect attribution and a redistribution limit. Record the agreement reference.",
+      "update_frequency": "frequent — treat as a living feed",
+      "closure_signal": "status flag, or absence from a later full export",
+      "deduplication": [
+        "provider_location_id",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "authorization_required": true,
+      "notes": "Priority 7 reflects authorization gating, not low value. Existing rows naming this brand (AR, IL, MI x2, NC) are quarantined no-official-source; the feed either confirms and replaces them or they stay quarantined."
+    },
+    {
+      "source_id": "allstays",
+      "priority": 8,
+      "classification": "discovery_only",
+      "name": "AllStays (independent truck stops, rest areas, weigh stations)",
+      "url": "https://www.allstays.com",
+      "represents": "parking|truck_stop|rest_area|weigh_station",
+      "gate_line": null,
+      "license_status": "license_required",
+      "authorization_required": true,
+      "authorization_held": false,
+      "acquisition_status": "NOT A SOURCE OF RECORD",
+      "may_be_source_of_record": false,
+      "may_be_scraped": false,
+      "expected_format": "csv|json-api, under licence only",
+      "contact_note": "Licensing / partnership contact. See data/sources/allstays/LICENSING-REQUEST.md.",
+      "required_columns": [
+        "location_id",
+        "name",
+        "street",
+        "city",
+        "state",
+        "zip",
+        "latitude",
+        "longitude",
+        "direction_of_travel",
+        "exit_or_milepost",
+        "space_count",
+        "access_hours",
+        "duration_limit",
+        "amenities",
+        "status"
+      ],
+      "stable_source_id_field": "location_id",
+      "attribution": "Per agreement — expect prominent attribution and a redistribution limit.",
+      "update_frequency": "per agreement; a scheduled refresh is required, not a one-time dump",
+      "closure_signal": "status flag, per agreement",
+      "deduplication": [
+        "provider_location_id",
+        "coordinate_proximity_150m",
+        "canonical_name_city_state"
+      ],
+      "prohibitions": [
+        "Do not scrape the site, its map endpoints or its mobile app APIs.",
+        "Do not purchase the paid PDF for reuse — buying a product does not license redistribution.",
+        "Do not copy names, coordinates, parking counts, amenities, hours, directions or descriptions.",
+        "Do not reproduce exclusive locations that appear nowhere authoritative.",
+        "Do not treat an AllStays listing as evidence that truck parking is permitted."
+      ],
+      "why_registered": "Independent truck stops are the one category with no national operator export. Registering AllStays as discovery_only makes the boundary explicit rather than leaving it to judgement in the moment.",
+      "contributes_to_gate": false,
+      "notes": "discovery_only means it may inform WHICH question to ask an authoritative source. It may never supply a value that lands in the directory. Contributes nothing to any gate line until a written licence exists."
+    }
+  ],
+  "obtain_next": "fhwa-truck-parking",
+  "acquisition_log": [
+    {
+      "source_id": "loves-master",
+      "status": "COMPLETE",
+      "date": "2026-07-27",
+      "records": 731
+    },
+    {
+      "source_id": "pilot-master",
+      "status": "COMPLETE",
+      "date": "2026-07-27",
+      "records": 875,
+      "us_records": 820,
+      "canadian_records": 55
+    },
+    {
+      "source_id": "ta-master",
+      "status": "BLOCKED",
+      "date": "2026-07-27",
+      "detail": "egress policy denial (403 CONNECT) on all official hosts; access path and request prepared"
+    },
+    {
+      "source_id": "allstays",
+      "status": "REGISTERED discovery_only",
+      "date": "2026-07-27",
+      "detail": "license_required; nothing fetched, scraped or purchased"
+    },
+    {
+      "source_id": "ta-master",
+      "status": "COMPLETE (content-verified; artifact pending commit)",
+      "date": "2026-07-27",
+      "records": 354,
+      "ta_brand": 348,
+      "held": 6
+    }
+  ],
+  "agency_registry": "data/imports/nationwide-parking-2026-07-26/agency-registry.json"
+}

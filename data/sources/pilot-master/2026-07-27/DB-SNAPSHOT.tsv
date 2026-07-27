@@ -1,0 +1,223 @@
+id	store_number	state	city	category_slug	is_published	has_coord	address	zip	lat	lng	interstate	source	name
+40e6a8f0-e686-4f00-8eba-65d11117ae7d		AR	West Memphis	truck-washes	true	false	3600 Service Loop Rd	72301			I-40	csv-import	Blue Beacon Truck Wash of West Memphis (Flying J)
+bc81fd4d-e85c-4de1-b213-705b1aa79e8b	624	FL	San Antonio	cat-scales	true	false	29933 State Road 52	33576			I-75	csv-import	CAT Scale - Flying J Travel Plaza #624 (Dade City)
+c05b09af-8df6-4092-9130-91c9a3deb61e		FL	Miami	cat-scales	true	false					I-75	csv-import	CAT Scale - Flying J, Miami
+6a2400d1-8053-46a5-adbb-e6a12e4cf641	293	FL	Ocala	cat-scales	true	false	2020 SW Highway 484	34473			I-75	csv-import	CAT Scale - Pilot #293 (Ocala, SR 484)
+ff0a084a-5dae-4a65-a4a8-f9bca9531384	424	FL	Ocala	cat-scales	true	false	4032 W Highway 326	34482			I-75	csv-import	CAT Scale - Pilot #424 (Ocala, 4032 Hwy 326)
+2c075ea6-0ffe-4f08-8bcc-9d0a027c1ff3	4556	FL	Wildwood	cat-scales	true	false	744 E State Road 44	34785			I-75	csv-import	CAT Scale - Pilot #4556 (Wildwood, 744 SR 44)
+83d35d2c-b77c-44ea-8e25-6b0c1b3722c1	95	FL	Wildwood	cat-scales	true	false	493 E State Road 44	34785			I-75	csv-import	CAT Scale - Pilot #95 (Wildwood, 493 SR 44)
+bbb6d29c-9a64-46fa-859f-2496d6085564	352	FL	Fort Myers	cat-scales	true	false	6050 Plaza Dr	33905			I-75	csv-import	CAT Scale - Pilot Travel Center #352, Fort Myers
+56accaa0-eb22-413a-b887-1e6d535c08ae	393	NC	Waynesville	cat-scales	true	false	3712 Crabtree Rd	28786			I-40	csv-import	CAT Scale - Pilot Travel Center #393
+b66b0f4d-ff5f-452c-82a7-a74151a6bcc1	409	TN	Dickson	cat-scales	true	false	2320 Highway 46 S	37055			I-40	csv-import	CAT Scale - Pilot Travel Center #409 Dickson
+f18a5587-4631-4b0c-83a2-55d6c12ad078	53	TN	Hurricane Mills	cat-scales	true	false	15559 Highway 13 S	37078			I-40	csv-import	CAT Scale - Pilot Travel Center #53 Hurricane Mills
+ea9dc82f-67a9-4e54-b0b9-10a0ebe33359	602	AL	Birmingham	cat-scales	true	false	224 Daniel Payne Dr	35207			I-65	csv-import	CAT Scale - Pilot Travel Center #602, Birmingham
+c5a48945-a47e-4fd5-914d-84f308fce637	94	FL	Punta Gorda	cat-scales	true	false	26505 Jones Loop Rd	33950			I-75	csv-import	CAT Scale - Pilot Travel Center #94, Punta Gorda
+04ba3188-26b8-4f28-b7aa-b90da2745d91	895	MI	Woodhaven	cat-scales	true	false	21055 West Rd	48183			I-75	csv-import	CAT Scale — Flying J #895, Woodhaven
+699bb772-2ec5-4520-bf6b-abeebf30954a	604	AL	Hope Hull	cat-scales	true	false	900 Tyson Rd	36043			I-65	csv-import	CAT Scale — Flying J Travel Center #604, Hope Hull
+bdbeb0cd-6935-4c31-b188-9465f1c1146a	630	GA	Jackson	cat-scales	true	true	1125 Bucksnort Rd	30233	33.207424	-84.064267	I-75	csv-import	CAT Scale — Flying J Travel Center #630, Jackson
+e77e023a-8667-4f3a-ab4e-480cf280ff2d	631	GA	Lake Park	cat-scales	true	true	7001 Bellville Rd	31636	30.641522	-83.189746	I-75	csv-import	CAT Scale — Flying J Travel Center #631, Lake Park
+c2bd3356-8933-46a5-9b08-0a520a585d2a	632	GA	Resaca	cat-scales	true	true	288 Resaca Beach Blvd NW	30735	34.576411	-84.94715	I-75	csv-import	CAT Scale — Flying J Travel Center #632, Resaca
+152dcf8e-4366-4317-9e54-0e6d716a59af	664	KY	Walton	cat-scales	true	false	13019 Walton Verona Rd	41094			I-75	csv-import	CAT Scale — Flying J Travel Center #664, Walton
+925013f5-8de1-4263-999a-8121bb9bd399	668	MI	Saginaw	cat-scales	true	false	3475 E Washington Rd	48601			I-75	csv-import	CAT Scale — Flying J Travel Center #668, Saginaw
+fb8eb46d-b871-4344-9cd6-5843638e7648	695	OH	Beaverdam	cat-scales	true	false	420 East Main Street	45808			I-75	csv-import	CAT Scale — Flying J Travel Center #695, Beaverdam
+861f3ac4-7494-480b-821c-05f6c9cf886d	700	OH	Perrysburg	cat-scales	true	false	26415 Warns Dr				I-75	csv-import	CAT Scale — Flying J Travel Center #700, Perrysburg
+0666ef38-a91d-4a71-b242-f94f4a45cca2	97	OH	Vandalia	cat-scales	true	false	175 Northwoods Blvd	45377			I-75	csv-import	CAT Scale — Flying J Travel Center #97, Vandalia
+2138c8b1-489c-4aa9-9fe9-51cf8fb72982		KY	Walton	cat-scales	true	false	118 Richwood Rd	41094			I-75	csv-import	CAT Scale — Mr. Fuel Travel Center, Walton
+b2b47835-26cd-4b73-9b81-aeb562872970	722	TN	Knoxville	cat-scales	true	false	800 Watt Rd	37932			I-75	csv-import	CAT Scale — Pilot Travel Center (Flying J #722), Knoxville (Watt Road)
+5e8660b1-0553-413a-b271-9bdf78f09202	15	OH	Toledo	cat-scales	true	false	5820 Hagman Rd	43612			I-75	csv-import	CAT Scale — Pilot Travel Center #15, Toledo
+03c57077-85f1-4fea-8838-348d2f8a3b5f	1577	TN	Pioneer	cat-scales	true	true	106 Comfort Lane	37847	36.37677	-84.248712	I-75	csv-import	CAT Scale — Pilot Travel Center #1577, Pioneer
+55f53612-5494-460b-9ee1-2ac92f154285	192	GA	Tifton	cat-scales	true	true	4431 Union Rd	31794	31.428514	-83.51632	I-75	csv-import	CAT Scale — Pilot Travel Center #192, Tifton
+2aafd4fa-3045-492d-a047-49a8ada973dd	231	KY	Corbin	cat-scales	true	false	249 W Cumberland Gap Pkwy	40701			I-75	csv-import	CAT Scale — Pilot Travel Center #231, Corbin
+88da4d5c-2816-4329-947d-6a77e584c45d	231	OH	Monroe	cat-scales	false	false					I-75	csv-import	CAT Scale — Pilot Travel Center #231, Monroe
+ab64b757-a841-4754-b0cf-0d36aa10087c	24	MI	Monroe	cat-scales	true	false	1100 N Dixie Hwy	48162			I-75	csv-import	CAT Scale — Pilot Travel Center #24, Monroe
+4b60c1b7-624c-4541-8466-0844e9e0369e	24	OH	Sharonville	cat-scales	false	false					I-75	csv-import	CAT Scale — Pilot Travel Center #24, Sharonville
+61744d1b-3abe-4aed-bbcc-775321a08d5b	267	GA	Byron	cat-scales	true	true	2965 Hwy 247C	31008	32.612278	-83.744515	I-75	csv-import	CAT Scale — Pilot Travel Center #267, Byron
+c297e04a-9f49-46d2-8ca2-28b97d243a62	284	MI	Monroe	cat-scales	true	false	1200 Nadeau Rd	48162			I-75	csv-import	CAT Scale — Pilot Travel Center #284, Monroe
+c318488f-fe10-471f-afb2-407f771beb82	284	OH	West Chester	cat-scales	false	false					I-75	csv-import	CAT Scale — Pilot Travel Center #284, West Chester
+ee24eb2e-7055-4814-8772-dc0797965591	319	GA	Dalton	cat-scales	true	true	243 Connector 3 SW	30720	34.686835	-85.000111	I-75	csv-import	CAT Scale — Pilot Travel Center #319, Dalton
+606a8c6f-80a0-4fd2-865e-19f30f18fd29	321	KY	Walton	cat-scales	true	false	11229 Frontage Rd	41094			I-75	csv-import	CAT Scale — Pilot Travel Center #321, Walton (Richwood)
+5e845e58-af0f-4226-96f6-e7d384fe3611	353	KY	Georgetown	cat-scales	true	false	110 Triport Rd	40324			I-75	csv-import	CAT Scale — Pilot Travel Center #353, Georgetown (Triport Rd)
+a641f4bb-fad2-49c5-9b64-a856c9b2d976	360	OH	Findlay	cat-scales	true	false	11471 State Route 613 W (OH-613)	45840			I-75	csv-import	CAT Scale — Pilot Travel Center #360, Findlay
+bc4ff9f8-a138-4a2c-9fc2-e6b9017faea7	403	TN	Heiskell	cat-scales	true	true	1915 E Raccoon Valley Rd	37754	36.11107	-84.020183	I-75	csv-import	CAT Scale — Pilot Travel Center #403 (ONE9 Travel Center), Heiskell
+2014a51a-b405-4d49-a3b4-a22a9844ac5f	416	GA	Cordele	cat-scales	true	true	2201 E 16th Ave		31.959812	-83.746752	I-75	csv-import	CAT Scale — Pilot Travel Center #416, Cordele
+6ea6cd6b-978f-494d-a434-913c90a82978	437	KY	Williamsburg	cat-scales	true	false	481 W Hwy 92 (KY-92)	40769			I-75	csv-import	CAT Scale — Pilot Travel Center #437, Williamsburg
+4e8c0e97-4aab-4853-8e43-904eacb3b0a9	4558	GA	Calhoun	cat-scales	true	true	2111 US Highway 41 NE	30701	34.55883	-84.935611	I-75	csv-import	CAT Scale — Pilot Travel Center #4558, Calhoun
+a732e380-3d35-43b5-916a-47198de64c3e	4561	GA	Valdosta	cat-scales	true	true	3460 Madison Hwy	31601	30.754267	-83.273221	I-75	csv-import	CAT Scale — Pilot Travel Center #4561, Valdosta
+e2aee5e7-1139-4566-a012-aa2ab3dc8453	457	OH	Beaverdam	cat-scales	true	false	427 East Main St	45808			I-75	csv-import	CAT Scale — Pilot Travel Center #457, Beaverdam
+dbf0f5f0-3fa6-4f92-98f5-40f76579d5c8	4598	TN	Niota	cat-scales	true	true	507 Hwy 309	37826	35.545167	-84.565514	I-75	csv-import	CAT Scale — Pilot Travel Center #4598, Niota
+ee270529-dc8c-4671-85ee-83a351b95338	47	KY	Georgetown	cat-scales	true	false	259 Cherry Blossom Way	40324			I-75	csv-import	CAT Scale — Pilot Travel Center #47, Georgetown (Cherry Blossom Way)
+cce804c6-fbf4-4d3b-8e4f-000952e40fc6	481	TN	McDonald	cat-scales	true	true	281 Pleasant Grove Road SW	37353	35.153142	-84.952948	I-75	csv-import	CAT Scale — Pilot Travel Center #481, McDonald (Cleveland)
+8947e3ea-dd2f-43ea-bdde-41c3864cbfb6	500	FL	Jasper	cat-scales	true	false	8067 FL-6	32052			I-75	csv-import	CAT Scale — Pilot Travel Center #500, Jasper
+338601ce-8529-4ee1-a478-3284d6901206	67	GA	Cartersville	cat-scales	true	true	968 Cassville-White Rd	30120	34.272701	-84.807736	I-75	csv-import	CAT Scale — Pilot Travel Center #67, Cartersville
+7e7568b1-db1e-4d3a-8403-85df63b12990	75	AL	Satsuma	cat-scales	true	false	6109 US-43 S	36572			I-65	csv-import	CAT Scale — Pilot Travel Center #75, Satsuma
+49a23bf0-18cb-4ee8-b3cc-eaf19114f3d3	9	OH	Franklin	cat-scales	true	false	6830 Franklin-Lebanon Road	45005			I-75	csv-import	CAT Scale — Pilot Travel Center #9, Franklin
+1fbc776a-057a-4370-96e9-bc049b0385a8	92	FL	Ocala	cat-scales	true	false	4255 NW Highway 326	34482			I-75	csv-import	CAT Scale — Pilot Travel Center #92, Ocala
+5c78823e-ad8c-4072-a019-f167a2846019	656	IN	Whiteland	cat-scales	true	false	82 White St	46184			I-65	csv-import	CAT Scale (at Flying J Travel Center #656)
+7612bd4d-3c89-4824-8916-ea651a1caf95	37	IN	Whiteland	cat-scales	true	false	2962 E 500 N	46184			I-65	csv-import	CAT Scale (at Pilot Travel Center #37)
+a1b16ec7-c91b-4173-8790-c48f19ff7cf7	627	GA	Brunswick	cat-scales	false	false	2990 US Hwy 17 S	31523			I-95	csv-import	CAT Scale at Flying J Brunswick (#627)
+b2d64c85-4150-4bf2-a7ed-a8f2d9ea31f4		VA	Ruther Glen	cat-scales	false	false	23866 Rogers Clark Blvd	22546			I-95	csv-import	CAT Scale at Flying J Carmel Church
+7fa26b2f-a97d-4c5e-aa6f-cb992518cafe		MD	Elkton	cat-scales	false	false	221 Belle Hill Road	21921			I-95	csv-import	CAT Scale at Flying J Elkton
+f2566159-665a-4205-929d-7352a3c1f402		FL	Fort Pierce	cat-scales	false	false	100 N Kings Hwy	34945			I-95	csv-import	CAT Scale at Flying J Fort Pierce
+eb5cb560-c5f7-466b-89b0-4fb84dbf8ff5		NC	Kenly	cat-scales	false	false	1800 Princeton-Kenly Rd	27542			I-95	csv-import	CAT Scale at Flying J Kenly
+5330fe76-dd64-4b5b-b8d6-aca559036526		SC	Latta	cat-scales	false	false	111 Mill Branch Rd	29565			I-95	csv-import	CAT Scale at Flying J Latta
+05e3d706-abe8-45ac-9a05-7da2c4ddf937	652	IN	Lebanon	cat-scales	true	false	520 S State Rd 39	46052			I-65	csv-import	CAT Scale at Flying J Lebanon #652
+61a7d832-a098-4196-bbe2-5b58562e7b9b		MD	North East	cat-scales	false	false	1 Center Drive	21901			I-95	csv-import	CAT Scale at Flying J North East
+6f7fee11-ff4c-445d-b830-d899d682312c		FL	Saint Augustine	cat-scales	false	false	950 FL-206 W	32086			I-95	csv-import	CAT Scale at Flying J Saint Augustine
+f91d1114-a109-48b5-9b5e-1aa96591f8ae		SC	Saint George	cat-scales	false	false	113 Motel Dr	29477			I-95	csv-import	CAT Scale at Flying J St. George
+1d1a2d76-46d8-46cc-9759-a9da44e2e53b		IN	Hebron	cat-scales	true	false	3231 E 181st Ave	46341			I-65	csv-import	CAT Scale at Flying J Travel Center (Hebron)
+b139516b-3826-4241-90b1-050b8b83b179	605	AR	Russellville	cat-scales	true	false	42 Bradley Cove Rd	72801			I-40	csv-import	CAT Scale at Flying J Travel Center #605
+32e1f8ab-7b2c-425d-b046-bf14bd3e1a0a	607	AR	West Memphis	cat-scales	true	false	3400 Service Loop Rd	72301			I-40	csv-import	CAT Scale at Flying J Travel Center #607
+a6b4c790-4ba6-48e8-bdad-2af3822a8f99	876	TN	Cookeville	cat-scales	true	false	1111 S Jefferson Ave	38506			I-40	csv-import	CAT Scale at ONE9 Travel Center (CAT #876)
+11ed7674-3739-4cfa-9433-51c982f1d544	226	TN	Dandridge	cat-scales	true	false	505 Patriot Dr	37725			I-40	csv-import	CAT Scale at ONE9 Travel Center #226
+38ffb2aa-c692-4376-9d7c-4b39e745845d		AR	Brinkley	cat-scales	true	false	2101 US Highway 49	72021			I-40	csv-import	CAT Scale at ONE9 Travel Center Brinkley
+6d944928-3079-4aef-b907-dfab87dadbb1		GA	Wildwood	cat-scales	true	false	650 GA-299	30757			I-24	csv-import	CAT Scale at ONE9 Travel Center Wildwood
+7b36b126-6502-447f-bb23-84c4010f7203		VA	Colonial Heights	cat-scales	false	false	2126 Ruffin Mill Rd	23834			I-95	csv-import	CAT Scale at Pilot Colonial Heights
+72ff780f-93e7-4421-b8a0-9d79a49205fd		NC	Dunn	cat-scales	false	false	65 Sadler Rd	28334			I-95	csv-import	CAT Scale at Pilot Dunn (Sadler Travel Plaza)
+3b130209-e596-4c15-a1fa-522cf7d933bc	337	SC	Florence	cat-scales	false	false	2015 W Lucas St	29501			I-95	csv-import	CAT Scale at Pilot Florence (#337)
+a74a9bb2-0a9c-4427-89d6-22e8715c7b7e	62	SC	Florence	cat-scales	false	false	3006 N Williston Rd				I-95	csv-import	CAT Scale at Pilot Florence (#62)
+9691fa24-7dec-48e1-83f0-6c8549f85d40		FL	Fort Pierce	cat-scales	false	false	7300 Okeechobee Rd	34945			I-95	csv-import	CAT Scale at Pilot Fort Pierce
+a3953ace-f227-41eb-8824-30476efb2e60		SC	Hardeeville	cat-scales	false	false	15976 Whyte Hardee Blvd	29927			I-95	csv-import	CAT Scale at Pilot Hardeeville
+67d39304-81ee-485f-a23a-0882d8ace653	4562	GA	Kingsland	cat-scales	false	false	2607 Scrubby Bluff Rd	31548			I-95	csv-import	CAT Scale at Pilot Kingsland (#4562)
+a2881397-1a79-4517-be05-ad60362466c9		MD	Perryville	cat-scales	false	false	31 Heather Lane	21903			I-95	csv-import	CAT Scale at Pilot Perryville
+c155ccb3-73d8-4cee-ab06-8be51125d95c		NC	Pleasant Hill	cat-scales	false	false	2032 NC-48	27866			I-95	csv-import	CAT Scale at Pilot Pleasant Hill
+64c31cfc-87b8-41a8-a05f-fd70a50df17c	71	GA	Port Wentworth	cat-scales	false	false	7001 GA-21	31407			I-95	csv-import	CAT Scale at Pilot Port Wentworth (#71)
+7f946536-b497-41a6-8f8a-e85b2b6b110d	34	IN	Remington	cat-scales	true	false	4154 W US Hwy 24	47977			I-65	csv-import	CAT Scale at Pilot Remington #34
+b9c7c0fd-8292-4f9f-8424-ab1914e68738		VA	Emporia	cat-scales	false	false	918 W Atlantic St	23847			I-95	csv-import	CAT Scale at Pilot Sadler's Emporia
+98a38aa5-c4ed-4534-b331-56b71a9a2edf		VA	Skippers	cat-scales	false	false	781 Moores Ferry Rd	23879			I-95	csv-import	CAT Scale at Pilot Skippers
+6d1d4dd4-a6c9-418b-a766-edfb108c2503	575	GA	St. Marys	cat-scales	false	false	491 St Marys Rd	31548			I-95	csv-import	CAT Scale at Pilot St. Marys (#575)
+bae44b4e-68ae-41f8-a15f-219606517dbf		IN	Gary	cat-scales	true	false	2501 Burr St	46406			I-65	csv-import	CAT Scale at Pilot Travel Center (Burr Street, Gary)
+8bdb3077-44fb-4228-8ae3-6328fa661a28		AL	Good Hope	cat-scales	true	false	1600 County Road 437	35055			I-65	csv-import	CAT Scale at Pilot Travel Center (Good Hope)
+9fa8f22a-5b4b-40a7-a594-885560ee35a0		IN	Hebron	cat-scales	true	false	18011 Colorado St	46341			I-65	csv-import	CAT Scale at Pilot Travel Center (Hebron)
+3a315155-9a8c-4d6f-8c1c-d3373bd4865e	1063	NC	Marion	cat-scales	true	false	3365 Sugar Hill Rd	28752			I-40	csv-import	CAT Scale at Pilot Travel Center #1063
+fb6a3d1d-098f-4dc5-92cb-f5c128c1edc8	114	TN	Crossville	cat-scales	true	false	2449 Genesis Rd	38571			I-40	csv-import	CAT Scale at Pilot Travel Center #114
+5497dc27-dbdc-44b7-8f64-3fd3f6504007	219	TN	Knoxville	cat-scales	true	false	7210 Strawberry Plains Pike	37914			I-40	csv-import	CAT Scale at Pilot Travel Center #219
+683aa9c6-51fa-479d-8042-b597b0bf2958	332	AR	North Little Rock	cat-scales	true	false	3300 Highway 391 N	72117			I-40	csv-import	CAT Scale at Pilot Travel Center #332
+c36a20c0-a035-4478-93c5-c93dceffb194	406	TN	Cornersville	cat-scales	true	false	9211 Lewisburg Highway	37047			I-65	csv-import	CAT Scale at Pilot Travel Center #406
+0244b320-2bb1-4d47-a16f-53da1663fa6b	411	TN	Lebanon	cat-scales	true	false	921 Murfreesboro Rd	37090			I-40	csv-import	CAT Scale at Pilot Travel Center #411
+85185773-3082-49d5-b2f0-74135faedfe7	429	AR	West Memphis	cat-scales	true	false	1100 Martin Luther King Jr Dr	72301			I-40	csv-import	CAT Scale at Pilot Travel Center #429
+42fe1af3-f619-4058-a721-afb10238dae3	430	AR	Russellville	cat-scales	true	false	215 AR-331 N	72802			I-40	csv-import	CAT Scale at Pilot Travel Center #430
+00ced50d-f1f6-4e29-9a16-1b866beedef0	441	AL	Priceville	cat-scales	true	false	3240 Point Mallard Parkway SE	35603			I-65	csv-import	CAT Scale at Pilot Travel Center #441
+a109cc92-378c-4d57-ac39-da50a5c2a2c6	713	SC	Latta	truck-stops	false	false	111 Mill Branch Rd	29565			I-95	csv-import	Flying J / ONE9 Travel Center #713
+455f776b-7681-45be-8604-fdb9593beb44	493	SC	Saint George	truck-stops	false	false	113 Motel Dr	29477			I-95	csv-import	Flying J Travel Center #493
+f77f6c23-384f-4f64-af4d-2b73d30dbfbb	604	AL	Hope Hull	truck-stops	true	false	900 Tyson Rd	36043			I-65	csv-import	Flying J Travel Center #604
+99e14e2c-5498-4df1-b60b-7ff743aec8ae	605	AR	Russellville	truck-stops	true	false	42 Bradley Cove Rd	72801			I-40	csv-import	Flying J Travel Center #605
+394f5b7a-2970-453b-91d4-fc87c30a51a0	607	AR	West Memphis	truck-stops	true	false	3400 Service Loop Rd	72301			I-40	csv-import	Flying J Travel Center #607
+9d5b4987-bd0e-4332-ae57-b774ca5ee801	622	FL	Fort Pierce	truck-stops	false	false	100 N Kings Hwy	34945			I-95	csv-import	Flying J Travel Center #622
+c372a30e-8b6d-44db-b71f-1a3621ef7a7e	626	FL	Saint Augustine	truck-stops	false	false	950 FL-206 W	32086			I-95	csv-import	Flying J Travel Center #626
+f0129700-18d1-49cf-b92f-0be14a549686	627	GA	Brunswick	truck-stops	false	false	2990 US Hwy 17 S	31523			I-95	csv-import	Flying J Travel Center #627
+c944296e-5c8f-4346-9755-b470a9aafe77	630	GA	Jackson	truck-stops	true	true	1125 Bucksnort Rd	30233	33.208006	-84.064004	I-75	csv-import	Flying J Travel Center #630
+96b417a9-ff26-480a-bdea-4ce572470bd7	631	GA	Lake Park	truck-stops	true	true	7001 Lake Park Bellville Rd	31636	30.641236	-83.190486	I-75	csv-import	Flying J Travel Center #631
+a178c35e-73ba-4c23-bbe4-605dc4a365c4	632	GA	Resaca	truck-stops	true	true	288 Resaca Beach Blvd	30735	34.576835	-84.946624	I-75	csv-import	Flying J Travel Center #632
+a70da55a-2a2e-420a-953c-4b6d46e1c435	652	IN	Lebanon	truck-stops	true	false	520 S State Rd 39	46052			I-65	csv-import	Flying J Travel Center #652
+9172f64e-0836-45fd-a136-3e9c914b7097	653	IN	Hebron	truck-stops	true	false	3231 E 181st Ave	46341			I-65	csv-import	Flying J Travel Center #653 (Hebron)
+1dac7271-b06e-47a7-9845-3ea235276d79	656	IN	Whiteland	truck-stops	true	false	82 White St	46184			I-65	csv-import	Flying J Travel Center #656
+54eb73aa-b523-42b7-bb42-be43bfe1e235	664	KY	Walton	truck-stops	true	false	13019 Walton Verona Rd	41094			I-75	csv-import	Flying J Travel Center #664
+effb0793-cbed-44f7-b05c-3645ccfdda21	668	MI	Saginaw	truck-stops	true	false	3475 E Washington Rd	48601			I-75	csv-import	Flying J Travel Center #668 (Saginaw)
+f97ef111-f094-422a-bc61-7362a0a27d26	683	NC	Kenly	truck-stops	false	false	1800 Princeton-Kenly Rd	27542			I-95	csv-import	Flying J Travel Center #683
+0ecffefe-7964-4da6-9052-c230adc0a249	695	OH	Beaverdam	truck-stops	true	false	420 East Main Street	45808			I-75	csv-import	Flying J Travel Center #695
+4e95994e-db22-4b01-9b6e-0af55d277eec	722	TN	Knoxville	truck-stops	true	true	800 Watt Rd	37932	35.8807	-84.2359	I-75	csv-import	Flying J Travel Center #722
+d56cff01-0dcb-4610-82aa-920d1214a828	784	MD	North East	truck-stops	false	false	1 Center Drive	21901			I-95	csv-import	Flying J Travel Center #784
+39a7ad06-c801-4b4f-8ea1-3d847839a62c	875	MD	Elkton	truck-stops	false	false	221 Belle Hill Road	21921			I-95	csv-import	Flying J Travel Center #875
+3e2d7707-cfa9-4fff-a6e1-b564b40bfc32	895	MI	Woodhaven	truck-stops	true	false	21055 West Rd	48183			I-75	csv-import	Flying J Travel Center #895 - Woodhaven
+f68a555f-f314-4506-91bc-db780f009c31	97	OH	Vandalia	truck-stops	true	false	175 Northwoods Blvd	45377			I-75	csv-import	Flying J Travel Center #97
+1beb847b-eca9-4b86-a151-558340292504	624	FL	San Antonio	truck-stops	true	false	29933 State Road 52	33576			I-75	csv-import	Flying J Travel Plaza #624 (Dade City / San Antonio)
+9b0bb934-cb3a-499c-b362-8f665e065b81	749	VA	Ruther Glen	truck-stops	false	false	23866 Rogers Clark Blvd	22546			I-95	csv-import	Flying J Travel Plaza #749 (Carmel Church)
+34ba01ad-945f-4960-b099-01964f28815d		KY	Walton	truck-stops	true	false	118 Richwood Rd	41094			I-75	csv-import	Mr. Fuel Travel Center (One9 Fuel Network)
+c8d0eb8c-df20-4bd7-89f2-038aa550c3ee		GA	Vienna	truck-stops	true	true	39 Victory Ln	31092	32.085408	-83.759891	I-75	csv-import	ONE9 Travel Center
+2e036deb-3b94-41b3-9fcb-fd5b71923e44	254	GA	Wildwood	truck-stops	true	false	650 GA-299	30757			I-24	csv-import	ONE9 Travel Center (former Pilot Travel Center #254)
+e780ec0a-3a95-42b8-b7bd-eca1cadf2a72	265	TN	Cookeville	truck-stops	true	false	1111 S Jefferson Ave	38506			I-40	csv-import	ONE9 Travel Center (Pilot #265)
+5cf98762-e51b-4116-8a71-1934fcc47f35	89	FL	Ellenton	truck-stops	true	false	1526 51st Ave E	34222			I-75	csv-import	ONE9 Travel Center (Pilot #89) - Ellenton
+69f1f244-c4c0-480b-9e95-f1b02554cb6b		AR	Brinkley	truck-stops	true	false	2101 US Highway 49	72021			I-40	csv-import	ONE9 Travel Center (Pilot Company)
+cc5fe530-72f9-4f40-82de-bb55487a82cc	1366	TN	Holladay	truck-stops	true	false	15060 US-641 S	38341			I-40	csv-import	ONE9 Travel Center #1366
+5fc5e9a4-17f9-40c7-9c65-d3904e90140f	226	TN	Dandridge	truck-stops	true	false	505 Patriot Dr	37725			I-40	csv-import	ONE9 Travel Center #226
+32188e16-75ce-477c-b671-a22f8606b139	319	GA	Dalton	truck-stops	true	true	243 Connector 3 SW	30720	34.687265	-85.000154	I-75	csv-import	ONE9 Travel Center #319
+f9e3ec91-4b3f-4c36-a174-96eafb9e907e	403	TN	Heiskell	truck-stops	true	true	1915 E Raccoon Valley Dr	37754	36.11107	-84.020183	I-75	csv-import	ONE9 Travel Center #403
+ca4da6a3-c18d-4f65-88ec-1076319eb6c5	88	FL	Cocoa	truck-stops	false	false	4455 W King St	32926			I-95	csv-import	Pilot / ONE9 Travel Center #88
+f0783c4c-568f-4ed0-8ee8-baec2257dab1		MI	Woodhaven	roadside-service	true	false	21055 West Rd	48183			I-75	csv-import	Pilot Flying J Truck Care - Woodhaven
+ad3e43c4-ef04-43df-b994-d7c9fb475388		NC	Waynesville	roadside-service	false	false					I-40	csv-import	Pilot Flying J Truck Care Service Center - Waynesville
+3f7408df-a39e-46cd-843a-61694fabbe9c		VA	Emporia	truck-stops	false	false	918 W Atlantic St	23847			I-95	csv-import	Pilot Travel Center - Sadler's Emporia
+438d7ce9-59d8-4fec-b8d5-24f36c3a5481		NC	Dunn	truck-stops	false	false	65 Sadler Rd	28334			I-95	csv-import	Pilot Travel Center (Sadler Travel Plaza)
+b8bff6ef-fb37-4415-9966-9e0ef40bbb4d	1047	FL	Jacksonville	truck-stops	false	false	4075 Jones Branch Rd	32219			I-95	csv-import	Pilot Travel Center #1047
+49310225-476e-403f-bc11-b296444ee454	1063	NC	Marion	truck-stops	true	false	3365 Sugar Hill Rd	28752			I-40	csv-import	Pilot Travel Center #1063
+4f77aa49-f11e-4ebd-a86e-9c6290ec1ec1	114	TN	Crossville	truck-stops	true	false	2449 Genesis Rd	38571			I-40	csv-import	Pilot Travel Center #114
+1c18704d-99b4-4644-865c-b0d740b9ccd5	149	TN	Stanton	truck-stops	true	false	7720 Highway 222	38069			I-40	csv-import	Pilot Travel Center #149 (Flagship)
+63726042-4b3b-41c2-a7e8-267af4a9285b	15	OH	Toledo	truck-stops	true	false	5820 Hagman Rd	43612			I-75	csv-import	Pilot Travel Center #15
+d7247403-1ed3-49de-83a5-af2862cdbd9f	1550	AL	Good Hope	truck-stops	true	false	1600 County Road 437	35055			I-65	csv-import	Pilot Travel Center #1550 (Good Hope)
+5aecf10b-8e95-48a4-a815-da033b1d7cf4	1577	TN	Pioneer	truck-stops	true	true	106 Comfort Ln	37847	36.37677	-84.248712	I-75	csv-import	Pilot Travel Center #1577
+e1c84a38-7da4-4597-ab5e-331b2e755297	187	TN	Knoxville	truck-stops	false	false	100 Merchants Rd	37912			I-75	csv-import	Pilot Travel Center #187
+944a23e3-93b6-4f19-a43a-8879c89ae09a	192	GA	Tifton	truck-stops	true	true	4431 Union Rd	31794	31.427922	-83.517008	I-75	csv-import	Pilot Travel Center #192
+b3c074e4-06a3-4cb4-b205-6ad5ddae3476	219	TN	Knoxville	truck-stops	true	false	7210 Strawberry Plains Pike	37914			I-40	csv-import	Pilot Travel Center #219
+b7a1bf29-998f-498a-a44a-0974411802b6	231	KY	Corbin	truck-stops	true	false	249 W Cumberland Gap Pkwy	40701			I-75	csv-import	Pilot Travel Center #231
+a458560a-f2f2-4149-b476-a63e7a260094	24	OH	(I-75 Exit 15 area)	truck-stops	false	false					I-75	csv-import	Pilot Travel Center #24
+321b8c5c-5c9f-48e1-aa9c-fd0332dee69e	24	MI	Monroe	truck-stops	true	false	1100 N Dixie Hwy	48162			I-75	csv-import	Pilot Travel Center #24 - Monroe
+ef42e8a8-4ee1-4ece-a100-ba17bfe15200	267	GA	Byron	truck-stops	true	true	2965 Highway 247C		32.612278	-83.744515	I-75	csv-import	Pilot Travel Center #267
+d806f887-5291-49e4-8e36-4e7ae97c3996	271	IN	Gary	truck-stops	true	false	2501 Burr St	46406			I-65	csv-import	Pilot Travel Center #271 (Burr Street)
+5527d376-b806-4a10-bc75-0478c35672d0	284	MI	Monroe	truck-stops	true	false	1200 Nadeau Rd	48161			I-75	csv-import	Pilot Travel Center #284 - Monroe
+f65fd2ef-14d5-456f-a937-bbf3750c87b9	290	MD	Perryville	truck-stops	false	false	31 Heather Lane	21903			I-95	csv-import	Pilot Travel Center #290
+7d145a52-2a8c-420b-87c8-5c8668bca4d9	293	FL	Ocala	truck-stops	true	false	2020 SW Highway 484	34473			I-75	csv-import	Pilot Travel Center #293 (Ocala, SR 484)
+5c42f488-24de-40af-a67d-88e61d627d64	321	KY	Walton	truck-stops	true	false	11229 Frontage Rd	41094			I-75	csv-import	Pilot Travel Center #321
+930d8058-2612-4312-99fe-c80cc9d03e11	332	AR	North Little Rock	truck-stops	true	false	3300 Highway 391 N	72117			I-40	csv-import	Pilot Travel Center #332
+4f23643b-4ec9-471a-beac-7a7538e73adf	337	SC	Florence	truck-stops	false	false	2015 W Lucas St	29501			I-95	csv-import	Pilot Travel Center #337
+4b07b610-8186-4ad2-b037-cb9c402928a9	34	IN	Remington	truck-stops	true	false	4154 W US Hwy 24	47977			I-65	csv-import	Pilot Travel Center #34
+951b39b1-6f25-40de-b2d3-d7cbca0d66a0	352	FL	Fort Myers	truck-stops	true	false	6050 Plaza Dr	33905			I-75	csv-import	Pilot Travel Center #352
+a8a32662-d389-4d96-9653-6fde235726d0	353	KY	Georgetown	truck-stops	true	false	110 Triport Rd	40324			I-75	csv-import	Pilot Travel Center #353
+bf859b17-33b7-4fb7-995a-1d7cb462c529	360	OH	Findlay	truck-stops	true	false	11471 State Route 613 W	45840			I-75	csv-import	Pilot Travel Center #360
+6e1f345b-b3fd-42bb-848c-acfb5573ebc8	366	TN	Jackson	truck-stops	true	false	30 Sand Pebble Rd	38305			I-40	csv-import	Pilot Travel Center #366
+7edab277-0c0b-4498-a04d-3389926b0fe4	37	IN	Whiteland	truck-stops	true	false	2962 E 500 N	46184			I-65	csv-import	Pilot Travel Center #37
+ac64dd0e-2288-4bb0-85b8-2f1913dfd9f6	384	VA	Colonial Heights	truck-stops	false	false	2126 Ruffin Mill Rd	23834			I-95	csv-import	Pilot Travel Center #384
+6c2078f9-7d25-48bf-8e8f-10d24ac2b372	393	NC	Waynesville	truck-stops	true	false	3712 Crabtree Rd	28786			I-40	csv-import	Pilot Travel Center #393
+07d998a5-79fa-4b95-b63f-7bbeb29ca62e	406	TN	Cornersville	truck-stops	true	false	9211 Lewisburg Highway	37047			I-65	csv-import	Pilot Travel Center #406
+c4fa7a01-7327-4a45-9a23-1d24e9bd4a3e	409	TN	Dickson	truck-stops	true	false	2320 Highway 46 S	37055			I-40	csv-import	Pilot Travel Center #409
+362f1bd5-2789-488a-8652-ffa580d9737a	411	TN	Lebanon	truck-stops	true	false	921 Murfreesboro Rd	37090			I-40	csv-import	Pilot Travel Center #411
+8a9e2301-b793-454f-85e6-c01e98b715c7	416	GA	Cordele	truck-stops	true	true	2201 16th Ave E	31015	31.960264	-83.74661	I-75	csv-import	Pilot Travel Center #416
+599cf7a7-eb06-4527-bcdb-69daa62e11c7	421	GA	Dalton	truck-stops	true	true	142 Carbondale Rd SW	30721	34.655613	-84.981043	I-75	csv-import	Pilot Travel Center #421
+9eaf0102-674a-4c29-a360-b2de6807e4f1	424	FL	Ocala	truck-stops	true	false	4032 W Highway 326	34482			I-75	csv-import	Pilot Travel Center #424 (Ocala, 4032 Hwy 326)
+7d43f079-09a4-4f73-a484-93682b5e28aa	429	AR	West Memphis	truck-stops	true	false	1100 Martin Luther King Jr Dr	72301			I-40	csv-import	Pilot Travel Center #429
+d7265e8b-ae0a-4d0b-84f1-de75c9f7a70d	430	AR	Russellville	truck-stops	true	false	215 AR-331 N	72802			I-40	csv-import	Pilot Travel Center #430
+92a67cb7-3086-461e-a710-7ab4be8446cf	437	KY	Williamsburg	truck-stops	true	false	481 W Hwy 92 (KY-92)	40769			I-75	csv-import	Pilot Travel Center #437
+28ed1b57-596a-42e2-bcb7-55434d32fe02	441	AL	Priceville	truck-stops	true	false	3240 Point Mallard Parkway SE	35603			I-65	csv-import	Pilot Travel Center #441
+f7f69a6a-d032-46ee-9ce6-52796f556a07	448	IN	Hebron	truck-stops	true	false	18011 Colorado St	46341			I-65	csv-import	Pilot Travel Center #448 (Hebron)
+58ed9375-a7ad-4139-95ec-8c928564778c	4556	FL	Wildwood	truck-stops	true	false	744 E State Road 44	34785			I-75	csv-import	Pilot Travel Center #4556 (Wildwood, 744 SR 44)
+9689ab8c-c937-4676-8fa4-de202ec699d7	4558	GA	Calhoun	truck-stops	true	true	2111 US Highway 41 NE	30701	34.558868	-84.935939	I-75	csv-import	Pilot Travel Center #4558
+c67c7c6b-57f0-444f-9d3f-c6000ae1f51d	4560	GA	Jackson	truck-stops	true	true	2995 Highway 36 W	30233	33.210567	-84.055973	I-75	csv-import	Pilot Travel Center #4560
+f6a155cc-c10c-455a-b854-a3643c00535d	4561	GA	Valdosta	truck-stops	true	true	3460 Madison Hwy	31601	30.754816	-83.272851	I-75	csv-import	Pilot Travel Center #4561
+0fda85a9-364c-4541-99d7-fac38c8f755e	4562	GA	Kingsland	truck-stops	false	false	2607 Scrubby Bluff Rd	31548			I-95	csv-import	Pilot Travel Center #4562
+9ac45310-ac8c-4885-a5aa-ebf787c2f13a	4569	SC	Hardeeville	truck-stops	false	false	15976 Whyte Hardee Blvd	29927			I-95	csv-import	Pilot Travel Center #4569
+7e79bd38-6884-4e0c-a05e-0303faa8514e	457	OH	Beaverdam	truck-stops	true	false	427 East Main Street	45808			I-75	csv-import	Pilot Travel Center #457
+989e6437-46b1-45ce-a5b2-7f7d4d0cb18a	4584	SC	Latta	truck-stops	false	false	1504 SC-38	29565			I-95	csv-import	Pilot Travel Center #4584
+4c7eff4b-4b93-4969-8d19-5fb1d388779b	4597	TN	Gordonsville	truck-stops	true	false	502 Gordonsville Hwy	38563			I-40	csv-import	Pilot Travel Center #4597
+5adb811d-9b49-4829-a08f-75481f80a864	4598	TN	Niota	truck-stops	true	true	507 Hwy 309	37826	35.545167	-84.565514	I-75	csv-import	Pilot Travel Center #4598
+8cb6aa2b-13c3-4f79-8b1b-ee434bb8cee8	4651	VA	Skippers	truck-stops	false	false	781 Moores Ferry Rd	23879			I-95	csv-import	Pilot Travel Center #4651
+d4d6ed3b-3e72-4011-b0cc-29783bc21dd0	47	KY	Georgetown	truck-stops	true	false	259 Cherry Blossom Way	40324			I-75	csv-import	Pilot Travel Center #47
+444e4c77-93aa-4cbc-a8f7-825079fac2f3	481	TN	McDonald	truck-stops	true	true	281 Pleasant Grove Road SW	37353	35.153142	-84.952948	I-75	csv-import	Pilot Travel Center #481
+6d8f6cd0-78e1-489f-9f94-7878cba55e77	500	FL	Jasper	truck-stops	true	false	8067 FL-6	32052			I-75	csv-import	Pilot Travel Center #500 (Jasper)
+7e949312-8bda-4eb3-b270-bed57d56fdc0	53	TN	Hurricane Mills	truck-stops	true	false	15559 Highway 13 S	37078			I-40	csv-import	Pilot Travel Center #53
+50cf9353-443d-406e-b1d2-9889112e116c	575	GA	St. Marys	truck-stops	false	false	491 St Marys Rd	31548			I-95	csv-import	Pilot Travel Center #575
+b89a9bb7-6833-4f23-8466-1d6660615cd3	58	NC	Pleasant Hill	truck-stops	false	false	2032 NC-48	27866			I-95	csv-import	Pilot Travel Center #58 (ONE9)
+c251431a-ff37-4d55-9b22-1fd126b525aa	602	AL	Birmingham	truck-stops	true	false	224 Daniel Payne Dr	35207			I-65	csv-import	Pilot Travel Center #602
+a77f9fde-3b52-4f86-961d-91e168d388d5	62	SC	Florence	truck-stops	false	false	3006 N Williston Rd				I-95	csv-import	Pilot Travel Center #62
+781f82b8-a9a0-4264-bebf-044a9aba151f	67	GA	Cartersville	truck-stops	true	true	968 Cassville White Rd	30120	34.272701	-84.807736	I-75	csv-import	Pilot Travel Center #67
+062c24f7-7145-41f3-97f7-431b2d8965b3	6990	NC	Kenly	truck-stops	false	false	1000 Truckstop Rd	27542			I-95	csv-import	Pilot Travel Center #6990
+da315672-4e7f-4389-a555-4e4b7aa1d94a	71	GA	Port Wentworth	truck-stops	false	false	7001 GA-21	31407			I-95	csv-import	Pilot Travel Center #71
+48942c6d-d58b-46ad-8a29-906278fceb35	75	AL	Satsuma	truck-stops	true	false	6109 US-43 S	36572			I-65	csv-import	Pilot Travel Center #75
+da698161-6d20-4069-9e12-64db6fb9cf21	9	OH	Franklin	truck-stops	true	false	6830 Franklin-Lebanon Road	45005			I-75	csv-import	Pilot Travel Center #9
+e5c73805-b895-443e-ad46-5b33992106d6	90	FL	Fort Pierce	truck-stops	false	false	7300 Okeechobee Rd	34945			I-95	csv-import	Pilot Travel Center #90
+1f226de3-a16d-434e-9db3-2cb86dbf9e31	91	FL	Saint Johns	truck-stops	false	false	1625 County Road 210 W	32259			I-95	csv-import	Pilot Travel Center #91
+894798c3-0460-4016-b5a1-ca4505143ee5	92	FL	Ocala	truck-stops	true	false	4255 NW Highway 326	34482			I-75	csv-import	Pilot Travel Center #92 (Ocala)
+7500cfb3-d609-4280-9869-356cb5588398	94	FL	Punta Gorda	truck-stops	true	false	26505 Jones Loop Rd	33950			I-75	csv-import	Pilot Travel Center #94
+76f653aa-907b-4800-865a-1dd03003185a	95	FL	Wildwood	truck-stops	true	false	493 E State Road 44	34785			I-75	csv-import	Pilot Travel Center #95 (Wildwood, 493 SR 44)
+ff14e2af-f0a7-4e65-a341-c15aab36fe6e	962	IN	Sellersburg	truck-stops	true	false	1503 Avco Blvd	47172			I-65	csv-import	Pro Stop (Pilot Flying J Dealer #962)
+1b28a7ae-3fa0-4c3a-975d-b96459b104d1		TN	Jackson	tire-repair	false	false	30 Sand Pebble Rd (at Pilot Travel Center #366)	38305			I-40	csv-import	Southern Tire Mart at Pilot - Jackson
+ecdaf4ed-6ee3-44b4-ac84-7c8149c63055		TN	Niota	tire-repair	true	true	543 Highway 309	37826	35.545167	-84.565514	I-75	csv-import	Southern Tire Mart at Pilot - Niota
+4788aa99-bbfe-4f81-b826-788e02ee475c		FL	Ocala	tire-repair	true	false	4080 W Hwy 326	34482			I-75	csv-import	Southern Tire Mart at Pilot - Ocala
+ac82ce7a-885f-485b-b1f6-b7072af48ca8		GA	Port Wentworth	tire-repair	false	false	7001 GA-21	31407			I-95	csv-import	Southern Tire Mart at Pilot - Port Wentworth
+8fb4e1c8-bbd6-45dc-b76e-5b67a0e12840		MI	Woodhaven	tire-repair	true	false	21055 West Rd	48183			I-75	csv-import	Southern Tire Mart at Pilot - Woodhaven
+73be6034-88f2-44ac-9534-f669515c83a4		AR	Brinkley	tire-repair	true	false	2105 N Main St	72021			I-40	csv-import	Southern Tire Mart at Pilot (Brinkley)
+2b7ac68a-1cd0-45d2-94bd-6ca204ce34ee		IN	Gary	tire-repair	true	false	2501 Burr St	46406			I-65	csv-import	Southern Tire Mart at Pilot (Gary)
+1b9fd8ed-aee3-458f-9296-7a6a5f5ca340		SC	Hardeeville	tire-repair	false	false	15976 Whyte Hardee Blvd	29927			I-95	csv-import	Southern Tire Mart at Pilot (Hardeeville)
+f4520840-396d-40f7-9df7-6bf8708e0997	297	KY	Georgetown	tire-repair	true	false	102 Triport Cir	40324			I-75	csv-import	Southern Tire Mart at Pilot #297
+6e837904-c3b3-432f-b78f-bce80ada5ea0	314	TN	Dandridge	tire-repair	true	false	505 Patriot Dr	37725			I-40	csv-import	Southern Tire Mart at Pilot #314
+e3e4eafb-c380-443e-b595-de2d3e0d3a9b	330	TN	Hurricane Mills	tire-repair	true	false	15559 Highway 13 S	37078			I-40	csv-import	Southern Tire Mart at Pilot #330
+d6bd039a-db3c-449a-a77d-a8c9d46fb7af		AR	West Memphis	tire-repair	true	false	3400 Service Loop Rd	72301			I-40	csv-import	Southern Tire Mart at Pilot Flying J
+adde99fe-b99d-4c75-b0a1-979badd7595b	9651	KY	Lexington	truck-stops	true	false	5360 Athens Boonesboro Rd	40509			I-75	csv-import	Speedway #9651 (ONE9 Fuel Network)
+410fb4a6-1480-436d-b89b-b5721608cc2a		IN	Gary	truck-washes	false	false	2501 Burr St	46406			I-65	csv-import	Truck Wash at Pilot Travel Center (Burr Street, Gary)

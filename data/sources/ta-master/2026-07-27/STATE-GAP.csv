@@ -1,0 +1,45 @@
+state,db_rows,db_route_usable,reference_rows,reference_with_parking,row_delta,route_usable_shortfall,note
+AL,12,8,10,10,2,2,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+AR,13,3,7,7,6,4,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+AZ,10,10,10,10,0,0,row counts agree
+CA,14,14,14,14,0,0,row counts agree
+CO,9,9,9,9,0,0,row counts agree
+CT,3,3,3,3,0,0,row counts agree
+FL,16,5,9,9,7,4,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+GA,16,12,13,13,3,1,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+IA,6,6,6,6,0,0,row counts agree
+ID,2,2,2,2,0,0,row counts agree
+IL,12,12,14,12,-2,0,directory holds FEWER rows than the reference lists — possible missing locations
+IN,20,10,15,15,5,5,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+KS,10,10,10,10,0,0,row counts agree
+KY,7,2,5,4,2,2,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+LA,12,12,12,12,0,0,row counts agree
+MD,4,0,3,3,1,3,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+MI,9,4,6,6,3,2,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+MN,4,4,4,4,0,0,row counts agree
+MO,13,13,13,13,0,0,row counts agree
+MS,4,4,4,4,0,0,row counts agree
+MT,2,2,2,2,0,0,row counts agree
+NC,6,3,5,5,1,2,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+ND,5,5,5,5,0,0,row counts agree
+NE,3,3,3,3,0,0,row counts agree
+NH,1,1,1,1,0,0,row counts agree
+NJ,4,4,4,4,0,0,row counts agree
+NM,9,9,9,9,0,0,row counts agree
+NV,10,10,10,10,0,0,row counts agree
+NY,7,7,7,7,0,0,row counts agree
+OH,19,14,17,16,2,2,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+OK,7,7,7,7,0,0,row counts agree
+OR,6,6,7,6,-1,0,directory holds FEWER rows than the reference lists — possible missing locations
+PA,14,14,15,14,-1,0,directory holds FEWER rows than the reference lists — possible missing locations
+RI,1,1,1,1,0,0,row counts agree
+SC,7,5,8,8,-1,3,directory holds FEWER rows than the reference lists — possible missing locations
+SD,3,3,3,3,0,0,row counts agree
+TN,15,5,9,9,6,4,"directory holds MORE rows than the reference lists — duplicates, closures or non-network rows to resolve"
+TX,40,40,40,40,0,0,row counts agree
+UT,3,3,3,3,0,0,row counts agree
+VA,9,5,9,8,0,3,row counts agree
+WA,4,4,4,4,0,0,row counts agree
+WI,7,7,7,7,0,0,row counts agree
+WV,4,4,4,4,0,0,row counts agree
+WY,5,5,5,5,0,0,row counts agree

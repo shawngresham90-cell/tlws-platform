@@ -1,0 +1,36 @@
+{
+  "file": "data/imports/locmaster20260725.xlsx",
+  "sha256": "5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303",
+  "status": "STALE REFERENCE ONLY — not a source of record, nothing importable",
+  "provenance": "unknown; no documented official download path, no origin checksum",
+  "data_rows": 354,
+  "brands": {
+    "TA": 192,
+    "TA Express": 79,
+    "Petro": 77,
+    "Goasis": 4,
+    "Thorntons": 2
+  },
+  "accounting": {
+    "approved": 0,
+    "duplicate": 0,
+    "conflict": 0,
+    "held": 0,
+    "unsupported": 347,
+    "non-us": 0,
+    "service-only": 7,
+    "quarantined": 0
+  },
+  "totals": {
+    "reference_rows": 354,
+    "directory_ta_rows": 387,
+    "directory_route_usable": 310,
+    "reference_with_parking": 347,
+    "stated_spaces_reference_only": 54589
+  },
+  "rules": {
+    "nothing_approved": "The approved bucket is empty by construction. No row may be approved without an official TA source of record.",
+    "no_import": "This analysis produces no SQL and no import manifest.",
+    "no_invented_values": "No coordinate, space count, amenity or name is invented or copied into the directory."
+  }
+}

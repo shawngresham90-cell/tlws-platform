@@ -1,0 +1,2274 @@
+/**
+ * Nationwide truck-parking expansion — gate tests.
+ *
+ * These are deliberately biting. The failure this suite exists to prevent is
+ * a plausible-looking parking record reaching the directory when it is
+ * actually a weigh station, a car-only rest area, a private lot with no
+ * source, a duplicate carriageway, or a facility with no coordinate. Each of
+ * those has a test that fails loudly rather than a comment asking someone to
+ * be careful.
+ *
+ * Everything here runs offline against the committed manifest and SQL.
+ *
+ * Run:
+ *   npx esbuild scripts/test-parking-expansion.ts --bundle --platform=node \
+ *     --format=cjs --alias:@=./src --outfile=/tmp/t.cjs && node /tmp/t.cjs
+ */
+import { readFileSync } from 'node:fs';
+
+let passed = 0;
+let failed = 0;
+const check = (name: string, cond: boolean, detail?: unknown) => {
+  if (cond) passed++;
+  else {
+    failed++;
+    console.log('FAIL:', name, detail ?? '');
+  }
+};
+
+const DIR = 'data/imports/nationwide-parking-2026-07-26';
+const csv = readFileSync(`${DIR}/RECONCILIATION-216.csv`, 'utf8');
+const manifest = JSON.parse(readFileSync(`${DIR}/manifest.json`, 'utf8'));
+const apply = readFileSync(`${DIR}/ENRICH-TEMPLATE.sql`, 'utf8');
+const publish = readFileSync(`${DIR}/PUBLISH-TEMPLATE.sql`, 'utf8');
+const rollback = readFileSync(`${DIR}/ROLLBACK-TEMPLATE.sql`, 'utf8');
+const reconcile = readFileSync(`${DIR}/RECONCILE.sql`, 'utf8');
+const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
+const fingerprint = readFileSync(`${DIR}/FINGERPRINT.sql`, 'utf8');
+
+type Row = Record<string, string>;
+
+/** Minimal RFC4180 reader — facility names carry commas and apostrophes, and a
+ *  split(',') mangles them into undefined fields that quietly skip tests. */
+function parseCsv(text: string): Row[] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else quoted = false;
+      } else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (c !== '\r') field += c;
+  }
+  if (field.length || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  const head = rows[0];
+  return rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
+}
+
+const rows: Row[] = parseCsv(csv.trim());
+
+/* ------------------------------- the manifest is the live set ------------- */
+{
+  check('216 rows reconciled', rows.length === 216, rows.length);
+  check(
+    'every row carries a disposition',
+    rows.every((r) => r.tier_disposition && r.tier_disposition.length > 0),
+  );
+  check(
+    'every row is either A-PENDING-COORDINATE or an explicit C: reason',
+    rows.every(
+      (r) => r.tier_disposition === 'A-PENDING-COORDINATE' || r.tier_disposition.startsWith('C:'),
+    ),
+  );
+  check('no row id repeats', new Set(rows.map((r) => r.id)).size === 216);
+  check(
+    'the CSV id digest is recorded so the copy can be re-proved',
+    reconcile.includes('1d707c73ad5f2aad741a20b7d88c7d92') &&
+      manifest.database_scope_id_digest === '1d707c73ad5f2aad741a20b7d88c7d92',
+  );
+}
+
+/* ------------------------------------- ACCIDENTAL PUBLICATION ------------- */
+// The single most damaging failure mode: something in this package publishing.
+{
+  check('Tier A approved for publication is zero', manifest.tier_a_approved_for_publication === 0);
+  check('no canary is proposed', manifest.canary_proposed === 0);
+  check(
+    'no candidate is marked eligible for a canary',
+    manifest.candidates.every((c: { eligible_for_canary: boolean }) => !c.eligible_for_canary),
+  );
+  check(
+    'any future insert defaults to unpublished',
+    manifest.defaults_for_any_future_insert.is_published === false,
+  );
+  check(
+    'any future insert defaults to unfeatured',
+    manifest.defaults_for_any_future_insert.is_featured === false,
+  );
+  check(
+    'is_indexable is left unchanged, not set',
+    manifest.defaults_for_any_future_insert.is_indexable === 'unchanged',
+  );
+
+  // The enrichment statement must never publish, and must prove it afterwards.
+  check('enrichment sets no is_published', !/set[\s\S]{0,400}?is_published\s*=/i.test(apply));
+  check('enrichment sets no is_featured', !/set[\s\S]{0,400}?is_featured\s*=/i.test(apply));
+  check(
+    'enrichment post-checks that nothing became published',
+    /Enrichment must never publish/.test(apply),
+  );
+  // No statement in the package may touch indexability.
+  for (const [label, sql] of [
+    ['enrich', apply],
+    ['publish', publish],
+    ['rollback', rollback],
+  ] as const) {
+    check(`${label} never writes is_indexable`, !/is_indexable\s*=/i.test(sql));
+  }
+  // Nothing is inserted this run.
+  check(
+    'no statement inserts into locations',
+    ![apply, publish, rollback].some((s) => /insert\s+into\s+public\.locations/i.test(s)),
+  );
+}
+
+/* ------------------------------------------- MISSING COORDINATES ---------- */
+{
+  check(
+    'publication requires a coordinate in the guard',
+    /Publication requires one/.test(publish) && /lat is null or l\.lng is null/i.test(publish),
+  );
+  check(
+    'publication re-enforces coordinates at the write itself',
+    /where id in \(select id from _publish\)[\s\S]{0,120}lat is not null and lng is not null/i.test(
+      publish,
+    ),
+  );
+  check('publication rejects a zero coordinate', /l\.lat = 0 or l\.lng = 0/.test(publish));
+  check(
+    'every pending candidate has a null coordinate (none invented)',
+    manifest.candidates.every(
+      (c: { lat: unknown; lng: unknown }) => c.lat === null && c.lng === null,
+    ),
+  );
+}
+
+/* --------------------------------------------- WEIGH STATIONS ------------- */
+// A weigh station is not parking. Only an explicit agency confirmation moves
+// one, and nothing in the pending set may be an unconfirmed scale.
+{
+  const weigh = rows.filter((r) => r.facility_type === 'weigh_inspection');
+  check('43 weigh/inspection rows identified', weigh.length === 43, weigh.length);
+  check(
+    'no weigh/inspection row is pending publication',
+    weigh.every((r) => r.tier_disposition.startsWith('C:')),
+    weigh.filter((r) => !r.tier_disposition.startsWith('C:')).map((r) => r.name),
+  );
+  check(
+    'weigh rows without parking evidence are quarantined as inspection-only',
+    weigh
+      .filter((r) => r.truck_parking_evidence === 'no')
+      .every((r) => r.tier_disposition === 'C:quarantine-inspection-only-no-parking-evidence'),
+  );
+  check(
+    'a weigh row WITH parking text still needs confirmation, not a pass',
+    weigh
+      .filter((r) => r.truck_parking_evidence === 'yes')
+      .every((r) => r.tier_disposition === 'C:quarantine-weigh-needs-parking-confirmation'),
+  );
+  // The converted-site exception must be typed as parking, not inspection.
+  const converted = rows.filter((r) => /former .*weigh station|weigh station,/i.test(r.name));
+  check(
+    'TDOT converted weigh stations are typed truck_parking, not weigh',
+    converted.length > 0 && converted.every((r) => r.facility_type === 'truck_parking'),
+    converted.map((r) => `${r.name} -> ${r.facility_type}`),
+  );
+  check(
+    'the classifier matches "former weigh station" BEFORE the generic weigh rule',
+    reconcile.indexOf('former .*weigh station') < reconcile.indexOf("THEN 'weigh_inspection'"),
+  );
+}
+
+/* ------------------------------------------------ CAR-ONLY ---------------- */
+// A rest area is not automatically truck parking.
+{
+  const restish = rows.filter((r) =>
+    ['rest_area', 'welcome_center', 'service_plaza'].includes(r.facility_type),
+  );
+  check(
+    'no rest area / welcome centre is pending without truck-parking evidence',
+    restish
+      .filter((r) => r.tier_disposition === 'A-PENDING-COORDINATE')
+      .every((r) => r.truck_parking_evidence === 'yes'),
+  );
+  check(
+    'rest areas with no truck-parking evidence are quarantined, not assumed',
+    restish
+      .filter((r) => r.truck_parking_evidence === 'no' && r.source_class === 'official')
+      .every((r) => r.tier_disposition === 'C:quarantine-truck-parking-unconfirmed'),
+  );
+}
+
+/* ------------------------------------------ BLANK SOURCE EVIDENCE --------- */
+{
+  check(
+    'no pending row rests on a third-party or missing source',
+    rows
+      .filter((r) => r.tier_disposition === 'A-PENDING-COORDINATE')
+      .every((r) => r.source_class === 'official'),
+  );
+  check(
+    'third-party and sourceless rows are quarantined by that name',
+    rows
+      .filter(
+        (r) =>
+          r.source_class !== 'official' &&
+          !['non_parking_business', 'weigh_inspection'].includes(r.facility_type),
+      )
+      .every((r) => r.tier_disposition === 'C:quarantine-no-official-source'),
+  );
+  check(
+    'enrichment refuses blank or non-https provenance',
+    /blank or non-https source evidence/.test(apply),
+  );
+  check('enrichment requires a named source agency', /btrim\(source_agency\) = ''/.test(apply));
+  check(
+    'every pending candidate names the agency whose dataset is required',
+    manifest.candidates.every((c: { source_agency: string }) => !!c.source_agency),
+  );
+  check(
+    'no candidate claims a source_url it never fetched',
+    manifest.candidates.every((c: { source_url: unknown }) => c.source_url === null),
+  );
+  check(
+    'no candidate invents a space count, hours, or amenities',
+    manifest.candidates.every(
+      (c: { parking_spaces: unknown; hours_or_restrictions: unknown; amenities: unknown }) =>
+        c.parking_spaces === null && c.hours_or_restrictions === null && c.amenities === null,
+    ),
+  );
+}
+
+/* ------------------------------- DUPLICATE DIRECTIONAL FACILITIES --------- */
+{
+  const base = (n: string) =>
+    n
+      .toLowerCase()
+      .replace(/\b(nb|sb|eb|wb|northbound|southbound|eastbound|westbound)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  const pairsIn = (pred: (r: Row) => boolean) => {
+    const groups = new Map<string, Row[]>();
+    for (const r of rows.filter(pred)) {
+      const k = `${r.state}|${r.interstate}|${base(r.name)}`;
+      groups.set(k, [...(groups.get(k) ?? []), r]);
+    }
+    return [...groups.values()].filter((g) => g.length > 1);
+  };
+  const PARKING_TYPES = ['rest_area', 'welcome_center', 'service_plaza', 'truck_parking'];
+  const parkingPairs = pairsIn((r) => PARKING_TYPES.includes(r.facility_type));
+  const weighPairs = pairsIn((r) => r.facility_type === 'weigh_inspection');
+  const pairs = pairsIn((r) => r.facility_type !== 'non_parking_business');
+
+  check(
+    '8 directional pairs among parking facilities',
+    parkingPairs.length === 8,
+    parkingPairs.length,
+  );
+  check('8 directional pairs among weigh stations', weighPairs.length === 8, weighPairs.length);
+  check(
+    '16 directional pairs in total, 32 rows',
+    pairs.length === 16 && pairs.flat().length === 32,
+  );
+  check(
+    'both halves of every pair carry a direction',
+    pairs.every((g) => g.every((r) => r.direction !== '')),
+    pairs.filter((g) => g.some((r) => r.direction === '')).map((g) => g[0].name),
+  );
+  check(
+    'the two halves of a pair never share a direction',
+    pairs.every((g) => new Set(g.map((r) => r.direction)).size === g.length),
+  );
+  check(
+    'directional pairs are kept as separate rows, never merged',
+    pairs.every((g) => new Set(g.map((r) => r.id)).size === g.length),
+  );
+  check(
+    'enrichment refuses two facilities sharing one coordinate',
+    /shared by more than one facility in this batch/.test(apply),
+  );
+
+  // Same physical facility split across categories must be flagged, not silently published.
+  const sameFacility = manifest.candidates.filter(
+    (c: { same_facility_group?: string }) => c.same_facility_group,
+  );
+  check('4 same-facility rows flagged (2 MDTA plazas)', sameFacility.length === 4);
+  check(
+    'they resolve to exactly 2 physical facilities',
+    new Set(
+      sameFacility.map((c: { same_facility_group: string }) =>
+        c.same_facility_group.replace(/ \(.*\)$/, ''),
+      ),
+    ).size === 2,
+  );
+  check(
+    'publication rechecks duplicates inside the transaction against live data',
+    /duplicate detail_slug\(s\) inside the batch/.test(publish) &&
+      /collide with an already-published detail_slug/.test(publish),
+  );
+  check(
+    'publication rejects a coordinate-proximity collision',
+    /within ~150 m of a published location/.test(publish),
+  );
+}
+
+/* ------------------------------------------------ HELD NETWORKS ----------- */
+{
+  const HELD = /love'?s|pilot|flying\s*j|sapp\s*bros|goasis|thornton/i;
+  check(
+    'no reconciled row names a held network',
+    rows.every((r) => !HELD.test(r.name)),
+    rows.filter((r) => HELD.test(r.name)).map((r) => r.name),
+  );
+  check(
+    'no candidate names a held network',
+    manifest.candidates.every((c: { name: string }) => !HELD.test(c.name)),
+  );
+  check('enrichment asserts no held network', /name a held network/.test(apply));
+  check('publication asserts no held network', /name a held network/.test(publish));
+  check(
+    'the fingerprint tracks held rows as must-not-change, not must-be-zero',
+    /held_published_MUST_NOT_CHANGE/.test(fingerprint),
+  );
+}
+
+/* --------------------------- INTERSTATE / EXIT FORMATTING ----------------- */
+{
+  const parking = rows.filter((r) => r.facility_type !== 'non_parking_business');
+  check(
+    'every parking-relevant row has a corridor',
+    parking.every((r) => r.interstate.length > 0),
+  );
+  check(
+    'every corridor matches I-<number>',
+    parking.every((r) => /^I-\d{1,3}$/.test(r.interstate)),
+    [...new Set(parking.map((r) => r.interstate))].filter((i) => !/^I-\d{1,3}$/.test(i)),
+  );
+  check(
+    'direction, when present, is one of NB/SB/EB/WB',
+    rows.every((r) => r.direction === '' || ['NB', 'SB', 'EB', 'WB'].includes(r.direction)),
+  );
+  check(
+    'candidates record direction as null rather than an empty string',
+    manifest.candidates.every(
+      (c: { direction: string | null }) =>
+        c.direction === null || ['NB', 'SB', 'EB', 'WB'].includes(c.direction),
+    ),
+  );
+}
+
+/* --------------------------------------- THE GA CARSON ANOMALY ------------ */
+{
+  const ga = manifest.candidates.find(
+    (c: { id: string }) => c.id === '49bf9a34-856c-4427-b94b-c8af02009a4c',
+  );
+  check('the GA Carson row is present in the manifest', !!ga);
+  check('it is quarantined', ga?.confidence === 'quarantined');
+  check('it is not canary-eligible', ga?.eligible_for_canary === false);
+  check(
+    'its quarantine reason names the conflict',
+    /Carson is a VDOT facility/.test(ga?.quarantine_reason ?? ''),
+  );
+  check(
+    'the VA original is a separate row',
+    manifest.candidates.some(
+      (c: { id: string }) => c.id === '0b924a84-cb2d-4876-b433-f63fdfa47c78',
+    ),
+  );
+}
+
+/* ------------------------------------------ ROLLBACK COMPLETENESS --------- */
+{
+  check('a rollback exists for publication', /UNPUBLISH/.test(rollback));
+  check('a rollback exists for enrichment', /DE-ENRICH/.test(rollback));
+  check(
+    'the de-enrich rollback is value-matched, not blind',
+    /no longer hold the coordinate this rollback was written against/.test(rollback),
+  );
+  check(
+    'the de-enrich rollback restores every column enrichment wrote',
+    [
+      'lat = null',
+      'lng = null',
+      'geocode_source = null',
+      'geocode_confidence = null',
+      'coord_verification_status = null',
+      'last_geocoded_at = null',
+    ].every((c) => rollback.includes(c)),
+  );
+  check(
+    'rollback refuses to strip a coordinate from a published page',
+    /Run the UNPUBLISH block first/.test(rollback),
+  );
+  // Symmetry: everything the forward statements write must be reversible.
+  const written = [
+    'lat',
+    'lng',
+    'geocode_source',
+    'geocode_confidence',
+    'coord_verification_status',
+    'last_geocoded_at',
+  ];
+  check(
+    'every enriched column appears in the rollback',
+    written.every((c) => rollback.includes(c)),
+    written.filter((c) => !rollback.includes(c)),
+  );
+  check('both rollback blocks are transactional', (rollback.match(/^begin;/gm) ?? []).length === 2);
+  check('both rollback blocks commit', (rollback.match(/^commit;/gm) ?? []).length === 2);
+}
+
+/* ------------------------------------------------ GUARD SHAPE ------------- */
+{
+  for (const [label, sql] of [
+    ['enrich', apply],
+    ['publish', publish],
+  ] as const) {
+    check(`${label} is transactional`, /^begin;/m.test(sql) && /^commit;/m.test(sql));
+    check(`${label} asserts an exact ROW_COUNT`, /get diagnostics n = row_count/i.test(sql));
+    check(`${label} raises on an unexpected row count`, /Expected to \w+ exactly/.test(sql));
+    check(`${label} matches rows by exact id, never by name`, !/where\s+l?\.?name\s*=/i.test(sql));
+  }
+  check('enrichment is blank-only', /lat is null and lng is null/i.test(apply));
+  check(
+    'enrichment refuses to overwrite an existing coordinate',
+    /already carry coordinates\. This statement never overwrites/.test(apply),
+  );
+  check(
+    'enrichment bounds-checks against the row own state',
+    /_bounds b on b\.state = l\.state/.test(apply),
+  );
+  check(
+    'an unknown state fails closed rather than skipping the bounds check',
+    /no bounding box on file\. Add it to _bounds rather than skipping the check/.test(apply),
+  );
+  check('publication runs one state per transaction', /target_state/.test(publish));
+  check(
+    'no template is executable as committed (empty VALUES list)',
+    /values\s*\n\s*--/.test(apply) && /values\s*\n\s*--/.test(publish),
+  );
+}
+
+/* ------------------------------------------------ READ-ONLY RUN ----------- */
+{
+  check(
+    'RECONCILE.sql is read-only',
+    !/\b(insert|update|delete|truncate|alter|drop)\b/i.test(reconcile.replace(/--[^\n]*/g, '')),
+  );
+  check(
+    'FINGERPRINT.sql is read-only',
+    !/\b(insert|update|delete|truncate|alter|drop)\b/i.test(fingerprint.replace(/--[^\n]*/g, '')),
+  );
+  check(
+    'the blocked-source record exists and names the policy, not a workaround',
+    /connect_rejected/.test(readFileSync(`${DIR}/BLOCKED-SOURCES.md`, 'utf8')),
+  );
+}
+
+/* ------------------------------- LAUNCH GATE ------------------------------ */
+// The gate is the launch decision. If these thresholds drift, or the preserved
+// baseline is quietly edited to look better, the build fails.
+{
+  check('the gate declares the product not ready', /NOT READY/.test(gate));
+  check(
+    'total rows is explicitly rejected as the coverage metric',
+    /Total rows are not the coverage metric/i.test(gate),
+  );
+
+  // All eight required thresholds, verbatim.
+  for (const [label, pattern] of [
+    ['Truck Parking Club 100%', /Truck Parking Club feed \|\s*\*\*100 %\*\*/],
+    ["Love's 2a directory 100% of 615", /directory coverage\*\* \|\s*\*\*100 % of 615\*\*/],
+    ["Love's 2b overnight 100% of 604", /overnight-parking coverage\*\* \|\s*\*\*100 % of 604\*\*/],
+    ['Pilot 3a directory 100% of 820', /U\.S\. directory coverage\*\* \|\s*\*\*100 % of 820\*\*/],
+    ['Pilot 3b parking 100% of 803', /U\.S\. truck-parking coverage\*\* \|\s*\*\*100 % of 803\*\*/],
+    [
+      'TA 4a directory 100% of 348',
+      /TA Express — \*\*directory coverage\*\* \|\s*\*\*100 % of 348\*\*/,
+    ],
+    [
+      'TA 4b route-usable 100% of 347',
+      /TA Express — \*\*route-usable coverage\*\* \|\s*\*\*100 % of 347\*\*/,
+    ],
+    ['rest areas >= 95%', /rest areas, welcome centers, service plazas \|\s*\*\*≥ 95 %\*\*/],
+    [
+      'weigh stations 100% separate',
+      /weigh stations, \*\*classified separately\*\* \|\s*\*\*100 %\*\*/,
+    ],
+    ['freight corridors >= 95%', /major freight corridors \|\s*\*\*≥ 95 %\*\*/],
+    ['all Interstates >= 85%', /all Interstates \|\s*\*\*≥ 85 %\*\*/],
+  ] as const) {
+    check(`gate requires ${label}`, pattern.test(gate), gate.match(/\|.*%.*\|/g)?.slice(0, 8));
+  }
+  /* 4a and 4b closed 2026-07-27 — the first (and only) passing lines. */
+  check(
+    'exactly two gate lines pass: 4a and 4b',
+    (gate.match(/\|\s*✅\s*\|/g) ?? []).length === 2 &&
+      /\*\*4a\*\*[^\n]*✅/.test(gate) &&
+      /\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
+  check('the gate still reads NOT READY overall', /NOT READY/.test(gate));
+
+  // The preserved baseline must keep reporting the real numbers.
+  for (const [label, pattern] of [
+    ['76 published parking', /\*\*76\*\*/],
+    ['31 mappable', /\*\*31\*\*/],
+    ['10 states covered', /\*\*10\*\*/],
+    ['40 states with none', /\*\*40\*\*/],
+    ['I-95 zero', /Published parking on \*\*I-95\*\* \|\s*\*\*0\*\*/],
+    ['216 reconciled', /\*\*216\*\*/],
+    ['Tier A zero', /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/],
+    ['635 of 1,165 missing coordinates', /\*\*635 of 1,165\*\*/],
+  ] as const) {
+    check(`baseline preserves ${label}`, pattern.test(gate));
+  }
+  check(
+    'Tier A = 0 is attributed to inaccessible coordinates, not a lowered bar',
+    /Tier A is 0 because authoritative coordinates were inaccessible/.test(gate),
+  );
+  check(
+    'the weigh-station rule is stated as binding in the gate',
+    /must not be counted as truck parking/.test(gate),
+  );
+}
+
+/* -------------------------- SOURCE ACQUISITION ---------------------------- */
+{
+  const acq = readFileSync(`${DIR}/SOURCE-ACQUISITION.md`, 'utf8');
+  const json = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8'));
+
+  const REQUIRED = [
+    'tpc-feed',
+    'loves-master',
+    'pilot-master',
+    'ta-master',
+    'fhwa-truck-parking',
+    'statedot-restareas',
+    'weigh-stations',
+  ];
+  // Seven gate-bearing sources, plus AllStays which is registered discovery_only
+  // and deliberately contributes to no gate line.
+  const gateSources = json.sources.filter(
+    (s: { contributes_to_gate?: boolean }) => s.contributes_to_gate !== false,
+  );
+  check('all seven gate-bearing sources are listed', gateSources.length === 7, gateSources.length);
+  check(
+    'AllStays is registered but contributes to no gate',
+    json.sources.length === 8,
+    json.sources.length,
+  );
+  for (const id of REQUIRED) {
+    check(
+      `source ${id} is present`,
+      json.sources.some((s: { source_id: string }) => s.source_id === id),
+    );
+  }
+
+  // Every field the brief requires, on every source.
+  const FIELDS = [
+    'url',
+    'expected_format',
+    'required_columns',
+    'stable_source_id_field',
+    'attribution',
+    'update_frequency',
+    'closure_signal',
+    'priority',
+    'deduplication',
+    'represents',
+  ];
+  for (const s of json.sources as Record<string, unknown>[]) {
+    for (const f of FIELDS) {
+      check(
+        `${s.source_id} specifies ${f}`,
+        s[f] !== undefined && s[f] !== null && String(s[f]).length > 0,
+      );
+    }
+    check(
+      `${s.source_id} classifies what it represents`,
+      (json.represents_values as string[]).some((v) => String(s.represents).includes(v)),
+      s.represents,
+    );
+    check(`${s.source_id} lists required columns`, (s.required_columns as string[]).length >= 8);
+  }
+
+  check(
+    'priorities are unique across all registered sources',
+    new Set(json.sources.map((s: { priority: number }) => s.priority)).size === json.sources.length,
+  );
+  check("Love's is priority 1 and named as obtain-first", json.obtain_first === 'loves-master');
+  check(
+    "the markdown names Love's as the first file to obtain",
+    /Obtain \*\*Love's Travel Stops\*\* first/.test(acq),
+  );
+  check(
+    'every source requires a latitude and a longitude column',
+    json.sources.every((s: { required_columns: string[] }) => {
+      // An acquired source records the file's REAL header names; an unacquired
+      // one still carries the generic checklist. Both must demand coordinates.
+      const lower = s.required_columns.map((c) => c.toLowerCase());
+      return lower.includes('latitude') && lower.includes('longitude');
+    }),
+  );
+
+  // Authorization and anti-scraping rules must be explicit and machine-readable.
+  const tpc = json.sources.find((s: { source_id: string }) => s.source_id === 'tpc-feed');
+  check('the TPC feed is marked authorization-required', tpc.authorization_required === true);
+  check(
+    'the no-scraping rule is machine-readable',
+    /must not be reproduced without an authorized feed/.test(json.rules.no_scraping),
+  );
+  check('the markdown repeats the no-scraping rule', /Do not scrape/.test(acq));
+  check(
+    'the weigh-station rule is machine-readable',
+    /never counted as truck parking/.test(json.rules.weigh_station_is_not_parking),
+  );
+  check('no invented attributes rule is present', !!json.rules.no_invented_attributes);
+  check('no inferred coordinates rule is present', !!json.rules.no_inferred_coordinates);
+  check('no speculative parsers rule is present', !!json.rules.no_speculative_parsers);
+  check(
+    'publication still requires separate authorization',
+    json.rules.publication_requires_separate_authorization === true,
+  );
+  check(
+    'the docs state that no URL was fetched this run',
+    /No URL below was fetched or verified during this run/.test(acq) &&
+      /was fetched or verified during this run/.test(json.note),
+  );
+  check(
+    'the weigh-station source is typed as its own category, not parking',
+    json.sources.find((s: { source_id: string }) => s.source_id === 'weigh-stations').represents ===
+      'weigh_station',
+  );
+}
+
+/* ------------------------------ INTAKE PROCESS ---------------------------- */
+{
+  const intake = readFileSync(`${DIR}/INTAKE-PROCESS.md`, 'utf8');
+  const STEPS = [
+    'Preserve the raw file and checksum it',
+    'Parse without modifying the original',
+    'Normalize fields',
+    'Reconcile against existing rows',
+    'Classify into updates, net-new, closures, duplicates',
+    'Validate coordinates and route proximity',
+    'Generate an unpublished, guarded import',
+    'Run a small, diverse canary',
+    'Measure coverage improvement',
+    'Publish only after separate authorization',
+  ];
+  STEPS.forEach((s, i) => check(`intake step ${i + 1}: ${s}`, intake.includes(s)));
+  check(
+    'intake order is 1..10',
+    STEPS.every((s, i) => intake.indexOf(s) > (i === 0 ? -1 : intake.indexOf(STEPS[i - 1]))),
+  );
+  check(
+    'no speculative parser is built ahead of the file',
+    /No parser exists yet, deliberately/.test(intake),
+  );
+  check(
+    'net-new rows default to unpublished and unfeatured',
+    /is_published = false`?, `?is_featured = false/.test(intake),
+  );
+  check(
+    'is_indexable is left unchanged on intake',
+    /`is_indexable` \*\*unchanged\*\*/.test(intake),
+  );
+  // Prose in these docs is hard-wrapped, so phrase assertions must tolerate a
+  // newline anywhere a space appears.
+  const phrase = (s: string) => new RegExp(s.replace(/ /g, '\\s+'));
+  check(
+    'closures are unpublished, never silently deleted',
+    phrase('never a silent delete').test(intake),
+  );
+  check(
+    'coverage is reported as % of source of record',
+    /percentage of the source of record/.test(intake),
+  );
+  check(
+    'row growth is explicitly rejected as a report',
+    /is not a coverage statement/.test(intake),
+  );
+  check('the three authorizations stay separate', /three separate authorizations/.test(intake));
+}
+
+/* ------------------------------ LOVE'S INTAKE ----------------------------- */
+// The first real source file. These lock the parking gate that produced the
+// 604, and the defects the authoritative file exposed in our own data.
+{
+  const L = 'data/sources/loves-master/2026-07-27';
+  const findings = readFileSync(`${L}/FINDINGS.md`, 'utf8');
+  const profile = JSON.parse(readFileSync(`${L}/PROFILE.json`, 'utf8'));
+  const checksum = readFileSync(`${L}/CHECKSUM.txt`, 'utf8');
+  const norm = parseCsv(readFileSync(`${L}/normalized.csv`, 'utf8').trim());
+  const quar = parseCsv(readFileSync(`${L}/quarantine.csv`, 'utf8').trim());
+  const rec = parseCsv(readFileSync(`${L}/RECONCILIATION.csv`, 'utf8').trim());
+  const conf = parseCsv(readFileSync(`${L}/CONFLICTS.csv`, 'utf8').trim());
+  const snap = readFileSync(`${L}/DB-SNAPSHOT.tsv`, 'utf8').trim().split('\n');
+
+  const SHA = 'ec5146ee475af473d037ed4913e4f9b4c1059c737581ff93d2b2eefcc5a89ab2';
+
+  /* step 1: the raw file is preserved and pinned */
+  check('raw file checksum is recorded', checksum.includes(SHA));
+  check('the profile pins the same checksum', profile.sha256 === SHA);
+  check(
+    'the reconciler refuses to run if the source changes',
+    readFileSync('scripts/reconcile-loves.mjs', 'utf8').includes(SHA),
+  );
+
+  /* step 2-3: parse and normalize, nothing invented */
+  check('731 source rows parsed', profile.data_rows === 731 && norm.length === 731);
+  check(
+    'the profile records the columns the file lacks',
+    profile.missing_expected_columns.includes('name') &&
+      profile.missing_expected_columns.includes('status'),
+  );
+  check(
+    'closure signal limited to absence is documented',
+    /only closure signal available is\s+absence/i.test(findings.replace(/\*\*/g, '')),
+  );
+  check(
+    'fuel prices are deliberately excluded',
+    !Object.keys(norm[0]).some((k) => /fuel|diesel|unleaded|price/i.test(k)),
+  );
+
+  /* THE PARKING GATE — this is what produced 604 */
+  const eligible = rec.filter((r) => r.disposition !== '');
+  check('604 eligible truck-parking locations', eligible.length === 604, eligible.length);
+  check(
+    'every eligible row is a Travel Stop',
+    eligible.every((r) => r.store_type === 'Travel Stop'),
+    [...new Set(eligible.map((r) => r.store_type))],
+  );
+  check(
+    'every eligible row has a stated space count > 0',
+    eligible.every((r) => Number(r.parking_spaces) > 0),
+  );
+  check(
+    'every eligible row has the operator overnight-parking flag',
+    eligible.every((r) => r.overnight_parking === 'true'),
+  );
+  check(
+    'every eligible row has a usable coordinate',
+    eligible.every(
+      (r) =>
+        Number(r.lat) !== 0 &&
+        Number(r.lng) !== 0 &&
+        Number(r.lat) >= 24 &&
+        Number(r.lat) <= 49.5 &&
+        Number(r.lng) >= -125 &&
+        Number(r.lng) <= -66.5,
+    ),
+  );
+
+  /* CAR-ONLY and SERVICE-ONLY must never be eligible */
+  for (const t of ['Car Stop', 'Truck Service', 'Country Store', 'Service Center']) {
+    check(`no ${t} is eligible`, !eligible.some((r) => r.store_type === t));
+    check(
+      `${t} rows are quarantined`,
+      quar.some((r) => r.store_type === t),
+    );
+  }
+  check(
+    'all 4 Car Stops are quarantined as car-only',
+    quar.filter((r) => r.store_type === 'Car Stop').length === 4,
+  );
+  check(
+    'the zero-space Travel Stop is quarantined',
+    quar.some((r) => r.store_type === 'Travel Stop' && r.parking_spaces === '0'),
+  );
+
+  /* nothing dropped */
+  check('eligible + quarantined = every source row', eligible.length + quar.length === 731);
+  check(
+    'every quarantined row carries an exact reason',
+    quar.every((r) => r.quarantine_reason && r.quarantine_reason.length > 5),
+  );
+
+  /* no invented values */
+  check(
+    'no eligible row invents a space count of 0',
+    !eligible.some((r) => r.parking_spaces === '0'),
+  );
+  // A stated 0 (Elk City #201) is honest data and must survive as 0; what must
+  // never happen is a null being defaulted to 0. The source has 110 null space
+  // counts, and all 110 must still be blank after normalization.
+  check(
+    'all 110 null space counts stayed blank, none defaulted to 0',
+    quar.filter((r) => r.parking_spaces === '').length === 110,
+    quar.filter((r) => r.parking_spaces === '').length,
+  );
+  // Six rows state a real 0 — Elk City #201 (a Travel Stop) and five Country
+  // Stores. A stated zero is the operator saying "you cannot park here"; it is
+  // data, and it must survive as 0 rather than being blanked or defaulted.
+  check(
+    'the six genuine zeros are preserved as 0, not blanked',
+    quar.filter((r) => r.parking_spaces === '0').length === 6,
+    quar.filter((r) => r.parking_spaces === '0').length,
+  );
+  check(
+    'Elk City #201 is among them and is quarantined',
+    quar.some((r) => r.source_ref === '201' && r.parking_spaces === '0'),
+  );
+
+  /* step 4: reconciliation is by store number against a verified snapshot */
+  check('the DB snapshot holds 159 rows', snap.length - 1 === 159);
+  check(
+    'the snapshot digest is recorded and matches production',
+    findings.includes('95c858c847c26d96ed799fae06529c83'),
+  );
+  check('541 net-new', rec.filter((r) => r.disposition === 'net-new').length === 541);
+  check('62 update-existing', rec.filter((r) => r.disposition === 'update-existing').length === 62);
+
+  /* step 5: the defects the authoritative file exposed */
+  check('2 store-number conflicts detected', conf.length === 2, conf.length);
+  check(
+    '#618 conflict: source KY, DB also MI',
+    conf.some((c) => c.source_ref === '618' && c.source_state === 'KY' && /MI/.test(c.db_states)),
+  );
+  check(
+    '#420 conflict: source MS, DB SC',
+    conf.some((c) => c.source_ref === '420' && c.source_state === 'MS' && c.db_states === 'SC'),
+  );
+  check(
+    'the findings name the three PUBLISHED rows at risk',
+    ['c32686ff', '485085d9', 'f6404302'].every((id) => findings.includes(id)),
+  );
+  check(
+    '#306 Dandridge is called out as a closure candidate',
+    /#306 is absent from the authoritative list/i.test(findings.replace(/\*\*/g, '')),
+  );
+  check(
+    'the two non-defects are recorded so they are not re-raised',
+    /Boss Truck Shop/.test(findings) && /trailing space/.test(findings),
+  );
+  check(
+    'no row was changed in the database this run',
+    /No\s+database\s+write\s+was\s+performed/i.test(findings),
+  );
+
+  /* colocation must not weaken the shared-coordinate guard */
+  check(
+    '45 colocated sites identified',
+    rec.filter((r) => /colocated/.test(r.note)).length === 45,
+    rec.filter((r) => /colocated/.test(r.note)).length,
+  );
+  check(
+    'the guard is explicitly not weakened for colocation',
+    /The guard must not be weakened/.test(findings),
+  );
+
+  /* completeness is not overclaimed */
+  check(
+    'completeness is flagged as unproven, not asserted',
+    /should not be marked 100 % until Shawn confirms/i.test(findings.replace(/\*\*/g, '')),
+  );
+  check(
+    'the gate reads NOT READY with only the TA lines passed',
+    /NOT READY/.test(gate) && /4a and 4b[^\n]*✅/.test(gate),
+  );
+  check(
+    'the preserved baseline still reads Tier A = 0',
+    /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/.test(gate),
+  );
+}
+
+/* ==========================================================================
+ * LOVE'S — the two gates must stay separate, and 11 stores must never be
+ * offered as overnight parking.
+ * ======================================================================== */
+{
+  const S = 'data/sources/loves-master/2026-07-27';
+  const P = 'data/imports/loves-2026-07-27';
+  const dir615 = parseCsv(readFileSync(`${S}/DIRECTORY-615.csv`, 'utf8'));
+  const over604 = parseCsv(readFileSync(`${S}/OVERNIGHT-604.csv`, 'utf8'));
+  const non11 = parseCsv(readFileSync(`${S}/NON-OVERNIGHT-11.csv`, 'utf8'));
+
+  check('gate 2a universe is 615', dir615.length === 615, dir615.length);
+  check('gate 2b universe is 604', over604.length === 604, over604.length);
+  check('11 non-overnight Travel Stops', non11.length === 11, non11.length);
+  check('615 = 604 + 11', over604.length + non11.length === dir615.length);
+
+  /* The two gates are DIFFERENT numbers. A single figure reported for both is
+   * the specific mistake this block exists to catch. */
+  check('2a and 2b are not the same number', over604.length !== dir615.length);
+
+  check(
+    'every one of the 604 is overnight-eligible with a positive space count',
+    over604.every((r) => r.overnight_parking === 'true' && Number(r.parking_spaces) > 0),
+  );
+  check(
+    'no non-overnight store leaks into the 604',
+    !over604.some((r) => non11.some((n) => n.source_ref === r.source_ref)),
+  );
+  check(
+    'every one of the 11 is still represented as a truck stop',
+    non11.every(
+      (r) => r.store_type === 'Travel Stop' && r.directory_representation === 'truck stop',
+    ),
+  );
+  check(
+    'every one of the 11 is explicitly barred from parking',
+    non11.every((r) => /never offered as overnight/i.test(r.parking_representation)),
+  );
+
+  /* #201 Elk City has zero stated spaces and must not qualify as parking. */
+  const elk = non11.find((r) => r.source_ref === '201');
+  check('#201 Elk City is in the non-overnight set', Boolean(elk));
+  check('#201 Elk City states zero spaces', elk?.parking_spaces === '0', elk?.parking_spaces);
+  check('#201 Elk City is in Oklahoma', elk?.state === 'OK', elk?.state);
+  check(
+    '#201 Elk City never appears in the overnight set',
+    !over604.some((r) => r.source_ref === '201'),
+  );
+
+  const publishState = readFileSync(`${P}/PUBLISH-PER-STATE.sql`, 'utf8');
+  const canarySql = readFileSync(`${P}/PUBLISH-CANARY.sql`, 'utf8');
+  const insertSql = readFileSync(`${P}/INSERT-NET-NEW.sql`, 'utf8');
+  const verifySql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+
+  check(
+    'per-state publish filters on the overnight flag',
+    /overnight_parking is true/.test(publishState),
+  );
+  check(
+    'per-state publish asserts no non-overnight row was published',
+    /non-overnight row\(s\) were published/.test(publishState),
+  );
+  check('canary rejects non-overnight rows', /are not overnight-eligible/.test(canarySql));
+  check(
+    'verify carries the non-overnight safety invariant',
+    /overnight_parking is not true/.test(verifySql),
+  );
+
+  /* Nothing may arrive published, featured, or with is_indexable touched. */
+  check('inserts are unpublished and unfeatured', /is_published, is_featured\)/.test(insertSql));
+  check(
+    "is_indexable is never written by the Love's insert",
+    !/is_indexable\s*=/.test(insertSql) && !/is_indexable[,)]/.test(insertSql),
+  );
+  check(
+    'the insert keeps the coordinate-collision guard',
+    /coordinate\(s\) shared by more than one site/.test(insertSql),
+  );
+
+  /* Map-pin rule: colocated service rows are reconciled but get no pin. */
+  const svc = parseCsv(readFileSync(`${S}/COLOCATED-SERVICE-ROWS.csv`, 'utf8'));
+  check('colocated service rows are reconciled', svc.length === 62, svc.length);
+  check(
+    'no colocated service row receives a map pin',
+    svc.every((r) => r.receives_map_pin === 'false'),
+  );
+  const enr = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  check(
+    'every enrichment target receives the pin',
+    enr.every((r) => r.receives_map_pin === 'true'),
+  );
+  check('62 map pins enriched', enr.length === 62, enr.length);
+
+  /* Corrections package: exact IDs, nothing deleted, Florence left alone. */
+  const corr = readFileSync(`${P}/CORRECTIONS.sql`, 'utf8');
+  for (const id of [
+    'c32686ff-6cf3-4422-af97-80b823e07eb9',
+    '485085d9-98c6-4e88-9661-862c3bc0c514',
+    'f6404302-7971-4884-8f37-82f098913d65',
+  ]) {
+    check(`corrections target ${id.slice(0, 8)} by exact id`, corr.includes(id));
+  }
+  check('corrections never delete', !/\bdelete\s+from\b/i.test(corr.replace(/^\s*--.*$/gm, '')));
+  check('corrections guard the exactly-3 row count', /expected 3 published target rows/.test(corr));
+  check('corrections protect the correct KY #618 rows', /Sadieville/.test(corr));
+  check('corrections carry a value-matched rollback', /republish exactly 3 row\(s\)/.test(corr));
+  check(
+    'Florence SC is quarantined with no statement proposed',
+    /beb05d53-db50-49cb-8790-ec01b45c8187/.test(corr) &&
+      !/update[\s\S]{0,400}beb05d53/i.test(corr.replace(/^\s*--.*$/gm, '')),
+  );
+  const quarantineMd = readFileSync(`${P}/QUARANTINE.md`, 'utf8');
+  check('Florence has a quarantine record', /beb05d53/.test(quarantineMd));
+
+  /* The launch gate must split 2a and 2b, and must not mark either passed. */
+  check('gate line 2a names the 615 directory universe', /\*\*2a\*\*[\s\S]{0,200}?615/.test(gate));
+  check('gate line 2b names the 604 overnight universe', /\*\*2b\*\*[\s\S]{0,200}?604/.test(gate));
+  check(
+    "neither Love's gate is marked passed",
+    !/\*\*2a\*\*[^\n]*✅/.test(gate) && !/\*\*2b\*\*[^\n]*✅/.test(gate),
+  );
+  check(
+    'the gate states that a complete source is not coverage',
+    /That closes the acquisition\. It does not move either gate\./.test(gate),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    obtain_next: string;
+  };
+  const loves = acq.sources.find((s) => s.source_id === 'loves-master') as Record<string, unknown>;
+  check("Love's acquisition is complete", loves.acquisition_status === 'COMPLETE');
+  check(
+    "Love's required columns no longer claim a status column",
+    !(loves.required_columns as string[]).includes('status'),
+  );
+  check(
+    "Love's records the absent status column",
+    (loves.columns_absent_from_export as string[]).includes('status'),
+  );
+  const lg = loves.gates as Record<string, number | string>;
+  check("Love's manifest keeps 2a = 615", lg['2a_directory_coverage'] === 615);
+  check("Love's manifest keeps 2b = 604", lg['2b_overnight_parking_coverage'] === 604);
+}
+
+/* ==========================================================================
+ * PILOT / FLYING J / ONE9 — U.S. denominators, brand identity, zero-space
+ * exclusion, and the refusal to invent overnight permission.
+ * ======================================================================== */
+{
+  const S = 'data/sources/pilot-master/2026-07-27';
+  const P = 'data/imports/pilot-2026-07-27';
+  const dir820 = parseCsv(readFileSync(`${S}/DIRECTORY-820.csv`, 'utf8'));
+  const park803 = parseCsv(readFileSync(`${S}/PARKING-803.csv`, 'utf8'));
+  const zero17 = parseCsv(readFileSync(`${S}/ZERO-SPACE-17.csv`, 'utf8'));
+  const canada55 = parseCsv(readFileSync(`${S}/CANADA-55.csv`, 'utf8'));
+  const normUs = parseCsv(readFileSync(`${S}/normalized-us.csv`, 'utf8'));
+
+  /* ---- denominators. 875 is never the U.S. number. ---- */
+  check('gate 3a universe is 820 U.S. locations', dir820.length === 820, dir820.length);
+  check('gate 3b universe is 803', park803.length === 803, park803.length);
+  check('17 zero-space U.S. locations', zero17.length === 17, zero17.length);
+  check('55 Canadian locations held separately', canada55.length === 55, canada55.length);
+  check('820 = 803 + 17', park803.length + zero17.length === dir820.length);
+  check('875 = 820 + 55', dir820.length + canada55.length === 875);
+  check('3a and 3b are not the same number', park803.length !== dir820.length);
+  check('the U.S. file contains no Canadian row', normUs.length === 820);
+  const CA = new Set([
+    'AB',
+    'BC',
+    'MB',
+    'NB',
+    'NL',
+    'NS',
+    'NT',
+    'NU',
+    'ON',
+    'PE',
+    'QC',
+    'SK',
+    'YT',
+  ]);
+  check('no province leaks into the U.S. set', !normUs.some((r) => CA.has(r.state)));
+  check(
+    'every Canadian row really is Canadian',
+    canada55.every((r) => CA.has(r.state)),
+  );
+  check('43 U.S. states', new Set(normUs.map((r) => r.state)).size === 43);
+  check(
+    '72,189 stated U.S. parking spaces',
+    park803.reduce((a, r) => a + Number(r.parking_spaces), 0) === 72189,
+  );
+
+  /* ---- zero-space locations must never be parking ---- */
+  check(
+    'every zero-space row states 0, not blank',
+    zero17.every((r) => r.parking_spaces === '0'),
+  );
+  check(
+    'every zero-space row is barred from parking and last-stop',
+    zero17.every(
+      (r) =>
+        /never returned as parking/i.test(r.parking_representation) &&
+        /never a last-legal-stop recommendation/i.test(r.parking_representation),
+    ),
+  );
+  check(
+    'no zero-space row leaks into the parking set',
+    !park803.some((r) => zero17.some((z) => z.source_ref === r.source_ref)),
+  );
+  check(
+    'every parking row has a positive count',
+    park803.every((r) => Number(r.parking_spaces) > 0),
+  );
+
+  /* ---- overnight permission is never invented ---- */
+  check(
+    'no U.S. row asserts overnight permission',
+    normUs.every((r) => r.overnight_parking === ''),
+  );
+  check(
+    'no U.S. row asserts parking restrictions',
+    normUs.every((r) => r.parking_restrictions === ''),
+  );
+
+  /* ---- brand identity preserved ---- */
+  const brands = new Set(normUs.map((r) => r.official_name));
+  for (const b of [
+    'Pilot Travel Center',
+    'Flying J Travel Center',
+    'ONE9 Travel Center',
+    'ONE9 Dealer',
+    'Pilot Dealer',
+    'Mr. Fuel Travel Center',
+    'Pilot Licensed Location',
+    'Flying J Dealer',
+  ]) {
+    check(`brand preserved: ${b}`, brands.has(b));
+  }
+  check(
+    'both published ONE9 casings are preserved',
+    brands.has('ONE9 Travel Center') && brands.has('One9 Travel Center'),
+  );
+  check('nothing was flattened to a bare "Pilot"', !brands.has('Pilot'));
+  check(
+    'every derived name keeps the official name and the store number',
+    normUs.every((r) => r.name === `${r.official_name} #${r.source_ref}`),
+  );
+
+  /* ---- coordinates are the operator's, never inferred ---- */
+  check(
+    'every U.S. row carries a coordinate',
+    normUs.every((r) => r.lat !== '' && r.lng !== ''),
+  );
+  check(
+    'every coordinate sits in the continental envelope',
+    normUs.every(
+      (r) =>
+        Number(r.lat) >= 24 &&
+        Number(r.lat) <= 49.5 &&
+        Number(r.lng) >= -125 &&
+        Number(r.lng) <= -66.5,
+    ),
+  );
+  check(
+    'no two U.S. locations share a coordinate',
+    new Set(normUs.map((r) => `${r.lat},${r.lng}`)).size === 820,
+  );
+  check('no duplicate store numbers', new Set(normUs.map((r) => r.source_ref)).size === 820);
+
+  /* ---- every row is classified in both directions ---- */
+  const dispo = new Map<string, number>();
+  for (const r of dir820) dispo.set(r.disposition, (dispo.get(r.disposition) ?? 0) + 1);
+  check(
+    'every official row has a disposition',
+    dir820.every((r) => r.disposition !== ''),
+  );
+  check(
+    '705 net-new with parking',
+    dispo.get('net-new-official-location') === 705,
+    dispo.get('net-new-official-location'),
+  );
+  check('87 exact authoritative matches', dispo.get('exact-authoritative-match') === 87);
+  check('14 net-new zero-space', dispo.get('net-new-zero-space-directory-only') === 14);
+  check('8 blank-only enrichments', dispo.get('blank-only-enrichment') === 8);
+  check(
+    '5 matched by address rather than store number',
+    dispo.get('address-matched-enrichment') === 5,
+  );
+  check('1 conflicting record', dispo.get('conflicting-record') === 1);
+
+  const closure = parseCsv(readFileSync(`${S}/CLOSURE-REVIEW.csv`, 'utf8'));
+  const services = parseCsv(readFileSync(`${S}/COLOCATED-SERVICE-ROWS.csv`, 'utf8'));
+  const enrich = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  const conflicts = parseCsv(readFileSync(`${S}/CONFLICTS.csv`, 'utf8'));
+  check('all 222 directory rows are accounted for', 101 + services.length + closure.length === 222);
+  check('92 colocated service rows', services.length === 92, services.length);
+  check('29 rows in closure review', closure.length === 29, closure.length);
+  check('84 enrichment targets', enrich.length === 84, enrich.length);
+  check('5 conflicting records', conflicts.length === 5, conflicts.length);
+
+  /* ---- absence from one export never triggers a delete or an unpublish ---- */
+  check(
+    'every closure-review row records NO action',
+    closure.every((r) => /^NONE\./.test(r.action)),
+  );
+  check(
+    'closure review states that absence is not proof of closure',
+    closure.every((r) => /not proof of closure/.test(r.action)),
+  );
+  const closureSqlLeak = [
+    'INSERT-NET-NEW.sql',
+    'ENRICH-EXISTING.sql',
+    'PUBLISH-CANARY.sql',
+    'PUBLISH-PER-STATE.sql',
+  ].map((f) => readFileSync(`${P}/${f}`, 'utf8').replace(/^\s*--.*$/gm, ''));
+  check(
+    'no forward statement deletes anything',
+    closureSqlLeak.every((s) => !/\bdelete\s+from\b/i.test(s)),
+  );
+  check(
+    'no forward statement unpublishes anything',
+    closureSqlLeak.every((s) => !/is_published\s*=\s*false/i.test(s)),
+  );
+
+  /* ---- matching never relies on a loose business name ---- */
+  check(
+    'every match records its evidence',
+    dir820
+      .filter((r) => !r.disposition.startsWith('net-new'))
+      .every((r) => r.match_evidence !== ''),
+  );
+  check(
+    'no match is justified by name alone',
+    dir820.every((r) => !/^name$/.test(r.match_evidence)),
+  );
+  const addrMatched = parseCsv(readFileSync(`${S}/ADDRESS-MATCHED.csv`, 'utf8'));
+  check(
+    'address matches carry brand and state, not just an address',
+    addrMatched.every((r) => /brand\+state/.test(r.evidence)),
+  );
+  check(
+    'address matches are flagged as weaker than a store-number match',
+    addrMatched.every((r) => /Weaker than a store-number match/.test(r.note)),
+  );
+
+  /* ---- the #749 / #876 address contradiction must stay a conflict ---- */
+  const contradiction = conflicts.find((c) => c.source_ref === '749');
+  check('#749 is held as a conflict', Boolean(contradiction));
+  check(
+    '#749 is a street-number contradiction, not a state mismatch',
+    contradiction?.conflict === 'store-number-matches-but-street-number-contradicts',
+  );
+  check('#749 enrichment is refused', /REFUSED/.test(contradiction?.resolution ?? ''));
+  check(
+    '#749 is not in the enrichment plan',
+    !enrich.some((r) => r.db_id === '9b0bb934-cb3a-499c-b362-8f665e065b81'),
+  );
+
+  /* ---- blank-only really is blank-only, checked against real values ---- */
+  check(
+    'no enrichment row restages a parking count the directory already has',
+    enrich.every((r) => !(r.parking_spaces !== '' && r.existing_parking_spaces !== '')),
+  );
+  check(
+    'overnight_parking is recorded as never written',
+    enrich.every((r) => /overnight_parking/.test(r.never_written)),
+  );
+  check(
+    'is_indexable is recorded as never written',
+    enrich.every((r) => /is_indexable/.test(r.never_written)),
+  );
+  check(
+    'every enrichment target receives the map pin',
+    enrich.every((r) => r.receives_map_pin === 'true'),
+  );
+  check(
+    'no colocated service row receives a map pin',
+    services.every((r) => r.receives_map_pin === 'false'),
+  );
+
+  /* ---- the guarded SQL ---- */
+  const ins = readFileSync(`${P}/INSERT-NET-NEW.sql`, 'utf8');
+  const enrSql = readFileSync(`${P}/ENRICH-EXISTING.sql`, 'utf8');
+  const canSql = readFileSync(`${P}/PUBLISH-CANARY.sql`, 'utf8');
+  const pubSql = readFileSync(`${P}/PUBLISH-PER-STATE.sql`, 'utf8');
+  const verSql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+  const rbSql = readFileSync(`${P}/ROLLBACK.sql`, 'utf8');
+  const fpSql = readFileSync(`${P}/FINGERPRINT.sql`, 'utf8');
+  const insBody = ins.replace(/^\s*--.*$/gm, '');
+
+  check('inserts arrive unpublished and unfeatured', /false, false\s*$/m.test(insBody));
+  // Named in a post-check guard is fine and wanted; WRITTEN is not. Both
+  // columns must be absent from every insert column list and never assigned.
+  const insertColumnLists = insBody.match(/insert into public\.locations[\s\S]*?\)/g) ?? [];
+  check(
+    'the insert names its columns explicitly',
+    insertColumnLists.length === 43,
+    insertColumnLists.length,
+  );
+  check(
+    'is_indexable is never written by the insert',
+    !/is_indexable\s*=/.test(ins) && insertColumnLists.every((c) => !/is_indexable/.test(c)),
+  );
+  check(
+    'overnight_parking is never written by the insert',
+    !/overnight_parking\s*=/.test(ins) &&
+      insertColumnLists.every((c) => !/overnight_parking/.test(c)),
+  );
+  check(
+    'the insert keeps the coordinate-collision guard',
+    /coordinate\(s\) shared by more than one site/.test(ins),
+  );
+  check(
+    'the insert keeps the 150 m proximity guard',
+    /within ~150 m of a published location/.test(ins),
+  );
+  check(
+    'the insert excludes third-party numbering from the store-number check',
+    /southern tire mart\|speedway\|blue beacon\|pro stop/.test(ins),
+  );
+  check('the insert asserts nothing became indexable', /published\/featured\/indexable/.test(ins));
+  check(
+    'the insert asserts no row claims overnight parking',
+    /row\(s\) claim overnight parking/.test(ins),
+  );
+  check(
+    'one transaction per state',
+    (ins.match(/^begin;$/gm) ?? []).length === 43,
+    (ins.match(/^begin;$/gm) ?? []).length,
+  );
+
+  check('enrichment is blank-only per field', /Blank-only violated/.test(enrSql));
+  check('enrichment refuses non truck-stops targets', /are not truck-stops rows/.test(enrSql));
+  check('enrichment keeps the collision guard', /collide with a published pin/.test(enrSql));
+  check(
+    'enrichment never writes overnight_parking',
+    !/set[\s\S]*?overnight_parking\s*=/.test(enrSql),
+  );
+
+  check('the canary requires a positive parking count', /no stated parking spaces/.test(canSql));
+  check('the canary publishes exactly 10', /publish exactly 10 row\(s\)/.test(canSql));
+  check(
+    'per-state publish excludes zero-space rows',
+    /coalesce\(parking_spaces, 0\) > 0/.test(pubSql),
+  );
+  check(
+    'per-state publish asserts no zero-space row was published',
+    /zero-space row\(s\) were published/.test(pubSql),
+  );
+
+  check('verify asserts no Canadian row was imported', /NO CANADIAN ROW WAS IMPORTED/.test(verSql));
+  check('verify carries the zero-space safety invariant', /THE SAFETY INVARIANT/.test(verSql));
+  check(
+    'verify asserts no invented overnight permission',
+    /NO INVENTED OVERNIGHT PERMISSION/.test(verSql),
+  );
+  check('verify checks the map-pin rule', /MAP-PIN RULE/.test(verSql));
+
+  check(
+    'rollback is value-matched and scoped by source tag',
+    /pilot-master-2026-07-27/.test(rbSql),
+  );
+  check('rollback refuses to delete published rows', /Rollback refused/.test(rbSql));
+  check('rollback refuses to delete rows predating the import', /predate this import/.test(rbSql));
+
+  check(
+    'fingerprints record a measured control digest',
+    /576f641146dfdb8ddb0de518acaa100d/.test(fpSql),
+  );
+  check(
+    'fingerprints record the verified snapshot id digest',
+    /130a63b248982b1e7d7977c6c728c484/.test(fpSql),
+  );
+  check('fingerprints assert third-party rows must not change', /MUST NOT CHANGE/.test(fpSql));
+
+  /* ---- the canary is geographically diverse ---- */
+  const canary = JSON.parse(readFileSync(`${P}/canary.json`, 'utf8')) as Record<
+    string,
+    string | number
+  >[];
+  check('canary is 10 locations', canary.length === 10);
+  check('canary spans 10 states', new Set(canary.map((c) => c.state)).size === 10);
+  check('canary spans 10 corridors', new Set(canary.map((c) => c.interstate)).size === 10);
+  check('canary spans at least 4 regions', new Set(canary.map((c) => c.region)).size >= 4);
+  check(
+    'no region holds more than 3 canary sites',
+    [...new Set(canary.map((c) => c.region))].every(
+      (r) => canary.filter((c) => c.region === r).length <= 3,
+    ),
+  );
+  check(
+    'every canary site has a positive space count',
+    canary.every((c) => Number(c.parking_spaces) > 0),
+  );
+  check(
+    'every canary site has a coordinate',
+    canary.every((c) => c.lat !== '' && c.lng !== ''),
+  );
+  check(
+    'the canary does not claim overnight permission',
+    canary.every((c) => /NOT CONFIRMED/.test(String(c.overnight_parking))),
+  );
+
+  /* ---- the launch gate splits 3a / 3b and passes neither ---- */
+  check(
+    'gate line 3a names the 820 U.S. directory universe',
+    /\*\*3a\*\*[\s\S]{0,200}?820/.test(gate),
+  );
+  check('gate line 3b names the 803 parking universe', /\*\*3b\*\*[\s\S]{0,200}?803/.test(gate));
+  check(
+    'neither Pilot gate is marked passed',
+    !/\*\*3a\*\*[^\n]*✅/.test(gate) && !/\*\*3b\*\*[^\n]*✅/.test(gate),
+  );
+  check(
+    'the gate states 875 is never the U.S. number',
+    /875 is never the U\.S\. coverage number/.test(gate),
+  );
+  check(
+    'the gate records that overnight permission is absent from this source',
+    /no overnight-permission field/.test(gate),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    obtain_next: string;
+    rules: Record<string, string>;
+  };
+  const pilot = acq.sources.find((s) => s.source_id === 'pilot-master') as Record<string, unknown>;
+  check('Pilot acquisition is complete', pilot.acquisition_status === 'COMPLETE');
+  check(
+    'Pilot sha256 recorded',
+    pilot.sha256 === 'd39ab57d51999f2468ff2f32790f8ab43a20b859559b0052e353272c9d1e330a',
+  );
+  check('Pilot record count recorded as 875', pilot.record_count === 875);
+  const pg = pilot.gates as Record<string, number | string>;
+  check('manifest keeps 3a = 820', pg['3a_us_directory_coverage'] === 820);
+  check('manifest keeps 3b = 803', pg['3b_us_truck_parking_coverage'] === 803);
+  check('manifest records 55 Canadian exclusions', pg.canadian_locations_excluded === 55);
+  check(
+    'manifest records the absent status column',
+    (pilot.columns_absent_from_export as string[]).includes('status'),
+  );
+  check(
+    'manifest records the absent overnight field',
+    (pilot.columns_absent_from_export as string[]).includes('overnight_permission'),
+  );
+  check('the next source to obtain is the FHWA layer', acq.obtain_next === 'fhwa-truck-parking');
+  check(
+    'a rule bars counting Canada toward U.S. coverage',
+    Boolean(acq.rules.canada_excluded_from_us_denominator),
+  );
+  check(
+    'a rule bars inventing overnight permission',
+    Boolean(acq.rules.no_invented_overnight_permission),
+  );
+  check('a rule states absence is not closure', Boolean(acq.rules.absence_is_not_closure));
+}
+
+/* ==========================================================================
+ * TA / PETRO / TA EXPRESS — acquisition blocked. Nothing may be approved from
+ * a reference file of unknown provenance, and no live row may be touched on
+ * its evidence.
+ * ======================================================================== */
+{
+  const S = 'data/sources/ta-master';
+  const blocked = readFileSync(`${S}/ACCESS-BLOCKED.md`, 'utf8');
+  const request = readFileSync(`${S}/DATA-ACCESS-REQUEST.md`, 'utf8');
+  const gapMd = readFileSync(`${S}/2026-07-27/GAP-ANALYSIS.md`, 'utf8');
+  const acct = parseCsv(readFileSync(`${S}/2026-07-27/REFERENCE-ACCOUNTING.csv`, 'utf8'));
+  const stateGap = parseCsv(readFileSync(`${S}/2026-07-27/STATE-GAP.csv`, 'utf8'));
+  const refProfile = JSON.parse(readFileSync(`${S}/2026-07-27/reference-profile.json`, 'utf8'));
+
+  /* ---- complete accounting: every reference row lands in exactly one bucket */
+  check('354 reference rows accounted for', acct.length === 354, acct.length);
+  check(
+    'every reference row has a disposition',
+    acct.every((r) => r.disposition !== ''),
+  );
+  check(
+    'every reference row has a reason',
+    acct.every((r) => r.reason !== ''),
+  );
+  const VALID = new Set([
+    'approved',
+    'duplicate',
+    'conflict',
+    'held',
+    'unsupported',
+    'non-us',
+    'service-only',
+    'quarantined',
+  ]);
+  check(
+    'every disposition is one of the eight buckets',
+    acct.every((r) => VALID.has(r.disposition)),
+  );
+
+  /* THE CENTRAL INVARIANT. No source of record means nothing is approved. */
+  check(
+    'ZERO reference rows are approved',
+    acct.filter((r) => r.disposition === 'approved').length === 0,
+    acct.filter((r) => r.disposition === 'approved').length,
+  );
+  check('the profile records approved = 0', refProfile.accounting.approved === 0);
+  check(
+    'the reference file is labelled stale, not a source of record',
+    /STALE REFERENCE ONLY/.test(refProfile.status) && refProfile.may_be_source_of_record !== true,
+  );
+  check('the profile records unknown provenance', /unknown/i.test(refProfile.provenance));
+
+  check('347 unsupported', acct.filter((r) => r.disposition === 'unsupported').length === 347);
+  check('7 service-only', acct.filter((r) => r.disposition === 'service-only').length === 7);
+  check(
+    'every service-only row states no truck parking',
+    acct
+      .filter((r) => r.disposition === 'service-only')
+      .every((r) => Number(r.truck_parking_spaces || 0) === 0),
+  );
+  check(
+    'every unsupported row is refused for lack of an authoritative source',
+    acct
+      .filter((r) => r.disposition === 'unsupported')
+      .every((r) => /no authoritative source of record/.test(r.reason)),
+  );
+
+  /* ---- the analysis produces nothing executable ---- */
+  check(
+    'the gap analysis produces no SQL',
+    /produces no SQL/.test(gapMd) || /This is not an import/.test(gapMd),
+  );
+  check(
+    'the excess directory rows are explicitly NOT actioned',
+    /No row is unpublished, corrected or deleted on this basis/.test(gapMd),
+  );
+  check(
+    'the directory-holds-more finding is recorded',
+    /387/.test(gapMd) && /354/.test(gapMd) && /\+33/.test(gapMd),
+  );
+
+  /* ---- per-state gap arithmetic ---- */
+  check('44 states in the gap table', stateGap.length === 44, stateGap.length);
+  check('db row total is 387', stateGap.reduce((a, r) => a + Number(r.db_rows), 0) === 387);
+  check(
+    'route-usable total is 310',
+    stateGap.reduce((a, r) => a + Number(r.db_route_usable), 0) === 310,
+  );
+  check(
+    'row_delta is db minus reference on every state',
+    stateGap.every((r) => Number(r.row_delta) === Number(r.db_rows) - Number(r.reference_rows)),
+  );
+  check(
+    'route_usable_shortfall is never negative',
+    stateGap.every((r) => Number(r.route_usable_shortfall) >= 0),
+  );
+  check(
+    'Maryland has zero route-usable TA rows',
+    stateGap.find((r) => r.state === 'MD')?.db_route_usable === '0',
+  );
+
+  /* ---- the blocked-access record ---- */
+  check(
+    'the block is recorded as a policy denial, not a credentials problem',
+    /Not a credentials\s*\n?problem/.test(blocked) || /Not a credentials problem/.test(blocked),
+  );
+  check(
+    'all ten attempted hosts are listed',
+    (blocked.match(/connect_rejected/g) ?? []).length >= 10,
+  );
+  check(
+    'scraping ta-petro.com is explicitly forbidden',
+    /No scraping of `ta-petro\.com`/.test(blocked),
+  );
+  check(
+    'the official access path is documented',
+    /developer.*portal/i.test(blocked) && /fleet/i.test(blocked),
+  );
+  check(
+    'a status column is called out as essential',
+    /status/.test(blocked) && /closures are detectable/.test(blocked),
+  );
+
+  /* ---- the request exists and has not been sent ---- */
+  check('the TA data-access request is marked not sent', /\*\*Not sent\.\*\*/.test(request));
+  check('the request asks for a stable site id', /site number or store ID/i.test(request));
+  check('the request asks for redistribution terms', /Redistribution terms/i.test(request));
+  check('the request keeps the three brands distinct', /kept distinct/.test(request));
+}
+
+/* ==========================================================================
+ * ALLSTAYS — discovery_only, license_required. Nothing fetched or copied.
+ * ======================================================================== */
+{
+  const readme = readFileSync('data/sources/allstays/README.md', 'utf8');
+  const licence = readFileSync('data/sources/allstays/LICENSING-REQUEST.md', 'utf8');
+
+  check('AllStays is classified discovery_only', /`discovery_only`/.test(readme));
+  check('AllStays is marked license_required', /`license_required`/.test(readme));
+  check('AllStays authorization is NOT held', /NOT HELD/.test(readme));
+  check(
+    'AllStays may not be a source of record',
+    /May be used as a source of record \| \*\*No\*\*/.test(readme),
+  );
+  check('AllStays may not be scraped', /May be scraped \| \*\*No\*\*/.test(readme));
+  check(
+    'the paid PDF may not be bought for reuse',
+    /Paid PDF may be purchased for reuse \| \*\*No\*\*/.test(readme),
+  );
+  check(
+    'nothing has been fetched from AllStays',
+    /Nothing from AllStays has been fetched, downloaded, scraped or copied/.test(readme),
+  );
+  for (const forbidden of [
+    'names',
+    'coordinates',
+    'parking counts',
+    'amenities',
+    'exclusive locations',
+  ]) {
+    check(
+      `copying ${forbidden} is forbidden`,
+      new RegExp(`\\*\\*${forbidden}\\*\\*|${forbidden}`).test(readme),
+    );
+  }
+  check('the licensing request is marked not sent', /\*\*Not sent\.\*\*/.test(licence));
+  check('the licensing request asks for direction of travel', /direction of travel/i.test(licence));
+  check('the licensing request asks for update rights', /update rights/i.test(licence));
+  check(
+    'declining is handled honestly as a product gap, not a launch blocker',
+    /not a\s+launch blocker/i.test(licence),
+  );
+
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+    rules: Record<string, string>;
+    obtain_next: string;
+  };
+  const all = acq.sources.find((s) => s.source_id === 'allstays') as Record<string, unknown>;
+  check('AllStays is in the machine-readable registry', Boolean(all));
+  check('registry marks it discovery_only', all.classification === 'discovery_only');
+  check('registry marks authorization not held', all.authorization_held === false);
+  check('registry forbids source-of-record use', all.may_be_source_of_record === false);
+  check('registry forbids scraping', all.may_be_scraped === false);
+  check('registry records it contributes to no gate', all.contributes_to_gate === false);
+  check('registry carries explicit prohibitions', (all.prohibitions as string[]).length >= 5);
+  check(
+    'a rule bars discovery_only sources from supplying values',
+    Boolean(acq.rules.discovery_only_sources_never_supply_values),
+  );
+  check(
+    'a rule states buying a product is not a licence',
+    Boolean(acq.rules.buying_a_product_is_not_a_licence),
+  );
+  check(
+    'a rule bars a stale reference from being a source',
+    Boolean(acq.rules.stale_reference_is_not_a_source),
+  );
+
+  const ta = acq.sources.find((s) => s.source_id === 'ta-master') as Record<string, unknown>;
+  check(
+    'TA acquisition is complete with the artifact committed and execution recorded',
+    /^COMPLETE/.test(String(ta.acquisition_status)) &&
+      /committed 2026-07-27/.test(String(ta.acquisition_status)) &&
+      /37 of 38 applied/.test(String(ta.acquisition_status)),
+  );
+  check('TA records ten attempted hosts', (ta.hosts_attempted as string[]).length === 10);
+  check(
+    'TA stale reference records 0 approved rows',
+    (ta.stale_reference as Record<string, number>).approved_rows === 0,
+  );
+  check('the next source to obtain is the FHWA layer', acq.obtain_next === 'fhwa-truck-parking');
+}
+
+/* ==========================================================================
+ * AGENCY REGISTRY — ranked, computed, corridor-prioritised. Gate lines 5 & 6.
+ * ======================================================================== */
+{
+  const reg = JSON.parse(readFileSync(`${DIR}/agency-registry.json`, 'utf8')) as {
+    states: Record<string, unknown>[];
+    federal: Record<string, unknown>[];
+    rules: Record<string, string>;
+    corridor_published_baseline: Record<string, number>;
+    network_status: string;
+  };
+  const md = readFileSync(`${DIR}/AGENCY-REGISTRY.md`, 'utf8');
+
+  check('39 states ranked', reg.states.length === 39, reg.states.length);
+  check(
+    'every state has an agency named',
+    reg.states.every((s) => String(s.agency).length > 3),
+  );
+  check(
+    'every state carries at least one priority corridor',
+    reg.states.every((s) => (s.priority_corridors as string[]).length >= 1),
+  );
+  check(
+    'ranks are 1..39 with no gaps',
+    reg.states
+      .map((s) => s.rank)
+      .sort((a, b) => Number(a) - Number(b))
+      .every((r, i) => r === i + 1),
+  );
+  check(
+    'ranking is monotonic in score',
+    reg.states.every((s, i) => i === 0 || Number(reg.states[i - 1].score) >= Number(s.score)),
+  );
+
+  /* I-95 must dominate: it publishes the fewest mappable parking rows. */
+  check(
+    'I-95 has the lowest published baseline',
+    Math.min(...Object.values(reg.corridor_published_baseline)) ===
+      reg.corridor_published_baseline['I-95'],
+  );
+  check('I-95 baseline is 4', reg.corridor_published_baseline['I-95'] === 4);
+  check(
+    'every tier-1 state carries more than one priority corridor',
+    reg.states
+      .filter((s) => s.tier === 1)
+      .every((s) => (s.priority_corridors as string[]).length > 1),
+    reg.states
+      .filter((s) => s.tier === 1 && (s.priority_corridors as string[]).length <= 1)
+      .map((s) => s.state),
+  );
+  // The property that matters: I-95 is the starved corridor, so no state that
+  // carries it may be demoted below tier 2.
+  const i95States = reg.states.filter((s) => (s.priority_corridors as string[]).includes('I-95'));
+  check('16 states carry I-95', i95States.length === 16, i95States.length);
+  check(
+    'no I-95 state is ranked below tier 2',
+    i95States.every((s) => Number(s.tier) <= 2),
+    i95States.filter((s) => Number(s.tier) > 2).map((s) => s.state),
+  );
+  check(
+    'every tier-2 state carries I-95 or more than one corridor',
+    reg.states
+      .filter((s) => s.tier === 2)
+      .every(
+        (s) =>
+          (s.priority_corridors as string[]).includes('I-95') ||
+          (s.priority_corridors as string[]).length > 1,
+      ),
+  );
+
+  /* A tie must never be split across a tier boundary. */
+  const byScore = new Map<number, Set<number>>();
+  for (const s of reg.states) {
+    const k = Number(s.score);
+    byScore.set(k, (byScore.get(k) ?? new Set()).add(Number(s.tier)));
+  }
+  check(
+    'no tied score is split across two tiers',
+    [...byScore.values()].every((t) => t.size === 1),
+  );
+
+  /* Weigh stations stay a separate category and a separate request. */
+  check(
+    'every state records a weigh-station custodian',
+    reg.states.every((s) => String(s.weigh_station_custodian).length > 3),
+  );
+  check(
+    'weigh stations are required as a SEPARATE category',
+    reg.states.every((s) =>
+      (s.datasets_required as string[]).some((d) => /SEPARATE category/.test(d)),
+    ),
+  );
+  check(
+    'the weigh-station rule is machine-readable',
+    /never counted as truck parking/.test(reg.rules.weigh_station_is_not_parking),
+  );
+  check(
+    'truck_parking_permitted is a required field',
+    reg.states.every((s) =>
+      (s.required_fields as string[]).some((f) => /truck_parking_permitted/.test(f)),
+    ),
+  );
+
+  /* Toll authorities are separate custodians — the northeast depends on it. */
+  const withToll = reg.states.filter((s) => (s.toll_authorities as string[]).length > 0);
+  check('toll authorities recorded for 10 states', withToll.length === 10, withToll.length);
+  check(
+    'a rule states toll authorities are separate custodians',
+    Boolean(reg.rules.toll_authorities_are_separate_custodians),
+  );
+
+  /* Nothing here claims to have been verified. */
+  check(
+    'the registry records that every agency host is blocked',
+    /BLOCKED/.test(reg.network_status),
+  );
+  check('no URL is claimed as verified', /No URL here was fetched or verified/.test(md));
+  check(
+    'every state records the access block',
+    reg.states.every((s) => /BLOCKED/.test(String(s.access_status))),
+  );
+
+  /* FHWA is asked first but loses to state data on conflict. */
+  check('the federal layer is listed first', reg.federal.length === 1 && reg.federal[0].rank === 0);
+  check(
+    'state DOT data wins over FHWA on conflict',
+    /State DOT data WINS over FHWA/.test(String(reg.federal[0].conflict_rule)),
+  );
+
+  /* The rules that bind every intake. */
+  for (const r of [
+    'no_inferred_coordinates',
+    'no_invented_attributes',
+    'directional_pairs_stay_separate',
+  ]) {
+    check(`registry carries rule ${r}`, Boolean(reg.rules[r]));
+  }
+
+  /* Markdown mirrors the JSON — no drift between the two. */
+  for (const s of reg.states)
+    check(
+      `${s.state} appears in the markdown`,
+      new RegExp(`\\| \\*\\*${s.state}\\*\\* \\|`).test(md),
+    );
+}
+
+/* ==========================================================================
+ * LAUNCH GATE — acquisition coverage and route-usable coverage are two
+ * separate measurements, and line 4 splits like 2 and 3.
+ * ======================================================================== */
+{
+  check('gate line 4a is directory coverage', /\*\*4a\*\*[^\n]*directory coverage/.test(gate));
+  check(
+    'gate line 4b is route-usable coverage',
+    /\*\*4b\*\*[^\n]*route-usable coverage/.test(gate),
+  );
+  check('TA 4a passed at full representation', /\*\*4a\*\*[^\n]*348 represented/.test(gate));
+  check(
+    'both TA gates are marked passed, and only they are',
+    /\*\*4a\*\*[^\n]*✅/.test(gate) &&
+      /\*\*4b\*\*[^\n]*✅/.test(gate) &&
+      (gate.match(/\|\s*✅\s*\|/g) ?? []).length === 2,
+  );
+  check(
+    '4b passes by distinct official Site ID',
+    /\*\*4b\*\*[^\n]*distinct official Site ID/.test(gate),
+  );
+
+  check(
+    'the gate defines the two measurements separately',
+    /Operator acquisition coverage/.test(gate) && /Route-usable coverage/.test(gate),
+  );
+  check(
+    'route-usable requires all four conditions',
+    /published\*\*, \*\*mappable\*\*, and carry confirmed truck parking/.test(gate),
+  );
+  check(
+    'the gate records the ~30-questionable-rows resolution',
+    /2 duplicates \(1 published\), 0 closures/.test(gate),
+  );
+  check(
+    'the gate warns acquisition without route-usable is a file on a disk',
+    /a file on a disk/.test(gate),
+  );
+  check('the gate points at the computed agency registry', /AGENCY-REGISTRY\.md/.test(gate));
+}
+
+/* ==========================================================================
+ * TA / PETRO / TA EXPRESS — the master arrived. Site-ID reconciliation,
+ * digest-proven inputs, and a package with no inserts.
+ * ======================================================================== */
+{
+  const S = 'data/sources/ta-master/2026-07-27';
+  const P = 'data/imports/ta-2026-07-27';
+  const crypto = require('node:crypto') as typeof import('node:crypto');
+
+  /* ---- provenance: both hashes recorded, execution gated on the artifact */
+  const checksum = readFileSync(`${S}/CHECKSUM.txt`, 'utf8');
+  check(
+    'working-copy sha256 recorded',
+    /5ebe0e9f034153536fe3946a3e5cc3d5a45c9a59b010131d5ccee20e21553303/.test(checksum),
+  );
+  check(
+    'official artifact sha256 recorded',
+    /a0c612f0426d141c481f84aae59dc15a0204617183bbf9c0866bfbb726ed63f7/.test(checksum),
+  );
+  check(
+    'artifact commit is a stated execution precondition',
+    /PRECONDITION OF EXECUTION/.test(checksum),
+  );
+
+  /* ---- digest-proven inputs re-proven offline, not trusted from comments */
+  const legacyRaw = readFileSync(`${S}/LEGACY-91.tsv`, 'utf8');
+  const legacyBody = legacyRaw.replace(/\n$/, '').split('\n').slice(1).join('\n');
+  check(
+    'LEGACY-91.tsv still matches the production digest',
+    crypto.createHash('md5').update(legacyBody).digest('hex') ===
+      '4aabb580c32b3959b196d4c2b8e0aa34',
+  );
+  const importRows = parseCsv(
+    readFileSync('data/imports/ta-petro/ta-petro-import-ready.csv', 'utf8'),
+  );
+  const sorted = [...importRows].sort(
+    (a, b) => a.name.localeCompare(b.name) || a.state.localeCompare(b.state),
+  );
+  const nsDigest = crypto
+    .createHash('md5')
+    .update(sorted.map((r) => `${r.name}|${r.state}`).join('\n'))
+    .digest('hex');
+  const valDigest = crypto
+    .createHash('md5')
+    .update(
+      sorted
+        .map((r) =>
+          [r.name, r.state, r.city, r.address, r.zip, r.latitude, r.longitude, r.truckspaces].join(
+            '|',
+          ),
+        )
+        .join('\n'),
+    )
+    .digest('hex');
+  check(
+    'import CSV name+state digest equals production',
+    nsDigest === 'e7843f7412c831ca5eb0687b37ab6018',
+    nsDigest,
+  );
+  check(
+    'import CSV value digest equals production',
+    valDigest === '2ac6c65968f6da9013ee0896b377003b',
+    valDigest,
+  );
+  check('304 imported rows', importRows.length === 304);
+
+  /* Note: sort order must match Postgres "order by name, state" (C-ish);
+   * localeCompare can disagree on punctuation. If the two digest checks above
+   * ever fail while production is unchanged, suspect the comparator first. */
+
+  /* ---- both ledgers complete, buckets exact ---- */
+  const rec = parseCsv(readFileSync(`${S}/RECONCILIATION-354.csv`, 'utf8'));
+  const db = parseCsv(readFileSync(`${S}/DB-ACCOUNTING-395.csv`, 'utf8'));
+  const buckets = (xs: Row[]) => {
+    const m = new Map<string, number>();
+    for (const r of xs) m.set(r.bucket, (m.get(r.bucket) ?? 0) + 1);
+    return Object.fromEntries(m);
+  };
+  check('official ledger holds all 354', rec.length === 354, rec.length);
+  check('db ledger holds all 395', db.length === 395, db.length);
+  const ob = buckets(rec);
+  check('306 exact matches', ob['exact-match'] === 306, ob['exact-match']);
+  check('40 safe enrichments', ob['safe-enrichment'] === 40);
+  check('6 held (Goasis + Thorntons)', ob['held'] === 6);
+  check('1 zero-parking TA-brand site', ob['zero-parking'] === 1);
+  check('1 cross-brand conflict', ob['conflict'] === 1);
+  check('ZERO missing / net-new', !('missing-net-new' in ob), ob['missing-net-new']);
+  const dbb = buckets(db);
+  check('db: 307 exact', dbb['exact-match'] === 307);
+  check('db: 46 service-only', dbb['service-only'] === 46);
+  check('db: 40 enrichment targets', dbb['safe-enrichment'] === 40);
+  check('db: exactly 2 duplicates', dbb['duplicate'] === 2);
+  check('db: ZERO probable closures', !('probable-closure' in dbb));
+
+  /* the ~30 questionable rows resolve to exactly these two */
+  const dups = parseCsv(readFileSync(`${S}/DUPLICATES.csv`, 'utf8'));
+  check(
+    'duplicate 1 is TA Atlanta South #268 (published)',
+    dups.some(
+      (d) =>
+        d.duplicate_db_id === '33e41d22-1dac-425b-a17d-c9b6affcda21' && d.is_published === 'true',
+    ),
+  );
+  check(
+    'duplicate 2 is TA Jacksonville South #248 (unpublished)',
+    dups.some(
+      (d) =>
+        d.duplicate_db_id === '74398e08-61e6-41b8-b3fd-e22c6c6cf6d0' && d.is_published === 'false',
+    ),
+  );
+  const closures = parseCsv(readFileSync(`${S}/CLOSURE-REVIEW.csv`, 'utf8'));
+  check('closure review is empty', closures.length === 0, closures.length);
+
+  /* ---- held brands stay held, zero-parking stays out of coverage ---- */
+  const held = rec.filter((r) => r.bucket === 'held');
+  check(
+    'held rows are exactly Goasis and Thorntons',
+    held.every((r) => r.brand === 'Goasis' || r.brand === 'Thorntons'),
+  );
+  check(
+    'held rows carry no db id and no plan',
+    held.every((r) => r.db_id === ''),
+  );
+  const zero = rec.find((r) => r.bucket === 'zero-parking');
+  check(
+    'the zero-parking site is 0347 TA Truck Service Franklin',
+    zero?.site_id === '0347' && /Truck Service Franklin/.test(zero?.name ?? ''),
+  );
+
+  /* ---- enrichment plan: blank-only, anchored, never the held brands ---- */
+  const plan = parseCsv(readFileSync(`${S}/ENRICHMENT-PLAN.csv`, 'utf8'));
+  check('40 enrichment rows', plan.length === 40);
+  check(
+    '38 address-anchored + 2 name-anchored holds',
+    plan.filter((p) => p.confidence === 'address-anchored').length === 38,
+  );
+  check(
+    'every plan row names an exact db id',
+    plan.every((p) => /^[0-9a-f-]{36}$/.test(p.db_id)),
+  );
+  check(
+    'no plan row touches a Goasis or Thorntons',
+    plan.every((p) => !/goasis|thorntons/i.test(p.db_name)),
+  );
+  check(
+    'the two holds are the Ashland VA pair',
+    plan
+      .filter((p) => p.confidence !== 'address-anchored')
+      .every((p) =>
+        ['e36e07df-2f06-48a6-9494-8cf3b0f4cc15', '7a03c1f5-6b4d-4951-98a2-a3e752d2270b'].includes(
+          p.db_id,
+        ),
+      ),
+  );
+
+  /* ---- the SQL package ---- */
+  const enrSql = readFileSync(`${P}/ENRICH-EXISTING.sql`, 'utf8');
+  const holdSql = readFileSync(`${P}/HOLD-NAME-ANCHORED.sql`, 'utf8');
+  const canSql = readFileSync(`${P}/CANARY-ENRICH.sql`, 'utf8');
+  const corrSql = readFileSync(`${P}/CORRECTIONS-PROPOSALS.sql`, 'utf8');
+  const rbSql = readFileSync(`${P}/ROLLBACK.sql`, 'utf8');
+  const fpSql = readFileSync(`${P}/FINGERPRINT.sql`, 'utf8');
+  const verSql = readFileSync(`${P}/VERIFY.sql`, 'utf8');
+  const noComments = (t: string) => t.replace(/^\s*--.*$/gm, '');
+
+  for (const [label, sql] of [
+    ['enrich', enrSql],
+    ['hold', holdSql],
+    ['canary', canSql],
+    ['rollback', rbSql],
+  ] as const) {
+    check(
+      `${label} never inserts into locations`,
+      !/insert\s+into\s+public\.locations/i.test(noComments(sql)),
+    );
+    check(`${label} never deletes`, !/\bdelete\s+from\b/i.test(noComments(sql)));
+    check(`${label} never writes is_published`, !/is_published\s*=/.test(noComments(sql)));
+    check(
+      `${label} never writes is_featured or is_indexable`,
+      !/is_(featured|indexable)\s*=/.test(noComments(sql)),
+    );
+    check(
+      `${label} never writes overnight_parking`,
+      !/overnight_parking\s*=/.test(noComments(sql)),
+    );
+  }
+  check(
+    'enrich runs one transaction per state (13)',
+    (enrSql.match(/^begin;$/gm) ?? []).length === 13,
+  );
+  check('enrich carries the exact-name identity guard', /name = e\.expected_name/.test(enrSql));
+  check('enrich is blank-only per field', /Blank-only violated/.test(enrSql));
+  check('enrich keeps the collision guard', /collide with a published pin/.test(enrSql));
+  check('hold is marked do-not-run', /DO NOT RUN until identity is verified/.test(holdSql));
+  check('hold contains exactly 2 statements', (holdSql.match(/^begin;$/gm) ?? []).length === 2);
+
+  const canaryJson = JSON.parse(readFileSync(`${P}/canary.json`, 'utf8')) as Record<
+    string,
+    string
+  >[];
+  check('canary is 10 rows', canaryJson.length === 10);
+  check('canary spans 10 states', new Set(canaryJson.map((c) => c.state)).size === 10);
+  check(
+    'canary rows are a subset of the address-anchored plan',
+    canaryJson.every((c) =>
+      plan.some((p) => p.db_id === c.db_id && p.confidence === 'address-anchored'),
+    ),
+  );
+
+  /* corrections: exact ids, guarded, nothing deleted, C has no SQL */
+  for (const id of [
+    '33e41d22-1dac-425b-a17d-c9b6affcda21',
+    '15de1227-c048-4efc-9434-ac55e17356f1',
+    'beb05d53-db50-49cb-8790-ec01b45c8187',
+    '74398e08-61e6-41b8-b3fd-e22c6c6cf6d0',
+  ]) {
+    check(`corrections reference ${id.slice(0, 8)} by exact id`, corrSql.includes(id));
+  }
+  check('corrections never delete', !/\bdelete\s+from\b/i.test(noComments(corrSql)));
+  check(
+    'correction A refuses to remove the only live pin',
+    /do NOT remove the only live pin/.test(corrSql),
+  );
+  check(
+    'correction B keeps the row unpublished',
+    /STAYS UNPUBLISHED/.test(corrSql) && /changed publication state/.test(corrSql),
+  );
+  check(
+    'correction B is anchored to the quarantined state',
+    /name = 'Love''s Travel Stop #420'/.test(corrSql) && /address = '3001 TV Rd'/.test(corrSql),
+  );
+  check(
+    'correction C proposes no SQL for the Jacksonville row',
+    !/update[\s\S]{0,300}?74398e08-61e6-41b8-b3fd-e22c6c6cf6d0/i.test(noComments(corrSql)),
+  );
+  /* The schema CHECK on geocode_source forbids bespoke tags, so the rollback
+   * is per-row: every statement names an exact plan id and clears a field
+   * only while it still holds the exact staged value. */
+  check(
+    'rollback never uses a bespoke geocode_source tag',
+    !/ta-master-2026-07-27/.test(noComments(rbSql)),
+  );
+  check(
+    'rollback is per-row, id-scoped and value-matched',
+    /id = '783d1792-e352-4fb3-bd2b-fc38951c19c8' and lat = 41\.573/.test(rbSql) &&
+      /geocode_source = 'batch-csv'/.test(rbSql),
+  );
+  check(
+    'rollback carries one active coordinate pair per staged coordinate fill',
+    (noComments(rbSql).match(/and lat = /g) ?? []).length === 27,
+  );
+  check('rollback leaves edited rows alone', /left alone/.test(rbSql));
+
+  /* Constraint-legal vocabulary everywhere — the two values every writing
+   * statement uses must be in the schema's CHECK lists. */
+  for (const [label, sql] of [
+    ['canary', canSql],
+    ['enrich', enrSql],
+    ['hold', holdSql],
+  ] as const) {
+    check(
+      `${label} writes only constraint-legal geocode metadata`,
+      /'batch-csv'/.test(noComments(sql)) &&
+        /'machine-checked'/.test(noComments(sql)) &&
+        !/operator-authoritative|ta-master-2026-07-27'/.test(noComments(sql)),
+    );
+  }
+
+  /* The executed state: remainder file, quarantine, execution record. */
+  const remSql = readFileSync(`${P}/ENRICH-REMAINDER.sql`, 'utf8');
+  check(
+    'remainder runs one transaction per state (12)',
+    (remSql.match(/^begin;$/gm) ?? []).length === 12,
+  );
+  check(
+    'remainder records the TN quarantine of site 0269',
+    /QUARANTINED/.test(remSql) && /0269/.test(remSql),
+  );
+  const execRec = readFileSync(`${P}/EXECUTION-RECORD.md`, 'utf8');
+  check(
+    'execution record: 37 of 38 applied, 1 quarantined',
+    /\*\*Rows applied\*\* \| \*\*37\*\*/.test(execRec) &&
+      /\*\*Quarantined\*\* \| \*\*1\*\*/.test(execRec),
+  );
+  check(
+    'execution record: control digest proven unchanged',
+    /64d573283c8c0e35bd39c73bb63819d3/.test(execRec) && /byte-identical/.test(execRec),
+  );
+  check(
+    'execution record: quarantined site listed with the other three unresolved',
+    /0001/.test(execRec) && /0142/.test(execRec) && /0393/.test(execRec) && /0269/.test(execRec),
+  );
+  check(
+    'execution record: collision guard not weakened',
+    /do not weaken the coordinate-collision guard/i.test(execRec),
+  );
+  check(
+    'execution record: nothing outside the authorization',
+    /Rows written outside the authorization \| 0/.test(execRec),
+  );
+
+  /* ---- the closeout: exact-ID exception, quarantine reasons, rollback ---- */
+  const closeSql = readFileSync(`${P}/CLOSEOUT.sql`, 'utf8');
+  const closeRb = readFileSync(`${P}/CLOSEOUT-ROLLBACK.sql`, 'utf8');
+  const closeMan = readFileSync(`${P}/CLOSEOUT-MANIFEST.md`, 'utf8');
+  check(
+    'closeout exception names exactly the two companion UUIDs',
+    /7ac0bc00-385a-48e5-875a-1576872a51f5/.test(closeSql) &&
+      /46c70f80-8582-44d1-a7b6-ea9423392fea/.test(closeSql),
+  );
+  check(
+    'closeout exception re-proves companion category + name + exact coordinate',
+    /category_slug in \('cat-scales','tire-repair'\)/.test(closeSql) &&
+      /l\.lat = 35\.8731 and l\.lng = -84\.2379/.test(closeSql),
+  );
+  check(
+    'closeout keeps the global guard: a third pin still aborts',
+    /non-exempt collision/.test(closeSql),
+  );
+  /* parking_spaces = 176 appears in the READ guard (precondition); the SET
+   * list of the one UPDATE must contain neither it nor any publication flag. */
+  const closeSetList =
+    closeSql.match(/update public\.locations\s+set ([\s\S]*?)\s+where /i)?.[1] ?? '';
+  check(
+    'closeout never writes parking_spaces or publication on 0269',
+    closeSetList.length > 0 &&
+      !/parking_spaces/.test(closeSetList) &&
+      !/is_published|is_featured|is_indexable|overnight_parking/.test(closeSetList),
+  );
+  check(
+    'closeout records both quarantines with their exact reasons',
+    /address = NULL/.test(closeSql) && /Blue Beacon/.test(closeSql),
+  );
+  check(
+    'closeout rollback is value-matched for both applied parts',
+    /lat = 35\.8731 and lng = -84\.2379/.test(closeRb) &&
+      /name = 'TA Atlanta South #268' and not is_published/.test(closeRb),
+  );
+  check(
+    'closeout manifest: 344 of 347 by distinct Site ID, digests unchanged',
+    /344 of 347/.test(closeMan) && /64d573283c8c0e35bd39c73bb63819d3/.test(closeMan),
+  );
+  check(
+    'closeout manifest records the would-be B manifest without applying it',
+    /NOT applied/.test(closeMan) && /Blue Beacon Truck Wash/.test(closeMan),
+  );
+  check(
+    'fingerprints record the measured control digest',
+    /64d573283c8c0e35bd39c73bb63819d3/.test(fpSql),
+  );
+  check('fingerprints record the scope id digest', /52d4c84e71b50adcecc2956a51c58274/.test(fpSql));
+  check('fingerprints flag the beb05d53 control-set caveat', /re-baseline/.test(fpSql));
+  check('verify carries the zero-parking invariant', /ZERO-PARKING INVARIANT/.test(verSql));
+  check('verify asserts Goasis/Thorntons untouched', /GOASIS AND THORNTONS UNTOUCHED/.test(verSql));
+  check('verify asserts overnight is never invented', /OVERNIGHT IS NEVER INVENTED/.test(verSql));
+
+  /* ---- the acquisition manifest and gate agree with the reconciliation ---- */
+  const acq = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8')) as {
+    sources: Record<string, unknown>[];
+  };
+  const ta = acq.sources.find((x) => x.source_id === 'ta-master') as Record<string, unknown>;
+  const gates = ta.gates as Record<string, number | string>;
+  check('manifest gate 4a = 348', gates['4a_directory_coverage'] === 348);
+  check('manifest gate 4b = 347', gates['4b_route_usable_coverage'] === 347);
+  check('manifest holds 6 held-brand locations', gates.held_goasis_thorntons === 6);
+  check(
+    'manifest records the execution precondition',
+    /a0c612f0/.test(String(ta.execution_precondition)),
+  );
+  const recon = ta.reconciliation as Record<string, unknown>;
+  check('manifest reconciliation shows 0 missing', recon.missing_net_new === 0);
+  check(
+    'gate: 4a and 4b are the passing lines',
+    /\*\*4a\*\*[^\n]*✅/.test(gate) && /\*\*4b\*\*[^\n]*✅/.test(gate),
+  );
+
+  /* ---- closeout 2: page-evidence identities, one-record exceptions ---- */
+  const c2Man = readFileSync(`${P}/CLOSEOUT2-MANIFEST.md`, 'utf8');
+  const c2Rb = readFileSync(`${P}/CLOSEOUT2-ROLLBACK.sql`, 'utf8');
+  check(
+    'closeout2 manifest binds each VA site to its official page identity',
+    /ta-petro\.com\/location\/va\/ta-ashland\//.test(c2Man) &&
+      /100 North Carter Rd/.test(c2Man) &&
+      /804-798-6011/.test(c2Man) &&
+      /10134 Lewistown Road/.test(c2Man) &&
+      /804-798-6021/.test(c2Man),
+  );
+  check(
+    'closeout2 manifest carries both official coordinates from the artifact',
+    /37\.7598/.test(c2Man) && /37\.7237/.test(c2Man),
+  );
+  check(
+    'closeout2 removed stale Love’s attribution without inventing a URL',
+    /removed, no invented replacement/.test(c2Man),
+  );
+  check(
+    'closeout2 records both gates closed by distinct Site ID',
+    /348\/348/.test(c2Man) && /347\/347/.test(c2Man) && /distinct\s+official Site ID/i.test(c2Man),
+  );
+  check(
+    'closeout2 rollback restores the exact prior Florence identity',
+    /Love''s Travel Stop #420/.test(c2Rb) &&
+      /loves\.com\/locations\/420/.test(c2Rb) &&
+      /name = 'Petro Florence'/.test(c2Rb),
+  );
+  check(
+    'closeout2 rollback is value-matched per site',
+    /address = '100 North Carter Rd' and phone = '804-798-6011'/.test(c2Rb) &&
+      /address = '10134 Lewistown Road' and phone = '804-798-6021'/.test(c2Rb),
+  );
+  const execRec2 = readFileSync(`${P}/EXECUTION-RECORD.md`, 'utf8');
+  check(
+    'execution record closes the line with no remaining blocker',
+    /No remaining TA\/Petro blocker/.test(execRec2) &&
+      /347\/347/.test(execRec2) &&
+      /348\/348/.test(execRec2),
+  );
+}
+
+console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);
+process.exit(failed ? 1 : 0);
