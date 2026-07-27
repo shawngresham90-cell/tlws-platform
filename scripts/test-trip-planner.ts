@@ -44,6 +44,8 @@ import {
   rankCandidates,
   recommendFuelStops,
   recommendParking,
+  hasConfirmedTruckParking,
+  isParkingNeed,
   type DirectoryListing,
   type RoutePoint,
 } from '@/lib/trip-planner/directory-layer';
@@ -730,6 +732,103 @@ const baseRequest: TripRequest = {
       clocks: freshClockState(T0),
       segments: [{ status: 'driving', minutes: 60 }],
     }).success,
+  );
+}
+
+/* ============================================== zero-space safety rule */
+// A record whose parking spaces are zero, negative, null, undefined or
+// non-numeric can never be recommended as truck parking or as a legal stop.
+// Positive-space records keep working; zero-space listings stay reachable
+// for non-parking needs (they remain ordinary directory entries).
+{
+  check(
+    'safety: only a finite positive count is confirmed parking',
+    hasConfirmedTruckParking(1) &&
+      hasConfirmedTruckParking(250) &&
+      !hasConfirmedTruckParking(0) &&
+      !hasConfirmedTruckParking(-3) &&
+      !hasConfirmedTruckParking(null) &&
+      !hasConfirmedTruckParking(undefined) &&
+      !hasConfirmedTruckParking(Number.NaN) &&
+      !hasConfirmedTruckParking(Number.POSITIVE_INFINITY) &&
+      !hasConfirmedTruckParking('50'),
+  );
+  check(
+    'safety: exactly overnight and parking are parking needs',
+    isParkingNeed('overnight') &&
+      isParkingNeed('parking') &&
+      !isParkingNeed('fuel') &&
+      !isParkingNeed('break'),
+  );
+
+  const listings: DirectoryListing[] = [
+    mkListing({ id: 'ok', name: 'Parkable', ...atMile(100), parkingSpaces: 40 }),
+    mkListing({ id: 'zero', name: 'Zero Lot', ...atMile(110), parkingSpaces: 0 }),
+    mkListing({ id: 'unknown', name: 'Unknown Lot', ...atMile(120), parkingSpaces: null }),
+    mkListing({ id: 'negative', name: 'Negative Lot', ...atMile(130), parkingSpaces: -5 }),
+  ];
+  const safetyCands = toStopCandidates(listings, routePoints, 5);
+  const nanLot = {
+    ...safetyCands.find((c) => c.id === 'ok')!,
+    id: 'nan',
+    name: 'NaN Lot',
+    parkingSpaces: Number.NaN,
+  };
+  const pool = [...safetyCands, nanLot];
+  const win = { fromMile: 0, toMile: 600 };
+
+  for (const need of ['parking', 'overnight'] as const) {
+    const ids = rankCandidates(pool, need, win).map((r) => r.candidate.id);
+    check(`safety: ${need} ranking holds only confirmed-parking rows`, ids.join(',') === 'ok', ids);
+  }
+  check(
+    'safety: requireCategory:false cannot bypass the rule',
+    rankCandidates(pool, 'parking', win, { requireCategory: false }).every(
+      (r) => r.candidate.id === 'ok',
+    ),
+  );
+  check(
+    'safety: recommendParking never surfaces an unconfirmed row',
+    recommendParking(pool, win, 10)
+      .map((r) => r.candidate.id)
+      .join(',') === 'ok',
+  );
+  check(
+    'safety: fuel need still sees the zero-space listing',
+    rankCandidates(pool, 'fuel', win).some((r) => r.candidate.id === 'zero'),
+  );
+
+  // Integration: a corridor whose every listing states zero spaces. The
+  // optimizer must leave overnight slots UNASSIGNED (driver self-selects)
+  // rather than hand one to a zero-space candidate; fuel stops keep working.
+  const zeroCorridor = toStopCandidates(
+    richListings.map((l) => ({ ...l, parkingSpaces: 0 })),
+    longPoints,
+    5,
+  );
+  const zeroTrip = planTrip({ ...baseRequest, candidates: zeroCorridor });
+  const overnights = zeroTrip.stops.filter((s) => s.kind === 'overnight');
+  check(
+    'safety: optimizer never assigns a zero-space overnight stop',
+    overnights.length > 0 &&
+      overnights.every((s) => s.candidate === null && s.alternates.length === 0),
+    overnights.map((s) => s.candidate?.id ?? null),
+  );
+  check(
+    'safety: unassigned overnight raises the self-select warning',
+    zeroTrip.warnings.some((w) => /for overnight/.test(w)),
+    zeroTrip.warnings,
+  );
+  check(
+    'safety: fuel stops still resolve on a zero-space corridor',
+    zeroTrip.stops.filter((s) => s.kind === 'fuel').every((s) => s.candidate !== null),
+  );
+
+  // Positive control: the untouched rich corridor still assigns overnights.
+  const richTrip = planTrip(baseRequest);
+  check(
+    'safety: positive-space corridor still assigns every overnight',
+    richTrip.stops.filter((s) => s.kind === 'overnight').every((s) => s.candidate !== null),
   );
 }
 

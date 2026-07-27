@@ -476,6 +476,41 @@ async function main() {
       check('quote: zero violations', q.itinerary.violations.length === 0);
     }
 
+    // Zero-space safety rule, end to end: a corridor whose every listing
+    // states zero spaces (one reservable, one explicitly free) must produce
+    // ZERO Last Stop slots — no reservable, no free — and report that no
+    // reservable parking exists on the corridor at all.
+    const zeroSpaceDeps = {
+      ...goodDeps,
+      loadListings: async () => [
+        {
+          ...listing(60, 'z-res'),
+          parkingSpaces: 0,
+          reservationUrl: 'https://truckparkingclub.com/z',
+        },
+        { ...listing(120, 'z-free'), parkingSpaces: 0, freeParking: true },
+        { ...listing(180, 'z-plain'), parkingSpaces: 0 },
+      ],
+    };
+    const zq = await composeQuote(req, zeroSpaceDeps);
+    check('quote: zero-space corridor still plans', zq.ok === true);
+    if (zq.ok) {
+      check(
+        'quote: zero-space corridor yields zero Last Stop slots',
+        zq.lastStop.slots.length === 0,
+      );
+      check(
+        'quote: zero-space reservable is not reservable-on-corridor',
+        zq.lastStop.noReservableOnCorridor === true,
+      );
+      check(
+        'quote: no planned stop of parking kind gets a zero-space candidate',
+        zq.itinerary.stops
+          .filter((s) => s.kind === 'overnight' || s.kind === 'parking')
+          .every((s) => s.candidate === null),
+      );
+    }
+
     // Every provider failing → still a plan, with warnings, no throw.
     const failingDeps = {
       loadListings: async () => {
