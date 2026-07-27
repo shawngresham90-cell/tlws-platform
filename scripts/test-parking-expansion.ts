@@ -2136,6 +2136,52 @@ const rows: Row[] = parseCsv(csv.trim());
     'execution record: nothing outside the authorization',
     /Rows written outside the authorization \| 0/.test(execRec),
   );
+
+  /* ---- the closeout: exact-ID exception, quarantine reasons, rollback ---- */
+  const closeSql = readFileSync(`${P}/CLOSEOUT.sql`, 'utf8');
+  const closeRb = readFileSync(`${P}/CLOSEOUT-ROLLBACK.sql`, 'utf8');
+  const closeMan = readFileSync(`${P}/CLOSEOUT-MANIFEST.md`, 'utf8');
+  check(
+    'closeout exception names exactly the two companion UUIDs',
+    /7ac0bc00-385a-48e5-875a-1576872a51f5/.test(closeSql) &&
+      /46c70f80-8582-44d1-a7b6-ea9423392fea/.test(closeSql),
+  );
+  check(
+    'closeout exception re-proves companion category + name + exact coordinate',
+    /category_slug in \('cat-scales','tire-repair'\)/.test(closeSql) &&
+      /l\.lat = 35\.8731 and l\.lng = -84\.2379/.test(closeSql),
+  );
+  check(
+    'closeout keeps the global guard: a third pin still aborts',
+    /non-exempt collision/.test(closeSql),
+  );
+  /* parking_spaces = 176 appears in the READ guard (precondition); the SET
+   * list of the one UPDATE must contain neither it nor any publication flag. */
+  const closeSetList =
+    closeSql.match(/update public\.locations\s+set ([\s\S]*?)\s+where /i)?.[1] ?? '';
+  check(
+    'closeout never writes parking_spaces or publication on 0269',
+    closeSetList.length > 0 &&
+      !/parking_spaces/.test(closeSetList) &&
+      !/is_published|is_featured|is_indexable|overnight_parking/.test(closeSetList),
+  );
+  check(
+    'closeout records both quarantines with their exact reasons',
+    /address = NULL/.test(closeSql) && /Blue Beacon/.test(closeSql),
+  );
+  check(
+    'closeout rollback is value-matched for both applied parts',
+    /lat = 35\.8731 and lng = -84\.2379/.test(closeRb) &&
+      /name = 'TA Atlanta South #268' and not is_published/.test(closeRb),
+  );
+  check(
+    'closeout manifest: 344 of 347 by distinct Site ID, digests unchanged',
+    /344 of 347/.test(closeMan) && /64d573283c8c0e35bd39c73bb63819d3/.test(closeMan),
+  );
+  check(
+    'closeout manifest records the would-be B manifest without applying it',
+    /NOT applied/.test(closeMan) && /Blue Beacon Truck Wash/.test(closeMan),
+  );
   check(
     'fingerprints record the measured control digest',
     /64d573283c8c0e35bd39c73bb63819d3/.test(fpSql),

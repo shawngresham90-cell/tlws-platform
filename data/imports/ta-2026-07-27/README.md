@@ -109,9 +109,9 @@ then run `HOLD-NAME-ANCHORED.sql`.
 
 | Gate | Universe | Before | Applied | Remaining |
 |---|--:|--:|--:|---|
-| **4a directory** | **348** | **347** | 347 | site 0393 — needs correction B |
-| **4b route-usable** | **347** | **306** sites | **343** | 0001 + 0142 (verify, publish) · 0393 (correct, publish) · **0269 (quarantined — collision guard)** |
+| **4a directory** | **348** | **347** | 347 | site 0393 — needs correction B (blocked: Blue Beacon collision, see closeout) |
+| **4b route-usable** | **347** | **306** sites | **344** (closeout applied 0269 via exact-ID exception; Atlanta dup unpublished) | 0001 + 0142 (no address anchor — quarantined) · 0393 (Blue Beacon collision — quarantined) |
 
 Details and directory-wide movement in `COVERAGE.md`; the full execution
 audit, including the two constraint-vocabulary aborts and the TN quarantine,
-in `EXECUTION-RECORD.md`.
+in `EXECUTION-RECORD.md`; the closeout in `CLOSEOUT-MANIFEST.md`.

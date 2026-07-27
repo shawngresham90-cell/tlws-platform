@@ -37,7 +37,8 @@ Petro Florence**, whose row exists but is mislabeled "Love's Travel Stop #420"
 |---|--:|---|
 | Before execution | **306** | 303 imported + TA Cartersville #146, TA Caryville, TA Lake Park #249 *(the published TA Atlanta South #268 duplicate also passes the filter but is the same site as its imported twin — 307 rows, 306 sites)* |
 | **After execution (applied)** | **343** | 24 published rows gained their first coordinate, 11 gained their official space count, 2 gained both — 37 rows total |
-| Remaining | 4 | sites 0001 + 0142 (HOLD → verify → publish decision), 0393 (correction B → publish decision), **0269 (quarantined: collision guard vs the site's own co-located service-record pins — needs an explicit decision, not a weakened guard)** |
+| **After closeout (2026-07-27, separate authorization)** | **344** | 0269 applied via a one-record exact-ID same-site exception; the Atlanta South duplicate unpublished (published 1165→1164, zero truck-stop pin collisions remain) |
+| Remaining | 3 | sites 0001 + 0142 (exact-address verification impossible — both candidate rows have `address = NULL`), 0393 (correction B blocked by the published Blue Beacon Truck Wash pin at 3003 TV Rd — needs its own one-record exception) |
 
 All 38 enrichment targets were **already published** — live pages a driver
 can reach that had no map pin or no capacity figure. The enrichment wrote no

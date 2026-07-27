@@ -112,3 +112,38 @@ publication changes, inserts, deletes and PR #195's merge remained
 
 \* 0269's published page already shows its space count (176 pre-existing);
 only the map pin is missing.
+
+---
+
+# Closeout addendum — 2026-07-27, separate authorization
+
+A tightly scoped closeout of the four gaps ran the same day (see
+`CLOSEOUT.sql`, `CLOSEOUT-ROLLBACK.sql`, `CLOSEOUT-MANIFEST.md`):
+
+- **Site 0269 — APPLIED.** Coordinate 35.8731/−84.2379 written blank-only
+  under a one-record, exact-ID same-site exception naming its two published
+  companion records (CAT scale + truck service, both re-proven in-transaction
+  to be companion categories at exactly the official coordinate). The global
+  collision guard is unmodified; a third pin in the radius still aborts.
+  Space count 176 and publication state untouched by construction.
+- **Correction A — APPLIED.** `33e41d22…` "TA Atlanta South #268" unpublished
+  after in-transaction proof that the imported row of record `15de1227…`
+  (official site 0268) is published and mappable. Nothing deleted; exactly
+  one published Atlanta South pin remains.
+- **Sites 0001/0142 — STILL QUARANTINED.** Exact-address verification is
+  impossible today: both candidate rows carry `address = NULL`, and
+  city/zip/name anchors were forbidden. No write.
+- **Site 0393 — STILL QUARANTINED.** Both operator exports confirm the
+  cross-brand proof, but the §B collision precondition failed its dry-run:
+  published pin `33dd16f0…` "Blue Beacon Truck Wash #51 - Florence"
+  (3003 TV Rd) sits inside the collision box of the official coordinate.
+  The granted exception covered only site 0269's two named companions, so
+  no relabel and no publication occurred.
+
+Post-closeout, all measured: route-usable **344 of 347 by distinct official
+Site ID** (published truck-stop pin collisions in scope: 0); published
+1165→1164; with_coords 560→561; published-unmappable 609→608; control digest,
+scope digests, imported digests and the overnight count unchanged. The three
+remaining gaps are sites 0001, 0142 (no address anchor on either candidate
+row) and 0393 (Blue Beacon collision — unblocked by a one-record exception
+analogous to 0269's, if authorized).
