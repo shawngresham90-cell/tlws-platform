@@ -482,5 +482,206 @@ const rows: Row[] = parseCsv(csv.trim());
   );
 }
 
+/* ------------------------------- LAUNCH GATE ------------------------------ */
+// The gate is the launch decision. If these thresholds drift, or the preserved
+// baseline is quietly edited to look better, the build fails.
+{
+  const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
+
+  check('the gate declares the product not ready', /NOT READY/.test(gate));
+  check(
+    'total rows is explicitly rejected as the coverage metric',
+    /Total rows are not the coverage metric/i.test(gate),
+  );
+
+  // All eight required thresholds, verbatim.
+  for (const [label, pattern] of [
+    ['Truck Parking Club 100%', /Truck Parking Club feed \|\s*\*\*100 %\*\*/],
+    ["Love's 100%", /Love's Travel Stops \|\s*\*\*100 %\*\*/],
+    ['Pilot/Flying J/ONE9 100%', /Pilot, Flying J and ONE9 \|\s*\*\*100 %\*\*/],
+    ['TA/Petro/TA Express 100%', /TA, Petro and TA Express \|\s*\*\*100 %\*\*/],
+    ['rest areas >= 95%', /rest areas, welcome centers, service plazas \|\s*\*\*≥ 95 %\*\*/],
+    [
+      'weigh stations 100% separate',
+      /weigh stations, \*\*classified separately\*\* \|\s*\*\*100 %\*\*/,
+    ],
+    ['freight corridors >= 95%', /major freight corridors \|\s*\*\*≥ 95 %\*\*/],
+    ['all Interstates >= 85%', /all Interstates \|\s*\*\*≥ 85 %\*\*/],
+  ] as const) {
+    check(`gate requires ${label}`, pattern.test(gate), gate.match(/\|.*%.*\|/g)?.slice(0, 8));
+  }
+  check('no gate line currently passes', !/\|\s*✅\s*\|/.test(gate));
+
+  // The preserved baseline must keep reporting the real numbers.
+  for (const [label, pattern] of [
+    ['76 published parking', /\*\*76\*\*/],
+    ['31 mappable', /\*\*31\*\*/],
+    ['10 states covered', /\*\*10\*\*/],
+    ['40 states with none', /\*\*40\*\*/],
+    ['I-95 zero', /Published parking on \*\*I-95\*\* \|\s*\*\*0\*\*/],
+    ['216 reconciled', /\*\*216\*\*/],
+    ['Tier A zero', /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/],
+    ['635 of 1,165 missing coordinates', /\*\*635 of 1,165\*\*/],
+  ] as const) {
+    check(`baseline preserves ${label}`, pattern.test(gate));
+  }
+  check(
+    'Tier A = 0 is attributed to inaccessible coordinates, not a lowered bar',
+    /Tier A is 0 because authoritative coordinates were inaccessible/.test(gate),
+  );
+  check(
+    'the weigh-station rule is stated as binding in the gate',
+    /must not be counted as truck parking/.test(gate),
+  );
+}
+
+/* -------------------------- SOURCE ACQUISITION ---------------------------- */
+{
+  const acq = readFileSync(`${DIR}/SOURCE-ACQUISITION.md`, 'utf8');
+  const json = JSON.parse(readFileSync(`${DIR}/source-acquisition.json`, 'utf8'));
+
+  const REQUIRED = [
+    'tpc-feed',
+    'loves-master',
+    'pilot-master',
+    'ta-master',
+    'fhwa-truck-parking',
+    'statedot-restareas',
+    'weigh-stations',
+  ];
+  check('all seven sources are listed', json.sources.length === 7, json.sources.length);
+  for (const id of REQUIRED) {
+    check(
+      `source ${id} is present`,
+      json.sources.some((s: { source_id: string }) => s.source_id === id),
+    );
+  }
+
+  // Every field the brief requires, on every source.
+  const FIELDS = [
+    'url',
+    'expected_format',
+    'required_columns',
+    'stable_source_id_field',
+    'attribution',
+    'update_frequency',
+    'closure_signal',
+    'priority',
+    'deduplication',
+    'represents',
+  ];
+  for (const s of json.sources as Record<string, unknown>[]) {
+    for (const f of FIELDS) {
+      check(
+        `${s.source_id} specifies ${f}`,
+        s[f] !== undefined && s[f] !== null && String(s[f]).length > 0,
+      );
+    }
+    check(
+      `${s.source_id} classifies what it represents`,
+      (json.represents_values as string[]).some((v) => String(s.represents).includes(v)),
+      s.represents,
+    );
+    check(`${s.source_id} lists required columns`, (s.required_columns as string[]).length >= 8);
+  }
+
+  check(
+    'priorities are unique 1..7',
+    new Set(json.sources.map((s: { priority: number }) => s.priority)).size === 7,
+  );
+  check("Love's is priority 1 and named as obtain-first", json.obtain_first === 'loves-master');
+  check(
+    "the markdown names Love's as the first file to obtain",
+    /Obtain \*\*Love's Travel Stops\*\* first/.test(acq),
+  );
+  check(
+    'every source carries a coordinate/space column requirement or is an operator feed',
+    json.sources.every(
+      (s: { required_columns: string[] }) =>
+        s.required_columns.includes('latitude') && s.required_columns.includes('longitude'),
+    ),
+  );
+
+  // Authorization and anti-scraping rules must be explicit and machine-readable.
+  const tpc = json.sources.find((s: { source_id: string }) => s.source_id === 'tpc-feed');
+  check('the TPC feed is marked authorization-required', tpc.authorization_required === true);
+  check(
+    'the no-scraping rule is machine-readable',
+    /must not be reproduced without an authorized feed/.test(json.rules.no_scraping),
+  );
+  check('the markdown repeats the no-scraping rule', /Do not scrape/.test(acq));
+  check(
+    'the weigh-station rule is machine-readable',
+    /never counted as truck parking/.test(json.rules.weigh_station_is_not_parking),
+  );
+  check('no invented attributes rule is present', !!json.rules.no_invented_attributes);
+  check('no inferred coordinates rule is present', !!json.rules.no_inferred_coordinates);
+  check('no speculative parsers rule is present', !!json.rules.no_speculative_parsers);
+  check(
+    'publication still requires separate authorization',
+    json.rules.publication_requires_separate_authorization === true,
+  );
+  check(
+    'the docs state that no URL was fetched this run',
+    /No URL below was fetched or verified during this run/.test(acq) &&
+      /was fetched or verified during this run/.test(json.note),
+  );
+  check(
+    'the weigh-station source is typed as its own category, not parking',
+    json.sources.find((s: { source_id: string }) => s.source_id === 'weigh-stations').represents ===
+      'weigh_station',
+  );
+}
+
+/* ------------------------------ INTAKE PROCESS ---------------------------- */
+{
+  const intake = readFileSync(`${DIR}/INTAKE-PROCESS.md`, 'utf8');
+  const STEPS = [
+    'Preserve the raw file and checksum it',
+    'Parse without modifying the original',
+    'Normalize fields',
+    'Reconcile against existing rows',
+    'Classify into updates, net-new, closures, duplicates',
+    'Validate coordinates and route proximity',
+    'Generate an unpublished, guarded import',
+    'Run a small, diverse canary',
+    'Measure coverage improvement',
+    'Publish only after separate authorization',
+  ];
+  STEPS.forEach((s, i) => check(`intake step ${i + 1}: ${s}`, intake.includes(s)));
+  check(
+    'intake order is 1..10',
+    STEPS.every((s, i) => intake.indexOf(s) > (i === 0 ? -1 : intake.indexOf(STEPS[i - 1]))),
+  );
+  check(
+    'no speculative parser is built ahead of the file',
+    /No parser exists yet, deliberately/.test(intake),
+  );
+  check(
+    'net-new rows default to unpublished and unfeatured',
+    /is_published = false`?, `?is_featured = false/.test(intake),
+  );
+  check(
+    'is_indexable is left unchanged on intake',
+    /`is_indexable` \*\*unchanged\*\*/.test(intake),
+  );
+  // Prose in these docs is hard-wrapped, so phrase assertions must tolerate a
+  // newline anywhere a space appears.
+  const phrase = (s: string) => new RegExp(s.replace(/ /g, '\\s+'));
+  check(
+    'closures are unpublished, never silently deleted',
+    phrase('never a silent delete').test(intake),
+  );
+  check(
+    'coverage is reported as % of source of record',
+    /percentage of the source of record/.test(intake),
+  );
+  check(
+    'row growth is explicitly rejected as a report',
+    /is not a coverage statement/.test(intake),
+  );
+  check('the three authorizations stay separate', /three separate authorizations/.test(intake));
+}
+
 console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -23,10 +23,32 @@ this package delivers instead is a complete baseline, a per-row reconciliation,
 a precise sourcing worklist, and a fully guarded package that runs the moment
 one authoritative layer becomes reachable.
 
+## The product is not ready to launch
+
+`LAUNCH-GATE.md` is the formal, binding coverage gate for the public directory
+and trip planner. **Not one of its eight lines passes today.** The binding
+constraint is source acquisition, not engineering: four operator feeds are not
+held, and the agency datasets are unreachable.
+
+**Total directory rows are not the coverage metric.** 1,165 published records
+sounds like progress until you notice 635 of them cannot be placed on a map.
+Coverage is percentage of the real-world universe captured, per source and per
+corridor.
+
+**Obtain first: the Love's Travel Stops location export**, from
+`https://www.loves.com/en/location-search` (or their fleet/business contact if
+no direct download is offered). One file, one gate line from 0 % to 100 %, and
+the widest corridor reach of anything on the list — it lands coordinates on
+I-80, I-90/I-94, I-10 and I-15, where the directory currently holds zero rows.
+
 ## Files
 
 | File | |
 |---|---|
+| `LAUNCH-GATE.md` | **the binding launch gate**, the preserved baseline, and the weigh-station rule |
+| `SOURCE-ACQUISITION.md` | the seven files Shawn must obtain, what each unblocks, and in what order |
+| `source-acquisition.json` | machine-readable companion to the above |
+| `INTAKE-PROCESS.md` | the ten steps that run the moment a file is uploaded |
 | `BASELINE.md` | 50-state coverage matrix, corridor analysis, duplicate and proximity risk |
 | `RECONCILIATION.md` | all 216 rows by outcome, facility typing, pairs, the one data defect |
 | `RECONCILIATION-216.csv` | per-row detail — id, type, direction, source class, evidence, disposition |
