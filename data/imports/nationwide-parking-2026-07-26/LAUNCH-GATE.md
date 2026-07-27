@@ -1,6 +1,8 @@
 # Launch gate — public directory and trip planner
 
-**Status: NOT READY. The gate below is not met on a single line.**
+**Status: NOT READY. No gate line passes.** One line (Love's) is in progress
+as of 2026-07-27 — 604 Tier-A locations are in hand, pending a completeness
+confirmation. The other seven are unstarted.
 
 This is the formal, binding coverage gate for launching the public directory
 and trip planner. It supersedes any earlier informal readiness language. A
@@ -33,13 +35,20 @@ Every line must pass. There is no partial launch.
 | # | Requirement | Threshold | Current | Pass |
 |---|---|---|---|:--:|
 | 1 | Authorized current Truck Parking Club feed | **100 %** | no authorized feed held | ❌ |
-| 2 | Love's Travel Stops | **100 %** | not sourced | ❌ |
+| 2 | Love's Travel Stops | **100 %** | **604 eligible in hand** — pending completeness confirmation | ⏳ |
 | 3 | Pilot, Flying J and ONE9 | **100 %** | not sourced | ❌ |
 | 4 | TA, Petro and TA Express | **100 %** | not sourced | ❌ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |
 | 6 | Official weigh stations, **classified separately** | **100 %** | not sourced | ❌ |
 | 7 | Route-segment coverage, major freight corridors | **≥ 95 %** | not measurable | ❌ |
 | 8 | Route-segment coverage, all Interstates | **≥ 85 %** | not measurable | ❌ |
+
+Line 2 moved on 2026-07-27: the Love's export arrived and yielded **604
+Tier-A truck-parking locations across 42 states and 64 corridors** — see
+`data/sources/loves-master/2026-07-27/FINDINGS.md`. It is marked ⏳ rather than
+✅ because the file is named `LovesSearchResults` and there is no independent
+count to prove it is the full national export rather than a filtered search.
+Confirm that, and line 2 passes.
 
 **Every threshold is measured against an authorized source of record**, not
 against what the database happens to contain. A category is at 100 % only when
@@ -98,6 +107,14 @@ Reference points that follow from the same audit:
   (85 %) and cat-scales (80 %).
 - 35 rows meet every Tier-A test except the coordinate; they are a work queue,
   not a tier.
+
+**Movement since the baseline** (recorded here, not merged into the table
+above — the baseline stays fixed): the Love's export of 2026-07-27 produced the
+project's first Tier-A set, **604 locations across 42 states and 64 corridors**,
+541 of them net-new. None is published; publication needs separate
+authorization. It also exposed three **published** directory rows for Love's
+locations the operator does not list — see
+`data/sources/loves-master/2026-07-27/FINDINGS.md`.
 
 ---
 

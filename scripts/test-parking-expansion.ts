@@ -683,5 +683,188 @@ const rows: Row[] = parseCsv(csv.trim());
   check('the three authorizations stay separate', /three separate authorizations/.test(intake));
 }
 
+/* ------------------------------ LOVE'S INTAKE ----------------------------- */
+// The first real source file. These lock the parking gate that produced the
+// 604, and the defects the authoritative file exposed in our own data.
+{
+  const L = 'data/sources/loves-master/2026-07-27';
+  const findings = readFileSync(`${L}/FINDINGS.md`, 'utf8');
+  const profile = JSON.parse(readFileSync(`${L}/PROFILE.json`, 'utf8'));
+  const checksum = readFileSync(`${L}/CHECKSUM.txt`, 'utf8');
+  const norm = parseCsv(readFileSync(`${L}/normalized.csv`, 'utf8').trim());
+  const quar = parseCsv(readFileSync(`${L}/quarantine.csv`, 'utf8').trim());
+  const rec = parseCsv(readFileSync(`${L}/RECONCILIATION.csv`, 'utf8').trim());
+  const conf = parseCsv(readFileSync(`${L}/CONFLICTS.csv`, 'utf8').trim());
+  const snap = readFileSync(`${L}/DB-SNAPSHOT.tsv`, 'utf8').trim().split('\n');
+
+  const SHA = 'ec5146ee475af473d037ed4913e4f9b4c1059c737581ff93d2b2eefcc5a89ab2';
+
+  /* step 1: the raw file is preserved and pinned */
+  check('raw file checksum is recorded', checksum.includes(SHA));
+  check('the profile pins the same checksum', profile.sha256 === SHA);
+  check(
+    'the reconciler refuses to run if the source changes',
+    readFileSync('scripts/reconcile-loves.mjs', 'utf8').includes(SHA),
+  );
+
+  /* step 2-3: parse and normalize, nothing invented */
+  check('731 source rows parsed', profile.data_rows === 731 && norm.length === 731);
+  check(
+    'the profile records the columns the file lacks',
+    profile.missing_expected_columns.includes('name') &&
+      profile.missing_expected_columns.includes('status'),
+  );
+  check(
+    'closure signal limited to absence is documented',
+    /only closure signal available is\s+absence/i.test(findings.replace(/\*\*/g, '')),
+  );
+  check(
+    'fuel prices are deliberately excluded',
+    !Object.keys(norm[0]).some((k) => /fuel|diesel|unleaded|price/i.test(k)),
+  );
+
+  /* THE PARKING GATE — this is what produced 604 */
+  const eligible = rec.filter((r) => r.disposition !== '');
+  check('604 eligible truck-parking locations', eligible.length === 604, eligible.length);
+  check(
+    'every eligible row is a Travel Stop',
+    eligible.every((r) => r.store_type === 'Travel Stop'),
+    [...new Set(eligible.map((r) => r.store_type))],
+  );
+  check(
+    'every eligible row has a stated space count > 0',
+    eligible.every((r) => Number(r.parking_spaces) > 0),
+  );
+  check(
+    'every eligible row has the operator overnight-parking flag',
+    eligible.every((r) => r.overnight_parking === 'true'),
+  );
+  check(
+    'every eligible row has a usable coordinate',
+    eligible.every(
+      (r) =>
+        Number(r.lat) !== 0 &&
+        Number(r.lng) !== 0 &&
+        Number(r.lat) >= 24 &&
+        Number(r.lat) <= 49.5 &&
+        Number(r.lng) >= -125 &&
+        Number(r.lng) <= -66.5,
+    ),
+  );
+
+  /* CAR-ONLY and SERVICE-ONLY must never be eligible */
+  for (const t of ['Car Stop', 'Truck Service', 'Country Store', 'Service Center']) {
+    check(`no ${t} is eligible`, !eligible.some((r) => r.store_type === t));
+    check(
+      `${t} rows are quarantined`,
+      quar.some((r) => r.store_type === t),
+    );
+  }
+  check(
+    'all 4 Car Stops are quarantined as car-only',
+    quar.filter((r) => r.store_type === 'Car Stop').length === 4,
+  );
+  check(
+    'the zero-space Travel Stop is quarantined',
+    quar.some((r) => r.store_type === 'Travel Stop' && r.parking_spaces === '0'),
+  );
+
+  /* nothing dropped */
+  check('eligible + quarantined = every source row', eligible.length + quar.length === 731);
+  check(
+    'every quarantined row carries an exact reason',
+    quar.every((r) => r.quarantine_reason && r.quarantine_reason.length > 5),
+  );
+
+  /* no invented values */
+  check(
+    'no eligible row invents a space count of 0',
+    !eligible.some((r) => r.parking_spaces === '0'),
+  );
+  // A stated 0 (Elk City #201) is honest data and must survive as 0; what must
+  // never happen is a null being defaulted to 0. The source has 110 null space
+  // counts, and all 110 must still be blank after normalization.
+  check(
+    'all 110 null space counts stayed blank, none defaulted to 0',
+    quar.filter((r) => r.parking_spaces === '').length === 110,
+    quar.filter((r) => r.parking_spaces === '').length,
+  );
+  // Six rows state a real 0 — Elk City #201 (a Travel Stop) and five Country
+  // Stores. A stated zero is the operator saying "you cannot park here"; it is
+  // data, and it must survive as 0 rather than being blanked or defaulted.
+  check(
+    'the six genuine zeros are preserved as 0, not blanked',
+    quar.filter((r) => r.parking_spaces === '0').length === 6,
+    quar.filter((r) => r.parking_spaces === '0').length,
+  );
+  check(
+    'Elk City #201 is among them and is quarantined',
+    quar.some((r) => r.source_ref === '201' && r.parking_spaces === '0'),
+  );
+
+  /* step 4: reconciliation is by store number against a verified snapshot */
+  check('the DB snapshot holds 159 rows', snap.length - 1 === 159);
+  check(
+    'the snapshot digest is recorded and matches production',
+    findings.includes('95c858c847c26d96ed799fae06529c83'),
+  );
+  check('541 net-new', rec.filter((r) => r.disposition === 'net-new').length === 541);
+  check('62 update-existing', rec.filter((r) => r.disposition === 'update-existing').length === 62);
+
+  /* step 5: the defects the authoritative file exposed */
+  check('2 store-number conflicts detected', conf.length === 2, conf.length);
+  check(
+    '#618 conflict: source KY, DB also MI',
+    conf.some((c) => c.source_ref === '618' && c.source_state === 'KY' && /MI/.test(c.db_states)),
+  );
+  check(
+    '#420 conflict: source MS, DB SC',
+    conf.some((c) => c.source_ref === '420' && c.source_state === 'MS' && c.db_states === 'SC'),
+  );
+  check(
+    'the findings name the three PUBLISHED rows at risk',
+    ['c32686ff', '485085d9', 'f6404302'].every((id) => findings.includes(id)),
+  );
+  check(
+    '#306 Dandridge is called out as a closure candidate',
+    /#306 is absent from the authoritative list/i.test(findings.replace(/\*\*/g, '')),
+  );
+  check(
+    'the two non-defects are recorded so they are not re-raised',
+    /Boss Truck Shop/.test(findings) && /trailing space/.test(findings),
+  );
+  check(
+    'no row was changed in the database this run',
+    /No\s+database\s+write\s+was\s+performed/i.test(findings),
+  );
+
+  /* colocation must not weaken the shared-coordinate guard */
+  check(
+    '45 colocated sites identified',
+    rec.filter((r) => /colocated/.test(r.note)).length === 45,
+    rec.filter((r) => /colocated/.test(r.note)).length,
+  );
+  check(
+    'the guard is explicitly not weakened for colocation',
+    /The guard must not be weakened/.test(findings),
+  );
+
+  /* completeness is not overclaimed */
+  check(
+    'completeness is flagged as unproven, not asserted',
+    /should not be marked 100 % until Shawn confirms/i.test(findings.replace(/\*\*/g, '')),
+  );
+  const gate = readFileSync(`${DIR}/LAUNCH-GATE.md`, 'utf8');
+  check(
+    "the gate marks Love's in progress, not passed",
+    /Love's Travel Stops \|\s*\*\*100 %\*\*\s*\|\s*\*\*604 eligible in hand\*\*/.test(gate),
+  );
+  check('the gate still reports that no line passes', /No gate line passes/.test(gate));
+  check(
+    'the preserved baseline still reads Tier A = 0',
+    /\*\*Tier A candidates\*\* \|\s*\*\*0\*\*/.test(gate),
+  );
+}
+
 console.log(`\nparking-expansion: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
