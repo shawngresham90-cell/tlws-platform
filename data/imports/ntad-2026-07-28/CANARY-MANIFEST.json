@@ -1,0 +1,85 @@
+{
+  "package": "ntad-canary-2026-07-28",
+  "source": "ntad-2019-v04",
+  "sourceSha256": "d32ebfebb0b84f68057be9d949d9ef13db3da014647042c75329aaf12a762b42",
+  "approved": [
+    {
+      "name": "Guilford Welcome Center (I-91 North)",
+      "state": "VT",
+      "city": "Guilford",
+      "lat": 42.812017,
+      "lng": -72.5662,
+      "detail_slug": "guilford-welcome-center-i-91-north-guilford-vt",
+      "direction": "North",
+      "ntad2019Spots": 19,
+      "parkingSpacesInserted": null,
+      "overnightInserted": false
+    },
+    {
+      "name": "Kennebunk Service Plaza (I-95 Northbound)",
+      "state": "ME",
+      "city": "Kennebunk",
+      "lat": 43.410379,
+      "lng": -70.55824,
+      "detail_slug": "kennebunk-service-plaza-i-95-northbound-kennebunk-me",
+      "direction": "Northbound",
+      "ntad2019Spots": 37,
+      "parkingSpacesInserted": null,
+      "overnightInserted": false
+    },
+    {
+      "name": "Smyrna Rest Area (US 13)",
+      "state": "DE",
+      "city": "Smyrna",
+      "lat": 39.3235,
+      "lng": -75.6175,
+      "detail_slug": "smyrna-rest-area-us-13-smyrna-de",
+      "direction": "both-directions-single-facility",
+      "ntad2019Spots": 28,
+      "parkingSpacesInserted": null,
+      "overnightInserted": false
+    },
+    {
+      "name": "Darien Service Plaza (I-95 Southbound)",
+      "state": "CT",
+      "city": "Darien",
+      "lat": 41.068057,
+      "lng": -73.504342,
+      "detail_slug": "darien-service-plaza-i-95-southbound-darien-ct",
+      "direction": "Southbound",
+      "ntad2019Spots": 70,
+      "parkingSpacesInserted": null,
+      "overnightInserted": false
+    },
+    {
+      "name": "Gold Run Safety Roadside Rest Area (I-80 Eastbound)",
+      "state": "CA",
+      "city": "Gold Run",
+      "lat": 39.17545,
+      "lng": -120.85773,
+      "detail_slug": "gold-run-safety-roadside-rest-area-i-80-eastbound-gold-run-ca",
+      "direction": "Eastbound",
+      "ntad2019Spots": 24,
+      "caltransCandidateTruckSpots": 7,
+      "parkingSpacesInserted": null,
+      "overnightInserted": false
+    }
+  ],
+  "held": [
+    {
+      "name": "Grand Bay Welcome Center",
+      "state": "AL",
+      "reason": "No current official truck-parking evidence (NTAD-2019 only); operating status listed but not confirmed (ALGOtraffic click-through required)"
+    },
+    {
+      "name": "Guilford North Parking Area",
+      "state": "VT",
+      "reason": "Identity hold — NTAD facility at I-91 N MM 1 not individually identifiable on any official Vermont page"
+    },
+    {
+      "name": "NHS Rest Stop or Truck Facility 9",
+      "state": "ME",
+      "reason": "Identity hold — anonymized NTAD name; no official publishable identity resolved (not a named Maine Turnpike plaza)"
+    }
+  ]
+}
