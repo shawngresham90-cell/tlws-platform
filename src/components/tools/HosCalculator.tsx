@@ -132,7 +132,7 @@ function ResultPanel({ result }: { result: SplitResult }) {
             <p className="font-display text-xl uppercase text-ink">{splitStatus}</p>
           </div>
           <div className="text-right">
-            <p className="doc-caption uppercase tracking-widest text-muted">Legal to drive</p>
+            <p className="doc-caption uppercase tracking-widest text-muted">HOS time available</p>
             <p
               className={cn(
                 'font-display text-2xl uppercase',
@@ -143,6 +143,10 @@ function ResultPanel({ result }: { result: SplitResult }) {
             </p>
           </div>
         </div>
+        <p className="doc-caption mt-2 text-muted">
+          Based on the hours entered and FMCSA HOS calculations. Verify against your ELD and current
+          duty status.
+        </p>
         {clocks && result.limiting ? (
           <p className="mt-3 text-sm text-muted">
             Usable driving time:{' '}
@@ -474,7 +478,9 @@ function CurrentClocks() {
                 limited by the <strong className="text-ink">{out.limiting}</strong> clock.
               </p>
               <div className="text-right">
-                <p className="doc-caption uppercase tracking-widest text-muted">Legal to drive</p>
+                <p className="doc-caption uppercase tracking-widest text-muted">
+                  HOS time available
+                </p>
                 <p
                   className={cn(
                     'font-display text-2xl uppercase',
@@ -485,6 +491,10 @@ function CurrentClocks() {
                 </p>
               </div>
             </div>
+            <p className="doc-caption mt-2 text-muted">
+              Based on the hours entered and FMCSA HOS calculations. Verify against your ELD and
+              current duty status.
+            </p>
           </Placard>
         </div>
       ) : null}
