@@ -30,6 +30,11 @@ import {
   detailDirectionsUrl,
 } from '@/lib/directory/detail';
 import { isValidDetailSlug, detailHref } from '@/lib/directory/detail-slug';
+import {
+  isOperatorReportedZeroParking,
+  truckParkingFactValue,
+  ZERO_PARKING_NOTICE,
+} from '@/lib/directory/parking-disclosure';
 import { resolveSlugRedirect } from '@/lib/directory/redirects';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
@@ -223,8 +228,9 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
       ),
     });
   }
-  if (entry.parkingSpaces != null) {
-    facts.push({ label: 'Truck spaces', value: `${entry.parkingSpaces}` });
+  const parkingFact = truckParkingFactValue(entry.parkingSpaces);
+  if (parkingFact != null) {
+    facts.push({ label: 'Truck spaces', value: parkingFact });
   }
   if (entry.verifiedAt)
     facts.push({ label: 'Information last verified', value: fmtDate(entry.verifiedAt) });
@@ -293,7 +299,7 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
         >
           🗺️ View on full map
         </Link>
-        {entry.tpcUrl && (
+        {entry.tpcUrl && !isOperatorReportedZeroParking(entry.parkingSpaces) && (
           <a
             href={entry.tpcUrl}
             target="_blank"
@@ -308,6 +314,15 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
       <Section>
         <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div>
+            {isOperatorReportedZeroParking(entry.parkingSpaces) && (
+              <p
+                role="note"
+                aria-label="No truck parking"
+                className="mb-6 rounded-card border border-diesel bg-asphalt-800 p-4 text-sm font-semibold text-diesel-300"
+              >
+                ⚠️ {ZERO_PARKING_NOTICE}
+              </p>
+            )}
             <h2 className="font-display text-2xl uppercase text-ink">At a glance</h2>
             <dl className="mt-4 grid gap-x-8 gap-y-3 rounded-card border border-line bg-asphalt-800 p-6 sm:grid-cols-2">
               {facts.map((f) => (
