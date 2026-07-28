@@ -108,11 +108,31 @@ overnight = Y for all 9, so a future one-field authorization closes them.
 
 **Total: 15 + 21 + 9 + 2 + 1 = 48 ✓**
 
+## Universe corrections discovered during execution (measured, not assumed)
+
+1. **#306 Dandridge is NOT in the export.** The 731-row workbook contains no
+   store 306 (QUARANTINE.md §C). The live published row
+   `f6404302 Love's Travel Stop #306` therefore claims a store number the
+   operator's current directory does not list — that IS the identity
+   conflict. It is **not** a member of the 615/604 gate universes; it is an
+   extra live record held for independent operator evidence (current store
+   number, closure, or renumbering). Absence from one export is never
+   grounds to unpublish.
+2. **The 615th export row is #420 Flowood MS**, disposition
+   `net-new-state-conflict` (604 = 541 net-new + 62 update-existing + 1
+   #420). It is held pending the Petro Florence relabel re-proof
+   (QUARANTINE.md §D) and is NOT part of this authorization's 48.
+3. Exact universe accounting: 615 = 552 staged + 62 update-existing +
+   **#420 (held)**. The gate remainders below use this, not the earlier
+   "remaining = #234 + #306" wording.
+
 ## Measured expectations under THIS authorization (recompute live, never trust)
 
-- Gate 2b: 556 → **593** max (+15 P1, +21 P2, +1 #451). The 9 P3 rows and
-  #317 stay outside 2b (overnight write not authorized); #306 held.
-- Gate 2a: 592 → **613** max (+21). Remaining: #234 TX (not authorized) and
-  #306 (held). #201 publication changes visibility, not 2a counting (already
-  counted among the 530).
+- Gate 2b (604): 556 → **593** max (+15 P1, +21 P2, +1 #451 P4). Remaining
+  11 = the 9 P3 rows + #317 (all blocked only by the unauthorized
+  `overnight_parking` write — export confirms Y for all 10) + #420 (held).
+- Gate 2a (615): 592 → **613** max (+21 P2). Remaining 2 = #234 TX
+  (non-overnight quarantine, not in this authorization's 21) + #420 (held).
+  #201's publication changes visibility only — it is already counted among
+  the 530 inserted.
 - Combined operator route-usable: 1,704 → **1,741** max of 1,754 (99.26 %).
