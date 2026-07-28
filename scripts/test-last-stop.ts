@@ -270,6 +270,80 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
   check('NaN clocks → usableDriveMin 0', res.usableDriveMin === 0);
 }
 
+/* ---------------------------------------------- zero-space safety rule */
+{
+  // Generous clocks: everything below is comfortably reachable. The ONLY
+  // thing separating these candidates is whether parking is confirmed —
+  // a Last Stop slot is a "you can legally park here" claim, so a stop
+  // without a stated positive space count may never fill one.
+  const rc = clocks();
+  const none = selectLastStops({
+    route,
+    candidates: [
+      mkCandidate({
+        id: 'zero-res',
+        routeMile: 100,
+        parkingSpaces: 0,
+        reservationUrl: 'https://truckparkingclub.com/z',
+      }),
+      mkCandidate({ id: 'null-free', routeMile: 120, parkingSpaces: null, freeParking: true }),
+      mkCandidate({
+        id: 'neg-res',
+        routeMile: 140,
+        parkingSpaces: -3,
+        reservationUrl: 'https://truckparkingclub.com/n',
+      }),
+      mkCandidate({ id: 'nan-free', routeMile: 150, parkingSpaces: Number.NaN, freeParking: true }),
+    ],
+    clocks: rc,
+    departAtMs: T0,
+  });
+  check(
+    'zero-space: no slot for unconfirmed-parking candidates',
+    none.slots.length === 0,
+    none.slots.map((s) => s.candidate.id),
+  );
+  check(
+    'zero-space: a zero-space reservable is not reservable-on-corridor',
+    none.noReservableOnCorridor === true,
+  );
+
+  const ok = selectLastStops({
+    route,
+    candidates: [
+      // Furthest stop is zero-space AND reservable — the tempting wrong pick.
+      mkCandidate({
+        id: 'zero-far',
+        routeMile: 160,
+        parkingSpaces: 0,
+        reservationUrl: 'https://truckparkingclub.com/far',
+      }),
+      mkCandidate({
+        id: 'good-res',
+        routeMile: 100,
+        parkingSpaces: 25,
+        reservationUrl: 'https://truckparkingclub.com/ok',
+      }),
+      mkCandidate({ id: 'good-free', routeMile: 90, parkingSpaces: 12, freeParking: true }),
+    ],
+    clocks: rc,
+    departAtMs: T0,
+  });
+  check('zero-space: confirmed rows still fill slots', ok.slots.length > 0);
+  check(
+    'zero-space: every slot holds a stated-positive space count',
+    ok.slots.every(
+      (s) => typeof s.candidate.parkingSpaces === 'number' && s.candidate.parkingSpaces > 0,
+    ),
+    ok.slots.map((s) => `${s.label}:${s.candidate.id}`),
+  );
+  const lastRes = ok.slots.find((s) => s.label === 'last-reservable');
+  check(
+    'zero-space: last-reservable skips the further zero-space stop',
+    lastRes?.candidate.id === 'good-res',
+  );
+}
+
 check('default buffer is 30', DEFAULT_SAFETY_BUFFER_MIN === 30);
 
 console.log(`\n${passed} passed, ${failed} failed`);
