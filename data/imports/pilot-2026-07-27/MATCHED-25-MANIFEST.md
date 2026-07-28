@@ -1,4 +1,4 @@
-# The 25 eligible matched rows — publication manifest (NOT EXECUTED)
+# The 25 eligible matched rows — publication manifest (EXECUTED 2026-07-28)
 
 **Authorization stop, 2026-07-27.** The closeout authorization named **29**
 rows and required a stop if the measured set differed. Measured live, the

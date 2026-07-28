@@ -1,5 +1,6 @@
 -- Pilot / Flying J / ONE9 — publication of the 25 ELIGIBLE matched pre-existing
--- rows. NOT EXECUTED.
+-- rows. EXECUTED 2026-07-28 (canary + six per-state transactions, all guards
+-- passed, zero quarantines) — see EXECUTION-RECORD.md addendum.
 --
 -- AUTHORIZATION STOP, 2026-07-27: the closeout authorization named "29 verified
 -- matched rows" and required a stop if the expected set is not exactly 29. The
@@ -12,13 +13,13 @@
 -- (conflicts #24 OH and #749 VA, closure candidates #290 MD and #187 TN).
 --
 -- 2026-07-28: a corrected authorization for exactly these 25 WAS granted,
--- with a SIX-record canary (one per represented state). Execution is blocked
--- pending database access (the Supabase connection lost authorization before
--- the mandatory pre-write re-verification could run); this file is the exact
--- package that will run, unchanged, once access is restored and the live set
--- re-verifies. Pre-write requirements: re-query all 25 against
--- MATCHED-25-MANIFEST.md (abort on any difference), fresh control +
--- authorized-set fingerprints, rollback file present.
+-- with a SIX-record canary (one per represented state). After database
+-- access was restored the pre-write re-verification passed exactly
+-- (25/25 value-matched, 0 collisions, 0 duplicate slugs, control digest
+-- 4b5aed26… unchanged through the outage, authorized-set digest
+-- 007aca22d37d4605c00c53a3a7d4269a captured) and this file ran verbatim:
+-- canary committed and audited (6/6 route-usable, published 1,868), then
+-- the six per-state transactions (published 1,887). Zero guard failures.
 --
 -- Every row below was verified against the checksummed official source
 -- (all_locations.csv, sha256 d39ab57d…e330a): DB coordinate and parking count

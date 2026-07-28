@@ -250,3 +250,36 @@ publish: published 1,862 → 1,887 and Gate 3b 763 → **788**/803 — not the
 
 The read-only review of all 14 quarantined records plus conflicting record
 #749 VA is in `QUARANTINE-REVIEW.md`; no quarantined row was modified.
+
+---
+
+## Addendum, 2026-07-28 — the 25-row publication EXECUTED
+
+Database access returned and the corrected 25-row authorization ran exactly
+as packaged, with zero guard failures and zero quarantines:
+
+1. **Pre-write verification passed in full**: 25/25 rows live, unpublished,
+   `truck-stops`, value-matched to the checksummed official coordinate and
+   count, positive-parking, unfeatured, unindexed, no overnight; 0 duplicate
+   slugs; 0 published pins within ~150 m; control digest
+   `4b5aed26cb6cc4ce1597b53d021a4ef4` **byte-identical through the outage**;
+   authorized-set digest `007aca22d37d4605c00c53a3a7d4269a` captured;
+   rollback (`PUBLISH-MATCHED-25-ROLLBACK.sql`) already committed.
+2. **Six-record canary** (#90 FL, #627 GA, #875 MD, #58 NC, #713 SC,
+   #384 VA) committed and audited: 6/6 satisfy the directory/trip-planner
+   data contract (published + mappable + positive count), 0 forbidden flags,
+   published 1,862 → 1,868, unmappable still 555, control digest unchanged.
+3. **Remaining 19** published in six guarded per-state transactions
+   (FL 5, GA 3, MD 1, NC 3, SC 5, VA 2).
+
+**Measured after (2026-07-28):** live **2,265** (unchanged) · published
+**1,887** (+25 exactly) · with_coords **1,351** (unchanged) ·
+published-unmappable **555** (unchanged) · featured/indexable **0** ·
+all 25 route-usable · 0 zero-space published · the 14 quarantined records,
+#749, #290 and #187 all untouched (0 gained coordinates) · control digest
+byte-identical. The only field change on the 25 was
+`is_published false → true` (plus `updated_at`).
+
+**Gates: 3a stays 809/820 · 3b measured 763 → 788/803** — +25 exactly,
+because each row is a distinct official store number in the 803 universe
+whose only missing route-usable condition was publication.
