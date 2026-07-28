@@ -40,8 +40,8 @@ Every line must pass. There is no partial launch.
 | # | Requirement | Threshold | Current | Pass |
 |---|---|---|---|:--:|
 | 1 | Authorized current Truck Parking Club feed | **100 %** | no authorized feed held | ❌ |
-| **2a** | Love's Travel Stops — **directory coverage** | **100 % of 615** | 62 reconciled, 552 prepared, **0 applied** | ⏳ |
-| **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
+| **2a** | Love's Travel Stops — **directory coverage** | **100 % of 615** | **592 represented** (62 reconciled + 530 inserted 2026-07-28); remaining 23 = 22 named quarantines + #201 zero-space hold | ⏳ |
+| **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | **556 route-usable** (520 published net-new + 36 enriched existing, all mappable/positive/overnight-confirmed); remaining 48 = quarantines + non-overnight + unpublished coordless | ⏳ |
 | **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | **809 represented** (709 inserted + 100 matched, applied 2026-07-27); 10 quarantined by the collision/store-number guards + 1 conflicting record (#749 VA) | ⏳ |
 | **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | **763 route-usable by distinct official store number** (695 published imports + 68 matched, applied 2026-07-27); gap 40 = 10 quarantined + 29 matched rows still unpublished (publication of pre-existing rows not yet authorized) + #749 | ⏳ |
 | **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **348 represented** — every official site has its own correctly-labeled row (0393 relabel applied 2026-07-27) | ✅ |
