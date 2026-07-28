@@ -103,6 +103,30 @@ function ClockTile({
   );
 }
 
+/* ---------------------------------------------------- next required action */
+
+/**
+ * Plain-language next step, derived ONLY from the engine's outputs. Planning
+ * guidance, not a compliance order — the disclaimer rides alongside.
+ */
+function nextRequiredAction(result: SplitResult): string {
+  if (result.violations.length > 0) {
+    return 'Do not keep driving. A limit was already exceeded — verify on your ELD and talk to your safety department.';
+  }
+  if (!result.clocks) return 'Fix the split (see the reason above) or take a full 10-hour break.';
+  if (result.usableDriveMin > 0) {
+    return `Nothing required yet — ${formatHM(result.usableDriveMin)} usable before the ${result.limiting} clock runs out.`;
+  }
+  switch (result.limiting) {
+    case '30-MIN BREAK':
+      return 'Take a 30-minute break (any non-driving status) before driving again.';
+    case 'CYCLE':
+      return 'Your 60/70-hour cycle is out of time. Only a 34-hour restart restores it.';
+    default:
+      return 'Take a 10-consecutive-hour break — or complete a qualifying split — before driving again.';
+  }
+}
+
 /* --------------------------------------------------------------- results */
 
 function ResultPanel({ result }: { result: SplitResult }) {
@@ -115,14 +139,6 @@ function ResultPanel({ result }: { result: SplitResult }) {
       : 'DOES NOT QUALIFY';
   return (
     <div className="mt-6 space-y-4" aria-live="polite">
-      {clocks ? (
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <ClockTile label="Drive available" minutes={clocks.driveMin} />
-          <ClockTile label="14-hr available" minutes={clocks.windowMin} />
-          <ClockTile label="Cycle available" minutes={clocks.cycleMin} />
-        </div>
-      ) : null}
-
       <Placard
         className={cn('border-l-2', result.legalToDrive ? 'border-l-marker' : 'border-l-diesel')}
       >
@@ -157,6 +173,19 @@ function ResultPanel({ result }: { result: SplitResult }) {
         ) : null}
       </Placard>
 
+      {clocks ? (
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ClockTile label="Drive available" minutes={clocks.driveMin} />
+          <ClockTile label="14-hr available" minutes={clocks.windowMin} />
+          <ClockTile label="Cycle available" minutes={clocks.cycleMin} />
+        </div>
+      ) : null}
+
+      <Placard>
+        <p className="doc-caption uppercase tracking-widest text-muted">Next required action</p>
+        <p className="mt-1 text-sm text-ink">{nextRequiredAction(result)}</p>
+      </Placard>
+
       {result.violations.length > 0 ? (
         <Placard role="note" className="border-l-2 border-l-diesel">
           <p className="doc-caption mb-2 uppercase tracking-widest text-diesel-300">
@@ -177,7 +206,7 @@ function ResultPanel({ result }: { result: SplitResult }) {
           aria-expanded={showHow}
           className="doc-caption inline-flex min-h-[48px] items-center gap-2 rounded-card border border-line px-4 uppercase tracking-wider text-muted transition-colors hover:border-signal hover:text-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
         >
-          {showHow ? '▾' : '▸'} How this result works
+          {showHow ? '▾' : '▸'} Why did I get this result?
         </button>
         {showHow ? (
           <Placard className="mt-3">
@@ -205,12 +234,12 @@ const PRESETS: Array<{ label: string; f: string; fs: RestStatus; s: string; ss: 
   { label: 'FULL 10-HR RESET', f: '10:00', fs: 'sleeper', s: '0:00', ss: 'off-duty' },
 ];
 
-function QuickSplit() {
+function QuickSplit({ preset }: { preset?: (typeof PRESETS)[number] }) {
   const [form, setForm] = useState({
-    f: '8:00',
-    fs: 'sleeper' as RestStatus,
-    s: '2:00',
-    ss: 'off-duty' as RestStatus,
+    f: preset?.f ?? '8:00',
+    fs: (preset?.fs ?? 'sleeper') as RestStatus,
+    s: preset?.s ?? '2:00',
+    ss: (preset?.ss ?? 'off-duty') as RestStatus,
     drv: '6:00',
     on: '1:00',
     oth: '0:00',
@@ -504,40 +533,62 @@ function CurrentClocks() {
 
 /* ------------------------------------------------------------------ shell */
 
+type CheckMode = 'clocks' | 'split-73' | 'split-82' | 'reset';
+
+const MODES: Array<{ key: CheckMode; label: string; sub: string }> = [
+  { key: 'clocks', label: 'My current clocks', sub: 'Read them straight off your ELD' },
+  { key: 'split-73', label: '7/3 split', sub: '7 hr sleeper + 3 hr rest' },
+  { key: 'split-82', label: '8/2 split', sub: '8 hr sleeper + 2 hr rest' },
+  { key: 'reset', label: 'Full 10-hour break', sub: 'Fresh 11 and 14 — cycle unchanged' },
+];
+
+const MODE_PRESET: Record<CheckMode, (typeof PRESETS)[number] | undefined> = {
+  clocks: undefined,
+  'split-73': PRESETS[0],
+  'split-82': PRESETS[1],
+  reset: PRESETS[2],
+};
+
 export function HosCalculator() {
-  const [mode, setMode] = useState<'split' | 'clocks'>('split');
+  const [mode, setMode] = useState<CheckMode | null>(null);
   return (
     <Section className="!py-10 sm:!py-14">
       <div className="mx-auto w-full max-w-xl">
-        <div
-          className="mb-5 grid grid-cols-2 overflow-hidden rounded-card border border-line"
-          role="tablist"
-          aria-label="Calculator mode"
-        >
-          {(
-            [
-              ['split', 'SPLIT SLEEPER CHECK'],
-              ['clocks', 'CURRENT CLOCKS'],
-            ] as const
-          ).map(([key, label]) => (
+        {mode === null ? (
+          <div>
+            <h2 className="font-display text-2xl uppercase text-ink">What are you checking?</h2>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {MODES.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setMode(m.key)}
+                  className="placard flex min-h-[88px] flex-col items-center justify-center p-4 text-center transition-colors hover:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
+                >
+                  <span className="font-display text-xl uppercase text-ink">{m.label}</span>
+                  <span className="doc-caption mt-1 text-muted">{m.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div>
             <button
-              key={key}
               type="button"
-              role="tab"
-              aria-selected={mode === key}
-              onClick={() => setMode(key)}
-              className={cn(
-                'min-h-[52px] px-3 font-display text-base uppercase tracking-wider transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal',
-                mode === key
-                  ? 'bg-signal text-asphalt'
-                  : 'bg-transparent text-muted hover:text-ink',
-              )}
+              onClick={() => setMode(null)}
+              className="doc-caption mb-4 inline-flex min-h-[48px] items-center gap-2 rounded-card border border-line px-4 uppercase tracking-wider text-muted transition-colors hover:border-signal hover:text-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
             >
-              {label}
+              ← Check something else
             </button>
-          ))}
-        </div>
-        <Placard>{mode === 'split' ? <QuickSplit /> : <CurrentClocks />}</Placard>
+            <Placard>
+              {mode === 'clocks' ? (
+                <CurrentClocks />
+              ) : (
+                <QuickSplit key={mode} preset={MODE_PRESET[mode]} />
+              )}
+            </Placard>
+          </div>
+        )}
       </div>
     </Section>
   );
