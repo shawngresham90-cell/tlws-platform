@@ -1,5 +1,22 @@
 # Love's — execution readiness, verified offline 2026-07-28
 
+**EXECUTED 2026-07-28** after database access returned. Every live
+pre-flight check below was performed and passed before any write; the
+staging table was digest-proven against this package
+(server md5 `4718c6212962261e801f1dbe2a1902b0` over the DB-normalized
+projection of the same parse that reproduces `058b277e04faacea77c0a95e6680e43f`).
+Results, quarantines (22 insert + 11 enrichment exclusions, each named with
+its live clash row), the #340→#835 canary substitution, and the measured
+final audit are in `EXECUTION-QUARANTINE-2026-07-28.md`. Outcome: 530
+inserted · 51 enriched · **520 published** across 42 states · 0 non-overnight
+or zero-space rows published · control digest byte-identical · rollbacks
+(`ROLLBACK.sql` block 1 + `ROLLBACK-DEENRICH-51.sql`) committed before the
+first write and unused.
+
+The section below is preserved as written pre-execution (historical record).
+
+---
+
 **NOT EXECUTED. Zero database writes.** Prepared under the autonomous-run
 authorization while database access was unavailable (the Supabase connection
 returned a permission error on every call, read-only included). Everything

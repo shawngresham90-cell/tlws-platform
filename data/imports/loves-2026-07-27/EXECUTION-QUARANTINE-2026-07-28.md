@@ -1,5 +1,35 @@
 # Love's execution — live pre-write sweep results and quarantines (2026-07-28)
 
+**EXECUTED 2026-07-28, zero guard failures.** Measured after completion —
+every number below matched the pre-declared target exactly:
+
+- Enriched **51 of 62** (all 51 carry the official pin with
+  `batch-csv|high|machine-checked` provenance; 36 published rows became
+  mappable).
+- Inserted **530 of 552** across 42 per-state transactions (0 published or
+  featured at insert; 0 missing coordinates; 10 non-overnight directory-only
+  records — the 11th, #234 Katy TX, is quarantined under A1).
+- Published **520** (10-record canary — 10 states, 10 corridors, all
+  mappable/positive/overnight — then 42 per-state remainder transactions,
+  510 rows). **0 non-overnight and 0 zero-space rows published.**
+  42,469 published parking spaces added.
+- Directory counters moved exactly as predicted: live 2,274 → **2,804** ·
+  published 1,896 → **2,416** · with_coords 1,364 → **1,945** ·
+  published-unmappable 551 → **515** · featured/indexable still 0.
+- Love's-scoped control digest `49022eb9796052895445d2244f7e2f56`
+  (2,116 non-Love's rows) byte-identical before and after. 0 duplicate
+  slugs table-wide. Held rows (#618 Birch Run pair, #306 Dandridge and its
+  Truck Care companion) re-verified untouched by identity.
+- Staging table `public._loves_stage_20260728` dropped after the final audit.
+
+**One write-shape deviation, documented:** the live schema constrains
+`exit_number` to 20 characters. Nine staged rows carry longer official exit
+strings (#846 AL, #803 IL, #782 KY, #497 NC, #667 NC, #744 OH, #167 OK,
+#169 OK, #170 OK). These inserted with `exit_number = NULL` —
+verbatim-or-nothing, never truncated — and the full values remain in
+`INSERT-NET-NEW.sql` for enrichment if the column is ever widened. No other
+field was altered.
+
 The staging table `public._loves_stage_20260728` was loaded with all 552
 net-new tuples and digest-proven against the committed package
 (server md5 `4718c6212962261e801f1dbe2a1902b0` over the DB-normalized
