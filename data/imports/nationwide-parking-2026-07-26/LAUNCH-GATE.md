@@ -42,8 +42,8 @@ Every line must pass. There is no partial launch.
 | 1 | Authorized current Truck Parking Club feed | **100 %** | no authorized feed held | ❌ |
 | **2a** | Love's Travel Stops — **directory coverage** | **100 % of 615** | 62 reconciled, 552 prepared, **0 applied** | ⏳ |
 | **2b** | Love's Travel Stops — **overnight-parking coverage** | **100 % of 604** | 0 route-usable, 604 prepared, **0 applied** | ⏳ |
-| **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | **809 represented** (709 inserted + 100 matched, applied 2026-07-27); 10 quarantined by the collision/store-number guards + 1 conflicting record (#749 VA) | ⏳ |
-| **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | **763 route-usable by distinct official store number** (695 published imports + 68 matched, applied 2026-07-27); gap 40 = 10 quarantined + 29 matched rows still unpublished (publication of pre-existing rows not yet authorized) + #749 | ⏳ |
+| **3a** | Pilot / Flying J / ONE9 — **U.S. directory coverage** | **100 % of 820** | **818 represented** (709 + 100 matched applied 2026-07-27; 9 quarantine resolutions applied 2026-07-28); remaining: #195 OR (needs page evidence) + #749 VA (identity conflict) | ⏳ |
+| **3b** | Pilot / Flying J / ONE9 — **U.S. truck-parking coverage** | **100 % of 803** | **801 route-usable by distinct official store number** (695 imports + 68 matched 2026-07-27; +25 matched publications, +9 resolved inserts, +4 repaired enrichments 2026-07-28); remaining: #195 OR + #749 VA | ⏳ |
 | **4a** | TA / Petro / TA Express — **directory coverage** | **100 % of 348** | **348 represented** — every official site has its own correctly-labeled row (0393 relabel applied 2026-07-27) | ✅ |
 | **4b** | TA / Petro / TA Express — **route-usable coverage** | **100 % of 347** | **347 route-usable by distinct official Site ID** — 37 enrichments + closeouts applied 2026-07-27; zero duplicate pins | ✅ |
 | 5 | Official public rest areas, welcome centers, service plazas | **≥ 95 %** | not sourced | ❌ |

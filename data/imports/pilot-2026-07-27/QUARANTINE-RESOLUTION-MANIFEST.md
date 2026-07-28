@@ -1,13 +1,18 @@
 # Quarantine resolution — prepared package for the 13 authorized records
 
-**NOT EXECUTED.** Prepared 2026-07-28 under the autonomous-run authorization,
-while database access is unavailable (the Supabase connection returns a
-permission error on every call, including read-only ones — so nothing was
-verified live and nothing was written). Every transaction in
-`QUARANTINE-RESOLUTION.sql` re-proves its documented evidence **inside the
-transaction** and aborts on any drift, so the package is safe to run verbatim
-once access returns; a run that aborts quarantines that record again rather
-than weakening anything.
+**EXECUTED 2026-07-28.** Database access returned; the live pre-flight
+re-audit passed exactly (13/13 exempted neighbours matched their documented
+identities, 2/2 clash rows unchanged, 4/4 enrichment targets still
+published-and-coordless, 0 slug conflicts), and the package ran verbatim
+with **zero guard failures**: mixed canary first (#17 MI, #35 IN, #700 OH,
+#95 FL), audited, then the remainder. Measured after: live 2,274 (+9) ·
+published 1,896 (+9) · with_coords 1,364 (+13) · published-unmappable 551
+(−4) · flags 0 · 9/9 inserts route-usable · 4/4 enrichments mappable ·
+space-fills exactly 42 (#1330) and 10 (#95), legacy counts 70 (#1550) and
+175 (#353) preserved · control digest `4b5aed26…` byte-identical · held
+rows untouched. **Gate 3a 809 → 818 of 820 · Gate 3b 788 → 801 of 803** —
+the only remaining gap on both gates is #195 OR (needs page/parcel
+evidence) and #749 VA (identity conflict).
 
 ## Scope
 

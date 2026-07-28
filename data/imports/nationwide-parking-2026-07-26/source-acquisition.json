@@ -149,7 +149,12 @@
         "gate_3a_represented": 809,
         "gate_3b_route_usable": 763,
         "control_digest_unchanged": "4b5aed26cb6cc4ce1597b53d021a4ef4",
-        "note": "Guards were never weakened; every guard failure was quarantined (QUARANTINE-EXECUTION.csv) and the batch counts adjusted. Enrichment never publishes; the 29 matched positive-parking sites whose pre-existing rows remain unpublished need a separate publication authorization. Record: data/imports/pilot-2026-07-27/EXECUTION-RECORD.md."
+        "matched_publications_2026_07_28": 25,
+        "quarantine_resolutions_2026_07_28": 13,
+        "gate_3a_represented_final": 818,
+        "gate_3b_route_usable_final": 801,
+        "remaining_gap": "#195 OR (page evidence) and #749 VA (identity conflict) on both gates",
+        "note": "Guards were never weakened; every guard failure was quarantined and later resolved only under exact-record/exact-neighbour exemptions with in-transaction identity re-proof (QUARANTINE-RESOLUTION.sql, 2026-07-28). Record: data/imports/pilot-2026-07-27/EXECUTION-RECORD.md."
       },
       "parking_rule": "A positive operator-provided parking-space count confirms truck parking for directory and map purposes only. The export has NO overnight-permission field; overnight legality, restrictions and duration limits stay unknown and must not be invented. The 17 zero-space locations may be listed as network truck stops but must never be returned as parking or as a last-legal-stop recommendation.",
       "brand_rule": "Retain the official Name value and the stable store number. Do not rename records to \"Pilot\". Pilot Travel Center, Flying J Travel Center, ONE9 Travel Center, ONE9 Dealer, Pilot Dealer, Mr. Fuel Travel Center, Pilot Licensed Location, Flying J Dealer, Flying J Cardlock, Flying J Licensed Location, Shell Cardlock, Shell Flying J Dealer, EZ Trip Travel Center, EZ Trip Dealer, Xpress Fuel Travel Center, Pilot Express, Pride Travel Center, Pilot Licensee, Stamart Travel Center and Arco Travel Center are all preserved distinctly, as are both published casings of the ONE9 brand string.",

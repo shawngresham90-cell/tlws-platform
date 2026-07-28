@@ -1,7 +1,11 @@
 -- Pilot quarantine resolution — the 13 individually authorized records.
--- NOT EXECUTED. Blocked pending database access; every transaction below
--- re-proves the documented evidence in-transaction and aborts on ANY drift,
--- so it is safe to run verbatim once access returns.
+-- EXECUTED 2026-07-28 verbatim, zero guard failures: mixed canary
+-- (#17 MI, #35 IN, #700 OH inserts+publishes, #95 FL enrichment) audited,
+-- then the remaining 6 inserts and 3 enrichments. Measured after:
+-- live 2,274 (+9) · published 1,896 (+9) · with_coords 1,364 (+13) ·
+-- published-unmappable 551 (−4) · control digest 4b5aed26… byte-identical ·
+-- 0 duplicate slugs · held rows (#195 OR, #749 VA, #290 MD, #187 TN)
+-- untouched. Gate 3a 809 -> 818/820 · Gate 3b 788 -> 801/803.
 --
 -- Scope: the 9 net-new inserts (#282 CA, #46 KY, #17 MI, #266 NM, #387 NV,
 -- #303 OH, #12 OH, #35 IN, #700 OH) and the 4 published-coordless
