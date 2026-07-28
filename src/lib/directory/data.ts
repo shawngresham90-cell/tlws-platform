@@ -353,3 +353,94 @@ export async function getDirectoryFacets(): Promise<DirectoryFacets> {
 export function statesIn(entries: DirectoryEntry[]): string[] {
   return [...new Set(entries.map((e) => e.state))].sort();
 }
+
+/* ------------------------------------------------------------------------
+ * Parking corridor flow (driver-first navigation, 2026-07-28):
+ * Parking → State → Interstate → Direction → ordered list.
+ * ---------------------------------------------------------------------- */
+
+/** Parking-capable categories (mirrors corridor.ts PARKING_CATEGORIES). */
+const PARKING_FLOW_CATEGORIES = ['parking', 'truck-stops', 'rest-areas', 'hotels-truck-parking'];
+
+/**
+ * Published parking-capable listings on one interstate in one state — the
+ * corridor list's data source. Fails soft to [].
+ */
+export async function getParkingCorridorEntries(
+  stateCode: string,
+  interstate: string,
+): Promise<DirectoryEntry[]> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .eq('state', stateCode.toUpperCase())
+      .eq('interstate', interstate)
+      .in('category_slug', PARKING_FLOW_CATEGORIES)
+      .order('name', { ascending: true })
+      .limit(1000);
+    if (error || !data) return [];
+    return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
+export type ParkingFacets = {
+  /** State codes with ≥1 published parking-capable listing, with counts. */
+  states: { code: string; count: number }[];
+  /** Interstates per state (designation + listing count), corridor-worthy only. */
+  interstatesByState: Record<string, { designation: string; count: number }[]>;
+};
+
+/**
+ * States and per-state interstates that actually have published
+ * parking-capable listings — drives the State and Interstate picker pages
+ * so a step never dead-ends. Fails soft to empty facets.
+ */
+export async function getParkingFacets(): Promise<ParkingFacets> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select('state, interstate, category_slug')
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .in('category_slug', PARKING_FLOW_CATEGORIES)
+      .limit(5000);
+    if (error || !data) return { states: [], interstatesByState: {} };
+    const rows = data as unknown as { state: string; interstate: string | null }[];
+    const stateCounts = new Map<string, number>();
+    const byState = new Map<string, Map<string, number>>();
+    for (const r of rows) {
+      const st = r.state?.trim().toUpperCase();
+      if (!st) continue;
+      stateCounts.set(st, (stateCounts.get(st) ?? 0) + 1);
+      const hwy = r.interstate?.trim();
+      if (!hwy || !/^I-\d{1,3}$/.test(hwy)) continue;
+      if (!byState.has(st)) byState.set(st, new Map());
+      const m = byState.get(st)!;
+      m.set(hwy, (m.get(hwy) ?? 0) + 1);
+    }
+    return {
+      states: [...stateCounts.entries()]
+        .map(([code, count]) => ({ code, count }))
+        .sort((a, b) => a.code.localeCompare(b.code)),
+      interstatesByState: Object.fromEntries(
+        [...byState.entries()].map(([st, m]) => [
+          st,
+          [...m.entries()]
+            .map(([designation, count]) => ({ designation, count }))
+            .sort(
+              (a, b) => parseInt(a.designation.slice(2), 10) - parseInt(b.designation.slice(2), 10),
+            ),
+        ]),
+      ),
+    };
+  } catch {
+    return { states: [], interstatesByState: {} };
+  }
+}
