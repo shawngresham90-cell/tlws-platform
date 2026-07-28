@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createStaticClient } from '@/lib/supabase/static';
 import type { DirectoryEntry } from './types';
 
@@ -128,23 +129,26 @@ export function getAllPublishedEntries(): Promise<DirectoryEntry[]> {
   return selectEntries({});
 }
 
+// Scoped readers are wrapped in React `cache()` so a page that reads the same
+// scope in both generateMetadata() and its body hits the DB once per request,
+// not twice. `cache` memoizes per-render by argument identity; it never leaks
+// across requests.
+
 /** All published listings in a state (two-letter code), for state pages. */
-export function getEntriesByState(stateCode: string): Promise<DirectoryEntry[]> {
-  return selectEntries({ state: stateCode.toUpperCase() });
-}
+export const getEntriesByState = cache((stateCode: string): Promise<DirectoryEntry[]> =>
+  selectEntries({ state: stateCode.toUpperCase() }),
+);
 
 /** All published listings on an interstate ("I-75"), for corridor pages. */
-export function getEntriesByInterstate(designation: string): Promise<DirectoryEntry[]> {
-  return selectEntries({ interstate: designation });
-}
+export const getEntriesByInterstate = cache((designation: string): Promise<DirectoryEntry[]> =>
+  selectEntries({ interstate: designation }),
+);
 
 /** Published listings at one interstate exit, for exit pages. */
-export function getEntriesByExit(
-  designation: string,
-  exitNumber: string,
-): Promise<DirectoryEntry[]> {
-  return selectEntries({ interstate: designation, exit_number: exitNumber });
-}
+export const getEntriesByExit = cache(
+  (designation: string, exitNumber: string): Promise<DirectoryEntry[]> =>
+    selectEntries({ interstate: designation, exit_number: exitNumber }),
+);
 
 /**
  * Published listings ordered by most-recently-updated (Milestone 25). Only rows
@@ -301,7 +305,10 @@ const EMPTY_FACETS: DirectoryFacets = {
  * new states and corridors appear everywhere the moment their data lands.
  * Fails soft to empty facets (pages then render on demand instead).
  */
-export async function getDirectoryFacets(): Promise<DirectoryFacets> {
+// Facets are read in both generateMetadata() and the body of the category,
+// exit and corridor pages; `cache` collapses that to a single query per render.
+export const getDirectoryFacets = cache(getDirectoryFacetsImpl);
+async function getDirectoryFacetsImpl(): Promise<DirectoryFacets> {
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase
