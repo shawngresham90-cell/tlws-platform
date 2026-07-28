@@ -573,6 +573,161 @@ commit;
 }
 writeFileSync(`${OUT}/PUBLISH-PER-STATE.sql`, pub);
 
+/* ============================ 4b. PUBLISH REMAINDER ====================== */
+/* PUBLISH-PER-STATE.sql expects every positive-parking insert to still be
+ * unpublished, so after the canary its 10 states fail their expected-count
+ * guards by design. This file is the same statement with the counts reduced
+ * by each state's canary row — run it AFTER the canary passes audit. The
+ * canary rows themselves are excluded naturally by `not is_published`. */
+const canaryPerState = new Map();
+for (const r of canary) canaryPerState.set(r.state, (canaryPerState.get(r.state) ?? 0) + 1);
+let pubRem = `-- Pilot / Flying J / ONE9 publication REMAINDER — one transaction per
+-- state, counts adjusted for the 10 already-published canary rows. Run only
+-- after PUBLISH-CANARY.sql has passed its audit. Guards identical to
+-- PUBLISH-PER-STATE.sql; the canary rows are excluded by \`not is_published\`.
+
+`;
+for (const [state, count] of [...pubByState].sort()) {
+  const adj = count - (canaryPerState.get(state) ?? 0);
+  if (adj === 0) {
+    pubRem += `-- ---------------------------------------------------------------- ${state}: canary covered its only row; nothing left to publish\n\n`;
+    continue;
+  }
+  pubRem += `-- ---------------------------------------------------------------- ${state} (${adj}${canaryPerState.has(state) ? ` = ${count} − canary` : ''})
+begin;
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and state = ${q(state)}
+     and category_slug = 'truck-stops' and not is_published
+     and coalesce(parking_spaces, 0) > 0
+     and lat is not null and lng is not null and deleted_at is null;
+  if n <> ${adj} then
+    raise exception '${state}: expected ${adj} publishable row(s) with parking, found %.', n;
+  end if;
+
+  update public.locations
+     set is_published = true, updated_at = now()
+   where source = ${q(SOURCE_TAG)} and state = ${q(state)}
+     and category_slug = 'truck-stops' and not is_published
+     and coalesce(parking_spaces, 0) > 0
+     and lat is not null and lng is not null and deleted_at is null;
+  get diagnostics n = row_count;
+  if n <> ${adj} then raise exception '${state}: expected to publish ${adj}, published %.', n; end if;
+
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and state = ${q(state)}
+     and is_published and coalesce(parking_spaces, 0) < 1;
+  if n <> 0 then raise exception '${state}: % zero-space row(s) were published.', n; end if;
+
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and state = ${q(state)} and overnight_parking;
+  if n <> 0 then raise exception '${state}: % row(s) claim overnight parking.', n; end if;
+end $$;
+commit;
+
+`;
+}
+writeFileSync(`${OUT}/PUBLISH-REMAINDER.sql`, pubRem);
+console.log(
+  `publish remainder    ${[...pubByState.values()].reduce((a, b) => a + b, 0) - canary.length} rows after the 10-row canary`,
+);
+
+/* ============================ 5. ROLLBACK ================================ */
+/* locations_geocode_source_check forbids a bespoke tag, so enrichment writes
+ * the shared legal value 'batch-csv' and the de-enrich reversal CANNOT be
+ * tag-scoped: it is per-row, exact-id, value-matched, generated from the
+ * committed plan. Insert/publish reversals stay scoped by the `source`
+ * column, which only this import's inserts set. */
+let rb = `-- Pilot / Flying J / ONE9 import — rollback. NOT EXECUTED. GENERATED.
+--
+-- Three independent reversals, in reverse order of application:
+-- unpublish, then de-enrich (per-row, value-matched), then delete inserts.
+-- A row edited since the forward write stops matching and is left alone.
+
+-- ===========================================================================
+-- 1. UNPUBLISH — reverses PUBLISH-CANARY.sql / PUBLISH-PER-STATE.sql
+-- ===========================================================================
+begin;
+do $$
+declare n integer; expected integer;
+begin
+  select count(*) into expected from public.locations
+   where source = ${q(SOURCE_TAG)} and is_published and deleted_at is null;
+  if expected = 0 then raise exception 'Nothing published by this import; nothing to unpublish.'; end if;
+
+  update public.locations set is_published = false, updated_at = now()
+   where source = ${q(SOURCE_TAG)} and is_published and deleted_at is null;
+  get diagnostics n = row_count;
+  if n <> expected then raise exception 'Expected to unpublish %, changed %.', expected, n; end if;
+
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and (is_featured or lat is null);
+  if n <> 0 then raise exception 'Post-check failed: % row(s) lost a coordinate or became featured.', n; end if;
+end $$;
+commit;
+
+-- ===========================================================================
+-- 2. DE-ENRICH — reverses ENRICH-EXISTING.sql, per-row and value-matched.
+--    Blank-only forward writes mean NULL is the exact pre-state of every
+--    cleared field (existing_parking_spaces in the plan records the rows
+--    that already had a count and were therefore never restaged).
+-- ===========================================================================
+begin;
+`;
+for (const p of enrich) {
+  rb += `\n-- #${p.source_ref} · ${p.db_name} (${p.state}) · fills: ${p.fills}\n`;
+  const fills = String(p.fills).split('+');
+  if (fills.includes('lat'))
+    rb += `update public.locations
+   set lat = null, lng = null, geocode_source = null, geocode_confidence = null,
+       coord_verification_status = null, last_geocoded_at = null, updated_at = now()
+ where id = ${q(p.db_id)} and lat = ${nq(p.lat)} and lng = ${nq(p.lng)}
+   and geocode_source = 'batch-csv' and deleted_at is null and not is_featured;\n`;
+  if (fills.includes('interstate'))
+    rb += `update public.locations set interstate = null, updated_at = now()
+ where id = ${q(p.db_id)} and interstate = ${q(p.interstate)} and deleted_at is null;\n`;
+  if (fills.includes('parking_spaces'))
+    rb += `update public.locations set parking_spaces = null, updated_at = now()
+ where id = ${q(p.db_id)} and parking_spaces = ${nq(p.parking_spaces)} and deleted_at is null;\n`;
+}
+rb += `commit;
+
+-- ===========================================================================
+-- 3. DELETE INSERTED ROWS — reverses INSERT-NET-NEW.sql. The only delete in
+--    the package; it can only reach rows this import created (source tag set
+--    by the insert and nothing else) and refuses while any target is
+--    published or featured.
+-- ===========================================================================
+begin;
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and is_published;
+  if n <> 0 then
+    raise exception 'Rollback refused: % inserted row(s) are published. Run the UNPUBLISH block first.', n;
+  end if;
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and is_featured;
+  if n <> 0 then raise exception 'Rollback refused: % row(s) are featured.', n; end if;
+  select count(*) into n from public.locations
+   where source = ${q(SOURCE_TAG)} and created_at < '2026-07-27';
+  if n <> 0 then raise exception 'Rollback refused: % target(s) predate this import.', n; end if;
+
+  delete from public.locations where source = ${q(SOURCE_TAG)};
+  get diagnostics n = row_count;
+  raise notice 'Deleted % inserted Pilot-network row(s).', n;
+
+  select count(*) into n from public.locations where source = ${q(SOURCE_TAG)};
+  if n <> 0 then raise exception 'Post-check failed: % row(s) survive.', n; end if;
+end $$;
+commit;
+`;
+writeFileSync(`${OUT}/ROLLBACK.sql`, rb);
+console.log(`rollback: per-row de-enrich pairs for ${enrich.length} plan rows`);
+
 /* ------------------------------------------------------------------ report */
 const sum = (xs, f) => xs.reduce((a, x) => a + f(x), 0);
 const corridors = new Set(
