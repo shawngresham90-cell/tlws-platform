@@ -283,3 +283,32 @@ byte-identical. The only field change on the 25 was
 **Gates: 3a stays 809/820 · 3b measured 763 → 788/803** — +25 exactly,
 because each row is a distinct official store number in the 803 universe
 whose only missing route-usable condition was publication.
+
+
+---
+
+## Addendum, 2026-07-28 — quarantine resolution EXECUTED (13 of 14)
+
+The individually authorized quarantine-resolution package ran verbatim with
+zero guard failures, after a live pre-flight re-audit confirmed every
+documented fact still held (13/13 exempted neighbours, 2/2 clash rows, 4/4
+published-coordless targets, 0 slug conflicts). Mixed canary first (#17 MI,
+#35 IN, #700 OH inserts + #95 FL enrichment), audited, then the remaining
+six inserts (#282 CA, #46 KY, #266 NM, #387 NV, #303 OH, #12 OH) and three
+enrichments (#1330 AR, #1550 AL, #353 KY). Every collision exception was
+scoped to the exact record and exact re-proven neighbour UUID(s) with a
+third-pin abort; the store-number guard excluded only the two re-proven
+clash rows by id. Rollback: QUARANTINE-RESOLUTION-ROLLBACK.sql.
+
+**Measured after:** live **2,274** (+9) · published **1,896** (+9) ·
+with_coords **1,364** (+13) · published-unmappable **551** (−4) · flags 0 ·
+9/9 inserts route-usable · 4/4 enrichments mappable · space fills exactly
+42 (#1330) and 10 (#95); legacy counts 70 (#1550) and 175 (#353) preserved ·
+control digest `4b5aed26cb6cc4ce1597b53d021a4ef4` byte-identical ·
+0 duplicate slugs · #195 OR, #749 VA, #290 MD, #187 TN untouched.
+
+**Gates: 3a 809 → 818/820 · 3b 788 → 801/803.** The entire remaining gap on
+both gates is two records: #195 OR (insert held for independent page/parcel
+evidence — the 70 m Biggs Junction adjacency) and #749 VA (identity
+conflict). Per-record resolution states are in QUARANTINE-EXECUTION.csv's
+new `resolution` column.
