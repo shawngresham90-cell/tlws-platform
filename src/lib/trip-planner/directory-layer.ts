@@ -95,6 +95,25 @@ export function toStopCandidates(
   return out.sort((a, b) => a.routeMile - b.routeMile);
 }
 
+/* -------------------------------------------------- zero-space safety rule */
+
+/**
+ * THE ZERO-SPACE SAFETY RULE. Confirmed truck parking means the listing
+ * STATES a finite positive space count. A stated zero is the operator saying
+ * "no truck parking here"; null/undefined/NaN mean "unknown" — and unknown is
+ * never assumed parkable. Neither may ever be recommended as truck parking or
+ * as a legal stop: a driver who plans an HOS stop around a listing without
+ * confirmed parking can run out of hours with nowhere legal to park.
+ */
+export function hasConfirmedTruckParking(spaces: unknown): spaces is number {
+  return typeof spaces === 'number' && Number.isFinite(spaces) && spaces > 0;
+}
+
+/** The needs whose recommendation means "you can park a truck here". */
+export function isParkingNeed(need: 'fuel' | 'break' | 'overnight' | 'parking'): boolean {
+  return need === 'overnight' || need === 'parking';
+}
+
 /* ----------------------------------------------------------------- scoring */
 
 export type ScoreBreakdown = {
@@ -182,16 +201,21 @@ export function rankCandidates(
   opts: { preferredFuelBrands?: string[]; requireCategory?: boolean } = {},
 ): { candidate: StopCandidate; score: ScoreBreakdown }[] {
   const cats = NEED_CATEGORIES[need];
-  return candidates
-    .filter((c) => c.routeMile >= window.fromMile && c.routeMile <= window.toMile)
-    .filter((c) => ((opts.requireCategory ?? true) ? cats.includes(c.categorySlug) : true))
-    .map((candidate) => ({ candidate, score: scoreCandidate(candidate, need, opts) }))
-    .sort(
-      (a, b) =>
-        b.score.total - a.score.total ||
-        a.candidate.offRouteMiles - b.candidate.offRouteMiles ||
-        a.candidate.name.localeCompare(b.candidate.name),
-    );
+  return (
+    candidates
+      .filter((c) => c.routeMile >= window.fromMile && c.routeMile <= window.toMile)
+      .filter((c) => ((opts.requireCategory ?? true) ? cats.includes(c.categorySlug) : true))
+      // Zero-space safety rule: for the parking needs this is a hard filter,
+      // not a score — no option (including requireCategory:false) bypasses it.
+      .filter((c) => !isParkingNeed(need) || hasConfirmedTruckParking(c.parkingSpaces))
+      .map((candidate) => ({ candidate, score: scoreCandidate(candidate, need, opts) }))
+      .sort(
+        (a, b) =>
+          b.score.total - a.score.total ||
+          a.candidate.offRouteMiles - b.candidate.offRouteMiles ||
+          a.candidate.name.localeCompare(b.candidate.name),
+      )
+  );
 }
 
 /** Fuel recommendation: best fuel-capable stops in the window. */
@@ -210,7 +234,15 @@ export function recommendParking(
   window: { fromMile: number; toMile: number },
   limit = 5,
 ): { candidate: StopCandidate; score: ScoreBreakdown }[] {
-  return rankCandidates(candidates, 'overnight', window, {}).slice(0, limit);
+  // Belt and braces with rankCandidates' own filter: this function's result
+  // is shown to a driver as parking, so it re-applies the zero-space rule
+  // even if a future rankCandidates edit forgets it.
+  return rankCandidates(
+    candidates.filter((c) => hasConfirmedTruckParking(c.parkingSpaces)),
+    'overnight',
+    window,
+    {},
+  ).slice(0, limit);
 }
 
 /** Map a planner need to the StopKind it produces. */
