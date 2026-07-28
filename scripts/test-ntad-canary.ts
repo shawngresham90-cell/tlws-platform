@@ -143,14 +143,22 @@ check(
   insertSql.includes("is distinct from 'ntad-2019-v04'"),
 );
 check(
-  'idempotency skip present (same-source slug skips)',
-  insertSql.includes('skipped := skipped + 1'),
+  'idempotency skip present in every state block (same-source slug skips)',
+  (insertSql.match(/already inserted, skipping/g) ?? []).length === 5,
 );
 check('collision guard present (±0.0015° box abort)', insertSql.includes('0.0015'));
-check('row-count guard present', insertSql.includes('get diagnostics'));
 check(
-  'total-count guard present (5 processed or abort)',
-  insertSql.includes('inserted + skipped <> 5'),
+  'row-count guard present in every state block',
+  (insertSql.match(/get diagnostics/g) ?? []).length === 5,
+);
+check(
+  'one guarded transaction per state (5 begin/commit pairs — a failure quarantines one state)',
+  (insertSql.match(/^begin;$/gm) ?? []).length === 5 &&
+    (insertSql.match(/^commit;$/gm) ?? []).length === 5,
+);
+check(
+  'every state block aborts unless exactly 1 row inserted',
+  (insertSql.match(/expected 1 insert, got %/g) ?? []).length === 5,
 );
 check(
   'rollback refuses published or altered rows',
