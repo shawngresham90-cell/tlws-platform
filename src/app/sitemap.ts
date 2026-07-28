@@ -61,6 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/apps', 0.6],
     ['/sponsors', 0.6],
     ['/dot-tools', 0.6],
+    ['/tools/hos-calculator', 0.7],
     ['/privacy', 0.3],
     ['/sms-terms', 0.3],
   ];

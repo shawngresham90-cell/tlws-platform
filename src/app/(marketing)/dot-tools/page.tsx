@@ -9,24 +9,34 @@ export const metadata = buildMetadata({
 });
 
 /**
- * Static, informational landing page for the planned TLWS DOT Tools.
+ * Landing page for TLWS DOT Tools.
  *
- * This page is intentionally non-functional. It does not calculate,
- * interpret, store, recommend, or provide any compliance conclusion. Every
- * tool card is a plain <div> (never a link/button) carrying an honest status
- * label, because the regulatory tools remain blocked pending independent
- * verification and attorney review. No calculators, no logic, no storage, no
- * data collection, no analytics — see the DOT Tools compliance docs.
+ * One tool is LIVE: the HOS Calculator (owner-authorized 2026-07-28; engine
+ * `src/lib/hos/`, regulatory record in `docs/compliance/hos-verification.md`
+ * and `split-sleeper-rule-ledger.md`). Its card links out; every other card
+ * remains a plain <div> (never a link/button) with an honest status label,
+ * because those tools remain blocked pending independent verification and
+ * attorney review. This page itself still computes nothing.
  */
 
-type ToolStatus = 'COMING SOON' | 'IN VERIFICATION' | 'LEGAL REVIEW REQUIRED';
+type ToolStatus = 'LIVE' | 'COMING SOON' | 'IN VERIFICATION' | 'LEGAL REVIEW REQUIRED';
 
 const TOOLS: Array<{
   icon: string;
   name: string;
   description: string;
   status: ToolStatus;
+  /** Set only for LIVE tools — the card becomes a link. */
+  href?: string;
 }> = [
+  {
+    icon: '⏱️',
+    name: 'HOS Calculator',
+    description:
+      'Split sleeper berth pairing under 49 CFR 395.1(g), plus your 11-hour, 14-hour, cycle, and break clocks. Planning and education only — not an ELD.',
+    status: 'LIVE',
+    href: '/tools/hos-calculator',
+  },
   {
     icon: '📖',
     name: 'Reg Deck',
@@ -80,7 +90,7 @@ function StatusPill({ status }: { status: ToolStatus }) {
       <span
         aria-hidden="true"
         className={`h-1.5 w-1.5 rounded-full ${
-          status === 'IN VERIFICATION' ? 'bg-signal' : 'bg-muted'
+          status === 'LIVE' ? 'bg-marker' : status === 'IN VERIFICATION' ? 'bg-signal' : 'bg-muted'
         }`}
       />
       {status}
@@ -108,8 +118,9 @@ export default function DotToolsPage() {
         <Placard className="max-w-3xl border-l-2 border-l-signal">
           <p className="eyebrow mb-3">Independent verification in progress</p>
           <p className="text-muted">
-            These tools are not available yet. TLWS is verifying the regulatory sources,
-            calculations, wording, privacy protections, and legal disclosures before launch.
+            The HOS Calculator is live below. The remaining tools are not available yet — TLWS is
+            verifying their regulatory sources, calculations, wording, privacy protections, and
+            legal disclosures before launch.
           </p>
         </Placard>
       </Section>
@@ -120,24 +131,43 @@ export default function DotToolsPage() {
           <Eyebrow>Planned tools</Eyebrow>
           <h2 className="display-section">What’s on the way</h2>
           <p className="mt-4 text-muted">
-            A preview of the free tools in development. Each one stays offline until its sources,
-            wording, and disclosures are reviewed. Nothing here is interactive yet.
+            The HOS Calculator is live. Every other tool stays offline until its sources, wording,
+            and disclosures are reviewed.
           </p>
         </div>
 
         <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((tool) => (
             <li key={tool.name}>
-              <Placard className="flex h-full flex-col">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <span aria-hidden="true" className="text-2xl">
-                    {tool.icon}
-                  </span>
-                  <StatusPill status={tool.status} />
-                </div>
-                <h3 className="font-display text-xl uppercase text-ink">{tool.name}</h3>
-                <p className="mt-2 text-sm text-muted">{tool.description}</p>
-              </Placard>
+              {tool.href ? (
+                <a
+                  href={tool.href}
+                  className="block h-full rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
+                >
+                  <Placard className="flex h-full flex-col border-l-2 border-l-marker transition-colors hover:border-signal">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <span aria-hidden="true" className="text-2xl">
+                        {tool.icon}
+                      </span>
+                      <StatusPill status={tool.status} />
+                    </div>
+                    <h3 className="font-display text-xl uppercase text-ink">{tool.name}</h3>
+                    <p className="mt-2 text-sm text-muted">{tool.description}</p>
+                    <p className="doc-caption mt-auto pt-3 text-signal">Open the calculator →</p>
+                  </Placard>
+                </a>
+              ) : (
+                <Placard className="flex h-full flex-col">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <span aria-hidden="true" className="text-2xl">
+                      {tool.icon}
+                    </span>
+                    <StatusPill status={tool.status} />
+                  </div>
+                  <h3 className="font-display text-xl uppercase text-ink">{tool.name}</h3>
+                  <p className="mt-2 text-sm text-muted">{tool.description}</p>
+                </Placard>
+              )}
             </li>
           ))}
         </ul>
