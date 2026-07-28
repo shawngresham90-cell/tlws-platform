@@ -88,8 +88,34 @@ overwriting overnight status. The export confirms overnight = Y for all 9.
   appear for fuel/food needs. It counts toward 2a (already did) and never
   toward 2b.
 
-## Addendum — final audit
+## Addendum — final audit (measured after the #201 publication)
 
-(Recorded after the #201 publication; see `CLOSEOUT-MANIFEST-2026-07-28.md`
-for targets and the final report for measured gates, counters and
-fingerprints.)
+- Counters: live **2,825** (+21) · published **2,453** (+37 = 15 + 21 + #201)
+  · mappable **1,968** (+23 = 21 inserts + #451 + #317) ·
+  published-unmappable **514** (−1, #451) · featured/indexable **0**.
+- Full-table digest moved (authorized writes only):
+  `d4a15c558232a5ea69b00154bdc46a5c` → `3490fa2dd3206f73e4a6f62c7b410d0c`.
+- **Pilot source scope digest byte-identical** (`f42622d5…`, 718 rows) and
+  **TA/Petro scope digest byte-identical** (`95229290…`, 380 rows) — Pilot
+  3a/3b = 818/820 · 801/803 and TA 4a/4b = 348/348 · 347/347 stand, proven
+  by fingerprint, untouched.
+- Exactly **39 Love's-scope rows changed** in the run window
+  (15 P1 + 21 P2 + 2 P4 + 1 P5) — every other Love's row untouched.
+- 0 duplicate slugs · 0 duplicate (name, state, city) composites ·
+  0 new published exact-coordinate pairs · 0 zero-space published parking
+  rows · the 17 name-pattern hits in the recommendable pool are all
+  **pre-existing** legacy csv-import companion rows (CAT-scale /
+  TA-Truck-Service entries carrying their host complex's count), none
+  touched this run — the known legacy dedup backlog.
+- **Gate 2a measured 613/615** by exact store-number set intersection with
+  the export (missing: #234 quarantined non-overnight + #420 held).
+- **Gate 2b measured 593/604** by distinct store number (remaining 11 =
+  the 9 P3 rows + #317, all blocked only by the unauthorized
+  `overnight_parking` write, + #420 held).
+- **New finding:** live `Love's Travel Stop #905` (Beaverdam OH,
+  `b60e869c`, legacy csv-import, published, coordless, untouched) also
+  claims a store number absent from the 731-row export — recorded beside
+  #306 as the second identity-review hold. Neither is a gate-universe
+  member; neither was modified.
+- Combined operator route-usable: **1,741 / 1,754 = 99.26 %**
+  (Love's 593/604 + Pilot 801/803 + TA 347/347).
