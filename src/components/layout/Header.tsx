@@ -52,6 +52,7 @@ const MENU_GROUPS: Array<{
     links: [
       { label: 'The Road Ahead', href: '/road-ahead' },
       { label: 'DOT Tools', href: '/dot-tools' },
+      { label: 'HOS Calculator', href: '/tools/hos-calculator' },
       { label: 'Store', href: '/store' },
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
