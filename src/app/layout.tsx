@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { MobileToolBar } from '@/components/layout/MobileToolBar';
 import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
 import { AttributionCapture } from '@/components/analytics/AttributionCapture';
 import { JsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo/schema';
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* First-touch utm capture — renders nothing, session-scoped */}
         <AttributionCapture />
       </head>
-      <body className="flex min-h-screen flex-col">
+      {/* pb-16 reserves room for the fixed mobile tool bar; sm:pb-0 releases it
+          where the bar is hidden. */}
+      <body className="flex min-h-screen flex-col pb-16 sm:pb-0">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-card focus:bg-signal focus:px-4 focus:py-2 focus:font-semibold focus:text-asphalt"
@@ -51,6 +54,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <Footer />
+        {/* Persistent driver tools — Parking | Trip Planner | HOS on phones. */}
+        <MobileToolBar />
       </body>
     </html>
   );
