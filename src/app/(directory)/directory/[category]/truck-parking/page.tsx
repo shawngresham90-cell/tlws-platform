@@ -37,6 +37,11 @@ function resolveInterstate(slug: string) {
 }
 
 function hasParking(e: DirectoryEntry): boolean {
+  // Zero-space safety rule: a stated non-positive count is the operator
+  // saying "no truck parking here". Such a listing stays on ordinary
+  // directory pages but never on a parking guide or in its coverage counts.
+  // (null/undefined = unknown, which this guide already labels as such.)
+  if (typeof e.parkingSpaces === 'number' && !(e.parkingSpaces > 0)) return false;
   if (PARKING_CATEGORIES.has(e.category)) return true;
   return (e.amenities ?? []).some((a) => (PARKING_CHIPS as readonly string[]).includes(a));
 }
@@ -87,7 +92,9 @@ export default async function InterstateParkingPage({ params }: { params: { cate
     chip,
     n: parking.filter((e) => (e.amenities ?? []).includes(chip)).length,
   })).filter((t) => t.n > 0);
-  const withSpaces = parking.filter((e) => e.parkingSpaces != null).length;
+  const withSpaces = parking.filter(
+    (e) => typeof e.parkingSpaces === 'number' && e.parkingSpaces > 0,
+  ).length;
 
   const listSchema = listingListSchema(parking, `${interstate.designation} truck parking`, path);
 

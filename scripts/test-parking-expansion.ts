@@ -1395,6 +1395,59 @@ const rows: Row[] = parseCsv(csv.trim());
     canary.every((c) => /NOT CONFIRMED/.test(String(c.overnight_parking))),
   );
 
+  /* ---- the executed state: record, quarantines, measured gates ---- */
+  const pExec = readFileSync(`${P}/EXECUTION-RECORD.md`, 'utf8');
+  const pQuar = parseCsv(readFileSync(`${P}/QUARANTINE-EXECUTION.csv`, 'utf8'));
+  check(
+    'execution record: 709 inserted, 10 quarantined',
+    /709 of 719 applied, 10 quarantined/.test(pExec),
+  );
+  check(
+    'execution record: 80 enriched, 4 quarantined',
+    /80 of 84 applied, 4 quarantined/.test(pExec),
+  );
+  check(
+    'execution record: 695 published imports',
+    /\*\*695 of the 705 positive-parking inserted rows are now published\*\*/.test(pExec),
+  );
+  check(
+    'execution record: control digest byte-identical',
+    /4b5aed26cb6cc4ce1597b53d021a4ef4/.test(pExec) && /byte-identical/.test(pExec),
+  );
+  check(
+    'execution record: measured gates 809/820 and 763/803',
+    /\*\*809 represented\*\*/.test(pExec) && /\*\*763 route-usable\*\*/.test(pExec),
+  );
+  check(
+    'execution record: no guard weakened, nothing outside the authorization',
+    /No guard was weakened/.test(pExec) &&
+      /Rows written outside the authorization \| \*\*0\*\*/.test(pExec),
+  );
+  check(
+    'execution record: zero-space stays staged pending the app hard-exclusion',
+    /parkingSpaces <= 0/.test(pExec) && /stay directory-staged only/.test(pExec),
+  );
+  check('14 quarantined actions recorded', pQuar.length === 14, pQuar.length);
+  check(
+    'quarantine split is 10 insert + 4 enrich',
+    pQuar.filter((q) => q.phase === 'insert').length === 10 &&
+      pQuar.filter((q) => q.phase === 'enrich').length === 4,
+  );
+  check(
+    'every quarantined action names its guard and stays out of the directory',
+    pQuar.every((q) => q.guard.length > 0 && /not inserted|not enriched/.test(q.disposition)),
+  );
+  check(
+    'the enrichment quarantines are the four collision targets',
+    ['1330', '1550', '353', '95'].every((r) =>
+      pQuar.some((q) => q.phase === 'enrich' && q.source_ref === r),
+    ),
+  );
+  check(
+    'fingerprints carry the measured after-values',
+    /MEASURED 2026-07-27 post-execution: 2265 \/ 1862 \/ 1351 \/ 555 \/ 0 \/ 0 \/ 0/.test(fpSql),
+  );
+
   /* ---- the launch gate splits 3a / 3b and passes neither ---- */
   check(
     'gate line 3a names the 820 U.S. directory universe',

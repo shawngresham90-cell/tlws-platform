@@ -1,6 +1,6 @@
 import type { Route, StopCandidate, RemainingClocks } from './types';
 import { HOS } from './types';
-import { NEED_CATEGORIES, scoreCandidate } from './directory-layer';
+import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './directory-layer';
 
 /**
  * Last Stop selection (docs/trip-planner/last-stop-engine.md) — the named
@@ -156,7 +156,13 @@ export function selectLastStops(args: {
   const rawUsable = Math.min(args.clocks.drivingMin, args.clocks.windowMin) - bufferMin;
   const usableDriveMin = Number.isFinite(rawUsable) ? Math.max(0, rawUsable) : 0;
 
-  const parkingCandidates = args.candidates.filter((c) => PARKING_CATEGORIES.has(c.categorySlug));
+  // Zero-space safety rule: every Last Stop slot tells a driver "you can
+  // legally park here", so a listing without a confirmed positive space
+  // count (zero, negative, null, or non-numeric) can never enter ANY slot —
+  // reservable or free — regardless of category or score.
+  const parkingCandidates = args.candidates.filter(
+    (c) => PARKING_CATEGORIES.has(c.categorySlug) && hasConfirmedTruckParking(c.parkingSpaces),
+  );
   const reservableAll = parkingCandidates.filter((c) => c.reservationUrl);
 
   type Scored = { candidate: StopCandidate; reach: Reach; score: number };

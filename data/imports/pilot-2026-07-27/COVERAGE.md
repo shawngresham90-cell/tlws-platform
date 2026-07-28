@@ -7,8 +7,13 @@ file: 875 total, 820 U.S., 55 Canadian, 43 U.S. states, 803 U.S. with a positive
 parking-space count, 17 with zero, 72,189 stated U.S. spaces, and zero duplicate
 store numbers, coordinates or name/address/state triples.
 
-Nothing below has been applied. These are the figures the package produces when
-insertion, enrichment and publication are each separately authorized.
+**Executed 2026-07-27** under explicit authorization — see
+`EXECUTION-RECORD.md` for the applied result. The figures below are what the
+package produces at full application; execution quarantined 10 inserts and 4
+enrichment targets (guards intact, `QUARANTINE-EXECUTION.csv`), so the
+measured landing is **3a 809 of 820 represented** and **3b 763 of 803
+route-usable**, with the remaining gap accounted for row by row in the
+execution record.
 
 ---
 
@@ -33,10 +38,10 @@ actually pass or fail.
 
 ## The two U.S. database gates, kept separate
 
-| Gate | Universe | In the DB today | After this package |
-|---|--:|--:|--:|
-| **3a — U.S. directory coverage** | **820** network locations | 101 reconciled | **820** |
-| **3b — U.S. truck-parking coverage** | **803** with a positive official space count | 0 route-usable | **803** |
+| Gate | Universe | Before execution | Prepared target | **Measured after (2026-07-27)** |
+|---|--:|--:|--:|--:|
+| **3a — U.S. directory coverage** | **820** network locations | 101 reconciled | 820 | **809** (10 quarantined, 1 conflict) |
+| **3b — U.S. truck-parking coverage** | **803** with a positive official space count | 0 route-usable | 803 | **763** (10 quarantined, 29 matched rows unpublished, 1 conflict) |
 
 820 = 803 with parking + 17 with zero stated spaces. Both figures come from the
 same file and neither may be reported as the other.
@@ -170,14 +175,24 @@ datasets, which remain blocked.
 
 ## What is still not passed
 
-Gates 3a and 3b both read **in progress**, not ✅:
+Gates 3a and 3b both still read **in progress**, not ✅, after the 2026-07-27
+execution (3a **809/820**, 3b **763/803**):
 
-- Insertion, enrichment and publication are three separate authorizations and
-  **none has been given**.
-- 5 records conflict with the export and are held for exact-ID verification.
-- 12 rows are probable-closure candidates; closure review is a separate exercise
-  with its own authorization. **Nothing is deleted or unpublished here.**
-- Route-segment coverage (gate lines 7 and 8) becomes far more *measurable* once
-  these publish, but is not measured here.
+- **10 quarantined inserts** (8 cross-operator interchange adjacencies against
+  published TA pins, 2 store-number-guard false positives) await individual
+  collision review under a future authorization.
+- **29 matched positive-parking sites** now carry coordinates and/or space
+  counts but their pre-existing rows remain **unpublished** — enrichment never
+  publishes, and publishing pre-existing rows was not part of this
+  authorization.
+- **4 enrichment targets** were quarantined whole on published-pin collisions
+  (#1330 AR, #1550 AL, #353 KY, #95 FL) — identity review first.
+- **1 record conflicts** with the export (#749 VA) and is held for exact-ID
+  verification; the other 4 prepared conflicts sit outside the 820 mapping.
+- 12 rows remain probable-closure candidates; closure review is a separate
+  exercise with its own authorization. **Nothing was deleted or unpublished.**
+- The **17 zero-space locations stay staged** (14 inserted unpublished, 3
+  matched untouched) until the app hard-excludes `parkingSpaces <= 0` from
+  every route-usable / last-legal-stop query — see EXECUTION-RECORD.md §7.
 
 The gate passes when the database represents all 820, not when the file does.
