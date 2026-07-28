@@ -3,10 +3,13 @@
 --
 -- AUTHORIZATION STOP, 2026-07-27: the closeout authorization named "29 verified
 -- matched rows" and required a stop if the expected set is not exactly 29. The
--- measured eligible set is 25: the other 4 unpublished matched rows are the
--- enrichment-quarantined records (#1330 AR, #1550 AL, #353 KY, #95 FL), which
--- are coordless (the published-pin collision guard blocked their enrichment)
--- and are excluded by the authorization's own "not quarantined" criterion.
+-- measured eligible set is 25. "29" was two coinciding sets (reconciled by
+-- exact UUID in MATCHED-25-MANIFEST.md): the gap report's 29 = these 25 plus
+-- 4 sites whose rows are already PUBLISHED but coordless (the enrichment-
+-- quarantined #1330 AR, #1550 AL, #353 KY, #95 FL — they need collision-
+-- exempted enrichment, not publication); the live count of unpublished
+-- network truck-stops rows also = 29 = these 25 plus 4 unrelated held rows
+-- (conflicts #24 OH and #749 VA, closure candidates #290 MD and #187 TN).
 -- Publication therefore STOPPED before any write. This file is the prepared,
 -- guarded package for the corrected 25-row set, awaiting re-authorization.
 --

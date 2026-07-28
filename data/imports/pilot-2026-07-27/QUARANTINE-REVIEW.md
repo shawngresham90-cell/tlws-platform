@@ -42,8 +42,11 @@ locations**; none looks like a duplicate of the TA pin.
 
 These four pre-existing rows were **not enriched at all** (they remain
 coordless), because the coordinate each would receive lands within the
-±0.0015° box of an already-published pin. They are also the reason the Phase A
-publication set is 25 and not 29.
+±0.0015° box of an already-published pin. All four rows are **already
+published** (coordless, so not route-usable); what they need is
+collision-exempted *enrichment*, never publication. They are the four sites
+that reduce the gap report's 29 matched positive-parking sites to the 25
+publication candidates in MATCHED-25-MANIFEST.md.
 
 | Official ID · brand | Official values (coords · spaces) | Target row (unenriched) | Colliding published pin(s) (id · category · distance) | Classification | Recommendation / narrow exception required |
 |---|---|---|---|---|---|

@@ -226,11 +226,20 @@ parking until an authoritative source states it.
 A follow-up authorization to publish "the 29 verified matched rows" was
 prepared and then **stopped before any write**, exactly as it instructed
 ("Stop if the expected set is not exactly 29"): the measured eligible set is
-**25**. The other 4 unpublished matched rows are the enrichment-quarantined
-records (#1330 AR, #1550 AL, #353 KY, #95 FL) — coordless, never enriched,
-and excluded by the authorization's own "not quarantined" criterion. The §6
-gap wording above ("29 matched positive-parking sites … now hold coordinates
-and/or space counts") over-stated this: only 25 of the 29 hold coordinates.
+**25**, and "29" turned out to describe two different sets that coincidentally
+share the number. **Set A** — the §6 gap figure (matched positive-parking
+sites not route-usable) — is the 25 publication candidates **plus 4 sites
+whose rows are already PUBLISHED but coordless**: the enrichment-quarantined
+records (#1330 AR, #1550 AL, #353 KY, #95 FL), which need collision-exempted
+*enrichment*, not publication. **Set B** — the live count of unpublished
+Pilot-network truck-stops rows, also exactly 29 — is the same 25 **plus 4
+unrelated, deliberately untouched rows**: held conflicts #24 OH and #749 VA,
+and probable-closure candidates #290 MD and #187 TN. Both sets are enumerated
+by exact UUID in MATCHED-25-MANIFEST.md and close at 25 + 4 with zero
+unexplained rows. The §6 gap wording above ("29 matched positive-parking
+sites … stay unpublished") therefore over-stated the publishable set: only
+25 of Set A's 29 are unpublished; the quarantined four were never
+publication candidates at all.
 
 Prepared and committed, awaiting a corrected 25-row authorization:
 `MATCHED-25-MANIFEST.md` (verified manifest and stop record),

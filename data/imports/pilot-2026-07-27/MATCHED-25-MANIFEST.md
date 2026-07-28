@@ -1,14 +1,30 @@
 # The 25 eligible matched rows — publication manifest (NOT EXECUTED)
 
 **Authorization stop, 2026-07-27.** The closeout authorization named **29**
-rows and required a stop if the measured set differed. Measured live: **29
-unpublished matched positive-parking sites exist, but only 25 are eligible**
-under the authorization's own criteria — the other 4 are the
-enrichment-quarantined records (#1330 AR, #1550 AL, #353 KY, #95 FL), which
-were never enriched (the published-pin collision guard blocked them, so they
-hold **no coordinates**) and are excluded by the "not quarantined" clause.
-Publication **stopped before any write**. The prepared package below awaits a
-corrected authorization for exactly these 25.
+rows and required a stop if the measured set differed. Measured live, the
+eligible set is **25** — and "29" turned out to be **two different sets that
+coincidentally share the number**, so they are reconciled here explicitly:
+
+- **Set A — the gap report's 29** (matched positive-parking sites not yet
+  route-usable): the **25 publication candidates below**, whose rows are
+  unpublished, **plus 4 sites whose rows are already PUBLISHED but coordless**
+  — the enrichment-quarantined records (#1330 AR `69f1f244`, #1550 AL
+  `d7247403`, #353 KY `a8a32662`, #95 FL `76f653aa`). The published-pin
+  collision guard blocked their coordinate enrichment, so those four need
+  collision-exempted *enrichment*, not publication — there is nothing on
+  them to publish. They also fail the authorization's "successfully
+  enriched" and "not quarantined" clauses.
+- **Set B — the live count of unpublished Pilot-network truck-stops rows**
+  (also exactly 29): the same **25 candidates plus 4 unrelated, deliberately
+  untouched rows** — held conflicts #24 OH `a458560a` (store-number-state
+  mismatch) and #749 VA `9b0bb934` (address contradiction), and
+  probable-closure candidates #290 MD `f65fd2ef` and #187 TN `e1c84a38`
+  (absent from the export; absence is never closure).
+
+Both sets were enumerated by exact UUID and close at 25 + 4 with zero
+unexplained rows; the 25-row intersection is identical. Publication
+**stopped before any write**. The prepared package below awaits a corrected
+authorization for exactly these 25.
 
 Verification completed before the stop:
 
