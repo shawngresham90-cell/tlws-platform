@@ -1,0 +1,92 @@
+-- ============================================================================
+-- INERT PLAN — DO NOT EXECUTE
+-- Rest-area canary preparation (2026-07-29). Prepared, NOT executed, per the
+-- milestone authorization: no rest-area insertion, enrichment,
+-- reclassification, or publication is authorized in this milestone.
+--
+-- Scope: the five existing NTAD rows only, exact IDs. AL Grand Bay stays
+-- HELD (identity). Enrichment and publication are SEPARATE transactions,
+-- one state per transaction, each fail-closed with count guards, current-
+-- value predicates (a changed row aborts, never overwrites), collision
+-- checks, provenance fields, and the value-matched rollback below. Only
+-- facilities with independently proven identity/coordinates/evidence are
+-- included; fields whose evidence is HELD are NOT written.
+--
+-- Evidence keys (STATE-DOT-EVIDENCE.md):
+--   CA bd40b5b6-3f37-4658-a48e-ec9f9fdc47e1  Caltrans SRRA 2026-05-15:
+--      open, 7 truck spaces, I-80, 0.5 mi W of Exit 144
+--   VT ed44c220-c6df-4699-901c-eed2820054ed  official MM 5.6, I-91 N
+--   ME 211b73ca-fccd-437d-9daf-139d6f60c902  official Mile 25, I-95 NB
+--   CT a6570355-da34-4fd7-aa1d-083666c9bb12  I-95 SB between Exits 10–9
+--      (no single strict exit → interstate only; position stays unverified)
+--   DE f1ae4251-03b1-44ac-a542-50c72ad3bf52  HELD for enrichment beyond
+--      route tag (decisive wording in blocked DelDOT flyer PDF)
+--   Overnight status: ALL FIVE remain 'unknown' — no state wording found.
+--   No 'prohibited' anywhere. Counts only from official state data (CA=7).
+-- ============================================================================
+
+-- ---------------- ENRICHMENT E-CA (one state; example of the guard shape;
+-- E-VT, E-ME, E-CT, E-DE follow the identical pattern with their fields)
+-- begin;
+-- do $e_ca$
+-- declare n integer;
+-- begin
+--   if (select count(*) from public.locations
+--       where id = 'bd40b5b6-3f37-4658-a48e-ec9f9fdc47e1'
+--         and deleted_at is null and source = 'ntad-2019-v04'
+--         and is_published = false and parking_spaces is null
+--         and interstate is null and mile_marker is null) <> 1 then
+--     raise exception 'E-CA guard: row drifted — abort, re-audit';
+--   end if;
+--   update public.locations
+--      set interstate = 'I-80',
+--          exit_number = '144',                -- Caltrans: 0.5 mi W of Exit 144
+--          parking_spaces = 7,                 -- Caltrans SRRA 2026-05-15
+--          geocode_source = 'import',
+--          coord_verification_status = coalesce(coord_verification_status, 'machine-checked')
+--    where id = 'bd40b5b6-3f37-4658-a48e-ec9f9fdc47e1';
+--   get diagnostics n = row_count;
+--   if n <> 1 then raise exception 'E-CA guard: expected 1, got %', n; end if;
+-- end $e_ca$;
+-- commit;
+--
+-- E-VT writes: interstate='I-91', mile_marker=5.6,
+--   mile_marker_source='state-dot', mile_marker_verified_at=now()
+-- E-ME writes: interstate='I-95', mile_marker=25.0,
+--   mile_marker_source='state-dot', mile_marker_verified_at=now()
+-- E-CT writes: interstate='I-95' ONLY (no exit/MM — between-exits position
+--   is not a strict token; stays in "Route position not verified")
+-- E-DE: HELD — no enrichment fields proven beyond identity.
+-- NOTE: mile_marker writes REQUIRE their own explicit authorization; they
+-- are the first-ever mile_marker population and must cite the state source.
+
+-- ---------------- PUBLICATION P-1..P-5 (separate transactions, later gate)
+-- One state per transaction; publish ONLY after enrichment verification and
+-- an explicit publication authorization:
+--   update public.locations set is_published = true
+--    where id = '<exact-id>' and deleted_at is null
+--      and source = 'ntad-2019-v04' and is_published = false;
+--   -- count guard = 1; is_indexable/is_featured NEVER touched;
+--   -- collision check: no other published row shares detail_slug or sits
+--   -- within 0.25 mi with the same taxonomy class.
+
+-- ---------------- VALUE-MATCHED ROLLBACK (per enrichment, committed first)
+-- R-CA: update public.locations
+--          set interstate = null, exit_number = null, parking_spaces = null
+--        where id = 'bd40b5b6-3f37-4658-a48e-ec9f9fdc47e1'
+--          and interstate = 'I-80' and exit_number = '144' and parking_spaces = 7;
+-- R-VT/R-ME additionally null mile_marker/mile_marker_source/
+--   mile_marker_verified_at where they equal the exact written values.
+-- Publication rollback: set is_published = false where id = '<id>'
+--   and is_published = true; count guard = 1.
+
+-- ---------------- HELD / QUARANTINE MANIFEST
+-- HELD: AL Grand Bay I-10 Welcome Center (identity hold, unchanged)
+-- HELD: DE Smyrna enrichment fields (blocked flyer PDF needs click-through)
+-- HELD: CT Darien strict position (between-exits; no strict token exists)
+-- HELD: overnight_status for all five (no official wording found; stays
+--       'unknown'; 'prohibited' never written without explicit statute/
+--       policy text)
+-- HELD: all 46 public-rest-area + 33 welcome-center legacy rows (csv-import
+--       provenance; per-state DOT re-verification required before any
+--       publication or reclassification)
