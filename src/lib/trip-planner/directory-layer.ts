@@ -1,6 +1,12 @@
 import { haversineMiles } from '@/lib/map/geo';
 import type { LatLng } from '@/lib/map/bounds';
 import type { StopCandidate, StopKind } from './types';
+import {
+  isConfirmedOvernight,
+  isProhibitedOvernight,
+  normalizeOvernightStatus,
+  type OvernightStatus,
+} from '@/lib/directory/overnight';
 
 /**
  * Directory integration layer (Phase 3). Turns geocoded directory listings
@@ -25,7 +31,13 @@ export type DirectoryListing = {
   interstate: string | null;
   exitNumber: string | null;
   parkingSpaces: number | null;
+  /** Legacy reference only — never gates or scores an overnight claim (M3). */
   overnightParking: boolean | null;
+  /**
+   * Authoritative three-way overnight truth (migration 047). Optional at
+   * this boundary: an absent value normalizes to 'unknown', never a claim.
+   */
+  overnightStatus?: OvernightStatus | null;
   freeParking: boolean | null;
   paidParking: boolean | null;
   reservationUrl: string | null;
@@ -81,6 +93,7 @@ export function toStopCandidates(
       offRouteMiles: projected.offRouteMiles,
       parkingSpaces: l.parkingSpaces,
       overnightParking: l.overnightParking ?? false,
+      overnightStatus: normalizeOvernightStatus(l.overnightStatus),
       freeParking: l.freeParking,
       paidParking: l.paidParking,
       reservationUrl: l.reservationUrl,
@@ -162,7 +175,9 @@ export function scoreCandidate(
 
   // Overnight-specific signals.
   if (need === 'overnight') {
-    components.overnightAllowed = c.overnightParking ? 10 : 0;
+    // M3: only evidence-backed confirmation scores. The legacy boolean
+    // never earns overnight credit.
+    components.overnightAllowed = isConfirmedOvernight(c.overnightStatus) ? 10 : 0;
     components.reservable = c.reservationUrl ? 8 : 0;
   }
 
@@ -208,6 +223,10 @@ export function rankCandidates(
       // Zero-space safety rule: for the parking needs this is a hard filter,
       // not a score — no option (including requireCategory:false) bypasses it.
       .filter((c) => !isParkingNeed(need) || hasConfirmedTruckParking(c.parkingSpaces))
+      // M3: a row with explicit "no overnight parking" wording is never
+      // recommended for an overnight stop. Unknown rows may still appear in
+      // general parking results — they are labeled honestly, not promoted.
+      .filter((c) => need !== 'overnight' || !isProhibitedOvernight(c.overnightStatus))
       .map((candidate) => ({ candidate, score: scoreCandidate(candidate, need, opts) }))
       .sort(
         (a, b) =>

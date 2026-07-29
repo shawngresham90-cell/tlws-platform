@@ -24,6 +24,10 @@ export type ListingRow = {
   paid_parking: boolean;
   reserved_parking: boolean;
   overnight_parking: boolean;
+  overnight_status: string | null;
+  overnight_status_source: string | null;
+  mile_marker: number | null;
+  mile_marker_source: string | null;
   parking_spaces: number | null;
   amenities: string[] | null;
   tpc_url: string | null;
@@ -45,7 +49,8 @@ const COLUMNS =
   'id, name, category_slug, address, city, state, zip, lat, lng, phone, website, description, ' +
   'free_parking, paid_parking, reserved_parking, overnight_parking, parking_spaces, amenities, ' +
   'tpc_url, affiliate_code, image_url, interstate, exit_number, is_published, is_featured, ' +
-  'is_indexable, verified_at, updated_at, created_at, detail_slug';
+  'is_indexable, verified_at, updated_at, created_at, detail_slug, overnight_status, ' +
+  'overnight_status_source, mile_marker, mile_marker_source';
 
 export type ListingFilters = {
   q?: string;

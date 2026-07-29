@@ -105,7 +105,17 @@ const row = (name: string, over: Partial<Record<string, string>> = {}) => [
   );
 
   const rich = byName.get('Rich Stop')!;
-  check('verdict: rich row ready to publish', rich.verdict === 'ready-to-publish', rich);
+  // M3 (2026-07-29): a CSV whose only parking attribute is the legacy
+  // "Overnight Parking: yes" boolean no longer previews an overnight chip —
+  // an imported row's `overnight_status` starts 'unknown', so claiming one
+  // would overstate the import. This row therefore scores 64 (one point under
+  // the 65 auto-publish threshold) and imports UNPUBLISHED pending enrichment,
+  // which is the intended discipline: unevidenced overnight never auto-publishes.
+  check(
+    'verdict: rich row imports unpublished pending overnight evidence',
+    rich.verdict === 'import-unpublished',
+    { verdict: rich.verdict, completeness: rich.completeness },
+  );
   check('geocoding: valid coords recognized', rich.geocoding === 'valid-coords');
 
   const badCoords = byName.get('Bad Coords Stop')!;

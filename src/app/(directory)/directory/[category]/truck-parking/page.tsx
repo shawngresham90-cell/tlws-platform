@@ -29,7 +29,7 @@ import type { DirectoryEntry } from '@/lib/directory/types';
 
 export const revalidate = 300;
 
-const PARKING_CHIPS = ['Free parking', 'Paid parking', 'Reserved', 'Overnight OK'] as const;
+const PARKING_CHIPS = ['Free parking', 'Paid parking', 'Reserved', 'Overnight confirmed'] as const;
 const PARKING_CATEGORIES = new Set(['parking', 'truck-stops', 'hotels-truck-parking']);
 
 function resolveInterstate(slug: string) {

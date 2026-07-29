@@ -70,7 +70,9 @@ function toCompleteness(row: ListingRow, approvedReviews: number): CompletenessI
   if (row.free_parking) chips.push('Free parking');
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
-  if (row.overnight_parking) chips.push('Overnight OK');
+  // M3: completeness mirrors the public chip, which comes from
+  // overnight_status — never the legacy boolean.
+  if (row.overnight_status === 'confirmed') chips.push('Overnight confirmed');
   chips.push(...(row.amenities ?? []));
   return {
     name: row.name,

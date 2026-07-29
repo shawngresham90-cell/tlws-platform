@@ -86,6 +86,7 @@ export const stopCandidateSchema = z.object({
   offRouteMiles: z.number().min(0),
   parkingSpaces: z.number().int().min(0).nullable(),
   overnightParking: z.boolean(),
+  overnightStatus: z.enum(['confirmed', 'prohibited', 'unknown']).optional(),
   freeParking: z.boolean().nullable().default(null),
   paidParking: z.boolean().nullable().default(null),
   reservationUrl: z.string().nullable(),

@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { normalizeOvernightStatus, overnightChipFor } from './overnight';
 import type { DirectoryEntry } from './types';
 
 /**
@@ -57,22 +58,17 @@ function safeUrl(value: string | null): string | undefined {
   }
 }
 
-/**
- * Narrow the raw `overnight_status` text to the three-way union. Anything
- * unrecognized (or null, on a row read before migration 047) degrades to
- * 'unknown' — never to a claim.
- */
-function toOvernightStatus(value: string | null): DirectoryEntry['overnightStatus'] {
-  return value === 'confirmed' || value === 'prohibited' ? value : 'unknown';
-}
-
 function toEntry(row: LocationRow): DirectoryEntry {
   // Parking attributes render as chips alongside stored amenities.
   const chips: string[] = [];
   if (row.free_parking) chips.push('Free parking');
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
-  if (row.overnight_parking) chips.push('Overnight OK');
+  // M3: the overnight chip comes from `overnight_status`, NOT the legacy
+  // `overnight_parking` boolean. Unknown emits no chip — absence is not a
+  // claim — so unreviewed rows can never read as confirmed.
+  const overnightChip = overnightChipFor(row.overnight_status);
+  if (overnightChip) chips.push(overnightChip);
   if (Array.isArray(row.amenities)) {
     for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
   }
@@ -100,7 +96,7 @@ function toEntry(row: LocationRow): DirectoryEntry {
     exitNumber: row.exit_number ?? undefined,
     mileMarker: typeof row.mile_marker === 'number' ? row.mile_marker : undefined,
     mileMarkerSource: row.mile_marker_source ?? undefined,
-    overnightStatus: toOvernightStatus(row.overnight_status),
+    overnightStatus: normalizeOvernightStatus(row.overnight_status),
     overnightStatusSource: row.overnight_status_source ?? undefined,
     createdAt: row.created_at ?? undefined,
     detailSlug: row.detail_slug ?? undefined,

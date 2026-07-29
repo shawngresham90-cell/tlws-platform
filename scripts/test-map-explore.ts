@@ -52,7 +52,7 @@ const POOL: DirectoryEntry[] = [
     lng: -84.8077,
     interstate: 'I-75',
     exitNumber: '296',
-    amenities: ['Showers', 'Fuel', 'Overnight OK'],
+    amenities: ['Showers', 'Fuel', 'Overnight confirmed'],
   }),
   entry({
     id: 'loves735',
@@ -121,7 +121,7 @@ const POOL: DirectoryEntry[] = [
   );
   check(
     'filters: parking chip',
-    applyExploreFilters(POOL, { ...EMPTY_FILTERS, amenities: ['Overnight OK'] }, null)
+    applyExploreFilters(POOL, { ...EMPTY_FILTERS, amenities: ['Overnight confirmed'] }, null)
       .map((e) => e.id)
       .join() === 'pilot67',
   );

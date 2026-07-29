@@ -1,4 +1,7 @@
 import type { DirectoryEntry } from './types';
+import { overnightLabelFor, type OvernightLabel } from './overnight';
+
+export type { OvernightLabel };
 
 /**
  * Corridor flow engine — the Parking → State → Interstate → Direction →
@@ -169,22 +172,10 @@ export function costChips(entry: DirectoryEntry): string[] {
   return chips;
 }
 
-export type OvernightLabel = 'Overnight confirmed' | 'Overnight prohibited' | 'Overnight unknown';
-
 /**
- * Overnight truth comes from `overnight_status` (migration 047) — the
- * evidence-backed three-way column — and from nothing else.
- *
- * The legacy `overnight_parking` boolean (surfaced as the "Overnight OK"
- * amenity chip) is deliberately NOT consulted: it was set by imports that
- * carried no evidence, so reading it here would relabel 330 unreviewed
- * legacy rows as a confirmed driver-facing claim. Those rows read
- * "unknown" until a reviewed source upgrades them (Option A). A row is
- * only ever "prohibited" when explicit statute or policy wording was
- * recorded with a provenance source.
+ * Overnight truth comes from `overnight_status` and nothing else — the
+ * shared vocabulary in ./overnight.ts, used identically by every surface.
  */
 export function overnightLabel(entry: DirectoryEntry): OvernightLabel {
-  if (entry.overnightStatus === 'confirmed') return 'Overnight confirmed';
-  if (entry.overnightStatus === 'prohibited') return 'Overnight prohibited';
-  return 'Overnight unknown';
+  return overnightLabelFor(entry.overnightStatus);
 }

@@ -61,7 +61,7 @@ const full = (over: Partial<DirectoryEntry> = {}): DirectoryEntry =>
     lng: -84.9,
     phone: '(706) 555-0100',
     website: 'https://example.com',
-    amenities: ['Showers', 'Fuel', 'Overnight OK'],
+    amenities: ['Showers', 'Fuel', 'Overnight confirmed'],
     parkingSpaces: 90,
     description: 'A full-service truck stop with fuel, showers, parking, and a real diner on site.',
     verifiedAt: '2026-07-01T00:00:00Z',

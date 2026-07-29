@@ -301,9 +301,31 @@ export function ListingForm({
           />
           <Check
             name="overnight_parking"
-            label="Overnight allowed"
+            label="Overnight allowed (Legacy reference — not authoritative)"
             defaultChecked={l?.overnight_parking}
           />
+        </div>
+        {/* M3: the authoritative overnight truth is `overnight_status`. It is
+            shown read-only here so an administrator cannot mistake the legacy
+            checkbox above for the published claim; changing status requires a
+            separately authorized, evidence-backed update. */}
+        <div className="rounded-card border border-line p-3">
+          <p className="doc-caption uppercase tracking-widest text-muted">
+            Overnight status (authoritative)
+          </p>
+          <p className="mt-1 text-sm text-ink">
+            {l?.overnight_status === 'confirmed'
+              ? 'Confirmed'
+              : l?.overnight_status === 'prohibited'
+                ? 'Prohibited'
+                : 'Unknown'}
+            {l?.overnight_status_source ? ` · source: ${l.overnight_status_source}` : ''}
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            This is what drivers see. The &ldquo;Overnight allowed&rdquo; checkbox above is a legacy
+            reference kept for data history only — it never produces a public claim. Unknown stays
+            unknown until reviewed evidence is recorded.
+          </p>
         </div>
         <div>
           <label htmlFor="f-spaces" className={labelClasses}>

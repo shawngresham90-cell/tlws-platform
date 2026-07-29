@@ -20,7 +20,11 @@ export type DirectoryEntry = {
   zip?: string;
   phone?: string;
   website?: string;
-  /** Short amenity/tag labels rendered as chips, e.g. "Overnight OK", "Showers". */
+  /**
+   * Short amenity/tag labels rendered as chips, e.g. "Overnight confirmed",
+   * "Showers". The overnight chip is derived from `overnight_status` — never
+   * from the legacy boolean — and is absent when the status is unknown.
+   */
   amenities?: string[];
   parkingSpaces?: number;
   description?: string;
