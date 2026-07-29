@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section } from '@/components/ui';
 import { GetFeaturedCta, DirectorySurfaceEvent } from '@/components/directory';
+import { CatScaleFastFind } from '@/components/directory/CatScaleFastFind';
 import {
   DirectoryHero,
   DirectoryBrowser,
@@ -157,6 +158,8 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
           title={category.heroTitle}
           intro={category.heroIntro}
         />
+        {/* Driver-first CAT Scale flows — Browse Route + Near Me (2026-07). */}
+        {category.slug === 'cat-scales' ? <CatScaleFastFind /> : null}
         <Section>
           <DirectoryBrowser categoryTitle={category.title} entries={entries} />
           <RelatedLinks groups={categoryScopeLinks(facets)} />
