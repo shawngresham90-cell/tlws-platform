@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
+import { SHIRTS_LEFT } from '@/lib/store/shirt-inventory';
 
 /**
  * TEMPORARY launch merchandising placement (CDL School launch window).
@@ -18,8 +19,6 @@ import { cn } from '@/lib/utils/cn';
 
 /** Existing Stan store purchase link (unchanged from ShirtHero). */
 const SHIRT_URL = 'https://stan.store/TRUCKINGLIFEWITHSHAWN/p/founding-member-shirt--only-100-made';
-/** Temporary launch inventory figure. Update as stock sells; remove at 0. */
-const SHIRTS_LEFT = 65;
 
 export function HeroShirtPromo({ className }: { className?: string }) {
   return (
