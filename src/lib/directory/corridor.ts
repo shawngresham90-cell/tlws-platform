@@ -6,10 +6,12 @@ import type { DirectoryEntry } from './types';
  *
  * Honesty rules, non-negotiable:
  * - A position is labeled "MM" ONLY when the record carries a separately
- *   verified mile-marker value (`entry.mileMarker`). The database has no
- *   mile-marker column today, so in production every position is an exit.
- *   An exit number is NEVER relabeled as a mile marker — not in the label,
- *   the sort, the query, or the tests.
+ *   verified mile-marker value (`entry.mileMarker`, from `locations.
+ *   mile_marker` — migration 047). No row carries one yet, so in practice
+ *   every position is still an exit. An exit number is NEVER relabeled as a
+ *   mile marker — not in the label, the sort, the query, or the tests.
+ * - Overnight truth comes from `overnight_status` only; the unevidenced
+ *   legacy boolean never produces a confirmed claim (see overnightLabel).
  * - Without a verified mile marker, position comes ONLY from a strictly
  *   parseable exit number ("41", "41A") and is labeled "EXIT". Compound or
  *   free-text values ("11/I-49, Exit 39", "Third St") are NEVER guessed —
@@ -167,8 +169,22 @@ export function costChips(entry: DirectoryEntry): string[] {
   return chips;
 }
 
-/** Overnight is CONFIRMED only when the row says so; everything else is unknown. */
-export function overnightLabel(entry: DirectoryEntry): 'Overnight confirmed' | 'Overnight unknown' {
-  const set = new Set((entry.amenities ?? []).map((a) => a.toLowerCase()));
-  return set.has('overnight ok') ? 'Overnight confirmed' : 'Overnight unknown';
+export type OvernightLabel = 'Overnight confirmed' | 'Overnight prohibited' | 'Overnight unknown';
+
+/**
+ * Overnight truth comes from `overnight_status` (migration 047) — the
+ * evidence-backed three-way column — and from nothing else.
+ *
+ * The legacy `overnight_parking` boolean (surfaced as the "Overnight OK"
+ * amenity chip) is deliberately NOT consulted: it was set by imports that
+ * carried no evidence, so reading it here would relabel 330 unreviewed
+ * legacy rows as a confirmed driver-facing claim. Those rows read
+ * "unknown" until a reviewed source upgrades them (Option A). A row is
+ * only ever "prohibited" when explicit statute or policy wording was
+ * recorded with a provenance source.
+ */
+export function overnightLabel(entry: DirectoryEntry): OvernightLabel {
+  if (entry.overnightStatus === 'confirmed') return 'Overnight confirmed';
+  if (entry.overnightStatus === 'prohibited') return 'Overnight prohibited';
+  return 'Overnight unknown';
 }

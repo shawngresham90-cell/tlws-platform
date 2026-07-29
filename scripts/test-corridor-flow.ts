@@ -185,9 +185,19 @@ check(
   costChips(entry({ amenities: ['Free parking', 'Reserved'] })).join(',') === 'FREE,RESERVED',
 );
 check('no chips when no cost data', costChips(entry({})).length === 0);
+// M3: overnight truth reads overnight_status ONLY. The legacy boolean's
+// "Overnight OK" chip must never produce a confirmed claim.
 check(
-  'overnight confirmed only from the chip',
-  overnightLabel(entry({ amenities: ['Overnight OK'] })) === 'Overnight confirmed',
+  'overnight confirmed only from overnight_status',
+  overnightLabel(entry({ overnightStatus: 'confirmed' })) === 'Overnight confirmed',
+);
+check(
+  'legacy "Overnight OK" chip alone never confirms',
+  overnightLabel(entry({ amenities: ['Overnight OK'] })) === 'Overnight unknown',
+);
+check(
+  'prohibited surfaces as its own label',
+  overnightLabel(entry({ overnightStatus: 'prohibited' })) === 'Overnight prohibited',
 );
 check('overnight unknown otherwise', overnightLabel(entry({})) === 'Overnight unknown');
 

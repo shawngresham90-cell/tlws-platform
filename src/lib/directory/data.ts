@@ -36,6 +36,10 @@ type LocationRow = {
   lng: number | null;
   interstate: string | null;
   exit_number: string | null;
+  mile_marker: number | null;
+  mile_marker_source: string | null;
+  overnight_status: string | null;
+  overnight_status_source: string | null;
   created_at: string | null;
   detail_slug: string | null;
   updated_at: string | null;
@@ -51,6 +55,15 @@ function safeUrl(value: string | null): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Narrow the raw `overnight_status` text to the three-way union. Anything
+ * unrecognized (or null, on a row read before migration 047) degrades to
+ * 'unknown' — never to a claim.
+ */
+function toOvernightStatus(value: string | null): DirectoryEntry['overnightStatus'] {
+  return value === 'confirmed' || value === 'prohibited' ? value : 'unknown';
 }
 
 function toEntry(row: LocationRow): DirectoryEntry {
@@ -85,6 +98,10 @@ function toEntry(row: LocationRow): DirectoryEntry {
     lng: row.lng ?? undefined,
     interstate: row.interstate ?? undefined,
     exitNumber: row.exit_number ?? undefined,
+    mileMarker: typeof row.mile_marker === 'number' ? row.mile_marker : undefined,
+    mileMarkerSource: row.mile_marker_source ?? undefined,
+    overnightStatus: toOvernightStatus(row.overnight_status),
+    overnightStatusSource: row.overnight_status_source ?? undefined,
     createdAt: row.created_at ?? undefined,
     detailSlug: row.detail_slug ?? undefined,
     updatedAt: row.updated_at ?? undefined,
@@ -96,7 +113,8 @@ const COLUMNS =
   'id, name, category_slug, state, city, slug, address, zip, phone, website, description, ' +
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
   'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at, ' +
-  'detail_slug, updated_at, verified_at';
+  'detail_slug, updated_at, verified_at, mile_marker, mile_marker_source, ' +
+  'overnight_status, overnight_status_source';
 
 /** Shared query base: published, not deleted, capped, featured-then-name order. */
 async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {

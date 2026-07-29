@@ -36,14 +36,27 @@ export type DirectoryEntry = {
   /** Exit number — future-ready for exit-based navigation. */
   exitNumber?: string;
   /**
-   * Separately verified mile-marker position. The `locations` table has NO
-   * mile-marker column today (audited 2026-07-29: only `interstate` and
-   * `exit_number` carry route position), so nothing populates this in
-   * production — it exists so the corridor engine can label "MM" honestly
-   * if and when a verified column ships. An exit number must NEVER be
-   * copied into this field.
+   * Separately verified mile-marker position, from `locations.mile_marker`
+   * (migration 047, applied 2026-07-29). Only rows with state-DOT or
+   * official-operator provenance ever carry a value; 0 rows are populated
+   * today, so in practice position still comes from the exit number. An
+   * exit number must NEVER be copied into this field.
    */
   mileMarker?: number;
+  /** Provenance for `mileMarker` — 'state-dot' | 'official-operator' | 'manual'. */
+  mileMarkerSource?: string;
+  /**
+   * Three-way overnight truth from `locations.overnight_status` (migration
+   * 047). 'confirmed' requires evidence recorded with a provenance source;
+   * 'prohibited' requires explicit statute/policy wording; everything else
+   * is 'unknown'. This REPLACES the legacy `overnight_parking` boolean for
+   * driver-facing claims — the boolean was never evidence-backed, so its
+   * 330 legacy `csv-import` true rows read as 'unknown' until reviewed
+   * (Option A, recorded in the schema plan).
+   */
+  overnightStatus?: 'confirmed' | 'prohibited' | 'unknown';
+  /** Provenance for `overnightStatus`, e.g. 'official-operator-export'. */
+  overnightStatusSource?: string;
   /** ISO timestamp, powers the "Newest" sort. */
   createdAt?: string;
   /** Globally unique slug for /directory/location/[slug] (migration 022). */
