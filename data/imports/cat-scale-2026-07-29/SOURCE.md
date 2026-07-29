@@ -8,7 +8,7 @@
 
 ## Privacy and redistribution handling
 
-- **The raw CSV is never committed.** It stays outside the repository (`.gitignore` carries `*extraction*.csv` and the `local/` detail directory as defense in depth). Redistribution rights for the complete row-level dataset are **not proven**, so the repository carries only: checksums, the intake/reconciliation scripts, aggregate accounting, the scale-number→classification map, and the 50-row Canada-held identity manifest — none of which reproduce the proprietary dataset (no committed file contains source coordinates, addresses, or phone numbers).
+- **The raw CSV is never committed.** It stays outside the repository (`.gitignore` carries `*extraction*.csv` and the `local/` detail directory as defense in depth). Redistribution rights for the complete row-level dataset are **not proven**, so the repository carries only: checksums, the intake/reconciliation scripts, aggregate accounting, and documentation — nothing tabulated from the export. Per the owner's use policy (`USE-POLICY.md`, 2026-07-29), the scale-number→classification map and the Canada-held identity manifest live ONLY in the gitignored `local/` directory: CAT Scale's Terms of Use prohibit republishing database information including condensed, selective, or tabulated versions, so no committed file may key or list export rows.
 - **`ManagerName` and `FaxNumber` are private fields.** The intake tool drops both columns at the moment of parsing; they appear in no output, no log, no committed file, and no local file. A CI test greps every committed artifact for these column values' presence.
 - `CATScaleNumber` is the stable official source identifier and keys all manifests.
 - Field semantics honored: `InterstateCity` = city · `TruckstopName` = host facility · `InterstateAddress` = unstructured route/address text (parsed conservatively, never treated as a verified street address) · scale number, state, postal code, public phone, coordinates and the public CAT Scale URL are preserved in the local (uncommitted) working set for the future authorized import. No street addresses or route facts are invented.
@@ -39,11 +39,11 @@
 
 ## Canada decision (owner-directed)
 
-All 50 Canadian rows are excluded from U.S. import candidates, U.S. coverage totals, launch-gate denominators and public runtime results. They are **not discarded**: `CANADA-HELD-MANIFEST.json` reconciles all 50 by scale number/province/city/host for possible future expansion. **No Canadian database import is authorized.**
+All 50 Canadian rows are excluded from U.S. import candidates, U.S. coverage totals, launch-gate denominators and public runtime results. They are **not discarded**: `local/CANADA-HELD-MANIFEST.json` (gitignored, private) reconciles all 50 by scale number/province/city/host for possible future expansion. **No Canadian database import is authorized.**
 
 ## Read-only reconciliation of all 2,289 U.S. rows vs the 207 existing cat-scales locations
 
-Production was queried read-only (snapshot 2026-07-29: 207 rows, 164 published, 32 with coordinates, 0 storing a CAT Scale number — host store numbers like "Love's #368" are NOT scale numbers and were never matched as such). Matching keys: state+interstate+exit, host brand/store+city, coordinate proximity ≤ 0.5 mi. Every U.S. record classified exactly once (`RECONCILIATION.json`):
+Production was queried read-only (snapshot 2026-07-29: 207 rows, 164 published, 32 with coordinates, 0 storing a CAT Scale number — host store numbers like "Love's #368" are NOT scale numbers and were never matched as such). Matching keys: state+interstate+exit, host brand/store+city, coordinate proximity ≤ 0.5 mi. Every U.S. record classified exactly once (`local/RECONCILIATION.json` — gitignored, private/internal per the use policy):
 
 | Class | Rows |
 |---|---:|
