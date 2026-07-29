@@ -9,11 +9,12 @@
  * output, log, or file this script writes.
  *
  * Outputs
- *   Committed (safe — do not reproduce the proprietary dataset):
- *     data/imports/cat-scale-2026-07-29/ACCOUNTING.json        aggregates only
- *     data/imports/cat-scale-2026-07-29/RECONCILIATION.json    scale number → class (+ matched location id)
- *     data/imports/cat-scale-2026-07-29/CANADA-HELD-MANIFEST.json  50 held rows (no coords/address/phone)
- *   Local only (gitignored, full detail for the future authorized import):
+ *   Committed (aggregates ONLY — per the owner's CAT Scale use policy,
+ *   nothing tabulated from the export may be committed or published):
+ *     data/imports/cat-scale-2026-07-29/ACCOUNTING.json
+ *   Local only (gitignored — private/internal reconciliation and planning):
+ *     data/imports/cat-scale-2026-07-29/local/RECONCILIATION.json
+ *     data/imports/cat-scale-2026-07-29/local/CANADA-HELD-MANIFEST.json
  *     data/imports/cat-scale-2026-07-29/local/us-full.json
  *     data/imports/cat-scale-2026-07-29/local/reconciliation-full.json
  *
@@ -350,13 +351,13 @@ const safeReconciliation = Object.fromEntries(
   ]),
 );
 fs.writeFileSync(
-  path.join(OUT_DIR, 'RECONCILIATION.json'),
+  path.join(LOCAL_DIR, 'RECONCILIATION.json'),
   JSON.stringify({ sha256: EXPECTED_SHA256, us: safeReconciliation }, null, 2),
 );
 
 // Canada-held manifest (50 rows expected): identity fields only.
 fs.writeFileSync(
-  path.join(OUT_DIR, 'CANADA-HELD-MANIFEST.json'),
+  path.join(LOCAL_DIR, 'CANADA-HELD-MANIFEST.json'),
   JSON.stringify(
     {
       decision:

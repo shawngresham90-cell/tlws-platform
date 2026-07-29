@@ -106,6 +106,31 @@ check(
 );
 
 /* ------------------------------------------------------- committed artifacts */
+// Owner use policy (USE-POLICY.md, 2026-07-29): the committed directory may
+// hold aggregates + documentation ONLY. Anything tabulated from the export
+// (scale-number maps, the Canada manifest) lives in gitignored local/.
+const COMMITTED_ALLOWLIST = new Set([
+  'ACCOUNTING.json',
+  'SOURCE.md',
+  'PROPOSED-IMPORT-PLAN.md',
+  'USE-POLICY.md',
+]);
+const committedFiles = fs
+  .readdirSync(IMPORT_DIR)
+  .filter((f) => fs.statSync(path.join(IMPORT_DIR, f)).isFile());
+check(
+  'use policy: committed dir holds aggregates/docs only (no tabulated manifests)',
+  committedFiles.every((f) => COMMITTED_ALLOWLIST.has(f)) &&
+    !committedFiles.includes('RECONCILIATION.json') &&
+    !committedFiles.includes('CANADA-HELD-MANIFEST.json'),
+  committedFiles,
+);
+check('use policy: USE-POLICY.md committed', committedFiles.includes('USE-POLICY.md'));
+check(
+  'use policy: intake writes tabulated manifests to local/ only',
+  /LOCAL_DIR, 'RECONCILIATION\.json'/.test(intakeSrc) &&
+    /LOCAL_DIR, 'CANADA-HELD-MANIFEST\.json'/.test(intakeSrc),
+);
 const accounting = readJson('ACCOUNTING.json');
 check('accounting: 2,339 total records', accounting.totals.all === 2339);
 check('accounting: 2,289 US records', accounting.totals.us === 2289);
@@ -146,7 +171,16 @@ check(
     accounting.multiScaleComplexes.scalesInvolved > accounting.multiScaleComplexes.complexes,
 );
 
-const reconciliation = readJson('RECONCILIATION.json');
+const LOCAL_REC = path.join(IMPORT_DIR, 'local/RECONCILIATION.json');
+const LOCAL_CA = path.join(IMPORT_DIR, 'local/CANADA-HELD-MANIFEST.json');
+if (!fs.existsSync(LOCAL_REC) || !fs.existsSync(LOCAL_CA)) {
+  console.log(
+    'note: local/ manifests absent (CI) — content checks covered by ACCOUNTING aggregates',
+  );
+}
+const reconciliation = fs.existsSync(LOCAL_REC)
+  ? JSON.parse(fs.readFileSync(LOCAL_REC, 'utf8'))
+  : null;
 const CLASSES = new Set([
   'exact-match',
   'enrichment-candidate',
@@ -156,39 +190,43 @@ const CLASSES = new Set([
   'identity-conflict',
   'quarantined',
 ]);
-const recEntries = Object.entries(reconciliation.us as Record<string, { class: string }>);
-check('reconciliation: exactly 2,289 US rows classified', recEntries.length === 2289);
-check(
-  'reconciliation: every class is a known class',
-  recEntries.every(([, v]) => CLASSES.has(v.class)),
-);
+if (reconciliation) {
+  const recEntries = Object.entries(reconciliation.us as Record<string, { class: string }>);
+  check('reconciliation (local): exactly 2,289 US rows classified', recEntries.length === 2289);
+  check(
+    'reconciliation (local): every class is a known class',
+    recEntries.every(([, v]) => CLASSES.has(v.class)),
+  );
+}
 
-const canadaManifest = readJson('CANADA-HELD-MANIFEST.json');
-check(
-  'canada manifest: exactly 50 rows held',
-  canadaManifest.count === 50 && canadaManifest.rows.length === 50,
-);
 const CA_PROVINCES = new Set('AB BC MB NB NL NS NT NU ON PE QC SK YT'.split(' '));
-check(
-  'canada manifest: only Canadian provinces',
-  canadaManifest.rows.every((r: { province: string }) => CA_PROVINCES.has(r.province)),
-);
-check(
-  'canada manifest: no coordinates/addresses/phones reproduced',
-  canadaManifest.rows.every(
-    (r: Record<string, unknown>) =>
-      !('lat' in r) &&
-      !('lng' in r) &&
-      !('address' in r) &&
-      !('phone' in r) &&
-      !('postalCode' in r),
-  ),
-);
-check(
-  'canada decision recorded: excluded from US totals, held not discarded',
-  /excluded from US import candidates/i.test(canadaManifest.decision) &&
-    /No Canadian import is authorized/i.test(canadaManifest.decision),
-);
+if (fs.existsSync(LOCAL_CA)) {
+  const canadaManifest = JSON.parse(fs.readFileSync(LOCAL_CA, 'utf8'));
+  check(
+    'canada manifest (local): exactly 50 rows held',
+    canadaManifest.count === 50 && canadaManifest.rows.length === 50,
+  );
+  check(
+    'canada manifest (local): only Canadian provinces',
+    canadaManifest.rows.every((r: { province: string }) => CA_PROVINCES.has(r.province)),
+  );
+  check(
+    'canada manifest (local): no coordinates/addresses/phones reproduced',
+    canadaManifest.rows.every(
+      (r: Record<string, unknown>) =>
+        !('lat' in r) &&
+        !('lng' in r) &&
+        !('address' in r) &&
+        !('phone' in r) &&
+        !('postalCode' in r),
+    ),
+  );
+  check(
+    'canada decision recorded (local): excluded from US totals, held not discarded',
+    /excluded from US import candidates/i.test(canadaManifest.decision) &&
+      /No Canadian import is authorized/i.test(canadaManifest.decision),
+  );
+}
 check(
   'US accounting excludes Canada (no province in US state counts)',
   Object.keys(accounting.usStateCounts).every((s) => !CA_PROVINCES.has(s)),
@@ -200,7 +238,11 @@ const committedArtifacts = fs
   .filter((f) => fs.statSync(path.join(IMPORT_DIR, f)).isFile());
 for (const f of committedArtifacts) {
   const text = fs.readFileSync(path.join(IMPORT_DIR, f), 'utf8');
-  const stripped = text.replace(/ManagerName|FaxNumber/g, ''); // doc references to the COLUMN NAMES are allowed
+  // Doc references to the COLUMN NAMES and to the policy BAN phrasing are
+  // allowed; actual field keys or values are not.
+  const stripped = text
+    .replace(/ManagerName|FaxNumber/g, '')
+    .replace(/manager names?|fax numbers?/gi, '');
   check(`privacy: ${f} carries no manager/fax field or value`, !/manager|fax/i.test(stripped));
 }
 check(

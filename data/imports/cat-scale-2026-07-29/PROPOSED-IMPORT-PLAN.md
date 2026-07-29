@@ -1,7 +1,13 @@
 # PROPOSED CAT Scale import/enrichment plan — INERT, NOT AUTHORIZED, NOT EXECUTED
 
+**HARD GATE (owner-directed, 2026-07-29): every step below additionally
+requires WRITTEN data-use permission from CAT Scale covering display and
+recurring refreshes — see `USE-POLICY.md`. Without it, the 2,074 net-new
+records and the 90 enrichment candidates must not be used publicly at all.**
+
 Nothing in this document has been run. It defines how a future, separately
-authorized milestone would act on the reconciliation in `RECONCILIATION.json`.
+authorized milestone would act on the reconciliation in
+`local/RECONCILIATION.json` (gitignored, private/internal).
 All writes would follow the established guarded pattern: per-state
 transactions, fail-closed count guards, value-matched rollback committed
 before any write, quarantine-not-weaken on any mismatch.
@@ -40,3 +46,11 @@ before any write, quarantine-not-weaken on any mismatch.
   no parking counts unless separately evidenced).
 - Runtime remains published-only throughout; unreviewed rows can never
   become visible by construction.
+
+## Recorded launch display spec (owner decision, 2026-07-29)
+
+Once written permission exists, listings show: CAT Scale number, host
+business, street address, public phone, coordinates, and the official CAT
+Scale link. Regular data refreshes come from officially provided exports
+through the checksum-verified intake — never from scraping catscale.com.
+Manager names, fax numbers, and the raw CSV remain unpublishable regardless.
