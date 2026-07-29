@@ -62,15 +62,29 @@ const SQL_FILES = ['PROPOSED-MIGRATION.sql', 'PROPOSED-ROLLBACK.sql', 'PROPOSED-
 for (const f of SQL_FILES) {
   check(`${f}: carries the INERT banner`, read(f).includes('INERT PLAN — DO NOT EXECUTE'));
 }
-// Nothing from this plan leaked into the migrations record directory —
-// no migration file mentions the new columns.
+// M1 was explicitly authorized and applied (rest-area milestone, 2026-07-29):
+// exactly ONE migration file may mention the new columns —
+// 047_mile_marker_overnight_status.sql — and its body must remain
+// byte-identical to the reviewed plan. No other migration mentions them.
+const AUTHORIZED_M1 = '047_mile_marker_overnight_status.sql';
 const migrationFiles = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql'));
 check(
-  'no supabase/migrations file mentions mile_marker or overnight_status',
+  'only the authorized 047 migration mentions mile_marker or overnight_status',
   migrationFiles.every((f) => {
+    if (f === AUTHORIZED_M1) return true;
     const t = fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8');
     return !/mile_marker|overnight_status/i.test(t);
   }),
+);
+check(
+  '047 exists and its body is byte-identical to the reviewed plan',
+  (() => {
+    const migPath = path.join(MIGRATIONS_DIR, AUTHORIZED_M1);
+    if (!fs.existsSync(migPath)) return false;
+    const mig = fs.readFileSync(migPath, 'utf8');
+    const plan = read('PROPOSED-MIGRATION.sql');
+    return plan.slice(plan.indexOf('begin;')) === mig.slice(mig.indexOf('begin;'));
+  })(),
 );
 // And the harness reconfirms nothing auto-applies migrations at build time.
 const netlifyToml = fs.readFileSync(path.join(process.cwd(), 'netlify.toml'), 'utf8');
