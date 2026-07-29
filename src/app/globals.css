@@ -148,3 +148,34 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Truck Parking marquee tile (home hero, beneath the shirt promo).
+   Theater-marquee bulbs are pure CSS — a dotted ring in the frame gutter.
+   The chase animation runs ONLY on hover/active and ONLY when the user has
+   not requested reduced motion. */
+.marquee-lights {
+  background-image: radial-gradient(
+    circle,
+    #ffd66b 2.2px,
+    rgba(255, 176, 32, 0.35) 3px,
+    transparent 3.8px
+  );
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes tlws-marquee-chase {
+    from {
+      background-position: 9px 9px;
+    }
+    to {
+      background-position: 27px 9px;
+    }
+  }
+  .group\/marquee:hover .marquee-lights,
+  .group\/marquee:active .marquee-lights,
+  .group\/marquee:focus-visible .marquee-lights {
+    animation: tlws-marquee-chase 0.9s steps(2) infinite;
+  }
+}

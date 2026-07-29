@@ -1,0 +1,306 @@
+{
+  "decision": "All Canadian rows are excluded from US import candidates, coverage totals, launch gates and runtime results. Held for possible future expansion. No Canadian import is authorized.",
+  "count": 50,
+  "rows": [
+    {
+      "catScaleNumber": "368",
+      "province": "AB",
+      "city": "Calgary",
+      "host": "Husky Truckstop"
+    },
+    {
+      "catScaleNumber": "1542",
+      "province": "AB",
+      "city": "Sherwood Park",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1541",
+      "province": "AB",
+      "city": "Calgary",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "949",
+      "province": "AB",
+      "city": "Calgary",
+      "host": "Nite Star Trux Wash"
+    },
+    {
+      "catScaleNumber": "1702",
+      "province": "AB",
+      "city": "Brooks",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1943",
+      "province": "AB",
+      "city": "Calgary",
+      "host": "BVD Calgary"
+    },
+    {
+      "catScaleNumber": "3111",
+      "province": "AB",
+      "city": "Medicine Hat",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1655",
+      "province": "BC",
+      "city": "Hope",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "3202",
+      "province": "BC",
+      "city": "Kamloops",
+      "host": "Kamloops Truck Stop"
+    },
+    {
+      "catScaleNumber": "903",
+      "province": "MB",
+      "city": "Headingley",
+      "host": "Husky Truckstop"
+    },
+    {
+      "catScaleNumber": "1546",
+      "province": "MB",
+      "city": "Headingley",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1917",
+      "province": "MB",
+      "city": "Winnipeg",
+      "host": "BVD Winnipeg"
+    },
+    {
+      "catScaleNumber": "1910",
+      "province": "MB",
+      "city": "Sainte Agathe",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1099",
+      "province": "NB",
+      "city": "Beardsley",
+      "host": "Irving Beardsley Big Stop"
+    },
+    {
+      "catScaleNumber": "1157",
+      "province": "NB",
+      "city": "Salisbury",
+      "host": "Irving Salisbury Big Stop"
+    },
+    {
+      "catScaleNumber": "1156",
+      "province": "NB",
+      "city": "Aulac",
+      "host": "Irving Aulac Big Stop"
+    },
+    {
+      "catScaleNumber": "1339",
+      "province": "ON",
+      "city": "Chatham",
+      "host": "Bloomfield Truck Stop"
+    },
+    {
+      "catScaleNumber": "1656",
+      "province": "ON",
+      "city": "Pickering",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1138",
+      "province": "ON",
+      "city": "Tilbury",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "534",
+      "province": "ON",
+      "city": "Mississauga",
+      "host": "TEMP CLOSED - Husky Truckstop"
+    },
+    {
+      "catScaleNumber": "1032",
+      "province": "ON",
+      "city": "London",
+      "host": "Husky Truckstop"
+    },
+    {
+      "catScaleNumber": "845",
+      "province": "ON",
+      "city": "Mississauga",
+      "host": "Husky Truck Stop"
+    },
+    {
+      "catScaleNumber": "1024",
+      "province": "ON",
+      "city": "Kingston",
+      "host": "Exit 611 Truckstop & Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1064",
+      "province": "ON",
+      "city": "Arnprior",
+      "host": "Antrim Truck Centre"
+    },
+    {
+      "catScaleNumber": "264",
+      "province": "ON",
+      "city": "Belleville",
+      "host": "Ten Acre Truckstop"
+    },
+    {
+      "catScaleNumber": "1182",
+      "province": "ON",
+      "city": "Woodstock",
+      "host": "Harnois Proxi"
+    },
+    {
+      "catScaleNumber": "1257",
+      "province": "ON",
+      "city": "Spencerville",
+      "host": "17 Acre Travel Center"
+    },
+    {
+      "catScaleNumber": "1251",
+      "province": "ON",
+      "city": "Wyoming",
+      "host": "Pilot Travel Center"
+    },
+    {
+      "catScaleNumber": "1318",
+      "province": "ON",
+      "city": "Comber",
+      "host": "BVD Lakeshore Service Center"
+    },
+    {
+      "catScaleNumber": "1545",
+      "province": "ON",
+      "city": "Napanee",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1544",
+      "province": "ON",
+      "city": "London",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "904",
+      "province": "ON",
+      "city": "Fort Erie",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "910",
+      "province": "ON",
+      "city": "Windsor",
+      "host": "Husky Truck Stop"
+    },
+    {
+      "catScaleNumber": "1619",
+      "province": "ON",
+      "city": "Lancaster",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1634",
+      "province": "ON",
+      "city": "Mississauga",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1711",
+      "province": "ON",
+      "city": "Cornwall",
+      "host": "BVD Cornwall"
+    },
+    {
+      "catScaleNumber": "1755",
+      "province": "ON",
+      "city": "AYR",
+      "host": "Flying J Travel Plaza"
+    },
+    {
+      "catScaleNumber": "1696",
+      "province": "ON",
+      "city": "Brampton",
+      "host": "BVD Brampton"
+    },
+    {
+      "catScaleNumber": "1782",
+      "province": "ON",
+      "city": "Bainsville",
+      "host": "RAV Petroleum"
+    },
+    {
+      "catScaleNumber": "1790",
+      "province": "ON",
+      "city": "Mississauga",
+      "host": "BVD Mississauga"
+    },
+    {
+      "catScaleNumber": "1821",
+      "province": "ON",
+      "city": "Sarnia",
+      "host": "Sarnia Esso Truckstop"
+    },
+    {
+      "catScaleNumber": "1833",
+      "province": "ON",
+      "city": "Sault Ste Marie",
+      "host": "Pilot Travel Center"
+    },
+    {
+      "catScaleNumber": "1911",
+      "province": "ON",
+      "city": "North Bay",
+      "host": "BVD North Bay Service Center"
+    },
+    {
+      "catScaleNumber": "1700",
+      "province": "ON",
+      "city": "Cardinal",
+      "host": "Cardinal Travel Centre"
+    },
+    {
+      "catScaleNumber": "3223",
+      "province": "ON",
+      "city": "St. Isidore",
+      "host": "Petro Pass"
+    },
+    {
+      "catScaleNumber": "1168",
+      "province": "QC",
+      "city": "Saint Liboire",
+      "host": "Irving St. Liboire Big Stop"
+    },
+    {
+      "catScaleNumber": "370",
+      "province": "SK",
+      "city": "Regina",
+      "host": "Husky Truckstop"
+    },
+    {
+      "catScaleNumber": "902",
+      "province": "SK",
+      "city": "Saskatoon",
+      "host": "Husky TrucskStop"
+    },
+    {
+      "catScaleNumber": "1751",
+      "province": "SK",
+      "city": "Saskatoon",
+      "host": "Flying J Fuel Stop"
+    },
+    {
+      "catScaleNumber": "1845",
+      "province": "SK",
+      "city": "Balgonie",
+      "host": "Flying J Travel Plaza"
+    }
+  ]
+}

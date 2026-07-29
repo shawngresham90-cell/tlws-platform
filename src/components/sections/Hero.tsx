@@ -1,5 +1,6 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
 import { HeroShirtPromo } from './HeroShirtPromo';
+import { TruckParkingMarquee } from './TruckParkingMarquee';
 
 /**
  * Hero — THE CALL (cinematic flow beat 1). Leads with the one thing that
@@ -68,8 +69,12 @@ export function Hero() {
             </p>
           </div>
 
-          {/* TEMPORARY launch merchandising — remove when the shirt sells out */}
-          <HeroShirtPromo className="mt-10 xl:mt-0 xl:justify-self-end" />
+          {/* Promo column: TEMPORARY shirt merchandising (remove when it sells
+              out) with the Truck Parking marquee tile DIRECTLY beneath it. */}
+          <div className="mt-10 flex w-full max-w-sm flex-col gap-5 xl:mt-0 xl:justify-self-end">
+            <HeroShirtPromo />
+            <TruckParkingMarquee />
+          </div>
         </div>
       </Container>
     </section>

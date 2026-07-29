@@ -363,10 +363,12 @@ export function statesIn(entries: DirectoryEntry[]): string[] {
 const PARKING_FLOW_CATEGORIES = ['parking', 'truck-stops', 'rest-areas', 'hotels-truck-parking'];
 
 /**
- * Published parking-capable listings on one interstate in one state — the
- * corridor list's data source. Fails soft to [].
+ * Published listings from the given categories on one interstate in one
+ * state — the generic corridor-list data source (parking flow, CAT Scale
+ * browse-route flow). Published-only by query AND by RLS. Fails soft to [].
  */
-export async function getParkingCorridorEntries(
+export async function getCorridorEntriesForCategories(
+  categories: string[],
   stateCode: string,
   interstate: string,
 ): Promise<DirectoryEntry[]> {
@@ -379,7 +381,7 @@ export async function getParkingCorridorEntries(
       .is('deleted_at', null)
       .eq('state', stateCode.toUpperCase())
       .eq('interstate', interstate)
-      .in('category_slug', PARKING_FLOW_CATEGORIES)
+      .in('category_slug', categories)
       .order('name', { ascending: true })
       .limit(1000);
     if (error || !data) return [];
@@ -389,19 +391,30 @@ export async function getParkingCorridorEntries(
   }
 }
 
+/**
+ * Published parking-capable listings on one interstate in one state — the
+ * corridor list's data source. Fails soft to [].
+ */
+export async function getParkingCorridorEntries(
+  stateCode: string,
+  interstate: string,
+): Promise<DirectoryEntry[]> {
+  return getCorridorEntriesForCategories(PARKING_FLOW_CATEGORIES, stateCode, interstate);
+}
+
 export type ParkingFacets = {
-  /** State codes with ≥1 published parking-capable listing, with counts. */
+  /** State codes with ≥1 published listing in scope, with counts. */
   states: { code: string; count: number }[];
   /** Interstates per state (designation + listing count), corridor-worthy only. */
   interstatesByState: Record<string, { designation: string; count: number }[]>;
 };
 
 /**
- * States and per-state interstates that actually have published
- * parking-capable listings — drives the State and Interstate picker pages
- * so a step never dead-ends. Fails soft to empty facets.
+ * States and per-state interstates that actually have published listings in
+ * the given categories — drives State and Interstate picker pages so a step
+ * never dead-ends. Fails soft to empty facets.
  */
-export async function getParkingFacets(): Promise<ParkingFacets> {
+export async function getRouteFacetsForCategories(categories: string[]): Promise<ParkingFacets> {
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase
@@ -409,7 +422,7 @@ export async function getParkingFacets(): Promise<ParkingFacets> {
       .select('state, interstate, category_slug')
       .eq('is_published', true)
       .is('deleted_at', null)
-      .in('category_slug', PARKING_FLOW_CATEGORIES)
+      .in('category_slug', categories)
       .limit(5000);
     if (error || !data) return { states: [], interstatesByState: {} };
     const rows = data as unknown as { state: string; interstate: string | null }[];
@@ -442,5 +455,66 @@ export async function getParkingFacets(): Promise<ParkingFacets> {
     };
   } catch {
     return { states: [], interstatesByState: {} };
+  }
+}
+
+export async function getParkingFacets(): Promise<ParkingFacets> {
+  return getRouteFacetsForCategories(PARKING_FLOW_CATEGORIES);
+}
+
+/* ----------------------------------------------------------------------
+ * CAT Scale browse-route + near-me (2026-07-29 milestone). Published-only
+ * by query and by RLS; only rows already reviewed and published can ever
+ * appear — unreviewed source rows are structurally invisible here.
+ * ---------------------------------------------------------------------- */
+
+const CAT_SCALE_CATEGORIES = ['cat-scales'];
+
+export async function getCatScaleFacets(): Promise<ParkingFacets> {
+  return getRouteFacetsForCategories(CAT_SCALE_CATEGORIES);
+}
+
+export async function getCatScaleCorridorEntries(
+  stateCode: string,
+  interstate: string,
+): Promise<DirectoryEntry[]> {
+  return getCorridorEntriesForCategories(CAT_SCALE_CATEGORIES, stateCode, interstate);
+}
+
+/** Published CAT Scale listings with verified coordinates — Near Me pool. */
+export async function getCatScaleMapEntries(): Promise<DirectoryEntry[]> {
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .in('category_slug', CAT_SCALE_CATEGORIES)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .order('name', { ascending: true })
+      .limit(3000);
+    if (error || !data) return [];
+    return (data as unknown as LocationRow[]).map(toEntry);
+  } catch {
+    return [];
+  }
+}
+
+/** Total published CAT Scale listings (with or without coordinates). */
+export async function getCatScalePublishedCount(): Promise<number> {
+  try {
+    const supabase = createStaticClient();
+    const { count, error } = await supabase
+      .from('locations')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .in('category_slug', CAT_SCALE_CATEGORIES);
+    if (error || count == null) return 0;
+    return count;
+  } catch {
+    return 0;
   }
 }
