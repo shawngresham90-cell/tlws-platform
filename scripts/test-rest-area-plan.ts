@@ -41,19 +41,34 @@ check(
   plan.slice(plan.indexOf('begin;')) === mig.slice(mig.indexOf('begin;')),
 );
 const migExec = exec(mig);
-check('047 is schema-only (no INSERT/UPDATE/DELETE)', !/^\s*(insert|update|delete)\b/im.test(migExec));
-check('047 keeps drift guards + post-conditions', /schema drift/.test(mig) && /post-condition failed/.test(mig));
-check('047 never touches overnight_parking definition', !/alter column overnight_parking|drop column overnight_parking/i.test(migExec));
+check(
+  '047 is schema-only (no INSERT/UPDATE/DELETE)',
+  !/^\s*(insert|update|delete)\b/im.test(migExec),
+);
+check(
+  '047 keeps drift guards + post-conditions',
+  /schema drift/.test(mig) && /post-condition failed/.test(mig),
+);
+check(
+  '047 never touches overnight_parking definition',
+  !/alter column overnight_parking|drop column overnight_parking/i.test(migExec),
+);
 
 /* ---------------------------------------------------------- M2 backfill */
 const m2 = read('data/imports/rest-area-2026-07-29/M2-BACKFILL-AS-EXECUTED.sql');
 const m2e = exec(m2);
 check('M2: cohort id-fingerprint guard present', m2e.includes('d68a000a205e14cfd7c58b4e60da34dc'));
 check('M2: exact 541 count guards', (m2e.match(/<> 541/g) ?? []).length >= 3);
-check('M2: positive parking count required', /parking_spaces is null or parking_spaces <= 0/.test(m2e));
-check('M2: legacy 330 queue guarded and untouched', /<> 330/.test(m2e) && !/set[^;]*csv-import/is.test(m2e));
 check(
-  "M2: writes only confirmed/official-operator-export/now()",
+  'M2: positive parking count required',
+  /parking_spaces is null or parking_spaces <= 0/.test(m2e),
+);
+check(
+  'M2: legacy 330 queue guarded and untouched',
+  /<> 330/.test(m2e) && !/set[^;]*csv-import/is.test(m2e),
+);
+check(
+  'M2: writes only confirmed/official-operator-export/now()',
   /set overnight_status\s*=\s*'confirmed'/.test(m2e) &&
     /'official-operator-export'/.test(m2e) &&
     !/set[^;]*overnight_status\s*=\s*'prohibited'/i.test(m2e),
@@ -84,17 +99,27 @@ check(
 const canary = read('data/imports/rest-area-2026-07-29/CANARY-PREP-INERT.sql');
 check('canary: INERT banner', canary.includes('INERT PLAN — DO NOT EXECUTE'));
 check('canary: ZERO executable SQL lines', exec(canary).trim() === '');
-check('canary: never proposes an overnight status write', !/set\s+overnight_status/i.test(canary.replace(/HELD:.*$/gm, '')));
+check(
+  'canary: never proposes an overnight status write',
+  !/set\s+overnight_status/i.test(canary.replace(/HELD:.*$/gm, '')),
+);
 check(
   'canary: mile_marker only with state-dot provenance',
   !/mile_marker\s*=\s*\d/.test(canary) ||
-    /mile_marker_source='state-dot'/.test(canary.replace(/\s/g, '').replace(/mile_marker_source='state-dot'/g, "mile_marker_source='state-dot'")),
+    /mile_marker_source='state-dot'/.test(
+      canary
+        .replace(/\s/g, '')
+        .replace(/mile_marker_source='state-dot'/g, "mile_marker_source='state-dot'"),
+    ),
 );
 check(
   'canary: exit values never copied into mile_marker (distinct fields, distinct values)',
   !/mile_marker\s*=\s*144/.test(canary), // CA exit is 144; its MM is never claimed
 );
-check('canary: is_indexable/is_featured/geo never written', !/set[^;]*(is_indexable|is_featured|\bgeo\b)\s*=/i.test(canary));
+check(
+  'canary: is_indexable/is_featured/geo never written',
+  !/set[^;]*(is_indexable|is_featured|\bgeo\b)\s*=/i.test(canary),
+);
 check('canary: AL hold recorded', /AL Grand Bay/.test(canary) && /HELD/.test(canary));
 
 /* ------------------------------------------------------------ documents */
