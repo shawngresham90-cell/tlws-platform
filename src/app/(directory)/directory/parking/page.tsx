@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { TpcReserveCta } from '@/components/directory/TpcReserveCta';
 import { DirectoryBrowser, GetFeaturedCta } from '@/components/directory';
-import { getEntries } from '@/lib/directory/data';
+import { getEntries, getParkingFacets } from '@/lib/directory/data';
+import { stateByCode } from '@/lib/directory/states';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { getDirectoryFacets } from '@/lib/directory/data';
 import { RelatedLinks } from '@/components/directory';
@@ -73,7 +74,11 @@ const PARKING_TYPES: ParkingType[] = [
 ];
 
 export default async function TruckParkingPage() {
-  const [entries, facets] = await Promise.all([getEntries('parking'), getDirectoryFacets()]);
+  const [entries, facets, parkingFacets] = await Promise.all([
+    getEntries('parking'),
+    getDirectoryFacets(),
+    getParkingFacets(),
+  ]);
   const listings = await listingListSchemaWithReviews(
     entries,
     'Truck Parking',
@@ -117,6 +122,34 @@ export default async function TruckParkingPage() {
               🗺️ View on map →
             </Link>
           </p>
+        </div>
+      </Section>
+
+      {/* Find parking fast — State → Interstate → Direction (driver-first flow) */}
+      <Section className="border-b border-line">
+        <div className="mx-auto w-full max-w-xl">
+          <Eyebrow>Find parking fast</Eyebrow>
+          <h2 className="display-section">Where are you?</h2>
+          <p className="mt-3 text-muted">
+            Pick your state, then your interstate and direction — parking listed by the next exit
+            ahead of you.
+          </p>
+          {parkingFacets.states.length > 0 ? (
+            <ul className="mt-6 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-5">
+              {parkingFacets.states.map(({ code, count }) => (
+                <li key={code}>
+                  <Link
+                    href={`/directory/parking/${code.toLowerCase()}`}
+                    className="placard flex min-h-[64px] flex-col items-center justify-center p-2 text-center transition-colors hover:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
+                    title={stateByCode(code)?.name ?? code}
+                  >
+                    <span className="font-display text-xl uppercase text-ink">{code}</span>
+                    <span className="doc-caption text-muted">{count}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </Section>
 

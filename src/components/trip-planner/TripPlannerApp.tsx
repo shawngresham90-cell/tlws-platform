@@ -174,6 +174,8 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [hazmatClass, setHazmatClass] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<QuoteResponse | null>(null);
+  // Driver-first wizard: 1 = where are you going, 2 = ELD clocks, 3 = plan.
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [presetName, setPresetName] = useState('');
   const [savedNote, setSavedNote] = useState('');
 
@@ -283,6 +285,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       });
       const quote = (await res.json()) as QuoteResponse;
       setResult(quote);
+      if (quote.ok) setStep(3);
       // Record device-local history on a successful plan (never uploaded).
       if (quote.ok) {
         saved.recordRecentPlace(o);
@@ -311,6 +314,7 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
     setDestination(d);
     applyPreset({ id: f.id, name: f.name, ...f.truck });
     saved.markPlanned(f.id);
+    setStep(2);
     void submit(o, d, f.truck);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -332,192 +336,255 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
 
   return (
     <div>
-      {/* ------------------------------------------------ inputs */}
-      <PlaceCombobox
-        id="tp-origin"
-        label="Origin — city, address, ZIP, or directory stop"
-        placeholder="e.g. Nashville, TN or a truck stop"
-        anchors={anchors}
-        recents={saved.store.recentPlaces.map(refToPlace)}
-        selected={origin}
-        onSelect={pickOrigin}
-      />
-      <PlaceCombobox
-        id="tp-destination"
-        label="Destination — city, address, ZIP, or directory stop"
-        placeholder="e.g. 123 Main St, Knoxville, TN"
-        anchors={anchors}
-        recents={saved.store.recentPlaces.map(refToPlace)}
-        selected={destination}
-        onSelect={pickDestination}
-      />
-      {samePoint && (
-        <p className="mt-2 text-xs text-diesel-300">
-          Origin and destination are the same place — pick two different locations.
-        </p>
-      )}
-
-      <label className={labelCls} htmlFor="tp-depart">
-        Departure (blank = now)
-      </label>
-      <input
-        id="tp-depart"
-        type="datetime-local"
-        className={input}
-        value={departLocal}
-        onChange={(e) => setDepartLocal(e.target.value)}
-      />
-
-      <fieldset className="mt-4 rounded-card border border-line p-4">
-        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
-          Your clocks right now (hours used)
-        </legend>
+      {/* --------------------------------------------- wizard indicator */}
+      <ol className="mt-4 grid list-none grid-cols-3 gap-1 p-0" aria-label="Trip planner steps">
         {(
           [
-            ['Driving (of 11h)', drivingUsed, setDrivingUsed, 11],
-            ['On-duty window (of 14h)', windowUsed, setWindowUsed, 14],
-            ['Driving since last 30-min break (of 8h)', sinceBreak, setSinceBreak, 8],
-            ['Cycle used (of 70h)', cycleUsed, setCycleUsed, 70],
-          ] as [string, number, (v: number) => void, number][]
-        ).map(([lbl, val, set, max]) => (
-          <label key={lbl} className="mt-3 block text-sm text-ink first:mt-0">
+            [1, 'Where to?'],
+            [2, 'Your clocks'],
+            [3, 'Your plan'],
+          ] as const
+        ).map(([n, lbl]) => (
+          <li
+            key={n}
+            aria-current={step === n ? 'step' : undefined}
+            className={`rounded-card border px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide ${
+              step === n ? 'border-signal text-signal' : 'border-line text-muted'
+            }`}
+          >
+            {n}. {lbl}
+          </li>
+        ))}
+      </ol>
+
+      {/* ------------------------------------ step 1: where are you going? */}
+      <div hidden={step !== 1}>
+        <PlaceCombobox
+          id="tp-origin"
+          label="Origin — city, address, ZIP, or directory stop"
+          placeholder="e.g. Nashville, TN or a truck stop"
+          anchors={anchors}
+          recents={saved.store.recentPlaces.map(refToPlace)}
+          selected={origin}
+          onSelect={pickOrigin}
+        />
+        <PlaceCombobox
+          id="tp-destination"
+          label="Destination — city, address, ZIP, or directory stop"
+          placeholder="e.g. 123 Main St, Knoxville, TN"
+          anchors={anchors}
+          recents={saved.store.recentPlaces.map(refToPlace)}
+          selected={destination}
+          onSelect={pickDestination}
+        />
+        {samePoint && (
+          <p className="mt-2 text-xs text-diesel-300">
+            Origin and destination are the same place — pick two different locations.
+          </p>
+        )}
+
+        <label className={labelCls} htmlFor="tp-depart">
+          Departure (blank = now)
+        </label>
+        <input
+          id="tp-depart"
+          type="datetime-local"
+          className={input}
+          value={departLocal}
+          onChange={(e) => setDepartLocal(e.target.value)}
+        />
+        <button
+          type="button"
+          disabled={!origin || !destination || samePoint}
+          onClick={() => setStep(2)}
+          className="mt-5 min-h-[56px] w-full rounded-card bg-signal px-5 font-display text-lg uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 disabled:opacity-50"
+        >
+          Continue — enter your clocks
+        </button>
+        {(!origin || !destination) && (
+          <p className="mt-3 text-sm text-muted">
+            Search and select an origin and destination to continue.
+          </p>
+        )}
+      </div>
+
+      {/* -------------------------------- step 2: what does your ELD show? */}
+      <div hidden={step !== 2}>
+        <fieldset className="mt-4 rounded-card border border-line p-4">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
+            Your clocks right now (hours used)
+          </legend>
+          {(
+            [
+              ['Driving (of 11h)', drivingUsed, setDrivingUsed, 11],
+              ['On-duty window (of 14h)', windowUsed, setWindowUsed, 14],
+              ['Driving since last 30-min break (of 8h)', sinceBreak, setSinceBreak, 8],
+              ['Cycle used (of 70h)', cycleUsed, setCycleUsed, 70],
+            ] as [string, number, (v: number) => void, number][]
+          ).map(([lbl, val, set, max]) => (
+            <label key={lbl} className="mt-3 block text-sm text-ink first:mt-0">
+              <span className="flex justify-between">
+                <span>{lbl}</span>
+                <span className="font-semibold text-signal">{val}h</span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={max}
+                step={0.5}
+                value={val}
+                onChange={(e) => set(Number(e.target.value))}
+                className="mt-1 w-full accent-signal"
+              />
+            </label>
+          ))}
+          <label className="mt-3 block text-sm text-ink">
             <span className="flex justify-between">
-              <span>{lbl}</span>
-              <span className="font-semibold text-signal">{val}h</span>
+              <span>Fuel level</span>
+              <span className="font-semibold text-signal">{fuelLevel}%</span>
             </span>
             <input
               type="range"
-              min={0}
-              max={max}
-              step={0.5}
-              value={val}
-              onChange={(e) => set(Number(e.target.value))}
+              min={5}
+              max={100}
+              step={5}
+              value={fuelLevel}
+              onChange={(e) => setFuelLevel(Number(e.target.value))}
               className="mt-1 w-full accent-signal"
             />
           </label>
-        ))}
-        <label className="mt-3 block text-sm text-ink">
-          <span className="flex justify-between">
-            <span>Fuel level</span>
-            <span className="font-semibold text-signal">{fuelLevel}%</span>
-          </span>
-          <input
-            type="range"
-            min={5}
-            max={100}
-            step={5}
-            value={fuelLevel}
-            onChange={(e) => setFuelLevel(Number(e.target.value))}
-            className="mt-1 w-full accent-signal"
-          />
-        </label>
-      </fieldset>
+        </fieldset>
 
-      <details className="mt-4 rounded-card border border-line p-4">
-        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
-          Truck profile (13&#39;6&quot; · 70 ft · 80,000 lb · 5 axles by default)
-        </summary>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <label className="block text-sm text-ink">
-            Height (ft)
-            <input
-              type="number"
-              min={8}
-              max={15}
-              step={0.1}
-              value={heightFt}
-              onChange={(e) => setHeightFt(Number(e.target.value))}
+        <details className="mt-4 rounded-card border border-line p-4">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted">
+            Advanced settings — truck profile (13&#39;6&quot; · 80,000 lb standard profile selected)
+          </summary>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="block text-sm text-ink">
+              Height (ft)
+              <input
+                type="number"
+                min={8}
+                max={15}
+                step={0.1}
+                value={heightFt}
+                onChange={(e) => setHeightFt(Number(e.target.value))}
+                className={input}
+              />
+            </label>
+            <label className="block text-sm text-ink">
+              Length (ft)
+              <input
+                type="number"
+                min={20}
+                max={120}
+                step={1}
+                value={lengthFt}
+                onChange={(e) => setLengthFt(Number(e.target.value))}
+                className={input}
+              />
+            </label>
+            <label className="block text-sm text-ink">
+              Gross weight (lb)
+              <input
+                type="number"
+                min={10000}
+                max={164000}
+                step={1000}
+                value={grossWeightLbs}
+                onChange={(e) => setGrossWeightLbs(Number(e.target.value))}
+                className={input}
+              />
+            </label>
+            <label className="block text-sm text-ink">
+              Axles
+              <input
+                type="number"
+                min={2}
+                max={9}
+                step={1}
+                value={axles}
+                onChange={(e) => setAxles(Number(e.target.value))}
+                className={input}
+              />
+            </label>
+          </div>
+          <label className="mt-3 block text-sm text-ink">
+            Hazmat placard
+            <select
+              value={hazmatClass}
+              onChange={(e) => setHazmatClass(e.target.value)}
               className={input}
-            />
+            >
+              {HAZMAT_OPTIONS.map(([v, lbl]) => (
+                <option key={v} value={v}>
+                  {lbl}
+                </option>
+              ))}
+            </select>
           </label>
-          <label className="block text-sm text-ink">
-            Length (ft)
-            <input
-              type="number"
-              min={20}
-              max={120}
-              step={1}
-              value={lengthFt}
-              onChange={(e) => setLengthFt(Number(e.target.value))}
-              className={input}
-            />
-          </label>
-          <label className="block text-sm text-ink">
-            Gross weight (lb)
-            <input
-              type="number"
-              min={10000}
-              max={164000}
-              step={1000}
-              value={grossWeightLbs}
-              onChange={(e) => setGrossWeightLbs(Number(e.target.value))}
-              className={input}
-            />
-          </label>
-          <label className="block text-sm text-ink">
-            Axles
-            <input
-              type="number"
-              min={2}
-              max={9}
-              step={1}
-              value={axles}
-              onChange={(e) => setAxles(Number(e.target.value))}
-              className={input}
-            />
-          </label>
-        </div>
-        <label className="mt-3 block text-sm text-ink">
-          Hazmat placard
-          <select
-            value={hazmatClass}
-            onChange={(e) => setHazmatClass(e.target.value)}
-            className={input}
-          >
-            {HAZMAT_OPTIONS.map(([v, lbl]) => (
-              <option key={v} value={v}>
-                {lbl}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <label className="flex-1 text-sm text-ink">
-            Save this profile as…
-            <input
-              type="text"
-              value={presetName}
-              onChange={(e) => setPresetName(e.target.value)}
-              placeholder="e.g. Reefer, Flatbed"
-              className={input}
-            />
-          </label>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="flex-1 text-sm text-ink">
+              Save this profile as…
+              <input
+                type="text"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                placeholder="e.g. Reefer, Flatbed"
+                className={input}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={!presetName.trim()}
+              onClick={() => {
+                saved.saveTruckPreset(presetName.trim(), currentTruck());
+                setPresetName('');
+              }}
+              className="rounded-card border border-line px-3 py-3 text-xs font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-asphalt-700 disabled:opacity-50"
+            >
+              Save preset
+            </button>
+          </div>
+        </details>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
           <button
             type="button"
-            disabled={!presetName.trim()}
-            onClick={() => {
-              saved.saveTruckPreset(presetName.trim(), currentTruck());
-              setPresetName('');
-            }}
-            className="rounded-card border border-line px-3 py-3 text-xs font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-asphalt-700 disabled:opacity-50"
+            onClick={() => setStep(1)}
+            className="min-h-[56px] rounded-card border border-line font-display uppercase tracking-wide text-ink transition-colors hover:border-signal"
           >
-            Save preset
+            ← Back
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => void submit()}
+            className="col-span-2 min-h-[56px] rounded-card bg-signal px-5 font-display text-lg uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 disabled:opacity-50"
+          >
+            {busy ? 'Planning…' : 'See my trip plan'}
           </button>
         </div>
-      </details>
+      </div>
 
-      <button
-        type="button"
-        disabled={!canSubmit}
-        onClick={() => void submit()}
-        className="mt-5 w-full rounded-card bg-signal px-5 py-4 font-display text-lg uppercase tracking-wide text-asphalt transition-colors hover:bg-signal-600 disabled:opacity-50"
-      >
-        {busy ? 'Planning…' : 'Plan my trip'}
-      </button>
-      {!canSubmit && !busy && !samePoint && (
-        <p className="mt-3 text-sm text-muted">
-          Search and select an origin and destination to plan your trip.
-        </p>
+      {/* ------------------------------------------ step 3: your trip plan */}
+      {step === 3 && result?.ok && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="min-h-[48px] rounded-card border border-line text-xs font-semibold uppercase tracking-wide text-ink transition-colors hover:border-signal"
+          >
+            ← Change route
+          </button>
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="min-h-[48px] rounded-card border border-line text-xs font-semibold uppercase tracking-wide text-ink transition-colors hover:border-signal"
+          >
+            ← Adjust clocks
+          </button>
+        </div>
       )}
 
       {/* ------------------------------------------------ results */}
@@ -731,30 +798,32 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       )}
 
       {/* ------------------------------------------------ account + sync */}
-      <AccountPanel
-        authStatus={cloud.authStatus}
-        email={cloud.email}
-        syncStatus={cloud.syncStatus}
-        sendOtp={cloud.sendOtp}
-        verifyOtp={cloud.verifyOtp}
-        signOut={cloud.signOut}
-        syncNow={cloud.syncNow}
-        deleteAllCloud={cloud.deleteAllCloud}
-      />
+      <div hidden={step !== 1}>
+        <AccountPanel
+          authStatus={cloud.authStatus}
+          email={cloud.email}
+          syncStatus={cloud.syncStatus}
+          sendOtp={cloud.sendOtp}
+          verifyOtp={cloud.verifyOtp}
+          signOut={cloud.signOut}
+          syncNow={cloud.syncNow}
+          deleteAllCloud={cloud.deleteAllCloud}
+        />
 
-      {/* ------------------------------------------------ saved trips */}
-      <SavedTripsPanel
-        store={saved.store}
-        status={saved.status}
-        storageAvailable={saved.storageAvailable}
-        onReplan={replanFavorite}
-        onRename={saved.renameFavorite}
-        onDelete={saved.deleteFavorite}
-        onApplyPreset={applyPreset}
-        onDeletePreset={saved.deleteTruckPreset}
-        onClearRecents={saved.clearRecents}
-        onClearAll={saved.clearAll}
-      />
+        {/* ------------------------------------------------ saved trips */}
+        <SavedTripsPanel
+          store={saved.store}
+          status={saved.status}
+          storageAvailable={saved.storageAvailable}
+          onReplan={replanFavorite}
+          onRename={saved.renameFavorite}
+          onDelete={saved.deleteFavorite}
+          onApplyPreset={applyPreset}
+          onDeletePreset={saved.deleteTruckPreset}
+          onClearRecents={saved.clearRecents}
+          onClearAll={saved.clearAll}
+        />
+      </div>
     </div>
   );
 }

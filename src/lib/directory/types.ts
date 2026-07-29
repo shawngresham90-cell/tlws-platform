@@ -35,6 +35,15 @@ export type DirectoryEntry = {
   interstate?: string;
   /** Exit number — future-ready for exit-based navigation. */
   exitNumber?: string;
+  /**
+   * Separately verified mile-marker position. The `locations` table has NO
+   * mile-marker column today (audited 2026-07-29: only `interstate` and
+   * `exit_number` carry route position), so nothing populates this in
+   * production — it exists so the corridor engine can label "MM" honestly
+   * if and when a verified column ships. An exit number must NEVER be
+   * copied into this field.
+   */
+  mileMarker?: number;
   /** ISO timestamp, powers the "Newest" sort. */
   createdAt?: string;
   /** Globally unique slug for /directory/location/[slug] (migration 022). */
