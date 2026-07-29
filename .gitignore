@@ -34,3 +34,7 @@ data/revenue-readiness/local/
 
 # Python bytecode from the data build scripts
 __pycache__/
+
+# CAT Scale proprietary source — never commit the raw CSV or full row-level detail
+*extraction*.csv
+data/imports/cat-scale-2026-07-29/local/
