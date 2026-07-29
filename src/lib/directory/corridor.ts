@@ -5,14 +5,21 @@ import type { DirectoryEntry } from './types';
  * ordered-list navigation (driver-first redesign, 2026-07-28).
  *
  * Honesty rules, non-negotiable:
- * - A listing's position comes ONLY from a strictly parseable exit number
- *   ("41", "41A"). Compound or free-text values ("11/I-49, Exit 39",
- *   "Third St") are NEVER guessed — those listings go to the separate
- *   "position not verified" section.
- * - "Direction" selects the ORDER OF TRAVEL (exit numbers ascend south→north
- *   and west→east on U.S. interstates), not a claim about which side of the
- *   highway a facility sits on. Most exits serve both directions; the UI
- *   says so.
+ * - A position is labeled "MM" ONLY when the record carries a separately
+ *   verified mile-marker value (`entry.mileMarker`). The database has no
+ *   mile-marker column today, so in production every position is an exit.
+ *   An exit number is NEVER relabeled as a mile marker — not in the label,
+ *   the sort, the query, or the tests.
+ * - Without a verified mile marker, position comes ONLY from a strictly
+ *   parseable exit number ("41", "41A") and is labeled "EXIT". Compound or
+ *   free-text values ("11/I-49, Exit 39", "Third St") are NEVER guessed —
+ *   those listings go to the separate "Route position not verified" section.
+ * - Exit-number ordering is APPROXIMATE route order (exit numbers follow
+ *   mile markers in most states); the UI says so in plain words.
+ * - "Direction" selects the ORDER OF TRAVEL (route positions ascend
+ *   south→north and west→east on U.S. interstates), not a claim about which
+ *   side of the highway a facility sits on. Most exits serve both
+ *   directions; the UI says so.
  */
 
 /** Categories a driver can actually park a truck in. */
@@ -70,38 +77,70 @@ export function interstateToSlug(designation: string): string {
   return designation.toLowerCase();
 }
 
+export type RoutePositionKind = 'mile-marker' | 'exit';
+
 export type CorridorListing = {
   entry: DirectoryEntry;
-  /** Verified numeric exit position, or null (unverified section). */
+  /** Numeric route position (verified MM value, else exit number), or null. */
   position: number | null;
-  /** Card label for the big number, e.g. "EXIT 41A". Null when unverified. */
+  /** What the position IS: a verified mile marker or an exit number. */
+  positionKind: RoutePositionKind | null;
+  /** Card label, e.g. "MM 71.5" or "EXIT 41A". Null when unverified. */
   positionLabel: string | null;
 };
 
 export type CorridorList = {
-  /** Position-verified listings, ascending by exit then name. */
+  /** Position-verified listings, ascending by route position then name. */
   positioned: CorridorListing[];
-  /** Listings without a strictly-parseable exit — never mixed in. */
+  /** Listings with no verified route position — never mixed in. */
   unpositioned: CorridorListing[];
 };
 
+/** "71.5" → "MM 71.5", "72" → "MM 72" — decimals kept, no padding. */
+function mileMarkerLabel(value: number): string {
+  return `MM ${Number(value.toFixed(1))}`;
+}
+
 /**
- * Split + order a corridor's entries. `positioned` is returned ascending;
- * the UI flips it for the LOW↔HIGH toggle / travel direction.
+ * Resolve a listing's route position. Verified mile marker wins and is
+ * labeled "MM"; otherwise a strictly-parseable exit number is used for
+ * approximate ordering and labeled "EXIT" — never "MM". Anything else is
+ * null (Route position not verified).
+ */
+export function resolveRoutePosition(
+  entry: Pick<DirectoryEntry, 'mileMarker' | 'exitNumber'>,
+): { position: number; positionKind: RoutePositionKind; positionLabel: string } | null {
+  const mm = entry.mileMarker;
+  if (typeof mm === 'number' && Number.isFinite(mm) && mm >= 0) {
+    return { position: mm, positionKind: 'mile-marker', positionLabel: mileMarkerLabel(mm) };
+  }
+  const exit = parseExitPosition(entry.exitNumber ?? null);
+  if (exit !== null) {
+    return {
+      position: exit,
+      positionKind: 'exit',
+      positionLabel: `EXIT ${entry.exitNumber!.trim().toUpperCase()}`,
+    };
+  }
+  return null;
+}
+
+/**
+ * Split + order a corridor's entries. `positioned` is returned ascending
+ * by route position (verified mile markers and exit numbers share the
+ * mileage scale — exit numbers follow mile markers in most states, which
+ * the UI states in plain words); the UI flips it for the LOW↔HIGH toggle /
+ * travel direction.
  */
 export function buildCorridorList(entries: DirectoryEntry[]): CorridorList {
   const positioned: CorridorListing[] = [];
   const unpositioned: CorridorListing[] = [];
   for (const entry of entries) {
-    const position = parseExitPosition(entry.exitNumber ?? null);
-    if (position === null) {
-      unpositioned.push({ entry, position: null, positionLabel: null });
+    const resolved = resolveRoutePosition(entry);
+    if (resolved === null) {
+      unpositioned.push({ entry, position: null, positionKind: null, positionLabel: null });
     } else {
-      positioned.push({
-        entry,
-        position,
-        positionLabel: `EXIT ${entry.exitNumber!.trim().toUpperCase()}`,
-      });
+      positioned.push({ entry, ...resolved });
     }
   }
   positioned.sort((a, b) => a.position! - b.position! || a.entry.name.localeCompare(b.entry.name));

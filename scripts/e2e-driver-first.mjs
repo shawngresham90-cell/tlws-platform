@@ -7,7 +7,7 @@
  *   - the persistent bottom bar (Parking | Trip Planner | HOS) is present and
  *     tappable (>=48px) on every screen at phone widths, and hidden on desktop
  *   - Parking flow walks State → Interstate → Direction → ordered list, with
- *     the LOW MM / HIGH MM toggle and the never-guess unpositioned section
+ *     the LOW → HIGH / HIGH → LOW toggle and the never-guess unpositioned section
  *   - Trip Planner opens on step 1 only (clocks hidden until Continue)
  *   - HOS Calculator opens on "What are you checking?" with four modes, and
  *     selecting a mode reveals only that mode's fields
@@ -175,8 +175,8 @@ try {
     await page.goto(`${BASE}/directory/parking/ga/i-75/northbound`, { waitUntil: 'networkidle' });
     check(`${label} corridor list: no overflow`, await noHorizontalOverflow(page));
     await assertBottomBar(page, `${label} corridor list`);
-    const toggle = page.getByRole('button', { name: /MM/ });
-    check(`${label} corridor list: LOW/HIGH MM toggle present`, (await toggle.count()) === 1);
+    const toggle = page.getByRole('button', { name: /LOW → HIGH|HIGH → LOW/ });
+    check(`${label} corridor list: LOW/HIGH order toggle present`, (await toggle.count()) === 1);
     const bodyText = await page.locator('main').innerText();
     check(
       `${label} corridor list: honest labels only (no guessed positions)`,
@@ -184,7 +184,14 @@ try {
         bodyText,
       ),
     );
-    // The toggle flips the order label.
+    // The database has no mile-marker column, so no corridor card may ever
+    // carry an "MM <number>" label — exit numbers must never be relabeled.
+    check(
+      `${label} corridor list: no false "MM" labels (exit numbers never relabeled)`,
+      !/\bMM \d/.test(bodyText),
+    );
+    check(`${label} corridor list: toggle never claims MM`, !/MM/.test(await toggle.innerText()));
+    // The toggle flips the order label between LOW → HIGH and HIGH → LOW.
     const before = await toggle.innerText();
     await toggle.click();
     const after = await toggle.innerText();

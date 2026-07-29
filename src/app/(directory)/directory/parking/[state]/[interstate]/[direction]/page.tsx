@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   const dir = params.direction.charAt(0).toUpperCase() + params.direction.slice(1);
   return buildMetadata({
     title: `${designation} ${dir} Truck Parking in ${state?.name ?? params.state.toUpperCase()} by Exit | Trucking Life with Shawn`,
-    description: `Truck parking on ${designation} ${params.direction} through ${state?.name ?? params.state.toUpperCase()}, listed by exit number with truck-space counts and overnight status.`,
+    description: `Truck parking on ${designation} ${params.direction} through ${state?.name ?? params.state.toUpperCase()}, listed in route order (verified mile marker where available, otherwise exit number) with truck-space counts and overnight status.`,
     path: `/directory/parking/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}/${params.direction.toLowerCase()}`,
   });
 }

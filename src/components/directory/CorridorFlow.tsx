@@ -17,10 +17,12 @@ import { detailDirectionsUrl } from '@/lib/directory/detail';
 
 /**
  * Corridor list — the final screen of Parking → State → Interstate →
- * Direction. Mobile-first for a phone in a cab: one column, large exit
- * numbers, 48px+ touch targets, no horizontal scrolling. Position order
- * comes ONLY from verified exit numbers; everything else sits in the
- * separate "position not verified" section at the bottom.
+ * Direction. Mobile-first for a phone in a cab: one column, large route
+ * positions, 48px+ touch targets, no horizontal scrolling. A position is
+ * labeled "Mile marker" ONLY when the record carries a separately verified
+ * mile-marker value (no database column supplies one today); otherwise it
+ * is an exit number labeled "Exit" — never relabeled as MM. Listings with
+ * neither sit in the separate "Route position not verified" section.
  */
 
 function ListingCard({ item }: { item: CorridorListing }) {
@@ -34,9 +36,13 @@ function ListingCard({ item }: { item: CorridorListing }) {
         {item.positionLabel ? (
           <div className="shrink-0 text-center">
             <div className="font-display text-3xl leading-none text-signal">
-              {item.positionLabel.replace('EXIT ', '')}
+              {item.positionLabel.replace(/^(EXIT|MM) /, '')}
             </div>
-            <div className="doc-caption uppercase tracking-widest text-muted">Exit</div>
+            {/* "Mile marker" ONLY for a separately verified mile-marker value —
+                an exit number is never relabeled as MM. */}
+            <div className="doc-caption uppercase tracking-widest text-muted">
+              {item.positionKind === 'mile-marker' ? 'Mile marker' : 'Exit'}
+            </div>
           </div>
         ) : null}
         <div className="min-w-0 flex-1">
@@ -116,12 +122,13 @@ export function CorridorList({
         aria-pressed={!ascending}
         className="mb-4 flex min-h-[56px] w-full items-center justify-center gap-3 rounded-card border border-line font-display text-lg uppercase tracking-wide text-ink transition-colors hover:border-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
       >
-        {ascending ? 'LOW MM → HIGH MM' : 'HIGH MM → LOW MM'}
+        {ascending ? 'LOW → HIGH' : 'HIGH → LOW'}
         <span aria-hidden="true">⇅</span>
       </button>
       <p className="doc-caption mb-4 text-muted">
-        Listed by exit number in your direction of travel. Exit numbers follow mile markers in most
-        states, and most exits serve both directions.
+        Listed in route order for your direction of travel — by verified mile marker where a listing
+        has one, otherwise by exit number. Exit numbers follow mile markers in most states, and most
+        exits serve both directions.
       </p>
       {ordered.length > 0 ? (
         <ul className="list-none space-y-3 p-0">
@@ -137,11 +144,11 @@ export function CorridorList({
       {unpositioned.length > 0 ? (
         <section className="mt-8">
           <h2 className="doc-caption mb-3 uppercase tracking-widest text-muted">
-            On this corridor — position not verified
+            Route position not verified
           </h2>
           <p className="doc-caption mb-3 text-muted">
-            These listings are on this interstate but don&rsquo;t carry a verified exit number, so
-            we won&rsquo;t guess where they fall in the list above.
+            These listings are on this interstate but don&rsquo;t carry a verified mile marker or a
+            usable exit number, so we won&rsquo;t guess where they fall in the list above.
           </p>
           <ul className="list-none space-y-3 p-0">
             {unpositioned.map((item) => (

@@ -18,6 +18,7 @@ import {
   interstateFromSlug,
   interstateToSlug,
   buildCorridorList,
+  resolveRoutePosition,
   spacesLabel,
   costChips,
   overnightLabel,
@@ -115,6 +116,61 @@ check(
 check(
   'compound exit is in the unverified section, not sorted in',
   list.unpositioned.some((l) => l.entry.id === 'c'),
+);
+
+/* -------------------------------- route-position honesty: MM vs EXIT vs none */
+// The database has NO mile-marker column (only exit_number) — mileMarker is
+// only ever set from a separately verified value, so these tests pin the
+// contract: MM label ⟺ verified mileMarker; exit numbers are NEVER
+// relabeled as MM; no verified position → unpositioned, never guessed.
+const mixed = buildCorridorList([
+  entry({ id: 'mmInt', name: 'Verified MM', mileMarker: 72 }),
+  entry({ id: 'mmDec', name: 'Decimal MM', mileMarker: 71.5 }),
+  entry({ id: 'exOnly', name: 'Exit only', exitNumber: '41A' }),
+  entry({ id: 'noPos', name: 'No position' }),
+]);
+const byId = (id: string) => mixed.positioned.find((l) => l.entry.id === id);
+check('verified MM: labeled "MM 72"', byId('mmInt')?.positionLabel === 'MM 72');
+check('verified MM: kind is mile-marker', byId('mmInt')?.positionKind === 'mile-marker');
+check('decimal MM: labeled "MM 71.5"', byId('mmDec')?.positionLabel === 'MM 71.5');
+check('decimal MM: numeric position kept', byId('mmDec')?.position === 71.5);
+check('exit only: labeled "EXIT 41A"', byId('exOnly')?.positionLabel === 'EXIT 41A');
+check('exit only: kind is exit', byId('exOnly')?.positionKind === 'exit');
+check(
+  'exit numbers are NEVER labeled MM',
+  mixed.positioned
+    .filter((l) => l.positionKind === 'exit')
+    .every((l) => l.positionLabel!.startsWith('EXIT ') && !l.positionLabel!.startsWith('MM')),
+);
+check(
+  'mixed list orders by numeric route position (41 < 71.5 < 72)',
+  mixed.positioned.map((l) => l.entry.id).join(',') === 'exOnly,mmDec,mmInt',
+  mixed.positioned.map((l) => `${l.entry.id}:${l.position}`),
+);
+check(
+  'missing route position → unpositioned, never guessed',
+  mixed.unpositioned.length === 1 && mixed.unpositioned[0].entry.id === 'noPos',
+);
+check(
+  'verified MM wins over exit number when both exist',
+  (() => {
+    const r = resolveRoutePosition({ mileMarker: 10, exitNumber: '99' });
+    return r?.positionKind === 'mile-marker' && r.position === 10 && r.positionLabel === 'MM 10';
+  })(),
+);
+check(
+  'exit is never coerced to MM by resolver',
+  resolveRoutePosition({ exitNumber: '41' })?.positionLabel === 'EXIT 41',
+);
+const reversedPositions = [...mixed.positioned].reverse().map((l) => l.position!);
+check(
+  'HIGH → LOW reversal is strictly descending',
+  reversedPositions.every((p, i) => i === 0 || p < reversedPositions[i - 1]),
+  reversedPositions,
+);
+check(
+  'exit-only fixture list carries only EXIT labels (no MM without a verified value)',
+  list.positioned.every((l) => l.positionLabel!.startsWith('EXIT ')),
 );
 
 /* ------------------------------------------------------------ card labels */
