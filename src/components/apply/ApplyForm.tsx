@@ -102,6 +102,7 @@ type Step2 = {
   start_timeframe: string;
   funding_type: string;
   sms_consent: boolean;
+  sms_marketing_consent: boolean;
 };
 type Errors = Record<string, string>;
 
@@ -112,6 +113,7 @@ const EMPTY2: Step2 = {
   start_timeframe: '',
   funding_type: '',
   sms_consent: false,
+  sms_marketing_consent: false,
 };
 
 /**
@@ -343,6 +345,7 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
           // Only the boolean choice is sent; the server owns the disclosure
           // text, version, and timestamp (never trust client consent metadata).
           sms_consent: s2.sms_consent,
+          sms_marketing_consent: s2.sms_marketing_consent,
           submission_id: step2SubmissionId.current,
         }),
       });
@@ -600,11 +603,23 @@ export function ApplyForm({ siteKey }: { siteKey: string }) {
               intrastate Georgia driving).
             </CheckboxField>
 
+            {/* Two SEPARATE consents. Both start unchecked; neither is
+                required. Declining either one still submits the form. */}
             <SmsConsentField
               id="sms_consent"
-              label="Yes, text me updates about my application (optional)"
+              source="academy-application"
+              label="Yes, text me about classes and follow up (optional)"
               checked={s2.sms_consent}
               onChange={(v) => set2('sms_consent', v)}
+            />
+
+            <SmsConsentField
+              id="sms_marketing_consent"
+              source="academy-application-marketing"
+              showSmsTerms={false}
+              label="Yes, send me promotional offers by SMS (optional)"
+              checked={s2.sms_marketing_consent}
+              onChange={(v) => set2('sms_marketing_consent', v)}
             />
           </div>
 

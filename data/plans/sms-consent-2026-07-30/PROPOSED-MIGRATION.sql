@@ -1,0 +1,75 @@
+-- ============================================================================
+-- INERT PLAN — DO NOT EXECUTE
+-- Optional normalization for promotional SMS consent (2026-07-30)
+--
+-- THE FEATURE DOES NOT NEED THIS. Both consents are already recorded durably
+-- today with no schema change:
+--
+--   * classes / follow-up  -> applications.sms_consent, .sms_consent_at,
+--                             .sms_consent_text (existing columns), PLUS an
+--                             append-only row in public.sms_consents under
+--                             source_form = 'academy-application'
+--   * promotional / marketing -> an append-only row in public.sms_consents
+--                             under source_form =
+--                             'academy-application-marketing', with its own
+--                             disclosure text, version and timestamp, PLUS a
+--                             distinct flag in the application_events audit
+--                             record for that submission
+--
+-- `sms_consents` already carries source_form, source_url, disclosure_text,
+-- sms_consent_version, phone, email and a timestamp, and it has no CHECK
+-- constraining source_form, so the second consent type fits the existing
+-- design exactly as intended.
+--
+-- This migration would ONLY add a convenience mirror on `applications` so
+-- marketing consent can be filtered without joining the evidence table. It is
+-- offered for review; nothing here has been applied to Supabase or any
+-- environment.
+-- ============================================================================
+
+-- begin;
+--
+-- do $mig$
+-- begin
+--   if not exists (select 1 from information_schema.columns
+--                  where table_schema = 'public' and table_name = 'applications'
+--                    and column_name = 'sms_consent') then
+--     raise exception 'guard: applications.sms_consent missing — re-audit first';
+--   end if;
+--   if exists (select 1 from information_schema.columns
+--              where table_schema = 'public' and table_name = 'applications'
+--                and column_name = 'sms_marketing_consent') then
+--     raise exception 'guard: column already exists — this migration already ran';
+--   end if;
+-- end $mig$;
+--
+-- -- Mirrors the three existing classes/follow-up columns, one-for-one, so the
+-- -- two consents stay structurally separate and neither can be read as the
+-- -- other. DEFAULT false: an existing row is NOT consent, and this migration
+-- -- deliberately back-fills nothing — every one of the 13 current applications
+-- -- stays exactly as the applicant left it.
+-- alter table public.applications
+--   add column sms_marketing_consent boolean not null default false,
+--   add column sms_marketing_consent_at timestamptz,
+--   add column sms_marketing_consent_text text;
+--
+-- -- Same shape as the existing guarantee on sms_consents: a timestamp may
+-- -- exist only for an affirmative opt-in.
+-- alter table public.applications
+--   add constraint applications_marketing_at_only_when_true
+--     check (sms_marketing_consent = true or sms_marketing_consent_at is null);
+--
+-- commit;
+
+-- ---------------------------------------------------------------- ROLLBACK
+-- Additive-only, so dropping the columns cannot destroy consent evidence:
+-- the authoritative record lives in the append-only `sms_consents` table and
+-- in `application_events`, both untouched by this migration.
+-- begin;
+-- alter table public.applications
+--   drop constraint if exists applications_marketing_at_only_when_true;
+-- alter table public.applications
+--   drop column if exists sms_marketing_consent,
+--   drop column if exists sms_marketing_consent_at,
+--   drop column if exists sms_marketing_consent_text;
+-- commit;
