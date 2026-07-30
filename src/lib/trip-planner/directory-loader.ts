@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { normalizeOvernightStatus } from '@/lib/directory/overnight';
 import type { DirectoryListing } from './directory-layer';
 
 /**
@@ -26,6 +27,7 @@ type PlannerRow = {
   exit_number: string | null;
   parking_spaces: number | null;
   overnight_parking: boolean | null;
+  overnight_status: string | null;
   free_parking: boolean | null;
   paid_parking: boolean | null;
   tpc_url: string | null;
@@ -37,7 +39,7 @@ type PlannerRow = {
 
 const PLANNER_COLUMNS =
   'id, name, category_slug, lat, lng, state, interstate, exit_number, parking_spaces, ' +
-  'overnight_parking, free_parking, paid_parking, tpc_url, amenities, fuel_brands, ' +
+  'overnight_parking, overnight_status, free_parking, paid_parking, tpc_url, amenities, fuel_brands, ' +
   'coord_verification_status, city';
 
 const strArray = (v: unknown): string[] =>
@@ -68,6 +70,7 @@ export function mapRowToListing(row: PlannerRow): DirectoryListing {
     exitNumber: row.exit_number,
     parkingSpaces: row.parking_spaces,
     overnightParking: row.overnight_parking,
+    overnightStatus: normalizeOvernightStatus(row.overnight_status),
     freeParking: row.free_parking,
     paidParking: row.paid_parking,
     reservationUrl: safeUrl(row.tpc_url),

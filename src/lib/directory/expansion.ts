@@ -49,7 +49,10 @@ function chipsOf(row: PreparedRow): string[] {
   if (row.free_parking) chips.push('Free parking');
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
-  if (row.overnight_parking) chips.push('Overnight OK');
+  // M3: no overnight chip in the import preview. A newly imported row's
+  // `overnight_status` defaults to 'unknown' (migration 047), so previewing
+  // an overnight claim from the CSV's legacy boolean would overstate what
+  // the import actually produces. Evidence upgrades status separately.
   if (Array.isArray(row.amenities))
     for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
   return chips;

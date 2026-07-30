@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { normalizeOvernightStatus, overnightChipFor } from './overnight';
 import type { DirectoryEntry } from './types';
 
 /**
@@ -36,6 +37,10 @@ type LocationRow = {
   lng: number | null;
   interstate: string | null;
   exit_number: string | null;
+  mile_marker: number | null;
+  mile_marker_source: string | null;
+  overnight_status: string | null;
+  overnight_status_source: string | null;
   created_at: string | null;
   detail_slug: string | null;
   updated_at: string | null;
@@ -59,7 +64,10 @@ function toEntry(row: LocationRow): DirectoryEntry {
   if (row.free_parking) chips.push('Free parking');
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
-  if (row.overnight_parking) chips.push('Overnight OK');
+  // M3: the overnight chip comes from `overnight_status`, NOT the legacy
+  // `overnight_parking` boolean. All three states are stated explicitly —
+  // an unreviewed row reads "Overnight unknown" rather than going silent.
+  chips.push(overnightChipFor(row.overnight_status));
   if (Array.isArray(row.amenities)) {
     for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
   }
@@ -85,6 +93,10 @@ function toEntry(row: LocationRow): DirectoryEntry {
     lng: row.lng ?? undefined,
     interstate: row.interstate ?? undefined,
     exitNumber: row.exit_number ?? undefined,
+    mileMarker: typeof row.mile_marker === 'number' ? row.mile_marker : undefined,
+    mileMarkerSource: row.mile_marker_source ?? undefined,
+    overnightStatus: normalizeOvernightStatus(row.overnight_status),
+    overnightStatusSource: row.overnight_status_source ?? undefined,
     createdAt: row.created_at ?? undefined,
     detailSlug: row.detail_slug ?? undefined,
     updatedAt: row.updated_at ?? undefined,
@@ -96,7 +108,8 @@ const COLUMNS =
   'id, name, category_slug, state, city, slug, address, zip, phone, website, description, ' +
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
   'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at, ' +
-  'detail_slug, updated_at, verified_at';
+  'detail_slug, updated_at, verified_at, mile_marker, mile_marker_source, ' +
+  'overnight_status, overnight_status_source';
 
 /** Shared query base: published, not deleted, capped, featured-then-name order. */
 async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {

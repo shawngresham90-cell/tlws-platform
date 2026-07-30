@@ -48,7 +48,7 @@ const NOW = new Date('2026-07-11T00:00:00Z');
     lng: -84.9,
     phone: '(706) 555-0100',
     website: 'https://example.com',
-    amenities: ['Showers', 'Fuel', 'Overnight OK'],
+    amenities: ['Showers', 'Fuel', 'Overnight confirmed'],
     parkingSpaces: 80,
     description: 'A full-service truck stop with fuel, showers, parking, and a real diner on site.',
     tpcUrl: 'https://truckparkingclub.com/l/1',

@@ -20,9 +20,12 @@ import { detailDirectionsUrl } from '@/lib/directory/detail';
  * Direction. Mobile-first for a phone in a cab: one column, large route
  * positions, 48px+ touch targets, no horizontal scrolling. A position is
  * labeled "Mile marker" ONLY when the record carries a separately verified
- * mile-marker value (no database column supplies one today); otherwise it
- * is an exit number labeled "Exit" — never relabeled as MM. Listings with
- * neither sit in the separate "Route position not verified" section.
+ * mile-marker value (`locations.mile_marker`, migration 047 — no row
+ * carries one yet); otherwise it is an exit number labeled "Exit" — never
+ * relabeled as MM. Listings with neither sit in the separate "Route
+ * position not verified" section. The overnight chip reads the three-way
+ * `overnight_status`, so an unreviewed legacy row says "unknown" rather
+ * than claiming overnight parking a driver can't rely on.
  */
 
 function ListingCard({ item }: { item: CorridorListing }) {
@@ -57,12 +60,14 @@ function ListingCard({ item }: { item: CorridorListing }) {
                 {c}
               </span>
             ))}
+            {/* Confirmed / prohibited / unknown come from overnight_status —
+                the evidence-backed column — never from the legacy boolean. */}
             <span
               className={cn(
                 'doc-caption rounded-card border px-2 py-0.5 uppercase tracking-wider',
-                overnight === 'Overnight confirmed'
-                  ? 'border-marker text-marker-300'
-                  : 'border-line text-muted',
+                overnight === 'Overnight confirmed' && 'border-marker text-marker-300',
+                overnight === 'Overnight prohibited' && 'border-signal text-signal',
+                overnight === 'Overnight unknown' && 'border-line text-muted',
               )}
             >
               {overnight}

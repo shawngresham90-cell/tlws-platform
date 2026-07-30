@@ -86,7 +86,7 @@ export function scoreCompleteness(entry: CompletenessInput): CompletenessResult 
   const tpcApplies = TPC_CATEGORIES.has(entry.category);
   const parkingApplies = PARKING_CATEGORIES.has(entry.category);
   const hasParkingChip = (entry.amenities ?? []).some((a) =>
-    ['Free parking', 'Paid parking', 'Reserved', 'Overnight OK'].includes(a),
+    ['Free parking', 'Paid parking', 'Reserved', 'Overnight confirmed'].includes(a),
   );
   const validTpc = Boolean(entry.tpcUrl && validateTpcUrl(entry.tpcUrl).ok);
 

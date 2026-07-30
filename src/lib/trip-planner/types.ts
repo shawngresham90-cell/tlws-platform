@@ -69,7 +69,13 @@ export type StopCandidate = {
   /** Straight-line miles off the route polyline (0 = on route). */
   offRouteMiles: number;
   parkingSpaces: number | null;
+  /** Legacy reference only — never gates or scores an overnight claim (M3). */
   overnightParking: boolean;
+  /**
+   * Authoritative three-way overnight truth (migration 047). Absent
+   * normalizes to 'unknown' at every read — never to a claim.
+   */
+  overnightStatus?: 'confirmed' | 'prohibited' | 'unknown';
   /** Directory free-parking flag (null = unknown — never assumed). */
   freeParking: boolean | null;
   /** Directory paid-parking flag (null = unknown — never assumed). */

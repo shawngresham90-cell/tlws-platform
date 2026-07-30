@@ -1,4 +1,7 @@
 import type { DirectoryEntry } from './types';
+import { overnightLabelFor, type OvernightLabel } from './overnight';
+
+export type { OvernightLabel };
 
 /**
  * Corridor flow engine — the Parking → State → Interstate → Direction →
@@ -6,10 +9,12 @@ import type { DirectoryEntry } from './types';
  *
  * Honesty rules, non-negotiable:
  * - A position is labeled "MM" ONLY when the record carries a separately
- *   verified mile-marker value (`entry.mileMarker`). The database has no
- *   mile-marker column today, so in production every position is an exit.
- *   An exit number is NEVER relabeled as a mile marker — not in the label,
- *   the sort, the query, or the tests.
+ *   verified mile-marker value (`entry.mileMarker`, from `locations.
+ *   mile_marker` — migration 047). No row carries one yet, so in practice
+ *   every position is still an exit. An exit number is NEVER relabeled as a
+ *   mile marker — not in the label, the sort, the query, or the tests.
+ * - Overnight truth comes from `overnight_status` only; the unevidenced
+ *   legacy boolean never produces a confirmed claim (see overnightLabel).
  * - Without a verified mile marker, position comes ONLY from a strictly
  *   parseable exit number ("41", "41A") and is labeled "EXIT". Compound or
  *   free-text values ("11/I-49, Exit 39", "Third St") are NEVER guessed —
@@ -167,8 +172,10 @@ export function costChips(entry: DirectoryEntry): string[] {
   return chips;
 }
 
-/** Overnight is CONFIRMED only when the row says so; everything else is unknown. */
-export function overnightLabel(entry: DirectoryEntry): 'Overnight confirmed' | 'Overnight unknown' {
-  const set = new Set((entry.amenities ?? []).map((a) => a.toLowerCase()));
-  return set.has('overnight ok') ? 'Overnight confirmed' : 'Overnight unknown';
+/**
+ * Overnight truth comes from `overnight_status` and nothing else — the
+ * shared vocabulary in ./overnight.ts, used identically by every surface.
+ */
+export function overnightLabel(entry: DirectoryEntry): OvernightLabel {
+  return overnightLabelFor(entry.overnightStatus);
 }

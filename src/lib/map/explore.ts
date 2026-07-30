@@ -17,7 +17,9 @@ export const PARKING_FILTERS = [
   { key: 'Free parking', label: 'Free parking' },
   { key: 'Paid parking', label: 'Paid parking' },
   { key: 'Reserved', label: 'Reserved parking' },
-  { key: 'Overnight OK', label: 'Overnight parking' },
+  // M3: only evidence-backed rows carry this chip, so filtering for it
+  // returns confirmed overnight parking ONLY — never unknown, never prohibited.
+  { key: 'Overnight confirmed', label: 'Overnight confirmed' },
 ] as const;
 
 export type ExploreFilters = {

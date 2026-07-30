@@ -1,5 +1,6 @@
 import type { DirectoryEntry } from './types';
 import { groupByCategory } from './related';
+import { isConfirmedOvernight } from './overnight';
 
 /**
  * Data-driven FAQ generation (Milestone 18 SEO). Questions are only emitted
@@ -47,8 +48,11 @@ export function buildFaqs(entries: DirectoryEntry[], scope: FaqScope): Faq[] {
 
   // Parking: dedicated lots + overnight-friendly stops.
   const dedicated = byCategory['parking'] ?? [];
+  // M3: "allow overnight parking" is a claim — only evidence-backed
+  // `overnight_status = confirmed` rows qualify. Unknown rows are never
+  // described as allowing it.
   const overnight = entries.filter(
-    (e) => e.category === 'truck-stops' && (e.amenities ?? []).includes('Overnight OK'),
+    (e) => e.category === 'truck-stops' && isConfirmedOvernight(e.overnightStatus),
   );
   if (dedicated.length + overnight.length > 0) {
     const parts: string[] = [];
