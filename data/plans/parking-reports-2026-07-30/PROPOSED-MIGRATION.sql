@@ -1,0 +1,89 @@
+-- ============================================================================
+-- INERT PLAN — DO NOT EXECUTE
+-- Driver parking reports: optional normalization (2026-07-30)
+--
+-- THE FEATURE DOES NOT NEED THIS. Driver reports work today against the
+-- existing `public.location_submissions` table; the report-specific facts
+-- ride in a parseable header inside `comments`. This migration promotes them
+-- to first-class columns so they can be indexed, constrained and queried
+-- directly. It is a later optimization, offered for review only.
+--
+-- Nothing here has been applied to Supabase or any environment.
+-- ============================================================================
+
+-- begin;
+--
+-- do $mig$
+-- begin
+--   -- Fail closed if the table isn't the one we audited.
+--   if not exists (select 1 from information_schema.tables
+--                  where table_schema = 'public' and table_name = 'location_submissions') then
+--     raise exception 'guard: location_submissions missing — re-audit before applying';
+--   end if;
+--   if exists (select 1 from information_schema.columns
+--              where table_schema = 'public' and table_name = 'location_submissions'
+--                and column_name = 'issue_type') then
+--     raise exception 'guard: issue_type already exists — this migration already ran';
+--   end if;
+-- end $mig$;
+--
+-- -- 1. What the driver said was wrong. Constrained to the published
+-- --    driver-facing taxonomy so unknown values cannot appear in triage.
+-- alter table public.location_submissions
+--   add column issue_type text
+--     check (issue_type is null or issue_type in (
+--       'parking-count', 'overnight', 'address', 'access',
+--       'closed', 'route-position', 'other', 'missing-location'));
+--
+-- -- 2. Optional supporting link. http(s) only, enforced in the DB as well as
+-- --    the API so a direct insert cannot smuggle a javascript: URL.
+-- alter table public.location_submissions
+--   add column evidence_url text
+--     check (evidence_url is null or evidence_url ~* '^https?://');
+--
+-- -- 3. Route hints for a PROPOSED location. Deliberately NO mile_marker
+-- --    column: an exit number is not a mile marker, drivers are not asked
+-- --    for one, and nothing may derive one from an exit.
+-- alter table public.location_submissions
+--   add column interstate text,
+--   add column exit_number text,
+--   add column direction text
+--     check (direction is null or direction in
+--            ('northbound', 'southbound', 'eastbound', 'westbound'));
+--
+-- -- 4. Triage vocabulary the review queue wants. 'reviewed' and 'resolved'
+-- --    do not exist in the current CHECK, so the queue ships with
+-- --    pending/rejected/duplicate until this lands.
+-- alter table public.location_submissions
+--   drop constraint if exists location_submissions_status_check;
+-- alter table public.location_submissions
+--   add constraint location_submissions_status_check
+--     check (status in ('pending', 'reviewed', 'resolved', 'rejected',
+--                       'approved', 'duplicate', 'merged'));
+--
+-- -- 5. Triage index: pending reports for one listing, newest first.
+-- create index if not exists location_submissions_report_triage_idx
+--   on public.location_submissions (location_id, issue_type, created_at desc)
+--   where status = 'pending';
+--
+-- commit;
+
+-- ---------------------------------------------------------------- ROLLBACK
+-- Value-matched and additive-only, so it cannot destroy submitted reports.
+-- begin;
+-- alter table public.location_submissions
+--   drop column if exists issue_type,
+--   drop column if exists evidence_url,
+--   drop column if exists interstate,
+--   drop column if exists exit_number,
+--   drop column if exists direction;
+-- drop index if exists location_submissions_report_triage_idx;
+-- alter table public.location_submissions
+--   drop constraint if exists location_submissions_status_check;
+-- alter table public.location_submissions
+--   add constraint location_submissions_status_check
+--     check (status in ('pending', 'approved', 'rejected', 'duplicate', 'merged'));
+-- commit;
+-- NOTE: rolling back the status CHECK fails if any row already uses
+-- 'reviewed' or 'resolved'. Re-triage those rows first — deliberately loud
+-- rather than silently rewriting review decisions.

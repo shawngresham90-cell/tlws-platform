@@ -196,6 +196,39 @@ try {
     // Owner rule: unknown must be VISIBLE, not omitted. Every listing card
     // carries exactly one overnight state, so a rendered list must show at
     // least one of the three labels — silence is a failure.
+    // Driver report path: present, tappable, and it opens a labeled dialog
+    // without breaking the phone layout.
+    const reportBtns = page.getByRole('button', { name: /Report parking info/i });
+    const nReport = await reportBtns.count();
+    check(`${label} corridor list: report action on listing cards`, nReport >= 0);
+    if (nReport > 0) {
+      const box = await reportBtns.first().boundingBox();
+      check(`${label} report action is tappable (>=44px)`, (box?.height ?? 0) >= 44, box?.height);
+      await reportBtns.first().click();
+      const dlg = page.getByRole('dialog');
+      check(`${label} report sheet opens as a dialog`, (await dlg.count()) === 1);
+      check(`${label} report sheet: no overflow`, await noHorizontalOverflow(page));
+      const sheetText = await dlg.innerText();
+      check(
+        `${label} report sheet states nothing changes automatically`,
+        /review queue|reviewed by a human|nothing on the map/i.test(sheetText),
+        sheetText.slice(0, 80),
+      );
+      await page.keyboard.press('Escape');
+      check(
+        `${label} report sheet closes on Escape`,
+        (await page.getByRole('dialog').count()) === 0,
+      );
+    }
+    const missingBtn = page.getByRole('button', { name: /Parking location missing\?/i });
+    check(`${label} corridor list: missing-location CTA present`, (await missingBtn.count()) === 1);
+    const mBox = await missingBtn.first().boundingBox();
+    check(
+      `${label} missing-location CTA is tappable (>=48px)`,
+      (mBox?.height ?? 0) >= 48,
+      mBox?.height,
+    );
+
     const cardCount = await page.locator('main li').count();
     check(
       `${label} corridor list: every rendered listing states an overnight status`,

@@ -14,6 +14,7 @@ import {
   type CorridorListing,
 } from '@/lib/directory/corridor';
 import { detailDirectionsUrl } from '@/lib/directory/detail';
+import { ReportParkingButton, MissingParkingButton, type RouteContext } from './ReportParkingSheet';
 
 /**
  * Corridor list — the final screen of Parking → State → Interstate →
@@ -104,6 +105,10 @@ function ListingCard({ item }: { item: CorridorListing }) {
           </span>
         )}
       </div>
+      {/* Driver correction path. Sends to a review queue; changes nothing. */}
+      <div className="mt-2 text-right">
+        <ReportParkingButton locationId={entry.id} locationName={entry.name} />
+      </div>
     </li>
   );
 }
@@ -111,9 +116,13 @@ function ListingCard({ item }: { item: CorridorListing }) {
 export function CorridorList({
   entries,
   direction,
+  routeContext,
 }: {
   entries: DirectoryEntry[];
   direction: CorridorDirection;
+  /** State / interstate / direction from the URL, prefilled into the
+      missing-location form. Never an exit, count or overnight claim. */
+  routeContext?: RouteContext;
 }) {
   const [ascending, setAscending] = useState(sortOrderForDirection(direction) === 'asc');
   const { positioned, unpositioned } = buildCorridorList(entries);
@@ -162,6 +171,15 @@ export function CorridorList({
           </ul>
         </section>
       ) : null}
+
+      {/* Coverage gap path: a driver can propose a place we don't list yet.
+          It becomes a pending submission, never a public listing. */}
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="mb-3 text-sm text-muted">
+          Know a truck-parking spot that isn&rsquo;t on this list?
+        </p>
+        <MissingParkingButton routeContext={routeContext} />
+      </div>
     </div>
   );
 }

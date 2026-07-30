@@ -46,7 +46,15 @@ export default async function ParkingCorridorPage({ params }: { params: Params }
         </Eyebrow>
         <h1 className="display-section">Parking ahead</h1>
         <div className="mt-5">
-          <CorridorList entries={entries} direction={direction} />
+          <CorridorList
+            entries={entries}
+            direction={direction}
+            routeContext={{
+              state: params.state.toUpperCase(),
+              interstate: designation,
+              direction,
+            }}
+          />
         </div>
         <p className="doc-caption mt-8">
           <Link
