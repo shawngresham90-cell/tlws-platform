@@ -307,5 +307,208 @@ check(
   /don&rsquo;t ask\s*\n?\s*for your name|track your location/i.test(sheet),
 );
 
+/* ==================================================== HARDENING PASS (2026-07-30)
+ * Service-role boundary, client-supplied-field boundary, prefill limits and
+ * pilot admin guarantees.
+ * ============================================================================ */
+
+/* ---------------------------------------- 1. service-role key never leaks */
+const adminClientSrc = read('src/lib/supabase/admin.ts');
+check(
+  'admin client is server-only (import throws in a client bundle)',
+  /^import 'server-only';/m.test(adminClientSrc),
+);
+check(
+  'service-role key is read from a non-public env var',
+  /process\.env\.SUPABASE_SERVICE_ROLE_KEY/.test(adminClientSrc) &&
+    !/NEXT_PUBLIC_SUPABASE_SERVICE/.test(adminClientSrc),
+);
+check(
+  'the report route runs on the server (nodejs runtime)',
+  /export const runtime = 'nodejs'/.test(routeSrc),
+);
+check(
+  'the report sheet is a client component that never imports the admin client',
+  /^'use client';/m.test(sheet) && !/supabase\/admin|SERVICE_ROLE/.test(sheet),
+);
+check(
+  'no service-role reference anywhere in the client component tree',
+  !/SERVICE_ROLE/.test(sheet) &&
+    !/SERVICE_ROLE/.test(read('src/components/directory/CorridorFlow.tsx')),
+);
+check(
+  'the route never echoes env, keys or the inserted row back to the client',
+  !/process\.env/.test(routeCode) && !/select\('\*'\)/.test(routeCode),
+);
+check(
+  'the public response body is minimal (received flag only)',
+  /ok\(\{ received: true \}, 201\)/.test(routeCode) &&
+    !/ok\(\{[^}]*(id|row|data|key|token)/.test(routeCode.replace('{ received: true }', '')),
+);
+check(
+  'error responses expose no database detail',
+  /fail\('Could not send your report\. Try again\.', 500, 'db_error'\)/.test(routeCode) &&
+    !/error\.message|error\.details|error\.hint/.test(routeCode),
+);
+
+/* ------------------------- 2/3. client cannot supply privileged fields */
+const INJECTIONS: [string, Record<string, unknown>][] = [
+  ['status', { status: 'approved' }],
+  ['kind', { kind: 'new' }],
+  ['is_published', { is_published: true }],
+  ['overnight_status', { overnight_status: 'confirmed' }],
+  ['parking_spaces', { parking_spaces: 500 }],
+  ['mile_marker', { mile_marker: 12.5 }],
+  ['reviewed_by', { reviewed_by: 'someone' }],
+  ['reviewed_at', { reviewed_at: '2020-01-01' }],
+  ['created_at', { created_at: '2020-01-01' }],
+  ['id', { id: '00000000-0000-0000-0000-000000000000' }],
+  ['profile_id', { profile_id: 'x' }],
+  ['table name', { table: 'locations' }],
+  ['admin_note', { admin_note: 'approved by me' }],
+];
+for (const [field, extra] of INJECTIONS) {
+  const res = parkingReportSchema.safeParse({
+    mode: 'issue',
+    locationId: LOC,
+    issueType: 'other',
+    ...extra,
+  });
+  check(`client cannot supply ${field} (rejected, not silently stripped)`, !res.success);
+}
+check(
+  'server constructs status/kind itself, never from the payload',
+  /status: 'pending'/.test(routeCode) &&
+    /kind: submissionKindFor\(data\)/.test(routeCode) &&
+    !/status: data\.|kind: data\.kind/.test(routeCode),
+);
+// Scope to the INSERT payload: `.eq('is_published', true)` in the existence
+// check is a READ filter, not a write.
+const insertPayload = /\.insert\(\{([\s\S]*?)\}\)/.exec(routeCode)?.[1] ?? '';
+check(
+  'server never writes publication or authoritative parking fields',
+  insertPayload.length > 0 &&
+    !/is_published|overnight_status|parking_spaces|mile_marker|is_featured|is_indexable/.test(
+      insertPayload,
+    ),
+);
+check(
+  'the insert payload writes only the columns we intend',
+  insertPayload.length > 0 &&
+    (insertPayload.match(/^\s*([a-z_]+):/gm) ?? [])
+      .map((m) => m.trim().replace(':', ''))
+      .every((k) =>
+        ['kind', 'location_id', 'name', 'state', 'city', 'address', 'comments', 'status'].includes(
+          k,
+        ),
+      ),
+  insertPayload.trim().slice(0, 120),
+);
+check(
+  'the table name is a hard-coded literal, never client-controlled',
+  /\.from\('location_submissions'\)/.test(routeCode) && !/\.from\(\s*[a-zA-Z]/.test(routeCode),
+);
+
+/* --------------------- 4/5/6. existence check, no locations row, no writes */
+check(
+  'an existing-location report verifies the listing exists before inserting',
+  /from\('locations'\)[\s\S]{0,300}maybeSingle\(\)/.test(routeCode) &&
+    /unknown_location/.test(routeCode),
+);
+check(
+  'the existence check requires published + not deleted',
+  /is_published', true\)|eq\('is_published', true\)/.test(routeCode) &&
+    /is\('deleted_at', null\)/.test(routeCode),
+);
+check(
+  'a missing-location submission never creates a locations row',
+  !/from\('locations'\)[\s\S]{0,200}\.insert\(/.test(routeCode),
+);
+check(
+  'exactly one insert exists in the route, into location_submissions',
+  (routeCode.match(/\.insert\(/g) ?? []).length === 1 &&
+    /from\('location_submissions'\)\s*\.insert\(/.test(routeCode),
+);
+
+/* ---------------------------------------- rate limit honesty + honeypot */
+const rlSrc = read('src/lib/api/rate-limit.ts');
+check(
+  'rate limiter is in-memory (documented as best-effort, not durable)',
+  /new Map<string, Bucket>\(\)/.test(rlSrc) && /in-memory/i.test(rlSrc),
+);
+check(
+  'rate limiter fails open so a bug cannot lock out drivers',
+  /fails OPEN|allowed: true/i.test(rlSrc),
+);
+check(
+  'honeypot short-circuits before any database call',
+  routeCode.indexOf('company_website') < routeCode.indexOf('createAdminClient()'),
+);
+
+/* ------------------------------------------- prefill limits (driver UX) */
+const routeCtxBody = /export type RouteContext = \{([^}]*)\}/.exec(sheet)?.[1] ?? '';
+check(
+  'only state / interstate / direction are prefillable',
+  routeCtxBody.length > 0 &&
+    !/exit|mile|parking|overnight|count/i.test(routeCtxBody) &&
+    ['state', 'interstate', 'direction'].every((k) => routeCtxBody.includes(k)),
+  routeCtxBody.trim(),
+);
+for (const forbidden of ['exitNumber', 'parkingDetails']) {
+  check(
+    `${forbidden} is never prefilled from route context`,
+    !new RegExp(`name="${forbidden}"[\\s\\S]{0,200}defaultValue=\\{routeContext`).test(sheet),
+  );
+}
+check(
+  'prefilled route values stay editable (defaultValue, not value)',
+  /defaultValue=\{routeContext\?\.state/.test(sheet) && !/\bvalue=\{routeContext/.test(sheet),
+);
+check(
+  'the driver is told the route was prefilled and can be corrected',
+  /change it if it&rsquo;s wrong/.test(sheet),
+);
+check(
+  'corridor page passes only the three safe context fields',
+  /routeContext=\{\{[\s\S]{0,200}state:[\s\S]{0,200}interstate:[\s\S]{0,200}direction,[\s\S]{0,20}\}\}/.test(
+    read('src/app/(directory)/directory/parking/[state]/[interstate]/[direction]/page.tsx'),
+  ),
+);
+
+/* --------------------------------------- detail page: two distinct CTAs */
+const detailSrc = read('src/app/(directory)/directory/location/[slug]/page.tsx');
+check('detail page keeps the long-form corrections link', /Send full corrections/.test(detailSrc));
+check('detail page offers the quick report', /ReportParkingButton/.test(detailSrc));
+check(
+  'the two CTAs describe different jobs',
+  /Quickest option/.test(detailSrc) && /Have the corrected details/.test(detailSrc),
+);
+
+/* ------------------------------------------------ pilot admin guarantees */
+check(
+  'admin sorts pending groups first',
+  /pending reports first|ap > 0 !== bp > 0/.test(adminPage),
+);
+check('admin shows a pending count badge', /pending<\/span>|\} pending/.test(adminPage));
+check('admin states that volume is not a trust score', /no trust score/i.test(adminPage));
+check(
+  'admin derives no numeric trust/confidence score',
+  !/trustScore|confidence\s*=|score\s*=\s*count/i.test(adminPage),
+);
+check('admin labels triage separately from correcting the listing', /Triage:/.test(adminPage));
+check(
+  'admin explains where a real correction happens',
+  /through the listing editor/.test(adminPage),
+);
+// The page TALKS about not applying; what matters is that no such control
+// exists. Check the actual interactive elements and submitted values.
+const adminControls = (adminPage.match(/<(?:button|form)[\s\S]*?>/g) ?? []).join('\n');
+check(
+  'admin has no apply/publish control',
+  !/apply|publish|approve/i.test(adminControls) &&
+    !/value="(approved|merged|published)"/.test(adminPage),
+  adminControls.slice(0, 120),
+);
+
 console.log(`parking-reports: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

@@ -363,23 +363,36 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
               </>
             )}
 
+            {/* Two deliberately different paths, not duplicate CTAs:
+                (1) the quick driver report — one tap per issue type, seconds,
+                    for "the info on this page is wrong";
+                (2) the detailed submission form — full listing fields, for
+                    sending replacement values (hours, phone, address, etc).
+                The long form is kept because the quick report intentionally
+                does NOT collect proposed replacement values. */}
             <div className="mt-8 rounded-card border border-line bg-asphalt-800 p-5 text-sm text-muted">
-              {/* Fast path first: two taps, listing already attached. */}
-              <div className="mb-4">
+              <p className="font-semibold text-ink">Spot something wrong?</p>
+              <div className="mt-3">
                 <ReportParkingButton
                   locationId={entry.id}
                   locationName={entry.name}
                   className="inline-flex min-h-[48px] w-full items-center justify-center rounded-card border border-signal px-4 font-display uppercase tracking-wide text-signal transition-colors hover:bg-signal hover:text-asphalt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal sm:w-auto"
                 />
+                <p className="mt-2">
+                  Quickest option — pick what&rsquo;s wrong and send. Takes a few seconds, no
+                  details needed.
+                </p>
               </div>
-              Something wrong here — moved, closed, new phone number?{' '}
-              <Link
-                href={`/directory/submit?listing=${params.slug}&kind=correction`}
-                className="font-semibold text-signal underline-offset-4 hover:underline"
-              >
-                Report incorrect information →
-              </Link>{' '}
-              Every report is reviewed by a human before the directory changes.
+              <p className="mt-4 border-t border-line pt-4">
+                Have the corrected details — new hours, phone, address?{' '}
+                <Link
+                  href={`/directory/submit?listing=${params.slug}&kind=correction`}
+                  className="font-semibold text-signal underline-offset-4 hover:underline"
+                >
+                  Send full corrections →
+                </Link>
+              </p>
+              <p className="mt-3">Either way a human reviews it before the directory changes.</p>
             </div>
           </div>
 

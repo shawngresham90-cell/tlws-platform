@@ -57,39 +57,47 @@ const optionalText = (max: number) =>
     .transform((v) => (v ? v : undefined));
 
 /**
- * Two report modes in one contract.
+ * Two report modes in one contract. Both are `.strict()`: a payload carrying
+ * any key we did not ask for — `status`, `kind`, `is_published`,
+ * `overnight_status`, `reviewed_by`, a table name — is REJECTED with a 400
+ * rather than silently stripped, so injection attempts fail loudly.
+ *
  *  - `issue`: a correction about a listing the driver is already looking at,
  *    so the location id travels with the request and nothing is re-searched.
  *  - `missing`: a proposed truck-parking location that does not exist yet.
  */
 export const parkingReportSchema = z.discriminatedUnion('mode', [
-  z.object({
-    mode: z.literal('issue'),
-    locationId: z.string().uuid({ message: 'Missing the listing this report is about.' }),
-    issueType: z.enum(ISSUE_VALUES),
-    note: optionalText(1000),
-    evidence: evidenceUrl.optional(),
-    /** Hidden field only bots fill. */
-    company_website: z.string().max(0).optional().or(z.literal('')),
-  }),
-  z.object({
-    mode: z.literal('missing'),
-    name: z.string().trim().min(2, 'Give the place a name.').max(120),
-    state: z
-      .string()
-      .trim()
-      .regex(/^[A-Za-z]{2}$/, 'Two-letter state, e.g. GA.')
-      .transform((v) => v.toUpperCase()),
-    interstate: optionalText(20),
-    direction: z.enum(['northbound', 'southbound', 'eastbound', 'westbound']).optional(),
-    exitNumber: optionalText(20),
-    city: optionalText(80),
-    address: optionalText(200),
-    parkingDetails: optionalText(500),
-    note: optionalText(1000),
-    evidence: evidenceUrl.optional(),
-    company_website: z.string().max(0).optional().or(z.literal('')),
-  }),
+  z
+    .object({
+      mode: z.literal('issue'),
+      locationId: z.string().uuid({ message: 'Missing the listing this report is about.' }),
+      issueType: z.enum(ISSUE_VALUES),
+      note: optionalText(1000),
+      evidence: evidenceUrl.optional(),
+      /** Hidden field only bots fill. */
+      company_website: z.string().max(0).optional().or(z.literal('')),
+    })
+    .strict(),
+  z
+    .object({
+      mode: z.literal('missing'),
+      name: z.string().trim().min(2, 'Give the place a name.').max(120),
+      state: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z]{2}$/, 'Two-letter state, e.g. GA.')
+        .transform((v) => v.toUpperCase()),
+      interstate: optionalText(20),
+      direction: z.enum(['northbound', 'southbound', 'eastbound', 'westbound']).optional(),
+      exitNumber: optionalText(20),
+      city: optionalText(80),
+      address: optionalText(200),
+      parkingDetails: optionalText(500),
+      note: optionalText(1000),
+      evidence: evidenceUrl.optional(),
+      company_website: z.string().max(0).optional().or(z.literal('')),
+    })
+    .strict(),
 ]);
 
 export type ParkingReportInput = z.infer<typeof parkingReportSchema>;

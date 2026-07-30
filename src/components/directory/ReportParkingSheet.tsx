@@ -26,16 +26,31 @@ const field =
   'placeholder:text-muted/60 focus:border-signal focus:outline-none';
 const labelCls = 'mb-1 block text-sm font-semibold text-ink';
 
+/**
+ * Route context the app already knows from the corridor URL. ONLY these three
+ * are ever prefilled. Exit number, parking count, overnight status and mile
+ * marker are NEVER guessed — an exit is not a mile marker, and a count or an
+ * overnight claim must come from the driver or from evidence, not from us.
+ * Every prefilled value stays editable so a driver can correct it.
+ */
+export type RouteContext = {
+  state?: string;
+  interstate?: string;
+  direction?: string;
+};
+
 export function ReportParkingSheet({
   mode,
   locationId,
   locationName,
+  routeContext,
   open,
   onClose,
 }: {
   mode: Mode;
   locationId?: string;
   locationName?: string;
+  routeContext?: RouteContext;
   open: boolean;
   onClose: () => void;
 }) {
@@ -219,6 +234,7 @@ export function ReportParkingSheet({
                       required
                       maxLength={2}
                       placeholder="GA"
+                      defaultValue={routeContext?.state ?? ''}
                       className={field}
                     />
                   </div>
@@ -231,6 +247,7 @@ export function ReportParkingSheet({
                       name="interstate"
                       maxLength={20}
                       placeholder="I-75"
+                      defaultValue={routeContext?.interstate ?? ''}
                       className={field}
                     />
                   </div>
@@ -240,7 +257,12 @@ export function ReportParkingSheet({
                     <label htmlFor="rp-direction" className={labelCls}>
                       Direction
                     </label>
-                    <select id="rp-direction" name="direction" className={field} defaultValue="">
+                    <select
+                      id="rp-direction"
+                      name="direction"
+                      className={field}
+                      defaultValue={routeContext?.direction ?? ''}
+                    >
                       <option value="">Not sure</option>
                       <option value="northbound">Northbound</option>
                       <option value="southbound">Southbound</option>
@@ -255,6 +277,12 @@ export function ReportParkingSheet({
                     <input id="rp-exit" name="exitNumber" maxLength={20} className={field} />
                   </div>
                 </div>
+                {(routeContext?.state || routeContext?.interstate || routeContext?.direction) && (
+                  <p className="-mt-2 text-xs text-muted">
+                    Route filled in from the list you were browsing — change it if it&rsquo;s wrong.
+                    We don&rsquo;t guess the exit or how many trucks fit.
+                  </p>
+                )}
                 <div>
                   <label htmlFor="rp-city" className={labelCls}>
                     City
@@ -355,7 +383,13 @@ export function ReportParkingButton({
 }
 
 /** Footer trigger for "we don't have this place yet". */
-export function MissingParkingButton({ className }: { className?: string }) {
+export function MissingParkingButton({
+  routeContext,
+  className,
+}: {
+  routeContext?: RouteContext;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -369,7 +403,12 @@ export function MissingParkingButton({ className }: { className?: string }) {
       >
         Parking location missing?
       </button>
-      <ReportParkingSheet mode="missing" open={open} onClose={() => setOpen(false)} />
+      <ReportParkingSheet
+        mode="missing"
+        routeContext={routeContext}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }

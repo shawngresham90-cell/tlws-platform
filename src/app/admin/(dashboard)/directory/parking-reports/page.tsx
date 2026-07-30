@@ -70,7 +70,16 @@ export default async function ParkingReportsPage() {
     for (const l of (locs ?? []) as LocationFacts[]) facts.set(l.id, l);
   }
 
-  const groups = groupReports(reports);
+  const all = groupReports(reports);
+  // Pilot triage order: anything with pending reports first, then by how many
+  // drivers reported it. Count is an ATTENTION signal — there is deliberately
+  // no trust score, and volume never implies the claim is true.
+  const groups = [...all].sort((a, b) => {
+    const ap = a.reports.filter((r) => r.status === 'pending').length;
+    const bp = b.reports.filter((r) => r.status === 'pending').length;
+    if (ap > 0 !== bp > 0) return bp - ap;
+    return b.count - a.count || (b.latestAt ?? '').localeCompare(a.latestAt ?? '');
+  });
   const pending = groups.filter((g) => g.reports.some((r) => r.status === 'pending'));
 
   return (
@@ -78,9 +87,11 @@ export default async function ParkingReportsPage() {
       <header>
         <h1 className="font-display text-3xl uppercase text-ink">Driver parking reports</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted">
-          Grouped by listing and issue so repeats surface first. Reviewing a report never changes a
-          listing — authoritative data only moves through a separate evidenced update. Several
-          drivers reporting the same thing means look sooner, not accept.
+          Pilot queue for the ~100 test drivers. Grouped by listing and issue, pending first, then
+          by how many drivers reported it. Reviewing a report never changes a listing —
+          authoritative data only moves through a separate evidenced update, which is why there is
+          no apply button here. Several drivers reporting the same thing means look sooner, never
+          accept: no trust score is derived from report volume.
         </p>
         <p className="mt-2 text-sm text-muted">
           {groups.length} group{groups.length === 1 ? '' : 's'} · {pending.length} with pending
@@ -101,9 +112,14 @@ export default async function ParkingReportsPage() {
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="font-display text-xl uppercase text-ink">
                 {group.issueLabel}
+                {group.reports.some((r) => r.status === 'pending') && (
+                  <span className="ml-3 rounded-card bg-signal px-2 py-0.5 text-sm text-asphalt">
+                    {group.reports.filter((r) => r.status === 'pending').length} pending
+                  </span>
+                )}
                 {group.count > 1 && (
-                  <span className="ml-3 rounded-card border border-signal px-2 py-0.5 text-sm text-signal">
-                    {group.count} reports
+                  <span className="ml-2 rounded-card border border-signal px-2 py-0.5 text-sm text-signal">
+                    {group.count} total reports
                   </span>
                 )}
               </h2>
@@ -150,7 +166,12 @@ export default async function ParkingReportsPage() {
                       {STATUS_LABEL[r.status] ?? r.status} ·{' '}
                       {r.created_at ? new Date(r.created_at).toLocaleString() : '—'}
                     </span>
-                    <form action={setReportStatus} className="flex flex-wrap gap-2">
+                    <form
+                      action={setReportStatus}
+                      aria-label="Triage this report (does not change the listing)"
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <span className="text-xs uppercase tracking-widest text-muted">Triage:</span>
                       <input type="hidden" name="id" value={r.id} />
                       {(['rejected', 'duplicate'] as const).map((s) => (
                         <button
@@ -209,6 +230,11 @@ export default async function ParkingReportsPage() {
                 </li>
               ))}
             </ul>
+            <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
+              Triage marks the <em>report</em> only. To change what drivers see, verify the claim
+              against an official or operator source and apply it through the listing editor — a
+              separate, evidenced action.
+            </p>
           </section>
         );
       })}
