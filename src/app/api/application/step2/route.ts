@@ -3,7 +3,7 @@ import { applicationStep2Schema } from '@/lib/api/schemas';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ok, fail } from '@/lib/api/responses';
 import { log } from '@/lib/api/logger';
-import { SMS_CONSENT_DISCLOSURE, resolveConsentGrant } from '@/lib/leads/sms-consent';
+import { disclosureFor, resolveConsentGrant } from '@/lib/leads/sms-consent';
 import { recordSmsConsent } from '@/lib/leads/sms-consent-server';
 
 export const runtime = 'nodejs';
@@ -52,6 +52,22 @@ export const POST = guardedPost(
     });
     const granted = resolveConsentGrant(consentRequested, durable);
 
+    // SEPARATE promotional consent. Recorded as its own append-only evidence
+    // row under its own source form and disclosure, so marketing consent can
+    // never be inferred from the classes/follow-up box or from the mere
+    // presence of a phone number. Declining it changes nothing else.
+    // Tokenless on purpose: the submission token is unique per row and is
+    // already spent by the primary record above.
+    const marketingRequested = data.sms_marketing_consent === true;
+    const marketingDurable = await recordSmsConsent({
+      sourceForm: 'academy-application-marketing',
+      email: (existing as { email?: string | null }).email,
+      phone: (existing as { phone?: string | null }).phone,
+      consent: marketingRequested,
+      submissionId: null,
+    });
+    const marketingGranted = resolveConsentGrant(marketingRequested, marketingDurable);
+
     const update: Record<string, unknown> = {
       has_permit: data.has_permit ?? null,
       age_confirmed: data.age_confirmed ?? null,
@@ -61,7 +77,7 @@ export const POST = guardedPost(
       // Fail closed: true only with durable evidence; otherwise false + null.
       sms_consent: granted,
       sms_consent_at: granted ? new Date().toISOString() : null,
-      sms_consent_text: granted ? SMS_CONSENT_DISCLOSURE : null,
+      sms_consent_text: granted ? disclosureFor('academy-application').text : null,
     };
 
     // Only set the timeframe if this step supplied one — don't clobber step 1.
@@ -83,7 +99,10 @@ export const POST = guardedPost(
       application_id: row.id,
       event_type: 'step2',
       // Reflects the effective (fail-closed) decision, not just the request.
-      detail: { sms_consent: granted },
+      // Auditable record of BOTH decisions, kept distinct. Marketing has no
+      // column on `applications`; its durable evidence lives in `sms_consents`
+      // and this event, so nothing about it is inferred later.
+      detail: { sms_consent: granted, sms_marketing_consent: marketingGranted },
     });
 
     log.info('application_step2_completed', { application_id: row.id });

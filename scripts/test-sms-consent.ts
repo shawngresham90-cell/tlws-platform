@@ -31,6 +31,7 @@ import {
   SMS_CONSENT_DISCLOSURE,
   SMS_CONSENT_VERSION,
   SMS_CONSENT_SOURCES,
+  disclosureFor,
   isSmsConsentSource,
   isValidSubmissionId,
   normalizeEmail,
@@ -98,7 +99,13 @@ check(
 
 /* ── Source map only contains real, public routes ──────────────────────── */
 const sourceKeys = Object.keys(SMS_CONSENT_SOURCES);
-check('two known sources', sourceKeys.length === 2, sourceKeys);
+// Three sources since 2026-07-30: the academy classes/follow-up consent, the
+// SEPARATE academy marketing consent, and the founders lead form.
+check('three known sources', sourceKeys.length === 3, sourceKeys);
+check(
+  'the academy marketing consent is its own source',
+  SMS_CONSENT_SOURCES['academy-application-marketing'] === '/academy/apply',
+);
 check(
   'academy-application → /academy/apply',
   SMS_CONSENT_SOURCES['academy-application'] === '/academy/apply',
@@ -133,8 +140,23 @@ const optedIn = buildSmsConsentRecord(
 );
 check('checked: sms_consent true', optedIn.sms_consent === true);
 check('checked: timestamp is the injected server clock', optedIn.sms_consent_at === NOW);
-check('checked: version stamped', optedIn.sms_consent_version === SMS_CONSENT_VERSION);
-check('checked: disclosure stored verbatim', optedIn.disclosure_text === SMS_CONSENT_DISCLOSURE);
+// Each form stamps ITS OWN version and disclosure (2026-07-30). The founders
+// form keeps the legacy constants; the academy form uses its own wording.
+check(
+  "checked: version stamped from the form's own disclosure",
+  optedIn.sms_consent_version === disclosureFor('academy-application').version,
+);
+check(
+  "checked: disclosure stored verbatim from the form's own wording",
+  optedIn.disclosure_text === disclosureFor('academy-application').text,
+);
+check(
+  'the founders form still stamps the legacy version and text',
+  buildSmsConsentRecord({ sourceForm: 'founder-lead', phone: '555', consent: true }, NOW)
+    .sms_consent_version === SMS_CONSENT_VERSION &&
+    buildSmsConsentRecord({ sourceForm: 'founder-lead', phone: '555', consent: true }, NOW)
+      .disclosure_text === SMS_CONSENT_DISCLOSURE,
+);
 check('checked: source_url from map', optedIn.source_url === '/academy/apply');
 check('checked: email trimmed + lowercased', optedIn.email === 'jane@example.com');
 check('checked: phone trimmed', optedIn.phone === '(555) 555-5555');

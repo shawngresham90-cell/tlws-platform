@@ -32,13 +32,63 @@ export const SMS_CONSENT_DISCLOSURE =
   'rates may apply. Msg frequency varies. Reply STOP to opt out. Reply HELP for help. By ' +
   'submitting this form, you also agree to our Privacy Policy.';
 
-/** Forms that display the SMS consent checkbox, mapped to the page they live on. */
+/**
+ * Academy classes / follow-up disclosure (owner-supplied, 2026-07-30). Shown
+ * next to the first, unchecked-by-default checkbox on /academy/apply and
+ * stored verbatim as evidence. Only "Privacy Policy" is rendered as a link;
+ * no word is added or removed.
+ */
+export const ACADEMY_SMS_CLASSES_DISCLOSURE =
+  'By checking this box, you agree to receive SMS text messages (classes and follow up) from ' +
+  'Trucking Life With Shawn at the number provided. Consent is not a condition of any purchase ' +
+  'or service. Msg & data rates may apply. Msg frequency varies. Reply STOP to opt out. Reply ' +
+  'HELP for help. By submitting this form, you also agree to our Privacy Policy.';
+
+/**
+ * Optional promotional/marketing disclosure (owner-supplied, 2026-07-30). A
+ * SEPARATE, independently unchecked box. Declining it never blocks the form,
+ * enrollment, purchase, or service.
+ */
+export const ACADEMY_SMS_MARKETING_DISCLOSURE =
+  'I also agree to receive occasional promotional offers and marketing messages via SMS from ' +
+  'Trucking Life With Shawn. Consent is not a condition of any purchase or service. Reply STOP ' +
+  'to opt out.';
+
+/** Version stamped on the two academy disclosures above. */
+export const ACADEMY_SMS_CONSENT_VERSION = '2026-07-30';
+
+/** Forms that display an SMS consent checkbox, mapped to the page they live on. */
 export const SMS_CONSENT_SOURCES = {
   'academy-application': '/academy/apply',
+  /** Separate row so marketing consent is never inferred from the other box. */
+  'academy-application-marketing': '/academy/apply',
   'founder-lead': '/founders',
 } as const;
 
 export type SmsConsentSource = keyof typeof SMS_CONSENT_SOURCES;
+
+/**
+ * Per-form disclosure + version. Each form keeps its own approved wording, so
+ * updating one form's language can never silently restate another form's
+ * consent. Existing records keep the version they were captured under.
+ */
+export const SMS_CONSENT_DISCLOSURES: Record<SmsConsentSource, { version: string; text: string }> =
+  {
+    'academy-application': {
+      version: ACADEMY_SMS_CONSENT_VERSION,
+      text: ACADEMY_SMS_CLASSES_DISCLOSURE,
+    },
+    'academy-application-marketing': {
+      version: ACADEMY_SMS_CONSENT_VERSION,
+      text: ACADEMY_SMS_MARKETING_DISCLOSURE,
+    },
+    // Unchanged: the founders lead form keeps its previously approved wording.
+    'founder-lead': { version: SMS_CONSENT_VERSION, text: SMS_CONSENT_DISCLOSURE },
+  };
+
+export function disclosureFor(source: SmsConsentSource): { version: string; text: string } {
+  return SMS_CONSENT_DISCLOSURES[source];
+}
 
 /** Type guard so the server only accepts a known form key. */
 export function isSmsConsentSource(v: unknown): v is SmsConsentSource {
@@ -123,8 +173,8 @@ export function buildSmsConsentRecord(input: SmsConsentInput, nowIso: string): S
     phone: normalizePhone(input.phone),
     sms_consent: consent,
     sms_consent_at: consent ? nowIso : null,
-    sms_consent_version: SMS_CONSENT_VERSION,
-    disclosure_text: SMS_CONSENT_DISCLOSURE,
+    sms_consent_version: disclosureFor(input.sourceForm).version,
+    disclosure_text: disclosureFor(input.sourceForm).text,
     submission_id: rawId && isValidSubmissionId(rawId) ? rawId : null,
   };
 }

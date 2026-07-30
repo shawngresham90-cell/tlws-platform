@@ -53,6 +53,8 @@ export const applicationStep2Schema = z.object({
   start_timeframe: startTimeframe.optional(),
   funding_type: z.enum(['self', 'employer', 'wioa', 'va', 'sponsor', 'unsure']).optional(),
   sms_consent: z.boolean().default(false),
+  /** Separate, optional promotional consent — never implied by the box above. */
+  sms_marketing_consent: z.boolean().default(false),
   // No client-supplied disclosure text — the server is the sole authority on the
   // disclosure wording, version, and timestamp (see the step2 route).
   submission_id: submissionId,
