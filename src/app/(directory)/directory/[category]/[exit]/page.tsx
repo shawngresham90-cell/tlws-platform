@@ -18,7 +18,15 @@ import {
   exitSlug,
   exitFromSlug,
 } from '@/lib/directory/interstates';
-import { getEntriesByExit, getEntriesByInterstate, getDirectoryFacets } from '@/lib/directory/data';
+import {
+  getDirectoryFacets,
+  getDirectoryFacetsResult,
+  getEntriesByExitResult,
+  getEntriesByInterstateResult,
+  throwDirectoryUnavailable,
+  unwrapDirectoryRead,
+  type DirectoryReadFailure,
+} from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -39,6 +47,9 @@ import { buildMetadata } from '@/lib/seo/metadata';
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  // Fail-soft ON PURPOSE: a build that cannot reach the database should
+  // prerender nothing and let pages render on demand (dynamicParams stays
+  // true), never fail the build — and never bake a 404 for a real exit.
   const facets = await getDirectoryFacets();
   const params: { category: string; exit: string }[] = [];
   for (const [designation, exits] of Object.entries(facets.exitsByInterstate)) {
@@ -49,16 +60,34 @@ export async function generateStaticParams() {
   return params;
 }
 
-async function resolveExit(params: { category: string; exit: string }) {
+/**
+ * Three outcomes, never two. "The facet read failed" is not "this exit does
+ * not exist" — collapsing them is what served a cached 404 on
+ * /directory/i75/exit-369 while 11 published rows existed.
+ */
+type ExitResolution =
+  | { status: 'ok'; interstate: NonNullable<ReturnType<typeof interstateBySlug>>; exit: string }
+  | { status: 'not-found' }
+  | { status: 'unavailable'; reason: DirectoryReadFailure; code?: string };
+
+async function resolveExit(params: { category: string; exit: string }): Promise<ExitResolution> {
   const interstate = /^i\d{1,3}$/i.test(params.category)
     ? interstateBySlug(params.category)
     : undefined;
-  if (!interstate) return null;
-  const facets = await getDirectoryFacets();
-  const knownExits = facets.exitsByInterstate[interstate.designation] ?? [];
+  // Pure check against the corridor registry — no database involved, so an
+  // unknown slug is a genuine 404 regardless of database health.
+  if (!interstate) return { status: 'not-found' };
+
+  const facetsResult = await getDirectoryFacetsResult();
+  if (!facetsResult.ok) {
+    return { status: 'unavailable', reason: facetsResult.reason, code: facetsResult.code };
+  }
+
+  const knownExits = facetsResult.data.exitsByInterstate[interstate.designation] ?? [];
   const exit = exitFromSlug(params.exit, knownExits);
-  if (!exit) return null;
-  return { interstate, exit };
+  // The facet read SUCCEEDED and this exit is not in it: genuinely no such exit.
+  if (!exit) return { status: 'not-found' };
+  return { status: 'ok', interstate, exit };
 }
 
 export async function generateMetadata({
@@ -67,9 +96,12 @@ export async function generateMetadata({
   params: { category: string; exit: string };
 }): Promise<Metadata> {
   const resolved = await resolveExit(params);
-  if (!resolved) return {};
+  // Metadata never throws and never decides the response status — the page
+  // component below is what distinguishes 404 from 500.
+  if (resolved.status !== 'ok') return {};
   const { interstate, exit } = resolved;
-  const entries = await getEntriesByExit(interstate.designation, exit);
+  const entriesResult = await getEntriesByExitResult(interstate.designation, exit);
+  const entries = entriesResult.ok ? entriesResult.data : [];
   const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
   return buildMetadata({
     title: `${interstate.designation} Exit ${exit} — Truck Stops, Parking & Services | Trucking Life with Shawn`,
@@ -85,16 +117,32 @@ export async function generateMetadata({
 }
 
 export default async function ExitPage({ params }: { params: { category: string; exit: string } }) {
+  const route = `/directory/${params.category}/${params.exit}`;
   const resolved = await resolveExit(params);
-  if (!resolved) notFound();
+  // A failed facet read is NOT "no such exit". Surface it as a server error —
+  // which is transient and never cached as a truth — instead of a 404 that
+  // outlives the outage that caused it.
+  if (resolved.status === 'unavailable') {
+    throwDirectoryUnavailable('exit_page.facets', route, resolved);
+  }
+  if (resolved.status === 'not-found') notFound();
   const { interstate, exit } = resolved;
 
-  const [entries, corridorEntries, facets] = await Promise.all([
-    getEntriesByExit(interstate.designation, exit),
-    getEntriesByInterstate(interstate.designation),
-    getDirectoryFacets(),
+  const [entriesResult, corridorResult, facetsResult] = await Promise.all([
+    getEntriesByExitResult(interstate.designation, exit),
+    getEntriesByInterstateResult(interstate.designation),
+    getDirectoryFacetsResult(),
   ]);
-  // An exit page only exists while it has published listings.
+  // All three feed the rendered page (listings, nearby exits, related links),
+  // and all three hit the same database in the same request. If any failed we
+  // cannot render this page faithfully, so fail loudly rather than publish a
+  // page that silently omits sections — and never fabricate a 404 from it.
+  const entries = unwrapDirectoryRead(entriesResult, 'exit_page.entries', route);
+  const corridorEntries = unwrapDirectoryRead(corridorResult, 'exit_page.corridor', route);
+  const facets = unwrapDirectoryRead(facetsResult, 'exit_page.facets', route);
+
+  // The reads SUCCEEDED and returned nothing: an exit page only exists while
+  // it has published listings, so this is a legitimate 404.
   if (entries.length === 0) notFound();
 
   const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
