@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { log } from '@/lib/api/logger';
 import { normalizeOvernightStatus, overnightChipFor } from './overnight';
 import type { DirectoryEntry } from './types';
 
@@ -111,8 +112,93 @@ const COLUMNS =
   'detail_slug, updated_at, verified_at, mile_marker, mile_marker_source, ' +
   'overnight_status, overnight_status_source';
 
-/** Shared query base: published, not deleted, capped, featured-then-name order. */
-async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {
+/* ------------------------------------------------- read result contract */
+
+/**
+ * Empty vs. error (2026-07-30). Every read here used to collapse a failed
+ * query into `[]`, making "this exit has no listings" and "the database did
+ * not answer" the same value. A page that turns `[]` into `notFound()` then
+ * manufactures a 404 out of an infrastructure blip — and on an ISR route that
+ * 404 is cached, so a transient failure becomes a durable lie.
+ * `/directory/i75/exit-369` served exactly that 404 for hours while 11
+ * published rows sat in the table.
+ *
+ * The `*Result` functions below are the single implementation of each query
+ * and report which of the three outcomes happened. The original fail-soft
+ * functions still exist and still return `[]`, delegating to these — so every
+ * caller that legitimately wants "render nothing rather than explode" is
+ * unchanged. Only callers that decide 404 vs. 500 need the strict variant.
+ */
+export type DirectoryReadFailure = 'query_error' | 'unavailable';
+
+export type DirectoryReadResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; reason: DirectoryReadFailure; code?: string };
+
+/** Thrown by pages when a read fails, so Next serves the normal error page. */
+export class DirectoryUnavailableError extends Error {
+  readonly operation: string;
+  constructor(operation: string) {
+    super(`Directory read failed: ${operation}`);
+    this.name = 'DirectoryUnavailableError';
+    this.operation = operation;
+  }
+}
+
+/**
+ * A Postgres SQLSTATE (e.g. "57014" statement_timeout) is short, fixed-shape
+ * and diagnostic — it carries no credentials, no environment values, no query
+ * text and no row data. Only that code is ever surfaced; the driver's message
+ * and details are deliberately dropped.
+ */
+function failureCode(error: unknown): string | undefined {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && code.length <= 12 ? code : undefined;
+}
+
+/**
+ * Log a read failure and throw. Returns `never`, so a caller that guards on
+ * failure narrows correctly afterwards. Safe fields only: what we were doing,
+ * where, and which failure class — never keys, env values, query text, driver
+ * messages or row contents.
+ */
+export function throwDirectoryUnavailable(
+  operation: string,
+  route: string,
+  failure: { reason: DirectoryReadFailure; code?: string },
+): never {
+  log.error('directory_read_failed', {
+    operation,
+    route,
+    reason: failure.reason,
+    code: failure.code,
+  });
+  throw new DirectoryUnavailableError(operation);
+}
+
+/**
+ * Turn a read result into data, or log and throw. Shared so every 404-gating
+ * page fails the same way and logs the same safe fields.
+ */
+export function unwrapDirectoryRead<T>(
+  result: DirectoryReadResult<T>,
+  operation: string,
+  route: string,
+): T {
+  if (result.ok) return result.data;
+  return throwDirectoryUnavailable(operation, route, result);
+}
+
+/* ------------------------------------------------------------ entry reads */
+
+/**
+ * Shared query base: published, not deleted, capped, featured-then-name order.
+ * Filters, ordering and the cap are byte-for-byte what they were — this
+ * function reports failure instead of hiding it, and returns no extra rows.
+ */
+async function selectEntriesResult(
+  filters: Record<string, string>,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
   try {
     const supabase = createStaticClient();
     let query = supabase
@@ -125,11 +211,18 @@ async function selectEntries(filters: Record<string, string>): Promise<Directory
       .order('is_featured', { ascending: false })
       .order('name', { ascending: true })
       .limit(1000);
-    if (error || !data) return [];
-    return (data as unknown as LocationRow[]).map(toEntry);
-  } catch {
-    return [];
+    if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
+    if (!data) return { ok: false, reason: 'unavailable' };
+    return { ok: true, data: (data as unknown as LocationRow[]).map(toEntry) };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
+}
+
+/** Fail-soft view of the same query, for callers that only render. */
+async function selectEntries(filters: Record<string, string>): Promise<DirectoryEntry[]> {
+  const result = await selectEntriesResult(filters);
+  return result.ok ? result.data : [];
 }
 
 export function getEntries(categorySlug: string): Promise<DirectoryEntry[]> {
@@ -157,6 +250,33 @@ export function getEntriesByExit(
   exitNumber: string,
 ): Promise<DirectoryEntry[]> {
   return selectEntries({ interstate: designation, exit_number: exitNumber });
+}
+
+/* Strict variants — identical queries, failure reported rather than hidden. */
+
+export function getEntriesResult(
+  categorySlug: string,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  return selectEntriesResult({ category_slug: categorySlug });
+}
+
+export function getEntriesByStateResult(
+  stateCode: string,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  return selectEntriesResult({ state: stateCode.toUpperCase() });
+}
+
+export function getEntriesByInterstateResult(
+  designation: string,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  return selectEntriesResult({ interstate: designation });
+}
+
+export function getEntriesByExitResult(
+  designation: string,
+  exitNumber: string,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  return selectEntriesResult({ interstate: designation, exit_number: exitNumber });
 }
 
 /**
@@ -313,8 +433,19 @@ const EMPTY_FACETS: DirectoryFacets = {
  * drives generateStaticParams, the sitemap, and the hub's browse blocks, so
  * new states and corridors appear everywhere the moment their data lands.
  * Fails soft to empty facets (pages then render on demand instead).
+ *
+ * Kept fail-soft ON PURPOSE for generateStaticParams and the sitemap: a build
+ * that cannot reach the database should prerender nothing and let pages render
+ * on demand, not fail the build. Callers that decide 404 vs. 500 use
+ * getDirectoryFacetsResult() instead.
  */
 export async function getDirectoryFacets(): Promise<DirectoryFacets> {
+  const result = await getDirectoryFacetsResult();
+  return result.ok ? result.data : EMPTY_FACETS;
+}
+
+/** Same query as getDirectoryFacets, reporting failure instead of hiding it. */
+export async function getDirectoryFacetsResult(): Promise<DirectoryReadResult<DirectoryFacets>> {
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase
@@ -323,7 +454,8 @@ export async function getDirectoryFacets(): Promise<DirectoryFacets> {
       .eq('is_published', true)
       .is('deleted_at', null)
       .limit(5000);
-    if (error || !data) return EMPTY_FACETS;
+    if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
+    if (!data) return { ok: false, reason: 'unavailable' };
     const rows = data as unknown as {
       state: string;
       interstate: string | null;
@@ -346,19 +478,22 @@ export async function getDirectoryFacets(): Promise<DirectoryFacets> {
       }
     }
     return {
-      states: [...states.keys()].sort(),
-      interstates: [...interstates.keys()].sort(),
-      exitsByInterstate: Object.fromEntries(
-        [...exits.entries()].map(([hwy, set]) => [
-          hwy,
-          [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
-        ]),
-      ),
-      countsByState: Object.fromEntries(states),
-      countsByInterstate: Object.fromEntries(interstates),
+      ok: true,
+      data: {
+        states: [...states.keys()].sort(),
+        interstates: [...interstates.keys()].sort(),
+        exitsByInterstate: Object.fromEntries(
+          [...exits.entries()].map(([hwy, set]) => [
+            hwy,
+            [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+          ]),
+        ),
+        countsByState: Object.fromEntries(states),
+        countsByInterstate: Object.fromEntries(interstates),
+      },
     };
-  } catch {
-    return EMPTY_FACETS;
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
 }
 
