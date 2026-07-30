@@ -43,6 +43,7 @@ import { listingDetailSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import type { DirectoryEntry } from '@/lib/directory/types';
+import { ReportParkingButton } from '@/components/directory/ReportParkingSheet';
 
 /**
  * Per-listing detail page (Milestone 20): /directory/location/[slug].
@@ -363,6 +364,14 @@ export default async function ListingDetailPage({ params }: { params: { slug: st
             )}
 
             <div className="mt-8 rounded-card border border-line bg-asphalt-800 p-5 text-sm text-muted">
+              {/* Fast path first: two taps, listing already attached. */}
+              <div className="mb-4">
+                <ReportParkingButton
+                  locationId={entry.id}
+                  locationName={entry.name}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-card border border-signal px-4 font-display uppercase tracking-wide text-signal transition-colors hover:bg-signal hover:text-asphalt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal sm:w-auto"
+                />
+              </div>
               Something wrong here — moved, closed, new phone number?{' '}
               <Link
                 href={`/directory/submit?listing=${params.slug}&kind=correction`}
