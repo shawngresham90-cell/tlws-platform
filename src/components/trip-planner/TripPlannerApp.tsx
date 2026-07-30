@@ -10,6 +10,7 @@ import { SavedTripsPanel } from './SavedTripsPanel';
 import { AccountPanel } from './AccountPanel';
 import { useSavedTrips } from './useSavedTrips';
 import { useCloudSync } from './useCloudSync';
+import { overnightLabelFor } from '@/lib/directory/overnight';
 
 /** A saved PlaceRef → the PlaceResult shape the form and combobox expect. */
 function refToPlace(ref: PlaceRef): PlaceResult {
@@ -66,6 +67,7 @@ type QuoteResponse = {
         parkingSpaces: number | null;
         reservationUrl: string | null;
         amenities: string[];
+        overnightStatus?: 'confirmed' | 'prohibited' | 'unknown';
       } | null;
       alternates: { name: string; parkingSpaces: number | null }[];
     }[];
@@ -694,6 +696,12 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
                     <p className="text-xs text-muted">
                       {s.candidate.parkingSpaces != null &&
                         `${s.candidate.parkingSpaces} spaces · `}
+                      {/* M3: overnight status is always stated explicitly —
+                          confirmed, prohibited, or unknown. Never omitted. */}
+                      <span data-overnight={overnightLabelFor(s.candidate.overnightStatus)}>
+                        {overnightLabelFor(s.candidate.overnightStatus)}
+                      </span>
+                      {s.candidate.amenities.length > 0 && ' · '}
                       {s.candidate.amenities.slice(0, 4).join(' · ')}
                       {s.candidate.reservationUrl && (
                         <a

@@ -65,10 +65,9 @@ function toEntry(row: LocationRow): DirectoryEntry {
   if (row.paid_parking) chips.push('Paid parking');
   if (row.reserved_parking) chips.push('Reserved');
   // M3: the overnight chip comes from `overnight_status`, NOT the legacy
-  // `overnight_parking` boolean. Unknown emits no chip — absence is not a
-  // claim — so unreviewed rows can never read as confirmed.
-  const overnightChip = overnightChipFor(row.overnight_status);
-  if (overnightChip) chips.push(overnightChip);
+  // `overnight_parking` boolean. All three states are stated explicitly —
+  // an unreviewed row reads "Overnight unknown" rather than going silent.
+  chips.push(overnightChipFor(row.overnight_status));
   if (Array.isArray(row.amenities)) {
     for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
   }

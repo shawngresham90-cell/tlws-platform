@@ -193,6 +193,15 @@ try {
       overnightWords.every((t) => /^Overnight (confirmed|prohibited|unknown)$/i.test(t)),
       overnightWords.slice(0, 5).join(' | '),
     );
+    // Owner rule: unknown must be VISIBLE, not omitted. Every listing card
+    // carries exactly one overnight state, so a rendered list must show at
+    // least one of the three labels — silence is a failure.
+    const cardCount = await page.locator('main li').count();
+    check(
+      `${label} corridor list: every rendered listing states an overnight status`,
+      cardCount === 0 || overnightWords.length > 0,
+      `cards=${cardCount} labels=${overnightWords.length}`,
+    );
     check(
       `${label} corridor list: honest labels only (no guessed positions)`,
       /truck spaces|Truck spaces unknown|No truck parking|position not verified|No position-verified listings/i.test(

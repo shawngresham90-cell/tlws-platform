@@ -19,6 +19,7 @@ import { overnightLabel, resolveRoutePosition, buildCorridorList } from '@/lib/d
 import {
   OVERNIGHT_CONFIRMED_CHIP,
   OVERNIGHT_PROHIBITED_CHIP,
+  OVERNIGHT_UNKNOWN_CHIP,
   isConfirmedOvernight,
   overnightChipFor,
   overnightLabelFor,
@@ -220,7 +221,10 @@ check(
     ),
   ).length === 1,
 );
-check('unknown emits no chip (absence is not a claim)', overnightChipFor('unknown') === null);
+check(
+  'unknown emits an EXPLICIT chip (never silence)',
+  overnightChipFor('unknown') === OVERNIGHT_UNKNOWN_CHIP,
+);
 check(
   'prohibited emits its own chip, never the confirmed one',
   overnightChipFor('prohibited') === OVERNIGHT_PROHIBITED_CHIP &&
@@ -357,6 +361,118 @@ const allSrc = PUBLIC_SURFACES.map((f) =>
 check(
   'no surface assigns an exit number into a mile marker',
   !/mileMarker\s*[:=][^;\n]*exit/i.test(allSrc.replace(/\/\*[\s\S]*?\*\//g, '')),
+);
+
+/* ==================================================== VISIBLE-UNKNOWN RULE
+ * Owner correction (2026-07-29): a public surface that communicates
+ * overnight status must state unknown OUT LOUD as "Overnight unknown".
+ * Silence is not an acceptable representation of unknown.
+ * ======================================================================== */
+
+/** What a public surface renders for a row, via the shared vocabulary. */
+const rendered = (status: unknown) => ({
+  label: overnightLabelFor(status),
+  chip: overnightChipFor(status),
+});
+
+check(
+  'PUBLIC: confirmed displays "Overnight confirmed"',
+  rendered('confirmed').label === 'Overnight confirmed' &&
+    rendered('confirmed').chip === 'Overnight confirmed',
+);
+check(
+  'PUBLIC: prohibited displays "Overnight prohibited"',
+  rendered('prohibited').label === 'Overnight prohibited' &&
+    rendered('prohibited').chip === 'Overnight prohibited',
+);
+check(
+  'PUBLIC: unknown displays "Overnight unknown"',
+  rendered('unknown').label === 'Overnight unknown' &&
+    rendered('unknown').chip === 'Overnight unknown',
+);
+check(
+  'PUBLIC: NULL displays "Overnight unknown"',
+  rendered(null).label === 'Overnight unknown' && rendered(null).chip === 'Overnight unknown',
+);
+check(
+  'PUBLIC: undefined displays "Overnight unknown"',
+  rendered(undefined).label === 'Overnight unknown' &&
+    rendered(undefined).chip === 'Overnight unknown',
+);
+for (const junk of ['yes', 'true', 'OK', 'Confirmed ', 42, {}, []]) {
+  check(
+    `PUBLIC: unrecognized (${JSON.stringify(junk)}) displays "Overnight unknown"`,
+    rendered(junk).label === 'Overnight unknown' && rendered(junk).chip === 'Overnight unknown',
+  );
+}
+check(
+  'PUBLIC: unknown is never silent — a chip is always emitted',
+  ['confirmed', 'prohibited', 'unknown', null, undefined, 'garbage'].every(
+    (v) => typeof overnightChipFor(v) === 'string' && overnightChipFor(v).length > 0,
+  ),
+);
+check(
+  'PUBLIC: chip and label never disagree',
+  ['confirmed', 'prohibited', 'unknown', null, 'garbage'].every(
+    (v) => overnightChipFor(v) === overnightLabelFor(v),
+  ),
+);
+
+/* -------- legacy boolean cannot create, suppress, upgrade or downgrade ---- */
+check(
+  'legacy boolean TRUE + status unknown still displays "Overnight unknown"',
+  overnightLabel(entry({ overnightStatus: 'unknown', amenities: ['Overnight OK'] })) ===
+    'Overnight unknown',
+);
+check(
+  'legacy boolean FALSE + status confirmed still displays "Overnight confirmed"',
+  overnightLabel(entry({ overnightStatus: 'confirmed', amenities: [] })) === 'Overnight confirmed',
+);
+check(
+  'legacy boolean TRUE + status prohibited still displays "Overnight prohibited"',
+  overnightLabel(entry({ overnightStatus: 'prohibited', amenities: ['Overnight OK'] })) ===
+    'Overnight prohibited',
+);
+
+/* ---------- confirmed-only filtering: admits confirmed, rejects the rest -- */
+const FILTER_CASES: [string, unknown][] = [
+  ['confirmed', 'confirmed'],
+  ['prohibited', 'prohibited'],
+  ['unknown', 'unknown'],
+  ['NULL', null],
+  ['undefined', undefined],
+  ['unrecognized', 'sure-why-not'],
+];
+for (const [name, value] of FILTER_CASES) {
+  const admitted = overnightChipFor(value) === OVERNIGHT_CONFIRMED_CHIP;
+  check(
+    `confirmed-only filter ${name === 'confirmed' ? 'admits' : 'rejects'} ${name}`,
+    name === 'confirmed' ? admitted : !admitted,
+  );
+  check(
+    `isConfirmedOvernight ${name === 'confirmed' ? 'admits' : 'rejects'} ${name}`,
+    name === 'confirmed' ? isConfirmedOvernight(value) : !isConfirmedOvernight(value),
+  );
+}
+check(
+  'the unknown chip is never a filter key in the map filters',
+  !/PARKING_FILTERS[\s\S]*?OVERNIGHT_UNKNOWN|key: 'Overnight unknown'/.test(
+    fs.readFileSync(path.join(process.cwd(), 'src/lib/map/explore.ts'), 'utf8'),
+  ),
+);
+
+/* ------------------- planner result cards state overnight status out loud */
+const plannerSrc = fs.readFileSync(
+  path.join(process.cwd(), 'src/components/trip-planner/TripPlannerApp.tsx'),
+  'utf8',
+);
+check(
+  'planner stop card renders the explicit overnight label',
+  /overnightLabelFor\(s\.candidate\.overnightStatus\)/.test(plannerSrc),
+);
+check(
+  'planner stop card does not read the legacy boolean',
+  !/candidate\.overnightParking/.test(plannerSrc),
 );
 
 console.log(`m3-switchover: ${passed} passed, ${failed} failed`);
