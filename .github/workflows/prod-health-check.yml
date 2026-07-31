@@ -213,3 +213,23 @@ jobs:
           check /directory/i75/exit-207 200
           check /directory/i75/exit-399 404
           exit 0
+
+      - name: DIAG sitemap exit-URL shape (is the truncation structured?)
+        if: always()
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          MAP=$(curl -sS --max-time 60 "$BASE/sitemap.xml")
+          echo "### exit URLs per corridor present in the sitemap"
+          printf '%s' "$MAP" \
+            | grep -oE '/directory/i[0-9]+/exit-[a-z0-9-]+' \
+            | sed -E 's#/directory/(i[0-9]+)/exit-.*#\1#' \
+            | sort | uniq -c | sort -rn
+          echo
+          echo "### every I-75 exit present in the sitemap (sorted)"
+          printf '%s' "$MAP" \
+            | grep -oE '/directory/i75/exit-[a-z0-9-]+' \
+            | sed -E 's#.*/exit-##' | sort -u | tr '\n' ' '
+          echo
+          echo "### detail URLs present"
+          printf '%s' "$MAP" | grep -cE '/directory/location/' || true
+          exit 0
