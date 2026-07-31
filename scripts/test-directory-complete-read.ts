@@ -16,10 +16,12 @@
  * error contract from the false-404 fix cannot detect it.
  *
  * THE TERMINAL CONDITION IS THE POINT. `batch.length < pageSize` proves
- * nothing: a backend that caps rows server-side returns a short page while
- * more data exists. The scan therefore ends ONLY when a request positioned
- * after the last row returns EMPTY, with an exact pre-scan count as a second,
- * independent floor check.
+ * nothing on its own: a backend that caps rows server-side returns a short
+ * page while more data exists. A scan therefore ends in exactly two ways —
+ * a request positioned after the last row returns EMPTY, or a short page is
+ * CORROBORATED by the database's own exact count over the same filtered set,
+ * returned with the first page. A server-side cap can satisfy neither, and
+ * with no count available only the first is reachable.
  *
  * Run:
  *   npx esbuild scripts/test-directory-complete-read.ts --bundle --platform=node \
@@ -101,6 +103,17 @@ function fetcherFor(pool: Row[], opts: FetchOpts = {}) {
 }
 const idsOf = (rows: Row[]) => rows.map((r) => r.id);
 
+/** Same fetcher, with the request count exposed — round trips are the cost. */
+function counting(pool: Row[], opts: FetchOpts = {}) {
+  const inner = fetcherFor(pool, opts);
+  const state = { calls: 0 };
+  const fetch = async (afterId: string | null, pageSize: number) => {
+    state.calls++;
+    return inner(afterId, pageSize);
+  };
+  return { fetch, state };
+}
+
 async function main() {
   /* ------------- OBJECTIVE 12: sizes spanning every old cap boundary ---- */
 
@@ -160,10 +173,94 @@ async function main() {
   );
 
   check(
-    'the terminal condition is an EMPTY page, not a short page',
-    /if \(batch\.length === 0\)/.test(dataCode) &&
-      !/if \(batch\.length < pageSize\)/.test(dataCode),
+    'a verified EMPTY page is a terminal condition',
+    /if \(batch\.length === 0\)/.test(dataCode),
   );
+  // Pinned as an exact shape rather than "this substring is absent": the short
+  // page must open a branch whose ONLY exit is corroboration by the separately
+  // measured count. Any bare `return`/`break` under a short page fails this.
+  check(
+    'a short page ALONE never terminates the scan',
+    /if \(batch\.length < pageSize\) \{\s*const floor = await expectedCount\(\);\s*if \(floor !== null && rows\.length >= floor\) return \{ ok: true, data: rows \};\s*\}/.test(
+      dataCode,
+    ),
+  );
+
+  /* ---- the count runs CONCURRENTLY with the first page, not before it ---- */
+
+  {
+    const order: string[] = [];
+    const pending = new Promise<number | null>((resolve) =>
+      setTimeout(() => {
+        order.push('count');
+        resolve(11);
+      }, 15),
+    );
+    const inner = fetcherFor(makePool(11));
+    const scan = await collectAllRows(async (afterId, pageSize) => {
+      order.push('page');
+      return inner(afterId, pageSize);
+    }, pending);
+    check('the first page is issued BEFORE the count resolves', order[0] === 'page', order);
+    check('an in-flight count still proves completeness', scan.ok && scan.data.length === 11);
+    check('the count is still consumed, not ignored', order.includes('count'));
+  }
+  // Scoped to the completeness floors (they alone name the error `countError`);
+  // getCatScalePublishedCount is a standalone count with no scan to overlap.
+  check(
+    'no completeness read awaits its count before starting the scan',
+    !/error: countError \} = await/.test(dataCode),
+  );
+
+  /* ------- OBJECTIVE 4/5: the corroborated stop costs one less round trip -- */
+
+  // The build performs ~1,700 scans, most of them a single short page (an exit
+  // holds a handful of rows). Confirming each with an extra empty-page request
+  // was ~1,700 round trips of pure overhead on every build.
+  {
+    const c1 = counting(makePool(2454));
+    const r1 = await collectAllRows(c1.fetch, 2454);
+    check('2,454 rows with a count: complete', r1.ok && r1.data.length === 2454);
+    check(
+      '2,454 rows with a count: 5 requests, no confirming page',
+      c1.state.calls === 5,
+      c1.state,
+    );
+
+    const c2 = counting(makePool(2454));
+    const r2 = await collectAllRows(c2.fetch, null);
+    check('2,454 rows with NO count: complete', r2.ok && r2.data.length === 2454);
+    check('2,454 rows with NO count: pays the confirming page', c2.state.calls === 6, c2.state);
+
+    // The shape that dominates the build: one exit, a handful of rows.
+    const c3 = counting(makePool(11));
+    const r3 = await collectAllRows(c3.fetch, 11);
+    check('an 11-row exit read with a count: complete', r3.ok && r3.data.length === 11);
+    check('an 11-row exit read with a count: ONE request', c3.state.calls === 1, c3.state);
+
+    const c4 = counting(makePool(11));
+    const r4 = await collectAllRows(c4.fetch, null);
+    check('an 11-row exit read with NO count: two requests', c4.state.calls === 2, c4.state);
+
+    // A server cap must NOT be able to satisfy the corroborated stop.
+    const c5 = counting(makePool(2454), { serverCap: 100 });
+    const r5 = await collectAllRows(c5.fetch, 2454);
+    check(
+      'a server cap cannot trigger the corroborated stop early',
+      r5.ok && r5.data.length === 2454 && c5.state.calls >= 25,
+      c5.state,
+    );
+
+    // Count says MORE than the pool holds: the short page must not end it.
+    const c6 = counting(makePool(2454));
+    const r6 = await collectAllRows(c6.fetch, 3000);
+    check(
+      'a short page with an unmet count keeps scanning, then fails short_pool',
+      !r6.ok && r6.reason === 'short_pool',
+      r6,
+    );
+    check('the unmet-count scan paid for a verified empty page', c6.state.calls === 6, c6.state);
+  }
 
   /* ------------------------- OBJECTIVE 1: backend cap cannot fake the end */
 
@@ -209,8 +306,23 @@ async function main() {
   check('middle-page failure fails closed', !midFail.ok && midFail.reason === 'query_error');
   check('middle-page failure yields no partial pool', !midFail.ok && !('data' in midFail));
 
-  const lastFail = await collectAllRows(fetcherFor(makePool(1200), { failLastPage: true }), 1200);
-  check('final-page failure fails closed', !lastFail.ok && lastFail.reason === 'query_error');
+  // With a count in hand the confirming page is never requested, so the
+  // last-page failure is exercised on the uncounted path — the one that still
+  // has to reach a verified empty page.
+  const lastFail = await collectAllRows(fetcherFor(makePool(1200), { failLastPage: true }), null);
+  check(
+    'confirming-page failure fails closed (no count available)',
+    !lastFail.ok && lastFail.reason === 'query_error',
+    lastFail,
+  );
+  check('confirming-page failure yields no partial pool', !lastFail.ok && !('data' in lastFail));
+  // And the counted path must still fail closed when its FINAL data page dies.
+  const lastDataFail = await collectAllRows(fetcherFor(makePool(1200), { failOnPage: 3 }), 1200);
+  check(
+    'final DATA page failure fails closed even with a count',
+    !lastDataFail.ok && lastDataFail.reason === 'query_error',
+    lastDataFail,
+  );
 
   const stuck = await collectAllRows(async (_a, pageSize) => ({ rows: makePool(pageSize) }), null, {
     pageSize: 10,
@@ -381,43 +493,65 @@ async function main() {
 
   /* --------------- OBJECTIVE 2: count/page filter parity ---------------- */
 
+  // Parity used to be an audit obligation: two queries, written adjacently,
+  // asserted to carry identical filters. It is now STRUCTURAL — the exact
+  // count is requested on the page query itself, so there is no second query
+  // to drift. These checks pin that property rather than the old duplication.
   check(
-    'every completeness read pairs an exact head-count with its page scan',
-    (dataCode.match(/count: 'exact', head: true/g) ?? []).length >= 5,
-  );
-  check('no completeness read passes a null expected count', !/\}, null\);/.test(dataCode));
-  check(
-    'published + soft-delete parity on count and page queries',
-    (dataCode.match(/\.eq\('is_published', true\)/g) ?? []).length >= 10 &&
-      (dataCode.match(/\.is\('deleted_at', null\)/g) ?? []).length >= 10,
+    'every completeness read takes its exact count ON the page query',
+    (dataCode.match(/afterId === null \? \{ count: 'exact' \} : undefined/g) ?? []).length === 5,
   );
   check(
-    'map read applies lat AND lng on both count and page query',
-    (dataCode.match(/\.not\('lat', 'is', null\)/g) ?? []).length >= 2 &&
-      (dataCode.match(/\.not\('lng', 'is', null\)/g) ?? []).length >= 2,
+    'the count is never requested with a cursor applied (it would count the remainder)',
+    !/gt\('id', afterId\)[\s\S]{0,200}count: 'exact'/.test(dataCode),
   );
   check(
-    'map read applies the same optional filters to both queries',
-    (dataCode.match(/filters\.category\) countQuery = countQuery\.eq\('category_slug'/g) ?? [])
-      .length === 1 &&
-      (dataCode.match(/filters\.category\) q = q\.eq\('category_slug'/g) ?? []).length === 1,
+    'no completeness read issues a separate head-count query',
+    (dataCode.match(/count: 'exact', head: true/g) ?? []).length === 1,
   );
   check(
-    'detail-slug read applies detail_slug NOT NULL to both queries',
-    (dataCode.match(/\.not\('detail_slug', 'is', null\)/g) ?? []).length >= 2,
+    'the surviving head-count is the standalone CAT Scale total, not a floor',
+    /getCatScalePublishedCount[\s\S]{0,400}count: 'exact', head: true/.test(dataCode),
   );
   check(
-    'route-facet read applies the same category set to both queries',
-    (dataCode.match(/\.in\('category_slug', categories\)/g) ?? []).length >= 2,
-  );
-  check(
-    'entry read applies the caller filters to both queries',
-    /for \(const \[column, value\] of Object\.entries\(filters\)\) countQuery\.eq\(column, value\)/.test(
+    'the scan prefers the total the database reported on the first page',
+    /if \(pages === 1 && typeof page\.total === 'number'\) reported = page\.total;/.test(
       dataCode,
-    ) &&
-      /for \(const \[column, value\] of Object\.entries\(filters\)\) q = q\.eq\(column, value\)/.test(
-        dataCode,
-      ),
+    ) && /if \(reported !== null\) return reported;/.test(dataCode),
+  );
+  check(
+    'the total is read from the query result, never derived from the batch',
+    (dataCode.match(/total: typeof count === 'number' \? count : undefined/g) ?? []).length === 5 &&
+      !/total: (rows|batch|data)\.length/.test(dataCode),
+  );
+  check(
+    'published + soft-delete filters still guard every read',
+    (dataCode.match(/\.eq\('is_published', true\)/g) ?? []).length >= 5 &&
+      (dataCode.match(/\.is\('deleted_at', null\)/g) ?? []).length >= 5,
+  );
+  check(
+    'map read still requires lat AND lng',
+    /\.not\('lat', 'is', null\)/.test(dataCode) && /\.not\('lng', 'is', null\)/.test(dataCode),
+  );
+  check(
+    'map read still applies its optional category / state / interstate filters',
+    /filters\.category\) q = q\.eq\('category_slug'/.test(dataCode) &&
+      /filters\.state\) q = q\.eq\('state', filters\.state\.toUpperCase\(\)\)/.test(dataCode) &&
+      /filters\.interstate\) q = q\.eq\('interstate', filters\.interstate\)/.test(dataCode),
+  );
+  check(
+    'detail-slug read still requires detail_slug NOT NULL',
+    /\.not\('detail_slug', 'is', null\)/.test(dataCode),
+  );
+  check(
+    'route-facet read still applies its category set',
+    /\.in\('category_slug', categories\)/.test(dataCode),
+  );
+  check(
+    'entry read still applies every caller filter',
+    /for \(const \[column, value\] of Object\.entries\(filters\)\) q = q\.eq\(column, value\)/.test(
+      dataCode,
+    ),
   );
 
   /* ---------------- category C caps gone / A+B caps kept ---------------- */
