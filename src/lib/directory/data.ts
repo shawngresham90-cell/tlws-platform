@@ -241,32 +241,61 @@ export const DIRECTORY_PAGE_SIZE = 500;
  */
 export const DIRECTORY_MAX_PAGES = 60;
 
-/** One page of a keyset scan: rows with id > afterId, ordered by id ascending. */
+/**
+ * One page of a keyset scan: rows with id > afterId, ordered by id ascending.
+ *
+ * `total` is the exact number of rows matching the filters, computed by the
+ * DATABASE over the whole filtered set and returned alongside the first page
+ * (PostgREST `count=exact`, delivered in Content-Range). It is not derived
+ * from the rows in the response, so it remains an independent measurement —
+ * it simply no longer costs its own round trip.
+ */
 type PageFetcher<R> = (
   afterId: string | null,
   pageSize: number,
-) => Promise<{ rows: R[]; error?: unknown }>;
+) => Promise<{ rows: R[]; error?: unknown; total?: number }>;
 
 /**
  * Walk every page of a result set. Returns a failure rather than a partial
  * list — a truncated set that looks complete is the whole point of this
  * helper.
  *
- * TERMINAL CONDITION, deliberately not `batch.length < pageSize`. A backend
- * that caps rows server-side returns a short page while more data exists, so
- * "short page" is evidence of nothing. The scan ends ONLY when a request
- * positioned AFTER the last row we saw comes back empty — a statement about
- * the data, not about the size of a response. A short page merely advances
- * the cursor and costs one more request.
+ * TERMINAL CONDITION, deliberately never `batch.length < pageSize` on its own.
+ * A backend that caps rows server-side returns a short page while more data
+ * exists, so "short page" is evidence of nothing. A scan therefore ends in
+ * exactly one of two ways:
  *
- * `expected` is a second, INDEPENDENT check: the exact row count measured
- * with the identical filter set before paging began. It is a FLOOR — rows
- * published during the scan legitimately push the total above it, but a total
- * below it means the scan lost rows and the result is refused.
+ *   1. a request positioned AFTER the last row seen comes back EMPTY — a
+ *      statement about the data, not about the size of a response; or
+ *   2. a short page CORROBORATED by the independent exact count: we hold at
+ *      least `expected` distinct rows in strict key order.
+ *
+ * (2) is not the inference (1) exists to reject. It requires a count computed
+ * by the database over the entire filtered set — never derived from the rows
+ * in hand — and a server-side cap can never satisfy it: capped pages stay
+ * short while the row total never reaches the count, so the scan continues to
+ * (1) or fails. With no count available, (2) cannot fire and (1) is the only
+ * exit.
+ *
+ * WHERE THE COUNT COMES FROM. Preferably from the FIRST PAGE ITSELF: asking
+ * PostgREST for `count=exact` returns the full filtered total in the response
+ * alongside the page. That has two consequences worth stating plainly:
+ *
+ *   - count/page filter parity stops being something to audit and assert. It
+ *     is ONE query, so the count cannot drift from the page it validates.
+ *   - it costs no extra round trip. A separate head-count query is a second
+ *     request per read, and a build performs ~1,400 of them.
+ *
+ * `expected` remains as a fallback for callers (and tests) that supply a
+ * separately measured count; a total reported by the first page wins.
+ *
+ * Either way it is a FLOOR on the way out: rows published during the scan
+ * legitimately push the total above it, but a total below it means the scan
+ * lost rows and the result is refused.
  */
 export async function collectAllRows<R extends { id: string }>(
   fetchPage: PageFetcher<R>,
-  expected: number | null,
+  expected: number | null | PromiseLike<number | null>,
   opts: { pageSize?: number; maxPages?: number } = {},
 ): Promise<DirectoryReadResult<R[]>> {
   const pageSize = Math.max(1, opts.pageSize ?? DIRECTORY_PAGE_SIZE);
@@ -275,17 +304,31 @@ export async function collectAllRows<R extends { id: string }>(
   let afterId: string | null = null;
   let pages = 0;
 
+  // Resolved at most once, and only when a decision needs it. A total the
+  // first page reported wins over the `expected` fallback: it is the same
+  // database COUNT, over the same filters, in the same query.
+  let reported: number | null = null;
+  let settled: number | null | undefined;
+  const expectedCount = async (): Promise<number | null> => {
+    if (reported !== null) return reported;
+    if (settled === undefined) settled = await expected;
+    return settled;
+  };
+
   while (pages < maxPages) {
     const page = await fetchPage(afterId, pageSize);
     pages++;
     if (page.error) return { ok: false, reason: 'query_error', code: failureCode(page.error) };
+    if (pages === 1 && typeof page.total === 'number') reported = page.total;
 
     const batch = page.rows ?? [];
 
     if (batch.length === 0) {
-      // The ONLY way this scan completes: a request after the last row we saw
-      // returned nothing. Verified emptiness, not an inferred boundary.
-      if (expected !== null && rows.length < expected) {
+      // The ONLY way this scan completes without corroboration: a request
+      // after the last row we saw returned nothing. Verified emptiness, not
+      // an inferred boundary.
+      const floor = await expectedCount();
+      if (floor !== null && rows.length < floor) {
         return { ok: false, reason: 'short_pool' };
       }
       return { ok: true, data: rows };
@@ -298,8 +341,24 @@ export async function collectAllRows<R extends { id: string }>(
 
     rows.push(...batch);
     afterId = lastId;
-    // NOTE: a short batch does NOT end the scan. See the terminal condition
-    // above — a server-side cap looks exactly like a short final page.
+
+    // CORROBORATED STOP. A short batch alone still ends nothing — that is the
+    // whole point of the terminal condition above. But a short batch TOGETHER
+    // WITH the independent exact count is proof, not inference: we have paged
+    // at least as many distinct rows, in strict key order, as a separate query
+    // measured under the identical filters. A server-side row cap cannot fake
+    // this — capped pages stay short while `rows.length` never reaches
+    // `expected`, so the scan keeps going and ends on a verified empty page or
+    // fails `short_pool`. When no count is available this cannot fire at all
+    // and the strict empty-page rule is the only way out.
+    //
+    // Worth one confirming request each? No: this fires once per scan, and the
+    // build performs ~1,700 scans, most of them a single short page (an exit
+    // holds a handful of rows). That confirming round trip was pure cost.
+    if (batch.length < pageSize) {
+      const floor = await expectedCount();
+      if (floor !== null && rows.length >= floor) return { ok: true, data: rows };
+    }
   }
 
   return { ok: false, reason: 'page_cap' };
@@ -408,11 +467,10 @@ async function selectEntriesResult(
 }
 
 /**
- * COUNT/PAGE FILTER PARITY: both queries below apply is_published = true,
- * deleted_at IS NULL and the SAME `filters` entries in the same way. A
- * mismatch would make the floor check either fire falsely or pass falsely,
- * so the two filter blocks are written adjacently and asserted by the
- * regression harness.
+ * COUNT/PAGE FILTER PARITY, structurally: the exact count is requested ON the
+ * first page query, so there is no second query whose filters could drift
+ * from this one. `count=exact` is only asked for when no cursor is applied —
+ * with a cursor it would count the remainder, not the set.
  */
 async function selectEntriesUncached(
   filters: Record<string, string>,
@@ -420,27 +478,21 @@ async function selectEntriesUncached(
   try {
     const supabase = createStaticClient();
 
-    const countQuery = supabase
-      .from('locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true)
-      .is('deleted_at', null);
-    for (const [column, value] of Object.entries(filters)) countQuery.eq(column, value);
-    const { count, error: countError } = await countQuery;
-    const expected = countError || typeof count !== 'number' ? null : count;
-
     const result = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select(COLUMNS)
+        .select(COLUMNS, afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null);
       for (const [column, value] of Object.entries(filters)) q = q.eq(column, value);
       if (afterId !== null) q = q.gt('id', afterId);
-      const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
-      return { rows: (data ?? []) as unknown as LocationRow[] };
-    }, expected);
+      return {
+        rows: (data ?? []) as unknown as LocationRow[],
+        total: typeof count === 'number' ? count : undefined,
+      };
+    }, null);
     if (!result.ok) return result;
 
     // Paging order is by id (unique, stable). The PRESENTATION order is
@@ -580,33 +632,14 @@ async function getEntriesWithCoordinatesUncached(
 ): Promise<DirectoryEntry[]> {
   try {
     const supabase = createStaticClient();
-    let query = supabase
-      .from('locations')
-      .select(COLUMNS)
-      .eq('is_published', true)
-      .is('deleted_at', null)
-      .not('lat', 'is', null)
-      .not('lng', 'is', null);
-    // COUNT/PAGE FILTER PARITY: identical eligibility on both queries —
-    // published, not deleted, lat AND lng present, plus the same optional
-    // category / state / interstate filters applied in the same order.
-    let countQuery = supabase
-      .from('locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true)
-      .is('deleted_at', null)
-      .not('lat', 'is', null)
-      .not('lng', 'is', null);
-    if (filters.category) countQuery = countQuery.eq('category_slug', filters.category);
-    if (filters.state) countQuery = countQuery.eq('state', filters.state.toUpperCase());
-    if (filters.interstate) countQuery = countQuery.eq('interstate', filters.interstate);
-    const { count, error: countError } = await countQuery;
-    const expected = countError || typeof count !== 'number' ? null : count;
-
+    // COUNT/PAGE FILTER PARITY, structurally: one query carries both the page
+    // and the exact count, so eligibility — published, not deleted, lat AND
+    // lng present, plus the same optional category / state / interstate
+    // filters — cannot differ between them.
     const scan = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select(COLUMNS)
+        .select(COLUMNS, afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null)
         .not('lat', 'is', null)
@@ -615,10 +648,13 @@ async function getEntriesWithCoordinatesUncached(
       if (filters.state) q = q.eq('state', filters.state.toUpperCase());
       if (filters.interstate) q = q.eq('interstate', filters.interstate);
       if (afterId !== null) q = q.gt('id', afterId);
-      const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
-      return { rows: (data ?? []) as unknown as LocationRow[] };
-    }, expected);
+      return {
+        rows: (data ?? []) as unknown as LocationRow[],
+        total: typeof count === 'number' ? count : undefined,
+      };
+    }, null);
     if (!scan.ok) return [];
     // Presentation order restored over the COMPLETE set (was .limit(2000)
     // against 1,940 published geocoded rows - 60 rows of headroom).
@@ -668,15 +704,8 @@ export async function getPublishedDetailSlugs(): Promise<DetailSlugRef[]> {
 async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
   try {
     const supabase = createStaticClient();
-    // COUNT/PAGE FILTER PARITY: published, not deleted, detail_slug present.
-    const { count, error: countError } = await supabase
-      .from('locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true)
-      .is('deleted_at', null)
-      .not('detail_slug', 'is', null);
-    const expected = countError || typeof count !== 'number' ? null : count;
-
+    // COUNT/PAGE FILTER PARITY, structurally: published, not deleted,
+    // detail_slug present — one query carries both the page and the count.
     const scan = await collectAllRows<{
       id: string;
       detail_slug: string;
@@ -684,12 +713,12 @@ async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
     }>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select('id, detail_slug, updated_at')
+        .select('id, detail_slug, updated_at', afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null)
         .not('detail_slug', 'is', null);
       if (afterId !== null) q = q.gt('id', afterId);
-      const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
       return {
         rows: (data ?? []) as unknown as {
@@ -697,8 +726,9 @@ async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
           detail_slug: string;
           updated_at: string | null;
         }[],
+        total: typeof count === 'number' ? count : undefined,
       };
-    }, expected);
+    }, null);
     if (!scan.ok) return [];
     return (scan.data as unknown as { detail_slug: string; updated_at: string | null }[]).map(
       (r) => ({
@@ -753,17 +783,10 @@ export async function getDirectoryFacetsResult(): Promise<DirectoryReadResult<Di
   return memoizeDuringBuild(memoKey('facets'), getDirectoryFacetsUncached);
 }
 
-/** COUNT/PAGE FILTER PARITY: is_published + deleted_at on both queries. */
+/** COUNT/PAGE FILTER PARITY, structurally: is_published + deleted_at, one query. */
 async function getDirectoryFacetsUncached(): Promise<DirectoryReadResult<DirectoryFacets>> {
   try {
     const supabase = createStaticClient();
-    const { count, error: countError } = await supabase
-      .from('locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true)
-      .is('deleted_at', null);
-    const expected = countError || typeof count !== 'number' ? null : count;
-
     const scan = await collectAllRows<{
       id: string;
       state: string;
@@ -772,11 +795,14 @@ async function getDirectoryFacetsUncached(): Promise<DirectoryReadResult<Directo
     }>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select('id, state, interstate, exit_number')
+        .select(
+          'id, state, interstate, exit_number',
+          afterId === null ? { count: 'exact' } : undefined,
+        )
         .eq('is_published', true)
         .is('deleted_at', null);
       if (afterId !== null) q = q.gt('id', afterId);
-      const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
       return {
         rows: (data ?? []) as unknown as {
@@ -785,8 +811,9 @@ async function getDirectoryFacetsUncached(): Promise<DirectoryReadResult<Directo
           interstate: string | null;
           exit_number: string | null;
         }[],
+        total: typeof count === 'number' ? count : undefined,
       };
-    }, expected);
+    }, null);
     if (!scan.ok) return scan;
     const rows = scan.data as unknown as {
       state: string;
@@ -909,33 +936,34 @@ export async function getRouteFacetsForCategories(categories: string[]): Promise
   );
 }
 
-/** COUNT/PAGE FILTER PARITY: is_published + deleted_at + the SAME category set. */
+/**
+ * COUNT/PAGE FILTER PARITY, structurally: is_published + deleted_at + the
+ * SAME category set, on the one query that carries both page and count.
+ */
 async function getRouteFacetsUncached(categories: string[]): Promise<ParkingFacets> {
   try {
     const supabase = createStaticClient();
-    const { count, error: countError } = await supabase
-      .from('locations')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true)
-      .is('deleted_at', null)
-      .in('category_slug', categories);
-    const expected = countError || typeof count !== 'number' ? null : count;
-
     // Same completeness rule as getDirectoryFacets: these facets drive the
     // Parking and CAT Scale State -> Interstate -> Direction flows, so a
     // capped sample would silently hide corridors from drivers.
     const scan = await collectAllRows<RouteFacetRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select('id, state, interstate, category_slug')
+        .select(
+          'id, state, interstate, category_slug',
+          afterId === null ? { count: 'exact' } : undefined,
+        )
         .eq('is_published', true)
         .is('deleted_at', null)
         .in('category_slug', categories);
       if (afterId !== null) q = q.gt('id', afterId);
-      const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
-      return { rows: (data ?? []) as unknown as RouteFacetRow[] };
-    }, expected);
+      return {
+        rows: (data ?? []) as unknown as RouteFacetRow[],
+        total: typeof count === 'number' ? count : undefined,
+      };
+    }, null);
     if (!scan.ok) return { states: [], interstatesByState: {} };
     const rows = scan.data as unknown as { state: string; interstate: string | null }[];
     const stateCounts = new Map<string, number>();
