@@ -129,7 +129,19 @@ const COLUMNS =
  * caller that legitimately wants "render nothing rather than explode" is
  * unchanged. Only callers that decide 404 vs. 500 need the strict variant.
  */
-export type DirectoryReadFailure = 'query_error' | 'unavailable';
+/**
+ * `query_error` / `unavailable` describe a read that failed outright.
+ * `short_pool` / `no_progress` / `page_cap` describe a read that returned
+ * data but could NOT be proven complete — the caller must treat them exactly
+ * as harshly, because a partial set presented as whole is the defect this
+ * layer exists to prevent.
+ */
+export type DirectoryReadFailure =
+  | 'query_error'
+  | 'unavailable'
+  | 'short_pool'
+  | 'no_progress'
+  | 'page_cap';
 
 export type DirectoryReadResult<T> =
   | { ok: true; data: T }
@@ -192,17 +204,25 @@ export function unwrapDirectoryRead<T>(
 /* --------------------------------------------- complete-read pagination */
 
 /**
- * Completeness (2026-07-30). Several directory reads asked for a fixed
- * `.limit(...)` with NO deterministic ordering and then treated the answer as
- * the whole dataset. A LIMIT without an ORDER BY lets Postgres return ANY
- * subset, so those reads were silently a *sample*:
+ * Completeness (2026-07-30, corrected 2026-07-31). Several directory reads
+ * asked for a fixed `.limit(...)` with NO deterministic ordering and then
+ * treated the answer as the whole dataset. A LIMIT without an ORDER BY lets
+ * Postgres return ANY subset, so such a read is silently a *sample*.
  *
- *   - selectEntries capped at 1,000 while one category holds 1,882 published
- *     rows and the unfiltered read (sitemap) covers 2,454 — already truncating
- *   - getDirectoryFacets capped at 5,000, unordered: the facet set drives exit
- *     pages, generateStaticParams and the sitemap, and /directory/i75/exit-369
- *     went missing from all three while 11 published rows existed
- *   - the map and detail-slug reads had the same shape
+ * Measured against 2,454 published rows, only ONE of these caps is binding
+ * today — and the distinction matters, so it is recorded honestly:
+ *
+ *   - selectEntries `.limit(1000)` IS truncating right now. The truck-stops
+ *     category holds 1,882 published rows (882 dropped) and the unfiltered
+ *     sitemap read covers 2,454, of which 2,439 pass the indexability gate
+ *     (~1,439 detail URLs missing from the sitemap).
+ *   - getDirectoryFacets `.limit(5000)`, the map `.limit(2000)` and the
+ *     detail-slug read were NOT binding at this row count. They are latent:
+ *     unordered, so the day the set crosses the cap the loss is arbitrary and
+ *     silent. They are fixed here for that reason — NOT because they explain
+ *     the /directory/i75/exit-369 incident. That page's cached 404 is
+ *     accounted for by the fail-soft read this file's empty-vs-error contract
+ *     replaced (#215); the facet cap does not fit the numbers.
  *
  * A truncated read is not an error and not an empty result, so the empty-vs-
  * error contract above cannot see it. The fix is to stop capping: page the
@@ -230,9 +250,19 @@ type PageFetcher<R> = (
 /**
  * Walk every page of a result set. Returns a failure rather than a partial
  * list — a truncated set that looks complete is the whole point of this
- * helper. `expected` is the row count measured before paging began and is a
- * FLOOR check: rows published during the scan legitimately push the total
- * above it, but a total below it means the scan lost rows.
+ * helper.
+ *
+ * TERMINAL CONDITION, deliberately not `batch.length < pageSize`. A backend
+ * that caps rows server-side returns a short page while more data exists, so
+ * "short page" is evidence of nothing. The scan ends ONLY when a request
+ * positioned AFTER the last row we saw comes back empty — a statement about
+ * the data, not about the size of a response. A short page merely advances
+ * the cursor and costs one more request.
+ *
+ * `expected` is a second, INDEPENDENT check: the exact row count measured
+ * with the identical filter set before paging began. It is a FLOOR — rows
+ * published during the scan legitimately push the total above it, but a total
+ * below it means the scan lost rows and the result is refused.
  */
 export async function collectAllRows<R extends { id: string }>(
   fetchPage: PageFetcher<R>,
@@ -251,26 +281,117 @@ export async function collectAllRows<R extends { id: string }>(
     if (page.error) return { ok: false, reason: 'query_error', code: failureCode(page.error) };
 
     const batch = page.rows ?? [];
-    if (batch.length === 0) break; // clean end on a page boundary
+
+    if (batch.length === 0) {
+      // The ONLY way this scan completes: a request after the last row we saw
+      // returned nothing. Verified emptiness, not an inferred boundary.
+      if (expected !== null && rows.length < expected) {
+        return { ok: false, reason: 'short_pool' };
+      }
+      return { ok: true, data: rows };
+    }
 
     const lastId = batch[batch.length - 1]?.id ?? null;
     // Defensive: a fetcher ignoring the cursor would loop forever and
     // duplicate every row. Refuse to advance rather than spin.
-    if (lastId === null || lastId === afterId) return { ok: false, reason: 'unavailable' };
+    if (lastId === null || lastId === afterId) return { ok: false, reason: 'no_progress' };
 
     rows.push(...batch);
     afterId = lastId;
-
-    // Only a SHORT page ends the scan; a full page always earns another request.
-    if (batch.length < pageSize) {
-      if (expected !== null && rows.length < expected) return { ok: false, reason: 'unavailable' };
-      return { ok: true, data: rows };
-    }
+    // NOTE: a short batch does NOT end the scan. See the terminal condition
+    // above — a server-side cap looks exactly like a short final page.
   }
 
-  if (pages >= maxPages) return { ok: false, reason: 'unavailable' };
-  if (expected !== null && rows.length < expected) return { ok: false, reason: 'unavailable' };
-  return { ok: true, data: rows };
+  return { ok: false, reason: 'page_cap' };
+}
+
+/* ------------------------------------------------- build-phase memoization */
+
+/**
+ * Reading the COMPLETE set costs more round trips than reading a capped
+ * sample, and static generation renders ~1,300 directory pages that each ask
+ * for the same facet data. Measured cost of that amplification: preview build
+ * time went from ~130-150s to 306s.
+ *
+ * This memo collapses identical complete reads within ONE build. It is gated
+ * on NEXT_PHASE === 'phase-production-build', which Next 14 assigns in exactly
+ * one place — next/dist/build/index.js, the build command. Nothing in the
+ * server start path assigns it (next-server.js only READS it to detect that it
+ * is running inside a build). So this cache:
+ *
+ *   - is active only while `next build` runs, in that process
+ *   - is completely inert at runtime, so ISR, `revalidate = 300` and the
+ *     admin's revalidatePath() behave exactly as before — a newly published
+ *     location appears on precisely the same schedule as today
+ *   - holds no state across builds or across requests
+ *
+ * It memoizes the PROMISE so concurrent renderers share one in-flight scan,
+ * and evicts on failure so one transient blip cannot poison a whole build.
+ */
+const BUILD_PHASE = 'phase-production-build';
+
+const buildReadMemo = new Map<string, Promise<unknown>>();
+
+/**
+ * Read-amplification counters. Two in-process integers, never logged and never
+ * emitted — the harness reads them to measure how many complete reads a build
+ * *asks for* versus how many actually hit the database, so measuring the memo
+ * does not require shipping build-time logging.
+ */
+let buildReadCalls = 0;
+let buildReadScans = 0;
+
+/** Test seam: lets the harness prove build-phase vs runtime behavior. */
+export function __resetBuildReadMemo(): void {
+  buildReadMemo.clear();
+  buildReadCalls = 0;
+  buildReadScans = 0;
+}
+export function __buildReadMemoSize(): number {
+  return buildReadMemo.size;
+}
+export function __buildReadStats(): { calls: number; scans: number } {
+  return { calls: buildReadCalls, scans: buildReadScans };
+}
+/** Test seam: drives the real memo with a counted stand-in for a live read. */
+export function __memoizeDuringBuildForTest<T>(key: string, run: () => Promise<T>): Promise<T> {
+  return memoizeDuringBuild(key, run);
+}
+export function isDirectoryBuildPhase(): boolean {
+  return process.env.NEXT_PHASE === BUILD_PHASE;
+}
+
+function memoizeDuringBuild<T>(key: string, run: () => Promise<T>): Promise<T> {
+  buildReadCalls++;
+  if (!isDirectoryBuildPhase()) {
+    buildReadScans++;
+    return run();
+  }
+  const hit = buildReadMemo.get(key) as Promise<T> | undefined;
+  if (hit) return hit;
+  buildReadScans++;
+  const pending = run().then(
+    (value) => {
+      // Never memoize a failed read for the rest of the build.
+      if ((value as { ok?: boolean } | null)?.ok === false) buildReadMemo.delete(key);
+      return value;
+    },
+    (error) => {
+      buildReadMemo.delete(key);
+      throw error;
+    },
+  );
+  buildReadMemo.set(key, pending);
+  return pending;
+}
+
+/** Stable memo key from a filter object — order-independent. */
+function memoKey(scope: string, filters: Record<string, unknown> = {}): string {
+  const parts = Object.entries(filters)
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .map(([k, v]) => `${k}=${String(v)}`)
+    .sort();
+  return parts.length ? `${scope}?${parts.join('&')}` : scope;
 }
 
 /* ------------------------------------------------------------ entry reads */
@@ -281,6 +402,19 @@ export async function collectAllRows<R extends { id: string }>(
  * function reports failure instead of hiding it, and returns no extra rows.
  */
 async function selectEntriesResult(
+  filters: Record<string, string>,
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  return memoizeDuringBuild(memoKey('entries', filters), () => selectEntriesUncached(filters));
+}
+
+/**
+ * COUNT/PAGE FILTER PARITY: both queries below apply is_published = true,
+ * deleted_at IS NULL and the SAME `filters` entries in the same way. A
+ * mismatch would make the floor check either fire falsely or pass falsely,
+ * so the two filter blocks are written adjacently and asserted by the
+ * regression harness.
+ */
+async function selectEntriesUncached(
   filters: Record<string, string>,
 ): Promise<DirectoryReadResult<DirectoryEntry[]>> {
   try {
@@ -436,6 +570,14 @@ export async function getNewestListings(limit = 24, offset = 0): Promise<Directo
 export async function getEntriesWithCoordinates(
   filters: { category?: string; state?: string; interstate?: string } = {},
 ): Promise<DirectoryEntry[]> {
+  return memoizeDuringBuild(memoKey('coords', filters), () =>
+    getEntriesWithCoordinatesUncached(filters),
+  );
+}
+
+async function getEntriesWithCoordinatesUncached(
+  filters: { category?: string; state?: string; interstate?: string } = {},
+): Promise<DirectoryEntry[]> {
   try {
     const supabase = createStaticClient();
     let query = supabase
@@ -445,6 +587,22 @@ export async function getEntriesWithCoordinates(
       .is('deleted_at', null)
       .not('lat', 'is', null)
       .not('lng', 'is', null);
+    // COUNT/PAGE FILTER PARITY: identical eligibility on both queries —
+    // published, not deleted, lat AND lng present, plus the same optional
+    // category / state / interstate filters applied in the same order.
+    let countQuery = supabase
+      .from('locations')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null);
+    if (filters.category) countQuery = countQuery.eq('category_slug', filters.category);
+    if (filters.state) countQuery = countQuery.eq('state', filters.state.toUpperCase());
+    if (filters.interstate) countQuery = countQuery.eq('interstate', filters.interstate);
+    const { count, error: countError } = await countQuery;
+    const expected = countError || typeof count !== 'number' ? null : count;
+
     const scan = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
@@ -460,7 +618,7 @@ export async function getEntriesWithCoordinates(
       const { data, error } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
       return { rows: (data ?? []) as unknown as LocationRow[] };
-    }, null);
+    }, expected);
     if (!scan.ok) return [];
     // Presentation order restored over the COMPLETE set (was .limit(2000)
     // against 1,940 published geocoded rows - 60 rows of headroom).
@@ -504,8 +662,21 @@ export type DetailSlugRef = {
  * sitemap without pulling full rows. Fails soft to [].
  */
 export async function getPublishedDetailSlugs(): Promise<DetailSlugRef[]> {
+  return memoizeDuringBuild(memoKey('detail-slugs'), getPublishedDetailSlugsUncached);
+}
+
+async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
   try {
     const supabase = createStaticClient();
+    // COUNT/PAGE FILTER PARITY: published, not deleted, detail_slug present.
+    const { count, error: countError } = await supabase
+      .from('locations')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .not('detail_slug', 'is', null);
+    const expected = countError || typeof count !== 'number' ? null : count;
+
     const scan = await collectAllRows<{
       id: string;
       detail_slug: string;
@@ -527,7 +698,7 @@ export async function getPublishedDetailSlugs(): Promise<DetailSlugRef[]> {
           updated_at: string | null;
         }[],
       };
-    }, null);
+    }, expected);
     if (!scan.ok) return [];
     return (scan.data as unknown as { detail_slug: string; updated_at: string | null }[]).map(
       (r) => ({
@@ -579,6 +750,11 @@ export async function getDirectoryFacets(): Promise<DirectoryFacets> {
 
 /** Same query as getDirectoryFacets, reporting failure instead of hiding it. */
 export async function getDirectoryFacetsResult(): Promise<DirectoryReadResult<DirectoryFacets>> {
+  return memoizeDuringBuild(memoKey('facets'), getDirectoryFacetsUncached);
+}
+
+/** COUNT/PAGE FILTER PARITY: is_published + deleted_at on both queries. */
+async function getDirectoryFacetsUncached(): Promise<DirectoryReadResult<DirectoryFacets>> {
   try {
     const supabase = createStaticClient();
     const { count, error: countError } = await supabase
@@ -727,6 +903,14 @@ export type ParkingFacets = {
  * never dead-ends. Fails soft to empty facets.
  */
 export async function getRouteFacetsForCategories(categories: string[]): Promise<ParkingFacets> {
+  return memoizeDuringBuild(
+    memoKey('route-facets', { categories: [...categories].sort().join('|') }),
+    () => getRouteFacetsUncached(categories),
+  );
+}
+
+/** COUNT/PAGE FILTER PARITY: is_published + deleted_at + the SAME category set. */
+async function getRouteFacetsUncached(categories: string[]): Promise<ParkingFacets> {
   try {
     const supabase = createStaticClient();
     const { count, error: countError } = await supabase
