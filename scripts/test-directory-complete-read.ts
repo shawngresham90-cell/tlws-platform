@@ -10,7 +10,8 @@
  *   - getDirectoryFacets capped at 5,000 and the map at 2,000, both unordered
  *     — NOT binding at 2,454 published rows, so they are latent rather than
  *     active defects. They do NOT explain the /directory/i75/exit-369 cached
- *     404; that is accounted for by the fail-soft read #215 replaced.
+ *     404 — and neither does #215's empty-vs-error contract, which shipped
+ *     while the 404 persisted. That cause is still unidentified.
  *
  * A truncated read is neither an error nor an empty result, so the empty-vs-
  * error contract from the false-404 fix cannot detect it.
