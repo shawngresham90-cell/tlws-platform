@@ -120,8 +120,11 @@ const COLUMNS =
  * not answer" the same value. A page that turns `[]` into `notFound()` then
  * manufactures a 404 out of an infrastructure blip — and on an ISR route that
  * 404 is cached, so a transient failure becomes a durable lie.
- * `/directory/i75/exit-369` served exactly that 404 for hours while 11
- * published rows sat in the table.
+ * `/directory/i75/exit-369` served a 404 for hours while 11 published rows sat
+ * in the table, which is what prompted this contract. Note the contract did
+ * NOT resolve that page: it shipped and the 404 persisted. Exit 369 remains an
+ * open defect with an unidentified cause; this is a class of bug it rules out,
+ * not a diagnosis of that one.
  *
  * The `*Result` functions below are the single implementation of each query
  * and report which of the three outcomes happened. The original fail-soft
@@ -220,9 +223,11 @@ export function unwrapDirectoryRead<T>(
  *     detail-slug read were NOT binding at this row count. They are latent:
  *     unordered, so the day the set crosses the cap the loss is arbitrary and
  *     silent. They are fixed here for that reason — NOT because they explain
- *     the /directory/i75/exit-369 incident. That page's cached 404 is
- *     accounted for by the fail-soft read this file's empty-vs-error contract
- *     replaced (#215); the facet cap does not fit the numbers.
+ *     the /directory/i75/exit-369 incident. The facet cap does not fit the
+ *     numbers, and no replacement theory is asserted here either: the
+ *     empty-vs-error contract below shipped and the 404 persisted, so THE
+ *     CAUSE IS STILL UNIDENTIFIED. Nothing in this file should be read as
+ *     fixing it.
  *
  * A truncated read is not an error and not an empty result, so the empty-vs-
  * error contract above cannot see it. The fix is to stop capping: page the
