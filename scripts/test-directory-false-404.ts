@@ -365,14 +365,25 @@ check(
   'the soft-delete filter is unchanged on both queries',
   (dataCode.match(/\.is\('deleted_at', null\)/g) ?? []).length >= 2,
 );
-check('the entry cap is unchanged at 1000', /\.limit\(1000\)/.test(dataCode));
-check('the facet cap is unchanged at 5000', /\.limit\(5000\)/.test(dataCode));
+/**
+ * The entry and facet reads no longer carry a fixed cap: the complete-read
+ * pagination change replaced `.limit(1000)` / `.limit(5000)` with a keyset
+ * scan over the whole set. These two assertions used to pin those literals;
+ * they now pin the SEMANTIC invariant those literals were standing in for —
+ * the reads are still scoped and still deterministically ordered, and the
+ * featured-then-name presentation order still governs what a driver sees.
+ */
 check(
-  'entry ordering is unchanged',
-  /\.order\('is_featured', \{ ascending: false \}\)[\s\S]{0,80}\.order\('name', \{ ascending: true \}\)/.test(
+  'entry and facet reads page deterministically by primary key',
+  /\.order\('id', \{ ascending: true \}\)/.test(dataCode) && /\.gt\('id', afterId\)/.test(dataCode),
+);
+check(
+  'the featured-then-name presentation order still governs the rendered list',
+  /Number\(b\.featured\) - Number\(a\.featured\) \|\| a\.name\.localeCompare\(b\.name\)/.test(
     dataCode,
   ),
 );
+check('a bounded safety cap still scopes the per-corridor read', /\.limit\(1000\)/.test(dataCode));
 check(
   'facet normalization is unchanged (trim + upper state, trim highway/exit)',
   /r\.state\?\.trim\(\)\.toUpperCase\(\)/.test(dataCode) &&
