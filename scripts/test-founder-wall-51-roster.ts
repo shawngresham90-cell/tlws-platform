@@ -283,6 +283,18 @@ check(
   'the literal word FUNDED is shown when the goal is reached',
   /goalReached \?[\s\S]{0,200}FUNDED/.test(thermometer),
 );
+// The owner-approved funded message, verbatim including the em dash.
+const FUNDED_MESSAGE = 'FUNDED \u2014 THE WALL IS COMPLETE';
+check(
+  'the funded message is exactly the approved wording',
+  thermometer.includes(FUNDED_MESSAGE),
+  FUNDED_MESSAGE,
+);
+check(
+  'the approved wording sits inside the goalReached branch',
+  new RegExp(`goalReached \\?[\\s\\S]{0,200}${FUNDED_MESSAGE}`).test(thermometer),
+);
+check('the superseded funded wording is gone', !/thank you, drivers/i.test(thermometer));
 check(
   'FUNDED is gated on remaining reaching zero',
   /const goalReached = goal > 0 && remaining === 0/.test(thermometer),
