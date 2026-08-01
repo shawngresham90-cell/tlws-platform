@@ -51,6 +51,12 @@ export const FOUNDER_TIERS: TierMeta[] = [
     blurb: 'Lay a brick in the foundation. Every founder counts, no matter the size.',
     capacity: 50,
   },
+  {
+    value: 'founder_shirt',
+    label: 'Founder / Shirt',
+    blurb: 'Wear the build. A founder shirt puts your name on the wall and on the road.',
+    capacity: 20,
+  },
 ];
 
 /** Tier capacity by value (null = uncapped/unknown). */

@@ -17,7 +17,14 @@ import { pctToGoal, remainingCents } from './campaign';
  * `founder_count` is derived from the number of published founder records.
  */
 
-export type FounderTier = 'equipment_sponsor' | 'student_sponsor' | 'iron' | 'steel' | 'brick';
+export type FounderTier =
+  | 'equipment_sponsor'
+  | 'student_sponsor'
+  | 'iron'
+  | 'steel'
+  | 'brick'
+  /** $35 Founder / Shirt tier, 20 spots. Requires migration 048. */
+  | 'founder_shirt';
 
 export type PublicFounder = {
   id: string;
