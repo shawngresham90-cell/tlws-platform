@@ -18,7 +18,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { dollars, remainingCents, tierRemaining } from '@/lib/community/campaign';
+import { dollars, remainingCents, tierRemaining, tierUsage } from '@/lib/community/campaign';
 import { TIER_CAPACITY, TIER_LABEL, FOUNDER_TIERS } from '@/components/community/tiers';
 
 let passed = 0;
@@ -309,6 +309,39 @@ check(
   /Migration 048 has not been applied/.test(rosterExec),
 );
 check('the package is labelled not-executed', /NOT EXECUTED/.test(roster));
+
+/* ------------------------------------------------ tierUsage exhaustiveness */
+// Regression: tierUsage used to build its accumulator with an `as` cast, which
+// defeated the exhaustiveness check. Adding founder_shirt to the union left the
+// object unchanged and every shirt row was silently dropped — the wall rendered
+// "20 of 20 spots open" while 16 were sold. Caught by visual validation, not by
+// any unit test, which is why this one exists.
+{
+  const rows = [
+    ...Array.from({ length: 4 }, () => ({ tier: 'iron' as const })),
+    ...Array.from({ length: 11 }, () => ({ tier: 'steel' as const })),
+    ...Array.from({ length: 20 }, () => ({ tier: 'brick' as const })),
+    ...Array.from({ length: 16 }, () => ({ tier: 'founder_shirt' as const })),
+  ];
+  const usage = tierUsage(rows);
+  check('tierUsage counts founder_shirt rows', usage.founder_shirt === 16, usage.founder_shirt);
+  check(
+    'tierUsage counts every tier',
+    usage.iron === 4 && usage.steel === 11 && usage.brick === 20,
+  );
+  check(
+    'tierUsage total equals the roster size',
+    Object.values(usage).reduce((a, b) => a + b, 0) === 51,
+  );
+  check(
+    'spots-left renders 4 of 20 for Founder / Shirt',
+    tierRemaining(TIER_CAPACITY.founder_shirt, usage.founder_shirt) === 4,
+  );
+  check(
+    'every tier in FOUNDER_TIERS has a usage key',
+    FOUNDER_TIERS.every((t) => t.value in usage),
+  );
+}
 
 console.log(`founder-wall-51-roster: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
