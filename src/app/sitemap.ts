@@ -15,6 +15,7 @@ import {
   productsOfType,
 } from '@/lib/store/products';
 import { shawnsPicks } from '@/lib/store/picks';
+import { DIRECT_PRODUCTS, directProductHref } from '@/lib/store/direct';
 import { STORE_GUIDES, guideHref } from '@/lib/store/product-types';
 import { publishedTests, testHref } from '@/lib/tests/catalog';
 
@@ -110,6 +111,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: 0.8,
   });
+  // Trucking Life's own products — always public, so always listed.
+  for (const product of DIRECT_PRODUCTS) {
+    entries.push({
+      url: `${SITE.url}${directProductHref(product.slug)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
   // Only categories that actually have a publicly visible product. A category
   // whose products are all hidden renders an empty page — submitting it would
   // be asking Google to index nothing.

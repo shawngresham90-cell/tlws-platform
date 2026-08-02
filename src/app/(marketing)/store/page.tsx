@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
+import { DirectStoreBrowser } from '@/components/store/DirectStoreBrowser';
 import { StoreBrowser } from '@/components/store/StoreBrowser';
 import { AmazonDisclosure } from '@/components/store/AmazonDisclosure';
 import { StoreEvents } from '@/components/store/StoreEvents';
 import { STORE_PRODUCTS } from '@/lib/store/products';
+import { DIRECT_PRODUCTS, directCategories } from '@/lib/store/direct';
 import { STORE_CATEGORIES, storeCategoryHref } from '@/lib/store/categories';
 import { STORE_GUIDES, guideHref } from '@/lib/store/product-types';
 import { STORE_EVENTS } from '@/lib/store/analytics';
@@ -13,19 +15,19 @@ import { buildMetadata } from '@/lib/seo/metadata';
 export const revalidate = 3600;
 
 export const metadata = buildMetadata({
-  title: 'Trucking Life Store — Gear a 17-Year Driver Actually Recommends',
+  title: 'Trucking Life Store — Guides, Coaching & Gear from Shawn',
   description:
-    'Dash cams, 12V fridges, bunk upgrades, and road-tested trucker gear, hand-picked by Trucking Life. Curated Amazon recommendations for drivers who want gear that holds up.',
+    'Driver guides, CDL protection material, Hours of Service reference, 1:1 coaching, and Founding Member merch from Trucking Life with Shawn. Free guides included.',
   path: '/store',
 });
 
 export default function StorePage() {
-  // Amazon products are currently hidden (lib/store/visibility.ts), which
-  // leaves this page with nothing to list. The sections below that only make
-  // sense with products — the picks/guides shortcuts, the category grid, the
-  // buying-guide rail — stand down rather than linking to empty pages. Flipping
-  // SHOW_AMAZON_PRODUCTS brings all of it back untouched.
-  const hasProducts = STORE_PRODUCTS.length > 0;
+  // The storefront is Trucking Life's OWN products. The Amazon catalog is
+  // preserved but hidden (lib/store/visibility.ts), so its sections render only
+  // if that flag is turned back on — this page works either way and never
+  // depends on Amazon being present.
+  const amazonProducts = STORE_PRODUCTS;
+  const hasAmazon = amazonProducts.length > 0;
 
   return (
     <>
@@ -44,112 +46,81 @@ export default function StorePage() {
           </Link>{' '}
           <span aria-hidden="true">›</span> <span className="text-ink">Store</span>
         </nav>
-        <Eyebrow>Trucking Life Store · Curated gear</Eyebrow>
+        <Eyebrow>Trucking Life Store</Eyebrow>
         <h1 className="display-hero max-w-3xl">
-          Gear that earns its spot in the cab<span className="text-signal">.</span>
+          Guides, coaching, and gear from the driver&apos;s seat
+          <span className="text-signal">.</span>
         </h1>
-        {hasProducts ? (
-          <p className="mt-6 max-w-2xl text-lg text-muted">
-            No sponsored fluff — 100+ picks of gear a 17-year driver actually reaches for, with an
-            honest reason for each. Every buy link goes to Amazon.
-          </p>
-        ) : (
-          // Every claim on this page is about the gear picks. With none visible,
-          // stating "100+ picks" or "every buy link goes to Amazon" would be
-          // plainly untrue, so the promotional copy stands down with the
-          // products rather than outliving them.
-          <p className="mt-6 max-w-2xl text-lg text-muted">
-            The gear picks are being reworked and are temporarily unavailable. Nothing has been
-            discontinued — check back shortly.
-          </p>
-        )}
-        {hasProducts && (
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/store/shawns-picks"
-              className="rounded-card bg-signal px-5 py-2.5 font-display text-sm uppercase text-asphalt transition-colors hover:bg-signal-600"
-            >
-              Shawn&apos;s Picks
-            </Link>
-            <Link
-              href="/store/guides"
-              className="rounded-card border border-line px-5 py-2.5 font-display text-sm uppercase text-ink transition-colors hover:border-signal"
-            >
-              Buying guides
-            </Link>
-          </div>
-        )}
-        <div className="mt-6">
-          <AmazonDisclosure />
+        <p className="mt-6 max-w-2xl text-lg text-muted">
+          Written by a 17-year driver with a clean record — DOT inspection material, CDL protection,
+          Hours of Service reference, and 1:1 coaching. Several guides are free. Checkout and
+          delivery happen on Shawn&apos;s Stan page.
+        </p>
+      </Section>
+
+      <Section className="border-b border-line">
+        <h2 className="display-section">Everything in the store</h2>
+        <p className="mt-3 max-w-2xl text-muted">
+          Search or filter by category. Free guides download straight away; paid products open their
+          Stan checkout page.
+        </p>
+        <div className="mt-8">
+          <DirectStoreBrowser products={DIRECT_PRODUCTS} categories={directCategories()} />
         </div>
       </Section>
 
-      {/* Buying guides */}
-      {hasProducts && (
-        <Section className="border-b border-line">
-          <Eyebrow>Buying guides</Eyebrow>
-          <h2 className="display-section">Best-of guides, no fake five-star roundups</h2>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {STORE_GUIDES.map((g) => (
-              <Link
-                key={g.slug}
-                href={guideHref(g.slug)}
-                className="flex items-center justify-between gap-3 rounded-card border border-line bg-asphalt-800 px-4 py-3 transition-colors hover:border-signal"
-              >
-                <span className="font-display text-sm uppercase text-ink">{g.title}</span>
-                <span aria-hidden="true" className="text-signal">
-                  →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Section>
-      )}
+      {/* Amazon gear — renders only while the affiliate catalog is visible. */}
+      {hasAmazon && (
+        <>
+          <Section className="border-b border-line bg-asphalt-800">
+            <Eyebrow>Buying guides</Eyebrow>
+            <h2 className="display-section">Best-of guides, no fake five-star roundups</h2>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {STORE_GUIDES.map((g) => (
+                <Link
+                  key={g.slug}
+                  href={guideHref(g.slug)}
+                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-asphalt px-4 py-3 transition-colors hover:border-signal"
+                >
+                  <span className="font-display text-sm uppercase text-ink">{g.title}</span>
+                  <span aria-hidden="true" className="text-signal">
+                    →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </Section>
 
-      {/* Categories */}
-      {hasProducts && (
-        <Section className="border-b border-line bg-asphalt-800">
-          <h2 className="display-section">Shop by category</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {STORE_CATEGORIES.map((c) => (
-              <Link
-                key={c.slug}
-                href={storeCategoryHref(c.slug)}
-                className="flex flex-col rounded-card border border-line bg-asphalt p-5 transition-colors hover:border-signal"
-              >
-                <span aria-hidden="true" className="text-3xl">
-                  {c.icon}
-                </span>
-                <span className="mt-3 font-display text-lg uppercase text-ink">{c.title}</span>
-                <span className="mt-1 text-sm text-muted">{c.blurb}</span>
-              </Link>
-            ))}
-          </div>
-        </Section>
-      )}
+          <Section className="border-b border-line">
+            <h2 className="display-section">Shop gear by category</h2>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {STORE_CATEGORIES.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={storeCategoryHref(c.slug)}
+                  className="flex flex-col rounded-card border border-line bg-asphalt-800 p-5 transition-colors hover:border-signal"
+                >
+                  <span aria-hidden="true" className="text-3xl">
+                    {c.icon}
+                  </span>
+                  <span className="mt-3 font-display text-lg uppercase text-ink">{c.title}</span>
+                  <span className="mt-1 text-sm text-muted">{c.blurb}</span>
+                </Link>
+              ))}
+            </div>
+          </Section>
 
-      {/* All products with search/filter/sort */}
-      {hasProducts && (
-        <Section className="border-b border-line">
-          <h2 className="display-section">All the picks</h2>
-          <p className="mt-3 max-w-2xl text-muted">
-            Search, filter, and sort. Product links go live as each pick is confirmed on Amazon.
-          </p>
-          <div className="mt-8">
-            <StoreBrowser products={STORE_PRODUCTS} />
-          </div>
-        </Section>
+          <Section className="border-b border-line">
+            <h2 className="display-section">Gear picks</h2>
+            <div className="mt-6">
+              <AmazonDisclosure />
+            </div>
+            <div className="mt-8">
+              <StoreBrowser products={amazonProducts} />
+            </div>
+          </Section>
+        </>
       )}
-
-      <Section className="bg-asphalt-800">
-        <div className="mx-auto max-w-2xl text-center">
-          <AmazonDisclosure />
-          <p className="mt-4 text-sm text-muted">
-            Prices and availability are shown on Amazon and can change. Trucking Life earns a small
-            commission on qualifying purchases at no extra cost to you.
-          </p>
-        </div>
-      </Section>
     </>
   );
 }

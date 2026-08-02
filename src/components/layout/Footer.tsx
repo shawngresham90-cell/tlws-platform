@@ -1,6 +1,15 @@
 import Link from 'next/link';
 import { Container } from '@/components/ui';
 import { SITE } from '@/lib/seo/site';
+import { STORE_PRODUCTS } from '@/lib/store/products';
+
+/**
+ * Buying Guides and Shawn's Picks list Amazon products. While that catalog is
+ * hidden (lib/store/visibility.ts) both pages render empty, so the footer stops
+ * pointing at them rather than sending people to a dead end. They return the
+ * moment the affiliate catalog is visible again.
+ */
+const AMAZON_VISIBLE = STORE_PRODUCTS.length > 0;
 
 const COLUMNS: Array<{
   heading: string;
@@ -30,8 +39,12 @@ const COLUMNS: Array<{
     heading: 'More',
     links: [
       { label: 'Store', href: '/store' },
-      { label: 'Buying Guides', href: '/store/guides' },
-      { label: "Shawn's Picks", href: '/store/shawns-picks' },
+      ...(AMAZON_VISIBLE
+        ? [
+            { label: 'Buying Guides', href: '/store/guides' },
+            { label: "Shawn's Picks", href: '/store/shawns-picks' },
+          ]
+        : []),
       { label: 'Books', href: '/books' },
       { label: 'Apps', href: '/apps' },
       { label: 'Directories', href: '/directory' },
