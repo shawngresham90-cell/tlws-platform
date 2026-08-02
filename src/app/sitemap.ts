@@ -15,7 +15,7 @@ import {
   productsOfType,
 } from '@/lib/store/products';
 import { shawnsPicks } from '@/lib/store/picks';
-import { DIRECT_PRODUCTS, directProductHref } from '@/lib/store/direct';
+import { DIRECT_PRODUCTS, directProductHref, SHIPPING_RETURNS_HREF } from '@/lib/store/direct';
 import { STORE_GUIDES, guideHref } from '@/lib/store/product-types';
 import { publishedTests, testHref } from '@/lib/tests/catalog';
 
@@ -110,6 +110,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.8,
+  });
+  // Physical-product policy — public and stable.
+  entries.push({
+    url: `${SITE.url}${SHIPPING_RETURNS_HREF}`,
+    lastModified: now,
+    changeFrequency: 'yearly',
+    priority: 0.4,
   });
   // Trucking Life's own products — always public, so always listed.
   for (const product of DIRECT_PRODUCTS) {

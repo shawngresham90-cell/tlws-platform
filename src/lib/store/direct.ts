@@ -29,6 +29,16 @@ export type Fulfillment = 'digital' | 'physical' | 'scheduled-service';
 /** The one Stan account Trucking Life sells through. */
 export const STAN_ACCOUNT_PREFIX = 'https://stan.store/TRUCKINGLIFEWITHSHAWN/p/';
 
+/**
+ * Order-support address for physical products, owner-designated 2026-08-02.
+ * Deliberately NOT the privacy address — that one is scoped to privacy and SMS
+ * matters and must not absorb order support.
+ */
+export const SHIRT_SUPPORT_EMAIL = 'shawngresham90@gmail.com';
+
+/** Where the owner-confirmed physical-product terms live. */
+export const SHIPPING_RETURNS_HREF = '/store/shipping-returns';
+
 export type DirectProduct = {
   slug: string;
   name: string;
@@ -65,8 +75,6 @@ export type DirectProduct = {
  */
 const NEEDS_DISCLAIMER =
   'Awaiting approved disclaimer copy — listed for information only until then.';
-const NEEDS_MERCH_POLICY =
-  'Awaiting return and shipping copy that describes the real Stan fulfillment.';
 
 export const DIRECT_PRODUCTS: DirectProduct[] = [
   /* ── Free driver guides ─────────────────────────────────────────────── */
@@ -158,18 +166,22 @@ export const DIRECT_PRODUCTS: DirectProduct[] = [
     // Stock wording is NEVER written here — it comes from shirt-inventory.ts,
     // the single source of truth, via shirtStockLabel() below.
     tagline: 'Wear the build. Supports the Trucking Life Academy.',
+    // Corrected 2026-08-02 alongside the policy: fulfillment is NOT "handled on
+    // the Stan page" — Trucking Life With Shawn makes and ships it. Stan is
+    // checkout only.
     description:
-      'A limited run of Founding Member shirts. Checkout, sizing, and fulfillment are handled on the Stan page.',
+      'A limited run of Founding Member shirts. Made and shipped by Trucking Life With Shawn; checkout and sizing happen on the Stan page.',
     priceUsd: 35,
     stanUrl: `${STAN_ACCOUNT_PREFIX}founding-member-shirt--only-100-made`,
     fulfillment: 'physical',
     badge: 'Limited run',
     image: '/store/products/founding-member-shirt.webp',
     featured: true,
-    // The only physical product in the catalog, and the site publishes no
-    // return or shipping policy. Selling it from here first would mean taking
-    // money for a shipped item with nothing on-site describing returns.
-    purchaseBlockedReason: NEEDS_MERCH_POLICY,
+    // Unblocked 2026-08-02: the owner confirmed the fulfillment, dispatch,
+    // damaged-order, returns and exchange terms, and they are published at
+    // SHIPPING_RETURNS_HREF. That was the only thing holding this back — the
+    // $35 price was already confirmed.
+    purchaseBlockedReason: null,
   },
 
   /* ── Digital guides ─────────────────────────────────────────────────── */

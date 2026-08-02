@@ -6,6 +6,7 @@ import { DirectProductCard } from './DirectProductCard';
 import { StoreEvents } from './StoreEvents';
 import {
   DIRECT_PRODUCTS,
+  SHIPPING_RETURNS_HREF,
   ctaState,
   directPriceLabel,
   fulfillmentLabel,
@@ -114,6 +115,18 @@ export function DirectProductView({ product }: { product: DirectProduct }) {
               Sold and delivered through Shawn&apos;s Stan page. Trucking Life does not process
               payments on this site.
             </p>
+
+            {/* Physical products carry owner-confirmed shipping and return terms.
+                Digital and coaching products are not shipped, so the link would
+                point at policy that does not apply to them. */}
+            {product.fulfillment === 'physical' && (
+              <p className="mt-3 text-sm text-muted">
+                <Link href={SHIPPING_RETURNS_HREF} className="text-signal hover:underline">
+                  Shipping &amp; returns
+                </Link>{' '}
+                — dispatch timing, damaged or incorrect orders, returns, and size exchanges.
+              </p>
+            )}
           </div>
         </div>
       </Section>

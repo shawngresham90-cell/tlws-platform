@@ -23,6 +23,8 @@
 import { readFileSync, existsSync } from 'node:fs';
 import {
   DIRECT_PRODUCTS,
+  SHIPPING_RETURNS_HREF,
+  SHIRT_SUPPORT_EMAIL,
   STAN_ACCOUNT_PREFIX,
   ctaState,
   directCategories,
@@ -36,6 +38,7 @@ import {
 import { ALL_STORE_PRODUCTS, STORE_PRODUCTS } from '@/lib/store/products';
 import { SHIRTS_LEFT, SHIRTS_TOTAL_RUN } from '@/lib/store/shirt-inventory';
 import { STORE_EVENTS } from '@/lib/store/analytics';
+import { LEGAL } from '@/lib/legal/company';
 
 let passed = 0;
 let failed = 0;
@@ -190,9 +193,10 @@ const actionableSlugs = DIRECT_PRODUCTS.filter((p) => ctaState(p).kind !== 'deta
   (p) => p.slug,
 );
 check(
-  'exactly the 5 free products are purchasable/actionable right now',
-  actionableSlugs.length === 5 &&
-    actionableSlugs.every((s) => byType('free').some((f) => f.slug === s)),
+  'exactly the 5 free guides + the Founder Shirt are actionable',
+  actionableSlugs.length === 6 &&
+    actionableSlugs.includes('founding-member-shirt') &&
+    byType('free').every((f) => actionableSlugs.includes(f.slug)),
   actionableSlugs,
 );
 
@@ -208,16 +212,102 @@ for (const slug of [
   check(`${slug} is listed`, Boolean(p));
   check(`${slug} is NOT purchasable pending disclaimer copy`, ctaState(p).kind === 'details');
 }
+/* 5b. The Founder Shirt is UNBLOCKED, and the policy that unblocked it exists */
+
 const shirt = directProduct('founding-member-shirt')!;
+const shirtCta = ctaState(shirt);
+check('the shirt has no remaining policy blocker', shirt.purchaseBlockedReason === null);
+check('the shirt offers an active purchase CTA', shirtCta.kind === 'buy', shirtCta);
+check('the shirt CTA says Buy now', shirtCta.label === 'Buy now', shirtCta.label);
 check(
-  'the shirt is blocked pending return/shipping copy, despite having a price',
-  ctaState(shirt).kind === 'details' && Boolean(shirt.purchaseBlockedReason),
+  'the shirt CTA points at the approved Stan URL',
+  'href' in shirtCta && shirtCta.href === shirt.stanUrl,
+  shirtCta,
+);
+check('the shirt price is still $35', shirt.priceUsd === 35, shirt.priceUsd);
+
+// The policy page must EXIST and must be reachable, or the CTA is live over
+// nothing — the exact situation the blocker was protecting against.
+const POLICY_PAGE = 'src/app/(marketing)/store/shipping-returns/page.tsx';
+check('the shipping & returns page exists', existsSync(POLICY_PAGE));
+check(
+  'its route matches SHIPPING_RETURNS_HREF',
+  SHIPPING_RETURNS_HREF === '/store/shipping-returns',
+);
+// Comments stripped: the page's own docblock explains WHY it avoids the
+// forbidden claims, and that explanation must not trip the forbidden-claim
+// scan below. Only shipped copy is tested.
+const policy = read(POLICY_PAGE)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  .replace(/^\s*\/\/[^\n]*$/gm, '');
+
+// Each owner-confirmed fact appears, verbatim in substance.
+for (const [label, re] of [
+  ['made and shipped by Trucking Life With Shawn', /made and shipped by Trucking Life With Shawn/i],
+  ['checkout occurs through Stan Store', /Checkout occurs through Stan Store/i],
+  [
+    'Stan shows charges before payment',
+    /shows shipping charges and estimated\s+delivery information before payment/i,
+  ],
+  ['dispatch within 10 business days', /dispatched within 10 business days/i],
+  ['case-by-case review', /reviewed on a case-by-case basis/i],
+  ['14-day report window', /within 14 days of delivery or the expected delivery date/i],
+  ['returns are not accepted', /Returns are not accepted/i],
+  ['size exchanges are not accepted', /Size exchanges are not accepted/i],
+  ['physical product', /physical product/i],
+] as const) {
+  check(`policy states: ${label}`, re.test(policy));
+}
+
+// And each forbidden claim is ABSENT. These are the ways a merch policy goes
+// wrong: promising delivery, inventing a vendor, or offering remedies nobody
+// agreed to.
+for (const [label, re] of [
+  ['free shipping', /free shipping/i],
+  ['guaranteed delivery', /guarantee/i],
+  ['an unconfirmed vendor', /printful|printify|gelato|teespring|shopify/i],
+  ['refunds', /\brefund/i],
+  ['exchanges being offered', /exchanges are accepted|we will exchange/i],
+  ['a warranty', /\bwarrant/i],
+  ['a free-shipping threshold', /\$\d+\s*(free|threshold)/i],
+] as const) {
+  check(`policy does NOT claim: ${label}`, !re.test(policy), policy.match(re)?.[0]);
+}
+
+check('policy uses the owner-designated support email', policy.includes('SHIRT_SUPPORT_EMAIL'));
+check(
+  'order support is NOT routed to the privacy address',
+  (SHIRT_SUPPORT_EMAIL as string) !== (LEGAL.contactEmail as string),
+  { support: SHIRT_SUPPORT_EMAIL, privacy: LEGAL.contactEmail },
 );
 check(
-  'no returns or shipping page exists yet, which is why the shirt is blocked',
-  !existsSync('src/app/(marketing)/returns/page.tsx') &&
-    !existsSync('src/app/(marketing)/shipping/page.tsx'),
+  'the product page links the policy for physical products',
+  /product\.fulfillment === 'physical'/.test(read('src/components/store/DirectProductView.tsx')) &&
+    /SHIPPING_RETURNS_HREF/.test(read('src/components/store/DirectProductView.tsx')),
 );
+check(
+  'the sitemap lists the policy page',
+  read('src/app/sitemap.ts').includes('SHIPPING_RETURNS_HREF'),
+);
+
+// Every OTHER paid/service product stays blocked.
+const stillBlocked = DIRECT_PRODUCTS.filter((p) => ctaState(p).kind === 'details').map(
+  (p) => p.slug,
+);
+check('exactly 7 products remain non-purchasable', stillBlocked.length === 7, stillBlocked);
+check('the shirt is NOT among the blocked', !stillBlocked.includes('founding-member-shirt'));
+for (const slug of [
+  '17-years-zero-violations',
+  'carnivore-trucker-health-system',
+  'save-your-cdl-sap-guide',
+  'cdl-crusher-guide',
+  'hos-bible',
+  'owner-operator-money',
+  'coaching-call',
+]) {
+  check(`${slug} remains non-purchasable`, stillBlocked.includes(slug));
+}
 
 /* 6. Type invariants ---------------------------------------------------- */
 
@@ -369,7 +459,14 @@ check(
 /* 12. Privacy: nothing personal in the catalog -------------------------- */
 
 const catalogSrc = read('src/lib/store/direct.ts');
-check('no email address in the catalog', !/[\w.+-]+@[\w-]+\.[\w.]+/.test(catalogSrc));
+// The owner-designated order-support address is intentional and public. Any
+// OTHER address in the catalog would be a leak.
+const emails = [...new Set(catalogSrc.match(/[\w.+-]+@[\w-]+\.[\w.]+/g) ?? [])];
+check(
+  'the only email in the catalog is the designated support address',
+  emails.every((e) => e === SHIRT_SUPPORT_EMAIL),
+  emails,
+);
 check('no phone number in the catalog', !/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/.test(catalogSrc));
 check('no API key or token in the catalog', !/(api[_-]?key|secret|token)\s*[:=]/i.test(catalogSrc));
 
