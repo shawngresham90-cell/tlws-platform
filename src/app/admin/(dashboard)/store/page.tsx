@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
 import {
-  STORE_PRODUCTS,
+  ALL_STORE_PRODUCTS,
   priceLabel,
   ratingLabel,
   productHref,
   productReadiness,
 } from '@/lib/store/products';
+import { isPubliclyVisible } from '@/lib/store/visibility';
 import { storeCategory } from '@/lib/store/categories';
 import { productTypeMeta } from '@/lib/store/product-types';
 import { AMAZON_ASSOCIATE_TAG } from '@/lib/store/amazon';
@@ -23,9 +24,13 @@ export const metadata = { title: 'Admin — Store Catalog', robots: { index: fal
  */
 export default function AdminStorePage() {
   requireAdmin();
-  const rows = STORE_PRODUCTS.map((p) => ({ p, r: productReadiness(p) }));
+  // The ADMIN audit deliberately reads the WHOLE catalog, including products
+  // hidden from the public store — the point of this page is to see everything
+  // that exists, and a hidden product still needs its ASIN tracked.
+  const rows = ALL_STORE_PRODUCTS.map((p) => ({ p, r: productReadiness(p) }));
   const total = rows.length;
   const liveCount = rows.filter((x) => x.r.live).length;
+  const hiddenCount = rows.filter((x) => !isPubliclyVisible(x.p)).length;
   const missing = {
     asin: rows.filter((x) => !x.r.hasAsin).length,
     title: rows.filter((x) => !x.r.hasVerifiedTitle).length,
@@ -55,6 +60,14 @@ export default function AdminStorePage() {
           it has a valid ASIN and a confirmed price — no button appears until then. Bulk-fill via{' '}
           <code className="text-ink">docs/store/owner-fill-template.csv</code>.
         </p>
+        {hiddenCount > 0 && (
+          <p className="mt-2 text-sm text-diesel-300">
+            {hiddenCount} of these are <strong>hidden from the public store</strong> and appear here
+            only. Nothing has been deleted — flip{' '}
+            <code className="text-ink">SHOW_AMAZON_PRODUCTS</code> in{' '}
+            <code className="text-ink">src/lib/store/visibility.ts</code> to restore them.
+          </p>
+        )}
       </header>
 
       <div className="flex flex-wrap gap-2">

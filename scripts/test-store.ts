@@ -31,10 +31,9 @@ import {
   amazonStorefrontUrl,
 } from '@/lib/store/amazon';
 import {
-  STORE_PRODUCTS,
-  storeProduct,
-  productsInCategory,
-  productsOfType,
+  ALL_STORE_PRODUCTS,
+  STORE_PRODUCTS as PUBLIC_STORE_PRODUCTS,
+  anyStoreProduct,
   productHref,
   productReadiness,
   productActive,
@@ -44,7 +43,7 @@ import {
 } from '@/lib/store/products';
 import { STORE_CATEGORIES, storeCategory, storeCategoryHref } from '@/lib/store/categories';
 import { PRODUCT_TYPES, STORE_GUIDES, storeGuide, guideHref } from '@/lib/store/product-types';
-import { shawnsPicks } from '@/lib/store/picks';
+import { shawnsPicks, SHAWNS_PICKS } from '@/lib/store/picks';
 import { relatedProducts, frequentlyBoughtTogether } from '@/lib/store/related';
 import { filterAndSortProducts } from '@/lib/store/search';
 import { productSchema } from '@/lib/store/schema';
@@ -61,6 +60,19 @@ const check = (name: string, cond: boolean, detail?: unknown) => {
   }
 };
 const read = (p: string) => readFileSync(p, 'utf8');
+
+/**
+ * These checks are about the CATALOG — that every product carries honest copy,
+ * that no Amazon fact is fabricated, that every category and guide is backed by
+ * real entries. That subject is the full catalog, not whatever subset is
+ * publicly visible today, so they run over ALL_STORE_PRODUCTS. Hiding a product
+ * must never weaken them; the public view is asserted separately in
+ * test-store-amazon-hidden.ts.
+ */
+const STORE_PRODUCTS = ALL_STORE_PRODUCTS;
+const storeProduct = anyStoreProduct;
+const productsInCategory = (c: string) => STORE_PRODUCTS.filter((p) => p.category === c);
+const productsOfType = (t: string) => STORE_PRODUCTS.filter((p) => p.productType === t);
 
 // ── 1. Associate tag + rel: exact, single source ───────────────────────────
 check(
@@ -286,32 +298,53 @@ check(
   ),
 );
 
-// ── 10. Shawn's Picks resolve to real products ─────────────────────────────
-const picks = shawnsPicks();
-check("Shawn's Picks non-empty", picks.length >= 8, picks.length);
+// ── 10. Shawn's Picks are backed by real catalog entries ───────────────────
+// `shawnsPicks()` reads the PUBLIC catalog, so while Amazon products are hidden
+// it correctly returns nothing. The durable assertion — the one that would
+// catch a typo'd or deleted pick — is that every configured pick slug still
+// resolves in the full catalog.
+check("Shawn's Picks are configured", SHAWNS_PICKS.length >= 8, SHAWNS_PICKS.length);
 check(
-  'every pick resolves to a real product',
-  picks.every((x) => storeProduct(x.product.slug)),
+  'every configured pick resolves to a real catalog product',
+  SHAWNS_PICKS.every((x) => Boolean(anyStoreProduct(x.slug))),
+  SHAWNS_PICKS.filter((x) => !anyStoreProduct(x.slug)).map((x) => x.slug),
 );
 check(
-  'every pick has a reason',
-  picks.every((x) => x.why.length > 0),
+  'every configured pick has a reason',
+  SHAWNS_PICKS.every((x) => x.why.length > 0),
+);
+const picks = shawnsPicks();
+check(
+  'public picks contain only publicly visible products',
+  picks.every((x) => PUBLIC_STORE_PRODUCTS.some((p) => p.slug === x.product.slug)),
 );
 
 // ── 11. Related + Frequently Bought Together ───────────────────────────────
-const sample = storeProduct('dual-dash-cam')!;
+// Both read the PUBLIC catalog. The properties that must hold regardless of how
+// many products are visible: never suggest the product itself, never duplicate,
+// never exceed the limit, and never surface something the public cannot see.
+const sample = anyStoreProduct('dual-dash-cam')!;
+check('sample product still exists in the catalog', Boolean(sample));
 const rel = relatedProducts(sample, 3);
 check(
   'related excludes the product itself',
   rel.every((p) => p.slug !== sample.slug),
 );
-check('related returns up to limit', rel.length > 0 && rel.length <= 3);
+check('related never exceeds the limit', rel.length <= 3, rel.length);
+check(
+  'related surfaces only publicly visible products',
+  rel.every((p) => PUBLIC_STORE_PRODUCTS.some((v) => v.slug === p.slug)),
+);
 const fbt = frequentlyBoughtTogether(sample, 3);
 check(
   'fbt excludes the product itself',
   fbt.every((p) => p.slug !== sample.slug),
 );
 check('fbt returns distinct products', new Set(fbt.map((p) => p.slug)).size === fbt.length);
+check(
+  'fbt surfaces only publicly visible products',
+  fbt.every((p) => PUBLIC_STORE_PRODUCTS.some((v) => v.slug === p.slug)),
+);
 
 // ── 12. Search / filter / sort ─────────────────────────────────────────────
 check(
