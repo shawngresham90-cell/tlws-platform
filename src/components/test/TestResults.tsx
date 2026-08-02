@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import { TextField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
+import { TEST_EVENTS, resultsVariant } from '@/lib/tests/analytics';
 import { gradeAttempt } from '@/lib/tests/scoring';
 import { testHref } from '@/lib/tests/catalog';
 import { BookmarkButton } from './BookmarkButton';
@@ -85,7 +86,7 @@ export function TestResults({
   useEffect(() => {
     if (drill || alreadyLogged || posting.current) return;
     posting.current = true;
-    trackEvent('practice_test_completed', {
+    trackEvent(TEST_EVENTS.completed, {
       test: test.slug,
       mode,
       scorePct: result.scorePct,
@@ -176,7 +177,19 @@ export function TestResults({
             drivers.
           </p>
           <div className="mt-4">
-            <Button href="/academy/apply">Apply to the Academy</Button>
+            <Button
+              href="/academy/apply"
+              onClick={() =>
+                trackEvent(TEST_EVENTS.academyCtaClick, {
+                  test: test.slug,
+                  mode,
+                  variant: resultsVariant(drill, result.passed),
+                  placement: 'results',
+                })
+              }
+            >
+              Apply to the Academy
+            </Button>
           </div>
         </div>
         <div className="rounded-card border border-line bg-asphalt-800 p-6">
@@ -186,7 +199,18 @@ export function TestResults({
             {PRESCHOOL_PRICE_LABEL}.
           </p>
           <div className="mt-4">
-            <Button variant="ghost" href={PRESCHOOL_PATH}>
+            <Button
+              variant="ghost"
+              href={PRESCHOOL_PATH}
+              onClick={() =>
+                trackEvent(TEST_EVENTS.preschoolCtaClick, {
+                  test: test.slug,
+                  mode,
+                  variant: resultsVariant(drill, result.passed),
+                  placement: 'results',
+                })
+              }
+            >
               See CDL Pre-School
             </Button>
           </div>
