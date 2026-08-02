@@ -15,6 +15,20 @@ export const metadata = buildMetadata({
   path: '/academy',
 });
 
+/**
+ * /academy — the Academy overview. Mostly static marketing content, but the
+ * "Built founder by founder" section renders the shared CampaignThermometer
+ * from the live `campaign_progress` aggregate, so this page must NOT be fully
+ * static. Without a revalidate window it is baked at build time and then keeps
+ * showing whatever the campaign totals happened to be on deploy day — which is
+ * what it did, while /founders and /road-ahead had already moved on.
+ *
+ * 60s matches those two, the only other surfaces reading the same aggregate,
+ * so the three can never disagree by more than that window. The numbers
+ * themselves are never written down here; they come from the reader.
+ */
+export const revalidate = 60;
+
 const PILLARS: Card[] = [
   {
     icon: '📋',
