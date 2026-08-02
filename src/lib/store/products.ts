@@ -1,5 +1,6 @@
 import type { ProductReadiness, StoreCategorySlug, StoreProductType, StoreProduct } from './types';
 import { isValidAsin } from './amazon';
+import { publicProducts } from './visibility';
 
 /**
  * Trucking Life Store catalog — 104 curated EDITORIAL recommendation slots
@@ -19,7 +20,15 @@ import { isValidAsin } from './amazon';
  * Names are descriptive archetypes (use-case based), NOT specific Amazon
  * listings, so nothing here misrepresents a real product.
  */
-export const STORE_PRODUCTS: StoreProduct[] = [
+/**
+ * THE COMPLETE CATALOG — every product, whether or not it is publicly visible.
+ *
+ * Nothing is ever removed from here. Public surfaces read `STORE_PRODUCTS`
+ * (below), which is this array filtered through `lib/store/visibility.ts`.
+ * Admin, tests, and development read this one so hidden products stay
+ * inspectable, searchable, and testable.
+ */
+export const ALL_STORE_PRODUCTS: StoreProduct[] = [
   {
     slug: 'dual-dash-cam',
     name: 'Front & Interior Dual Dash Cam',
@@ -3102,15 +3111,41 @@ export const STORE_PRODUCTS: StoreProduct[] = [
   },
 ];
 
-if (STORE_PRODUCTS.length !== 104) {
+if (ALL_STORE_PRODUCTS.length !== 104) {
   // Guardrail: 100 M54 editorial slots + 4 owner-requested "first 12" additions.
-  throw new Error(`Store catalog must have 104 products, found ${STORE_PRODUCTS.length}`);
+  // Counts the WHOLE catalog — hiding a product must never trip this, because
+  // hiding does not remove anything.
+  throw new Error(`Store catalog must have 104 products, found ${ALL_STORE_PRODUCTS.length}`);
 }
 
-const BY_SLUG = new Map(STORE_PRODUCTS.map((p) => [p.slug, p]));
+/**
+ * THE PUBLIC VIEW. Every customer-facing surface — store browse, product
+ * pages, categories, buying guides, Shawn's Picks, related products, the
+ * sitemap — reads this, so visibility is decided in exactly one place
+ * (lib/store/visibility.ts) and cannot drift between surfaces.
+ *
+ * Amazon affiliate products are currently hidden; flip `SHOW_AMAZON_PRODUCTS`
+ * to restore them everywhere at once.
+ */
+export const STORE_PRODUCTS: StoreProduct[] = publicProducts(ALL_STORE_PRODUCTS);
 
+const BY_SLUG = new Map(STORE_PRODUCTS.map((p) => [p.slug, p]));
+const BY_SLUG_ALL = new Map(ALL_STORE_PRODUCTS.map((p) => [p.slug, p]));
+
+/**
+ * Public lookup. Returns `undefined` for a hidden product, so a hidden slug
+ * 404s instead of rendering a page nothing links to.
+ */
 export function storeProduct(slug: string): StoreProduct | undefined {
   return BY_SLUG.get(slug);
+}
+
+/**
+ * Catalog lookup INCLUDING hidden products. For admin, tests, and tooling —
+ * never for a public page.
+ */
+export function anyStoreProduct(slug: string): StoreProduct | undefined {
+  return BY_SLUG_ALL.get(slug);
 }
 
 export function productsInCategory(category: StoreCategorySlug): StoreProduct[] {

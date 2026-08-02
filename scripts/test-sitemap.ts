@@ -43,7 +43,13 @@ async function main() {
   const entries = await sitemap();
   const urls = entries.map((e) => e.url);
 
-  check('sitemap: produces entries', urls.length > 100, urls.length);
+  // Non-trivial, not a specific count. This threshold used to be 100 because
+  // the 104 store products were unconditionally present; they are now gated on
+  // visibility (lib/store/visibility.ts), so the store contributes a variable
+  // number. What still matters here is that the generator produces a healthy
+  // static sitemap rather than an empty or broken one.
+  check('sitemap: produces entries', urls.length > 40, urls.length);
+  check('sitemap: still lists the store hub', urls.includes(`${SITE.url}/store`));
 
   /* -------------------------------------------------- no duplicate <url> */
   const counts = new Map<string, number>();

@@ -23,14 +23,28 @@ import { STORE_EVENTS } from '@/lib/store/analytics';
 import { productSchema } from '@/lib/store/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { DirectProductView } from '@/components/store/DirectProductView';
+import { DIRECT_PRODUCTS, directProduct } from '@/lib/store/direct';
 
 export const revalidate = 3600;
 
 export function generateStaticParams() {
-  return STORE_PRODUCTS.map((p) => ({ slug: p.slug }));
+  // Both catalogs share this route. Direct products are always present; Amazon
+  // products contribute only while they are publicly visible, so a hidden
+  // affiliate slug is never prerendered and 404s instead.
+  return [...DIRECT_PRODUCTS, ...STORE_PRODUCTS].map((p) => ({ slug: p.slug }));
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const direct = directProduct(params.slug);
+  if (direct) {
+    return buildMetadata({
+      title: `${direct.name} — Trucking Life Store`,
+      description: `${direct.tagline} ${direct.description}`.slice(0, 155),
+      path: `/store/products/${direct.slug}`,
+      image: direct.image,
+    });
+  }
   const p = storeProduct(params.slug);
   if (!p) return buildMetadata({ noindex: true });
   return buildMetadata({
@@ -42,6 +56,12 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 }
 
 export default function ProductPage({ params }: { params: { slug: string } }) {
+  // Direct products first — they are the storefront. Falling through to the
+  // Amazon lookup means the slug is an affiliate product, which resolves only
+  // while that catalog is visible.
+  const direct = directProduct(params.slug);
+  if (direct) return <DirectProductView product={direct} />;
+
   const product = storeProduct(params.slug);
   if (!product) notFound();
   const cat = storeCategory(product.category);

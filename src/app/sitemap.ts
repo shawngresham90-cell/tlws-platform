@@ -8,7 +8,14 @@ import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { isDetailIndexable } from '@/lib/directory/detail';
 import { detailHref } from '@/lib/directory/detail-slug';
 import { STORE_CATEGORIES, storeCategoryHref } from '@/lib/store/categories';
-import { STORE_PRODUCTS, productHref } from '@/lib/store/products';
+import {
+  STORE_PRODUCTS,
+  productHref,
+  productsInCategory,
+  productsOfType,
+} from '@/lib/store/products';
+import { shawnsPicks } from '@/lib/store/picks';
+import { DIRECT_PRODUCTS, directProductHref, SHIPPING_RETURNS_HREF } from '@/lib/store/direct';
 import { STORE_GUIDES, guideHref } from '@/lib/store/product-types';
 import { publishedTests, testHref } from '@/lib/tests/catalog';
 
@@ -104,7 +111,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'weekly',
     priority: 0.8,
   });
+  // Physical-product policy — public and stable.
+  entries.push({
+    url: `${SITE.url}${SHIPPING_RETURNS_HREF}`,
+    lastModified: now,
+    changeFrequency: 'yearly',
+    priority: 0.4,
+  });
+  // Trucking Life's own products — always public, so always listed.
+  for (const product of DIRECT_PRODUCTS) {
+    entries.push({
+      url: `${SITE.url}${directProductHref(product.slug)}`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
+  // Only categories that actually have a publicly visible product. A category
+  // whose products are all hidden renders an empty page — submitting it would
+  // be asking Google to index nothing.
   for (const category of STORE_CATEGORIES) {
+    if (productsInCategory(category.slug).length === 0) continue;
     entries.push({
       url: `${SITE.url}${storeCategoryHref(category.slug)}`,
       lastModified: now,
@@ -120,22 +147,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     });
   }
-  // Buying guides (M54) + Shawn's Picks.
-  entries.push(
-    {
+  // Buying guides (M54) + Shawn's Picks — each listed only while it still has
+  // visible products to show, for the same reason as the categories above.
+  const visibleGuides = STORE_GUIDES.filter((g) => productsOfType(g.productType).length > 0);
+  if (visibleGuides.length > 0) {
+    entries.push({
       url: `${SITE.url}/store/guides`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
-    },
-    {
+    });
+  }
+  if (shawnsPicks().length > 0) {
+    entries.push({
       url: `${SITE.url}/store/shawns-picks`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
-    },
-  );
-  for (const guide of STORE_GUIDES) {
+    });
+  }
+  for (const guide of visibleGuides) {
     entries.push({
       url: `${SITE.url}${guideHref(guide.slug)}`,
       lastModified: now,

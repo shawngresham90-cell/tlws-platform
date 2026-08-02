@@ -11,4 +11,8 @@ export const STORE_EVENTS = {
   picksView: 'store_picks_view',
   search: 'store_search',
   amazonCtaClick: 'store_amazon_cta_click',
+  /** Direct (Stan) products. Slug + placement only — no user data, no price. */
+  stanClick: 'store_stan_click',
+  freeGuideClick: 'store_free_guide_click',
+  coachingClick: 'store_coaching_click',
 } as const;
