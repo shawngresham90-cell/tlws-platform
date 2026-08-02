@@ -102,13 +102,19 @@ export function tierRemaining(capacity: number | null, usedCount: number): numbe
 
 /** How many published founders currently hold each tier. */
 export function tierUsage(founders: Pick<PublicFounder, 'tier'>[]): Record<FounderTier, number> {
-  const usage = {
+  // ANNOTATED, NOT CAST. The previous `as Record<FounderTier, number>` cast
+  // silenced the exhaustiveness check, so when `founder_shirt` was added to the
+  // union this object kept compiling while `f.tier in usage` quietly dropped
+  // every shirt row — the wall showed "20 of 20 spots open" with 16 sold.
+  // With a type annotation instead, omitting a tier is a compile error.
+  const usage: Record<FounderTier, number> = {
     equipment_sponsor: 0,
     student_sponsor: 0,
     iron: 0,
     steel: 0,
     brick: 0,
-  } as Record<FounderTier, number>;
+    founder_shirt: 0,
+  };
   for (const f of founders) {
     if (f.tier in usage) usage[f.tier] += 1;
   }

@@ -160,7 +160,16 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   check(
     'tier order is recognition order',
     JSON.stringify(TIER_ORDER) ===
-      JSON.stringify(['equipment_sponsor', 'student_sponsor', 'iron', 'steel', 'brick']),
+      JSON.stringify([
+        'equipment_sponsor',
+        'student_sponsor',
+        'iron',
+        'steel',
+        'brick',
+        // founder_shirt ($35, 20 spots) sits lowest on the wall — added with
+        // migration 048 for the approved 51-entry roster.
+        'founder_shirt',
+      ]),
   );
   const usage = tierUsage(ROSTER as { tier: 'iron' | 'steel' | 'brick' }[]);
   check('iron usage = 2', usage.iron === 2, usage);
@@ -250,7 +259,8 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
     thermo.includes('pctToGoal') && thermo.includes('remainingCents'),
   );
   check('thermometer has visible % text (not color alone)', thermo.includes('% funded'));
-  check('thermometer handles goal reached', thermo.includes('Goal reached'));
+  // Owner-approved wording: the funded state says the literal word FUNDED.
+  check('thermometer handles goal reached', thermo.includes('FUNDED'));
   for (const [label, path] of [
     ['founders wall page', 'src/app/(community)/founders/page.tsx'],
     ['homepage section', 'src/components/sections/FoundersWall.tsx'],
@@ -330,7 +340,7 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   );
   check(
     'render over-goal: capped 100%, goal reached',
-    over.includes('100% funded') && over.includes('Goal reached') && over.includes('width:100%'),
+    over.includes('100% funded') && over.includes('FUNDED') && over.includes('width:100%'),
   );
 }
 

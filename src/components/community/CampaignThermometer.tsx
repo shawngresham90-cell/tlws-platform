@@ -36,7 +36,7 @@ export function CampaignThermometer({
 
       {goalReached ? (
         <p className="mt-3 font-display text-xl uppercase text-signal">
-          Goal reached — thank you, drivers
+          FUNDED — THE WALL IS COMPLETE
         </p>
       ) : (
         <p className="mt-3 font-display text-xl uppercase text-ink">
