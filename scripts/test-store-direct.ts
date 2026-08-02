@@ -139,13 +139,33 @@ check(
   'the shirt labels as $35',
   directPriceLabel(directProduct('founding-member-shirt')!) === '$35',
 );
-// The six blank-price products are exactly the ones expected to be blank.
+// Owner-approved prices (2026-08-02). Pinned to the exact figure so a typo or
+// a silent edit fails here rather than on a customer-facing page. Integers, so
+// the label is a plain `$N` with no rounding or float formatting in the path.
+const APPROVED_PRICES: Array<[string, number, string]> = [
+  ['founding-member-shirt', 35, '$35'],
+  ['17-years-zero-violations', 19, '$19'],
+  ['owner-operator-money', 19, '$19'],
+  ['coaching-call', 20, '$20'],
+];
+for (const [slug, price, label] of APPROVED_PRICES) {
+  const p = directProduct(slug)!;
+  check(`${slug}: price is the approved ${label}`, p.priceUsd === price, p.priceUsd);
+  check(`${slug}: renders exactly "${label}"`, directPriceLabel(p) === label, directPriceLabel(p));
+  check(`${slug}: price is an integer, not a float`, Number.isInteger(p.priceUsd), p.priceUsd);
+  check(`${slug}: label carries no decimals or stray zeros`, /^\$\d+$/.test(directPriceLabel(p)!));
+}
+
+// The blank-price products are exactly the ones still awaiting a decision.
+// After the 2026-08-02 pricing approval that is the four disclaimer-blocked
+// guides and nothing else.
 const blank = DIRECT_PRODUCTS.filter((p) => p.priceUsd === null).map((p) => p.slug);
 check(
-  'exactly the 7 unpriced products are unpriced',
-  blank.length === 7 &&
+  'exactly the 4 unpriced products are unpriced',
+  blank.length === 4 &&
     !blank.includes('founding-member-shirt') &&
-    !blank.some((s) => byType('free').some((f) => f.slug === s)),
+    !blank.some((s) => byType('free').some((f) => f.slug === s)) &&
+    !blank.some((s) => APPROVED_PRICES.some(([a]) => a === s)),
   blank,
 );
 
@@ -192,11 +212,20 @@ for (const p of byType('free')) {
 const actionableSlugs = DIRECT_PRODUCTS.filter((p) => ctaState(p).kind !== 'details').map(
   (p) => p.slug,
 );
+// The 5 free guides + the Founder Shirt + the three products priced on
+// 2026-08-02. Enumerated rather than counted, so adding a product without a
+// price decision cannot slip in behind a passing total.
+const EXPECTED_ACTIONABLE = [
+  ...byType('free').map((f) => f.slug),
+  'founding-member-shirt',
+  '17-years-zero-violations',
+  'owner-operator-money',
+  'coaching-call',
+];
 check(
-  'exactly the 5 free guides + the Founder Shirt are actionable',
-  actionableSlugs.length === 6 &&
-    actionableSlugs.includes('founding-member-shirt') &&
-    byType('free').every((f) => actionableSlugs.includes(f.slug)),
+  'exactly the 5 free guides, the Founder Shirt, and the 3 newly priced products are actionable',
+  actionableSlugs.length === EXPECTED_ACTIONABLE.length &&
+    EXPECTED_ACTIONABLE.every((s) => actionableSlugs.includes(s)),
   actionableSlugs,
 );
 
@@ -291,22 +320,83 @@ check(
   read('src/app/sitemap.ts').includes('SHIPPING_RETURNS_HREF'),
 );
 
-// Every OTHER paid/service product stays blocked.
+// What remains blocked, and why. After the 2026-08-02 pricing approval the
+// only products without a purchase path are the four whose blocker is a
+// missing DISCLAIMER, not a missing price — so a future pricing decision must
+// not quietly unblock them. That is asserted directly below.
 const stillBlocked = DIRECT_PRODUCTS.filter((p) => ctaState(p).kind === 'details').map(
   (p) => p.slug,
 );
-check('exactly 7 products remain non-purchasable', stillBlocked.length === 7, stillBlocked);
-check('the shirt is NOT among the blocked', !stillBlocked.includes('founding-member-shirt'));
-for (const slug of [
-  '17-years-zero-violations',
+const DISCLAIMER_BLOCKED = [
   'carnivore-trucker-health-system',
   'save-your-cdl-sap-guide',
   'cdl-crusher-guide',
   'hos-bible',
-  'owner-operator-money',
-  'coaching-call',
-]) {
+];
+check('exactly 4 products remain non-purchasable', stillBlocked.length === 4, stillBlocked);
+check('the shirt is NOT among the blocked', !stillBlocked.includes('founding-member-shirt'));
+for (const slug of DISCLAIMER_BLOCKED) {
   check(`${slug} remains non-purchasable`, stillBlocked.includes(slug));
+  check(
+    `${slug} is held by a disclaimer blocker, not merely an absent price`,
+    Boolean(directProduct(slug)!.purchaseBlockedReason),
+  );
+}
+check(
+  'the blocked set is exactly the disclaimer-pending four',
+  stillBlocked.every((s) => DISCLAIMER_BLOCKED.includes(s)),
+  stillBlocked,
+);
+
+// The three newly priced products are actionable, and each keeps the CTA kind
+// its type demands — a coaching call books, a digital guide buys.
+const NEWLY_ACTIVE: Array<[string, 'buy' | 'book']> = [
+  ['17-years-zero-violations', 'buy'],
+  ['owner-operator-money', 'buy'],
+  ['coaching-call', 'book'],
+];
+for (const [slug, kind] of NEWLY_ACTIVE) {
+  const p = directProduct(slug)!;
+  const cta = ctaState(p);
+  check(`${slug}: now actionable`, cta.kind !== 'details', cta);
+  check(`${slug}: CTA kind is "${kind}"`, cta.kind === kind, cta.kind);
+  check(`${slug}: no policy blocker remains`, p.purchaseBlockedReason === null);
+  check(`${slug}: CTA points at its approved Stan URL`, 'href' in cta && cta.href === p.stanUrl);
+  check(
+    `${slug}: Stan URL is on the approved account`,
+    p.stanUrl.startsWith('https://stan.store/TRUCKINGLIFEWITHSHAWN/p/'),
+  );
+}
+check(
+  'exactly 9 direct products are actionable',
+  DIRECT_PRODUCTS.filter((p) => ctaState(p).kind !== 'details').length === 9,
+  DIRECT_PRODUCTS.filter((p) => ctaState(p).kind !== 'details').map((p) => p.slug),
+);
+
+// Narrow-viewport safety, argued from string length rather than a rendered
+// browser. Pricing a product swaps two strings: the price slot goes from
+// "Price coming soon" to "$N", and the CTA from "Details coming soon" to
+// "Buy now" / "Book your call". Both replacements are SHORTER than what they
+// replace, in the same containers, so no width that fitted before can overflow
+// now. (The price also renders at text-3xl vs base — 3 characters against 17
+// still wins comfortably.) This is a bound, not a screenshot.
+const PRICE_PLACEHOLDER = 'Price coming soon';
+const CTA_PLACEHOLDER = 'Details coming soon';
+for (const [slug] of NEWLY_ACTIVE) {
+  const p = directProduct(slug)!;
+  const label = directPriceLabel(p)!;
+  const cta = ctaState(p);
+  check(
+    `${slug}: price label "${label}" is shorter than the placeholder it replaces`,
+    label.length < PRICE_PLACEHOLDER.length,
+    { label: label.length, placeholder: PRICE_PLACEHOLDER.length },
+  );
+  check(
+    `${slug}: CTA label "${cta.label}" is no longer than the placeholder it replaces`,
+    cta.label.length <= CTA_PLACEHOLDER.length,
+    { label: cta.label.length, placeholder: CTA_PLACEHOLDER.length },
+  );
+  check(`${slug}: price label is short enough for a 320px column`, label.length <= 8, label);
 }
 
 /* 6. Type invariants ---------------------------------------------------- */
