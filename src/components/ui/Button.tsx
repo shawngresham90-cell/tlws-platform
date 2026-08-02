@@ -31,7 +31,14 @@ type Props = {
   rel?: string;
   className?: string;
   children: React.ReactNode;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+  /**
+   * Widened to HTMLElement because this one prop has to satisfy three
+   * different elements: <button>, <a>, and next/link. The inherited
+   * ButtonHTMLAttributes version is HTMLButtonElement-only and will not type
+   * against an anchor, so it is omitted below and redeclared here.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'>;
 
 /** Primary conversion primitive. A control says what happens: "Apply now," not "Submit." */
 export function Button({
@@ -41,9 +48,15 @@ export function Button({
   rel,
   className,
   children,
+  onClick,
   ...rest
 }: Props) {
   const classes = cn(base, variants[variant], className);
+  // `onClick` is forwarded to the link branches too. Previously it was folded
+  // into `...rest` and reached only the <button> branch, so passing it
+  // alongside `href` did nothing — silently, which is the worst way for a prop
+  // to fail. Analytics on a navigating CTA is the case that needs it. No
+  // caller passed both before this, so forwarding changes no existing render.
   if (href && external) {
     return (
       // Custom rel intentionally omits noreferrer (affiliate links need the
@@ -53,6 +66,7 @@ export function Button({
         target="_blank"
         rel={rel ? `${rel} noopener` : 'noopener noreferrer'}
         className={classes}
+        onClick={onClick}
       >
         {children}
         <span className="sr-only"> (opens in new tab)</span>
@@ -61,13 +75,13 @@ export function Button({
   }
   if (href) {
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} className={classes} onClick={onClick}>
         {children}
       </Link>
     );
   }
   return (
-    <button className={classes} {...rest}>
+    <button className={classes} onClick={onClick} {...rest}>
       {children}
     </button>
   );
