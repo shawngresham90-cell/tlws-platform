@@ -1,5 +1,5 @@
 import { FONT_STACK, PALETTE, ROAD_REPORT, SENDER } from './brand';
-import { resolveCopy, type Copy } from './approval';
+import { isPending, resolveCopy, type Copy } from './approval';
 
 /**
  * The Road Report renderer — one email definition in, HTML and plain text out.
@@ -33,7 +33,20 @@ export type Block =
   | { kind: 'list'; items: Copy[] }
   | { kind: 'cta'; label: Copy; href: Copy; caption?: Copy }
   | { kind: 'correction'; text: Copy }
-  | { kind: 'divider' };
+  | { kind: 'divider' }
+  /**
+   * An inline reference link. Deliberately NOT a `cta`: it renders as ordinary
+   * underlined body text, never as a button. That distinction is what lets an
+   * issue mention a dozen things while asking for exactly one — if every
+   * reference were a button, the single primary call to action would be one
+   * button among thirteen.
+   */
+  | { kind: 'link'; label: Copy; href: Copy }
+  /**
+   * Small muted text under a section — a source credit, a caveat. Visually
+   * subordinate so it reads as attribution rather than as content.
+   */
+  | { kind: 'note'; text: Copy };
 
 export type NewsletterEmail = {
   /** Stable id. Used by the campaign registry, the audit log and tests. */
@@ -55,6 +68,18 @@ export type RenderContext = {
   recipientName?: string | null;
   /** Absolute base for links. Defaults to the site's canonical URL. */
   siteUrl?: string;
+  /**
+   * The postal address for the footer. Defaults to `SENDER.postalAddress`,
+   * which is still awaiting owner approval and therefore renders as a marker.
+   *
+   * Overridable so the success path is reachable. With the module constant as
+   * the only source, every render would contain a pending marker forever, and
+   * "a fully valid issue passes validation" — the branch that decides real
+   * sends happen — would be the one branch no test could ever exercise. This is
+   * not a way around the approval gate: `evaluateSendReadiness` reads the
+   * sender identity separately and still refuses while it is unapproved.
+   */
+  postalAddress?: Copy;
 };
 
 export type RenderedEmail = {
@@ -143,6 +168,15 @@ function blockHtml(block: Block): string {
 
     case 'divider':
       return `<tr><td style="${pad}padding-top:4px;padding-bottom:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${PALETTE.cardEdge};font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>`;
+
+    case 'link':
+      // Underlined as well as coloured. Colour alone does not distinguish a
+      // link for a colour-blind reader, and several clients override link
+      // colours wholesale.
+      return `<tr><td style="${pad}padding-top:0;padding-bottom:16px;"><p style="margin:0;font-family:${FONT_STACK};font-size:16px;line-height:1.6;color:${PALETTE.ink};word-break:break-word;"><a href="${ec(block.href)}" style="color:${PALETTE.signal};text-decoration:underline;">${ec(block.label)}</a></p></td></tr>`;
+
+    case 'note':
+      return `<tr><td style="${pad}padding-top:0;padding-bottom:16px;"><p style="margin:0;font-family:${FONT_STACK};font-size:13px;line-height:1.5;color:${PALETTE.muted};word-break:break-word;">${ec(block.text)}</p></td></tr>`;
   }
 }
 
@@ -150,10 +184,19 @@ function blockHtml(block: Block): string {
 
 function blockText(block: Block): string {
   switch (block.kind) {
-    case 'heading':
+    case 'heading': {
       // Underlined with dashes so structure survives in a client that shows
       // only the text part — plain text still has to be readable, not a dump.
-      return `${c(block.text).toUpperCase()}\n${'-'.repeat(Math.min(c(block.text).length, 72))}`;
+      //
+      // A PENDING MARKER IS NEVER UPPERCASED. Two reasons, and the second is
+      // the one that bites: the marker text is an instruction to the author and
+      // shouting it helps nobody, and an uppercased marker is a DIFFERENT
+      // string from the one in the HTML, so the placeholder scan counts the
+      // same unfinished heading twice and reports a total nobody can reconcile.
+      const text = c(block.text);
+      const shown = isPending(block.text) ? text : text.toUpperCase();
+      return `${shown}\n${'-'.repeat(Math.min(shown.length, 72))}`;
+    }
     case 'paragraph':
       return wrap(c(block.text));
     case 'list':
@@ -166,6 +209,11 @@ function blockText(block: Block): string {
       return wrap(`CORRECTION: ${c(block.text)}`);
     case 'divider':
       return '—'.repeat(40);
+    case 'link':
+      // Label and URL on one logical line, wrapped but never split mid-URL.
+      return wrap(`${c(block.label)}: ${c(block.href)}`);
+    case 'note':
+      return wrap(c(block.text));
   }
 }
 
@@ -173,6 +221,7 @@ function blockText(block: Block): string {
 
 export function renderEmail(email: NewsletterEmail, ctx: RenderContext): RenderedEmail {
   const siteUrl = ctx.siteUrl ?? ROAD_REPORT.site;
+  const postalAddress = ctx.postalAddress ?? SENDER.postalAddress;
   const name = greeting(ctx.recipientName);
   const subject = c(email.subject);
   const previewText = c(email.previewText);
@@ -247,7 +296,7 @@ ${preheader}
               <a href="${esc(siteUrl)}" style="color:${PALETTE.signal};">${esc(siteUrl)}</a>
             </p>
             <p style="margin:12px 0 0 0;font-family:${FONT_STACK};font-size:13px;line-height:1.6;color:${PALETTE.muted};">
-              ${esc(c(SENDER.postalAddress))}
+              ${esc(c(postalAddress))}
             </p>
             <p style="margin:12px 0 0 0;font-family:${FONT_STACK};font-size:13px;line-height:1.6;color:${PALETTE.muted};">
               You are receiving this because you signed up at ${esc(siteUrl)}.<br>
@@ -283,7 +332,7 @@ ${preheader}
     `${ROAD_REPORT.name} is written by ${ROAD_REPORT.publisher}.`,
     siteUrl,
     '',
-    wrap(c(SENDER.postalAddress)),
+    wrap(c(postalAddress)),
     '',
     wrap(`You are receiving this because you signed up at ${siteUrl}.`),
     'Unsubscribe — one click, no questions, effective immediately:',
