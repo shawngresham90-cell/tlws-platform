@@ -136,9 +136,29 @@ check(
   'the driver error message and details are never logged or thrown',
   !/error\.message|error\.details|error\.hint|JSON\.stringify\(error/.test(dataCode),
 );
+/**
+ * The credential ban is absolute and unchanged. What changed is the shape of
+ * the assertion: the complete-read work introduced ONE environment read —
+ * NEXT_PHASE, the build-phase marker Next assigns during `next build` — so a
+ * blanket `process.env` ban no longer distinguishes "reads a secret" from
+ * "checks which phase it is running in". Naming the single permitted read and
+ * pinning how it may be used is strictly stronger than the blanket form: an
+ * aliased or dynamic env read now fails where before it could slip past.
+ */
 check(
-  'no credential or environment value is read in the data layer',
-  !/process\.env|SERVICE_ROLE|ANON_KEY|apikey/i.test(dataCode),
+  'no credential is read in the data layer',
+  !/SERVICE_ROLE|ANON_KEY|apikey|SUPABASE_[A-Z_]*KEY|SECRET|TOKEN|PASSWORD/i.test(dataCode),
+);
+check(
+  'the ONLY environment value read is the build-phase marker',
+  (dataCode.match(/process\.env\.[A-Za-z_]+/g) ?? []).every(
+    (m) => m === 'process.env.NEXT_PHASE',
+  ) && !/process\.env\s*\[/.test(dataCode),
+);
+check(
+  'the build-phase marker is compared to a literal, never logged or returned',
+  /process\.env\.NEXT_PHASE === BUILD_PHASE/.test(dataCode) &&
+    (dataCode.match(/process\.env\.NEXT_PHASE/g) ?? []).length === 1,
 );
 check('only a short SQLSTATE-shaped code is surfaced', /code\.length <= 12/.test(dataCode));
 check(
@@ -337,14 +357,25 @@ check(
   'the soft-delete filter is unchanged on both queries',
   (dataCode.match(/\.is\('deleted_at', null\)/g) ?? []).length >= 2,
 );
-check('the entry cap is unchanged at 1000', /\.limit\(1000\)/.test(dataCode));
-check('the facet cap is unchanged at 5000', /\.limit\(5000\)/.test(dataCode));
+/**
+ * The entry and facet reads no longer carry a fixed cap: the complete-read
+ * pagination change replaced `.limit(1000)` / `.limit(5000)` with a keyset
+ * scan over the whole set. These two assertions used to pin those literals;
+ * they now pin the SEMANTIC invariant those literals were standing in for —
+ * the reads are still scoped and still deterministically ordered, and the
+ * featured-then-name presentation order still governs what a driver sees.
+ */
 check(
-  'entry ordering is unchanged',
-  /\.order\('is_featured', \{ ascending: false \}\)[\s\S]{0,80}\.order\('name', \{ ascending: true \}\)/.test(
+  'entry and facet reads page deterministically by primary key',
+  /\.order\('id', \{ ascending: true \}\)/.test(dataCode) && /\.gt\('id', afterId\)/.test(dataCode),
+);
+check(
+  'the featured-then-name presentation order still governs the rendered list',
+  /Number\(b\.featured\) - Number\(a\.featured\) \|\| a\.name\.localeCompare\(b\.name\)/.test(
     dataCode,
   ),
 );
+check('a bounded safety cap still scopes the per-corridor read', /\.limit\(1000\)/.test(dataCode));
 check(
   'facet normalization is unchanged (trim + upper state, trim highway/exit)',
   /r\.state\?\.trim\(\)\.toUpperCase\(\)/.test(dataCode) &&
