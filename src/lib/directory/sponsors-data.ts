@@ -55,18 +55,14 @@ export async function getSponsorsFor(ctx: SponsorContext): Promise<Sponsor[]> {
         'id, name, tagline, url, logo, placements, states, interstates, categories, active, starts_at, ends_at',
       )
       .eq('active', true)
+      // Deterministic truncation: without an order, a table past the cap
+      // would show a Postgres-arbitrary subset of paying sponsors — silent
+      // wrongness of exactly the kind the directory reads were bitten by.
+      .order('id', { ascending: true })
       .limit(100);
     if (error || !data) return [];
     return activeSponsorsFor((data as unknown as SponsorRow[]).map(toSponsor), ctx);
   } catch {
     return [];
   }
-}
-
-/** Convenience for pages that only know their placement. */
-export function sponsorContext(
-  placement: SponsorPlacement,
-  scope?: { state?: string; interstate?: string; category?: string },
-): SponsorContext {
-  return { placement, ...scope };
 }

@@ -20,13 +20,15 @@ import {
 } from '@/lib/directory/interstates';
 import {
   getDirectoryFacets,
-  getDirectoryFacetsResult,
-  getEntriesByExitResult,
-  getEntriesByInterstateResult,
   throwDirectoryUnavailable,
   unwrapDirectoryRead,
   type DirectoryReadFailure,
 } from '@/lib/directory/data';
+import {
+  cachedDirectoryFacetsResult,
+  cachedEntriesByExitResult,
+  cachedEntriesByInterstateResult,
+} from '@/lib/directory/request-cache';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -78,7 +80,7 @@ async function resolveExit(params: { category: string; exit: string }): Promise<
   // unknown slug is a genuine 404 regardless of database health.
   if (!interstate) return { status: 'not-found' };
 
-  const facetsResult = await getDirectoryFacetsResult();
+  const facetsResult = await cachedDirectoryFacetsResult();
   if (!facetsResult.ok) {
     return { status: 'unavailable', reason: facetsResult.reason, code: facetsResult.code };
   }
@@ -100,7 +102,7 @@ export async function generateMetadata({
   // component below is what distinguishes 404 from 500.
   if (resolved.status !== 'ok') return {};
   const { interstate, exit } = resolved;
-  const entriesResult = await getEntriesByExitResult(interstate.designation, exit);
+  const entriesResult = await cachedEntriesByExitResult(interstate.designation, exit);
   const entries = entriesResult.ok ? entriesResult.data : [];
   const places = [...new Set(entries.map((e) => `${e.city}, ${e.state}`))];
   return buildMetadata({
@@ -129,9 +131,9 @@ export default async function ExitPage({ params }: { params: { category: string;
   const { interstate, exit } = resolved;
 
   const [entriesResult, corridorResult, facetsResult] = await Promise.all([
-    getEntriesByExitResult(interstate.designation, exit),
-    getEntriesByInterstateResult(interstate.designation),
-    getDirectoryFacetsResult(),
+    cachedEntriesByExitResult(interstate.designation, exit),
+    cachedEntriesByInterstateResult(interstate.designation),
+    cachedDirectoryFacetsResult(),
   ]);
   // All three feed the rendered page (listings, nearby exits, related links),
   // and all three hit the same database in the same request. If any failed we

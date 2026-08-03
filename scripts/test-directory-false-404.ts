@@ -176,11 +176,39 @@ check(
   'not-found still calls notFound()',
   /if \(resolved\.status === 'not-found'\) notFound\(\)/.test(exitCode),
 );
+/**
+ * The exit page now reads through request-scoped `cache()` wrappers (its
+ * metadata and body used to run the same facet scan three times). The
+ * invariant these checks pin is unchanged — every page read resolves to a
+ * STRICT `*Result` variant, never a fail-soft one — so the assertion follows
+ * the chain: the page must call the cached names, and the wrapper module
+ * must bind each cached name to exactly its strict variant via React cache().
+ */
+const requestCacheCode = read('src/lib/directory/request-cache.ts');
 check(
-  'every page read uses the strict result variant',
-  /getEntriesByExitResult\(/.test(exitCode) &&
-    /getEntriesByInterstateResult\(/.test(exitCode) &&
-    /getDirectoryFacetsResult\(/.test(exitCode),
+  'every page read uses the request-cached strict result variant',
+  /cachedEntriesByExitResult\(/.test(exitCode) &&
+    /cachedEntriesByInterstateResult\(/.test(exitCode) &&
+    /cachedDirectoryFacetsResult\(/.test(exitCode),
+);
+check(
+  'the cached wrappers wrap exactly the strict result variants',
+  /cachedDirectoryFacetsResult = cache\(getDirectoryFacetsResult\)/.test(requestCacheCode) &&
+    /cachedEntriesByExitResult = cache\(getEntriesByExitResult\)/.test(requestCacheCode) &&
+    /cachedEntriesByInterstateResult = cache\(getEntriesByInterstateResult\)/.test(
+      requestCacheCode,
+    ),
+);
+// generateStaticParams stays fail-soft ON PURPOSE (a build that cannot reach
+// the database prerenders nothing rather than failing or baking 404s). The
+// render path — metadata onward — is what must never take a fail-soft read.
+const exitRenderCode = exitCode.slice(exitCode.indexOf('export async function generateMetadata'));
+check(
+  'the render path takes no fail-soft directory read',
+  exitRenderCode.length > 0 &&
+    !/getEntries\(|getEntriesByExit\(|getEntriesByInterstate\(|getDirectoryFacets\(/.test(
+      exitRenderCode,
+    ),
 );
 check(
   'all three page reads are unwrapped (a failure in any one cannot be ignored)',

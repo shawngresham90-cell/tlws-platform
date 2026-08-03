@@ -142,6 +142,11 @@ export async function listingListSchemaWithReviews(
   listName: string,
   path: string,
 ): Promise<object | null> {
+  // listingListSchema returns null when no entry is indexable, so with zero
+  // indexable entries the two review-table scans below (up to 10,000 rating
+  // rows + 2,000 review rows, per page regeneration) fed a result that was
+  // discarded unread. Decide null first, spend second.
+  if (!entries.some((e) => e.indexable)) return null;
   const [aggregates, reviewsByLocation] = await Promise.all([
     getReviewAggregates(),
     getApprovedReviewsForSeo(),
