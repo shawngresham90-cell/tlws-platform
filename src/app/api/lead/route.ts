@@ -68,6 +68,11 @@ export const POST = guardedPost(
     }
 
     let leadId: string | undefined = existing.data?.id;
+    // Did THIS submission bring the address in? The client needs to know: a
+    // repeat signup and a genuine new subscriber both return 2xx, and without
+    // this flag the newsletter form fires its conversion event for both — so
+    // the metric counts submissions rather than subscribers.
+    let created = false;
 
     if (leadId) {
       const patch = buildLeadPatch({
@@ -133,6 +138,7 @@ export const POST = guardedPost(
         }
       } else {
         leadId = inserted.data.id;
+        created = true;
       }
     }
 
@@ -157,8 +163,11 @@ export const POST = guardedPost(
       }
     }
 
-    log.info('lead_captured', { lead_id: lead.id, source: data.source });
+    log.info('lead_captured', { lead_id: lead.id, source: data.source, created });
     // Delivery email intentionally NOT sent (Milestone 4: dormant).
-    return ok({ lead_id: lead.id }, 201);
+    // `created` distinguishes a new subscriber from a repeat submission. It is
+    // a boolean about the write, not about the person, so it carries nothing
+    // personal and is safe for the caller to report to analytics.
+    return ok({ lead_id: lead.id, created }, 201);
   },
 );
