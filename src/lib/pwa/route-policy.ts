@@ -2,7 +2,7 @@
  * Route classification for the PWA foundation — the single written policy for
  * what the service worker may and may not touch. public/sw.js mirrors these
  * lists as plain literals (a service worker cannot import TypeScript);
- * scripts/test-pwa-service-worker.ts asserts the two stay in lockstep, so a
+ * scripts/test-pwa-foundation.ts asserts the two stay in lockstep, so a
  * policy change here that is not carried into the worker fails the suite.
  *
  * Three classes:

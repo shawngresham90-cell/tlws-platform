@@ -2,7 +2,7 @@
  * TLWS service worker — the conservative foundation, not an offline app.
  *
  * Policy (mirrored from src/lib/pwa/route-policy.ts, which documents the
- * reasoning; scripts/test-pwa-service-worker.ts asserts the mirror is exact):
+ * reasoning; scripts/test-pwa-foundation.ts asserts the mirror is exact):
  *
  *  - Never intercepts /api/, /admin or /go/ — no caching, no fallback,
  *    nothing. Auth, mutations, personal data and redirect tracking pass

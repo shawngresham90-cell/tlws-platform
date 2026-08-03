@@ -62,6 +62,29 @@ including on the Trip Planner.
 - Registration is production-only (`src/lib/pwa/lifecycle.ts`) so a dev
   session can never be poisoned by a stale worker.
 
+## Rollback
+
+The worker is designed so that reverting it is a normal deploy, not an
+incident. Three levels, cheapest first:
+
+1. **Revert the commit.** `public/sw.js` and `public/offline.html` are served
+   with `max-age=0, must-revalidate` (netlify.toml), so the next visit
+   revalidates and picks up the reverted worker. Because no page HTML is ever
+   cached, a client running the old worker still sees live pages in the
+   meantime — a stale worker cannot serve stale content.
+2. **Change what a released worker caches.** Bump `VERSION` in
+   `public/sw.js`. `activate` deletes every `tlws-*` cache that is not in
+   `KNOWN_CACHES`, so the previous version's caches are dropped wholesale on
+   the next activation.
+3. **Disable the PWA entirely.** Ship a `public/sw.js` whose body is
+   `self.addEventListener('install', () => self.skipWaiting()); self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((k) => Promise.all(k.map((n) => caches.delete(n)))).then(() => self.registration.unregister())));`
+   That self-uninstalls on every installed client and clears its caches.
+   Deleting the file is *not* equivalent: a 404 leaves already-installed
+   workers running indefinitely.
+
+Removing the manifest or the icons is safe at any time — it only stops new
+installs; it does not affect already-installed clients or cached data.
+
 ## Boundaries honoured
 
 No Navigator work, no turn-by-turn, no push notifications, no background
