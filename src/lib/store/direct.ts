@@ -193,7 +193,7 @@ export const DIRECT_PRODUCTS: DirectProduct[] = [
     tagline: 'The habits and decisions that keep a CDL intact.',
     description:
       'Practical mindset, habits, and decisions that keep a CDL intact. Built from 17 years on the road with a clean record.',
-    priceUsd: null,
+    priceUsd: 19,
     stanUrl: `${STAN_ACCOUNT_PREFIX}17-years-zero-violations`,
     fulfillment: 'digital',
     badge: 'Shawn’s pick',
@@ -271,7 +271,7 @@ export const DIRECT_PRODUCTS: DirectProduct[] = [
     tagline: 'Practical guidance for a first-year owner-operator.',
     description:
       'Practical guidance for first-year owner-operators. Digital delivery. No income guarantees.',
-    priceUsd: null,
+    priceUsd: 19,
     stanUrl: `${STAN_ACCOUNT_PREFIX}keep-more-of-your-money--first-year-owneroperato`,
     fulfillment: 'digital',
     badge: null,
@@ -289,7 +289,7 @@ export const DIRECT_PRODUCTS: DirectProduct[] = [
     tagline: 'A scheduled call — not a download.',
     description:
       'A personal 1:1 coaching session with Shawn. This is a scheduled call service, not a digital download or a physical product. Scheduling happens on the Stan page.',
-    priceUsd: null,
+    priceUsd: 20,
     stanUrl: `${STAN_ACCOUNT_PREFIX}book-a-11-call-with-me-wxbdizeg`,
     fulfillment: 'scheduled-service',
     badge: 'Coaching',
