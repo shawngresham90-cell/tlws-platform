@@ -412,6 +412,12 @@ check('orange (flare) is the secondary accent', /text-flare-300/.test(page));
 check('manifest rows are bordered', (page.match(/border-2 border-ink\/15/g) ?? []).length >= 4);
 check('display type is condensed uppercase', /font-display/.test(page) && /uppercase/.test(page));
 check('the orange accent is a real theme token', /flare:/.test(read('tailwind.config.ts')));
+// The owner-approved reference orange. Pinned so the secondary accent cannot
+// drift back to an invented value.
+check(
+  'flare matches the approved reference orange #FF5A1F',
+  /DEFAULT: '#FF5A1F'/.test(read('tailwind.config.ts')),
+);
 check('exactly four supply tiers are defined', SUPPLY_TIERS.length === 4, SUPPLY_TIERS.length);
 check(
   'every tier has a range, a title and a blurb',
