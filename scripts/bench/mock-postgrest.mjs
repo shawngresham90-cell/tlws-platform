@@ -267,7 +267,11 @@ const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     const table = url.pathname.replace(/^\/rest\/v1\//, '').split('/')[0];
 
-    if (logStream) {
+    // Response size + service time are appended by logDone at end of handling,
+    // so the log carries the full cost picture per request.
+    const started = process.hrtime.bigint();
+    const logDone = (bytes) => {
+      if (!logStream) return;
       logStream.write(
         JSON.stringify({
           n: requestCount,
@@ -277,14 +281,18 @@ const server = http.createServer((req, res) => {
           query: url.search,
           prefer: req.headers.prefer ?? null,
           range: req.headers.range ?? null,
+          bytes,
+          serviceUs: Number((process.hrtime.bigint() - started) / 1000n),
         }) + '\n',
       );
-    }
+    };
 
     // Health probe for the bench orchestrator.
     if (url.pathname === '/__mock/health') {
+      const body = JSON.stringify({ ok: true, requests: requestCount, rows: LOCATIONS.length });
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, requests: requestCount, rows: LOCATIONS.length }));
+      res.end(body);
+      logDone(body.length);
       return;
     }
 
@@ -292,6 +300,7 @@ const server = http.createServer((req, res) => {
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end('[]');
+      logDone(2);
       return;
     }
 
@@ -307,8 +316,10 @@ const server = http.createServer((req, res) => {
       }
       result = runQuery(dataset, url);
     } catch (err) {
+      const body = JSON.stringify({ code: 'MOCK400', message: String(err?.message ?? err) });
       res.writeHead(400, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ code: 'MOCK400', message: String(err?.message ?? err) }));
+      res.end(body);
+      logDone(body.length);
       return;
     }
 
@@ -323,6 +334,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'HEAD') {
       res.writeHead(200, headers);
       res.end();
+      logDone(0);
       return;
     }
 
@@ -330,22 +342,26 @@ const server = http.createServer((req, res) => {
     // PGRST116, which supabase-js maybeSingle() maps back to data: null.
     if ((req.headers.accept ?? '').includes('application/vnd.pgrst.object+json')) {
       if (result.rows.length === 1) {
+        const body = JSON.stringify(result.rows[0]);
         res.writeHead(200, headers);
-        res.end(JSON.stringify(result.rows[0]));
+        res.end(body);
+        logDone(body.length);
       } else {
+        const body = JSON.stringify({
+          code: 'PGRST116',
+          message: `JSON object requested, multiple (or no) rows returned: ${result.rows.length}`,
+        });
         res.writeHead(406, { 'content-type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            code: 'PGRST116',
-            message: `JSON object requested, multiple (or no) rows returned: ${result.rows.length}`,
-          }),
-        );
+        res.end(body);
+        logDone(body.length);
       }
       return;
     }
 
+    const body = JSON.stringify(result.rows);
     res.writeHead(200, headers);
-    res.end(JSON.stringify(result.rows));
+    res.end(body);
+    logDone(body.length);
   };
 
   if (LATENCY > 0) setTimeout(handle, LATENCY);
