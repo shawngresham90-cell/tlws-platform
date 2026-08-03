@@ -13,10 +13,18 @@
  * covers. Separate concerns, separate evidence.
  *
  * NOTHING HERE IS ACTIVE. `EMAIL_CONSENT_RECORDING_ENABLED` is false, and the
- * table it needs (migration 049) has not been applied. The flag exists so the
+ * tables it needs (migration 049) have not been applied. The flag exists so the
  * route can be wired and tested now and switched on in one reviewed line once
  * the migration is applied and the wording below is approved — rather than a
  * later change having to rediscover all of this.
+ *
+ * WHERE "IS THIS PERSON SUBSCRIBED?" IS ANSWERED: not here. Migration 049
+ * defines `email_subscription_status`, a view that derives the answer from the
+ * consent and unsubscribe logs — latest instruction wins, ties fail closed.
+ * That rule is deliberately NOT reimplemented in TypeScript. Two copies of a
+ * consent rule can disagree, and the moment they do there is no way to tell
+ * which one a given send actually used. This module builds evidence rows; the
+ * database decides what they add up to.
  */
 
 /**
@@ -37,11 +45,11 @@
  *   3. How does someone stop receiving it?
  *   4. Is the address shared with anyone outside Trucking Life?
  *
- * Until it is filled in, `EMAIL_CONSENT_DISCLOSURE` stays empty,
+ * Until it is filled in, `EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL` stays empty,
  * `hasApprovedDisclosure()` returns false, and recording stays off — the
  * newsletter keeps working exactly as it does today, minus the data loss.
  */
-export const EMAIL_CONSENT_DISCLOSURE = '';
+export const EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL = '';
 
 /**
  * Version of the disclosure text above. MUST be incremented in the same commit
@@ -58,7 +66,7 @@ export type EmailConsentSourceForm = (typeof EMAIL_CONSENT_SOURCE_FORMS)[number]
 /**
  * Master switch. Stays false until BOTH are true:
  *   1. migration 049 has been applied (the table exists), and
- *   2. EMAIL_CONSENT_DISCLOSURE holds owner-approved wording.
+ *   2. EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL holds owner-approved wording.
  *
  * Recording against a missing table would fail every submission; recording
  * empty wording would produce evidence that proves nothing. Either way the
@@ -67,7 +75,9 @@ export type EmailConsentSourceForm = (typeof EMAIL_CONSENT_SOURCE_FORMS)[number]
 export const EMAIL_CONSENT_RECORDING_ENABLED = false;
 
 /** True only when real wording has been approved. Empty or whitespace is not approval. */
-export function hasApprovedDisclosure(text: string = EMAIL_CONSENT_DISCLOSURE): boolean {
+export function hasApprovedDisclosure(
+  text: string = EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL,
+): boolean {
   return text.trim().length > 0;
 }
 
@@ -77,7 +87,7 @@ export function hasApprovedDisclosure(text: string = EMAIL_CONSENT_DISCLOSURE): 
  */
 export function canRecordEmailConsent(
   enabled: boolean = EMAIL_CONSENT_RECORDING_ENABLED,
-  text: string = EMAIL_CONSENT_DISCLOSURE,
+  text: string = EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL,
 ): boolean {
   return enabled && hasApprovedDisclosure(text);
 }
@@ -121,7 +131,63 @@ export function buildEmailConsentRecord(input: {
     email_consent: input.consent,
     email_consent_at: input.consent ? input.now.toISOString() : null,
     email_consent_version: EMAIL_CONSENT_VERSION,
-    disclosure_text: EMAIL_CONSENT_DISCLOSURE,
+    disclosure_text: EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL,
+    submission_id: input.submissionId ?? null,
+  };
+}
+
+/* ── Consent out ────────────────────────────────────────────────────────── */
+
+/**
+ * How an opt-out reached us. MUST stay in step with the
+ * `email_unsubscribes_method_known` check constraint in migration 049 — the
+ * newsletter-correctness harness asserts the two lists match, so a value added
+ * here without a migration fails the build rather than every insert at runtime.
+ *
+ *   link      the unsubscribe link in an email footer
+ *   one-click RFC 8058 List-Unsubscribe-Post, actioned by the mail client
+ *   reply     they replied asking to stop; recorded by hand
+ *   complaint a spam report relayed by the sending provider
+ *   manual    any other owner-recorded request, explained in `note`
+ */
+export const UNSUBSCRIBE_METHODS = ['link', 'one-click', 'reply', 'complaint', 'manual'] as const;
+export type UnsubscribeMethod = (typeof UNSUBSCRIBE_METHODS)[number];
+
+/** An append-only opt-out row, exactly as migration 049 defines it. */
+export type EmailUnsubscribeRecord = {
+  email: string;
+  method: UnsubscribeMethod;
+  note: string | null;
+  submission_id: string | null;
+};
+
+/**
+ * Build an opt-out row.
+ *
+ * NO DISCLOSURE, NO VERSION, NO CONSENT GATE. Unlike
+ * `buildEmailConsentRecord`, this asks nothing of
+ * `EMAIL_CONSENT_RECORDING_ENABLED` or of approved wording. An opt-out is the
+ * one instruction that must always be recordable: gating it on the same
+ * switches that hold back consent collection would mean a period where someone
+ * could ask to stop and we had nowhere to put it. Recording an opt-out for an
+ * address that never consented is harmless — it can only ever reduce what we
+ * send.
+ *
+ * The address is normalized here to match the check constraint on the column.
+ * A differently-cased spelling would land as a separate identity and leave the
+ * real one still subscribed.
+ */
+export function buildEmailUnsubscribeRecord(input: {
+  email: string;
+  method: UnsubscribeMethod;
+  note?: string | null;
+  submissionId?: string | null;
+}): EmailUnsubscribeRecord {
+  const note = input.note?.trim();
+  return {
+    email: input.email.trim().toLowerCase(),
+    method: input.method,
+    note: note ? note : null,
     submission_id: input.submissionId ?? null,
   };
 }
