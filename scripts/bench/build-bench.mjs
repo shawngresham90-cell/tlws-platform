@@ -86,7 +86,12 @@ try {
 
   // ---- analyze the request log ------------------------------------------
   const lines = fs.existsSync(LOG)
-    ? fs.readFileSync(LOG, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l))
+    ? fs
+        .readFileSync(LOG, 'utf8')
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((l) => JSON.parse(l))
     : [];
 
   const byTable = {};
@@ -121,8 +126,10 @@ try {
   };
   fs.writeFileSync(OUT, JSON.stringify(result, null, 2));
 
-  console.log(`\n[bench] ${LABEL}: build ${(wallMs / 1000).toFixed(1)}s, ` +
-    `${lines.length} DB requests (${byTable.locations ?? 0} to locations)`);
+  console.log(
+    `\n[bench] ${LABEL}: build ${(wallMs / 1000).toFixed(1)}s, ` +
+      `${lines.length} DB requests (${byTable.locations ?? 0} to locations)`,
+  );
   console.log(`[bench] results -> ${OUT}`);
 } finally {
   mock.kill();

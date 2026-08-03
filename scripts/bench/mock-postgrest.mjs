@@ -133,8 +133,7 @@ const LOCATIONS = [];
   for (; i < N_PUBLISHED; i++) LOCATIONS.push(makeRow(i, { published: true }));
   // Unpublished + soft-deleted rows exist so the filters do real work.
   for (; i < N_PUBLISHED + 200; i++) LOCATIONS.push(makeRow(i, { published: false }));
-  for (; i < N_PUBLISHED + 250; i++)
-    LOCATIONS.push(makeRow(i, { published: true, deleted: true }));
+  for (; i < N_PUBLISHED + 250; i++) LOCATIONS.push(makeRow(i, { published: true, deleted: true }));
   // A fixed slice of published rows is non-indexable (prod: 2,439 of 2,454).
   for (let k = 0; k < 15; k++) LOCATIONS[k * 37].is_indexable = false;
 
@@ -188,7 +187,8 @@ function predicateFor(column, raw) {
       break;
     case 'is':
       base = (r) =>
-        parseScalar(val) === null ? r[column] === null || r[column] === undefined
+        parseScalar(val) === null
+          ? r[column] === null || r[column] === undefined
           : r[column] === parseScalar(val);
       break;
     case 'in': {
