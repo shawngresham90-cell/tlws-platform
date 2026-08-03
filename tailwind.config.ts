@@ -42,6 +42,17 @@ const config: Config = {
           // there (WCAG AA fail); 300 clears 6:1 on every dark background.
           300: '#F87171',
         },
+        // Road Flare — the SECONDARY accent beside Sodium Amber. Added for the
+        // approved Supply the Classroom manifest design, which pairs a yellow
+        // primary with an orange secondary. Same shape as diesel/marker:
+        // DEFAULT for fills and borders, 300 for text on dark surfaces.
+        flare: {
+          // #FF5A1F is the owner-approved reference orange for the campaign.
+          DEFAULT: '#FF5A1F',
+          // Lighter tint for the small uppercase manifest labels, where the
+          // DEFAULT's weight starts to fight the amber primary at 10px.
+          300: '#FF8A5C',
+        },
         // Marker Green — success/verified/DOT-compliant states only.
         marker: {
           DEFAULT: '#3E7C4F', // fills/borders

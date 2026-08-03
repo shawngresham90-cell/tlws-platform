@@ -1,6 +1,7 @@
 import { Hero } from '@/components/sections/Hero';
 import { ProofBar } from '@/components/sections/ProofBar';
 import { JourneyStrip } from '@/components/sections/JourneyStrip';
+import { SupplyClassroom } from '@/components/sections/SupplyClassroom';
 import { RoadAheadTeaser } from '@/components/sections/RoadAheadTeaser';
 import { ShirtHero } from '@/components/sections/ShirtHero';
 import { FourPaths } from '@/components/sections/FourPaths';
@@ -37,6 +38,10 @@ export default function HomePage() {
       <Hero />
       {/* 2 — THE PROOF (real numbers only) */}
       <ProofBar />
+      {/* 2b — SUPPLY THE CLASSROOM: additive campaign band, displaces nothing */}
+      <Reveal>
+        <SupplyClassroom />
+      </Reveal>
       {/* 3 — THE FOUR DOORS */}
       <Reveal>
         <FourPaths />
