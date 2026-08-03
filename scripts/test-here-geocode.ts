@@ -180,6 +180,25 @@ async function main() {
     await ttl.search('memphis tn');
     check('geo-port: after TTL refetched', ttlCalls === 2);
 
+    // Concurrent identical queries coalesce to one call — a fast typist's
+    // repeated prefix (or two users on one warm instance) must not double
+    // the transaction spend for one answer.
+    let slowCalls = 0;
+    const slowPort = createHereGeocodePort(async () => {
+      slowCalls++;
+      await new Promise((r) => setTimeout(r, 20));
+      return { status: 200, json: async () => geoResponse() };
+    }, 'k');
+    const [g1, g2] = await Promise.all([
+      slowPort.search('atlanta ga'),
+      slowPort.search('Atlanta GA'),
+    ]);
+    check(
+      'geo-port: concurrent identical (normalized) queries coalesce to one call',
+      slowCalls === 1 && g1.length > 0 && g2.length > 0,
+      { slowCalls },
+    );
+
     // Retry: 5xx once, 4xx never.
     let seq = 0;
     const flaky = createHereGeocodePort(

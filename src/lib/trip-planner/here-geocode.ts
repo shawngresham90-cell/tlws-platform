@@ -164,6 +164,10 @@ export function createHereGeocodePort(
   const maxResults = opts.maxResults ?? 6;
 
   const cache = new Map<string, { atMs: number; matches: GeocodeMatch[] }>();
+  // One in-flight request per normalized query — same coalescing rationale
+  // as the routing adapter: the cache is written only after a response
+  // lands, so concurrent identical lookups would otherwise both spend.
+  const pending = new Map<string, Promise<GeocodeMatch[]>>();
   let windowStartMs = 0;
   let callsInWindow = 0;
 
@@ -189,6 +193,29 @@ export function createHereGeocodePort(
     return null;
   };
 
+  const fetchMatches = async (normalized: string): Promise<GeocodeMatch[]> => {
+    try {
+      if (!underCap()) return [];
+      callsInWindow += 1;
+      const matches = parseGeocodeResponse(
+        await getJson(buildGeocodeUrl(normalized, apiKey as string, maxResults)),
+        maxResults,
+      );
+
+      cache.set(normalized, { atMs: nowMs(), matches });
+      if (cache.size > cacheMax) {
+        for (const k of cache.keys()) {
+          if (cache.size <= cacheMax) break;
+          cache.delete(k);
+        }
+      }
+      return matches;
+    } catch {
+      // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
+      return [];
+    }
+  };
+
   return {
     name: 'here-geocode',
     search: async (query: string): Promise<GeocodeMatch[]> => {
@@ -197,25 +224,23 @@ export function createHereGeocodePort(
       if (normalized.length < MIN_QUERY_LENGTH) return [];
       try {
         const hit = cache.get(normalized);
-        if (hit && nowMs() - hit.atMs < cacheTtlMs) return hit.matches;
-
-        if (!underCap()) return [];
-        callsInWindow += 1;
-        const matches = parseGeocodeResponse(
-          await getJson(buildGeocodeUrl(normalized, apiKey, maxResults)),
-          maxResults,
-        );
-
-        cache.set(normalized, { atMs: nowMs(), matches });
-        if (cache.size > cacheMax) {
-          for (const k of cache.keys()) {
-            if (cache.size <= cacheMax) break;
-            cache.delete(k);
-          }
+        if (hit) {
+          if (nowMs() - hit.atMs < cacheTtlMs) return hit.matches;
+          // Stale on read = deleted on read, so dead entries never occupy
+          // eviction slots ahead of live ones.
+          cache.delete(normalized);
         }
-        return matches;
+
+        const inFlight = pending.get(normalized);
+        if (inFlight) return inFlight;
+        const run = fetchMatches(normalized);
+        pending.set(normalized, run);
+        try {
+          return await run;
+        } finally {
+          pending.delete(normalized);
+        }
       } catch {
-        // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
         return [];
       }
     },

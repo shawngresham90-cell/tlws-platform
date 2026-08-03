@@ -255,6 +255,10 @@ export function createHereRoutingPort(
   const hourlyCap = opts.hourlyCap ?? 100;
 
   const cache = new Map<string, { atMs: number; result: RoutingResult }>();
+  // One in-flight request per cache key: the cache is written only after a
+  // response lands, so without this two concurrent quotes for the same lane
+  // would both miss and spend two transactions on one answer.
+  const pending = new Map<string, Promise<RoutingResult | null>>();
   let windowStartMs = 0;
   let callsInWindow = 0;
 
@@ -281,6 +285,47 @@ export function createHereRoutingPort(
     return null;
   };
 
+  const fetchRoute = async (key: string, req: RoutingRequest): Promise<RoutingResult | null> => {
+    try {
+      if (!underCap()) return null;
+      callsInWindow += 1;
+      const parsed = parseHereResponse(await getJson(buildHereRouteUrl(req, apiKey as string)));
+      if (!parsed) return null;
+
+      const distanceMiles = Number((parsed.meters / METERS_PER_MILE).toFixed(1));
+      const hours = parsed.seconds / 3600;
+      if (distanceMiles < 0.1 || hours <= 0) return null;
+      const route = buildRoute([
+        {
+          seq: 0,
+          from: { label: 'origin', position: req.origin },
+          to: { label: 'destination', position: req.destination },
+          distanceMiles,
+          avgSpeedMph: distanceMiles / hours,
+        },
+      ]);
+      const result: RoutingResult = {
+        route,
+        routePoints: toRoutePoints(parsed.positions, distanceMiles),
+        tollCents: null,
+        provider: 'HERE Routing API v8 (truck profile)',
+        instructions: parsed.instructions,
+      };
+
+      cache.set(key, { atMs: nowMs(), result });
+      if (cache.size > cacheMax) {
+        for (const k of cache.keys()) {
+          if (cache.size <= cacheMax) break;
+          cache.delete(k);
+        }
+      }
+      return result;
+    } catch {
+      // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
+      return null;
+    }
+  };
+
   return {
     name: 'here',
     route: async (req: RoutingRequest): Promise<RoutingResult | null> => {
@@ -291,43 +336,24 @@ export function createHereRoutingPort(
       try {
         const key = routeCacheKey(req);
         const hit = cache.get(key);
-        if (hit && nowMs() - hit.atMs < cacheTtlMs) return hit.result;
-
-        if (!underCap()) return null;
-        callsInWindow += 1;
-        const parsed = parseHereResponse(await getJson(buildHereRouteUrl(req, apiKey)));
-        if (!parsed) return null;
-
-        const distanceMiles = Number((parsed.meters / METERS_PER_MILE).toFixed(1));
-        const hours = parsed.seconds / 3600;
-        if (distanceMiles < 0.1 || hours <= 0) return null;
-        const route = buildRoute([
-          {
-            seq: 0,
-            from: { label: 'origin', position: req.origin },
-            to: { label: 'destination', position: req.destination },
-            distanceMiles,
-            avgSpeedMph: distanceMiles / hours,
-          },
-        ]);
-        const result: RoutingResult = {
-          route,
-          routePoints: toRoutePoints(parsed.positions, distanceMiles),
-          tollCents: null,
-          provider: 'HERE Routing API v8 (truck profile)',
-          instructions: parsed.instructions,
-        };
-
-        cache.set(key, { atMs: nowMs(), result });
-        if (cache.size > cacheMax) {
-          for (const k of cache.keys()) {
-            if (cache.size <= cacheMax) break;
-            cache.delete(k);
-          }
+        if (hit) {
+          if (nowMs() - hit.atMs < cacheTtlMs) return hit.result;
+          // Expired entries used to sit in their slots until eviction
+          // pressure — a full cache could be dead weight evicting live
+          // routes. Stale on read = deleted on read.
+          cache.delete(key);
         }
-        return result;
+
+        const inFlight = pending.get(key);
+        if (inFlight) return inFlight;
+        const run = fetchRoute(key, req);
+        pending.set(key, run);
+        try {
+          return await run;
+        } finally {
+          pending.delete(key);
+        }
       } catch {
-        // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
         return null;
       }
     },

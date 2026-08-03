@@ -248,6 +248,30 @@ async function main() {
     await ttlPort.route(baseRequest());
     check('port: after TTL → refetched', ttlCalls === 2);
 
+    // Concurrent identical requests coalesce to ONE transaction. The cache
+    // is written only after a response lands, so without in-flight sharing
+    // a double-submit would spend two HERE calls on one answer.
+    let slowCalls = 0;
+    const slowPort = createHereRoutingPort(
+      async () => {
+        slowCalls++;
+        await new Promise((r) => setTimeout(r, 20));
+        return { status: 200, json: async () => hereResponse() };
+      },
+      'k',
+      { nowMs: () => T0 },
+    );
+    const [c1, c2, c3] = await Promise.all([
+      slowPort.route(baseRequest()),
+      slowPort.route(baseRequest()),
+      slowPort.route(baseRequest()),
+    ]);
+    check(
+      'port: concurrent identical requests coalesce to one call',
+      slowCalls === 1 && c1 !== null && c2 !== null && c3 !== null,
+      { slowCalls },
+    );
+
     // Retry: one retry on 5xx, none on 4xx.
     let seq = 0;
     const flaky = createHereRoutingPort(

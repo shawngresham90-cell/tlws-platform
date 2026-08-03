@@ -2,17 +2,18 @@ import type { LatLng } from '@/lib/map/bounds';
 import type { Route, TruckProfile } from './types';
 
 /**
- * Provider adapter interfaces (Phase 3). INTERFACES AND NULL IMPLEMENTATIONS
- * ONLY — no adapter in this file performs network I/O, and no live adapter
- * exists yet. Each port mirrors the shape of its intended provider so a
- * Phase 4+ implementation is a drop-in:
+ * Provider adapter interfaces. INTERFACES AND NULL IMPLEMENTATIONS ONLY —
+ * no adapter in this file performs network I/O. The live adapters exist
+ * elsewhere and are wired in at the API-route layer:
  *
- *   RoutingPort      → HERE Routing API v8 (truck profile)
- *   GeocodingPort    → US Census geocoder (already implemented in
- *                      src/lib/directory/census-geocoder.ts behind
- *                      ExternalGeocoderAdapter; re-exported here)
- *   WeatherPort      → NWS api.weather.gov (free, US)
- *   FuelPricePort    → EIA open data (weekly regional diesel averages)
+ *   RoutingPort      → HERE Routing API v8, live in ./here-routing.ts
+ *                      (wired in api/trip-planner/quote/route.ts)
+ *   GeocodingPort    → US Census geocoder (src/lib/directory/census-geocoder.ts
+ *                      behind ExternalGeocoderAdapter; re-exported here) —
+ *                      distinct from the HERE free-text GeocodePort in
+ *                      ./here-geocode.ts used by the places route
+ *   WeatherPort      → NWS api.weather.gov, live in ./nws-weather.ts
+ *   FuelPricePort    → EIA weekly diesel, live in ./eia-fuel.ts
  *
  * Every port method is async and returns null/empty on "cannot answer" —
  * the planner degrades gracefully instead of failing the whole plan.
