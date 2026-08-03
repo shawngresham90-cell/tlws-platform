@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { LEAD_SOURCES, type LeadFilter, type LeadSource } from '@/lib/leads/funnel';
 
 /**
  * Admin data access. Uses the service-role client (bypasses RLS) so the
@@ -81,19 +82,116 @@ export type LeadRow = {
   id: string;
   email: string;
   first_name: string | null;
-  phone: string | null;
   sms_consent: boolean | null;
   source: string | null;
   utm: Record<string, unknown> | null;
   created_at: string;
 };
 
-/** Read-only lead list for the admin funnel view. Never writes. */
-export function getLeads(): Promise<Result<LeadRow>> {
-  return fetchRows<LeadRow>(
-    'leads',
-    'id, email, first_name, phone, sms_consent, source, utm, created_at',
-  );
+/** Rows plus the true table total, which `rows.length` is not once a cap applies. */
+export type LeadResult = Result<LeadRow> & {
+  /** Exact row count matching the filter, independent of how many were fetched. */
+  total: number;
+  /** True when the fetch was capped and `rows` is a prefix of `total`. */
+  truncated: boolean;
+};
+
+/** Most rows the admin list will fetch in one request. */
+export const LEAD_PAGE_SIZE = 500;
+
+/**
+ * Read-only lead list for the admin funnel view. Never writes.
+ *
+ * Three deliberate differences from the generic `fetchRows`:
+ *
+ * 1. AN EXPLICIT LIMIT AND A REAL TOTAL. The shared helper applies neither, so
+ *    the list was silently capped by PostgREST's default max-rows and the
+ *    heading counted the fetched page rather than the table. At two leads that
+ *    is invisible; at two thousand it under-reports and nobody can tell. The
+ *    cap is now ours and stated, and `total` comes from an exact count so the
+ *    UI can say "showing N of M" honestly.
+ * 2. A SOURCE FILTER, applied in the database rather than by fetching
+ *    everything and filtering in the page — otherwise the cap would be spent on
+ *    rows about to be discarded, and a filtered view could come back empty
+ *    while matching rows sat just past the limit.
+ * 3. NO PHONE. It was selected but never rendered — fetching a PII column no
+ *    consumer uses is a needless exposure, so it is out of the query entirely.
+ */
+export async function getLeads(filter: LeadFilter = { kind: 'all' }): Promise<LeadResult> {
+  try {
+    const supabase = createAdminClient();
+    let query = supabase
+      .from('leads')
+      .select('id, email, first_name, sms_consent, source, utm, created_at', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(LEAD_PAGE_SIZE);
+
+    if (filter.kind === 'source') query = query.eq('source', filter.source);
+    // NULL is not "not in the list" to Postgres — `source not in (...)` drops
+    // null rows entirely, so an unsourced lead would vanish from every bucket.
+    if (filter.kind === 'other') {
+      query = query.or(`source.is.null,source.not.in.(${LEAD_SOURCES.join(',')})`);
+    }
+
+    const { data, error, count } = await query;
+    if (error) return { rows: [], error: error.message, total: 0, truncated: false };
+    const rows = (data as LeadRow[]) ?? [];
+    const total = count ?? rows.length;
+    return { rows, error: null, total, truncated: total > rows.length };
+  } catch (e) {
+    return { rows: [], error: (e as Error).message, total: 0, truncated: false };
+  }
+}
+
+/** Exact whole-table counts behind the filter chips and the segment summary. */
+export type LeadTally = {
+  bySource: Record<LeadSource, number>;
+  /** Rows whose source is null or absent from `LEAD_SOURCES`. */
+  other: number;
+  total: number;
+  error: string | null;
+};
+
+const ZERO_BY_SOURCE = () =>
+  Object.fromEntries(LEAD_SOURCES.map((s) => [s, 0])) as Record<LeadSource, number>;
+
+/**
+ * Per-source counts over the WHOLE table, not the fetched page.
+ *
+ * The admin list used to tally segments from `rows`, so every chip inherited
+ * the page cap and the segment breakdown quietly described the first 500 leads
+ * rather than the list. These are `head: true` count queries — no row data
+ * crosses the wire, just numbers.
+ *
+ * `other` is derived by subtraction rather than queried, because it is defined
+ * as the complement and a derived value cannot disagree with the total. It is
+ * clamped at zero: the counts are separate statements, so a row inserted
+ * between them could otherwise produce a negative and a nonsense chip.
+ */
+export async function getLeadTally(): Promise<LeadTally> {
+  try {
+    const supabase = createAdminClient();
+    const count = (source?: LeadSource) => {
+      const q = supabase.from('leads').select('id', { count: 'exact', head: true });
+      return source ? q.eq('source', source) : q;
+    };
+    const [all, ...perSource] = await Promise.all([count(), ...LEAD_SOURCES.map((s) => count(s))]);
+
+    const failed = [all, ...perSource].find((r) => r.error);
+    if (failed?.error) {
+      return { bySource: ZERO_BY_SOURCE(), other: 0, total: 0, error: failed.error.message };
+    }
+
+    const bySource = ZERO_BY_SOURCE();
+    LEAD_SOURCES.forEach((s, i) => {
+      bySource[s] = perSource[i].count ?? 0;
+    });
+    const total = all.count ?? 0;
+    const known = LEAD_SOURCES.reduce((sum, s) => sum + bySource[s], 0);
+    return { bySource, other: Math.max(0, total - known), total, error: null };
+  } catch (e) {
+    return { bySource: ZERO_BY_SOURCE(), other: 0, total: 0, error: (e as Error).message };
+  }
 }
 
 /**
