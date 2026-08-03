@@ -1,5 +1,6 @@
 import { Section, Button, Eyebrow } from '@/components/ui';
 import { ProductGrid, type Product } from '@/components/shop/ProductCard';
+import { InstallCard } from '@/components/pwa/InstallCard';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
@@ -186,6 +187,10 @@ export default function AppsPage() {
             Driver tools and PDF guides that save you time, money, or your CDL — built by a driver
             with 17 years on the road and zero violations. Start with the free ones.
           </p>
+        </div>
+        {/* Renders only where an install path actually exists (see pwa/InstallCard). */}
+        <div className="mt-10 max-w-xl">
+          <InstallCard />
         </div>
       </Section>
 

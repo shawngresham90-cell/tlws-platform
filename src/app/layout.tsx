@@ -1,10 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileToolBar } from '@/components/layout/MobileToolBar';
 import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
 import { AttributionCapture } from '@/components/analytics/AttributionCapture';
+import { PwaLifecycle } from '@/components/pwa/PwaLifecycle';
 import { JsonLd, organizationSchema, personSchema, websiteSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import './globals.css';
@@ -28,6 +29,10 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = buildMetadata();
+
+// Paints the browser/installed-app chrome asphalt so the PWA title bar and
+// Android task switcher match the site's dark surface (tailwind asphalt).
+export const viewport: Viewport = { themeColor: '#141414' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -56,6 +61,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         {/* Persistent driver tools — Parking | Trip Planner | HOS on phones. */}
         <MobileToolBar />
+        {/* Service-worker registration + offline banner — renders nothing online. */}
+        <PwaLifecycle />
       </body>
     </html>
   );

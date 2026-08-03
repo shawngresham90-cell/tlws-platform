@@ -1,0 +1,122 @@
+<!doctype html>
+<!--
+  Offline shell — the only page the service worker ever serves in place of a
+  live one. Deliberately self-contained: inline CSS, no JS framework, no
+  external requests beyond the precached Anton/Inter fonts (which fall back
+  to system fonts if absent). Color values are the design tokens from
+  tailwind.config.ts: asphalt #141414 / #1F1F22, line #2A2A2E, ink #F2F0EB,
+  muted #A3A39B, signal #F5A623.
+
+  Claim discipline: this page must never imply any TLWS feature works
+  offline. The TLWS PWA foundation does not provide offline truck navigation,
+  and live data (parking, routes, weather, HOS) is only trustworthy fresh.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>You're offline — Trucking Life with Shawn</title>
+    <style>
+      @font-face {
+        font-family: 'Anton';
+        src: url('/fonts/anton-400.woff2') format('woff2');
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Inter';
+        src: url('/fonts/inter-400.woff2') format('woff2');
+        font-weight: 400;
+        font-display: swap;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #141414;
+        color: #f2f0eb;
+        font-family: 'Inter', system-ui, sans-serif;
+        padding: 24px;
+      }
+      main {
+        max-width: 34rem;
+        text-align: center;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #a3a39b;
+        border: 1px solid #2a2a2e;
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-family: 'Anton', Impact, sans-serif;
+        font-weight: 400;
+        text-transform: uppercase;
+        font-size: clamp(2.25rem, 8vw, 3.5rem);
+        line-height: 0.95;
+        letter-spacing: -0.01em;
+        margin-bottom: 16px;
+      }
+      h1 .dot {
+        color: #f5a623;
+      }
+      p {
+        color: #a3a39b;
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+      .card {
+        background: #1f1f22;
+        border: 1px solid #2a2a2e;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 24px 0;
+        text-align: left;
+      }
+      .card p {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        background: #f5a623;
+        color: #141414;
+        border: 0;
+        border-radius: 8px;
+        padding: 12px 28px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #d98c1a;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="badge">No connection</span>
+      <h1>You're offline<span class="dot">.</span></h1>
+      <p>Trucking Life with Shawn needs a connection for anything live.</p>
+      <div class="card">
+        <p>
+          Truck parking, trip plans, routes, weather, fuel prices and Hours of Service math are only
+          shown fresh — nothing is saved for offline use, because stale road data is worse than
+          none. This app does not provide offline truck navigation.
+        </p>
+      </div>
+      <p>When you're back in coverage, try again.</p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
