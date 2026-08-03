@@ -24,6 +24,7 @@ import {
   eiaDieselPrice,
   createEiaFuelPort,
   STATE_TO_PADD,
+  __resetEiaPriceCache,
 } from '@/lib/trip-planner/eia-fuel';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
 import {
@@ -292,15 +293,20 @@ async function main() {
       'eia: lookup succeeds with key',
       price?.centsPerGallon === 390 && price.source.includes('EIA'),
     );
+    // The weekly price is cached per PADD region, so failure-path cases must
+    // start from a cold cache or they would assert against the cached success.
+    __resetEiaPriceCache();
     check(
       'eia: no key → null (no invented price)',
       (await eiaDieselPrice('GA', okFetch, undefined)) === null,
     );
+    __resetEiaPriceCache();
     check(
       'eia: http failure → null',
       (await eiaDieselPrice('GA', async () => ({ status: 503, json: async () => ({}) }), 'k')) ===
         null,
     );
+    __resetEiaPriceCache();
     check(
       'eia: thrown fetch → null',
       (await eiaDieselPrice(
@@ -311,8 +317,45 @@ async function main() {
         'k',
       )) === null,
     );
+    __resetEiaPriceCache();
     const portPrice = await createEiaFuelPort(okFetch, 'k').dieselCentsPerGallon('TN');
     check('eia: port wraps lookup', portPrice === 390);
+
+    /* -------------------------------------- EIA price cache behavior */
+    __resetEiaPriceCache();
+    let eiaFetches = 0;
+    const countingFetch = async () => {
+      eiaFetches++;
+      return { status: 200, json: async () => body };
+    };
+    await eiaDieselPrice('GA', countingFetch, 'k');
+    await eiaDieselPrice('GA', countingFetch, 'k');
+    check('eia cache: repeat lookup for the same region does not refetch', eiaFetches === 1);
+
+    // GA and TN are different PADD regions, so a TN lookup is a real fetch.
+    await eiaDieselPrice('TN', countingFetch, 'k');
+    check('eia cache: distinct region is a distinct entry', eiaFetches === 2);
+
+    // Concurrent lookups share ONE in-flight fetch — the promise is cached,
+    // not the settled value.
+    __resetEiaPriceCache();
+    eiaFetches = 0;
+    await Promise.all([
+      eiaDieselPrice('GA', countingFetch, 'k'),
+      eiaDieselPrice('GA', countingFetch, 'k'),
+      eiaDieselPrice('GA', countingFetch, 'k'),
+    ]);
+    check('eia cache: concurrent lookups coalesce to one fetch', eiaFetches === 1);
+
+    // A null result (outage) is evicted, never pinned: the next lookup after
+    // a failure retries instead of serving the cached failure for an hour.
+    __resetEiaPriceCache();
+    check(
+      'eia cache: failure is not cached',
+      (await eiaDieselPrice('GA', async () => ({ status: 503, json: async () => ({}) }), 'k')) ===
+        null && (await eiaDieselPrice('GA', okFetch, 'k'))?.centsPerGallon === 390,
+    );
+    __resetEiaPriceCache();
   }
 
   /* ------------------------------------------------ rate limiter */
@@ -588,6 +631,71 @@ async function main() {
       'quote: clock schema rejects 12h driving',
       !simpleClocksSchema.safeParse({ drivingUsedMin: 12 * 60 }).success,
     );
+
+    /* --------------------------- provider-spend ordering guarantees */
+    // A request that fails clock validation must cost NOTHING: no routing
+    // transaction (HERE calls are capped and billed) and no directory scan.
+    {
+      let routed = 0;
+      let loaded = 0;
+      const spendTrackingDeps = {
+        ...goodDeps,
+        loadListings: async () => {
+          loaded++;
+          return goodDeps.loadListings();
+        },
+        routing: {
+          name: 'spend-tracker',
+          route: async () => {
+            routed++;
+            return null;
+          },
+        },
+      };
+      // Driver-entered inconsistencies are CLAMPED into validity by
+      // clockStateFromSimple, so a schema-legal request cannot fail clock
+      // validation — the bad-clocks branch is defense in depth for callers
+      // that bypass the schema. Exercise it that way: a non-positive
+      // departAtMs makes atMs invalid and nothing clamps it.
+      const badClocks = await composeQuote({ ...req, departAtMs: -5 }, spendTrackingDeps);
+      check(
+        'quote: invalid clocks reject before ANY provider spend',
+        badClocks.ok === false &&
+          !badClocks.ok &&
+          badClocks.error.code === 'bad-clocks' &&
+          routed === 0 &&
+          loaded === 0,
+        { routed, loaded },
+      );
+
+      // The directory scan must START before the routing call resolves —
+      // they are independent, so they run concurrently, not sequentially.
+      let listingsStartedBeforeRoutingResolved = false;
+      let listingsStarted = false;
+      const concurrencyDeps = {
+        ...goodDeps,
+        loadListings: async () => {
+          listingsStarted = true;
+          return goodDeps.loadListings();
+        },
+        routing: {
+          name: 'concurrency-probe',
+          route: async () => {
+            // Yield one macrotask so a concurrently-started listings load has
+            // observably begun; a sequential implementation cannot have
+            // started it yet because this call has not resolved.
+            await new Promise((r) => setTimeout(r, 10));
+            listingsStartedBeforeRoutingResolved = listingsStarted;
+            return null;
+          },
+        },
+      };
+      const concurrent = await composeQuote(req, concurrencyDeps);
+      check(
+        'quote: directory scan runs concurrently with routing, not after it',
+        concurrent.ok === true && listingsStartedBeforeRoutingResolved,
+      );
+    }
   }
 
   console.log(`\n${passed} passed, ${failed} failed`);

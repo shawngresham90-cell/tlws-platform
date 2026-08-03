@@ -112,6 +112,24 @@ export function eiaSeriesUrl(region: string, apiKey: string): string {
   );
 }
 
+/**
+ * Per-region price cache. The series is WEEKLY (published Mondays), yet every
+ * quote used to fetch it live — pure waste and an external failure point in
+ * the middle of each request. One hour of staleness against weekly data is
+ * unmeasurable; the cache is per warm instance like the rest of this layer.
+ *
+ * The PROMISE is cached so concurrent quotes share one in-flight fetch; a
+ * lookup that resolves null (no key, outage, malformed body) is evicted
+ * immediately so failures are retried on the next quote, never pinned.
+ */
+const PRICE_TTL_MS = 60 * 60 * 1000;
+const priceCache = new Map<string, { at: number; promise: Promise<FuelPriceResult | null> }>();
+
+/** Test seam: lets the harness prove cache behavior without waiting out the TTL. */
+export function __resetEiaPriceCache(): void {
+  priceCache.clear();
+}
+
 /** Detailed lookup used by the API layer (adds period/source attribution). */
 export async function eiaDieselPrice(
   state: string,
@@ -120,6 +138,27 @@ export async function eiaDieselPrice(
 ): Promise<FuelPriceResult | null> {
   if (!apiKey) return null;
   const region = STATE_TO_PADD[state.trim().toUpperCase()] ?? US_SERIES;
+
+  const now = Date.now();
+  const hit = priceCache.get(region);
+  if (hit && now - hit.at < PRICE_TTL_MS) return hit.promise;
+
+  const entry = {
+    at: now,
+    promise: eiaDieselPriceUncached(region, fetchFn, apiKey).then((result) => {
+      if (result === null && priceCache.get(region) === entry) priceCache.delete(region);
+      return result;
+    }),
+  };
+  priceCache.set(region, entry);
+  return entry.promise;
+}
+
+async function eiaDieselPriceUncached(
+  region: string,
+  fetchFn: EiaFetch,
+  apiKey: string,
+): Promise<FuelPriceResult | null> {
   try {
     const res = await fetchFn(eiaSeriesUrl(region, apiKey));
     if (res.status !== 200) return null;

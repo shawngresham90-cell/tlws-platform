@@ -108,6 +108,14 @@ export function createNwsWeatherPort(fetchFn: NwsFetch): WeatherPort {
           // weather 300 miles out matters ~6 hours from now, not right now.
           const etaMs = departAtMs + (sample.routeMile / AVG_PROGRESS_MPH) * 3_600_000;
 
+          // Alerts depend only on the coordinate, not on the points→forecast
+          // chain, so that request runs CONCURRENTLY with it. Worst case per
+          // sample drops from 3 sequential timeouts (10.5 s — over the 8 s
+          // weather budget, losing everything) to 2 (7 s — inside it).
+          const alertsPromise = get(
+            `${NWS_BASE}/alerts/active?point=${lat.toFixed(4)},${lng.toFixed(4)}`,
+          ) as Promise<AlertsResponse | null>;
+
           const points = (await get(
             `${NWS_BASE}/points/${lat.toFixed(4)},${lng.toFixed(4)}`,
           )) as PointsResponse | null;
@@ -134,9 +142,7 @@ export function createNwsWeatherPort(fetchFn: NwsFetch): WeatherPort {
             }
           }
 
-          const alertsRes = (await get(
-            `${NWS_BASE}/alerts/active?point=${lat.toFixed(4)},${lng.toFixed(4)}`,
-          )) as AlertsResponse | null;
+          const alertsRes = await alertsPromise;
           for (const f of alertsRes?.features ?? []) {
             const headline = f.properties?.headline ?? '';
             if (!headline) continue;

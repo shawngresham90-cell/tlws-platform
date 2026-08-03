@@ -207,11 +207,47 @@ export async function collectPlannerRows(
 /* ---------------------------------------------------------------- loader */
 
 /**
+ * Module-level pool cache. Every quote request used to re-run the full
+ * count + keyset scan — five sequential Supabase round trips at today's pool
+ * size — for data that changes at human-review cadence. The trip-planner
+ * page itself is ISR with `revalidate = 300`, so 300 s of staleness here is
+ * exactly the staleness the product already accepts for the same pool.
+ *
+ * The PROMISE is cached, not the value, so concurrent quotes share one
+ * in-flight scan instead of racing duplicate ones. A load that resolves
+ * empty (the fail-soft path) is evicted immediately: an outage must degrade
+ * only the requests during it, not be pinned as "no locations" for five
+ * minutes. Per warm serverless instance, like every other cache in this
+ * layer (see rate-limit.ts).
+ */
+const POOL_TTL_MS = 300_000;
+let poolCache: { at: number; promise: Promise<DirectoryListing[]> } | null = null;
+
+/** Test seam: lets the harness prove cache behavior without waiting out the TTL. */
+export function __resetPlannerPoolCache(): void {
+  poolCache = null;
+}
+
+export async function loadPlannerListings(): Promise<DirectoryListing[]> {
+  const now = Date.now();
+  if (poolCache && now - poolCache.at < POOL_TTL_MS) return poolCache.promise;
+  const entry = {
+    at: now,
+    promise: loadPlannerListingsUncached().then((rows) => {
+      if (rows.length === 0 && poolCache === entry) poolCache = null;
+      return rows;
+    }),
+  };
+  poolCache = entry;
+  return entry.promise;
+}
+
+/**
  * Published, coordinate-bearing listings for the planner — the COMPLETE
  * eligible pool, paginated. Fail-soft [] on any error, including a scan that
  * could not prove it was complete.
  */
-export async function loadPlannerListings(): Promise<DirectoryListing[]> {
+async function loadPlannerListingsUncached(): Promise<DirectoryListing[]> {
   try {
     const supabase = createStaticClient();
 
@@ -279,8 +315,8 @@ export type PlannerAnchor = {
 
 /**
  * Origin/destination picker options: geocoded listings labeled by name and
- * city/state. Fail-soft []. (Until HERE geocoding arrives, drivers anchor
- * trips to known directory locations.)
+ * city/state. Fail-soft []. (Directory anchors complement HERE free-text
+ * geocoding in the picker — known truck-relevant locations rank first.)
  */
 export async function loadPlannerAnchors(): Promise<PlannerAnchor[]> {
   const listings = await loadPlannerListings();

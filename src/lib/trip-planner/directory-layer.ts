@@ -59,8 +59,28 @@ export function projectOntoRoute(
   routePoints: RoutePoint[],
   maxOffRouteMiles: number,
 ): { routeMile: number; offRouteMiles: number } | null {
+  // Degree-window prefilter. This loop runs listings × routePoints times per
+  // quote (~1,940 × ≤400 ≈ 780k iterations), and almost every pair is far
+  // apart — a whole directory against one corridor. Two absolute-value
+  // comparisons reject those pairs before the trig-heavy haversine runs.
+  //
+  // The window is deliberately WIDER than the radius so it can only produce
+  // false positives (which fall through to the exact haversine test), never
+  // false negatives: one degree of latitude is never less than 68.7 miles
+  // (we divide by 68), and one degree of longitude is 69.17 × cos(lat) miles
+  // (we pad the divisor by 5%). Route points within the latitude window
+  // differ from `position.lat` by well under a tenth of a degree at planner
+  // radii, so evaluating cos at the listing's latitude is safe inside the pad.
+  const latLimit = maxOffRouteMiles / 68;
+  const lngLimit =
+    maxOffRouteMiles / Math.max(1e-6, 69.17 * Math.cos((position.lat * Math.PI) / 180) * 0.95);
+
   let best: { routeMile: number; offRouteMiles: number } | null = null;
   for (const p of routePoints) {
+    if (Math.abs(p.position.lat - position.lat) > latLimit) continue;
+    // Longitude wraps at ±180 (Aleutian-class edge case): take the shorter arc.
+    const dLng = Math.abs(p.position.lng - position.lng);
+    if (Math.min(dLng, 360 - dLng) > lngLimit) continue;
     const d = haversineMiles(position, p.position);
     if (d <= maxOffRouteMiles && (best === null || d < best.offRouteMiles)) {
       best = { routeMile: p.routeMile, offRouteMiles: Number(d.toFixed(2)) };
