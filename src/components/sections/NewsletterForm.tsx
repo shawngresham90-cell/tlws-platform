@@ -3,12 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
+import { NEWSLETTER_EVENTS } from '@/lib/leads/analytics';
 import { leadAttribution } from '@/lib/attribution';
 
 /**
  * Newsletter capture island. Posts to the existing guarded lead pipeline
  * (`POST /api/lead`, source "newsletter") — no new email provider, no
- * campaign machinery. Repeat submits are safe (the API upserts by email).
+ * campaign machinery.
+ *
+ * Repeat submits are safe and write nothing: the API merges by email and only
+ * touches columns the submitting form actually collected, so typing an address
+ * in here can never overwrite a name, phone, first-touch campaign or consent
+ * captured by some other form. It reports `created` so the two outcomes are
+ * counted separately — see lib/leads/analytics.ts.
  *
  * Attribution comes from `leadAttribution()` — the session's FIRST-touch utm,
  * not just the current URL. A driver who arrives on a `/go/...` short link and
@@ -68,7 +75,15 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
         setChallengeKey((k) => k + 1);
         return;
       }
-      trackEvent('newsletter_lead_captured');
+      // A repeat signup and a genuine new subscriber both return 2xx, so
+      // firing one event for both counted SUBMISSIONS, not subscribers — and
+      // `done` is component state, so a reload or a return visit re-fires it.
+      // The API now reports which happened; the two are reported separately so
+      // the subscriber number stays a subscriber number. `created` is a fact
+      // about the write, never about the person.
+      trackEvent(
+        body.data?.created ? NEWSLETTER_EVENTS.captured : NEWSLETTER_EVENTS.alreadySubscribed,
+      );
       setDone(true);
     } catch {
       setError('Network error. Check your connection and try again.');
