@@ -29,8 +29,12 @@ import {
   CAMPAIGN_OPENS_AT_MS,
   CAMPAIGN_OPENS_ISO,
   CAMPAIGN_OPENS_LABEL,
+  CAMPAIGN_DESTINATION,
+  CAMPAIGN_LOAD_NUMBER,
+  CAMPAIGN_OPENS_STAMP,
   CAMPAIGN_PATH,
   CASH_APP_URL,
+  MANIFEST_ROWS,
   SUPPLY_TIERS,
   countdownParts,
   pad2,
@@ -336,21 +340,78 @@ check(
     !/\b(Suite|Ste\.|Apt\.?|Unit)\s*[#\w]/i.test(rendered),
 );
 check(
-  'the page states delivery is handled by Amazon and the address is not shown',
-  /Delivery is handled entirely by Amazon/.test(pageText) &&
-    /never displayed on this page/.test(pageText),
+  'ship-to uses the conservative unverified-config wording',
+  /Amazon handles delivery through the wishlist checkout\./.test(pageText) &&
+    /The private street address is not displayed on this page\./.test(pageText),
+);
+check(
+  'ship-to never asserts the private Amazon address setting as verified',
+  !/auto-?fill/i.test(pageText) && !/keeps the street line private/i.test(pageText),
 );
 
 /* ------------------------------------------------------- campaign concept */
 
-check('page keeps the Classroom Build Out eyebrow', /Classroom Build Out/.test(page));
-check('page keeps The Room Is Empty headline', /The Room Is Empty/.test(page));
-check('page names the destination city', /\{CAMPAIGN_CITY\}/.test(page));
+/* ---- approved manifest design: the bill-of-lading strip, field by field */
+const EXPECTED_MANIFEST: Array<[string, string]> = [
+  ['Load', 'TLA-001'],
+  ['Origin', 'Anywhere'],
+  ['Destination', 'Dalton, GA'],
+  ['Deliver by', '10.18.2026'],
+  ['Status', 'Loading'],
+];
+check('manifest strip has exactly five fields', MANIFEST_ROWS.length === 5, MANIFEST_ROWS.length);
+for (const [field, value] of EXPECTED_MANIFEST) {
+  check(
+    `manifest strip: ${field} = ${value}`,
+    MANIFEST_ROWS.some((r) => r.field === field && r.value === value),
+    MANIFEST_ROWS.find((r) => r.field === field),
+  );
+}
+check('manifest strip renders from the shared source', /MANIFEST_ROWS\.map/.test(page));
+check('load number constant matches the manifest', CAMPAIGN_LOAD_NUMBER === 'TLA-001');
+check('destination constant matches the manifest', CAMPAIGN_DESTINATION === 'Dalton, GA');
+check('deliver-by stamp matches the opening date', CAMPAIGN_OPENS_STAMP === '10.18.2026');
+
+/* ---- approved hero */
 check(
-  'page uses freight-manifest language',
-  /Shipper/.test(page) && /Destination/.test(page) && /Delivery Date/.test(page),
+  'hero eyebrow is the approved Classroom Manifest line',
+  /Classroom Manifest · Trucking Life Academy/.test(pageText),
 );
-check('page explains why a list exists', /Why a list instead of a fundraiser/.test(page));
+check(
+  'hero headline is "The Room Is Empty." with the period',
+  /The Room Is Empty\./.test(pageText),
+);
+
+/* ---- approved section order */
+const SECTION_ORDER = [
+  'Why this list exists',
+  'What&rsquo;s on the load',
+  'Pick your weight class',
+  'Two ways in',
+  'Ship to',
+  'Built by drivers.',
+];
+let lastIdx = -1;
+let ordered = true;
+for (const heading of SECTION_ORDER) {
+  const idx = page.indexOf(heading);
+  if (idx === -1 || idx < lastIdx) ordered = false;
+  else lastIdx = idx;
+  check(`section present: ${heading.replace('&rsquo;', String.fromCharCode(39))}`, idx > -1);
+}
+check('sections appear in the approved order', ordered);
+check(
+  'closing block carries the Trucking Life Academy identity',
+  /Trucking Life Academy<\/p>/.test(page) || /Trucking Life Academy/.test(pageText),
+);
+
+/* ---- approved styling: dark ground, yellow primary, orange secondary */
+check('page uses the dark asphalt ground', /bg-asphalt/.test(page));
+check('yellow (signal) is the primary accent', /text-signal|border-signal/.test(page));
+check('orange (flare) is the secondary accent', /text-flare-300/.test(page));
+check('manifest rows are bordered', (page.match(/border-2 border-ink\/15/g) ?? []).length >= 4);
+check('display type is condensed uppercase', /font-display/.test(page) && /uppercase/.test(page));
+check('the orange accent is a real theme token', /flare:/.test(read('tailwind.config.ts')));
 check('exactly four supply tiers are defined', SUPPLY_TIERS.length === 4, SUPPLY_TIERS.length);
 check(
   'every tier has a range, a title and a blurb',
@@ -359,7 +420,7 @@ check(
 check('tier ids are unique', new Set(SUPPLY_TIERS.map((t) => t.id)).size === SUPPLY_TIERS.length);
 check('page renders the tiers from the shared source', /SUPPLY_TIERS\.map/.test(page));
 check(
-  'tiers avoid promising a specific item at a specific price',
+  'the load section avoids promising a specific item at a specific price',
   /Exact items, quantities and prices live on the Amazon list/.test(pageText),
 );
 

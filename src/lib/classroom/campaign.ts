@@ -24,8 +24,29 @@ export const CAMPAIGN_OPENS_AT_MS = Date.parse(CAMPAIGN_OPENS_ISO);
 /** Human-facing opening date, used in copy and metadata. */
 export const CAMPAIGN_OPENS_LABEL = 'October 18, 2026';
 
+/** Manifest-style date stamp (10.18.2026) for the bill-of-lading strip. */
+export const CAMPAIGN_OPENS_STAMP = '10.18.2026';
+
 /** Where the classroom is being built. City/region only — never a street address. */
 export const CAMPAIGN_CITY = 'Dalton, Georgia';
+
+/** Manifest-strip form of the destination. */
+export const CAMPAIGN_DESTINATION = 'Dalton, GA';
+
+/** Load number for the manifest strip — the campaign's shipment identity. */
+export const CAMPAIGN_LOAD_NUMBER = 'TLA-001';
+
+/**
+ * The bill-of-lading strip. Field/value pairs exactly as approved, kept here
+ * so the page renders them from one source and the tests can pin them.
+ */
+export const MANIFEST_ROWS: readonly { field: string; value: string }[] = [
+  { field: 'Load', value: CAMPAIGN_LOAD_NUMBER },
+  { field: 'Origin', value: 'Anywhere' },
+  { field: 'Destination', value: CAMPAIGN_DESTINATION },
+  { field: 'Deliver by', value: CAMPAIGN_OPENS_STAMP },
+  { field: 'Status', value: 'Loading' },
+] as const;
 
 /** Primary CTA: the Amazon wishlist that fulfils the supplies. */
 export const AMAZON_WISHLIST_URL = 'https://www.amazon.com/hz/wishlist/ls/1VNA3OIBPOYEB';

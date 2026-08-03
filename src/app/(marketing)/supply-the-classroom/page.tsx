@@ -1,12 +1,14 @@
-import { Section, Eyebrow } from '@/components/ui';
+import { Section } from '@/components/ui';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { ClassroomCountdown } from '@/components/classroom/ClassroomCountdown';
 import { AmazonListCta, CashAppCta } from '@/components/classroom/ClassroomCtas';
 import {
   CAMPAIGN_CITY,
+  CAMPAIGN_DESTINATION,
   CAMPAIGN_OPENS_LABEL,
   CAMPAIGN_PATH,
+  MANIFEST_ROWS,
   SUPPLY_TIERS,
 } from '@/lib/classroom/campaign';
 
@@ -17,12 +19,10 @@ export const metadata = buildMetadata({
 });
 
 /**
- * Supply the Classroom — the campaign front door.
- *
- * Built to the approved campaign concept: a freight manifest for a room that
- * does not exist yet. The Amazon list is the primary action because it is the
- * only surface that knows what is still needed; Cash App is secondary, for
- * the things a list cannot cover.
+ * Supply the Classroom — the campaign front door, built to the approved
+ * bill-of-lading design: a freight manifest for a room that does not exist
+ * yet. Dark ground, Sodium Amber primary, Road Flare orange secondary,
+ * condensed uppercase display type, bordered manifest rows throughout.
  *
  * CLAIM SAFETY. The reference copy ended the CTA block with a promise that
  * every supporter's name goes on the Founder Wall and into a launch film.
@@ -36,9 +36,19 @@ export const metadata = buildMetadata({
  * obligation nobody could keep, so it is replaced with what is actually true:
  * the supplies become the room. See the PR for the full audit.
  *
- * Only the city is ever named. No street address appears on this page — the
- * delivery address lives inside the Amazon list.
+ * SHIP-TO. The mockup states Amazon auto-fills the delivery address and keeps
+ * the street line private. That is a setting inside a private Amazon account,
+ * which cannot be verified from this codebase — so the public wording claims
+ * only what is observable here: Amazon handles delivery through the wishlist
+ * checkout, and no street address is displayed on this page. Only the city is
+ * ever named.
  */
+
+/** Shared bordered-row shell — the manifest visual language of the page. */
+function ManifestRow({ children }: { children: React.ReactNode }) {
+  return <div className="border-t-2 border-ink/15 py-6 first:border-t-0">{children}</div>;
+}
+
 export default function SupplyTheClassroomPage() {
   return (
     <>
@@ -49,106 +59,158 @@ export default function SupplyTheClassroomPage() {
         ])}
       />
 
-      {/* ---------------------------------------------------- manifest head */}
-      <Section className="!pb-10">
-        <Eyebrow>Classroom Build Out</Eyebrow>
-        <h1 className="display-section">The Room Is Empty</h1>
-        <p className="mt-4 max-w-2xl text-lg text-muted">
-          Trucking Life Academy has a room in {CAMPAIGN_CITY} and a date on the calendar. What it
-          does not have yet is everything that goes inside it. This is the load list.
-        </p>
-
-        {/* Freight manifest: the campaign stated as a bill of lading. */}
-        <dl className="mt-10 grid gap-px overflow-hidden rounded-card border-2 border-ink/20 bg-ink/20 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { term: 'Shipper', detail: 'Drivers, everywhere' },
-            { term: 'Destination', detail: CAMPAIGN_CITY },
-            { term: 'Delivery Date', detail: CAMPAIGN_OPENS_LABEL },
-            { term: 'Status', detail: 'Loading' },
-          ].map((row) => (
-            <div key={row.term} className="bg-asphalt-700 p-5">
-              <dt className="text-xs uppercase tracking-[0.2em] text-muted">{row.term}</dt>
-              <dd className="mt-2 font-display text-xl uppercase text-ink">{row.detail}</dd>
+      {/* ============================================= BILL OF LADING STRIP */}
+      <Section className="!pb-0 !pt-10">
+        <dl className="grid grid-cols-2 gap-px border-2 border-signal/50 bg-signal/20 sm:grid-cols-3 lg:grid-cols-5">
+          {MANIFEST_ROWS.map((row) => (
+            <div key={row.field} className="bg-asphalt px-4 py-3">
+              <dt className="text-[0.625rem] uppercase tracking-[0.25em] text-flare-300">
+                {row.field}
+              </dt>
+              <dd className="mt-1 font-display text-base uppercase tracking-wide text-ink">
+                {row.value}
+              </dd>
             </div>
           ))}
         </dl>
+      </Section>
 
-        <div className="mt-10">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-muted">Time to delivery</h2>
-          <div className="mt-3">
+      {/* ============================================================= HERO */}
+      <Section className="!pb-10 !pt-10">
+        <p className="text-xs uppercase tracking-[0.25em] text-signal">
+          Classroom Manifest · Trucking Life Academy
+        </p>
+        <h1 className="display-section mt-4">The Room Is Empty.</h1>
+        <p className="mt-5 max-w-2xl text-lg text-muted">
+          There is a room in {CAMPAIGN_CITY} with a date on it and nothing inside. Everything a
+          driver will learn in there still has to get there first. This is the load list.
+        </p>
+
+        <div className="mt-10 border-2 border-ink/15 bg-asphalt-700 p-6 sm:p-8">
+          <h2 className="text-xs uppercase tracking-[0.25em] text-flare-300">Time to delivery</h2>
+          <div className="mt-4">
             <ClassroomCountdown />
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <AmazonListCta placement="campaign_hero" />
           <CashAppCta placement="campaign_hero" />
         </div>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          The Amazon list is the fastest way to help — it is the only place that knows what is still
-          missing.
-        </p>
       </Section>
 
-      {/* ------------------------------------------------- why a list exists */}
-      <Section className="!pt-6">
-        <h2 className="display-section text-3xl sm:text-4xl">Why a list instead of a fundraiser</h2>
-        <div className="mt-5 grid max-w-4xl gap-5 text-muted md:grid-cols-2">
-          <p>
-            A list is honest. You can see exactly what the classroom needs, pick the thing you want
-            to cover, and watch it come off the list when someone else gets there first. Nothing
-            disappears into a general fund.
-          </p>
-          <p>
-            It also means the money goes where it says it goes. You are not sending a donation and
-            hoping — you are buying a specific item for a specific room, and Amazon delivers it
-            straight there.
-          </p>
+      {/* =========================================== WHY THIS LIST EXISTS */}
+      <Section className="!py-10">
+        <h2 className="display-section text-3xl sm:text-4xl">Why this list exists</h2>
+        <div className="mt-6 max-w-4xl">
+          <ManifestRow>
+            <p className="text-muted">
+              A list is honest. You can see exactly what the room needs, cover the one thing you
+              want to cover, and watch it come off the list when somebody beats you to it. Nothing
+              disappears into a general fund.
+            </p>
+          </ManifestRow>
+          <ManifestRow>
+            <p className="text-muted">
+              It also means the money lands where it says it lands. You are not sending a donation
+              and hoping — you are buying a specific item for a specific classroom, and it ships
+              straight there.
+            </p>
+          </ManifestRow>
         </div>
       </Section>
 
-      {/* --------------------------------------------------------- the tiers */}
-      <Section className="!pt-6">
-        <h2 className="display-section text-3xl sm:text-4xl">Pick your weight class</h2>
+      {/* ============================================= WHAT'S ON THE LOAD */}
+      <Section className="!py-10">
+        <h2 className="display-section text-3xl sm:text-4xl">What&rsquo;s on the load</h2>
         <p className="mt-4 max-w-2xl text-muted">
-          Every load gets there the same way — one piece at a time. Exact items, quantities and
-          prices live on the Amazon list, which is the only place that stays current.
+          Desks and seating. Boards and displays. The consumables a working classroom burns through
+          every week, and the shared gear a whole class learns on. Exact items, quantities and
+          prices live on the Amazon list — it is the only place that stays current.
         </p>
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2">
-          {SUPPLY_TIERS.map((tier) => (
-            <li key={tier.id} className="rounded-card border-2 border-ink/15 bg-asphalt-700 p-6">
-              <p className="font-display text-2xl uppercase text-signal">{tier.range}</p>
-              <h3 className="mt-2 font-display text-lg uppercase text-ink">{tier.title}</h3>
-              <p className="mt-2 text-sm text-muted">{tier.blurb}</p>
-            </li>
-          ))}
-        </ul>
       </Section>
 
-      {/* --------------------------------------------- shipping and privacy */}
-      <Section className="!pt-6">
-        <h2 className="display-section text-3xl sm:text-4xl">Shipping and privacy</h2>
-        <div className="mt-5 grid max-w-4xl gap-5 text-muted md:grid-cols-2">
-          <p>
-            Delivery is handled entirely by Amazon through the list. The shipping address is held
-            inside the list itself and is never displayed on this page — you do not need it, and
-            publishing it is not something a school should do.
-          </p>
-          <p>
-            If you would rather cover something that is not on the list — a delivery charge, a local
-            pickup, a gap nobody thought of — Cash App is there for that. Every dollar goes into the
-            same room.
-          </p>
+      {/* ============================================== CONTRIBUTION TIERS */}
+      <Section className="!py-10">
+        <h2 className="display-section text-3xl sm:text-4xl">Pick your weight class</h2>
+        <div className="mt-6 border-2 border-ink/15">
+          {SUPPLY_TIERS.map((tier, i) => (
+            <div
+              key={tier.id}
+              className={`grid gap-2 p-5 sm:grid-cols-[9rem,1fr] sm:gap-6 sm:p-6 ${
+                i > 0 ? 'border-t-2 border-ink/15' : ''
+              }`}
+            >
+              <p className="font-display text-2xl uppercase leading-none text-signal">
+                {tier.range}
+              </p>
+              <div>
+                <h3 className="font-display text-lg uppercase tracking-wide text-ink">
+                  {tier.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted">{tier.blurb}</p>
+              </div>
+            </div>
+          ))}
         </div>
+      </Section>
 
-        <div className="mt-10 rounded-card border-2 border-signal/40 bg-asphalt-700 p-6">
-          <h3 className="font-display text-xl uppercase text-ink">What your help actually does</h3>
-          <p className="mt-3 max-w-2xl text-muted">
+      {/* ===================================================== TWO WAYS IN */}
+      <Section className="!py-10">
+        <h2 className="display-section text-3xl sm:text-4xl">Two ways in</h2>
+        <div className="mt-6 grid gap-px border-2 border-ink/15 bg-ink/15 md:grid-cols-2">
+          <div className="bg-asphalt-700 p-6 sm:p-8">
+            <p className="text-[0.625rem] uppercase tracking-[0.25em] text-signal">Primary</p>
+            <h3 className="mt-2 font-display text-xl uppercase text-ink">Buy off the list</h3>
+            <p className="mt-3 text-sm text-muted">
+              Pick a real item, and Amazon ships it to the classroom. This is the fastest way to
+              help and the only one that knows what is still missing.
+            </p>
+            <AmazonListCta placement="two_ways_in" className="mt-6 w-full sm:w-auto" />
+          </div>
+          <div className="bg-asphalt-700 p-6 sm:p-8">
+            <p className="text-[0.625rem] uppercase tracking-[0.25em] text-flare-300">Secondary</p>
+            <h3 className="mt-2 font-display text-xl uppercase text-ink">Send supply money</h3>
+            <p className="mt-3 text-sm text-muted">
+              For the gaps a list cannot hold — a delivery charge, a local pickup, something nobody
+              thought of. Every dollar goes into the same room.
+            </p>
+            <CashAppCta placement="two_ways_in" className="mt-6 w-full sm:w-auto" />
+          </div>
+        </div>
+      </Section>
+
+      {/* ========================================================= SHIP TO */}
+      <Section className="!py-10">
+        <h2 className="display-section text-3xl sm:text-4xl">Ship to</h2>
+        <div className="mt-6 max-w-4xl border-2 border-ink/15">
+          <div className="grid gap-2 p-5 sm:grid-cols-[9rem,1fr] sm:gap-6 sm:p-6">
+            <p className="text-[0.625rem] uppercase tracking-[0.25em] text-flare-300">Consignee</p>
+            <p className="font-display text-lg uppercase text-ink">
+              Trucking Life Academy · {CAMPAIGN_DESTINATION}
+            </p>
+          </div>
+          <div className="grid gap-2 border-t-2 border-ink/15 p-5 sm:grid-cols-[9rem,1fr] sm:gap-6 sm:p-6">
+            <p className="text-[0.625rem] uppercase tracking-[0.25em] text-flare-300">Delivery</p>
+            <p className="text-sm text-muted">
+              Amazon handles delivery through the wishlist checkout. The private street address is
+              not displayed on this page.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      {/* ====================================== CLOSING: TLA IDENTITY */}
+      <Section className="!pb-20 !pt-10">
+        <div className="border-2 border-signal/40 bg-asphalt-700 p-8 sm:p-10">
+          <p className="text-xs uppercase tracking-[0.25em] text-signal">Trucking Life Academy</p>
+          <h2 className="display-section mt-3 text-3xl sm:text-4xl">Built by drivers.</h2>
+          <p className="mt-4 max-w-2xl text-muted">
             Every item bought off that list becomes part of the room drivers train in — the desks
             they sit at, the boards they learn from, the gear they put their hands on. The classroom
             opens because people who already drive for a living decided it should.
           </p>
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
             <AmazonListCta placement="campaign_footer" />
             <CashAppCta placement="campaign_footer" />
           </div>

@@ -61,7 +61,14 @@ export function CashAppCta({
       rel="noopener noreferrer"
       aria-label="Send money toward classroom supplies through Cash App (opens in a new tab)"
       onClick={() => trackEvent(CLASSROOM_EVENTS.cashAppClick, { placement })}
-      className={cn(baseCta, 'border-2 border-ink/30 text-ink hover:border-signal', className)}
+      // Road Flare orange — the approved SECONDARY accent, deliberately
+      // distinct from the amber primary so the two actions never read as
+      // equal weight.
+      className={cn(
+        baseCta,
+        'border-2 border-flare text-flare-300 hover:bg-flare/10 focus-visible:ring-flare',
+        className,
+      )}
     >
       {children}
     </a>
