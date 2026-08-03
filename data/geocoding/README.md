@@ -40,3 +40,31 @@ columns:
 - `*-sources.md` — per-row source URL, verification method, confidence
 - `*-review.md` — audit summary, counts, known limitations, and the exact
   apply instructions for that batch
+
+## Queue triage (offline, read-only)
+
+`scripts/geocoding-queues.ts` splits a verified batch three ways so a
+low-confidence candidate and an outright-bad row no longer share one bucket:
+
+- **ready** — passes every gate (action=ready, confidence=high, valid
+  coordinates); safe to apply after admin selection.
+- **manual-review** — has a candidate coordinate but needs a human
+  (low/medium confidence, action=manual-review, or would overwrite existing
+  coordinates).
+- **rejected** — must not be applied as-is (skip, unresolved, or
+  missing/invalid coordinates).
+
+It also flags **duplicate proposed coordinates** (two distinct listings sharing
+one coordinate — a reused anchor or copy/paste) for review, and writes a
+`*-queues-report.md`. Each queue CSV keeps the full 15-column contract plus a
+`queue_reasons` column, so it re-parses cleanly through `parseGeocodingCsv`.
+
+The tool is read-only: it applies no coordinates and touches no database. The
+logic lives in `src/lib/directory/geocoding-queues.ts` (pure, additive — the
+admin console is unchanged) and is covered by `scripts/test-geocoding-queues.ts`.
+
+```
+npx esbuild scripts/geocoding-queues.ts --bundle --platform=node --format=cjs \
+  --alias:@=./src --outfile=.next/geocoding-queues.cjs \
+&& node .next/geocoding-queues.cjs data/geocoding/<batch>.csv data/geocoding
+```
