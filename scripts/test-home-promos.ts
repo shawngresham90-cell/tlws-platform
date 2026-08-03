@@ -34,7 +34,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
 
 /* ------------------------------------------------- shirt inventory: source */
-check('shirt inventory: approved figure is exactly 49', SHIRTS_LEFT === 49);
+check('shirt inventory: approved figure is exactly 29', SHIRTS_LEFT === 29);
 check('shirt inventory: edition size unchanged (100 made)', SHIRTS_TOTAL_RUN === 100);
 check(
   'shirt inventory: remaining within [0, run]',
