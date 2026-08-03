@@ -96,8 +96,8 @@ export default async function AdminLeadsPage({
           <p className="mb-4 text-sm text-muted">
             {truncated ? (
               <>
-                Showing the {rows.length} most recent of <span className="text-ink">{total}</span> in
-                this view. Older leads are in the table but not on this page.
+                Showing the {rows.length} most recent of <span className="text-ink">{total}</span>{' '}
+                in this view. Older leads are in the table but not on this page.
               </>
             ) : (
               <>
@@ -139,7 +139,9 @@ export default async function AdminLeadsPage({
                           {r.source || '—'}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-muted">{seg.label}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-muted">{campaign || '—'}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-muted">
+                          {campaign || '—'}
+                        </td>
                         <td className="whitespace-nowrap px-4 py-3">
                           {r.sms_consent ? (
                             <span className="font-semibold text-marker">Yes</span>
