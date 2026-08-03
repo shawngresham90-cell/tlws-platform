@@ -38,3 +38,6 @@ __pycache__/
 # CAT Scale proprietary source — never commit the raw CSV or full row-level detail
 *extraction*.csv
 data/imports/cat-scale-2026-07-29/local/
+
+# Local email previews (scripts/preview-road-report.ts)
+.road-report-preview/
