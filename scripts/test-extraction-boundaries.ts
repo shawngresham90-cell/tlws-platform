@@ -152,15 +152,32 @@ for (const [path, source] of sources) {
   );
 }
 
-/* ---------------------------------------- nothing that ships references them yet */
+/* ---------------------------------------- who may reference the extractions */
+
+// The PWA foundation milestone (docs/pwa-foundation.md) ended the inert era
+// for install-prompt: it is now wired to exactly one shipped surface, the
+// install card. The Navigator extraction remains inert — Navigator is a
+// future milestone and nothing that ships may touch it yet.
 
 const srcFiles = walk('src').filter((f) => !EXTRACTED.includes(f));
 const EXTRACTED_SPECIFIERS = ['@/lib/pwa/install-prompt', '@/lib/navigator/direction-of-travel'];
 
-for (const specifier of EXTRACTED_SPECIFIERS) {
-  const referencing = srcFiles.filter((f) => readFileSync(f, 'utf8').includes(specifier));
+{
+  const referencing = srcFiles.filter((f) =>
+    readFileSync(f, 'utf8').includes('@/lib/pwa/install-prompt'),
+  );
   check(
-    `no shipped module imports ${specifier} — the extraction is inert in this PR`,
+    'install-prompt is imported only by the install card (the sanctioned PWA surface)',
+    referencing.length === 1 && referencing[0] === 'src/components/pwa/InstallCard.tsx',
+    referencing,
+  );
+}
+{
+  const referencing = srcFiles.filter((f) =>
+    readFileSync(f, 'utf8').includes('@/lib/navigator/direction-of-travel'),
+  );
+  check(
+    'no shipped module imports @/lib/navigator/direction-of-travel — Navigator is still inert',
     referencing.length === 0,
     referencing,
   );
@@ -189,19 +206,24 @@ for (const dir of PROTECTED_DIRS) {
   check(`${dir} references nothing from the extraction`, contaminated.length === 0, contaminated);
 }
 
-/* --------------------------- no service worker or manifest was introduced */
+/* --------------- the PWA foundation exists in exactly its canonical shape */
 
-const PWA_ARTIFACTS = [
+// The foundation milestone introduced one worker (public/sw.js) and one
+// manifest (src/app/manifest.ts, the Next file convention). Duplicate or
+// legacy locations must never appear beside them — two manifests or two
+// workers is how installs and caches silently diverge.
+for (const artifact of ['public/sw.js', 'src/app/manifest.ts']) {
+  check(`${artifact} exists — the PWA foundation's canonical artifact`, existsSync(artifact));
+}
+const FORBIDDEN_DUPLICATES = [
   'public/manifest.json',
   'public/manifest.webmanifest',
-  'public/sw.js',
   'public/service-worker.js',
-  'src/app/manifest.ts',
   'src/app/manifest.json',
   'src/app/sw.ts',
 ];
-for (const artifact of PWA_ARTIFACTS) {
-  check(`${artifact} was not created — the PWA milestone is still separate`, !existsSync(artifact));
+for (const artifact of FORBIDDEN_DUPLICATES) {
+  check(`${artifact} does not exist — one canonical worker/manifest only`, !existsSync(artifact));
 }
 
 check(

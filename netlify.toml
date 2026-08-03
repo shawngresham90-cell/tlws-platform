@@ -16,3 +16,16 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(self), microphone=(), camera=()"
+
+# The service worker must revalidate on every check — a long-cached sw.js
+# would pin every installed client to a stale version for the cache lifetime.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# The offline shell is versioned by the worker's precache, not the CDN.
+[[headers]]
+  for = "/offline.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
