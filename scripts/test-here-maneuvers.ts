@@ -154,7 +154,10 @@ const A = (over: Record<string, unknown> = {}) => ({
           A({ offset: 'x' }), // non-numeric offset -> section start
           A({ offset: 999 }), // beyond geometry -> clamped to last point
           { action: 42, instruction: 'Numeric action kind.' }, // display only
-          null, // tolerated by the actions loop shape
+          // A null entry would throw at `a.instruction` — pre-existing
+          // parser behavior (swallowed upstream into a null route), so the
+          // fixture filters it out rather than pretending it is tolerated.
+          null,
         ].filter((x) => x !== null),
       },
     ]),
