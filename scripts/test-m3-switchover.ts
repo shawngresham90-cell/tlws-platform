@@ -140,9 +140,24 @@ check(
 );
 
 /* ------------------------------------------------ no write-path regression */
+/**
+ * The write ban is unchanged. The build-read memo is a plain in-process Map,
+ * and `buildReadMemo.delete(key)` is a cache eviction, not a database call —
+ * so its own Map operations are renamed out before the scan. Every other
+ * `.delete(` / `.insert(` / `.update(` / `.upsert(` in the file still fails
+ * this check, on any receiver.
+ */
+const dataSrcWithoutMemoMapOps = dataSrc.replace(
+  /buildReadMemo\.(get|set|delete|clear)\(/g,
+  'memoMapOp(',
+);
 check(
   'switchover is read-only (no insert/update/delete added to the data layer)',
-  !/\.(insert|update|upsert|delete)\(/.test(dataSrc),
+  !/\.(insert|update|upsert|delete)\(/.test(dataSrcWithoutMemoMapOps),
+);
+check(
+  'the memo really is a Map, not a database handle',
+  /const buildReadMemo = new Map<string, Promise<unknown>>\(\)/.test(dataSrc),
 );
 const corridorSrc = fs.readFileSync(
   path.join(process.cwd(), 'src/lib/directory/corridor.ts'),

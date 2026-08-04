@@ -26,11 +26,22 @@ export const metadata = buildMetadata({
  * published-only (query + RLS).
  */
 export default async function CatScaleNearMePage() {
-  const [scales, searchPool, publishedTotal] = await Promise.all([
+  const [scales, coordinatePool, publishedTotal] = await Promise.all([
     getCatScaleMapEntries(),
     getEntriesWithCoordinates(),
     getCatScalePublishedCount(),
   ]);
+  // The search pool exists only so the city/ZIP box can resolve to a real
+  // area. Project it to the six fields search reads before it crosses the
+  // server->client boundary — the full rows were this page's largest payload.
+  const searchPool = coordinatePool.map(({ name, city, state, zip, lat, lng }) => ({
+    name,
+    city,
+    state,
+    zip,
+    lat,
+    lng,
+  }));
   const stateNamesByCode = Object.fromEntries(DIRECTORY_STATES.map((s) => [s.code, s.name]));
 
   return (

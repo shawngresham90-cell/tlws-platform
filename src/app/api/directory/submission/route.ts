@@ -14,7 +14,10 @@ export const runtime = 'nodejs';
  */
 export const POST = guardedPost(
   submissionSchema,
-  { routeKey: 'directory-submission', rateLimitMax: 5 },
+  // STRICT Turnstile: the submit form renders the widget and always sends a
+  // token, so a tokenless POST is not a driver — it's a bot skipping the
+  // field the schema marks optional. Verified-if-present let those through.
+  { routeKey: 'directory-submission', rateLimitMax: 5, requireTurnstile: true },
   async ({ data }) => {
     // Honeypot tripped: a hidden field only bots fill. Pretend success so the
     // bot learns nothing; store nothing.

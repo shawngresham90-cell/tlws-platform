@@ -56,9 +56,24 @@ export function guardedPost<S extends z.ZodTypeAny>(
       return fail(first?.message ?? 'Validation failed.', 422, 'validation');
     }
 
-    // Turnstile: verify if the validated payload includes a token.
+    // Turnstile. Two modes, and the difference is the whole point:
+    //
+    //   requireTurnstile: true   — STRICT. A missing token is a failed
+    //     verification. Without this, a bot that simply OMITS the token
+    //     field walks past a `.optional()` schema and the widget-wired form
+    //     is protected against everyone except the abusers. Environment
+    //     awareness lives in verifyTurnstile: dev without a secret still
+    //     skips, production without a secret fails closed (same policy the
+    //     apply route already has via its schema-required token).
+    //
+    //   default ("if present") — verify a token when one arrives, allow
+    //     when absent. Only correct for routes whose form has no widget yet;
+    //     routes that render the widget should be strict.
     const maybeToken = (parsed.data as { turnstileToken?: string }).turnstileToken;
-    if (opts.requireTurnstile !== false && maybeToken) {
+    if (opts.requireTurnstile === true) {
+      const okToken = await verifyTurnstile(maybeToken ?? '', ip);
+      if (!okToken) return fail('Verification failed. Reload and try again.', 403, 'turnstile');
+    } else if (opts.requireTurnstile !== false && maybeToken) {
       const okToken = await verifyTurnstile(maybeToken, ip);
       if (!okToken) return fail('Verification failed. Reload and try again.', 403, 'turnstile');
     }

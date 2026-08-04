@@ -235,6 +235,63 @@ async function pagingTests() {
     'paging still works when the count is unavailable',
     noCount.ok && noCount.rows.length === 2500,
   );
+
+  /* ------ UNIFICATION ADDENDUM (2026-08-04): no-count terminal condition */
+
+  // Same policy as the directory's collectAllRows: with NO independent count,
+  // a short page proves nothing — a server-side cap returns short pages while
+  // more data exists. The only honest uncorroborated exit is a verified EMPTY
+  // page. Before this rule, cap+no-count returned 100 of 3,000 rows as ok.
+  {
+    const pool = makePool(3000).sort((a, b) => a.id.localeCompare(b.id));
+    const cappedNoCount: PlannerPageFetcher = async (afterId) => {
+      const start = afterId === null ? 0 : pool.findIndex((r) => r.id > afterId);
+      if (start < 0) return { rows: [] };
+      return { rows: pool.slice(start, start + 100) }; // cap below requested size
+    };
+    const res = await collectPlannerRows(cappedNoCount, null, { pageSize: 500, maxPages: 40 });
+    check(
+      'server cap with NO count: the scan keeps walking to the verified empty page',
+      res.ok && res.rows.length === 3000,
+      res.ok ? res.rows.length : res,
+    );
+  }
+
+  {
+    let calls = 0;
+    const counted: PlannerPageFetcher = async (afterId, pageSize) => {
+      calls++;
+      const sorted = makePool(7).sort((a, b) => a.id.localeCompare(b.id));
+      const start = afterId === null ? 0 : sorted.findIndex((r) => r.id > afterId);
+      if (start < 0) return { rows: [] };
+      return { rows: sorted.slice(start, start + pageSize) };
+    };
+    const res = await collectPlannerRows(counted, null);
+    check('no count, short first page: still complete', res.ok && res.rows.length === 7);
+    check(
+      'no count, short first page: pays the verified-empty confirmation request',
+      calls === 2,
+      calls,
+    );
+  }
+
+  {
+    // With a count, the corroborated stop still avoids the extra request.
+    let calls = 0;
+    const counted: PlannerPageFetcher = async (afterId, pageSize) => {
+      calls++;
+      const sorted = makePool(7).sort((a, b) => a.id.localeCompare(b.id));
+      const start = afterId === null ? 0 : sorted.findIndex((r) => r.id > afterId);
+      if (start < 0) return { rows: [] };
+      return { rows: sorted.slice(start, start + pageSize) };
+    };
+    const res = await collectPlannerRows(counted, 7);
+    check(
+      'with a count, a corroborated short page still stops in ONE request',
+      res.ok && calls === 1,
+      calls,
+    );
+  }
 }
 
 /* ------------------------------------------------------- loader contract */

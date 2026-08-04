@@ -14,7 +14,12 @@ export const runtime = 'nodejs';
  */
 export const POST = guardedPost(
   claimSchema,
-  { routeKey: 'preschool-claim', rateLimitMax: 5 },
+  // STRICT Turnstile: the claim form renders the widget (ClaimForm.tsx wires
+  // turnstileToken), so by the handler's own policy a bot that simply OMITS
+  // the optional token must not walk past verification. Same mode as the
+  // review and submission routes; dev-without-secret still skips inside
+  // verifyTurnstile, production-without-secret fails closed.
+  { routeKey: 'preschool-claim', rateLimitMax: 5, requireTurnstile: true },
   async ({ data }) => {
     // Honeypot tripped: a hidden field only bots fill. Pretend success so the
     // bot learns nothing; store nothing.

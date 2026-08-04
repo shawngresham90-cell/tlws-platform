@@ -27,6 +27,9 @@ export async function verifyTurnstile(token: string, remoteIp?: string): Promise
     const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       body,
+      // A slow siteverify must not hold the whole submission until the
+      // platform kills it; timeout falls into the catch below = fail closed.
+      signal: AbortSignal.timeout(4000),
     });
     const data = (await res.json()) as { success: boolean; 'error-codes'?: string[] };
     if (!data.success) log.warn('turnstile_failed', { codes: data['error-codes'] });

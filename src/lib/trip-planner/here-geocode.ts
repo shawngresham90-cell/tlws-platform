@@ -164,6 +164,10 @@ export function createHereGeocodePort(
   const maxResults = opts.maxResults ?? 6;
 
   const cache = new Map<string, { atMs: number; matches: GeocodeMatch[] }>();
+  // One in-flight request per normalized query — same coalescing rationale
+  // as the routing adapter: the cache is written only after a response
+  // lands, so concurrent identical lookups would otherwise both spend.
+  const pending = new Map<string, Promise<GeocodeMatch[]>>();
   let windowStartMs = 0;
   let callsInWindow = 0;
 
@@ -176,17 +180,46 @@ export function createHereGeocodePort(
     return callsInWindow < hourlyCap;
   };
 
-  const getJson = async (url: string): Promise<unknown | null> => {
+  // Answered vs failed is the distinction the cache needs: a 200 with no
+  // items is a real "no matches" worth remembering, while a network error,
+  // timeout, 4xx or 5xx is a FAILURE — caching that as an empty answer would
+  // pin "no matches" for the full TTL after one provider blip (the routing
+  // adapter deliberately never caches failures; this adapter now agrees).
+  const getJson = async (url: string): Promise<{ answered: true; body: unknown } | null> => {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const res = await fetchFn(url);
-        if (res.status === 200) return await res.json();
+        if (res.status === 200) return { answered: true, body: await res.json() };
         if (res.status < 500) return null;
       } catch {
         // network/timeout — one retry, then give up
       }
     }
     return null;
+  };
+
+  const fetchMatches = async (normalized: string): Promise<GeocodeMatch[]> => {
+    try {
+      if (!underCap()) return [];
+      callsInWindow += 1;
+      const answer = await getJson(buildGeocodeUrl(normalized, apiKey as string, maxResults));
+      // Failed call: fail soft to [] but cache NOTHING, so the next request
+      // retries instead of inheriting the outage for an hour.
+      if (answer === null) return [];
+      const matches = parseGeocodeResponse(answer.body, maxResults);
+
+      cache.set(normalized, { atMs: nowMs(), matches });
+      if (cache.size > cacheMax) {
+        for (const k of cache.keys()) {
+          if (cache.size <= cacheMax) break;
+          cache.delete(k);
+        }
+      }
+      return matches;
+    } catch {
+      // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
+      return [];
+    }
   };
 
   return {
@@ -197,25 +230,23 @@ export function createHereGeocodePort(
       if (normalized.length < MIN_QUERY_LENGTH) return [];
       try {
         const hit = cache.get(normalized);
-        if (hit && nowMs() - hit.atMs < cacheTtlMs) return hit.matches;
-
-        if (!underCap()) return [];
-        callsInWindow += 1;
-        const matches = parseGeocodeResponse(
-          await getJson(buildGeocodeUrl(normalized, apiKey, maxResults)),
-          maxResults,
-        );
-
-        cache.set(normalized, { atMs: nowMs(), matches });
-        if (cache.size > cacheMax) {
-          for (const k of cache.keys()) {
-            if (cache.size <= cacheMax) break;
-            cache.delete(k);
-          }
+        if (hit) {
+          if (nowMs() - hit.atMs < cacheTtlMs) return hit.matches;
+          // Stale on read = deleted on read, so dead entries never occupy
+          // eviction slots ahead of live ones.
+          cache.delete(normalized);
         }
-        return matches;
+
+        const inFlight = pending.get(normalized);
+        if (inFlight) return inFlight;
+        const run = fetchMatches(normalized);
+        pending.set(normalized, run);
+        try {
+          return await run;
+        } finally {
+          pending.delete(normalized);
+        }
       } catch {
-        // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
         return [];
       }
     },

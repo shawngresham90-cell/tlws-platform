@@ -236,6 +236,25 @@ export async function composeQuote(
     return { ok: false, error: { code: 'bad-route', message: (e as Error).message } };
   }
 
+  // Clock validation is pure and costs microseconds, so it runs BEFORE any
+  // provider spend: a request that is going to 422 must never burn a HERE
+  // transaction (a capped, billed resource) or a directory scan first.
+  const clocks = clockStateFromSimple(input.clocks, input.departAtMs);
+  const clockProblems = validateClockState(clocks);
+  if (clockProblems.length > 0) {
+    return {
+      ok: false,
+      error: { code: 'bad-clocks', message: 'Clock state invalid', problems: clockProblems },
+    };
+  }
+
+  // The directory pool does not depend on routing output — only
+  // toStopCandidates() needs routePoints — so the scan starts NOW and runs
+  // concurrently with the routing call below instead of after it. Fail-soft
+  // to [] exactly as before; the catch is attached immediately so a rejection
+  // during the routing await cannot become an unhandled rejection.
+  const listingsPromise: Promise<DirectoryListing[]> = deps.loadListings().catch(() => []);
+
   // Live truck routing first (HERE behind the RoutingPort seam) — it feeds
   // real geometry to everything downstream: HOS planning, weather bands,
   // stop/parking candidates, and fuel math. Any failure (no key, outage,
@@ -277,22 +296,9 @@ export async function composeQuote(
     }
   }
 
-  const clocks = clockStateFromSimple(input.clocks, input.departAtMs);
-  const clockProblems = validateClockState(clocks);
-  if (clockProblems.length > 0) {
-    return {
-      ok: false,
-      error: { code: 'bad-clocks', message: 'Clock state invalid', problems: clockProblems },
-    };
-  }
-
-  // Directory candidates — fail-soft.
-  let listings: DirectoryListing[] = [];
-  try {
-    listings = await deps.loadListings();
-  } catch {
-    listings = [];
-  }
+  // Directory candidates — fail-soft; the scan has been running since before
+  // the routing call (see listingsPromise above).
+  const listings: DirectoryListing[] = await listingsPromise;
   const candidates = toStopCandidates(listings, routeData.routePoints, 5);
   if (candidates.length === 0) {
     warnings.push(

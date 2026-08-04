@@ -13,7 +13,10 @@ export const runtime = 'nodejs';
  */
 export const POST = guardedPost(
   reviewSchema,
-  { routeKey: 'directory-review', rateLimitMax: 5 },
+  // STRICT Turnstile: the review form renders the widget and always sends a
+  // token, so a tokenless POST is not a driver — it's a bot skipping the
+  // field the schema marks optional. Verified-if-present let those through.
+  { routeKey: 'directory-review', rateLimitMax: 5, requireTurnstile: true },
   async ({ data }) => {
     // Honeypot tripped — pretend success, store nothing.
     if (data.company_website) {

@@ -220,7 +220,19 @@ export type HereRoutingOptions = {
   hourlyCap?: number;
 };
 
-/** Cache key: rounded endpoints + the truck attributes that change routing. */
+/**
+ * Departure-time bucket for the route cache/coalescing key. The request URL
+ * sends `departureTime` (buildHereRouteUrl), so HERE's answer is
+ * departure-dependent: traffic and time-of-day truck restrictions can change
+ * the physical route. A key without it shared one cached route across every
+ * departure time for the full 6h TTL and presented it as computed for the
+ * requested departure. 30-minute buckets keep coalescing effective for the
+ * real usage pattern (drivers quote departures near "now", which land in the
+ * same bucket) while bounding cross-departure reuse to half an hour.
+ */
+const DEPART_BUCKET_MS = 30 * 60_000;
+
+/** Cache key: rounded endpoints + truck attributes + departure bucket. */
 export function routeCacheKey(req: RoutingRequest): string {
   const t = req.truck;
   const pt = (p: LatLng) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
@@ -237,6 +249,10 @@ export function routeCacheKey(req: RoutingRequest): string {
     // Avoidances change the route — a toll-free route must not be served
     // from the cache of an unrestricted one (sorted for order-independence).
     sanitizeAvoidances(req.avoid).sort().join(','),
+    // Different departure times must not share a routing answer beyond the
+    // bucket: the provider computes traffic and restrictions for the
+    // departure we send it.
+    Math.floor(req.departAtMs / DEPART_BUCKET_MS),
   ].join('|');
 }
 
@@ -255,6 +271,10 @@ export function createHereRoutingPort(
   const hourlyCap = opts.hourlyCap ?? 100;
 
   const cache = new Map<string, { atMs: number; result: RoutingResult }>();
+  // One in-flight request per cache key: the cache is written only after a
+  // response lands, so without this two concurrent quotes for the same lane
+  // would both miss and spend two transactions on one answer.
+  const pending = new Map<string, Promise<RoutingResult | null>>();
   let windowStartMs = 0;
   let callsInWindow = 0;
 
@@ -281,6 +301,47 @@ export function createHereRoutingPort(
     return null;
   };
 
+  const fetchRoute = async (key: string, req: RoutingRequest): Promise<RoutingResult | null> => {
+    try {
+      if (!underCap()) return null;
+      callsInWindow += 1;
+      const parsed = parseHereResponse(await getJson(buildHereRouteUrl(req, apiKey as string)));
+      if (!parsed) return null;
+
+      const distanceMiles = Number((parsed.meters / METERS_PER_MILE).toFixed(1));
+      const hours = parsed.seconds / 3600;
+      if (distanceMiles < 0.1 || hours <= 0) return null;
+      const route = buildRoute([
+        {
+          seq: 0,
+          from: { label: 'origin', position: req.origin },
+          to: { label: 'destination', position: req.destination },
+          distanceMiles,
+          avgSpeedMph: distanceMiles / hours,
+        },
+      ]);
+      const result: RoutingResult = {
+        route,
+        routePoints: toRoutePoints(parsed.positions, distanceMiles),
+        tollCents: null,
+        provider: 'HERE Routing API v8 (truck profile)',
+        instructions: parsed.instructions,
+      };
+
+      cache.set(key, { atMs: nowMs(), result });
+      if (cache.size > cacheMax) {
+        for (const k of cache.keys()) {
+          if (cache.size <= cacheMax) break;
+          cache.delete(k);
+        }
+      }
+      return result;
+    } catch {
+      // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
+      return null;
+    }
+  };
+
   return {
     name: 'here',
     route: async (req: RoutingRequest): Promise<RoutingResult | null> => {
@@ -291,43 +352,24 @@ export function createHereRoutingPort(
       try {
         const key = routeCacheKey(req);
         const hit = cache.get(key);
-        if (hit && nowMs() - hit.atMs < cacheTtlMs) return hit.result;
-
-        if (!underCap()) return null;
-        callsInWindow += 1;
-        const parsed = parseHereResponse(await getJson(buildHereRouteUrl(req, apiKey)));
-        if (!parsed) return null;
-
-        const distanceMiles = Number((parsed.meters / METERS_PER_MILE).toFixed(1));
-        const hours = parsed.seconds / 3600;
-        if (distanceMiles < 0.1 || hours <= 0) return null;
-        const route = buildRoute([
-          {
-            seq: 0,
-            from: { label: 'origin', position: req.origin },
-            to: { label: 'destination', position: req.destination },
-            distanceMiles,
-            avgSpeedMph: distanceMiles / hours,
-          },
-        ]);
-        const result: RoutingResult = {
-          route,
-          routePoints: toRoutePoints(parsed.positions, distanceMiles),
-          tollCents: null,
-          provider: 'HERE Routing API v8 (truck profile)',
-          instructions: parsed.instructions,
-        };
-
-        cache.set(key, { atMs: nowMs(), result });
-        if (cache.size > cacheMax) {
-          for (const k of cache.keys()) {
-            if (cache.size <= cacheMax) break;
-            cache.delete(k);
-          }
+        if (hit) {
+          if (nowMs() - hit.atMs < cacheTtlMs) return hit.result;
+          // Expired entries used to sit in their slots until eviction
+          // pressure — a full cache could be dead weight evicting live
+          // routes. Stale on read = deleted on read.
+          cache.delete(key);
         }
-        return result;
+
+        const inFlight = pending.get(key);
+        if (inFlight) return inFlight;
+        const run = fetchRoute(key, req);
+        pending.set(key, run);
+        try {
+          return await run;
+        } finally {
+          pending.delete(key);
+        }
       } catch {
-        // Absolute fail-soft: no URL, no key, no detail escapes this adapter.
         return null;
       }
     },

@@ -5,7 +5,12 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { DirectoryEntry } from '@/lib/directory/types';
 import { withDistance, sortByDistance, withinRadius } from '@/lib/map/geo';
-import { searchLocation, directionsUrl, type ExploreOrigin } from '@/lib/map/explore';
+import {
+  searchLocation,
+  directionsUrl,
+  type ExploreOrigin,
+  type SearchableEntry,
+} from '@/lib/map/explore';
 
 /**
  * CAT Scale "Near Me" — synchronized map and list.
@@ -39,8 +44,13 @@ export function CatScaleNearMe({
 }: {
   /** Published CAT Scale listings with verified coordinates. */
   scales: DirectoryEntry[];
-  /** Published coordinate-ready listings (all categories) — resolves manual city/ZIP input to a real area, never invented coordinates. */
-  searchPool: DirectoryEntry[];
+  /**
+   * Published coordinate-ready listings (all categories), slimmed to the six
+   * fields manual search reads — resolves city/ZIP input to a real area,
+   * never invented coordinates. Slim on purpose: this pool exists ONLY to
+   * geocode the text box, and full entries were the page's dominant payload.
+   */
+  searchPool: SearchableEntry[];
   stateNames: Record<string, string>;
 }) {
   const [origin, setOrigin] = useState<ExploreOrigin | null>(null);

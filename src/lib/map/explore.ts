@@ -98,8 +98,19 @@ export function applyExploreFilters(
   return out;
 }
 
-export type LocationSearchResult =
-  | { kind: 'match'; matches: DirectoryEntry[]; origin: ExploreOrigin; bounds: LatLngBounds }
+/**
+ * The minimal row shape manual location search needs. Callers that only
+ * search (the CAT Scale near-me pool) can serialize these six fields instead
+ * of whole DirectoryEntry objects — on a ~2,000-row pool that is the
+ * difference between a few-hundred-KB flight payload and a few tens of KB.
+ */
+export type SearchableEntry = Pick<
+  DirectoryEntry,
+  'name' | 'city' | 'state' | 'zip' | 'lat' | 'lng'
+>;
+
+export type LocationSearchResult<E extends SearchableEntry = DirectoryEntry> =
+  | { kind: 'match'; matches: E[]; origin: ExploreOrigin; bounds: LatLngBounds }
   | { kind: 'none' };
 
 const norm = (s: string) => s.trim().toLowerCase();
@@ -109,17 +120,17 @@ const norm = (s: string) => s.trim().toLowerCase();
  * (name or code), ZIP, or business name. Never invents coordinates — a match
  * centers on the matching listings' own bounds; no match returns 'none'.
  */
-export function searchLocation(
-  entries: DirectoryEntry[],
+export function searchLocation<E extends SearchableEntry>(
+  entries: E[],
   query: string,
   stateNamesByCode: Record<string, string> = {},
-): LocationSearchResult {
+): LocationSearchResult<E> {
   const q = norm(query);
   if (!q) return { kind: 'none' };
 
   // "city, st" | "city st" | plain term
   const cityState = q.match(/^(.+?)[,\s]+([a-z]{2})$/);
-  const matchers: ((e: DirectoryEntry) => boolean)[] = [];
+  const matchers: ((e: E) => boolean)[] = [];
   if (cityState) {
     matchers.push(
       (e) => norm(e.city) === norm(cityState[1]) && e.state.toLowerCase() === cityState[2],

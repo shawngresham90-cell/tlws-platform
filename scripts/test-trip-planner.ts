@@ -37,6 +37,7 @@ import {
   costPerMileCents,
   validateCostInputs,
 } from '@/lib/trip-planner/cost-engine';
+import { haversineMiles } from '@/lib/map/geo';
 import {
   projectOntoRoute,
   toStopCandidates,
@@ -427,6 +428,39 @@ const atMile = (m: number) => ({ lat: 32 + m * MILE_DEG, lng: -84 });
     'dir: far point rejected',
     projectOntoRoute({ lat: 40, lng: -100 }, routePoints, 5) === null,
   );
+
+  // Prefilter equivalence: the degree-window fast path inside projectOntoRoute
+  // may only skip haversine calls, never change the answer. Sweep a
+  // deterministic grid of positions — on-route, near the radius boundary on
+  // both sides, and far away — and compare against a brute-force reference
+  // that has no prefilter.
+  {
+    const bruteForce = (pos: { lat: number; lng: number }, maxMiles: number) => {
+      let best: { routeMile: number; offRouteMiles: number } | null = null;
+      for (const p of routePoints) {
+        const d = haversineMiles(pos, p.position);
+        if (d <= maxMiles && (best === null || d < best.offRouteMiles)) {
+          best = { routeMile: p.routeMile, offRouteMiles: Number(d.toFixed(2)) };
+        }
+      }
+      return best;
+    };
+    let mismatches = 0;
+    let boundaryCases = 0;
+    for (let mile = 0; mile <= 300; mile += 17) {
+      for (const offMiles of [0, 1, 4.9, 5, 5.1, 6, 20, 300]) {
+        for (const sign of [1, -1]) {
+          const pos = { lat: 32 + mile * MILE_DEG, lng: -84 + sign * offMiles * MILE_DEG };
+          const fast = projectOntoRoute(pos, routePoints, 5);
+          const slow = bruteForce(pos, 5);
+          if (Math.abs(offMiles - 5) < 0.2) boundaryCases++;
+          if (JSON.stringify(fast) !== JSON.stringify(slow)) mismatches++;
+        }
+      }
+    }
+    check('dir: prefilter never changes a projection result', mismatches === 0, { mismatches });
+    check('dir: equivalence sweep exercised radius-boundary cases', boundaryCases >= 50);
+  }
 
   const listings: DirectoryListing[] = [
     mkListing({ id: 'a', name: 'Alpha Travel Center', ...atMile(100) }),
