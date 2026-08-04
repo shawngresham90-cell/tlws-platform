@@ -137,18 +137,61 @@ export function validateTruckProfileForRouting(t: TruckProfile): string[] {
   return problems;
 }
 
+type HereAction = {
+  action?: string;
+  instruction?: string;
+  direction?: string;
+  severity?: string;
+  /** Index into the SECTION's decoded polyline where the maneuver occurs. */
+  offset?: number;
+  /** Meters covered by this action. */
+  length?: number;
+  /** Seconds spent in this action. */
+  duration?: number;
+};
 type HereSection = {
   summary?: { length?: number; duration?: number };
   polyline?: string;
-  actions?: { instruction?: string }[];
+  actions?: HereAction[];
 };
 type HereResponse = { routes?: { sections?: HereSection[] }[] };
+
+/**
+ * One turn instruction with enough structure for turn-by-turn guidance
+ * (Navigator milestone N1). Purely additive next to `instructions`:
+ * `composeQuote` and every existing caller ignore it.
+ */
+export type HereManeuver = {
+  /** HERE action kind: 'depart' | 'turn' | 'exit' | 'arrive' | ... */
+  action: string;
+  instruction: string;
+  /** 'left' | 'right' | ... when HERE supplies one. */
+  direction: string | null;
+  severity: string | null;
+  /**
+   * Index into the parsed route's CONCATENATED `positions` array (section
+   * offsets are rebased during the parse), clamped to the array bounds.
+   */
+  offset: number;
+  lengthM: number | null;
+  durationS: number | null;
+};
+
+/**
+ * Guidance needs the complete maneuver list — capping it the way display
+ * instructions are capped would silently drop turns late in a long trip.
+ * The bound below is a defense against a malformed provider payload, not a
+ * truncation policy: HERE emits well under 1,000 actions for any real
+ * route (a coast-to-coast run is a few hundred).
+ */
+const MAX_MANEUVERS = 1000;
 
 export type ParsedHereRoute = {
   meters: number;
   seconds: number;
   positions: LatLng[];
   instructions: string[];
+  maneuvers: HereManeuver[];
 };
 
 /** Extract distance/duration/geometry/instructions. Null on anything malformed. */
@@ -159,12 +202,17 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   let seconds = 0;
   const positions: LatLng[] = [];
   const instructions: string[] = [];
+  const maneuvers: HereManeuver[] = [];
   for (const s of sections) {
     const len = s.summary?.length;
     const dur = s.summary?.duration;
     if (typeof len !== 'number' || typeof dur !== 'number' || len < 0 || dur < 0) return null;
     meters += len;
     seconds += dur;
+    // Captured before this section's polyline is appended: HERE action
+    // offsets index into the SECTION polyline, and the maneuver list must
+    // index into the concatenated route geometry.
+    const sectionBase = positions.length;
     if (typeof s.polyline === 'string' && s.polyline.length > 0) {
       try {
         for (const pos of decodeFlexiblePolyline(s.polyline).positions) {
@@ -176,10 +224,45 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
     }
     for (const a of s.actions ?? []) {
       if (typeof a.instruction === 'string' && a.instruction) instructions.push(a.instruction);
+      // A maneuver additionally needs a kind; entries without one stay in
+      // the display list above but cannot drive guidance. Same leniency
+      // rule as instructions: skip the malformed entry, never fail the route.
+      if (
+        maneuvers.length < MAX_MANEUVERS &&
+        typeof a.instruction === 'string' &&
+        a.instruction &&
+        typeof a.action === 'string' &&
+        a.action
+      ) {
+        const sectionOffset =
+          typeof a.offset === 'number' && Number.isInteger(a.offset) && a.offset >= 0
+            ? a.offset
+            : 0;
+        maneuvers.push({
+          action: a.action,
+          instruction: a.instruction,
+          direction: typeof a.direction === 'string' && a.direction ? a.direction : null,
+          severity: typeof a.severity === 'string' && a.severity ? a.severity : null,
+          offset: sectionBase + sectionOffset,
+          lengthM: typeof a.length === 'number' && a.length >= 0 ? a.length : null,
+          durationS: typeof a.duration === 'number' && a.duration >= 0 ? a.duration : null,
+        });
+      }
     }
   }
   if (meters <= 0 || seconds <= 0 || positions.length < 2) return null;
-  return { meters, seconds, positions, instructions: instructions.slice(0, MAX_INSTRUCTIONS) };
+  // Defensive clamp: a provider offset beyond the section's own geometry
+  // must still land on a real route point.
+  for (const m of maneuvers) {
+    if (m.offset >= positions.length) m.offset = positions.length - 1;
+  }
+  return {
+    meters,
+    seconds,
+    positions,
+    instructions: instructions.slice(0, MAX_INSTRUCTIONS),
+    maneuvers,
+  };
 }
 
 /** Downsample decoded geometry into cumulative route-mile points. */
