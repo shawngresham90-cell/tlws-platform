@@ -220,7 +220,19 @@ export type HereRoutingOptions = {
   hourlyCap?: number;
 };
 
-/** Cache key: rounded endpoints + the truck attributes that change routing. */
+/**
+ * Departure-time bucket for the route cache/coalescing key. The request URL
+ * sends `departureTime` (buildHereRouteUrl), so HERE's answer is
+ * departure-dependent: traffic and time-of-day truck restrictions can change
+ * the physical route. A key without it shared one cached route across every
+ * departure time for the full 6h TTL and presented it as computed for the
+ * requested departure. 30-minute buckets keep coalescing effective for the
+ * real usage pattern (drivers quote departures near "now", which land in the
+ * same bucket) while bounding cross-departure reuse to half an hour.
+ */
+const DEPART_BUCKET_MS = 30 * 60_000;
+
+/** Cache key: rounded endpoints + truck attributes + departure bucket. */
 export function routeCacheKey(req: RoutingRequest): string {
   const t = req.truck;
   const pt = (p: LatLng) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
@@ -237,6 +249,10 @@ export function routeCacheKey(req: RoutingRequest): string {
     // Avoidances change the route — a toll-free route must not be served
     // from the cache of an unrestricted one (sorted for order-independence).
     sanitizeAvoidances(req.avoid).sort().join(','),
+    // Different departure times must not share a routing answer beyond the
+    // bucket: the provider computes traffic and restrictions for the
+    // departure we send it.
+    Math.floor(req.departAtMs / DEPART_BUCKET_MS),
   ].join('|');
 }
 

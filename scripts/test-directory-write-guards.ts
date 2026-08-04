@@ -41,6 +41,7 @@ const turnstile = read('src/lib/api/turnstile.ts');
 const review = read('src/app/api/directory/review/route.ts');
 const submission = read('src/app/api/directory/submission/route.ts');
 const parkingReport = read('src/app/api/directory/parking-report/route.ts');
+const preschoolClaim = read('src/app/api/preschool/claim/route.ts');
 
 async function main() {
   /* ------------------------------------------------ strict mode exists */
@@ -69,6 +70,14 @@ async function main() {
   check(
     'submission route is strict — its form always sends a token',
     /requireTurnstile: true/.test(submission),
+  );
+  // Audit 2026-08-04: the claim form renders the widget (ClaimForm wires
+  // turnstileToken), so by the handler's own policy the route must be strict
+  // — the original strict-mode sweep missed it, leaving token omission a
+  // working bypass on the one route that feeds the Founding Student wall.
+  check(
+    'preschool claim route is strict — its form always sends a token',
+    /requireTurnstile: true/.test(preschoolClaim),
   );
   // Deliberate, documented exception: the parking-report sheet renders no
   // widget (friction tradeoff for the driver test cohort), so strict mode

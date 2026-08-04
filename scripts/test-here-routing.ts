@@ -229,6 +229,44 @@ async function main() {
         routeCacheKey(baseRequest({ truck: { ...DEFAULT_TRUCK_PROFILE, heightFt: 12 } })),
     );
 
+    // UNIFICATION ADDENDUM (2026-08-04): the request URL sends departureTime,
+    // so HERE's answer is departure-dependent (traffic + time-of-day truck
+    // restrictions). Different departure times must not share a routing
+    // result: the key buckets departAtMs at 30 minutes — near-simultaneous
+    // quotes still coalesce, a 6-hours-later departure never inherits a
+    // stale route labeled as computed for it.
+    check(
+      'port: cache key separates departure times across buckets',
+      routeCacheKey(baseRequest()) !==
+        routeCacheKey(baseRequest({ departAtMs: T0 + 6 * 3_600_000 })),
+    );
+    check(
+      'port: departures inside one 30-minute bucket still share a key',
+      routeCacheKey(baseRequest()) === routeCacheKey(baseRequest({ departAtMs: T0 + 60_000 })),
+    );
+    check(
+      'port: adjacent buckets do not share',
+      routeCacheKey(baseRequest()) !== routeCacheKey(baseRequest({ departAtMs: T0 + 31 * 60_000 })),
+    );
+    {
+      let departCalls = 0;
+      const departPort = createHereRoutingPort(
+        async () => {
+          departCalls++;
+          return { status: 200, json: async () => hereResponse() };
+        },
+        'k',
+        { nowMs: () => T0 },
+      );
+      await departPort.route(baseRequest());
+      await departPort.route(baseRequest({ departAtMs: T0 + 6 * 3_600_000 }));
+      check(
+        'port: a 6h-later departure spends its own transaction, never a cached one',
+        departCalls === 2,
+        departCalls,
+      );
+    }
+
     // TTL expiry with injected clock.
     let now = T0;
     let ttlCalls = 0;

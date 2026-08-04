@@ -449,11 +449,18 @@ function memoizeDuringBuild<T>(key: string, run: () => Promise<T>): Promise<T> {
   return pending;
 }
 
-/** Stable memo key from a filter object — order-independent. */
+/**
+ * Stable memo key from a filter object — order-independent. Only ABSENT
+ * values (undefined/null) are dropped: an empty string is still a filter the
+ * query applies (`.eq(col, '')` matches nothing `.eq`-less would match), so
+ * folding it into the unfiltered key would let two different queries share
+ * one memo slot. Values are encoded so a value containing '&' or '=' cannot
+ * masquerade as extra key/value pairs.
+ */
 function memoKey(scope: string, filters: Record<string, unknown> = {}): string {
   const parts = Object.entries(filters)
-    .filter(([, v]) => v !== undefined && v !== null && v !== '')
-    .map(([k, v]) => `${k}=${String(v)}`)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
     .sort();
   return parts.length ? `${scope}?${parts.join('&')}` : scope;
 }
@@ -627,14 +634,21 @@ export async function getNewestListings(limit = 24, offset = 0): Promise<Directo
 export async function getEntriesWithCoordinates(
   filters: { category?: string; state?: string; interstate?: string } = {},
 ): Promise<DirectoryEntry[]> {
-  return memoizeDuringBuild(memoKey('coords', filters), () =>
+  // The memoized layer carries the Result SHAPE even though callers are
+  // fail-soft: memoizeDuringBuild's eviction fires on `ok === false`, so a
+  // failed scan must still LOOK failed when the memo inspects it. Swallowing
+  // the failure into [] inside the memoized function would cache one
+  // transient blip as an empty map for the entire build (the exact defect
+  // the eviction exists to prevent). Fail-soft happens HERE, outside.
+  const result = await memoizeDuringBuild(memoKey('coords', filters), () =>
     getEntriesWithCoordinatesUncached(filters),
   );
+  return result.ok ? result.data : [];
 }
 
 async function getEntriesWithCoordinatesUncached(
   filters: { category?: string; state?: string; interstate?: string } = {},
-): Promise<DirectoryEntry[]> {
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
   try {
     const supabase = createStaticClient();
     // COUNT/PAGE FILTER PARITY, structurally: one query carries both the page
@@ -660,12 +674,15 @@ async function getEntriesWithCoordinatesUncached(
         total: typeof count === 'number' ? count : undefined,
       };
     }, null);
-    if (!scan.ok) return [];
+    if (!scan.ok) return scan;
     // Presentation order restored over the COMPLETE set (was .limit(2000)
     // against 1,940 published geocoded rows - 60 rows of headroom).
-    return scan.data.map(toEntry).sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
-    return [];
+    return {
+      ok: true,
+      data: scan.data.map(toEntry).sort((a, b) => a.name.localeCompare(b.name)),
+    };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
 }
 
@@ -703,10 +720,13 @@ export type DetailSlugRef = {
  * sitemap without pulling full rows. Fails soft to [].
  */
 export async function getPublishedDetailSlugs(): Promise<DetailSlugRef[]> {
-  return memoizeDuringBuild(memoKey('detail-slugs'), getPublishedDetailSlugsUncached);
+  // Result shape through the memo, fail-soft outside — see the coords read
+  // above for why (memo eviction must be able to SEE a failed scan).
+  const result = await memoizeDuringBuild(memoKey('detail-slugs'), getPublishedDetailSlugsUncached);
+  return result.ok ? result.data : [];
 }
 
-async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
+async function getPublishedDetailSlugsUncached(): Promise<DirectoryReadResult<DetailSlugRef[]>> {
   try {
     const supabase = createStaticClient();
     // COUNT/PAGE FILTER PARITY, structurally: published, not deleted,
@@ -734,15 +754,18 @@ async function getPublishedDetailSlugsUncached(): Promise<DetailSlugRef[]> {
         total: typeof count === 'number' ? count : undefined,
       };
     }, null);
-    if (!scan.ok) return [];
-    return (scan.data as unknown as { detail_slug: string; updated_at: string | null }[]).map(
-      (r) => ({
-        detailSlug: r.detail_slug,
-        updatedAt: r.updated_at ?? undefined,
-      }),
-    );
-  } catch {
-    return [];
+    if (!scan.ok) return scan;
+    return {
+      ok: true,
+      data: (scan.data as unknown as { detail_slug: string; updated_at: string | null }[]).map(
+        (r) => ({
+          detailSlug: r.detail_slug,
+          updatedAt: r.updated_at ?? undefined,
+        }),
+      ),
+    };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
 }
 
@@ -935,17 +958,22 @@ export type ParkingFacets = {
  * never dead-ends. Fails soft to empty facets.
  */
 export async function getRouteFacetsForCategories(categories: string[]): Promise<ParkingFacets> {
-  return memoizeDuringBuild(
+  // Result shape through the memo, fail-soft outside — see the coords read
+  // above for why (memo eviction must be able to SEE a failed scan).
+  const result = await memoizeDuringBuild(
     memoKey('route-facets', { categories: [...categories].sort().join('|') }),
     () => getRouteFacetsUncached(categories),
   );
+  return result.ok ? result.data : { states: [], interstatesByState: {} };
 }
 
 /**
  * COUNT/PAGE FILTER PARITY, structurally: is_published + deleted_at + the
  * SAME category set, on the one query that carries both page and count.
  */
-async function getRouteFacetsUncached(categories: string[]): Promise<ParkingFacets> {
+async function getRouteFacetsUncached(
+  categories: string[],
+): Promise<DirectoryReadResult<ParkingFacets>> {
   try {
     const supabase = createStaticClient();
     // Same completeness rule as getDirectoryFacets: these facets drive the
@@ -969,7 +997,7 @@ async function getRouteFacetsUncached(categories: string[]): Promise<ParkingFace
         total: typeof count === 'number' ? count : undefined,
       };
     }, null);
-    if (!scan.ok) return { states: [], interstatesByState: {} };
+    if (!scan.ok) return scan;
     const rows = scan.data as unknown as { state: string; interstate: string | null }[];
     const stateCounts = new Map<string, number>();
     const byState = new Map<string, Map<string, number>>();
@@ -984,22 +1012,26 @@ async function getRouteFacetsUncached(categories: string[]): Promise<ParkingFace
       m.set(hwy, (m.get(hwy) ?? 0) + 1);
     }
     return {
-      states: [...stateCounts.entries()]
-        .map(([code, count]) => ({ code, count }))
-        .sort((a, b) => a.code.localeCompare(b.code)),
-      interstatesByState: Object.fromEntries(
-        [...byState.entries()].map(([st, m]) => [
-          st,
-          [...m.entries()]
-            .map(([designation, count]) => ({ designation, count }))
-            .sort(
-              (a, b) => parseInt(a.designation.slice(2), 10) - parseInt(b.designation.slice(2), 10),
-            ),
-        ]),
-      ),
+      ok: true,
+      data: {
+        states: [...stateCounts.entries()]
+          .map(([code, count]) => ({ code, count }))
+          .sort((a, b) => a.code.localeCompare(b.code)),
+        interstatesByState: Object.fromEntries(
+          [...byState.entries()].map(([st, m]) => [
+            st,
+            [...m.entries()]
+              .map(([designation, count]) => ({ designation, count }))
+              .sort(
+                (a, b) =>
+                  parseInt(a.designation.slice(2), 10) - parseInt(b.designation.slice(2), 10),
+              ),
+          ]),
+        ),
+      },
     };
-  } catch {
-    return { states: [], interstatesByState: {} };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
 }
 

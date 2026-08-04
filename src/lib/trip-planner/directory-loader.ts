@@ -183,13 +183,21 @@ export async function collectPlannerRows(
     rows.push(...batch);
     afterId = lastId;
 
-    // A short page is the last page — and only a short page ends the scan,
-    // so a full page always earns another request.
+    // TERMINAL CONDITION — same policy as the directory's collectAllRows:
+    // a short page alone proves nothing, because a backend that caps rows
+    // server-side returns short pages while more data exists. A short page
+    // ends the scan only when CORROBORATED by the independently measured
+    // count. With no count available (the pre-scan COUNT failed), the only
+    // honest exit is a verified EMPTY page positioned after the last row —
+    // one extra round trip, never a silently truncated pool marked ok.
     if (batch.length < pageSize) {
-      if (expected !== null && rows.length < expected) {
-        return { ok: false, reason: 'short_pool', loaded: rows.length, expected, pages };
+      if (expected !== null) {
+        if (rows.length < expected) {
+          return { ok: false, reason: 'short_pool', loaded: rows.length, expected, pages };
+        }
+        return { ok: true, rows, pages };
       }
-      return { ok: true, rows, pages };
+      // expected === null: keep scanning to the verified empty page.
     }
   }
 

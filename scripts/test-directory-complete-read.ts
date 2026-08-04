@@ -801,6 +801,112 @@ async function main() {
     /DirectoryReadResult/.test(dataCode) && /unwrapDirectoryRead/.test(dataCode),
   );
 
+  /* -------- UNIFICATION ADDENDUM: audit-mandated cases (2026-08-04) ----- */
+
+  // Server caps of 500 and 1000 rows. DIRECTORY_PAGE_SIZE is 500, so these
+  // caps only bind when the scan asks for MORE than the cap per page — run
+  // with pageSize 1500 so every page comes back short while data remains.
+  // The guarantee under test is the same as the cap-100 case: a short page
+  // proves nothing, and the scan still retrieves everything.
+  for (const cap of [500, 1000]) {
+    const withCount = await collectAllRows(fetcherFor(makePool(2454), { serverCap: cap }), 2454, {
+      pageSize: 1500,
+    });
+    check(
+      `server cap ${cap} with a count: complete anyway`,
+      withCount.ok && withCount.data.length === 2454,
+      withCount.ok ? withCount.data.length : withCount,
+    );
+    const noCount = await collectAllRows(fetcherFor(makePool(2454), { serverCap: cap }), null, {
+      pageSize: 1500,
+    });
+    check(
+      `server cap ${cap} with NO count: complete anyway (verified empty page)`,
+      noCount.ok && noCount.data.length === 2454,
+      noCount.ok ? noCount.data.length : noCount,
+    );
+  }
+
+  // Rows REMOVED during the scan. The count was measured before the rows
+  // vanished, so the floor check must refuse the pool — a deletion mid-scan
+  // is indistinguishable from silent loss, and ISR retries shortly anyway.
+  {
+    let sorted = [...makePool(2454)].sort((a, b) => a.id.localeCompare(b.id));
+    let calls = 0;
+    const shrinking = async (afterId: string | null, pageSize: number) => {
+      calls++;
+      if (calls === 2) sorted = sorted.slice(0, 1200); // 1,254 rows deleted mid-scan
+      const start = afterId === null ? 0 : sorted.findIndex((r) => r.id > afterId);
+      if (start < 0) return { rows: [] };
+      return { rows: sorted.slice(start, start + pageSize) };
+    };
+    const res = await collectAllRows(shrinking, 2454);
+    check(
+      'rows removed during scan: refused as short_pool, never a silent subset',
+      !res.ok && res.reason === 'short_pool',
+      res,
+    );
+  }
+
+  // Memo eviction on a THROWN read (the ok:false path was already covered).
+  {
+    const savedPhase2 = process.env.NEXT_PHASE;
+    try {
+      process.env.NEXT_PHASE = 'phase-production-build';
+      __resetBuildReadMemo();
+      let runs = 0;
+      const boom = () => {
+        runs++;
+        return Promise.reject(new Error('transient'));
+      };
+      await __memoizeDuringBuildForTest('throwing-read', boom).catch(() => undefined);
+      check('a thrown read is not left in the memo', __buildReadMemoSize() === 0);
+      await __memoizeDuringBuildForTest('throwing-read', boom).catch(() => undefined);
+      check('the next call after a throw re-runs the read', runs === 2, runs);
+    } finally {
+      if (savedPhase2 === undefined) delete process.env.NEXT_PHASE;
+      else process.env.NEXT_PHASE = savedPhase2;
+      __resetBuildReadMemo();
+    }
+  }
+
+  // The fail-soft reads must carry the Result SHAPE through the memo so the
+  // ok===false eviction can actually see a failed scan; the [] / empty-facets
+  // fail-soft happens OUTSIDE the memoized function. (Audit 2026-08-04: the
+  // original wiring swallowed failure inside, so one transient blip was
+  // cached as an empty success for the entire build.)
+  check(
+    'coords read: Result shape through the memo, fail-soft outside',
+    /const result = await memoizeDuringBuild\(memoKey\('coords', filters\)/.test(dataCode) &&
+      /async function getEntriesWithCoordinatesUncached[\s\S]{0,220}Promise<DirectoryReadResult</.test(
+        dataCode,
+      ),
+  );
+  check(
+    'detail-slugs read: Result shape through the memo, fail-soft outside',
+    /const result = await memoizeDuringBuild\(memoKey\('detail-slugs'\)/.test(dataCode) &&
+      /async function getPublishedDetailSlugsUncached\(\): Promise<DirectoryReadResult</.test(
+        dataCode,
+      ),
+  );
+  check(
+    'route-facets read: Result shape through the memo, fail-soft outside',
+    /getRouteFacetsUncached\(\s*categories: string\[\],?\s*\): Promise<DirectoryReadResult</.test(
+      dataCode,
+    ) && /result\.ok \? result\.data : \{ states: \[\], interstatesByState: \{\} \}/.test(dataCode),
+  );
+
+  // memoKey: only ABSENT values may be dropped — an empty string is still a
+  // filter the query applies, so folding it into the unfiltered key would
+  // share one memo slot across two different queries. Values are encoded so
+  // '&' / '=' in a value cannot masquerade as extra pairs.
+  check(
+    "memoKey drops only undefined/null — '' stays a distinct key",
+    /\.filter\(\(\[, v\]\) => v !== undefined && v !== null\)/.test(dataCode) &&
+      !/v !== undefined && v !== null && v !== ''/.test(dataCode),
+  );
+  check('memoKey encodes keys and values', /encodeURIComponent\(String\(v\)\)/.test(dataCode));
+
   console.log(`directory-complete-read: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);
 }

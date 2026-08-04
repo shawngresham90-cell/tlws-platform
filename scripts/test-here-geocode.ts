@@ -244,6 +244,51 @@ async function main() {
       (await down.search('dallas tx')).length === 0 && throwCalls === 2,
     );
 
+    // UNIFICATION ADDENDUM (2026-08-04): a FAILED call must not be cached as
+    // "no matches" for the TTL — the next lookup retries the provider. Only
+    // real answers (including a genuine 200-with-no-items) enter the cache.
+    check(
+      'geo-port: an outage is NOT negative-cached — the next search retries',
+      (await down.search('dallas tx')).length === 0 && throwCalls === 4,
+      throwCalls,
+    );
+    {
+      let emptyCalls = 0;
+      const emptyOk = createHereGeocodePort(
+        async () => {
+          emptyCalls++;
+          return { status: 200, json: async () => ({ items: [] }) };
+        },
+        'k',
+        { nowMs: () => T0 },
+      );
+      await emptyOk.search('nowhere xy');
+      await emptyOk.search('nowhere xy');
+      check(
+        'geo-port: a real "no matches" answer IS cached (one provider call)',
+        emptyCalls === 1,
+        emptyCalls,
+      );
+    }
+    {
+      let fiveCalls = 0;
+      const alwaysDown = createHereGeocodePort(
+        async () => {
+          fiveCalls++;
+          return { status: 503, json: async () => ({}) };
+        },
+        'k',
+        { nowMs: () => T0 },
+      );
+      await alwaysDown.search('memphis tn');
+      await alwaysDown.search('memphis tn');
+      check(
+        'geo-port: persistent 5xx is never served from cache (2 attempts each time)',
+        fiveCalls === 4,
+        fiveCalls,
+      );
+    }
+
     // Free-tier cap.
     let capNow = T0;
     let capCalls = 0;
