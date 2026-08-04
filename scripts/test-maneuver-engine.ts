@@ -160,5 +160,24 @@ const ROUTE = Array.from({ length: 11 }, (_, i) => ({
   check('no fabricated progress without a route', v.routeMile === null && v.remainingMi === null);
 }
 
+{
+  // StrictMode idempotency: React can evaluate a render twice with the
+  // identical position object. The second update with the SAME reference
+  // must return the same view WITHOUT feeding the tracker again — else
+  // the reversal-hold counter double-counts every backward fix.
+  const controller = createNavigationController({
+    tracker: createRouteTracker(ROUTE),
+    engine: createManeuverEngine(MANEUVERS, MILES),
+    totalMi: 5,
+  });
+  const p = posAt(36 - 0.00724 * 2, T0);
+  const first = controller.update(p);
+  const second = controller.update(p);
+  check('same input reference: same view reference (tracker not re-fed)', second === first);
+  const p2 = posAt(36 - 0.00724 * 3, T0 + 30_000);
+  const third = controller.update(p2);
+  check('a NEW position object still advances', (third.routeMile ?? 0) > (first.routeMile ?? 0));
+}
+
 console.log(`maneuver-engine: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

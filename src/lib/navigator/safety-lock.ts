@@ -77,14 +77,30 @@ export function createSafetyLock(sessionId: string): SafetyLock {
   let stoppedDuringOverride = false;
   const log: OverrideLogEntry[] = [];
 
+  // Same-state calls return the SAME reference (matching the gps-session
+  // discipline) so the provider's setState bails out and an idle, parked
+  // screen does not re-render once a second for nothing.
+  let lastState: SafetyLockState | null = null;
+
   function currentState(nowMs: number): SafetyLockState {
     const overrideActive = overrideUntilMs > nowMs;
-    return {
+    const next: SafetyLockState = {
       motion,
       locked: motion !== 'STATIONARY' && !overrideActive,
       overrideRemainingMs: overrideActive ? overrideUntilMs - nowMs : 0,
       overrideActive,
     };
+    if (
+      lastState &&
+      lastState.motion === next.motion &&
+      lastState.locked === next.locked &&
+      lastState.overrideRemainingMs === next.overrideRemainingMs &&
+      lastState.overrideActive === next.overrideActive
+    ) {
+      return lastState;
+    }
+    lastState = next;
+    return next;
   }
 
   function sample(position: PositionState, nowMs: number): SafetyLockState {

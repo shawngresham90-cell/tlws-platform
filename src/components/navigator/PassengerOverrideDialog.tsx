@@ -71,6 +71,7 @@ export function PassengerOverrideDialog({
         onPointerDown={beginHold}
         onPointerUp={endHold}
         onPointerLeave={endHold}
+        onPointerCancel={endHold}
         onKeyDown={(e) => {
           if ((e.key === 'Enter' || e.key === ' ') && holdStart === null) {
             e.preventDefault();

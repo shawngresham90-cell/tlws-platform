@@ -169,5 +169,16 @@ const parked = (t: number) => pos({ speedMph: 0 }, t);
   );
 }
 
+// ---------------------------------------- same-state reference bailout
+{
+  const lock = createSafetyLock('s7');
+  for (let t = 0; t <= STATIONARY_DWELL_MS; t += 1000) lock.sample(parked(T0 + t), T0 + t);
+  const a = lock.sample(parked(T0 + 40_000), T0 + 40_000);
+  const b = lock.sample(parked(T0 + 41_000), T0 + 41_000);
+  check('idle STATIONARY ticks return the SAME reference (no render churn)', a === b);
+  const c = lock.state(T0 + 42_000);
+  check('state() reuses the reference too', c === b);
+}
+
 console.log(`safety-lock: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

@@ -49,6 +49,11 @@ export function createNavigationController(
   route: { tracker: RouteTracker; engine: ManeuverEngine; totalMi: number } | null,
 ): NavigationController {
   let last: DrivingView = emptyView(route);
+  // Idempotency on the same input REFERENCE: React can evaluate a render
+  // twice (StrictMode) with the identical PositionState object; without
+  // this guard the tracker would ingest the same fix twice and its
+  // reversal-hold counter would double-count.
+  let lastInput: PositionState | null = null;
 
   function emptyView(
     r: { tracker: RouteTracker; engine: ManeuverEngine; totalMi: number } | null,
@@ -65,6 +70,8 @@ export function createNavigationController(
   }
 
   function update(position: PositionState): DrivingView {
+    if (position === lastInput) return last;
+    lastInput = position;
     if (route === null) {
       last = { ...emptyView(null), speedMph: position.speedMph };
       return last;

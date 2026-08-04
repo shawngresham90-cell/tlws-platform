@@ -120,8 +120,11 @@ function inProviders(child: ReturnType<typeof createElement>): string {
   check('dialog: 2000 ms hold constant', HOLD_MS === 2000);
   const src = strip(readFileSync('src/components/navigator/PassengerOverrideDialog.tsx', 'utf8'));
   check(
-    'dialog: hold wired to pointer down/up/leave',
-    /onPointerDown/.test(src) && /onPointerUp/.test(src) && /onPointerLeave/.test(src),
+    'dialog: hold wired to pointer down/up/leave/CANCEL (a cancelled touch must end the hold)',
+    /onPointerDown/.test(src) &&
+      /onPointerUp/.test(src) &&
+      /onPointerLeave/.test(src) &&
+      /onPointerCancel/.test(src),
   );
   check(
     'dialog: keyboard hold (Enter/Space down + up)',
