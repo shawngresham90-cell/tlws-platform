@@ -28,6 +28,13 @@ export type NavigatorStatusViewProps = {
   position: PositionState;
   watching: boolean;
   supported: boolean;
+  /**
+   * Provider-supplied: true only until the platform's FIRST response. The
+   * session alone cannot distinguish "never asked" from a genuine
+   * POSITION_UNAVAILABLE (both are health 'unavailable'), and rendering a
+   * real failure as "waiting…" would hide it forever.
+   */
+  acquiring: boolean;
   onStart: () => void;
   onStop: () => void;
 };
@@ -36,6 +43,7 @@ export function NavigatorStatusView({
   position,
   watching,
   supported,
+  acquiring,
   onStart,
   onStop,
 }: NavigatorStatusViewProps) {
@@ -79,10 +87,6 @@ export function NavigatorStatusView({
   }
 
   const { fix, health } = position;
-  // Before anything has failed OR succeeded, 'unavailable' just means the
-  // permission prompt / first fix is pending — announcing "Location
-  // unavailable" there would sound like an error that has not happened.
-  const acquiring = fix === null && health === 'unavailable';
   const lastKnown = health === 'lost' || health === 'unavailable';
   return (
     <div className="space-y-4">
@@ -114,12 +118,13 @@ export function NavigatorStatusView({
 }
 
 export function NavigatorStatus() {
-  const { position, watching, supported, start, stop } = useGps();
+  const { position, watching, supported, acquiring, start, stop } = useGps();
   return (
     <NavigatorStatusView
       position={position}
       watching={watching}
       supported={supported}
+      acquiring={acquiring}
       onStart={start}
       onStop={stop}
     />

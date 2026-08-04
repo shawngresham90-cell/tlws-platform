@@ -51,7 +51,12 @@ export const REVERSAL_MIN_SPEED_MPH = 2;
 export const REVERSAL_MIN_DISPLACEMENT_MI = 0.02;
 /** Fixes farther than this from every sampled route point are unprojectable. */
 export const MAX_PROJECTION_MILES = 2;
-/** Internal densification target spacing (miles) and hard point cap. */
+/**
+ * Internal densification target spacing (miles) and the point BOUND. The
+ * bound is nominal, not exact: the per-gap ceil fencepost can overshoot it
+ * by up to inputCount points (a 6,000-mile planner route lands at ~20,001)
+ * — the purpose is order-of-magnitude memory safety, which it provides.
+ */
 export const DENSIFY_SPACING_MI = 0.1;
 export const DENSIFY_MAX_POINTS = 20_000;
 
@@ -71,6 +76,7 @@ export type RouteTracker = {
  * 0.1-mile spacing provides and the planner's ≥2-mile spacing does not.
  */
 export function densifyRoutePoints(routePoints: RoutePoint[]): RoutePoint[] {
+  if (routePoints.length < 2) return routePoints.slice();
   const total = routePoints[routePoints.length - 1].routeMile;
   const spacing = Math.max(DENSIFY_SPACING_MI, total / DENSIFY_MAX_POINTS);
   const out: RoutePoint[] = [];

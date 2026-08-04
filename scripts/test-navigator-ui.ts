@@ -48,9 +48,19 @@ const state = (over: Partial<PositionState> = {}): PositionState => ({
   ...over,
 });
 
-function render(props: { position: PositionState; watching: boolean; supported: boolean }): string {
+function render(props: {
+  position: PositionState;
+  watching: boolean;
+  supported: boolean;
+  acquiring?: boolean;
+}): string {
   return renderToStaticMarkup(
-    createElement(NavigatorStatusView, { ...props, onStart: noop, onStop: noop }),
+    createElement(NavigatorStatusView, {
+      acquiring: false,
+      ...props,
+      onStart: noop,
+      onStop: noop,
+    }),
   );
 }
 
@@ -140,21 +150,34 @@ function render(props: { position: PositionState; watching: boolean; supported: 
     'denied (idle): recovery path explained NEXT TO a real Enable button',
     deniedIdle.includes('Re-allow location') && deniedIdle.includes('Enable location'),
   );
-  // Audit fix: before anything has failed, pending permission/first fix is
-  // presented as acquisition, not as an error.
+  // Audit fix + critic fix: acquisition is PROVIDER state (first response
+  // not yet received), so a pending permission prompt reads as waiting —
+  // while a genuine POSITION_UNAVAILABLE (OS location off) is NOT masked.
   const noFix = render({
     position: state({ fix: null, health: 'unavailable', speedMph: null, headingDeg: null }),
     watching: true,
     supported: true,
+    acquiring: true,
   });
   check(
-    'watching: pre-first-fix presented as acquiring, not as an error',
+    'watching: pre-first-response presented as acquiring, not as an error',
     noFix.includes('Waiting for location permission and first fix') &&
       !noFix.includes('Location unavailable'),
   );
   check(
     'watching: pre-first-fix placeholders',
     noFix.includes('Waiting for first fix') && noFix.includes('Needs two fixes'),
+  );
+  const realUnavailable = render({
+    position: state({ fix: null, health: 'unavailable', speedMph: null, headingDeg: null }),
+    watching: true,
+    supported: true,
+    acquiring: false,
+  });
+  check(
+    'watching: a REAL unavailable error (post-first-response) is never masked as acquiring',
+    realUnavailable.includes('Location unavailable') &&
+      !realUnavailable.includes('Waiting for location permission'),
   );
 }
 
@@ -179,7 +202,7 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
   );
   check(
     'provider: start guards against a second watch',
-    provider.includes('if (cancelRef.current) return'),
+    provider.includes('if (activeRef.current) return'),
   );
   check('provider: staleness tick cleared on stop', provider.includes('clearInterval'));
   check(
@@ -188,7 +211,7 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
   );
   check(
     'provider: callbacks guarded against contract-violating ports',
-    (provider.match(/if \(!cancelRef\.current\) return;/g) ?? []).length === 2,
+    (provider.match(/if \(!activeRef\.current\) return;/g) ?? []).length === 2,
   );
   check(
     'provider: permission errors normalized (denied/timeout/unavailable)',

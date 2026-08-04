@@ -80,6 +80,8 @@ type GpsContextValue = {
   watching: boolean;
   /** True when the platform has no geolocation API at all. */
   supported: boolean;
+  /** True from start() until the first fix or first error arrives. */
+  acquiring: boolean;
   /** Start the single watch. Call ONLY from a direct user action. */
   start: () => void;
   stop: () => void;
@@ -108,11 +110,24 @@ export function GpsProvider({
   const [position, setPosition] = useState<PositionState>(session.state());
   const [watching, setWatching] = useState(false);
   const [supported, setSupported] = useState(true);
+  // True from start() until the platform answers with a first fix OR a
+  // first error. The pure session cannot distinguish "never asked" from a
+  // real POSITION_UNAVAILABLE (both are health 'unavailable'), and only
+  // the provider sees the callbacks — so acquisition is provider state.
+  // Without it, a driver with OS location services disabled would read
+  // "Waiting for permission…" forever instead of the truth.
+  const [acquiring, setAcquiring] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // The single-watch guard. cancelRef cannot serve this purpose during the
+  // port's synchronous watch() call (its cancel function does not exist
+  // yet), so a dedicated flag guards callbacks and detects a synchronous
+  // denial delivered before watch() returns.
+  const activeRef = useRef(false);
 
   /** Cancel the watch and the tick without touching session state. */
   const teardown = useCallback(() => {
+    activeRef.current = false;
     if (cancelRef.current) {
       cancelRef.current();
       cancelRef.current = null;
@@ -128,24 +143,28 @@ export function GpsProvider({
     // Position is ephemeral: stopping the watch drops it entirely.
     setPosition(session.reset());
     setWatching(false);
+    setAcquiring(false);
   }, [session, teardown]);
 
   const start = useCallback(() => {
-    if (cancelRef.current) return; // already the single active watch
+    if (activeRef.current) return; // already the single active watch
     const activePort = port ?? createBrowserGeolocationPort();
     if (!activePort) {
       setSupported(false);
       return;
     }
-    cancelRef.current = activePort.watch(
+    activeRef.current = true;
+    const cancel = activePort.watch(
       (fix) => {
         // Port contract says no callbacks after cancel; guard anyway so a
         // contract-violating injected port cannot repopulate dropped state.
-        if (!cancelRef.current) return;
+        if (!activeRef.current) return;
+        setAcquiring(false);
         setPosition(session.ingestFix(fix));
       },
       (kind) => {
-        if (!cancelRef.current) return;
+        if (!activeRef.current) return;
+        setAcquiring(false);
         if (kind === 'denied') {
           // Denial is terminal for this watch: the browser will not deliver
           // again. Tear the dead watch down so "Enable location" genuinely
@@ -160,16 +179,24 @@ export function GpsProvider({
       },
       WATCH_OPTIONS,
     );
+    if (!activeRef.current) {
+      // A synchronous error (injected ports) tore us down mid-watch();
+      // the cancel function only exists now, so finish the cancellation.
+      cancel();
+      return;
+    }
+    cancelRef.current = cancel;
     tickRef.current = setInterval(() => setPosition(session.tick(Date.now())), TICK_MS);
     setWatching(true);
+    setAcquiring(session.state().fix === null);
   }, [port, session, teardown]);
 
   // Unmount = navigation away: the watch must never outlive its owner.
   useEffect(() => stop, [stop]);
 
   const value = useMemo(
-    () => ({ position, watching, supported, start, stop }),
-    [position, watching, supported, start, stop],
+    () => ({ position, watching, supported, acquiring, start, stop }),
+    [position, watching, supported, acquiring, start, stop],
   );
   return <GpsContext.Provider value={value}>{children}</GpsContext.Provider>;
 }
