@@ -91,6 +91,16 @@ const ROWS: Row[] = [
   row('I-75', '84 ', { state: 'GA' }),
   // Non-interstate designation: never an exit page, must not crash facets.
   row('US-41', '5'),
+  // DEFECT CLASS C — no-hyphen corridor spelling: "I75".
+  ...Array.from({ length: 2 }, () => row('I75', '440', { state: 'KY' })),
+  // Leading zeros are DIFFERENT stored values: '069' and '69' are two
+  // facet values, two slugs, two pages — deterministic, never merged.
+  row('I-75', '069', { state: 'OH' }),
+  row('I-75', '69', { state: 'OH' }),
+  // Pagination boundary: 1,050 I-40 rows (> one 1,000-row page) spread
+  // across five exits, so the canonical filter must survive the
+  // complete-read cursor crossing a page boundary mid-corridor.
+  ...Array.from({ length: 1050 }, (_, i) => row('I-40', String(70 + (i % 5)), { state: 'TN' })),
 ];
 
 /* -------------------------------------- minimal PostgREST-shaped server */
@@ -216,6 +226,37 @@ async function main() {
 
   // Non-interstate designations never mint exit pages and never crash.
   check('US-41 never becomes an exit-page corridor', interstateSlug('US-41') === null);
+
+  // DEFECT CLASS C: "I75" (no hyphen) buckets canonically and resolves.
+  check(
+    'no-hyphen "I75" rows bucket under canonical I-75',
+    facets.exitsByInterstate['I-75'].includes('440'),
+  );
+  const e440 = await getEntriesByExitResult('I-75', '440');
+  check('REGRESSION: no-hyphen-corridor rows reachable', e440.ok && e440.data.length === 2, e440);
+
+  // Leading zeros: distinct values stay distinct and deterministic.
+  const zeros = facets.exitsByInterstate['I-75'].filter((e) => e === '069' || e === '69');
+  check('leading-zero pair advertised as TWO distinct exits', zeros.length === 2, zeros);
+  check('leading-zero slugs differ', exitSlug('069') !== exitSlug('69'));
+  const e069 = await getEntriesByExitResult('I-75', '069');
+  const e69 = await getEntriesByExitResult('I-75', '69');
+  check('069 page carries only its own row', e069.ok && e069.data.length === 1);
+  check('69 page carries only its own row', e69.ok && e69.data.length === 1);
+
+  // Pagination boundary: complete-read + canonical filter across >1 page.
+  const c40 = await getEntriesByInterstateResult('I-40');
+  check(
+    '1,050-row corridor read is COMPLETE across the page boundary',
+    c40.ok && c40.data.length === 1050,
+    c40.ok ? c40.data.length : c40,
+  );
+  const e72 = await getEntriesByExitResult('I-40', '72');
+  check(
+    'exit rows split across pagination boundaries all arrive',
+    e72.ok && e72.data.length === 210,
+    e72.ok ? e72.data.length : e72,
+  );
 
   // THE CENTRAL INVARIANT — sitemap and page lookup can never disagree:
   // every (corridor, exit) pair facets advertise must (a) round-trip through
