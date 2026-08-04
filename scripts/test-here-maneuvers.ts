@@ -85,8 +85,14 @@ const A = (over: Record<string, unknown> = {}) => ({
     check('happy: 3 maneuvers', parsed.maneuvers.length === 3, parsed.maneuvers.length);
     check('happy: instructions unchanged alongside', parsed.instructions.length === 3);
     const [m0, m1, m2] = parsed.maneuvers;
-    check('happy: action kinds', m0.action === 'depart' && m1.action === 'turn' && m2.action === 'arrive');
-    check('happy: offsets verbatim in single section', m0.offset === 0 && m1.offset === 1 && m2.offset === 2);
+    check(
+      'happy: action kinds',
+      m0.action === 'depart' && m1.action === 'turn' && m2.action === 'arrive',
+    );
+    check(
+      'happy: offsets verbatim in single section',
+      m0.offset === 0 && m1.offset === 1 && m2.offset === 2,
+    );
     check('happy: direction null when absent', m0.direction === null && m1.direction === 'right');
     check('happy: severity null when absent', m2.severity === null && m1.severity === 'quite');
     check('happy: length/duration retained', m1.lengthM === 320 && m1.durationS === 45);
@@ -203,7 +209,16 @@ const A = (over: Record<string, unknown> = {}) => ({
   check(
     'null: negative summary still rejects the whole route',
     parseHereResponse(
-      hereResponse([{ lengthM: -1, durationS: 300, coords: [[35, -84], [35.1, -84.1]] }]),
+      hereResponse([
+        {
+          lengthM: -1,
+          durationS: 300,
+          coords: [
+            [35, -84],
+            [35.1, -84.1],
+          ],
+        },
+      ]),
     ) === null,
   );
   check(
@@ -212,7 +227,11 @@ const A = (over: Record<string, unknown> = {}) => ({
       routes: [
         {
           sections: [
-            { summary: { length: 10, duration: 10 }, polyline: '!!!not-a-polyline!!!', actions: [A()] },
+            {
+              summary: { length: 10, duration: 10 },
+              polyline: '!!!not-a-polyline!!!',
+              actions: [A()],
+            },
           ],
         },
       ],
@@ -240,8 +259,14 @@ const A = (over: Record<string, unknown> = {}) => ({
   );
   check('cap: parses', parsed !== null);
   if (parsed) {
-    check('cap: maneuvers bounded at 1000 (defense, not truncation policy)', parsed.maneuvers.length === 1000);
-    check('cap: display instructions keep their own historical cap', parsed.instructions.length === 60);
+    check(
+      'cap: maneuvers bounded at 1000 (defense, not truncation policy)',
+      parsed.maneuvers.length === 1000,
+    );
+    check(
+      'cap: display instructions keep their own historical cap',
+      parsed.instructions.length === 60,
+    );
   }
 }
 

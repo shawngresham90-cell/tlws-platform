@@ -35,7 +35,7 @@ function lcg(seed: number): () => number {
   let s = seed >>> 0;
   return () => {
     s = (s * 1664525 + 1013904223) >>> 0;
-    return (s / 0x80000000) - 1;
+    return s / 0x80000000 - 1;
   };
 }
 
@@ -119,10 +119,16 @@ function trace(
     if (st.fix) lastGoodT = st.fix.tMs;
   }
   check('degradation: fixes past 30 s all discarded', lastGoodT === T0 + 29_000, lastGoodT);
-  check('degradation: ends degraded (held fix, not lost) until staleness', s.state().health === 'lost' || s.state().health === 'degraded');
+  check(
+    'degradation: ends degraded (held fix, not lost) until staleness',
+    s.state().health === 'lost' || s.state().health === 'degraded',
+  );
   // The tick at the last sample time is > 10 s after the last accepted fix,
   // so staleness has taken over by the end of the run:
-  check('degradation: staleness eventually wins over degraded', s.tick(T0 + 59_000).health === 'lost');
+  check(
+    'degradation: staleness eventually wins over degraded',
+    s.tick(T0 + 59_000).health === 'lost',
+  );
 }
 
 // ------------------------------------------------------------ 30 s dropout

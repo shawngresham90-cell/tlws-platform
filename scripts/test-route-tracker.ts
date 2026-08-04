@@ -68,12 +68,23 @@ const atMile = (mile: number, lngOffset = 0) => ({
 {
   const t = createRouteTracker(straightRoute(10));
   const first = t.update(atMile(0.2));
-  check('forward: projects onto the route', Math.abs(first.routeMile - 0.2) < 0.05, first.routeMile);
+  check(
+    'forward: projects onto the route',
+    Math.abs(first.routeMile - 0.2) < 0.05,
+    first.routeMile,
+  );
   check('forward: high confidence on-route', first.confidence === 'high');
-  check('forward: offRoute ~0 on the line', first.offRouteMiles !== null && first.offRouteMiles < 0.05);
+  check(
+    'forward: offRoute ~0 on the line',
+    first.offRouteMiles !== null && first.offRouteMiles < 0.05,
+  );
   const second = t.update(atMile(1.0));
   check('forward: advances', Math.abs(second.routeMile - 1.0) < 0.05, second.routeMile);
-  check('forward: remaining = total - mile', Math.abs(second.remainingMi - 9.0) < 0.1, second.remainingMi);
+  check(
+    'forward: remaining = total - mile',
+    Math.abs(second.remainingMi - 9.0) < 0.1,
+    second.remainingMi,
+  );
 }
 
 // ------------------------------------------------- within-tolerance jitter
@@ -81,7 +92,11 @@ const atMile = (mile: number, lngOffset = 0) => ({
   const t = createRouteTracker(straightRoute(10));
   t.update(atMile(2.0));
   const jitter = t.update(atMile(2.0 - BACKWARD_TOLERANCE_MI + 0.01));
-  check('jitter: small backward projection never lowers the mile', jitter.routeMile >= 2.0 - 0.05, jitter.routeMile);
+  check(
+    'jitter: small backward projection never lowers the mile',
+    jitter.routeMile >= 2.0 - 0.05,
+    jitter.routeMile,
+  );
   check('jitter: stays high confidence', jitter.confidence === 'high');
   check('jitter: no reversal counting', jitter.heldBackwardFixes === 0);
 }
@@ -99,7 +114,11 @@ const atMile = (mile: number, lngOffset = 0) => ({
   const snap2 = t.update(atMile(1.0));
   check('cloverleaf: second identical snap still held', snap2.routeMile >= 2.95, snap2.routeMile);
   const resume = t.update(atMile(3.1));
-  check('cloverleaf: forward fix ends the hold', Math.abs(resume.routeMile - 3.1) < 0.05, resume.routeMile);
+  check(
+    'cloverleaf: forward fix ends the hold',
+    Math.abs(resume.routeMile - 3.1) < 0.05,
+    resume.routeMile,
+  );
   check('cloverleaf: counter reset on resume', resume.heldBackwardFixes === 0);
   check('cloverleaf: confidence recovers', resume.confidence === 'high');
 }
@@ -120,7 +139,10 @@ const atMile = (mile: number, lngOffset = 0) => ({
   );
   check('reversal: confidence high once adopted', r3.confidence === 'high');
   const onward = t.update(atMile(2.5));
-  check('reversal: forward progress resumes from the adopted mile', Math.abs(onward.routeMile - 2.5) < 0.05);
+  check(
+    'reversal: forward progress resumes from the adopted mile',
+    Math.abs(onward.routeMile - 2.5) < 0.05,
+  );
 }
 {
   // INCONSISTENT backward fixes (projection flicker between crossing
@@ -130,7 +152,10 @@ const atMile = (mile: number, lngOffset = 0) => ({
   t.update(atMile(5.0));
   t.update(atMile(4.5)); // held (1)
   const flick = t.update(atMile(2.0)); // 2.5 mi from previous backward candidate
-  check('flicker: inconsistent backward candidate restarts the count', flick.heldBackwardFixes === 1);
+  check(
+    'flicker: inconsistent backward candidate restarts the count',
+    flick.heldBackwardFixes === 1,
+  );
   t.update(atMile(4.4)); // inconsistent with 2.0 again -> restart
   const still = t.state();
   check('flicker: mile never moved through all of it', still.routeMile >= 4.95, still.routeMile);
@@ -145,12 +170,12 @@ const atMile = (mile: number, lngOffset = 0) => ({
   check('unprojectable: mile held', off.routeMile >= 0.95, off.routeMile);
   check('unprojectable: offRouteMiles null', off.offRouteMiles === null);
   check('unprojectable: low confidence', off.confidence === 'low');
-  check(
-    `unprojectable: window is ${MAX_PROJECTION_MILES} mi`,
-    MAX_PROJECTION_MILES === 2,
-  );
+  check(`unprojectable: window is ${MAX_PROJECTION_MILES} mi`, MAX_PROJECTION_MILES === 2);
   const back = t.update(atMile(1.2));
-  check('unprojectable: recovers on the next on-route fix', back.confidence === 'high' && Math.abs(back.routeMile - 1.2) < 0.05);
+  check(
+    'unprojectable: recovers on the next on-route fix',
+    back.confidence === 'high' && Math.abs(back.routeMile - 1.2) < 0.05,
+  );
 }
 
 // ------------------------------------------------------ off-route distance
@@ -168,8 +193,18 @@ const atMile = (mile: number, lngOffset = 0) => ({
 
 // ----------------------------------------- replay: northbound composition
 {
-  type TraceRow = { tMs: number; lat: number; lng: number; accuracy: number; speed: number | null; heading: number | null };
-  const rows: TraceRow[] = readFileSync('scripts/fixtures/traces/synthetic-northbound-60mph.jsonl', 'utf8')
+  type TraceRow = {
+    tMs: number;
+    lat: number;
+    lng: number;
+    accuracy: number;
+    speed: number | null;
+    heading: number | null;
+  };
+  const rows: TraceRow[] = readFileSync(
+    'scripts/fixtures/traces/synthetic-northbound-60mph.jsonl',
+    'utf8',
+  )
     .trim()
     .split('\n')
     .map((l) => JSON.parse(l));
@@ -182,7 +217,12 @@ const atMile = (mile: number, lngOffset = 0) => ({
   let lowConfidence = 0;
   for (const r of rows) {
     const st = session.ingestFix({
-      lat: r.lat, lng: r.lng, accuracyM: r.accuracy, speedMps: r.speed, headingDeg: r.heading, tMs: r.tMs,
+      lat: r.lat,
+      lng: r.lng,
+      accuracyM: r.accuracy,
+      speedMps: r.speed,
+      headingDeg: r.heading,
+      tMs: r.tMs,
     });
     session.tick(r.tMs);
     if (!st.fix || st.fix.tMs !== r.tMs) continue;
@@ -199,8 +239,18 @@ const atMile = (mile: number, lngOffset = 0) => ({
 
 // -------------------------------------------- replay: genuine reversal
 {
-  type TraceRow = { tMs: number; lat: number; lng: number; accuracy: number; speed: number | null; heading: number | null };
-  const rows: TraceRow[] = readFileSync('scripts/fixtures/traces/synthetic-genuine-reversal.jsonl', 'utf8')
+  type TraceRow = {
+    tMs: number;
+    lat: number;
+    lng: number;
+    accuracy: number;
+    speed: number | null;
+    heading: number | null;
+  };
+  const rows: TraceRow[] = readFileSync(
+    'scripts/fixtures/traces/synthetic-genuine-reversal.jsonl',
+    'utf8',
+  )
     .trim()
     .split('\n')
     .map((l) => JSON.parse(l));
@@ -211,7 +261,12 @@ const atMile = (mile: number, lngOffset = 0) => ({
   let peak = 0;
   for (const r of rows) {
     const st = session.ingestFix({
-      lat: r.lat, lng: r.lng, accuracyM: r.accuracy, speedMps: r.speed, headingDeg: r.heading, tMs: r.tMs,
+      lat: r.lat,
+      lng: r.lng,
+      accuracyM: r.accuracy,
+      speedMps: r.speed,
+      headingDeg: r.heading,
+      tMs: r.tMs,
     });
     session.tick(r.tMs);
     if (!st.fix || st.fix.tMs !== r.tMs) continue;

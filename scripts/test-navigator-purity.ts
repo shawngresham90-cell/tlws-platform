@@ -44,14 +44,14 @@ const files = existsSync(LIB_DIR)
   ? readdirSync(LIB_DIR).filter((f) => f.endsWith('.ts') || f.endsWith('.tsx'))
   : [];
 check('navigator core is non-empty', files.length > 0, files.length);
-check('no .tsx (no React surface) inside the pure core', files.every((f) => f.endsWith('.ts')));
+check(
+  'no .tsx (no React surface) inside the pure core',
+  files.every((f) => f.endsWith('.ts')),
+);
 for (const required of ['types.ts', 'ports.ts']) {
   check(`N0 scaffold file present: ${required}`, files.includes(required));
 }
-check(
-  'N0 route-group layout exists',
-  existsSync('src/app/(navigator)/layout.tsx'),
-);
+check('N0 route-group layout exists', existsSync('src/app/(navigator)/layout.tsx'));
 
 // ---------------------------------------------------------------- purity bans
 const RAW_BANS: { name: string; re: RegExp }[] = [

@@ -130,7 +130,10 @@ check('constants: jump gate is 100 mph', MAX_IMPLIED_SPEED_MPH === 100);
     st.speedMph,
   );
   const neg = s.ingestFix(fix({ speedMps: -3, tMs: T0 + 2000, lat: 35.0002 }));
-  check('speed: negative device speed falls back to derivation', neg.speedMph !== null && neg.speedMph >= 0);
+  check(
+    'speed: negative device speed falls back to derivation',
+    neg.speedMph !== null && neg.speedMph >= 0,
+  );
 }
 
 // ---------------------------------------------------- heading derivation
