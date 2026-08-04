@@ -55,6 +55,31 @@ export function interstateSlug(designation: string): string | null {
   return m ? `i${m[1]}` : null;
 }
 
+/**
+ * Canonical designation for any stored interstate value: " i 75 ", "i-75",
+ * "I75" all become "I-75"; anything that is not an interstate designation
+ * (e.g. "US-41") returns null. This is the ONE spelling that facet buckets,
+ * sitemap URLs, and entry lookups all agree on — /directory/i75/exit-369
+ * once 404'd with published rows present precisely because the two ends of
+ * that pipeline normalized differently.
+ */
+export function canonicalDesignation(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const m = raw.trim().match(/^I-?\s?(\d{1,3})$/i);
+  return m ? `I-${m[1]}` : null;
+}
+
+/**
+ * Canonical exit value: trimmed, inner whitespace collapsed, and letter
+ * suffixes uppercased ("369 " → "369", "7b" → "7B") so one physical exit
+ * stored with cosmetic variants maps to ONE page — `exitSlug` lowercases for
+ * the URL, so slugs are unaffected. Null when nothing remains.
+ */
+export function canonicalExitNumber(raw: string | null | undefined): string | null {
+  const t = raw?.trim().replace(/\s+/g, ' ').toUpperCase();
+  return t ? t : null;
+}
+
 /** "i75" → the corridor record (registry copy when we have it, generated otherwise). */
 export function interstateBySlug(slug: string): DirectoryInterstate | undefined {
   const m = slug.toLowerCase().match(/^i(\d{1,3})$/);

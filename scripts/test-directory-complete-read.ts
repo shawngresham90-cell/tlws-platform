@@ -535,10 +535,12 @@ async function main() {
     /\.not\('lat', 'is', null\)/.test(dataCode) && /\.not\('lng', 'is', null\)/.test(dataCode),
   );
   check(
-    'map read still applies its optional category / state / interstate filters',
+    'map read still applies its optional category / state / interstate filters ' +
+      '(interstate now canonically: superset query + in-memory canonical match)',
     /filters\.category\) q = q\.eq\('category_slug'/.test(dataCode) &&
       /filters\.state\) q = q\.eq\('state', filters\.state\.toUpperCase\(\)\)/.test(dataCode) &&
-      /filters\.interstate\) q = q\.eq\('interstate', filters\.interstate\)/.test(dataCode),
+      /q\.eq\('interstate', filters\.interstate\)/.test(dataCode) &&
+      /canonicalDesignation\(row\.interstate\) === canonicalHwy/.test(dataCode),
   );
   check(
     'detail-slug read still requires detail_slug NOT NULL',
@@ -549,10 +551,10 @@ async function main() {
     /\.in\('category_slug', categories\)/.test(dataCode),
   );
   check(
-    'entry read still applies every caller filter',
-    /for \(const \[column, value\] of Object\.entries\(filters\)\) q = q\.eq\(column, value\)/.test(
-      dataCode,
-    ),
+    'entry read still applies every caller filter (canonical interstate/exit filters ' +
+      'apply as superset query + in-memory canonical match; all others stay eq)',
+    /for \(const \[column, value\] of serverFilters\) q = q\.eq\(column, value\)/.test(dataCode) &&
+      /canonicalHwy \|\| canonicalExit/.test(dataCode),
   );
 
   /* ---------------- category C caps gone / A+B caps kept ---------------- */
@@ -779,15 +781,18 @@ async function main() {
     PARKING_CATEGORIES.join(',') === 'parking,truck-stops,rest-areas,hotels-truck-parking',
   );
   check(
-    'facet normalization unchanged',
+    'facet normalization canonical (state upper; exits via shared canonicalizer)',
     /r\.state\?\.trim\(\)\.toUpperCase\(\)/.test(dataCode) &&
-      /r\.exit_number\?\.trim\(\)/.test(dataCode),
+      /canonicalExitNumber\(r\.exit_number\)/.test(dataCode),
   );
   check(
     'numeric-aware exit sort unchanged',
     /localeCompare\(b, undefined, \{ numeric: true \}\)/.test(dataCode),
   );
-  check('no filter was loosened', !/\.or\(|\.ilike\(|\.neq\('is_published'/.test(dataCode));
+  check(
+    'no filter loosened beyond the paired canonical-interstate superset',
+    !/\.or\(|\.neq\('is_published'/.test(dataCode) && !/\.ilike\((?!'interstate')/.test(dataCode),
+  );
   check(
     'no credential or env value is read in the data layer',
     !/process\.env\.(?!NEXT_PHASE)/.test(dataCode),

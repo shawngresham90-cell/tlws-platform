@@ -1,4 +1,5 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { canonicalDesignation, canonicalExitNumber } from '@/lib/directory/interstates';
 import { log } from '@/lib/api/logger';
 import { normalizeOvernightStatus, overnightChipFor } from './overnight';
 import type { DirectoryEntry } from './types';
@@ -490,13 +491,34 @@ async function selectEntriesUncached(
   try {
     const supabase = createStaticClient();
 
+    // Interstate/exit filters match CANONICALLY, exactly like the facet
+    // builder that decides which corridor and exit pages exist. An exact
+    // `.eq` here while facets trim/canonicalize is how a cosmetically dirty
+    // row ("369 ", "i-75") once made facets/sitemap advertise an exit whose
+    // page query then found nothing — a false 404 (/directory/i75/exit-369).
+    // The database cannot canonicalize inside a PostgREST filter, so the
+    // server narrows to a small superset (digits of the corridor) and the
+    // canonical comparison happens here, on the same values facets saw.
+    const canonicalHwy = filters.interstate ? canonicalDesignation(filters.interstate) : null;
+    const canonicalExit = filters.exit_number ? canonicalExitNumber(filters.exit_number) : null;
+    const serverFilters = Object.entries(filters).filter(
+      ([column]) =>
+        !(column === 'interstate' && canonicalHwy) && !(column === 'exit_number' && canonicalExit),
+    );
+
     const result = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
         .select(COLUMNS, afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null);
-      for (const [column, value] of Object.entries(filters)) q = q.eq(column, value);
+      for (const [column, value] of serverFilters) q = q.eq(column, value);
+      if (canonicalHwy) {
+        // Superset by corridor number: catches "I-75", " i-75", "I 75"…
+        // (also I-175/I-275, removed canonically below). Bounded like every
+        // directory read by the shared pagination cap.
+        q = q.ilike('interstate', `%${canonicalHwy.slice(2)}%`);
+      }
       if (afterId !== null) q = q.gt('id', afterId);
       const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
@@ -506,12 +528,20 @@ async function selectEntriesUncached(
       };
     }, null);
     if (!result.ok) return result;
+    const rows =
+      canonicalHwy || canonicalExit
+        ? result.data.filter(
+            (row) =>
+              (!canonicalHwy || canonicalDesignation(row.interstate) === canonicalHwy) &&
+              (!canonicalExit || canonicalExitNumber(row.exit_number) === canonicalExit),
+          )
+        : result.data;
 
     // Paging order is by id (unique, stable). The PRESENTATION order is
     // restored here — the same featured-then-name order the old query asked
     // the database for, now applied to the COMPLETE set instead of to an
     // arbitrary first 1,000 rows.
-    const entries = result.data.map(toEntry);
+    const entries = rows.map(toEntry);
     entries.sort((a, b) => Number(b.featured) - Number(a.featured) || a.name.localeCompare(b.name));
     return { ok: true, data: entries };
   } catch (error) {
@@ -655,6 +685,9 @@ async function getEntriesWithCoordinatesUncached(
     // and the exact count, so eligibility — published, not deleted, lat AND
     // lng present, plus the same optional category / state / interstate
     // filters — cannot differ between them.
+    // Same canonical-corridor matching as selectEntriesUncached, so the map
+    // and the corridor pages agree about which rows belong to "I-75".
+    const canonicalHwy = filters.interstate ? canonicalDesignation(filters.interstate) : null;
     const scan = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
@@ -665,7 +698,11 @@ async function getEntriesWithCoordinatesUncached(
         .not('lng', 'is', null);
       if (filters.category) q = q.eq('category_slug', filters.category);
       if (filters.state) q = q.eq('state', filters.state.toUpperCase());
-      if (filters.interstate) q = q.eq('interstate', filters.interstate);
+      if (filters.interstate) {
+        q = canonicalHwy
+          ? q.ilike('interstate', `%${canonicalHwy.slice(2)}%`)
+          : q.eq('interstate', filters.interstate);
+      }
       if (afterId !== null) q = q.gt('id', afterId);
       const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
       if (error) return { rows: [], error };
@@ -675,11 +712,14 @@ async function getEntriesWithCoordinatesUncached(
       };
     }, null);
     if (!scan.ok) return scan;
+    const rows = canonicalHwy
+      ? scan.data.filter((row) => canonicalDesignation(row.interstate) === canonicalHwy)
+      : scan.data;
     // Presentation order restored over the COMPLETE set (was .limit(2000)
     // against 1,940 published geocoded rows - 60 rows of headroom).
     return {
       ok: true,
-      data: scan.data.map(toEntry).sort((a, b) => a.name.localeCompare(b.name)),
+      data: rows.map(toEntry).sort((a, b) => a.name.localeCompare(b.name)),
     };
   } catch (error) {
     return { ok: false, reason: 'unavailable', code: failureCode(error) };
@@ -854,10 +894,15 @@ async function getDirectoryFacetsUncached(): Promise<DirectoryReadResult<Directo
     for (const r of rows) {
       const state = r.state?.trim().toUpperCase();
       if (state) states.set(state, (states.get(state) ?? 0) + 1);
-      const hwy = r.interstate?.trim();
+      // Interstates bucket under the SAME canonical spelling the entry
+      // queries match on ("i-75" and "I-75" are one corridor, one facet key,
+      // one sitemap URL set); non-interstate designations keep their trimmed
+      // stored value as before. Exits canonicalize the same way, so a facet
+      // can never advertise an exit page whose entry lookup sees zero rows.
+      const hwy = canonicalDesignation(r.interstate) ?? r.interstate?.trim();
       if (hwy) {
         interstates.set(hwy, (interstates.get(hwy) ?? 0) + 1);
-        const exit = r.exit_number?.trim();
+        const exit = canonicalExitNumber(r.exit_number);
         if (exit) {
           if (!exits.has(hwy)) exits.set(hwy, new Set());
           exits.get(hwy)!.add(exit);
