@@ -10,6 +10,7 @@ import { SavedTripsPanel } from './SavedTripsPanel';
 import { AccountPanel } from './AccountPanel';
 import { useSavedTrips } from './useSavedTrips';
 import { useCloudSync } from './useCloudSync';
+import { CLOCK_INPUT_LIMITS_H, remainingToSimpleClocks } from '@/lib/trip-planner/clock-input';
 import { overnightLabelFor } from '@/lib/directory/overnight';
 
 /** A saved PlaceRef → the PlaceResult shape the form and combobox expect. */
@@ -163,10 +164,13 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
   const [origin, setOrigin] = useState<PlaceResult | null>(null);
   const [destination, setDestination] = useState<PlaceResult | null>(null);
   const [departLocal, setDepartLocal] = useState('');
-  const [drivingUsed, setDrivingUsed] = useState(0);
-  const [windowUsed, setWindowUsed] = useState(0);
-  const [sinceBreak, setSinceBreak] = useState(0);
-  const [cycleUsed, setCycleUsed] = useState(0);
+  // Clock inputs are REMAINING hours (what the driver's ELD shows as left),
+  // defaulting to a fresh driver with every clock at its full legal limit.
+  // The single used↔remaining conversion lives in lib/trip-planner/clock-input.
+  const [drivingLeft, setDrivingLeft] = useState<number>(CLOCK_INPUT_LIMITS_H.driving);
+  const [windowLeft, setWindowLeft] = useState<number>(CLOCK_INPUT_LIMITS_H.window);
+  const [breakLeft, setBreakLeft] = useState<number>(CLOCK_INPUT_LIMITS_H.untilBreak);
+  const [cycleLeft, setCycleLeft] = useState<number>(CLOCK_INPUT_LIMITS_H.cycle);
   const [fuelLevel, setFuelLevel] = useState(100);
   // Truck profile (defaults = standard 5-axle, 13'6" dry van at 80k GVW).
   const [heightFt, setHeightFt] = useState(13.5);
@@ -274,13 +278,12 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
           origin: { label: o.label, position: { lat: o.lat, lng: o.lng } },
           destination: { label: d.label, position: { lat: d.lat, lng: d.lng } },
           departAtMs,
-          clocks: {
-            cycleRule: '70/8',
-            drivingUsedMin: drivingUsed * 60,
-            windowElapsedMin: windowUsed > 0 ? windowUsed * 60 : -1,
-            drivingSinceBreakMin: Math.min(sinceBreak, drivingUsed) * 60,
-            cycleUsedMin: Math.max(cycleUsed, drivingUsed) * 60,
-          },
+          clocks: remainingToSimpleClocks({
+            drivingLeftH: drivingLeft,
+            windowLeftH: windowLeft,
+            untilBreakLeftH: breakLeft,
+            cycleLeftH: cycleLeft,
+          }),
           fuelLevelFraction: fuelLevel / 100,
           truck,
         }),
@@ -414,20 +417,44 @@ export function TripPlannerApp({ anchors: initialAnchors }: { anchors: PlannerAn
       <div hidden={step !== 2}>
         <fieldset className="mt-4 rounded-card border border-line p-4">
           <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
-            Your clocks right now (hours used)
+            Your clocks right now (hours remaining)
           </legend>
+          <p className="mt-1 text-sm text-muted">
+            Enter how much time you have available now — the remaining hours your ELD shows, not the
+            hours you have already used.
+          </p>
           {(
             [
-              ['Driving (of 11h)', drivingUsed, setDrivingUsed, 11],
-              ['On-duty window (of 14h)', windowUsed, setWindowUsed, 14],
-              ['Driving since last 30-min break (of 8h)', sinceBreak, setSinceBreak, 8],
-              ['Cycle used (of 70h)', cycleUsed, setCycleUsed, 70],
+              [
+                'Driving time remaining (of 11h)',
+                drivingLeft,
+                setDrivingLeft,
+                CLOCK_INPUT_LIMITS_H.driving,
+              ],
+              [
+                'On-duty time remaining (of 14h)',
+                windowLeft,
+                setWindowLeft,
+                CLOCK_INPUT_LIMITS_H.window,
+              ],
+              [
+                'Time remaining until required break (of 8h)',
+                breakLeft,
+                setBreakLeft,
+                CLOCK_INPUT_LIMITS_H.untilBreak,
+              ],
+              [
+                '70-hour cycle time remaining (of 70h)',
+                cycleLeft,
+                setCycleLeft,
+                CLOCK_INPUT_LIMITS_H.cycle,
+              ],
             ] as [string, number, (v: number) => void, number][]
           ).map(([lbl, val, set, max]) => (
             <label key={lbl} className="mt-3 block text-sm text-ink first:mt-0">
               <span className="flex justify-between">
                 <span>{lbl}</span>
-                <span className="font-semibold text-signal">{val}h</span>
+                <span className="font-semibold text-signal">{val}h left</span>
               </span>
               <input
                 type="range"
