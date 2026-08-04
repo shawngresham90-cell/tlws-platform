@@ -405,14 +405,18 @@ check(
 );
 check('a bounded safety cap still scopes the per-corridor read', /\.limit\(1000\)/.test(dataCode));
 check(
-  'facet normalization is unchanged (trim + upper state, trim highway/exit)',
+  'facet normalization is CANONICAL (upper state; shared canonicalizers for highway/exit)',
   /r\.state\?\.trim\(\)\.toUpperCase\(\)/.test(dataCode) &&
-    /r\.interstate\?\.trim\(\)/.test(dataCode) &&
-    /r\.exit_number\?\.trim\(\)/.test(dataCode),
+    /canonicalDesignation\(r\.interstate\)/.test(dataCode) &&
+    /canonicalExitNumber\(r\.exit_number\)/.test(dataCode),
 );
 check(
-  'no filter was loosened — the only query shape is still eq-based',
-  !/\.or\(|\.ilike\(|\.neq\('is_published'/.test(dataCode),
+  'publish/delete filters never loosened; the ONLY tolerant filter is the canonical ' +
+    'interstate superset, always paired with the in-memory canonical match',
+  !/\.or\(|\.neq\('is_published'/.test(dataCode) &&
+    !/\.ilike\((?!'interstate')/.test(dataCode) &&
+    /canonicalDesignation\(row\.interstate\) === canonicalHwy/.test(dataCode) &&
+    /canonicalExitNumber\(row\.exit_number\) === canonicalExit/.test(dataCode),
 );
 
 /* --------------------------- parking / overnight / mile-marker unchanged */
