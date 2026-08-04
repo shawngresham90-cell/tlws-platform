@@ -16,6 +16,7 @@
  */
 import { readFileSync } from 'node:fs';
 import {
+  densifyRoutePoints,
   BACKWARD_TOLERANCE_MI,
   createRouteTracker,
   MAX_PROJECTION_MILES,
@@ -121,6 +122,81 @@ const atMile = (mile: number, lngOffset = 0) => ({
   );
   check('cloverleaf: counter reset on resume', resume.heldBackwardFixes === 0);
   check('cloverleaf: confidence recovers', resume.confidence === 'high');
+}
+{
+  // Audit regression pin (proven defect in the first draft): IDENTICAL
+  // backward candidates are maximally "consistent" but prove nothing.
+  // A truck PARKED over a crossing segment (speed 0) must never confirm,
+  // no matter how many fixes arrive.
+  const t = createRouteTracker(straightRoute(10));
+  t.update({ ...atMile(3.0), speedMph: 0 });
+  let st = t.state();
+  for (let i = 0; i < 12; i++) st = t.update({ ...atMile(1.0), speedMph: 0 });
+  check('stationary-over-crossing: never confirms a reversal', st.routeMile >= 2.95, st.routeMile);
+  check('stationary-over-crossing: stays low confidence', st.confidence === 'low');
+}
+{
+  // Audit regression pin: a truck driving FORWARD past a long adjacent
+  // anti-parallel leg produces quantized-identical backward candidates at
+  // speed. Motion evidence alone must not confirm — the candidates never
+  // PROGRESS backward, so the hold survives indefinitely.
+  const t = createRouteTracker(straightRoute(10));
+  t.update({ ...atMile(6.0), speedMph: 60 });
+  let st = t.state();
+  for (let i = 0; i < 12; i++) st = t.update({ ...atMile(2.0, 0.0004 * i), speedMph: 60 });
+  check(
+    'forward-past-adjacent-leg: identical candidates never confirm at speed',
+    st.routeMile >= 5.95,
+    st.routeMile,
+  );
+}
+{
+  // Sparse fix cadence (backgrounded tab, power-save throttling): a real
+  // reversal shows DECREASING candidates fix over fix and must confirm
+  // even at 60 s intervals — the first draft deadlocked here.
+  const t = createRouteTracker(straightRoute(10));
+  t.update({ ...atMile(5.0), speedMph: 20 });
+  t.update({ ...atMile(4.75), speedMph: 20 });
+  t.update({ ...atMile(4.5), speedMph: 20 });
+  const st = t.update({ ...atMile(4.25), speedMph: 20 });
+  check(
+    'sparse reversal: decreasing candidates with motion confirm',
+    Math.abs(st.routeMile - 4.25) < 0.05,
+    st.routeMile,
+  );
+}
+{
+  // Densification: production toRoutePoints spaces samples at >= 2 miles;
+  // the tracker must interpolate internally so its thresholds are real.
+  const sparse: import('@/lib/trip-planner/directory-layer').RoutePoint[] = [];
+  for (let mile = 0; mile <= 10 + 1e-9; mile += 2) {
+    sparse.push({ position: { lat: 35 + mile * MILE_LAT, lng: -84 }, routeMile: mile });
+  }
+  const t = createRouteTracker(sparse);
+  const st = t.update(atMile(3.0));
+  check(
+    'densify: a fix between 2-mile samples projects to its true mile, not the nearest input sample',
+    Math.abs(st.routeMile - 3.0) < 0.11,
+    st.routeMile,
+  );
+  const dense = densifyRoutePoints(sparse);
+  check('densify: spacing tightened to <= 0.1 mi', dense.length >= 90, dense.length);
+  check(
+    'densify: endpoints preserved',
+    dense[0].routeMile === 0 && dense[dense.length - 1].routeMile === 10,
+  );
+}
+{
+  let threw = false;
+  try {
+    createRouteTracker([
+      { position: { lat: 35, lng: -84 }, routeMile: 5 },
+      { position: { lat: 35.1, lng: -84 }, routeMile: 2 },
+    ]);
+  } catch {
+    threw = true;
+  }
+  check('construction: rejects decreasing routeMile input', threw);
 }
 
 // ----------------------------------------------------- genuine reversal

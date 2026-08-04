@@ -49,8 +49,23 @@ export function NavigatorStatusView({
   }
 
   if (!watching) {
+    // Denial tears the watch down (the browser will not deliver again), so
+    // the denied explanation lives here — next to the Enable button the
+    // recovery instructions refer to.
+    const denied = position.health === 'denied';
     return (
       <div className="space-y-4">
+        {denied ? (
+          <p aria-live="polite" role="status" className="font-semibold text-ink">
+            Status: {HEALTH_LABEL.denied}
+          </p>
+        ) : null}
+        {denied ? (
+          <p className="text-ink/80">
+            The preview cannot run without location. Re-allow location for this site in your browser
+            settings, then press Enable location below.
+          </p>
+        ) : null}
         <p className="text-ink/80">
           The position preview shows your live GPS fix, speed, and heading exactly as the future
           Navigator will read them. Location stays on this device: it is never saved, never logged,
@@ -64,22 +79,22 @@ export function NavigatorStatusView({
   }
 
   const { fix, health } = position;
+  // Before anything has failed OR succeeded, 'unavailable' just means the
+  // permission prompt / first fix is pending — announcing "Location
+  // unavailable" there would sound like an error that has not happened.
+  const acquiring = fix === null && health === 'unavailable';
+  const lastKnown = health === 'lost' || health === 'unavailable';
   return (
     <div className="space-y-4">
       <p aria-live="polite" role="status" className="font-semibold text-ink">
-        Status: {HEALTH_LABEL[health]}
+        Status:{' '}
+        {acquiring ? 'Waiting for location permission and first fix…' : HEALTH_LABEL[health]}
       </p>
-      {health === 'denied' ? (
-        <p className="text-ink/80">
-          Navigation cannot start without location. To use the preview, re-allow location for this
-          site in your browser settings, then press Enable location again.
-        </p>
-      ) : null}
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-ink/90">
         <dt className="font-semibold">Position</dt>
         <dd>
           {fix
-            ? `${fix.lat.toFixed(4)}, ${fix.lng.toFixed(4)}${health === 'lost' ? ' (last known)' : ''}`
+            ? `${fix.lat.toFixed(4)}, ${fix.lng.toFixed(4)}${lastKnown ? ' (last known)' : ''}`
             : 'Waiting for first fix…'}
         </dd>
         <dt className="font-semibold">Accuracy</dt>
@@ -91,11 +106,7 @@ export function NavigatorStatusView({
         <dt className="font-semibold">Heading</dt>
         <dd>{position.headingDeg !== null ? `${Math.round(position.headingDeg)}°` : '—'}</dd>
       </dl>
-      <Button
-        variant="ghost"
-        onClick={onStop}
-        aria-label="Stop the position preview and discard position"
-      >
+      <Button variant="ghost" onClick={onStop} aria-label="Stop preview and discard position">
         Stop preview
       </Button>
     </div>

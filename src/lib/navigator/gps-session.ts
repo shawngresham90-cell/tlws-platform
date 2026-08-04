@@ -71,9 +71,17 @@ export function createGpsSession(): GpsSession {
   function ingestFix(raw: RawGeoFix): PositionState {
     if (!isFiniteCoord(raw)) return state; // malformed sample: ignore entirely
 
-    // Accuracy gate: discard, hold the last good fix, report degraded.
+    // Accuracy gate: discard and hold the last good fix. A REJECTED sample
+    // may only ever downgrade `good` to `degraded` — it must not resurrect
+    // a `lost` fix as "approximate current position" (that produced a 1 Hz
+    // lost/degraded flap in audit), and with no fix held there is nothing
+    // to describe as degraded, so acquisition states pass through
+    // unchanged. Same-state samples return the same reference so the
+    // provider's setState bails out.
     if (raw.accuracyM > MAX_ACCURACY_M) {
-      state = { ...state, health: 'degraded' };
+      if (state.fix !== null && state.health === 'good') {
+        state = { ...state, health: 'degraded' };
+      }
       return state;
     }
 
@@ -133,13 +141,14 @@ export function createGpsSession(): GpsSession {
     if (kind === 'denied') {
       // Fail-safe: denial clears position outright. Navigation cannot start.
       state = { ...INITIAL_STATE, health: 'denied' };
-    } else if (kind === 'unavailable') {
-      state = { ...state, health: 'unavailable' };
-    } else {
-      // timeout: with a fix in hand this is a gap (lost); with none, the
-      // platform simply has nothing yet.
-      state = { ...state, health: state.fix ? 'lost' : 'unavailable' };
+      return state;
     }
+    // unavailable, or timeout: with a fix in hand a timeout is a gap
+    // (lost); with none, the platform simply has nothing yet. Repeats of
+    // the same condition return the same reference (no render churn).
+    const next: PositionState['health'] =
+      kind === 'unavailable' ? 'unavailable' : state.fix ? 'lost' : 'unavailable';
+    if (state.health !== next) state = { ...state, health: next };
     return state;
   }
 

@@ -111,7 +111,8 @@ export function GpsProvider({
   const cancelRef = useRef<(() => void) | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stop = useCallback(() => {
+  /** Cancel the watch and the tick without touching session state. */
+  const teardown = useCallback(() => {
     if (cancelRef.current) {
       cancelRef.current();
       cancelRef.current = null;
@@ -120,10 +121,14 @@ export function GpsProvider({
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
+  }, []);
+
+  const stop = useCallback(() => {
+    teardown();
     // Position is ephemeral: stopping the watch drops it entirely.
     setPosition(session.reset());
     setWatching(false);
-  }, [session]);
+  }, [session, teardown]);
 
   const start = useCallback(() => {
     if (cancelRef.current) return; // already the single active watch
@@ -133,13 +138,31 @@ export function GpsProvider({
       return;
     }
     cancelRef.current = activePort.watch(
-      (fix) => setPosition(session.ingestFix(fix)),
-      (kind) => setPosition(session.ingestError(kind)),
+      (fix) => {
+        // Port contract says no callbacks after cancel; guard anyway so a
+        // contract-violating injected port cannot repopulate dropped state.
+        if (!cancelRef.current) return;
+        setPosition(session.ingestFix(fix));
+      },
+      (kind) => {
+        if (!cancelRef.current) return;
+        if (kind === 'denied') {
+          // Denial is terminal for this watch: the browser will not deliver
+          // again. Tear the dead watch down so "Enable location" genuinely
+          // comes back, but KEEP the denied state visible — resetting it
+          // would hide why the preview stopped.
+          setPosition(session.ingestError('denied'));
+          teardown();
+          setWatching(false);
+          return;
+        }
+        setPosition(session.ingestError(kind));
+      },
       WATCH_OPTIONS,
     );
     tickRef.current = setInterval(() => setPosition(session.tick(Date.now())), TICK_MS);
     setWatching(true);
-  }, [port, session]);
+  }, [port, session, teardown]);
 
   // Unmount = navigation away: the watch must never outlive its owner.
   useEffect(() => stop, [stop]);

@@ -79,7 +79,33 @@ check('constants: jump gate is 100 mph', MAX_IMPLIED_SPEED_MPH === 100);
   const s = createGpsSession();
   const st = s.ingestFix(fix({ accuracyM: 80 }));
   check('accuracy: first-ever fix over gate leaves no fix', st.fix === null);
-  check('accuracy: first-ever fix over gate reports degraded', st.health === 'degraded');
+  check(
+    'accuracy: with no held fix there is nothing to call degraded — stays unavailable',
+    st.health === 'unavailable',
+  );
+}
+{
+  // Audit regression pin: a REJECTED sample must never upgrade health.
+  // Before the fix, junk 1 Hz fixes resurrected a stale `lost` fix as
+  // `degraded` every second, flapping the aria-live status.
+  const s = createGpsSession();
+  s.ingestFix(fix());
+  s.tick(T0 + STALE_AFTER_MS + 1);
+  check('no-upgrade: setup reached lost', s.state().health === 'lost');
+  const flap = s.ingestFix(fix({ accuracyM: 80, tMs: T0 + 20_000 }));
+  check('no-upgrade: rejected fix does NOT resurrect lost as degraded', flap.health === 'lost');
+  check(
+    'no-upgrade: repeated rejections return the same state reference',
+    s.ingestFix(fix({ accuracyM: 80, tMs: T0 + 21_000 })) === flap,
+  );
+}
+{
+  const s = createGpsSession();
+  s.ingestFix(fix());
+  const first = s.ingestFix(fix({ accuracyM: 80, tMs: T0 + 1000 }));
+  check('no-churn: good -> degraded allocates once', first.health === 'degraded');
+  const second = s.ingestFix(fix({ accuracyM: 80, tMs: T0 + 2000 }));
+  check('no-churn: degraded stays the same reference on repeats', second === first);
 }
 
 // -------------------------------------------------------------- jump gate

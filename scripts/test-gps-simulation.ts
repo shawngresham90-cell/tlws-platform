@@ -119,6 +119,16 @@ function trace(
     if (st.fix) lastGoodT = st.fix.tMs;
   }
   check('degradation: fixes past 30 s all discarded', lastGoodT === T0 + 29_000, lastGoodT);
+  // Audit regression pin: once staleness declares `lost`, continuing junk
+  // fixes must not flap health back to `degraded` (1 Hz aria-live churn).
+  const s2 = createGpsSession();
+  let flapped = false;
+  for (const f of trace(60, 60, (f, i) => (i >= 20 ? { ...f, accuracyM: 80 } : f))) {
+    s2.ingestFix(f);
+    const st = s2.tick(f.tMs);
+    if (f.tMs > T0 + 31_000 && st.health === 'degraded') flapped = true;
+  }
+  check('degradation: no lost->degraded flap from rejected fixes', !flapped);
   check(
     'degradation: ends degraded (held fix, not lost) until staleness',
     s.state().health === 'lost' || s.state().health === 'degraded',

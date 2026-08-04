@@ -96,8 +96,8 @@ function render(props: { position: PositionState; watching: boolean; supported: 
   check('watching: speed and heading rendered', html.includes('61 mph') && html.includes('2°'));
   check('watching: accuracy rendered', html.includes('±8'));
   check(
-    'watching: stop button labeled including the discard consequence',
-    html.includes('aria-label="Stop the position preview and discard position"'),
+    'watching: stop button accessible name STARTS with its visible text (WCAG 2.5.3)',
+    html.includes('aria-label="Stop preview and discard position"'),
   );
 }
 {
@@ -105,28 +105,53 @@ function render(props: { position: PositionState; watching: boolean; supported: 
     ['degraded', 'Position approximate'],
     ['lost', 'Position unknown'],
     ['denied', 'Location permission denied'],
-    ['unavailable', 'Location unavailable'],
   ];
   for (const [health, text] of labels) {
     const html = render({ position: state({ health }), watching: true, supported: true });
     check(`watching: '${health}' rendered as text`, html.includes(text));
   }
+  const unavailableHeld = render({
+    position: state({ health: 'unavailable' }),
+    watching: true,
+    supported: true,
+  });
+  check(
+    "watching: 'unavailable' with a held fix rendered as text",
+    unavailableHeld.includes('Location unavailable'),
+  );
+  check(
+    "watching: 'unavailable' fix also labeled '(last known)' — never silently current",
+    unavailableHeld.includes('(last known)'),
+  );
   const lost = render({ position: state({ health: 'lost' }), watching: true, supported: true });
   check(
     "watching: lost fix labeled '(last known)' — never silently current",
     lost.includes('(last known)'),
   );
-  const denied = render({
+  // Audit fix: denial tears the watch down, so the recovery path renders in
+  // the IDLE branch, right next to the Enable button it refers to.
+  const deniedIdle = render({
     position: state({ health: 'denied', fix: null }),
-    watching: true,
+    watching: false,
     supported: true,
   });
-  check('watching: denied state explains recovery path', denied.includes('re-allow location'));
+  check('denied (idle): status announced', deniedIdle.includes('Location permission denied'));
+  check(
+    'denied (idle): recovery path explained NEXT TO a real Enable button',
+    deniedIdle.includes('Re-allow location') && deniedIdle.includes('Enable location'),
+  );
+  // Audit fix: before anything has failed, pending permission/first fix is
+  // presented as acquisition, not as an error.
   const noFix = render({
     position: state({ fix: null, health: 'unavailable', speedMph: null, headingDeg: null }),
     watching: true,
     supported: true,
   });
+  check(
+    'watching: pre-first-fix presented as acquiring, not as an error',
+    noFix.includes('Waiting for location permission and first fix') &&
+      !noFix.includes('Location unavailable'),
+  );
   check(
     'watching: pre-first-fix placeholders',
     noFix.includes('Waiting for first fix') && noFix.includes('Needs two fixes'),
@@ -157,6 +182,14 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
     provider.includes('if (cancelRef.current) return'),
   );
   check('provider: staleness tick cleared on stop', provider.includes('clearInterval'));
+  check(
+    'provider: denial tears the dead watch down (audit fix)',
+    /denied[\s\S]{0,400}teardown\(\);[\s\S]{0,80}setWatching\(false\)/.test(provider),
+  );
+  check(
+    'provider: callbacks guarded against contract-violating ports',
+    (provider.match(/if \(!cancelRef\.current\) return;/g) ?? []).length === 2,
+  );
   check(
     'provider: permission errors normalized (denied/timeout/unavailable)',
     provider.includes("'denied'") &&
