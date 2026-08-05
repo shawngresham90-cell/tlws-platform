@@ -1,40 +1,58 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { DrivingView } from '@/lib/navigator/navigation-controller';
 import {
-  createNavigationController,
-  type DrivingView,
-  type NavigationController,
-} from '@/lib/navigator/navigation-controller';
+  createNavigationLifecycle,
+  type NavigationLifecycle,
+} from '@/lib/navigator/navigation-lifecycle';
+import {
+  createPilotLog,
+  resolvePilotMode,
+  type PilotLog,
+  type PilotMode,
+} from '@/lib/navigator/pilot-mode';
+import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { useGps } from './GpsProvider';
-import { useSafetyLock } from './SafetyLockProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
+import { PilotTripControls } from './PilotTripControls';
 
 /**
- * Basic driving screen (milestone N5, visual only — Phase 2A scope).
- * Maneuver card first and largest, status as text, no text input on this
- * screen at all, every target ≥ 64 px. Phase 2A ships NO route source:
- * the on-demand route endpoint is milestone N8 and paid HERE calls are
- * out of scope, so the default state is the honest "route unavailable"
- * (AD-8: guidance never starts without a real route). The controller
- * accepts an injected route in tests.
+ * Driving screen (milestone N5 visuals; milestone P1 wires the completed
+ * navigation engine behind Pilot Mode). Maneuver card first and largest,
+ * status as text, every target ≥ 64 px.
  *
- * Deferred deliberately: map tiles (N12), HOS strip (N6), one-touch
- * panels (N9), voice (N7), rerouting (N8), emergency mode data (N9).
+ * P1 integration: ONE NavigationLifecycle instance connects destination
+ * entry → the flag-gated route API → the immutable route session → the
+ * composed navigation session (matcher → detector → caged rerouter →
+ * arrival) → this screen. The component layer owns cadence and the clock;
+ * every engine stays pure. Without Pilot Mode (production, or flag off)
+ * this screen renders exactly the N5 preview: no route source, honest
+ * "route unavailable", no provider spend possible (the endpoint 404s).
  */
+
+const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
 export function DrivingScreenView({
   view,
   watching,
   onStart,
   onStop,
+  lifecycleLine = null,
+  destinationSlot = null,
+  hosSourceLabel = DEFAULT_HOS_LABEL,
 }: {
   view: DrivingView;
   watching: boolean;
   onStart: () => void;
   onStop: () => void;
+  /** Pilot Mode line under the status text, e.g. the lifecycle state. */
+  lifecycleLine?: string | null;
+  /** Pilot Mode replaces the placeholder in the stationary-only gate. */
+  destinationSlot?: ReactNode;
+  hosSourceLabel?: string;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -77,6 +95,7 @@ export function DrivingScreenView({
         {statusText[view.status]}
         {view.lastKnown ? ' (last known)' : ''}
       </p>
+      {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
         <dt>Route progress</dt>
@@ -93,11 +112,11 @@ export function DrivingScreenView({
 
       {/* Permanent HOS strip (milestone N6) — the driver's clocks against
           the drive, in every screen state. Clocks only count down while
-          guidance is genuinely active; the 2A preview has no trip source,
-          so the strip says exactly where its numbers come from. */}
+          guidance is genuinely active; the label says exactly where its
+          numbers come from. */}
       <HosStrip
         drivingActive={view.status === 'navigating' || view.status === 'position-degraded'}
-        sourceLabel="No trip loaded — showing a fresh driver's full clocks."
+        sourceLabel={hosSourceLabel}
       />
 
       <MotionLockOverlay />
@@ -125,12 +144,15 @@ export function DrivingScreenView({
         )}
       </LockGate>
 
-      {/* Stationary-only affordance (destination entry ships with N8) —
-          gated by the shared map, demonstrating default-deny end to end. */}
+      {/* Stationary-only affordance — gated by the shared map,
+          demonstrating default-deny end to end. Pilot Mode mounts the
+          trip controls here; otherwise the honest placeholder stands. */}
       <LockGate action="edit-destination" lockedLabel="Destination entry">
-        <p className="text-xl text-ink/80">
-          Destination entry unlocks here when routing ships (a later milestone).
-        </p>
+        {destinationSlot ?? (
+          <p className="text-xl text-ink/80">
+            Destination entry unlocks here when routing ships (a later milestone).
+          </p>
+        )}
       </LockGate>
     </div>
   );
@@ -138,28 +160,91 @@ export function DrivingScreenView({
 
 export function DrivingScreen() {
   const { position, watching, start, stop } = useGps();
-  const controllerRef = useRef<NavigationController | null>(null);
-  // Phase 2A has no route source (see header): the controller starts with
-  // route = null and renders the route-unavailable state.
-  if (controllerRef.current === null) controllerRef.current = createNavigationController(null);
-  const [, setTick] = useState(0);
-  const view = useMemo(() => {
-    void watching;
-    return controllerRef.current!.update(position);
-  }, [position, watching]);
 
+  // Pilot Mode resolves default-deny: the server pass has no hostname, so
+  // it renders inactive; the client re-resolves once after mount.
+  const [pilot, setPilot] = useState<PilotMode>(() =>
+    resolvePilotMode({ flagValue: process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED, hostname: null }),
+  );
+  useEffect(() => {
+    setPilot(
+      resolvePilotMode({
+        flagValue: process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED,
+        hostname: window.location.hostname,
+      }),
+    );
+  }, []);
+
+  const logRef = useRef<PilotLog | null>(null);
+  if (logRef.current === null) logRef.current = createPilotLog();
+  const lifecycleRef = useRef<NavigationLifecycle | null>(null);
+  if (lifecycleRef.current === null) {
+    lifecycleRef.current = createNavigationLifecycle({
+      planPort: createNavigatorPlanPort(),
+      replacementPort: createNavigatorReplacementPort(),
+      log: logRef.current,
+    });
+  }
+  const lifecycle = lifecycleRef.current;
+  const [, setRev] = useState(0);
+  const bump = () => setRev((r) => r + 1);
+
+  // One lifecycle tick per gated position update. GpsProvider re-renders
+  // every second while a watch is active, so cadence rides that tick; the
+  // lifecycle is reference-idempotent against double renders.
+  const view = useMemo(() => lifecycle.tick(position, Date.now()).view, [position, lifecycle]);
+  const lcState = lifecycle.state();
+
+  // Off-route → ask the caged N8e rerouter. Re-entry is structurally
+  // impossible: once requested the state is 'rerouting', not 'off-route',
+  // and every budget/cooldown decision belongs to the controller.
+  useEffect(() => {
+    if (lcState !== 'off-route') return;
+    const accuracyM =
+      position.fix !== null && Number.isFinite(position.accuracyM) ? position.accuracyM : null;
+    void lifecycle.requestReroute(Date.now(), accuracyM).then(bump);
+  }, [lcState, position, lifecycle]);
+
+  // Unmount = leaving the screen: cancel any live trip so no engine
+  // outlives its owner (GpsProvider tears the watch down the same way).
+  useEffect(() => () => void lifecycle.cancel(Date.now()), [lifecycle]);
+
+  const tripLoaded = lcState !== 'idle' && lcState !== 'planning' && lcState !== 'completed';
   return (
     <DrivingScreenView
       view={view}
       watching={watching}
       onStart={() => {
         start();
-        setTick((t) => t + 1);
+        bump();
       }}
       onStop={() => {
+        // Stopping the preview also cancels any live pilot trip — the
+        // summary stays honest ('cancelled'), the engines are released.
+        lifecycle.cancel(Date.now());
         stop();
-        setTick((t) => t + 1);
+        bump();
       }}
+      lifecycleLine={
+        pilot.active && lcState !== 'idle'
+          ? `Pilot trip state: ${lcState.replace(/-/g, ' ')}`
+          : null
+      }
+      destinationSlot={
+        pilot.active ? (
+          <PilotTripControls
+            lifecycle={lifecycle}
+            fix={position.fix}
+            debugLog={pilot.debugLogging ? logRef.current : null}
+            onChanged={bump}
+          />
+        ) : null
+      }
+      hosSourceLabel={
+        tripLoaded
+          ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'
+          : DEFAULT_HOS_LABEL
+      }
     />
   );
 }
