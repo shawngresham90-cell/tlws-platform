@@ -39,7 +39,23 @@ export async function guardedParse<S extends z.ZodTypeAny>(
   req: NextRequest,
   schema: S,
 ): Promise<{ data: z.output<S> } | { response: NextResponse }> {
-  if (!limiter.allow(clientKey(req))) {
+  return guardedParseWithLimiter(limiter, req, schema);
+}
+
+/**
+ * Same pipeline with a caller-supplied limiter (N8a). The Navigator route
+ * endpoint spends a metered provider transaction per miss, so it carries a
+ * much stricter budget than the planner's shared 20/min limiter — a second
+ * `RateLimiter` instance, exactly the doc 03 proposal. The planner
+ * endpoints keep the shared limiter above, byte-for-byte unchanged
+ * behavior.
+ */
+export async function guardedParseWithLimiter<S extends z.ZodTypeAny>(
+  routeLimiter: RateLimiter,
+  req: NextRequest,
+  schema: S,
+): Promise<{ data: z.output<S> } | { response: NextResponse }> {
+  if (!routeLimiter.allow(clientKey(req))) {
     return { response: errorJson(429, 'rate-limited', 'Too many requests — slow down.') };
   }
   // Reject oversized bodies before reading them when the client declares a

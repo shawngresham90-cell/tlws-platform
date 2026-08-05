@@ -149,12 +149,34 @@ type HereAction = {
   /** Seconds spent in this action. */
   duration?: number;
 };
+type HereNotice = {
+  title?: string;
+  code?: string;
+  severity?: string;
+};
 type HereSection = {
   summary?: { length?: number; duration?: number };
   polyline?: string;
   actions?: HereAction[];
+  notices?: HereNotice[];
 };
 type HereResponse = { routes?: { sections?: HereSection[] }[] };
+
+/**
+ * Route-level notice retained by the parse (N8a). HERE attaches notices to
+ * sections — e.g. a violated truck restriction ships as severity
+ * `critical`. The planner has always ignored these (its route is an
+ * estimate aid); the Navigator MUST see them, because a critical notice
+ * means the route is not truck-legal as returned.
+ */
+export type HereRouteNotice = {
+  code: string;
+  title: string;
+  severity: string;
+};
+
+/** Defense against a malformed payload, not a truncation policy. */
+const MAX_NOTICES = 50;
 
 /**
  * One turn instruction with enough structure for turn-by-turn guidance
@@ -192,6 +214,8 @@ export type ParsedHereRoute = {
   positions: LatLng[];
   instructions: string[];
   maneuvers: HereManeuver[];
+  /** Provider notices, always an array (empty when none). Additive (N8a). */
+  notices: HereRouteNotice[];
 };
 
 /** Extract distance/duration/geometry/instructions. Null on anything malformed. */
@@ -203,7 +227,22 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   const positions: LatLng[] = [];
   const instructions: string[] = [];
   const maneuvers: HereManeuver[] = [];
+  const notices: HereRouteNotice[] = [];
   for (const s of sections) {
+    for (const n of s.notices ?? []) {
+      // Leniency rule as elsewhere: a malformed notice entry is skipped,
+      // never fails the route — but a well-formed one is always retained.
+      if (
+        notices.length < MAX_NOTICES &&
+        (typeof n.code === 'string' || typeof n.title === 'string')
+      ) {
+        notices.push({
+          code: typeof n.code === 'string' ? n.code : '',
+          title: typeof n.title === 'string' ? n.title : '',
+          severity: typeof n.severity === 'string' && n.severity ? n.severity : 'info',
+        });
+      }
+    }
     const len = s.summary?.length;
     const dur = s.summary?.duration;
     if (typeof len !== 'number' || typeof dur !== 'number' || len < 0 || dur < 0) return null;
@@ -262,6 +301,7 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
     positions,
     instructions: instructions.slice(0, MAX_INSTRUCTIONS),
     maneuvers,
+    notices,
   };
 }
 
@@ -292,6 +332,17 @@ export function toRoutePoints(
   return points;
 }
 
+/** Why one route() call ended the way it did (N8a observability). */
+export type HereRouteOutcome =
+  | 'no-key'
+  | 'invalid-profile'
+  | 'over-cap'
+  | 'cache-hit'
+  | 'coalesced'
+  | 'provider-error'
+  | 'malformed-response'
+  | 'ok';
+
 export type HereRoutingOptions = {
   /** Injected clock for cache TTL tests. */
   nowMs?: () => number;
@@ -301,6 +352,14 @@ export type HereRoutingOptions = {
   cacheMax?: number;
   /** Per-instance live-call budget per hour (free-tier guard), default 100. */
   hourlyCap?: number;
+  /**
+   * Optional outcome observer (N8a). Fired at most once per route() call
+   * with why the call resolved as it did — the Navigator's honest
+   * provider-failure reporting and the cost-control tests hang off this.
+   * Exceptions from the observer are swallowed; the route path never
+   * depends on it. Default: no observer, byte-identical planner behavior.
+   */
+  onOutcome?: (outcome: HereRouteOutcome) => void;
 };
 
 /**
@@ -352,6 +411,13 @@ export function createHereRoutingPort(
   const cacheTtlMs = opts.cacheTtlMs ?? 6 * 3_600_000;
   const cacheMax = opts.cacheMax ?? 500;
   const hourlyCap = opts.hourlyCap ?? 100;
+  const emit = (outcome: HereRouteOutcome): void => {
+    try {
+      opts.onOutcome?.(outcome);
+    } catch {
+      // The observer can never affect routing.
+    }
+  };
 
   const cache = new Map<string, { atMs: number; result: RoutingResult }>();
   // One in-flight request per cache key: the cache is written only after a
@@ -386,14 +452,28 @@ export function createHereRoutingPort(
 
   const fetchRoute = async (key: string, req: RoutingRequest): Promise<RoutingResult | null> => {
     try {
-      if (!underCap()) return null;
+      if (!underCap()) {
+        emit('over-cap');
+        return null;
+      }
       callsInWindow += 1;
-      const parsed = parseHereResponse(await getJson(buildHereRouteUrl(req, apiKey as string)));
-      if (!parsed) return null;
+      const json = await getJson(buildHereRouteUrl(req, apiKey as string));
+      if (json === null) {
+        emit('provider-error');
+        return null;
+      }
+      const parsed = parseHereResponse(json);
+      if (!parsed) {
+        emit('malformed-response');
+        return null;
+      }
 
       const distanceMiles = Number((parsed.meters / METERS_PER_MILE).toFixed(1));
       const hours = parsed.seconds / 3600;
-      if (distanceMiles < 0.1 || hours <= 0) return null;
+      if (distanceMiles < 0.1 || hours <= 0) {
+        emit('malformed-response');
+        return null;
+      }
       const route = buildRoute([
         {
           seq: 0,
@@ -409,7 +489,13 @@ export function createHereRoutingPort(
         tollCents: null,
         provider: 'HERE Routing API v8 (truck profile)',
         instructions: parsed.instructions,
+        // N8a additions — optional on the type; composeQuote ignores them.
+        maneuvers: parsed.maneuvers,
+        notices: parsed.notices,
+        summary: { meters: parsed.meters, seconds: parsed.seconds },
+        geometryPointCount: parsed.positions.length,
       };
+      emit('ok');
 
       cache.set(key, { atMs: nowMs(), result });
       if (cache.size > cacheMax) {
@@ -428,15 +514,24 @@ export function createHereRoutingPort(
   return {
     name: 'here',
     route: async (req: RoutingRequest): Promise<RoutingResult | null> => {
-      if (!apiKey) return null;
+      if (!apiKey) {
+        emit('no-key');
+        return null;
+      }
       // Impossible truck profiles never reach the provider: no transaction
       // spent, no garbage route — the caller falls back to the estimate.
-      if (validateTruckProfileForRouting(req.truck).length > 0) return null;
+      if (validateTruckProfileForRouting(req.truck).length > 0) {
+        emit('invalid-profile');
+        return null;
+      }
       try {
         const key = routeCacheKey(req);
         const hit = cache.get(key);
         if (hit) {
-          if (nowMs() - hit.atMs < cacheTtlMs) return hit.result;
+          if (nowMs() - hit.atMs < cacheTtlMs) {
+            emit('cache-hit');
+            return hit.result;
+          }
           // Expired entries used to sit in their slots until eviction
           // pressure — a full cache could be dead weight evicting live
           // routes. Stale on read = deleted on read.
@@ -444,7 +539,10 @@ export function createHereRoutingPort(
         }
 
         const inFlight = pending.get(key);
-        if (inFlight) return inFlight;
+        if (inFlight) {
+          emit('coalesced');
+          return inFlight;
+        }
         const run = fetchRoute(key, req);
         pending.set(key, run);
         try {
