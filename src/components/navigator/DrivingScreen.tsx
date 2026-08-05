@@ -9,6 +9,7 @@ import {
 import { useGps } from './GpsProvider';
 import { useSafetyLock } from './SafetyLockProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
+import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
 
 /**
@@ -89,6 +90,15 @@ export function DrivingScreenView({
         <dt>Speed</dt>
         <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
       </dl>
+
+      {/* Permanent HOS strip (milestone N6) — the driver's clocks against
+          the drive, in every screen state. Clocks only count down while
+          guidance is genuinely active; the 2A preview has no trip source,
+          so the strip says exactly where its numbers come from. */}
+      <HosStrip
+        drivingActive={view.status === 'navigating' || view.status === 'position-degraded'}
+        sourceLabel="No trip loaded — showing a fresh driver's full clocks."
+      />
 
       <MotionLockOverlay />
 
