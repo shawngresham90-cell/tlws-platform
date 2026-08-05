@@ -465,13 +465,19 @@ function warmUp(
   const libDir = 'src/lib/navigator';
   const consumers: string[] = [];
   for (const f of readdirSync(libDir)) {
-    if (f === 'map-matcher.ts' || f === 'off-route-detector.ts' || f === 'reroute-controller.ts')
-      continue;
+    const sanctioned = [
+      'map-matcher.ts',
+      'off-route-detector.ts', // N8d observe-only detector
+      'reroute-controller.ts', // N8e caged replacement
+      'arrival-controller.ts', // N8f arrival state machine
+      'navigation-session.ts', // N8f composition layer
+    ];
+    if (sanctioned.includes(f)) continue;
     const src = strip(readFileSync(join(libDir, f), 'utf8'));
     if (/map-matcher|MapMatcher|advanceEligible/.test(src)) consumers.push(f);
   }
   check(
-    'boundary: only the N8d detector and N8e controller consume matcher verdicts',
+    'boundary: only the sanctioned N8d–N8f consumers touch matcher verdicts',
     consumers.length === 0,
     consumers,
   );
