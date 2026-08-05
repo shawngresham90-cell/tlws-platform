@@ -8,7 +8,9 @@
  *   2. Every UIAction has an explicit permission mapping (default-deny).
  *   3. Override expires at 15 min and is cleared by a stop/start cycle.
  *   4. Override never survives a reload (nothing persists it).
- *   5. Off-route decisions: none exist yet (N8) — asserted absent.
+ *   5. Route replacement: none exists yet (N8e) — asserted absent; and
+ *      off-route (N8d, observe-only) never fires within 150 m of a
+ *      planned stop — asserted behaviorally.
  *   6. Announcements: none exist yet (N7) — asserted absent.
  *   7. The exit control is reachable in every lock state.
  *
@@ -21,6 +23,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createSafetyLock, OVERRIDE_DURATION_MS } from '@/lib/navigator/safety-lock';
 import { ACTION_PERMISSIONS, allowedWhileMoving, type UIAction } from '@/lib/navigator/actions';
+import { createOffRouteDetector } from '@/lib/navigator/off-route-detector';
 import type { PositionState } from '@/lib/navigator/types';
 
 let passed = 0;
@@ -130,18 +133,49 @@ function componentMotionChecksAbsent(): boolean {
   }
 }
 
-// INVARIANTS 5 & 6 — off-route/reroute and announcements do not exist yet.
+// INVARIANTS 5 & 6 — route-REPLACEMENT code and announcements do not
+// exist yet. With N8d, off-route DETECTION exists observe-only, so
+// invariant 5 graduates to its real doc 06 §7 form as well: off-route
+// never fires within 150 m of a planned stop — proven behaviorally.
 {
   const libDir = 'src/lib/navigator';
-  let offRoute = false;
+  let replacement = false;
   let announce = false;
   for (const f of readdirSync(libDir)) {
     const src = strip(readFileSync(join(libDir, f), 'utf8'));
-    if (/reroute|offRouteDecision/i.test(src)) offRoute = true;
+    if (/reroute/i.test(src)) replacement = true;
     if (/speechSynthesis|announce/i.test(src)) announce = true;
   }
-  check('invariant 5: no reroute/off-route decision code exists (N8)', !offRoute);
+  check('invariant 5a: no route-replacement code exists (N8e)', !replacement);
   check('invariant 6: no announcement code exists (N7)', !announce);
+
+  // Invariant 5b — the planned-stop exclusion, against the real detector:
+  // fixes that scream "off route" can NEVER confirm within 150 m of a
+  // planned stop.
+  const detector = createOffRouteDetector();
+  const screaming = {
+    matched: true,
+    routeMile: 10,
+    candidateMile: 10,
+    lateralM: 140,
+    headingDeltaDeg: 5,
+    travelDirection: 'forward' as const,
+    confidence: 'low' as const,
+    advanceEligible: false,
+    reasons: ['far-from-route'],
+  };
+  for (let i = 0; i < 20; i++) {
+    detector.observe({
+      match: screaming,
+      tMs: T0 + i * 3000,
+      speedMph: 45,
+      nearestPlannedStopM: 120,
+    });
+  }
+  check(
+    'invariant 5b: off-route never fires within 150 m of a planned stop',
+    detector.state().state === 'on-route' && detector.events().every((e) => e.to !== 'confirmed'),
+  );
 }
 
 // INVARIANT 7 — the exit control is reachable in every lock state:
