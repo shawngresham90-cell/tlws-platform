@@ -465,12 +465,13 @@ function warmUp(
   const libDir = 'src/lib/navigator';
   const consumers: string[] = [];
   for (const f of readdirSync(libDir)) {
-    if (f === 'map-matcher.ts' || f === 'off-route-detector.ts') continue;
+    if (f === 'map-matcher.ts' || f === 'off-route-detector.ts' || f === 'reroute-controller.ts')
+      continue;
     const src = strip(readFileSync(join(libDir, f), 'utf8'));
     if (/map-matcher|MapMatcher|advanceEligible/.test(src)) consumers.push(f);
   }
   check(
-    'boundary: only the N8d observe-only detector consumes the matcher',
+    'boundary: only the N8d detector and N8e controller consume matcher verdicts',
     consumers.length === 0,
     consumers,
   );

@@ -15,6 +15,7 @@
 
 import type { LatLng } from '@/lib/map/bounds';
 import type { TruckProfile } from '@/lib/trip-planner/types';
+import type { RouteAvoidance } from '@/lib/trip-planner/providers';
 import type { HereManeuver } from '@/lib/trip-planner/here-routing';
 import {
   geometryFingerprint,
@@ -49,6 +50,9 @@ export type RouteSession = Readonly<{
   maneuvers: readonly Readonly<SessionManeuver>[];
   distanceMiles: number;
   durationSeconds: number;
+  /** Feature avoidances the route was requested with — preserved so a
+   *  replacement route (N8e) is requested under identical restrictions. */
+  avoid: readonly RouteAvoidance[];
   validationState: SessionEligibleState;
   warnings: readonly string[];
   /** Integrity fingerprint of the geometry at creation time. */
@@ -70,6 +74,8 @@ export type CreateSessionInput = {
     direction: string | null;
     offset: number;
   }[];
+  /** Feature avoidances the route was requested with. */
+  avoid?: readonly RouteAvoidance[];
   /** The N8a route verdict for this route. */
   validationState: string;
   warnings?: readonly string[];
@@ -90,6 +96,7 @@ function deepFreezeSession(session: RouteSession): RouteSession {
   Object.freeze(session.geometry);
   for (const m of session.maneuvers) Object.freeze(m);
   Object.freeze(session.maneuvers);
+  Object.freeze(session.avoid);
   Object.freeze(session.warnings);
   return Object.freeze(session);
 }
@@ -183,6 +190,7 @@ export function createRouteSession(input: CreateSessionInput): CreateSessionResu
     maneuvers,
     distanceMiles: Number(input.distanceMiles.toFixed(1)),
     durationSeconds: Math.round(input.durationSeconds),
+    avoid: [...(input.avoid ?? [])],
     validationState: input.validationState,
     warnings: [...(input.warnings ?? [])],
     geometryFingerprint: geometryFingerprint(normalized.points),
