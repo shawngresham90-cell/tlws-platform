@@ -8,7 +8,9 @@
  *   2. Every UIAction has an explicit permission mapping (default-deny).
  *   3. Override expires at 15 min and is cleared by a stop/start cycle.
  *   4. Override never survives a reload (nothing persists it).
- *   5. Off-route decisions: none exist yet (N8) — asserted absent.
+ *   5. Off-route/reroute discipline (behavioral): 5a — replacement may
+ *      spend ONLY from a CONFIRMED off-route state; 5b — off-route never
+ *      fires within 150 m of a planned stop (doc 06 §7 item 5).
  *   6. Announcements: none exist yet (N7) — asserted absent.
  *   7. The exit control is reachable in every lock state.
  *
@@ -21,6 +23,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createSafetyLock, OVERRIDE_DURATION_MS } from '@/lib/navigator/safety-lock';
 import { ACTION_PERMISSIONS, allowedWhileMoving, type UIAction } from '@/lib/navigator/actions';
+import { createOffRouteDetector } from '@/lib/navigator/off-route-detector';
+import { createRerouteController } from '@/lib/navigator/reroute-controller';
+import { createRouteSession } from '@/lib/navigator/route-session';
 import type { PositionState } from '@/lib/navigator/types';
 
 let passed = 0;
@@ -130,18 +135,101 @@ function componentMotionChecksAbsent(): boolean {
   }
 }
 
-// INVARIANTS 5 & 6 — off-route/reroute and announcements do not exist yet.
+// INVARIANTS 5 & 6 — announcements do not exist yet (N7); off-route and
+// replacement (N8d/N8e) are enforced BEHAVIORALLY: confirmed-only spend
+// and the doc 06 §7 planned-stop exclusion.
 {
   const libDir = 'src/lib/navigator';
-  let offRoute = false;
   let announce = false;
   for (const f of readdirSync(libDir)) {
     const src = strip(readFileSync(join(libDir, f), 'utf8'));
-    if (/reroute|offRouteDecision/i.test(src)) offRoute = true;
     if (/speechSynthesis|announce/i.test(src)) announce = true;
   }
-  check('invariant 5: no reroute/off-route decision code exists (N8)', !offRoute);
   check('invariant 6: no announcement code exists (N7)', !announce);
+
+  // Invariant 5a — with N8e, route replacement exists but is CAGED:
+  // only a CONFIRMED off-route state may spend a provider transaction,
+  // and the trailing-hour budget is a hard stop. Proven against the real
+  // controller with a counting port.
+  {
+    const geometry: { lat: number; lng: number }[] = [];
+    for (let i = 0; i < 200; i++) geometry.push({ lat: 35 + i * 0.001, lng: -85 });
+    const made = createRouteSession({
+      routeId: 'inv5a',
+      truck: {
+        lengthFt: 73,
+        heightFt: 13.5,
+        widthFt: 8.5,
+        grossWeightLbs: 80_000,
+        axles: 5,
+        hazmatClass: null,
+        tankGallons: 200,
+        mpg: 6.5,
+        fuelSafetyFactor: 0.8,
+      },
+      origin: geometry[0],
+      destination: geometry[199],
+      positions: geometry,
+      distanceMiles: 13.7,
+      durationSeconds: 900,
+      maneuvers: [{ action: 'depart', instruction: 'Go.', direction: null, offset: 0 }],
+      validationState: 'valid',
+    });
+    if (!made.ok) throw new Error('inv5a fixture failed');
+    let calls = 0;
+    const controller = createRerouteController(made.session, async () => {
+      calls += 1;
+      return { kind: 'failure', reason: 'inv5a-port' };
+    });
+    const pos = { lat: 35.05, lng: -85.002 };
+    void controller.requestReroute({
+      detectorState: 'suspected',
+      currentPosition: pos,
+      accuracyM: 8,
+      tMs: T0,
+    });
+    void controller.requestReroute({
+      detectorState: 'recovering',
+      currentPosition: pos,
+      accuracyM: 8,
+      tMs: T0 + 1,
+    });
+    void controller.requestReroute({
+      detectorState: 'on-route',
+      currentPosition: pos,
+      accuracyM: 8,
+      tMs: T0 + 2,
+    });
+    check('invariant 5a: only CONFIRMED may spend — every other state refused free', calls === 0);
+  }
+
+  // Invariant 5b — the planned-stop exclusion, against the real detector:
+  // fixes that scream "off route" can NEVER confirm within 150 m of a
+  // planned stop.
+  const detector = createOffRouteDetector();
+  const screaming = {
+    matched: true,
+    routeMile: 10,
+    candidateMile: 10,
+    lateralM: 140,
+    headingDeltaDeg: 5,
+    travelDirection: 'forward' as const,
+    confidence: 'low' as const,
+    advanceEligible: false,
+    reasons: ['far-from-route'],
+  };
+  for (let i = 0; i < 20; i++) {
+    detector.observe({
+      match: screaming,
+      tMs: T0 + i * 3000,
+      speedMph: 45,
+      nearestPlannedStopM: 120,
+    });
+  }
+  check(
+    'invariant 5b: off-route never fires within 150 m of a planned stop',
+    detector.state().state === 'on-route' && detector.events().every((e) => e.to !== 'confirmed'),
+  );
 }
 
 // INVARIANT 7 — the exit control is reachable in every lock state:
@@ -163,5 +251,58 @@ function componentMotionChecksAbsent(): boolean {
   );
 }
 
-console.log(`safety-invariants: ${passed} passed, ${failed} failed`);
-if (failed > 0) process.exit(1);
+// Invariant 5a (budget half) — sequential spends, awaited so nothing
+// coalesces: with cooldowns elapsed, the 7th confirmed request in the
+// trailing hour is refused unspent.
+async function invariant5aBudget(): Promise<void> {
+  const geometry: { lat: number; lng: number }[] = [];
+  for (let i = 0; i < 200; i++) geometry.push({ lat: 35 + i * 0.001, lng: -85 });
+  const made = createRouteSession({
+    routeId: 'inv5a-budget',
+    truck: {
+      lengthFt: 73,
+      heightFt: 13.5,
+      widthFt: 8.5,
+      grossWeightLbs: 80_000,
+      axles: 5,
+      hazmatClass: null,
+      tankGallons: 200,
+      mpg: 6.5,
+      fuelSafetyFactor: 0.8,
+    },
+    origin: geometry[0],
+    destination: geometry[199],
+    positions: geometry,
+    distanceMiles: 13.7,
+    durationSeconds: 900,
+    maneuvers: [{ action: 'depart', instruction: 'Go.', direction: null, offset: 0 }],
+    validationState: 'valid',
+  });
+  if (!made.ok) throw new Error('inv5a budget fixture failed');
+  let spent = 0;
+  const budget = createRerouteController(
+    made.session,
+    async () => {
+      spent += 1;
+      return { kind: 'failure', reason: 'budget-port' };
+    },
+    { failureBackoffMs: [1], successCooldownMs: 1, duplicateWindowMs: 0 },
+  );
+  let t = T0;
+  for (let i = 0; i < 7; i++) {
+    t += 60_000 + i;
+    await budget.requestReroute({
+      detectorState: 'confirmed',
+      currentPosition: { lat: 35.01 + i * 0.01, lng: -85.002 },
+      accuracyM: 8,
+      tMs: t,
+    });
+  }
+  check('invariant 5a: trailing-hour budget refuses the 7th spend', spent === 6, spent);
+}
+
+void (async () => {
+  await invariant5aBudget();
+  console.log(`safety-invariants: ${passed} passed, ${failed} failed`);
+  if (failed > 0) process.exit(1);
+})();

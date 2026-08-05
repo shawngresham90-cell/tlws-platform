@@ -239,7 +239,19 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
       `privacy ${f}: no analytics import (no coordinate leakage path)`,
       !/analytics|trackEvent|plausible/i.test(src),
     );
-    check(`privacy ${f}: no fetch (position never leaves the device)`, !/\bfetch\s*\(/.test(src));
+    // P1 carve-out: route-port.ts is the ONE sanctioned network path —
+    // the driver-initiated route request to the first-party, flag-gated
+    // /api/navigator/route endpoint (origin/destination only, N8a
+    // design). Its endpoint exclusivity is pinned in
+    // test-navigator-pilot.ts; every other component stays fetch-free.
+    if (f !== 'route-port.ts') {
+      check(`privacy ${f}: no fetch (position never leaves the device)`, !/\bfetch\s*\(/.test(src));
+    } else {
+      check(
+        `privacy ${f}: fetch aimed only at the navigator route endpoint`,
+        src.includes("'/api/navigator/route'") && !/https?:\/\//.test(src),
+      );
+    }
     check(
       `motion ${f}: no animation classes (reduced-motion safe by construction)`,
       !/animate-/.test(src),

@@ -76,6 +76,12 @@ export type RoutingResult = {
   summary?: { meters: number; seconds: number };
   /** Total decoded geometry points behind `routePoints` (which are sampled). */
   geometryPointCount?: number;
+  /**
+   * FULL decoded geometry (N8b). Present ONLY when the adapter was
+   * created with `retainGeometry: true` — the planner's instances never
+   * set it, so planner cache memory is unchanged.
+   */
+  geometry?: LatLng[];
 };
 
 export type RoutingPort = {
