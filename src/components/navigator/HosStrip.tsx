@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { freshClockState } from '@/lib/trip-planner/hos-engine';
 import type { ClockState } from '@/lib/trip-planner/types';
 import { HOS_TICK_MS, hosStripView, tickClocks } from '@/lib/navigator/hos-strip';
+import { createHosAnnouncer, type VoiceGuidance } from '@/lib/navigator/voice-guidance';
 import { HosWarningLine } from './HosWarningLine';
 
 /**
@@ -22,6 +23,7 @@ export function HosStrip({
   initialClocks,
   drivingActive,
   sourceLabel,
+  voice,
 }: {
   /** Injected clock state (tests / a future N8 session); fresh when absent. */
   initialClocks?: ClockState;
@@ -29,12 +31,15 @@ export function HosStrip({
   drivingActive: boolean;
   /** Honest provenance line, e.g. "No trip loaded — full clocks shown". */
   sourceLabel: string;
+  /** N7 voice output for threshold crossings; the strip stays visual without it. */
+  voice?: VoiceGuidance;
 }) {
   const [clocks, setClocks] = useState<ClockState>(
     () => initialClocks ?? freshClockState(Date.now()),
   );
   const activeRef = useRef(drivingActive);
   activeRef.current = drivingActive;
+  const announcerRef = useRef(createHosAnnouncer());
 
   // 60 s cadence (doc 05 §9). The interval always runs so a drive that
   // starts mid-minute is picked up at the next tick; the advance itself
@@ -48,6 +53,17 @@ export function HosStrip({
   }, []);
 
   const view = hosStripView(clocks);
+
+  // Threshold crossings speak (doc 05 §9). collect() re-offers the current
+  // (clock, severity) every tick; the guidance module's announce-once ids
+  // make anything but a genuine escalation a silent drop.
+  useEffect(() => {
+    if (!voice) return;
+    for (const req of announcerRef.current.collect(view.warning, view.remaining)) {
+      voice.request(req);
+    }
+  });
+
   return (
     <section aria-label="Hours of service" className="rounded-card border border-line p-4">
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">

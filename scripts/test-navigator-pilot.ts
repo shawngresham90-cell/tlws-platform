@@ -810,7 +810,7 @@ async function main() {
   );
   check(
     'DrivingScreen cancels the trip on unmount',
-    /useEffect\(\(\) => \(\) => void lifecycle\.cancel/.test(drivingSrc),
+    /voiceRef\.current\?\.clearPending\(\);\s*void lifecycle\.cancel/.test(drivingSrc),
   );
   check(
     'DrivingScreen owns no timers (cadence stays with GpsProvider)',
@@ -821,8 +821,9 @@ async function main() {
     drivingSrc.includes('pilot.active ? (') || drivingSrc.includes('pilot.active ?'),
   );
   check(
-    'stop button also cancels a live pilot trip',
-    /onStop[\s\S]{0,200}lifecycle\.cancel/.test(drivingSrc),
+    'stop button also cancels a live pilot trip (and kills pending speech)',
+    /onStop[\s\S]{0,400}lifecycle\.cancel/.test(drivingSrc) &&
+      /onStop[\s\S]{0,400}clearPending/.test(drivingSrc),
   );
   check(
     'route port only ever talks to the flag-gated navigator endpoint',

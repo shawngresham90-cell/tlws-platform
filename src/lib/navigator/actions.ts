@@ -16,6 +16,7 @@ export type UIAction =
   | 'start-position-preview' // explicit user start of the GPS watch
   | 'view-status' // map, maneuver card, status strip class
   | 'open-emergency' // never locked (surface ships with N9 data)
+  | 'mute-voice' // one-touch mute/unmute, always available (N7)
   | 'edit-destination'
   | 'edit-truck-profile'
   | 'add-stop'
@@ -31,6 +32,7 @@ export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
   'start-position-preview': true,
   'view-status': true,
   'open-emergency': true,
+  'mute-voice': true,
   'edit-destination': false,
   'edit-truck-profile': false,
   'add-stop': false,
