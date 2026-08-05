@@ -459,17 +459,18 @@ function warmUp(
   }
 }
 
-// ---------------------------------- N8c boundary: nothing consumes it yet
+// ------------------ N8c/N8d boundary: only the observe-only detector may
+// consume the matcher; the controller and every guidance path stay clean.
 {
   const libDir = 'src/lib/navigator';
   const consumers: string[] = [];
   for (const f of readdirSync(libDir)) {
-    if (f === 'map-matcher.ts') continue;
+    if (f === 'map-matcher.ts' || f === 'off-route-detector.ts') continue;
     const src = strip(readFileSync(join(libDir, f), 'utf8'));
     if (/map-matcher|MapMatcher|advanceEligible/.test(src)) consumers.push(f);
   }
   check(
-    'boundary: no navigator module consumes the matcher yet (observe-only until N8d)',
+    'boundary: only the N8d observe-only detector consumes the matcher',
     consumers.length === 0,
     consumers,
   );
