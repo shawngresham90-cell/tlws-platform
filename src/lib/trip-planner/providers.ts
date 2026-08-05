@@ -36,6 +36,26 @@ export type RoutingRequest = {
   avoid?: RouteAvoidance[];
 };
 
+/** One structured turn instruction (Navigator N8a; providers may omit). */
+export type RouteManeuver = {
+  action: string;
+  instruction: string;
+  direction: string | null;
+  severity: string | null;
+  /** Index into the parsed route geometry where the maneuver occurs. */
+  offset: number;
+  lengthM: number | null;
+  durationS: number | null;
+};
+
+/** Provider notice attached to a route (e.g. a violated truck restriction). */
+export type RouteNotice = {
+  code: string;
+  title: string;
+  /** Provider severity, passed through (e.g. 'critical' | 'info'). */
+  severity: string;
+};
+
 export type RoutingResult = {
   route: Route;
   /** Sampled polyline points with cumulative route-miles (directory layer input). */
@@ -46,6 +66,16 @@ export type RoutingResult = {
   provider: string;
   /** Turn-by-turn instruction texts when the provider returns them. */
   instructions?: string[];
+  /**
+   * N8a additions, all OPTIONAL and additive: existing consumers
+   * (composeQuote) ignore them; the Navigator route API requires them.
+   */
+  maneuvers?: RouteManeuver[];
+  notices?: RouteNotice[];
+  /** Provider summary exactly as parsed (pre-rounding). */
+  summary?: { meters: number; seconds: number };
+  /** Total decoded geometry points behind `routePoints` (which are sampled). */
+  geometryPointCount?: number;
 };
 
 export type RoutingPort = {
