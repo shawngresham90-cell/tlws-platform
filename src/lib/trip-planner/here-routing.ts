@@ -360,6 +360,13 @@ export type HereRoutingOptions = {
    * depends on it. Default: no observer, byte-identical planner behavior.
    */
   onOutcome?: (outcome: HereRouteOutcome) => void;
+  /**
+   * Retain the FULL decoded geometry on results (N8b). Default FALSE:
+   * the planner never needs it and its cache must not grow by holding
+   * complete polylines. The Navigator route endpoint opts in and pairs
+   * this with a much smaller `cacheMax`.
+   */
+  retainGeometry?: boolean;
 };
 
 /**
@@ -494,6 +501,8 @@ export function createHereRoutingPort(
         notices: parsed.notices,
         summary: { meters: parsed.meters, seconds: parsed.seconds },
         geometryPointCount: parsed.positions.length,
+        // N8b: full geometry only on explicit opt-in (see the option doc).
+        ...(opts.retainGeometry ? { geometry: parsed.positions } : {}),
       };
       emit('ok');
 

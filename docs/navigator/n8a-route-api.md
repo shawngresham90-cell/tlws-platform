@@ -70,9 +70,9 @@ here-routing harnesses) passes unchanged.
 
 ## Remaining before N8b
 
-- Full-resolution geometry in the response (today: sampled `routePoints`;
-  the decoded polyline is not returned yet) and the session handoff into
-  `createNavigationController`.
+- ~~Full-resolution geometry in the response and the session handoff into
+  `createNavigationController`~~ — **implemented by N8b**; see
+  [n8b-geometry-session.md](./n8b-geometry-session.md).
 - Client wiring (destination entry is still the locked placeholder on the
   driving screen).
 - p95 latency measurement against the real provider (unmeasurable from CI).
