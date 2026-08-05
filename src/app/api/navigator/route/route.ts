@@ -10,6 +10,11 @@ import {
 } from '@/lib/navigator-api/route-contract';
 import { validateNavigatorTruckProfile } from '@/lib/navigator/truck-validation';
 import { validateRoute } from '@/lib/navigator/route-validation';
+import {
+  geometryFingerprint,
+  normalizeGeometry,
+  validateGeometryEndpoints,
+} from '@/lib/navigator/route-geometry';
 
 /**
  * POST /api/navigator/route — NEW-1 from the architecture package
@@ -43,10 +48,20 @@ const navigatorLimiter = new RateLimiter({
 // across requests within a warm serverless instance — the same discipline
 // as the planner's quote endpoint, with a SEPARATE cache (different
 // response needs) but the same hard spend cap.
-const hereRouting = createHereRoutingPort(async (url: string) => {
-  const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-  return { status: res.status, json: () => res.json() };
-}, process.env.HERE_API_KEY);
+const hereRouting = createHereRoutingPort(
+  async (url: string) => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    return { status: res.status, json: () => res.json() };
+  },
+  process.env.HERE_API_KEY,
+  {
+    // N8b: this instance retains FULL geometry on results, so its cache
+    // is kept deliberately small — 24 full routes, not the planner's 500
+    // sampled ones. The planner's instances never set retainGeometry.
+    retainGeometry: true,
+    cacheMax: 24,
+  },
+);
 
 export async function POST(req: NextRequest) {
   // Rail 1 — production-inert until the Navigator itself is enabled.
@@ -122,6 +137,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Rail 6 (N8b) — the GEOMETRY itself must survive normalization and
+  // endpoint agreement before it can ever seed a navigation session.
+  const distanceMiles = result!.route.totalMiles;
+  const normalized = normalizeGeometry(result!.geometry ?? [], distanceMiles);
+  const geometryProblems = [
+    ...normalized.problems,
+    ...(normalized.problems.length === 0
+      ? validateGeometryEndpoints(normalized.points, data.origin, data.destination)
+      : []),
+  ];
+  if (geometryProblems.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        state: 'rejected',
+        problems: geometryProblems.map((p) => ({ code: `geometry:${p.code}`, message: p.message })),
+        warnings: verdict.warnings,
+      },
+      { status: 422 },
+    );
+  }
+
   // valid / valid-with-warning / requires-review all return the route —
   // but only the first two are ok:true; a requires-review route must
   // never auto-start a session.
@@ -133,10 +170,19 @@ export async function POST(req: NextRequest) {
       problems: verdict.problems,
       warnings: verdict.warnings,
       route: {
-        distanceMiles: result!.route.totalMiles,
+        routeId: `nav-${geometryFingerprint(normalized.points)}-${data.departAtMs}`,
+        distanceMiles,
         seconds: result!.summary?.seconds ?? null,
         provider: result!.provider,
         routePoints: result!.routePoints,
+        // N8b: the COMPLETE geometry, 5-decimal rounded (~1 m) to bound
+        // payload size; the session recomputes cumulative miles
+        // deterministically from these pairs plus distanceMiles.
+        geometry: normalized.points.map((p) => [
+          Number(p.position.lat.toFixed(5)),
+          Number(p.position.lng.toFixed(5)),
+        ]),
+        geometryFingerprint: geometryFingerprint(normalized.points),
         maneuvers: result!.maneuvers ?? [],
         instructions: result!.instructions ?? [],
         notices: result!.notices ?? [],
