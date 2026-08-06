@@ -234,5 +234,73 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   );
 }
 
+// ============ ROUND-2 REGRESSION: the search flashed and never settled ====
+// Live report: the correct address was found and shown, then the result
+// area kept flashing and re-requesting instead of locking in. Two
+// independent causes, both pinned here.
+{
+  const search = readFileSync('src/components/navigator/DestinationSearch.tsx', 'utf8');
+  const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+
+  // CAUSE 1 — the effect depended on the `origin` OBJECT, and the driving
+  // screen re-renders every GPS tick (1 Hz) with a fresh literal, so the
+  // debounce restarted and a request went out once per second.
+  check(
+    'flash-fix: the search effect depends on a coarse origin KEY, never the object',
+    /}, \[query, originKey, settled\]\)/.test(search) && search.includes('originKey ='),
+    search.match(/}, \[[^\]]*\]\);/g)?.slice(-1),
+  );
+  check(
+    'flash-fix: the live origin is read from a ref at fire time (not a stale closure)',
+    search.includes('originRef.current = origin') &&
+      search.includes('const at = originRef.current'),
+  );
+  check(
+    'flash-fix: the origin key is rounded, so GPS jitter cannot retrigger it',
+    /origin\.lat\.toFixed\(3\)/.test(search) && /origin\.lng\.toFixed\(3\)/.test(search),
+  );
+  check(
+    'flash-fix: the parent memoizes the origin object it passes down',
+    controls.includes('const searchOrigin = useMemo(') &&
+      controls.includes('origin={searchOrigin}'),
+  );
+  check(
+    'flash-fix: the parent no longer builds a fresh origin literal inline',
+    !/origin=\{fix === null \? null : \{ lat: fix\.lat, lng: fix\.lng \}\}/.test(controls),
+  );
+
+  // CAUSE 2 — selecting a result left the picked title in the query box
+  // with nothing marking the search finished, so the effect immediately
+  // searched again for it and repopulated the list under the driver.
+  check(
+    'settle-fix: selection marks the search SETTLED and the effect stops',
+    search.includes('const [settled, setSettled]') && /if \(settled\) return;/.test(search),
+  );
+  check(
+    'settle-fix: selection retires any in-flight response',
+    /seqRef\.current \+= 1;[\s\S]{0,120}setSettled\(true\)/.test(search),
+  );
+  check(
+    'settle-fix: selection clears the results list and the searching flag',
+    /setSettled\(true\);[\s\S]{0,200}setSearching\(false\);[\s\S]{0,200}setResults\(\[\]\)/.test(
+      search,
+    ),
+  );
+  check(
+    'settle-fix: editing the query reopens the search AND drops the stale pick',
+    search.includes('setSettled(false)') && search.includes('onClear()'),
+  );
+  check(
+    'settle-fix: the parent clears its pick when the driver edits',
+    controls.includes('onClear={() => setPicked(null)}'),
+  );
+  // The status line is what visibly flashed; it must be driven by state
+  // that can now hold still.
+  check(
+    'settle-fix: "Searching…" is bound to the searching flag alone',
+    search.includes("{searching ? 'Searching…' : (status ?? '')}"),
+  );
+}
+
 console.log(`destination-search: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

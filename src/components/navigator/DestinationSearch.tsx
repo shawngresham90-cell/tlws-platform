@@ -37,24 +37,43 @@ const FACILITY_LABEL: Record<string, string> = {
 export function DestinationSearch({
   origin,
   onPick,
+  onClear,
   disabled = false,
 }: {
   /** The truck's current position — search is biased around it. */
   origin: LatLng | null;
   onPick: (candidate: DestinationCandidate) => void;
+  /** The driver edited the query after choosing — drop the old pick. */
+  onClear: () => void;
   disabled?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DestinationCandidate[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  // Once a place is chosen the search is DONE. Without this the query
+  // still holds the picked title, so the effect would immediately search
+  // again for it and repopulate the list under the driver's finger.
+  const [settled, setSettled] = useState(false);
   // Only the newest search may write state — a slow earlier response must
   // never overwrite a newer list.
   const seqRef = useRef(0);
+  // The live origin, read at FIRE time. Kept in a ref so a moving truck
+  // never re-triggers the effect (see originKey below).
+  const originRef = useRef(origin);
+  originRef.current = origin;
+
+  // The effect must not depend on the `origin` OBJECT: the driving screen
+  // re-renders on every GPS tick (1 Hz) and passes a fresh object literal
+  // each time, which restarted the debounce and re-issued a request every
+  // second — the flashing the road test saw. A coarse key (~110 m) is
+  // enough to re-bias results if the truck actually moves.
+  const originKey = origin === null ? null : `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}`;
 
   useEffect(() => {
+    if (settled) return;
     const q = query.trim();
-    if (q.length < MIN_SEARCH_LENGTH || origin === null) {
+    if (q.length < MIN_SEARCH_LENGTH || originKey === null) {
       setResults([]);
       setSearching(false);
       return;
@@ -62,7 +81,12 @@ export function DestinationSearch({
     const mySeq = ++seqRef.current;
     setSearching(true);
     const timer = setTimeout(() => {
-      void searchDestinations(q, origin)
+      const at = originRef.current;
+      if (at === null) {
+        setSearching(false);
+        return;
+      }
+      void searchDestinations(q, at)
         .then((outcome) => {
           if (mySeq !== seqRef.current) return;
           if (outcome.kind === 'failure') {
@@ -80,7 +104,7 @@ export function DestinationSearch({
         });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, origin]);
+  }, [query, originKey, settled]);
 
   return (
     <div className="space-y-3">
@@ -93,7 +117,16 @@ export function DestinationSearch({
           value={query}
           disabled={disabled}
           placeholder="Address, business, truck stop, or city"
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            // Editing the text means the driver is choosing again: reopen
+            // the search and drop the previous pick so a stale selection
+            // can never be planned behind new text.
+            if (settled) {
+              setSettled(false);
+              onClear();
+            }
+          }}
           aria-label="Search for a destination by address, business, truck stop, or city"
         />
       </label>
@@ -118,10 +151,16 @@ export function DestinationSearch({
                   type="button"
                   className="min-h-16 w-full rounded-card border border-line px-4 py-3 text-left text-ink"
                   onClick={() => {
-                    onPick(place);
+                    // Selecting ENDS the search: bump the sequence so any
+                    // in-flight response is ignored, mark settled so the
+                    // effect stops, and clear the list and the status line.
+                    seqRef.current += 1;
+                    setSettled(true);
+                    setSearching(false);
                     setResults([]);
                     setQuery(place.title);
                     setStatus(null);
+                    onPick(place);
                   }}
                 >
                   <span className="block text-xl font-semibold">{place.title}</span>

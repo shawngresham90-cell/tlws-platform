@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { NavigationLifecycle } from '@/lib/navigator/navigation-lifecycle';
 import type { PilotLog } from '@/lib/navigator/pilot-mode';
 import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
@@ -61,6 +61,18 @@ export function PilotTripControls({
   const state = lifecycle.state();
   const summary = lifecycle.summary();
 
+  // A stable object for the search: this component re-renders on every GPS
+  // tick, and a fresh literal here made the search effect restart (and
+  // re-issue a request) once per second. Identity changes only when the
+  // truck actually moves ~110 m.
+  const lat = fix?.lat ?? null;
+  const lng = fix?.lng ?? null;
+  const searchOrigin = useMemo(
+    () => (lat === null || lng === null ? null : { lat, lng }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lat === null ? null : lat.toFixed(3), lng === null ? null : lng.toFixed(3)],
+  );
+
   async function planRoute() {
     if (busy) return;
     if (fix === null) {
@@ -118,12 +130,13 @@ export function PilotTripControls({
       {state === 'idle' ? (
         <div className="space-y-3">
           <DestinationSearch
-            origin={fix === null ? null : { lat: fix.lat, lng: fix.lng }}
+            origin={searchOrigin}
             disabled={busy}
             onPick={(place) => {
               setPicked(place);
               setNote(null);
             }}
+            onClear={() => setPicked(null)}
           />
 
           {picked !== null ? (

@@ -206,5 +206,63 @@ function northRoute(n = 200) {
   );
 }
 
+// ====== ROUND-2 REGRESSION: Start Trip left the driver on the controls ====
+// Live report: after Start Trip the mobile UI stayed on the pilot
+// controls/debug section instead of presenting the navigation experience.
+// The start button lives at the BOTTOM (inside the stationary-only gate)
+// while the maneuver card and map are at the TOP, and nothing moved the
+// viewport.
+{
+  const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+
+  check(
+    'start-fix: the view accepts a focus token for trip start',
+    screen.includes('focusNavigationKey') && screen.includes('navTopRef'),
+  );
+  check(
+    'start-fix: the token scrolls the guidance into view',
+    /navTopRef\.current[\s\S]{0,200}scrollIntoView/.test(screen),
+  );
+  check(
+    'start-fix: the scroll target is the maneuver card (the top of guidance)',
+    /ref=\{navTopRef\}[\s\S]{0,120}aria-label="Next maneuver"/.test(screen),
+  );
+  check(
+    'start-fix: scrollIntoView is feature-detected (never throws in a test/older runtime)',
+    screen.includes("typeof el.scrollIntoView === 'function'"),
+  );
+  check(
+    'start-fix: fires only on the route-ready → navigating transition',
+    screen.includes("lcState === 'navigating' && prev === 'route-ready'"),
+  );
+  check(
+    'start-fix: later guidance states do NOT re-scroll the driver',
+    // The token derives from a tick bumped only by that one transition —
+    // not from routeId or lcState, which change during reroutes.
+    screen.includes('focusTick === 0 ? null : `trip-start-${focusTick}`') &&
+      !/focusNavigationKey = .*routeId/.test(screen),
+  );
+  check(
+    'start-fix: the effect keys on the token, so one start scrolls once',
+    /}, \[focusNavigationKey\]\)/.test(screen),
+  );
+  check(
+    'start-fix: guidance still precedes the pilot controls in document order',
+    // Anchor on the JSX USAGE, not the prop declarations at the top.
+    screen.indexOf('aria-label="Next maneuver"') < screen.indexOf('{mapSlot}') &&
+      screen.indexOf('{mapSlot}') < screen.indexOf('{destinationSlot ??'),
+  );
+
+  const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+  check(
+    'start-fix: the pilot debug log stays collapsed by default',
+    controls.includes('<details') && !/<details\s+open/.test(controls),
+  );
+  check(
+    'start-fix: destination entry is hidden once a trip is underway',
+    controls.includes("{state === 'idle' ? ("),
+  );
+}
+
 console.log(`navigation-map: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
