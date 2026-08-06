@@ -7,7 +7,12 @@
  * Only decoding is implemented — this platform never sends geometry to HERE.
  */
 
-const ENCODING_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+// Exact alphabet from the published spec (heremaps/flexible-polyline):
+// index 62 is '-' and index 63 is '_'. These two were SWAPPED here until
+// 2026-08 — both characters still "decoded", just to the wrong value, so
+// any real polyline containing them silently shifted every later point in
+// that dimension by a constant (the 7.5 mi live-pilot destination gap).
+const ENCODING_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const DECODING_TABLE = new Map<string, number>(
   Array.from(ENCODING_TABLE, (c, i) => [c, i] as [string, number]),
 );

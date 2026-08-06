@@ -46,6 +46,8 @@ import {
   type HereRouteOutcome,
 } from '@/lib/trip-planner/here-routing';
 import { redactCoordinates } from '@/lib/navigator/pilot-mode';
+import { decodeFlexiblePolyline } from '@/lib/trip-planner/flexible-polyline';
+import { encodeTestPolyline } from './helpers/flexible-polyline-encode';
 import type { RoutingRequest } from '@/lib/trip-planner/providers';
 import type { TruckProfile } from '@/lib/trip-planner/types';
 
@@ -816,6 +818,64 @@ async function main() {
         reversed.problems.some((p) => p.code.startsWith('destination-distance:')),
       reversed.problems.map((p) => p.code),
     );
+
+    // --- ROOT CAUSE of the 7.5 mi live gap: alphabet chars 62/63 ----------
+    // The decoder's table had '-' and '_' SWAPPED vs the published spec
+    // ('-' = 62, '_' = 63). Both chars still "decoded" — to the wrong
+    // value — so one corrupted delta shifted every later point in that
+    // dimension by a constant. The README spec vector contains neither
+    // character, which is why the pins above never caught it. These pins
+    // exercise both characters directly and via a full round-trip.
+    //
+    // 'BF-BA': version 1, precision 5, then varint 62 ('-'=62 low chunk,
+    // continuation + 'B') → zigzag 62 = +31 → lat 0.00031; 'A' → lng 0.
+    const dash = decodeFlexiblePolyline('BF-BA').positions;
+    check(
+      "alphabet: '-' decodes as index 62 per spec (swapped table gave -0.00032)",
+      dash.length === 1 && Math.abs(dash[0][0] - 0.00031) < 1e-12 && Math.abs(dash[0][1]) < 1e-12,
+      dash,
+    );
+    // 'BF_BA': varint 63 → zigzag 63 = -32 → lat -0.00032.
+    const under = decodeFlexiblePolyline('BF_BA').positions;
+    check(
+      "alphabet: '_' decodes as index 63 per spec (swapped table gave +0.00031)",
+      under.length === 1 &&
+        Math.abs(under[0][0] - -0.00032) < 1e-12 &&
+        Math.abs(under[0][1]) < 1e-12,
+      under,
+    );
+    // Round-trip through the spec-faithful test encoder with deltas chosen
+    // so the encoding provably CONTAINS both characters — the exact class
+    // of polyline the old table silently corrupted.
+    const rtPts: [number, number][] = [
+      [34.9157, -85.1095], // the live pilot's requested destination area
+      [34.91601, -85.1095], // lat delta +31 → encodes with '-'
+      [34.91569, -85.1095], // lat delta -32 → encodes with '_'
+      [34.917, -84.9769], // large mixed delta
+    ];
+    const rtEncoded = encodeTestPolyline(rtPts);
+    check(
+      "alphabet round-trip: fixture encoding really contains '-' and '_'",
+      rtEncoded.includes('-') && rtEncoded.includes('_'),
+      rtEncoded,
+    );
+    const rtDecoded = decodeFlexiblePolyline(rtEncoded).positions;
+    let rtMaxErr = Infinity;
+    if (rtDecoded.length === rtPts.length) {
+      rtMaxErr = 0;
+      for (let i = 0; i < rtPts.length; i++) {
+        rtMaxErr = Math.max(
+          rtMaxErr,
+          Math.abs(rtDecoded[i][0] - rtPts[i][0]),
+          Math.abs(rtDecoded[i][1] - rtPts[i][1]),
+        );
+      }
+    }
+    check(
+      'alphabet round-trip: decode(encode(pts)) is exact — no constant-offset drift',
+      rtMaxErr < 1e-9,
+      { rtMaxErr, rtDecoded },
+    );
   }
 
   // --------------------------------------- 7. endpoint + regression structure
@@ -888,6 +948,11 @@ async function main() {
     check(
       'adapter: observer is optional and swallowed (planner behavior unchanged)',
       /onProviderHttpError\?\./.test(adapter),
+    );
+    const poly = readFileSync('src/lib/trip-planner/flexible-polyline.ts', 'utf8');
+    check(
+      "decoder: alphabet ends with '-','_' (spec indices 62/63), never the swapped pair",
+      poly.includes("0123456789-_'") && !poly.includes("0123456789_-'"),
     );
 
     const apiUtil = strip(readFileSync('src/lib/trip-planner/api-util.ts', 'utf8'));
