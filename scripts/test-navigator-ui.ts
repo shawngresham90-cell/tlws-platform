@@ -104,7 +104,10 @@ function render(props: {
   check('watching: coordinates displayed for the driver', html.includes('35.1235, -84.7654'));
   check('watching: coordinates rounded to 4 dp on screen', !html.includes('35.1234567'));
   check('watching: speed and heading rendered', html.includes('61 mph') && html.includes('2°'));
-  check('watching: accuracy rendered', html.includes('±8'));
+  check(
+    'watching: accuracy rendered in FEET (US driver UI, pilot round 1)',
+    html.includes('±30 ft'),
+  );
   check(
     'watching: stop button accessible name STARTS with its visible text (WCAG 2.5.3)',
     html.includes('aria-label="Stop preview and discard position"'),
@@ -239,17 +242,31 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
       `privacy ${f}: no analytics import (no coordinate leakage path)`,
       !/analytics|trackEvent|plausible/i.test(src),
     );
-    // P1 carve-out: route-port.ts is the ONE sanctioned network path —
-    // the driver-initiated route request to the first-party, flag-gated
-    // /api/navigator/route endpoint (origin/destination only, N8a
-    // design). Its endpoint exclusivity is pinned in
-    // test-navigator-pilot.ts; every other component stays fetch-free.
-    if (f !== 'route-port.ts') {
-      check(`privacy ${f}: no fetch (position never leaves the device)`, !/\bfetch\s*\(/.test(src));
+    // The network carve-out is by MODULE KIND, not by file name: only
+    // `*-port.ts` modules may transmit, so the surface that can send
+    // anything stays small, named, and reviewable, and every COMPONENT
+    // stays fetch-free. Two ports exist:
+    //   route-port.ts  — the driver-initiated route request (N8a)
+    //   search-port.ts — destination search (pilot round 1); sends the
+    //                    typed query and the truck position, because
+    //                    results must be biased to where the truck is
+    // Both talk ONLY to first-party, flag-gated /api/navigator endpoints;
+    // neither stores, logs, or forwards anything. Endpoint exclusivity is
+    // additionally pinned in test-navigator-pilot.ts.
+    const isPort = /-port\.ts$/.test(f);
+    if (!isPort) {
+      check(
+        `privacy ${f}: no fetch in a COMPONENT (transmission lives in ports only)`,
+        !/\bfetch\s*\(/.test(src),
+      );
     } else {
       check(
-        `privacy ${f}: fetch aimed only at the navigator route endpoint`,
-        src.includes("'/api/navigator/route'") && !/https?:\/\//.test(src),
+        `privacy ${f}: fetch aimed only at a first-party /api/navigator endpoint`,
+        /['"`]\/api\/navigator\//.test(src) && !/https?:\/\//.test(src),
+      );
+      check(
+        `privacy ${f}: transmits nothing beyond the request (no storage, no forwarding)`,
+        !/localStorage|sessionStorage|indexedDB|navigator\.sendBeacon/i.test(src),
       );
     }
     check(

@@ -45,6 +45,7 @@ import type { ReplacementPort, RerouteResult } from './reroute-controller';
 import type { DestinationInfo } from './truck-entrance';
 import type { TripSummary } from './arrival-controller';
 import type { PilotLog } from './pilot-mode';
+import { positionAtRouteMile } from './map-view';
 
 export type LifecycleState =
   | 'idle'
@@ -135,11 +136,29 @@ export type LifecycleSnapshot = {
   routeId: string | null;
 };
 
+/**
+ * Everything the navigation MAP needs, and nothing else (pilot round 1).
+ * Read-only projection of the live session: no engine reference escapes,
+ * so a map can never advance, replace, or mutate a route.
+ */
+export type MapData = {
+  /** Route line, in order. Empty when no route is loaded. */
+  geometry: readonly LatLng[];
+  /** Where the trip ends — the map's destination marker. */
+  destination: LatLng | null;
+  /** Where the next maneuver happens, for its marker. Null when none. */
+  nextManeuver: LatLng | null;
+  /** Identity of the CURRENT route: changes on every replacement. */
+  routeId: string | null;
+};
+
 export type NavigationLifecycle = {
   state(): LifecycleState;
   /** The driving-screen view for the CURRENT state (no-route when idle). */
   view(): DrivingView;
   snapshot(): LifecycleSnapshot;
+  /** Read-only geometry/destination projection for the navigation map. */
+  mapData(): MapData;
   /** idle → planning → route-ready | idle. Refused outside idle. */
   plan(req: PlanRequest, destination: DestinationInfo, tMs: number): Promise<PlanOutcome>;
   /** route-ready → navigating. Builds the full engine stack. */
@@ -457,10 +476,27 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     return transition('idle', tMs, 'reset');
   }
 
+  function mapData(): MapData {
+    // Prefer the engine's CURRENT session so a replacement route draws the
+    // moment it lands; fall back to the planned session before navigation
+    // starts. Positions are copied — the caller cannot reach into the
+    // frozen session geometry.
+    const active = nav?.currentSession() ?? routeSession;
+    const nextMi = lastView.maneuvers?.next?.mileMi ?? null;
+    return {
+      geometry: active === null ? [] : active.geometry.map((p) => ({ ...p.position })),
+      destination: destinationInfo === null ? null : { ...destinationInfo.position },
+      nextManeuver:
+        active === null || nextMi === null ? null : positionAtRouteMile(active.geometry, nextMi),
+      routeId: active === null ? null : active.routeId,
+    };
+  }
+
   return {
     state: () => state,
     view: () => lastView,
     snapshot,
+    mapData,
     plan,
     startNavigation,
     discardRoute,

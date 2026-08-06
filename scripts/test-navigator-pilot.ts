@@ -839,10 +839,23 @@ async function main() {
     !/fetch\(|XMLHttpRequest|axios/.test(controlsSrc),
   );
   check(
-    'trip controls add no geocoding or search (P1 adds no features)',
-    !/geocode|autocomplete|search/i.test(
-      controlsSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, ''),
-    ),
+    // Superseded by pilot round 1, which the owner authorized after the
+    // first live road test: coordinate entry is replaced by destination
+    // SEARCH. The scope rule that still binds is the one above — the
+    // controls perform no network I/O themselves; search is delegated to
+    // the sanctioned search-port, whose endpoint is pinned below.
+    'trip controls delegate search to the port, never fetching themselves',
+    controlsSrc.includes('<DestinationSearch') && !/fetch\(/.test(controlsSrc),
+  );
+  const searchPortSrc = readFileSync('src/components/navigator/search-port.ts', 'utf8');
+  check(
+    'search port targets only the flag-gated navigator search endpoint',
+    searchPortSrc.includes('/api/navigator/destination-search') &&
+      !/https?:\/\//.test(searchPortSrc),
+  );
+  check(
+    'search port never throws into the screen',
+    searchPortSrc.includes("{ kind: 'failure', reason: 'network' }"),
   );
   check(
     '/drive page still 404s without the flag',

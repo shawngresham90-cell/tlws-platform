@@ -75,7 +75,7 @@ type Rig = {
   drive(
     route: readonly GeometryPoint[],
     fixes: (Partial<MatchFix> & { atMile: number; eastM?: number; tMs: number })[],
-    extras?: Partial<Pick<ObserveInput, 'nearestPlannedStopM' | 'remainingMi'>>,
+    extras?: Partial<Pick<ObserveInput, 'nearestPlannedStopM' | 'remainingMi' | 'accuracyM'>>,
   ): OffRouteState[];
 };
 function rig(route: readonly GeometryPoint[], config = {}): Rig {
@@ -90,7 +90,13 @@ function rig(route: readonly GeometryPoint[], config = {}): Rig {
         const fix = fixAt(r, f.atMile, f);
         const match = matcher.match(fix);
         states.push(
-          detector.observe({ match, tMs: fix.tMs, speedMph: fix.speedMph, ...extras }).state,
+          detector.observe({
+            match,
+            tMs: fix.tMs,
+            speedMph: fix.speedMph,
+            accuracyM: fix.accuracyM,
+            ...extras,
+          }).state,
         );
       }
       return states;
@@ -119,15 +125,16 @@ function warmLeg(mile: number, t: number) {
     })),
   );
   check('sudden: first off fix is SUSPECTED, never confirmed alone', states[0] === 'suspected');
+  // Pilot round 1: this leg is at 60 mph, so the FAST ladder governs —
+  // 2 qualifying fixes AND 3 s, instead of 4 fixes AND 8 s. The truck
+  // covers ~90 ft/s at this speed; the old ladder spent a quarter mile
+  // before guidance reacted. The single-fix prohibition is unchanged.
   check(
-    'sudden: not confirmed before the fix threshold',
-    states[1] === 'suspected' && states[2] === 'suspected',
-  );
-  check(
-    'sudden: confirmed after 4 qualifying fixes + elapsed time',
-    states[3] === 'confirmed',
+    'sudden: confirmed on the fast ladder at highway speed (2 fixes + 3 s)',
+    states[1] === 'confirmed',
     states,
   );
+  check('sudden: stays confirmed while the evidence continues', states[3] === 'confirmed', states);
   const events = r.detector.events();
   check(
     'sudden: deterministic event chain on-route→suspected→confirmed',
@@ -140,7 +147,7 @@ function warmLeg(mile: number, t: number) {
     confirmEvent.tMs > T0 &&
       confirmEvent.lateralM !== null &&
       confirmEvent.lateralM > 100 &&
-      confirmEvent.elapsedMs >= DETECTOR_DEFAULTS.confirmMinElapsedMs &&
+      confirmEvent.elapsedMs >= DETECTOR_DEFAULTS.fastConfirmMinElapsedMs &&
       confirmEvent.routeMile !== null,
   );
 }
@@ -298,16 +305,19 @@ function warmLeg(mile: number, t: number) {
   const r = rig(route);
   r.drive(route, warmLeg(5, T0));
   // Two qualifying fixes… then a 60 s tunnel… then two more. The chain
-  // is NOT continuous — never confirmed.
+  // is NOT continuous — never confirmed. Driven at 30 mph (below the
+  // pilot-round-1 fast-ladder speed) so the leg stays genuinely
+  // half-built and the gap has an episode to dissolve; the fast ladder
+  // is exercised by the sudden-departure scenario above.
   r.drive(route, [
-    { atMile: 5.2, eastM: 120, tMs: T0 + 12_000 },
-    { atMile: 5.25, eastM: 120, tMs: T0 + 15_000 },
+    { atMile: 5.2, eastM: 120, tMs: T0 + 12_000, speedMph: 30 },
+    { atMile: 5.25, eastM: 120, tMs: T0 + 15_000, speedMph: 30 },
   ]);
   check('tunnel: episode open before the gap', r.detector.state().state === 'suspected');
   const after = r.drive(route, [
-    { atMile: 5.9, eastM: 120, tMs: T0 + 75_000 }, // gap-reset fix
-    { atMile: 5.95, eastM: 120, tMs: T0 + 78_000 },
-    { atMile: 6.0, eastM: 120, tMs: T0 + 81_000 },
+    { atMile: 5.9, eastM: 120, tMs: T0 + 75_000, speedMph: 30 }, // gap-reset fix
+    { atMile: 5.95, eastM: 120, tMs: T0 + 78_000, speedMph: 30 },
+    { atMile: 6.0, eastM: 120, tMs: T0 + 81_000, speedMph: 30 },
   ]);
   check('tunnel: the gap dissolved the half-built episode', after[0] === 'on-route');
   check(
@@ -523,6 +533,263 @@ function warmLeg(mile: number, t: number) {
     detector.events().length <= DETECTOR_DEFAULTS.maxEvents,
   );
   check('perf: long session retains < 50 MB', heapAfter - heapBefore < 50 * 1048576);
+}
+
+// ================= PILOT ROUND 1: latency + false-reroute scenarios =======
+// The live road test reported reroute "too slow" while requiring that
+// fueling, parking, backing and short GPS drift never trigger one.
+
+// --- wrong direction on the planned roadway ------------------------------
+{
+  const route = northRoute();
+  const r = rig(route);
+  // Warm up heading NORTH along the route (bearing 0).
+  r.drive(route, warmLeg(5, T0));
+  // Now driving SOUTH on the same roadway: on the line (lateral ~0), so
+  // only the heading disagreement can reveal it. Before round 1 this was
+  // undetectable — the truck could drive the wrong way indefinitely.
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3].map((i) => ({
+      atMile: 5.2 - i * 0.02,
+      headingDeg: 180,
+      speedMph: 55,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  check(
+    'wrong-way: driving the route backwards is DETECTED (was invisible before round 1)',
+    states.includes('confirmed'),
+    states,
+  );
+  check('wrong-way: never confirmed on the first fix alone', states[0] !== 'confirmed', states);
+}
+{
+  // Same geometry, but crawling in a yard: heading noise at low speed must
+  // never read as wrong-way.
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3, 4].map((i) => ({
+      atMile: 5.2 - i * 0.002,
+      headingDeg: 180,
+      speedMph: 6,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  check(
+    'wrong-way: heading noise below road speed never confirms (yard crawl)',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+}
+
+// --- reroute latency at highway speed ------------------------------------
+{
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  // 1 Hz fixes, as the live GPS provider delivers them.
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3, 4, 5].map((i) => ({
+      atMile: 5.2 + i * 0.017,
+      eastM: 120,
+      speedMph: 62,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  const firstConfirm = states.indexOf('confirmed');
+  check(
+    'latency: highway departure confirms within 4 s of 1 Hz fixes',
+    firstConfirm >= 1 && firstConfirm <= 3,
+    { states, firstConfirm },
+  );
+  check(
+    'latency: the old 8 s floor no longer governs at highway speed',
+    firstConfirm * 1000 < DETECTOR_DEFAULTS.confirmMinElapsedMs,
+    firstConfirm,
+  );
+}
+{
+  // Surface streets: the cautious ladder still governs below the fast
+  // speed, so a city block's worth of lateral error can't fire a reroute.
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  const states = r.drive(
+    route,
+    [0, 1].map((i) => ({
+      atMile: 5.2 + i * 0.01,
+      eastM: 120,
+      speedMph: 25,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  check(
+    'latency: below highway speed the slow ladder still applies (no fast confirm)',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+}
+
+// --- false reroutes: backing, fueling, parking, drift --------------------
+{
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  // Backing to a dock as it really happens: a few truck-lengths at
+  // walking pace, 90 m off the mainline, heading reversed.
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3, 4, 5].map((i) => ({
+      atMile: 5.2 - i * 0.004,
+      eastM: 90,
+      headingDeg: 180,
+      speedMph: 3,
+      tMs: T0 + 12_000 + i * 2000,
+    })),
+  );
+  check(
+    'no false reroute: backing to a dock never confirms',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+
+  // The reverse-travel suppression itself, proven directly: a match the
+  // detector would otherwise treat as strong departure evidence (200 m
+  // off-line, well above the low-speed floor) is stood down purely
+  // because the truck is travelling in reverse.
+  const backing = createOffRouteDetector();
+  let backingState: OffRouteState = 'on-route';
+  let reason: string | null = null;
+  for (let i = 0; i < 6; i++) {
+    const snap = backing.observe({
+      match: {
+        matched: true,
+        routeMile: 5.2,
+        candidateMile: 5.2,
+        lateralM: 200,
+        headingDeltaDeg: 175,
+        travelDirection: 'reverse',
+        confidence: 'low',
+        advanceEligible: false,
+        reasons: ['beside-route'],
+      },
+      tMs: T0 + i * 1000,
+      speedMph: 25,
+      accuracyM: 5,
+    });
+    backingState = snap.state;
+    reason = snap.suppressionReason;
+  }
+  check('backing: reverse travel is suppressed by name', reason === 'backing', reason);
+  check('backing: strong lateral evidence in reverse never confirms', backingState === 'on-route');
+}
+{
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  // Fuel island: 100 m off the road, creeping.
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({
+      atMile: 5.2 + i * 0.001,
+      eastM: 100,
+      speedMph: 4,
+      tMs: T0 + 12_000 + i * 4000,
+    })),
+  );
+  check(
+    'no false reroute: fueling (creeping 100 m off-road) never confirms',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+}
+{
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  // Truck parking: stopped, drifting inside a lot for minutes.
+  const states = r.drive(
+    route,
+    Array.from({ length: 10 }, (_, i) => ({
+      atMile: 5.2,
+      eastM: 110 + (i % 3) * 15,
+      speedMph: 0,
+      tMs: T0 + 12_000 + i * 30_000,
+    })),
+  );
+  check(
+    'no false reroute: parked and drifting in a lot never confirms',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+}
+{
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  // Urban-canyon drift at highway speed: big lateral error, but the fix
+  // itself is loose. Accuracy is the discriminator — without the round-1
+  // gate the fast ladder would confirm this in ~3 s.
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3].map((i) => ({
+      atMile: 5.2 + i * 0.017,
+      eastM: 120,
+      speedMph: 62,
+      accuracyM: 85,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  check(
+    'no false reroute: a loose fix is drift, never departure evidence',
+    states.every((s) => s !== 'confirmed'),
+    states,
+  );
+}
+{
+  // …but a TIGHT fix at the same lateral distance still confirms fast:
+  // the accuracy gate must not have disabled detection wholesale.
+  const route = northRoute();
+  const r = rig(route);
+  r.drive(route, warmLeg(5, T0));
+  const states = r.drive(
+    route,
+    [0, 1, 2, 3].map((i) => ({
+      atMile: 5.2 + i * 0.017,
+      eastM: 120,
+      speedMph: 62,
+      accuracyM: 6,
+      tMs: T0 + 12_000 + i * 1000,
+    })),
+  );
+  check(
+    'accuracy gate is selective: a tight fix at the same offset still confirms',
+    states.includes('confirmed'),
+    states,
+  );
+}
+
+// --- the reroute controller is still the only spender ---------------------
+{
+  const src = readFileSync('src/lib/navigator/off-route-detector.ts', 'utf8');
+  check(
+    'zero-cost boundary intact after round 1 (no fetch/provider in the detector)',
+    !/fetch\s*\(|provider|http/i.test(src.replace(/^\s*(\/\/|\*|\/\*).*$/gm, '')),
+  );
+  const session = readFileSync('src/lib/navigator/navigation-session.ts', 'utf8');
+  check(
+    'session retires a hung in-flight reroute before asking again',
+    session.includes('expireInFlight(tMs)'),
+  );
+  check(
+    'session feeds fix accuracy to the detector (drift gate is wired, not theoretical)',
+    /accuracyM:\s*fix\.accuracyM/.test(session),
+  );
 }
 
 console.log(`offroute-detector: ${passed} passed, ${failed} failed`);

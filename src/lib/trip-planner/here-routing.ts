@@ -100,6 +100,10 @@ export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
   // parser's leniency rule drops them all, and validation correctly
   // refuses guidance with no-maneuvers (live pilot, deploy-preview-251).
   p.set('return', 'polyline,summary,actions,instructions');
+  // US driver UI: instruction text must never read in meters ("Go for
+  // 33 m" was misread as miles in the live pilot). Applies to the
+  // instruction wording only; summary/length fields stay metric.
+  p.set('units', 'imperial');
   p.set('departureTime', new Date(req.departAtMs).toISOString());
   const t = req.truck;
   p.set('truck[height]', String(Math.round(t.heightFt * CM_PER_FT)));

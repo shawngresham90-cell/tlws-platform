@@ -39,6 +39,12 @@ export type ObserveInput = {
   nearestPlannedStopM?: number | null;
   /** Miles remaining to the destination, when the caller knows it. */
   remainingMi?: number | null;
+  /**
+   * Fix accuracy in meters, when the caller has it (pilot round 1). A
+   * loose fix is GPS drift, not evidence of leaving the road: it can
+   * never build a departure episode, though it also never dissolves one.
+   */
+  accuracyM?: number | null;
 };
 
 export type OffRouteEvent = {
@@ -89,6 +95,29 @@ export type DetectorConfig = {
   suppressDestinationMi: number;
   /** ...when slower than this, mph. */
   suppressDestinationSpeedMph: number;
+  /**
+   * Highway-committed speed (pilot round 1). An episode whose every
+   * qualifying observation was at or above this speed confirms on the
+   * FAST thresholds below: at 45 mph the truck covers ~200 ft per second,
+   * so the slow ladder spent half a mile before guidance reacted.
+   */
+  fastConfirmSpeedMph: number;
+  fastConfirmFixes: number;
+  fastConfirmMinElapsedMs: number;
+  /**
+   * Wrong-direction evidence (pilot round 1): the matcher's
+   * 'opposing-heading' reason means the truck's bearing disagrees with
+   * the route by more than a right angle — driving the planned roadway
+   * the wrong way. That never moves the truck laterally off the line, so
+   * without this it could never qualify. Requires real road speed, since
+   * a heading below the matcher's own floor is noise.
+   */
+  wrongDirectionSpeedMph: number;
+  /**
+   * Fix accuracy beyond which an observation is drift, not evidence.
+   * Null accuracy (platform has none) is trusted, as elsewhere.
+   */
+  maxEvidenceAccuracyM: number;
   /** Event log bound. */
   maxEvents: number;
 };
@@ -102,6 +131,11 @@ export const DETECTOR_DEFAULTS: DetectorConfig = {
   suppressPlannedStopM: 150,
   suppressDestinationMi: 1.0,
   suppressDestinationSpeedMph: 25,
+  fastConfirmSpeedMph: 45,
+  fastConfirmFixes: 2,
+  fastConfirmMinElapsedMs: 3_000,
+  wrongDirectionSpeedMph: 20,
+  maxEvidenceAccuracyM: 40,
   maxEvents: 100,
 };
 
@@ -121,6 +155,9 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
   let state: OffRouteState = 'on-route';
   let qualifying = 0;
   let episodeStartMs: number | null = null;
+  // True while EVERY qualifying observation of this episode was at
+  // highway-committed speed — the fast confirmation ladder's precondition.
+  let episodeAllFast = false;
   let recoverStreak = 0;
   let suppressed = false;
   let suppressionReason: string | null = null;
@@ -160,6 +197,9 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
       return 'low-speed';
     }
     if (input.match.reasons.includes('low-speed-pull-in')) return 'pull-in';
+    // Backing (docks, fuel islands, parking): the truck is moving
+    // opposite the route by design. Never a departure. (Pilot round 1.)
+    if (input.match.travelDirection === 'reverse') return 'backing';
     if (
       input.remainingMi !== undefined &&
       input.remainingMi !== null &&
@@ -184,9 +224,29 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
     const m = input.match;
     if (input.speedMph === null || input.speedMph < cfg.suppressLowSpeedMph) return false;
     if (m.reasons.includes('gap-reset')) return false;
+    // A loose fix is drift, not a departure (pilot round 1). It cannot
+    // build evidence; `clean()` still governs whether it dissolves one.
+    if (
+      input.accuracyM !== undefined &&
+      input.accuracyM !== null &&
+      input.accuracyM > cfg.maxEvidenceAccuracyM
+    ) {
+      return false;
+    }
     if (!m.matched) return m.confidence === 'unknown'; // beyond every candidate bound
     if (m.lateralM !== null && m.lateralM > cfg.qualifyLateralM) return true;
+    // Wrong direction on the planned roadway (pilot round 1): the truck
+    // is on the line, so lateral distance says nothing — the matcher's
+    // opposing-heading verdict is the only evidence there is.
+    if (m.reasons.includes('opposing-heading') && input.speedMph >= cfg.wrongDirectionSpeedMph) {
+      return true;
+    }
     return false;
+  }
+
+  /** Highway-committed: a departure at this speed is deliberate, not drift. */
+  function isFast(input: ObserveInput): boolean {
+    return input.speedMph !== null && input.speedMph >= cfg.fastConfirmSpeedMph;
   }
 
   /** A clean observation: confidently matched, near the line. */
@@ -212,6 +272,7 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
     ) {
       qualifying = 0;
       episodeStartMs = null;
+      episodeAllFast = false;
       recoverStreak = 0;
       transition(state === 'suspected' ? 'on-route' : 'confirmed', input);
       return snapshot();
@@ -230,10 +291,12 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
         if (q) {
           qualifying = 1;
           episodeStartMs = input.tMs;
+          episodeAllFast = isFast(input);
           transition('suspected', input);
         } else {
           qualifying = 0;
           episodeStartMs = null;
+          episodeAllFast = false;
         }
         break;
       }
@@ -243,13 +306,19 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
           // approach, not a departure. Stand down entirely.
           qualifying = 0;
           episodeStartMs = null;
+          episodeAllFast = false;
           transition('on-route', input);
           break;
         }
         if (q) {
           qualifying += 1;
+          episodeAllFast = episodeAllFast && isFast(input);
           const elapsed = episodeStartMs === null ? 0 : input.tMs - episodeStartMs;
-          if (qualifying >= cfg.confirmFixes && elapsed >= cfg.confirmMinElapsedMs) {
+          const needFixes = episodeAllFast ? cfg.fastConfirmFixes : cfg.confirmFixes;
+          const needElapsed = episodeAllFast
+            ? cfg.fastConfirmMinElapsedMs
+            : cfg.confirmMinElapsedMs;
+          if (qualifying >= needFixes && elapsed >= needElapsed) {
             transition('confirmed', input);
           }
         } else if (c) {
@@ -257,6 +326,7 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
           // before confirmation dissolves the episode.
           qualifying = 0;
           episodeStartMs = null;
+          episodeAllFast = false;
           transition('on-route', input);
         }
         // Ambiguous observations (neither qualifying nor clean) hold the
@@ -276,6 +346,7 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
           if (recoverStreak >= cfg.recoverFixes) {
             qualifying = 0;
             episodeStartMs = null;
+            episodeAllFast = false;
             recoverStreak = 0;
             transition('recovered', input);
           }
