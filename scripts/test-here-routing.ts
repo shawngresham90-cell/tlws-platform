@@ -131,8 +131,8 @@ async function main() {
     check('url: no hazmat param without placard', q.get('truck[shippedHazardousGoods]') === null);
     check('url: api key as param', q.get('apiKey') === 'TESTKEY');
     check(
-      'url: polyline+summary+actions requested',
-      q.get('return') === 'polyline,summary,actions',
+      'url: polyline+summary+actions+instructions requested (instruction text ships only when `instructions` is in return=)',
+      q.get('return') === 'polyline,summary,actions,instructions',
     );
 
     const hazUrl = buildHereRouteUrl(

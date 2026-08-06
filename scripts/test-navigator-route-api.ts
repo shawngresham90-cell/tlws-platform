@@ -42,6 +42,7 @@ import {
   parseHereResponse,
   createHereRoutingPort,
   routeCacheKey,
+  summarizeHereResponseShape,
   type HereFetch,
   type HereRouteOutcome,
 } from '@/lib/trip-planner/here-routing';
@@ -268,6 +269,11 @@ async function main() {
         p.get('departureTime') !== null,
     );
     check('serializer: transport mode is truck', p.get('transportMode') === 'truck');
+    check(
+      'serializer: return= requests instructions alongside actions (v8 ships instruction TEXT only with `instructions`)',
+      p.get('return') === 'polyline,summary,actions,instructions',
+      p.get('return'),
+    );
 
     // Unit conversions, pinned exactly (a wrong unit is as bad as a missing field).
     check('serializer: 13.5 ft height → 411 cm', p.get('truck[height]') === '411');
@@ -876,6 +882,89 @@ async function main() {
       rtMaxErr < 1e-9,
       { rtMaxErr, rtDecoded },
     );
+
+    // --- live no-maneuvers reproduction (deploy-preview-251 retest) -------
+    // return=actions WITHOUT instructions ships actions with NO instruction
+    // text; the parser's leniency rule drops every one → zero maneuvers →
+    // the validator refuses guidance. Reproduce that exact response shape.
+    const liveShape = {
+      routes: [
+        {
+          sections: [
+            {
+              polyline: SPEC,
+              summary: { length: 214_000, duration: 7_800 },
+              actions: [
+                { action: 'depart', duration: 60, length: 500, offset: 0 },
+                { action: 'arrive', duration: 30, length: 200, offset: 3 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const lp = parseHereResponse(liveShape);
+    check(
+      'live shape: text-less actions parse to ZERO maneuvers and ZERO instructions (not a crash)',
+      lp !== null && lp.maneuvers.length === 0 && lp.instructions.length === 0,
+      lp && { maneuvers: lp.maneuvers.length, instructions: lp.instructions.length },
+    );
+    if (lp) {
+      const lv = validateRoute(
+        { lat: SPEC_PTS[3][0], lng: SPEC_PTS[3][1] },
+        {
+          kind: 'parsed',
+          route: {
+            summary: { meters: lp.meters, seconds: lp.seconds },
+            firstPosition: lp.positions[0],
+            lastPosition: lp.positions[lp.positions.length - 1],
+            geometryPointCount: lp.positions.length,
+            maneuvers: lp.maneuvers,
+            notices: [],
+          },
+        },
+      );
+      check(
+        'live shape: validator stays FAIL-CLOSED — requires-review with no-maneuvers, never usable',
+        lv.state === 'requires-review' && lv.problems.some((p) => p.code === 'no-maneuvers'),
+        lv,
+      );
+    }
+    // The sanitized shape summary must identify this incident from the
+    // response alone: action count present, `instruction` absent from the
+    // first action's field list.
+    const shape = summarizeHereResponseShape(liveShape, 4);
+    check(
+      'shape summary: exact structure-only string for the live no-maneuvers shape',
+      shape ===
+        'routes:1;sections:1;actions:2;fields:polyline.summary.actions;' +
+          'action0:action.duration.length.offset;notices:none;positions:4',
+      shape,
+    );
+    const hostile = {
+      routes: [
+        {
+          sections: [
+            {
+              'polyline?<>': 'apiKey=SECRET123',
+              summary: { length: 1, duration: 1 },
+              actions: [{ 'instruction!': 'Turn at the warehouse, 34.9157 north' }],
+              notices: [{ code: 'weird/code&x=1' }],
+            },
+          ],
+        },
+      ],
+    };
+    const hs = summarizeHereResponseShape(hostile as unknown, 2);
+    check(
+      'shape summary: values never read — no secrets, no text, no decimal numbers can escape',
+      !hs.includes('SECRET') &&
+        !hs.includes('Turn') &&
+        !hs.includes('=') &&
+        !/\d+\.\d+/.test(hs) &&
+        hs.includes('weirdcodex1'),
+      hs,
+    );
   }
 
   // --------------------------------------- 7. endpoint + regression structure
@@ -953,6 +1042,19 @@ async function main() {
     check(
       "decoder: alphabet ends with '-','_' (spec indices 62/63), never the swapped pair",
       poly.includes("0123456789-_'") && !poly.includes("0123456789_-'"),
+    );
+    check(
+      'endpoint: sanitized response-shape diagnostic wired (temporary, PR #251)',
+      /onResponseShape/.test(code) && code.includes('provider-shape:'),
+    );
+    check(
+      'endpoint: shape resets before each provider call (no stale cross-request diagnostics)',
+      code.includes('lastResponseShape = null') &&
+        code.indexOf('lastResponseShape = null') < code.indexOf('hereRouting.route('),
+    );
+    check(
+      'endpoint: shape attaches to requires-review (the non-usable outcome under investigation)',
+      code.includes("verdict.state === 'requires-review' && lastResponseShape !== null"),
     );
 
     const apiUtil = strip(readFileSync('src/lib/trip-planner/api-util.ts', 'utf8'));

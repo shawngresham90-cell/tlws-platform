@@ -57,6 +57,10 @@ const navigatorLimiter = new RateLimiter({
 // is diagnostic-only and the 6/hour limiter keeps concurrency near zero.
 let lastRouteOutcome: HereRouteOutcome | null = null;
 let lastProviderHttp: { status: number | null; note: string } | null = null;
+// TEMPORARY pilot diagnostic (PR #251): sanitized provider response
+// structure — counts and field names only, never values — attached to
+// non-usable outcomes so a live failure reports what shape HERE returned.
+let lastResponseShape: string | null = null;
 
 const hereRouting = createHereRoutingPort(
   async (url: string) => {
@@ -75,6 +79,9 @@ const hereRouting = createHereRoutingPort(
     },
     onProviderHttpError: (status, note) => {
       lastProviderHttp = { status, note };
+    },
+    onResponseShape: (shape) => {
+      lastResponseShape = shape;
     },
   },
 );
@@ -142,6 +149,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Rail 4 — one provider call through the shared, budgeted adapter.
+  // The shape observer fires only on a LIVE provider response; reset first
+  // so a cache-hit or short-circuited call can't attach a stale summary
+  // from an earlier request in this warm instance.
+  lastResponseShape = null;
   const result = await hereRouting.route(toRoutingRequest(data));
 
   // Rail 5 — validate before anything reaches a navigation session.
@@ -211,6 +222,12 @@ export async function POST(req: NextRequest) {
         });
       }
     }
+    if (lastResponseShape !== null) {
+      problems.push({
+        code: `provider-shape:${lastResponseShape}`,
+        message: 'Sanitized provider response structure (temporary pilot diagnostic).',
+      });
+    }
     return NextResponse.json(
       { ok: false, state: verdict.state, problems, warnings: verdict.warnings },
       { status: 422 },
@@ -243,11 +260,24 @@ export async function POST(req: NextRequest) {
   // but only the first two are ok:true; a requires-review route must
   // never auto-start a session.
   const ok = verdict.state === 'valid' || verdict.state === 'valid-with-warning';
+  // requires-review is a non-usable outcome (guidance must not start), so
+  // it carries the same temporary shape diagnostic as a rejection — this
+  // is what identifies WHY a live route arrived without maneuvers.
+  const problems =
+    verdict.state === 'requires-review' && lastResponseShape !== null
+      ? [
+          ...verdict.problems,
+          {
+            code: `provider-shape:${lastResponseShape}`,
+            message: 'Sanitized provider response structure (temporary pilot diagnostic).',
+          },
+        ]
+      : verdict.problems;
   return NextResponse.json(
     {
       ok,
       state: verdict.state,
-      problems: verdict.problems,
+      problems,
       warnings: verdict.warnings,
       route: {
         routeId: `nav-${geometryFingerprint(normalized.points)}-${data.departAtMs}`,
