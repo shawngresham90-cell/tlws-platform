@@ -45,6 +45,7 @@ import {
   type HereFetch,
   type HereRouteOutcome,
 } from '@/lib/trip-planner/here-routing';
+import { redactCoordinates } from '@/lib/navigator/pilot-mode';
 import type { RoutingRequest } from '@/lib/trip-planner/providers';
 import type { TruckProfile } from '@/lib/trip-planner/types';
 
@@ -860,6 +861,22 @@ async function main() {
     check(
       'endpoint: provider HTTP status + sanitized note surfaced on failures',
       /onProviderHttpError/.test(code) && code.includes('provider-http:'),
+    );
+    check(
+      'endpoint: destination-mismatch rejection echoes the snapped route end (route-ends-at)',
+      code.includes('route-ends-at:') &&
+        code.includes("p.code === 'destination-mismatch'") &&
+        /end\.lat\.toFixed\(4\)/.test(code) &&
+        /end\.lng\.toFixed\(4\)/.test(code),
+    );
+    check(
+      'endpoint: route-ends-at is attached only after validateRoute, in the 422 branch',
+      code.indexOf('validateRoute(') < code.indexOf('route-ends-at:'),
+    );
+    check(
+      'pilot log: a route-ends-at code is fully coordinate-redacted (AD-7)',
+      redactCoordinates('rejected:destination-mismatch,route-ends-at:41.1234,-95.6789') ===
+        'rejected:destination-mismatch,route-ends-at:[coord],[coord]',
     );
 
     const adapter = strip(readFileSync('src/lib/trip-planner/here-routing.ts', 'utf8'));

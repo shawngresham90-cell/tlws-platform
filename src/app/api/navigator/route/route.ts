@@ -194,8 +194,25 @@ export async function POST(req: NextRequest) {
     );
   }
   if (verdict.state === 'rejected') {
+    // Pilot diagnosability: on a destination mismatch, echo WHERE the
+    // provider's route actually ends so a road tester can tell a legal
+    // entrance snap from a wrong pin by putting the point on a map. The
+    // coordinate rides in the CODE (clients join codes into the visible
+    // failure reason); the pilot log redacts any 4+-decimal number, so
+    // this never persists in a log. The threshold itself is untouched.
+    const problems = [...verdict.problems];
+    if (problems.some((p) => p.code === 'destination-mismatch')) {
+      const end = result?.routePoints[result.routePoints.length - 1]?.position;
+      if (end && Number.isFinite(end.lat) && Number.isFinite(end.lng)) {
+        problems.push({
+          code: `route-ends-at:${end.lat.toFixed(4)},${end.lng.toFixed(4)}`,
+          message:
+            'Where the provider route actually ends. Compare this point against the destination that was entered.',
+        });
+      }
+    }
     return NextResponse.json(
-      { ok: false, state: verdict.state, problems: verdict.problems, warnings: verdict.warnings },
+      { ok: false, state: verdict.state, problems, warnings: verdict.warnings },
       { status: 422 },
     );
   }
