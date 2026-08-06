@@ -361,6 +361,15 @@ export type HereRoutingOptions = {
    */
   onOutcome?: (outcome: HereRouteOutcome) => void;
   /**
+   * Optional provider-HTTP observer (pilot diagnostics): fired when the
+   * provider answers non-200 (with the status and a short, sanitized
+   * body snippet — never the key, never the URL) or when the fetch
+   * throws (status null, note 'network-or-timeout'). Purely additive;
+   * exceptions from the observer are swallowed. Default: no observer,
+   * byte-identical planner behavior.
+   */
+  onProviderHttpError?: (status: number | null, note: string) => void;
+  /**
    * Retain the FULL decoded geometry on results (N8b). Default FALSE:
    * the planner never needs it and its cache must not grow by holding
    * complete polylines. The Navigator route endpoint opts in and pairs
@@ -443,15 +452,42 @@ export function createHereRoutingPort(
     return callsInWindow < hourlyCap;
   };
 
+  // Provider-HTTP observer (pilot diagnostics). The 4xx body is HERE's
+  // own error JSON (title/cause/action) and never contains the key; the
+  // snippet is sanitized and capped anyway so nothing secret-shaped can
+  // pass through even if the provider changes its error format.
+  const reportHttp = (status: number | null, note: string): void => {
+    try {
+      const safe = note
+        .replace(/apiKey=[^&\s"']*/gi, 'apiKey=REDACTED')
+        .replace(/[^\x20-\x7E]/g, ' ')
+        .slice(0, 200);
+      opts.onProviderHttpError?.(status, safe);
+    } catch {
+      // The observer can never affect routing.
+    }
+  };
+
   const getJson = async (url: string): Promise<unknown | null> => {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const res = await fetchFn(url);
         if (res.status === 200) return await res.json();
         // 4xx will not fix itself; retrying only spends quota.
-        if (res.status < 500) return null;
+        if (res.status < 500) {
+          let body = '';
+          try {
+            body = JSON.stringify(await res.json());
+          } catch {
+            body = '(unreadable body)';
+          }
+          reportHttp(res.status, body);
+          return null;
+        }
+        reportHttp(res.status, '(5xx, will retry once)');
       } catch {
         // network/timeout — one retry, then give up
+        reportHttp(null, 'network-or-timeout');
       }
     }
     return null;

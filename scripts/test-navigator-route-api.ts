@@ -734,6 +734,21 @@ async function main() {
       'endpoint: the config message never echoes key material',
       !/process\.env\.HERE_API_KEY\s*\}/.test(code) && !/\$\{[^}]*HERE_API_KEY/.test(code),
     );
+    check(
+      'endpoint: provider HTTP status + sanitized note surfaced on failures',
+      /onProviderHttpError/.test(code) && code.includes('provider-http:'),
+    );
+
+    const adapter = strip(readFileSync('src/lib/trip-planner/here-routing.ts', 'utf8'));
+    check(
+      'adapter: provider-HTTP observer is sanitized (key pattern stripped, capped)',
+      /apiKey=\[\^&\\s"'\]\*/.test(adapter.replace(/\s/g, '')) ||
+        (adapter.includes('onProviderHttpError') && adapter.includes('apiKey=REDACTED')),
+    );
+    check(
+      'adapter: observer is optional and swallowed (planner behavior unchanged)',
+      /onProviderHttpError\?\./.test(adapter),
+    );
 
     const apiUtil = strip(readFileSync('src/lib/trip-planner/api-util.ts', 'utf8'));
     check(

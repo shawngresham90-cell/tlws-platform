@@ -56,6 +56,7 @@ const navigatorLimiter = new RateLimiter({
 // provider outage. Concurrent requests could interleave this value; it
 // is diagnostic-only and the 6/hour limiter keeps concurrency near zero.
 let lastRouteOutcome: HereRouteOutcome | null = null;
+let lastProviderHttp: { status: number | null; note: string } | null = null;
 
 const hereRouting = createHereRoutingPort(
   async (url: string) => {
@@ -71,6 +72,9 @@ const hereRouting = createHereRoutingPort(
     cacheMax: 24,
     onOutcome: (outcome) => {
       lastRouteOutcome = outcome;
+    },
+    onProviderHttpError: (status, note) => {
+      lastProviderHttp = { status, note };
     },
   },
 );
@@ -162,10 +166,12 @@ export async function POST(req: NextRequest) {
   );
 
   if (verdict.state === 'provider-failure') {
-    // Attach the adapter's bucketed cause so road testing can tell a
-    // timeout from an HTTP error from a spend-cap stop — codes only,
-    // never a URL or key.
+    // Attach the adapter's bucketed cause AND the provider's real HTTP
+    // status + sanitized error snippet so road testing can tell a key
+    // rejection (401/403 — e.g. Routing not enabled for the HERE app)
+    // from a 400 request problem from a timeout. Never a URL or key.
     const cause = result === null ? (lastRouteOutcome ?? 'unknown') : 'unknown';
+    const http = result === null ? lastProviderHttp : null;
     return NextResponse.json(
       {
         ok: false,
@@ -173,6 +179,14 @@ export async function POST(req: NextRequest) {
         problems: [
           ...verdict.problems,
           { code: `provider-cause:${cause}`, message: 'Bucketed provider-failure cause.' },
+          ...(http !== null
+            ? [
+                {
+                  code: `provider-http:${http.status ?? 'network'}`,
+                  message: http.note,
+                },
+              ]
+            : []),
         ],
         warnings: verdict.warnings,
       },
