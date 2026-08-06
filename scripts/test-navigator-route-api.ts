@@ -715,6 +715,25 @@ async function main() {
       code.indexOf('hereRouting.route(') < code.indexOf('validateRoute('),
     );
     check('endpoint: no console/log of URLs or keys', !/console\./.test(code));
+    check(
+      'endpoint: missing HERE_API_KEY answers a DISTINCT provider-not-configured 503 (pilot diagnosability)',
+      code.includes('provider-not-configured') &&
+        code.includes('!process.env.HERE_API_KEY') &&
+        /503/.test(code),
+    );
+    check(
+      'endpoint: config pre-check runs before the limiter is charged',
+      code.indexOf('provider-not-configured') <
+        code.indexOf('guardedParseWithLimiter(navigatorLimiter'),
+    );
+    check(
+      'endpoint: provider-failure carries the bucketed adapter cause (codes only, no URL/key)',
+      /onOutcome/.test(code) && code.includes('provider-cause:'),
+    );
+    check(
+      'endpoint: the config message never echoes key material',
+      !/process\.env\.HERE_API_KEY\s*\}/.test(code) && !/\$\{[^}]*HERE_API_KEY/.test(code),
+    );
 
     const apiUtil = strip(readFileSync('src/lib/trip-planner/api-util.ts', 'utf8'));
     check(

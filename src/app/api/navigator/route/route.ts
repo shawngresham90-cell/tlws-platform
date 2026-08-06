@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createHereRoutingPort } from '@/lib/trip-planner/here-routing';
+import { createHereRoutingPort, type HereRouteOutcome } from '@/lib/trip-planner/here-routing';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
 import { errorJson, guardedParseWithLimiter } from '@/lib/trip-planner/api-util';
 import {
@@ -48,6 +48,15 @@ const navigatorLimiter = new RateLimiter({
 // across requests within a warm serverless instance — the same discipline
 // as the planner's quote endpoint, with a SEPARATE cache (different
 // response needs) but the same hard spend cap.
+//
+// The adapter's fail-soft null hides WHY it failed; the outcome hook
+// records the last bucketed cause (no-key / over-cap / provider-error /
+// malformed-response — never a URL, never the key) so a pilot failure is
+// diagnosable from the response instead of reading as a generic
+// provider outage. Concurrent requests could interleave this value; it
+// is diagnostic-only and the 6/hour limiter keeps concurrency near zero.
+let lastRouteOutcome: HereRouteOutcome | null = null;
+
 const hereRouting = createHereRoutingPort(
   async (url: string) => {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -60,6 +69,9 @@ const hereRouting = createHereRoutingPort(
     // sampled ones. The planner's instances never set retainGeometry.
     retainGeometry: true,
     cacheMax: 24,
+    onOutcome: (outcome) => {
+      lastRouteOutcome = outcome;
+    },
   },
 );
 
@@ -67,6 +79,31 @@ export async function POST(req: NextRequest) {
   // Rail 1 — production-inert until the Navigator itself is enabled.
   if (process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED !== 'true') {
     return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
+  }
+
+  // Rail 1b — configuration honesty: a deploy context without the HERE
+  // key (e.g. an env var scoped to Production only, or to builds but not
+  // functions) must say so DISTINCTLY, before any limiter token or
+  // provider budget is touched. Without this check the request would
+  // fall through to a generic 'no-provider-response', indistinguishable
+  // from a real provider outage. No key material is ever echoed.
+  if (!process.env.HERE_API_KEY) {
+    return NextResponse.json(
+      {
+        ok: false,
+        state: 'provider-failure',
+        problems: [
+          {
+            code: 'provider-not-configured',
+            message:
+              'The routing provider key is not configured for this deploy context. ' +
+              'Check HERE_API_KEY availability (context AND functions scope) in the deploy environment.',
+          },
+        ],
+        warnings: [],
+      },
+      { status: 503 },
+    );
   }
 
   // Rails 2 + schema — strict limiter, size caps, zod shape.
@@ -125,8 +162,20 @@ export async function POST(req: NextRequest) {
   );
 
   if (verdict.state === 'provider-failure') {
+    // Attach the adapter's bucketed cause so road testing can tell a
+    // timeout from an HTTP error from a spend-cap stop — codes only,
+    // never a URL or key.
+    const cause = result === null ? (lastRouteOutcome ?? 'unknown') : 'unknown';
     return NextResponse.json(
-      { ok: false, state: verdict.state, problems: verdict.problems, warnings: verdict.warnings },
+      {
+        ok: false,
+        state: verdict.state,
+        problems: [
+          ...verdict.problems,
+          { code: `provider-cause:${cause}`, message: 'Bucketed provider-failure cause.' },
+        ],
+        warnings: verdict.warnings,
+      },
       { status: 502 },
     );
   }
