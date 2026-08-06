@@ -694,6 +694,129 @@ async function main() {
     }
   }
 
+  // ---------------- 6b. pilot defect regressions — destination mismatch
+  // (live pilot on deploy-preview-251: rejected:destination-mismatch).
+  // The decode/concat pipeline is pinned against the OFFICIAL HERE
+  // flexible-polyline spec vector, and the endpoint-distance tiers are
+  // pinned with the measured-distance diagnostic code.
+  {
+    const SPEC = 'BFoz5xJ67i1B1B7PzIhaxL7Y'; // heremaps/flexible-polyline README vector
+    const SPEC_PTS = [
+      [50.10228, 8.69821],
+      [50.10201, 8.69567],
+      [50.10063, 8.6915],
+      [50.09878, 8.68752],
+    ];
+    const body = {
+      routes: [
+        {
+          sections: [
+            {
+              polyline: SPEC,
+              summary: { length: 1000, duration: 60 },
+              actions: [{ action: 'depart', instruction: 'Go', offset: 0 }],
+            },
+            {
+              polyline: SPEC,
+              summary: { length: 1000, duration: 60 },
+              actions: [{ action: 'arrive', instruction: 'Arrive', offset: 3 }],
+            },
+          ],
+        },
+      ],
+    };
+    const parsed = parseHereResponse(body);
+    check('spec vector: parse succeeds on a multi-section route', parsed !== null);
+    if (parsed) {
+      const last = parsed.positions[parsed.positions.length - 1];
+      check(
+        'spec vector: decode is exact and LAT-FIRST (no lat/lng reversal)',
+        Math.abs(parsed.positions[0].lat - SPEC_PTS[0][0]) < 1e-9 &&
+          Math.abs(parsed.positions[0].lng - SPEC_PTS[0][1]) < 1e-9,
+        parsed.positions[0],
+      );
+      check(
+        'spec vector: multi-section concat keeps order; final point = last section last',
+        parsed.positions.length === 8 &&
+          Math.abs(last.lat - SPEC_PTS[3][0]) < 1e-9 &&
+          Math.abs(last.lng - SPEC_PTS[3][1]) < 1e-9,
+        last,
+      );
+      check(
+        'spec vector: arrive offset rebased into the concatenated geometry',
+        parsed.maneuvers[parsed.maneuvers.length - 1].offset === 7,
+      );
+      const mv = validateRoute(
+        { lat: SPEC_PTS[3][0], lng: SPEC_PTS[3][1] },
+        {
+          kind: 'parsed',
+          route: {
+            summary: { meters: 2000, seconds: 120 },
+            firstPosition: parsed.positions[0],
+            lastPosition: last,
+            geometryPointCount: parsed.positions.length,
+            maneuvers: parsed.maneuvers,
+            notices: [],
+          },
+        },
+      );
+      check(
+        'multi-section route validates clean against its true endpoint',
+        mv.state === 'valid',
+        mv,
+      );
+    }
+
+    const goodRoute: ParsedRouteForValidation = {
+      summary: { meters: 214_000, seconds: 7_800 },
+      firstPosition: ORIGIN,
+      lastPosition: DEST,
+      geometryPointCount: 900,
+      maneuvers: [
+        { action: 'depart', instruction: 'Head north.', offset: 0 },
+        { action: 'arrive', instruction: 'Arrive.', offset: 899 },
+      ],
+      notices: [],
+    };
+    const at = (dLatDeg: number) => ({ lat: DEST.lat + dLatDeg, lng: DEST.lng });
+    const v = (lastPosition: { lat: number; lng: number }) =>
+      validateRoute(DEST, { kind: 'parsed', route: { ...goodRoute, lastPosition } });
+
+    const exact = v(DEST);
+    check(
+      'fixture: EXACT endpoint → valid, no destination codes',
+      exact.state === 'valid' &&
+        !exact.problems.some((p) => p.code.startsWith('destination')) &&
+        !exact.warnings.some((w) => w.code.startsWith('destination')),
+    );
+    const snap = v(at(0.3 / 69.0937)); // ~0.3 mi — normal legal road snapping
+    check('fixture: normal road snapping (0.3 mi) → still valid', snap.state === 'valid', snap);
+    const entrance = v(at(0.8 / 69.0937)); // ~0.8 mi — warehouse entrance offset
+    check(
+      'fixture: warehouse entrance offset (0.8 mi) → requires-review with measured distance',
+      entrance.state === 'requires-review' &&
+        entrance.problems.some((p) => p.code === 'destination-offset') &&
+        entrance.problems.some((p) => p.code === 'destination-distance:0.8mi'),
+      entrance.problems.map((p) => p.code),
+    );
+    const wrong = v(at(5 / 69.0937)); // ~5 mi — genuinely wrong destination
+    check(
+      'fixture: genuinely wrong destination (5 mi) → rejected with measured distance',
+      wrong.state === 'rejected' &&
+        wrong.problems.some((p) => p.code === 'destination-mismatch') &&
+        wrong.problems.some((p) => p.code === 'destination-distance:5.0mi'),
+      wrong.problems.map((p) => p.code),
+    );
+    const reversed = v({ lat: DEST.lng, lng: DEST.lat }); // swapped lat/lng
+    check(
+      'fixture: reversed lat/lng → rejected, distance code exposes the absurd gap',
+      reversed.state === 'rejected' &&
+        reversed.problems.some((p) => p.code === 'destination-mismatch') &&
+        reversed.problems.some((p) => p.code.startsWith('destination-distance:')),
+      reversed.problems.map((p) => p.code),
+    );
+  }
+
   // --------------------------------------- 7. endpoint + regression structure
   {
     const endpoint = readFileSync('src/app/api/navigator/route/route.ts', 'utf8');
