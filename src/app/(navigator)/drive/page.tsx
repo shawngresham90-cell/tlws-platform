@@ -4,6 +4,7 @@ import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { DrivingScreen } from '@/components/navigator/DrivingScreen';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { requirePilotAccess } from '@/lib/navigator-api/pilot-session';
 
 /**
  * Navigator Phase 2A surface: the basic driving screen (N5, visual only)
@@ -12,7 +13,14 @@ import { buildMetadata } from '@/lib/seo/metadata';
  * this route is a 404, so shipping it changes nothing in production.
  * No route source exists yet (N8): the screen's default state is
  * "route unavailable", and no HERE transaction can occur from here.
+ *
+ * TWO gates, in order: the flag decides whether the route exists at all,
+ * then the pilot password decides who may see it. The middleware enforces
+ * the same thing a step earlier; this is the copy that cannot be undone by
+ * a matcher edit. Reading the cookie makes the route dynamic.
  */
+
+export const dynamic = 'force-dynamic';
 
 const ENABLED = process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED === 'true';
 
@@ -24,8 +32,9 @@ export const metadata = buildMetadata({
   noindex: true,
 });
 
-export default function DrivePreviewPage() {
+export default async function DrivePreviewPage() {
   if (!ENABLED) notFound();
+  await requirePilotAccess('/drive');
   return (
     <Section>
       <Container>
