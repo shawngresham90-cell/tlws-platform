@@ -624,6 +624,61 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
     'the map is not pushed below the voice control',
     html.indexOf('data-test-map="live"') < html.indexOf('Mute voice'),
   );
+
+  // ---- the SAME screen in map-first full-screen driving mode ----
+  // This is the surface the driver actually sees at speed, and the one
+  // the two milestones fought over. Voice must be present and reachable
+  // ON it — not exiled below the fold with the pilot controls, because
+  // mute is permitted while moving.
+  const fs = renderToStaticMarkup(
+    createElement(
+      GpsProvider,
+      null,
+      createElement(
+        SafetyLockProvider,
+        null,
+        createElement(DrivingScreenView, {
+          view: view as never,
+          watching: true,
+          onStart: () => {},
+          onStop: () => {},
+          voice: v,
+          fullScreen: true,
+          roadName: 'US-27 North',
+          etaText: '3:45 PM',
+          mapSlot: createElement('div', { 'data-test-map': 'live' }, 'MAP'),
+          overviewSlot: createElement('button', { type: 'button' }, 'Overview'),
+          focusNavigationKey: 'trip-start-1',
+        }),
+      ),
+    ),
+  );
+  check('full-screen: viewport-filling surface (100dvh)', /h-\[100dvh\]/.test(fs));
+  check('full-screen: maneuver instruction present', fs.includes('US-27 North'));
+  check('full-screen: live map present', fs.includes('data-test-map="live"'));
+  check(
+    'full-screen: map above the controls',
+    fs.indexOf('data-test-map="live"') < fs.indexOf('Stop'),
+  );
+  check('full-screen: US units, not meters', /12\.3\s*mi/.test(fs));
+  check('full-screen: speed in mph', /58\s*mph/.test(fs));
+  check('full-screen: arrival estimate shown', fs.includes('3:45 PM'));
+  // Voice is REACHABLE on the driving surface, in compact wording.
+  check('full-screen: voice control present on the driving surface', /Voice on|>Mute</.test(fs));
+  check(
+    'full-screen: voice control keeps a 64 px target (words shorten, target does not)',
+    /min-h-16[^>]*>(Voice on|Mute)</.test(fs) ||
+      /aria-label="(Voice on — enable voice guidance|Mute voice guidance)"/.test(fs),
+  );
+  check(
+    'full-screen: voice sits with Stop, not below the fold with the pilot controls',
+    fs.indexOf('enable voice guidance') < fs.indexOf('Destination entry') ||
+      fs.indexOf('Mute voice guidance') < fs.indexOf('Destination entry'),
+  );
+  check(
+    'full-screen: accessible name still starts with the visible words (WCAG 2.5.3)',
+    !/>Voice on</.test(fs) || /aria-label="Voice on — enable voice guidance"/.test(fs),
+  );
 }
 
 // ------------------------------------- OUTPUT-ONLY boundary (hard bans)

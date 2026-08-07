@@ -26,6 +26,10 @@ import {
 } from '@/lib/navigator/voice-guidance';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { createBrowserSpeechPort } from './speech-port';
+import { formatEta, roadNameFromInstruction } from '@/lib/navigator/driving-hud';
+import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
+import { MapStyleControl } from './MapStyleControl';
+import { useSafetyLock } from './SafetyLockProvider';
 import { useGps } from './GpsProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
@@ -49,6 +53,18 @@ import { VoiceControls } from './VoiceControls';
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
+/**
+ * States where guidance is genuinely live, and the screen becomes the
+ * map-first driving surface instead of a page. 'route-ready' is NOT here:
+ * the driver has not started yet and still needs the ordinary controls.
+ */
+const ACTIVE_LIFECYCLE_STATES: readonly string[] = [
+  'navigating',
+  'off-route',
+  'rerouting',
+  'final-approach',
+];
+
 // Leaflet is browser-only and must never run during SSR; it also must not
 // weigh on the first paint of a screen whose job is guidance.
 const NavigationMap = dynamic(() => import('./NavigationMap').then((m) => m.NavigationMap), {
@@ -71,6 +87,11 @@ export function DrivingScreenView({
   mapSlot = null,
   focusNavigationKey = null,
   voice,
+  fullScreen = false,
+  roadName = null,
+  etaText = null,
+  overviewSlot = null,
+  mapStyleSlot = null,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -92,6 +113,16 @@ export function DrivingScreenView({
   focusNavigationKey?: string | null;
   /** N7 voice guidance; static test renders may omit it. */
   voice?: VoiceGuidance;
+  /** Active guidance: render the viewport-filling, map-first surface. */
+  fullScreen?: boolean;
+  /** Road the next maneuver puts the truck on, when the provider named it. */
+  roadName?: string | null;
+  /** Clock-time arrival estimate, e.g. "3:45 PM". */
+  etaText?: string | null;
+  /** Route-overview control, already wrapped in its own LockGate. */
+  overviewSlot?: ReactNode;
+  /** Map-style picker, already wrapped in its own LockGate. */
+  mapStyleSlot?: ReactNode;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -118,118 +149,206 @@ export function DrivingScreenView({
     }
   }, [focusNavigationKey]);
 
-  return (
-    <div className="space-y-6">
-      {/* Maneuver card — the largest element, ≥32px text, never scrolls away. */}
-      <section
-        ref={navTopRef}
-        aria-label="Next maneuver"
-        className="scroll-mt-4 rounded-card border border-line p-6"
-      >
-        {m ? (
-          <>
-            <p className="text-2xl text-ink/80">
-              In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
+  // A maneuver card that reads over any basemap: opaque backing, road
+  // name when the provider named one, and the following turn.
+  const maneuverCard = (
+    <section
+      ref={navTopRef}
+      aria-label="Next maneuver"
+      className="max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-3 shadow-lg sm:p-6"
+    >
+      {m ? (
+        <>
+          <p className="text-xl text-ink/80 sm:text-2xl">
+            In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
+          </p>
+          {/* Sized so the map still owns the screen on a 320 px phone: the
+              instruction is the largest text, but it may not eat the map. */}
+          <p className="text-2xl font-semibold leading-tight text-ink sm:text-4xl">
+            {m.instruction}
+          </p>
+          {roadName ? <p className="text-base text-ink/80 sm:text-xl">on {roadName}</p> : null}
+          {view.maneuvers?.following ? (
+            <p className="mt-1 truncate text-base text-ink/70 sm:text-xl">
+              then {view.maneuvers.following.instruction}
             </p>
-            <p className="text-4xl font-semibold text-ink">{m.instruction}</p>
-            {view.maneuvers?.following ? (
-              <p className="mt-2 text-xl text-ink/70">
-                then {view.maneuvers.following.instruction}
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <p className="text-3xl font-semibold text-ink">
-            {view.status === 'arrived' ? 'You have arrived' : 'No maneuver to show'}
-          </p>
-        )}
-      </section>
+          ) : null}
+        </>
+      ) : (
+        <p className="text-3xl font-semibold text-ink">
+          {view.status === 'arrived' ? 'You have arrived' : 'No maneuver to show'}
+        </p>
+      )}
+    </section>
+  );
 
-      {/* The map answers "where am I, what road is this, where am I going" —
-          it sits directly under the maneuver card and never above it: the
-          instruction is still the largest thing on the screen. */}
-      {mapSlot}
-
-      {/* Status as TEXT — never color alone; live region for changes. */}
-      <p aria-live="polite" role="status" className="text-xl font-semibold text-ink">
-        {statusText[view.status]}
-        {view.lastKnown ? ' (last known)' : ''}
-      </p>
-      {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
-
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
-        <dt>Route progress</dt>
-        <dd>
-          {view.routeMile !== null && view.totalMi !== null
-            ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
-            : '—'}
+  // Compact bottom readout for the driving surface.
+  const compactStrip = (
+    <dl className="grid shrink-0 grid-cols-3 gap-2 rounded-card border border-line bg-asphalt/95 px-3 py-1 text-center text-ink">
+      <div>
+        <dt className="text-xs text-ink/70">Speed</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">
+          {view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}
         </dd>
-        <dt>Distance remaining</dt>
-        <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
-        <dt>Speed</dt>
-        <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
-      </dl>
+      </div>
+      <div>
+        <dt className="text-xs text-ink/70">Remaining</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">
+          {formatDriverDistanceMi(view.remainingMi)}
+        </dd>
+      </div>
+      <div>
+        <dt className="text-xs text-ink/70">Arrive</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">{etaText ?? '—'}</dd>
+      </div>
+    </dl>
+  );
 
-      {/* Permanent HOS strip (milestone N6) — the driver's clocks against
-          the drive, in every screen state. Clocks only count down while
-          guidance is genuinely active; the label says exactly where its
-          numbers come from. */}
-      <HosStrip
-        drivingActive={view.status === 'navigating' || view.status === 'position-degraded'}
-        sourceLabel={hosSourceLabel}
-        voice={voice}
-      />
+  // ---- ONE tree for both modes -------------------------------------------
+  // Active navigation is a viewport-filling application surface (no browser
+  // fullscreen API); every other state is the ordinary page. Critically the
+  // ELEMENT ORDER is identical in both, and only classes change: React
+  // therefore keeps the map component MOUNTED across the
+  // route-ready → navigating transition. Two separate trees would unmount
+  // it, tearing down and rebuilding the Leaflet instance mid-trip — a
+  // visible reload exactly when the driver starts moving.
+  const shellCls = fullScreen
+    ? 'fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-asphalt'
+    : '';
+  // Portrait stacks card → map → readouts. Landscape becomes a two-column
+  // grid — readouts left, map spanning the right — WITHOUT reordering the
+  // DOM, so the map still never remounts.
+  const surfaceCls = fullScreen
+    ? 'flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
+      'landscape:grid landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)] ' +
+      'landscape:grid-rows-[auto_auto_auto_1fr] landscape:items-start'
+    : 'space-y-6';
+  const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
+  const mapWrapCls = fullScreen
+    ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line ' +
+      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 landscape:h-full landscape:min-h-0'
+    : '';
 
-      {/* Voice enable/mute (milestone N7) — allowed while moving by the
-          shared permission map, like the exit control. Voice starts
-          muted; nothing speaks until the driver enables it. */}
-      {voice ? (
-        <LockGate action="mute-voice" lockedLabel="Voice mute">
-          <VoiceControls voice={voice} />
+  return (
+    <div className={shellCls}>
+      <div className={surfaceCls}>
+        <div className={colOne}>{maneuverCard}</div>
+
+        {/* The map: the driving surface's primary element, and the one
+            component that must survive the layout switch untouched. */}
+        <div className={mapWrapCls}>{mapSlot}</div>
+
+        {/* Status as TEXT — never color alone; live region for changes. */}
+        <p
+          aria-live="polite"
+          role="status"
+          className={
+            fullScreen
+              ? `${colOne} truncate text-sm font-semibold text-ink`
+              : 'text-xl font-semibold text-ink'
+          }
+        >
+          {statusText[view.status]}
+          {view.lastKnown ? ' (last known)' : ''}
+        </p>
+
+        <div className={colOne}>
+          {fullScreen ? (
+            compactStrip
+          ) : (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
+              <dt>Route progress</dt>
+              <dd>
+                {view.routeMile !== null && view.totalMi !== null
+                  ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
+                  : '—'}
+              </dd>
+              <dt>Distance remaining</dt>
+              <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
+              <dt>Speed</dt>
+              <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
+            </dl>
+          )}
+        </div>
+
+        {/* Permanent HOS strip (milestone N6) — the driver's clocks against
+            the drive, in every screen state. In landscape the map needs the
+            height more than the clocks need the space. */}
+        <div className={fullScreen ? `${colOne} landscape:hidden` : ''}>
+          <HosStrip
+            drivingActive={
+              fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
+            }
+            sourceLabel={hosSourceLabel}
+            voice={voice}
+          />
+        </div>
+
+        {/* Stop is the always-visible exit control — allowed while moving.
+            Voice mute rides the SAME row rather than taking one of its own:
+            the driving surface is height-constrained, and a second row
+            would eat the map's floor on a 320 px phone. Mute is allowed
+            while moving by the shared permission map, like Stop, so it
+            must live here on the driving surface and not below the fold. */}
+        <div className={fullScreen ? `${colOne} flex gap-2` : ''}>
+          {fullScreen ? overviewSlot : null}
+          {voice ? (
+            <LockGate action="mute-voice" lockedLabel="Voice mute">
+              <VoiceControls voice={voice} compact={fullScreen} />
+            </LockGate>
+          ) : null}
+          <LockGate action="stop-navigation" lockedLabel="Stop navigation">
+            {watching ? (
+              <button
+                type="button"
+                onClick={onStop}
+                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                aria-label="Stop navigation and discard position"
+              >
+                {fullScreen ? 'Stop' : 'Stop navigation'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onStart}
+                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                aria-label="Enable location and start the driving preview"
+              >
+                Enable location
+              </button>
+            )}
+          </LockGate>
+        </div>
+      </div>
+
+      {/* Below the driving surface: everything that must not compete with
+          guidance. In full-screen this sits past the fold; on the ordinary
+          page it simply continues. */}
+      <div className={fullScreen ? 'space-y-4 p-4' : 'mt-6 space-y-6'}>
+        <MotionLockOverlay />
+        {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
+        {mapStyleSlot}
+
+        {/* Stationary-only affordance — gated by the shared map,
+            demonstrating default-deny end to end. Pilot Mode mounts the
+            trip controls here; otherwise the honest placeholder stands. */}
+        <LockGate action="edit-destination" lockedLabel="Destination entry">
+          {destinationSlot ?? (
+            <p className="text-xl text-ink/80">
+              Destination entry unlocks here when routing ships (a later milestone).
+            </p>
+          )}
         </LockGate>
-      ) : null}
-
-      <MotionLockOverlay />
-
-      {/* Stop is the always-visible exit control — allowed while moving. */}
-      <LockGate action="stop-navigation" lockedLabel="Stop navigation">
-        {watching ? (
-          <button
-            type="button"
-            onClick={onStop}
-            className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
-            aria-label="Stop navigation and discard position"
-          >
-            Stop navigation
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onStart}
-            className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
-            aria-label="Enable location and start the driving preview"
-          >
-            Enable location
-          </button>
-        )}
-      </LockGate>
-
-      {/* Stationary-only affordance — gated by the shared map,
-          demonstrating default-deny end to end. Pilot Mode mounts the
-          trip controls here; otherwise the honest placeholder stands. */}
-      <LockGate action="edit-destination" lockedLabel="Destination entry">
-        {destinationSlot ?? (
-          <p className="text-xl text-ink/80">
-            Destination entry unlocks here when routing ships (a later milestone).
-          </p>
-        )}
-      </LockGate>
+      </div>
     </div>
   );
 }
 
 export function DrivingScreen() {
   const { position, watching, start, stop } = useGps();
+  // Motion policy comes from the ONE shared map (doc 06 §1); the map
+  // component never decides for itself whether browsing is permitted.
+  const { permits } = useSafetyLock();
 
   // Pilot Mode resolves default-deny: the server pass has no hostname, so
   // it renders inactive; the client re-resolves once after mount.
@@ -387,11 +506,51 @@ export function DrivingScreen() {
 
   const focusNavigationKey = focusTick === 0 ? null : `trip-start-${focusTick}`;
 
+  // Map-first surface only while guidance is genuinely live; every other
+  // state keeps the ordinary page so nothing else on the site changes.
+  const fullScreen = ACTIVE_LIFECYCLE_STATES.includes(lcState);
+  const [styleId, setStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE);
+  const [overviewToggleKey, setOverviewToggleKey] = useState(0);
+
+  const roadName = roadNameFromInstruction(view.maneuvers?.next?.instruction ?? null);
+  // The core stays clock-free: the component supplies both "now" and the
+  // device's zone offset.
+  const nowMs = Date.now();
+  const etaText = formatEta(
+    view.remainingMi,
+    view.totalMi,
+    mapData.durationSeconds,
+    nowMs,
+    new Date(nowMs).getTimezoneOffset(),
+  );
+
   return (
     <DrivingScreenView
       view={view}
       watching={watching}
       focusNavigationKey={focusNavigationKey}
+      fullScreen={fullScreen}
+      roadName={roadName}
+      etaText={etaText}
+      overviewSlot={
+        fullScreen ? (
+          <LockGate action="route-overview" lockedLabel="Route overview">
+            <button
+              type="button"
+              onClick={() => setOverviewToggleKey((k) => k + 1)}
+              className="min-h-16 w-full rounded-card border border-line px-4 text-lg font-semibold text-ink"
+              aria-label="Show the whole route, then return to your truck"
+            >
+              Overview
+            </button>
+          </LockGate>
+        ) : null
+      }
+      mapStyleSlot={
+        <LockGate action="change-map-style" lockedLabel="Map style">
+          <MapStyleControl styleId={styleId} onChange={setStyleId} />
+        </LockGate>
+      }
       mapSlot={
         watching || mapData.geometry.length > 0 ? (
           <NavigationMap
@@ -402,6 +561,10 @@ export function DrivingScreen() {
             destination={mapData.destination}
             nextManeuver={mapData.nextManeuver}
             routeId={mapData.routeId}
+            styleId={styleId}
+            canBrowse={permits('browse-map')}
+            navigating={fullScreen}
+            overviewToggleKey={overviewToggleKey}
           />
         ) : null
       }

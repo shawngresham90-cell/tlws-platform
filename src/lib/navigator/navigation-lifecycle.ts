@@ -150,6 +150,8 @@ export type MapData = {
   nextManeuver: LatLng | null;
   /** Identity of the CURRENT route: changes on every replacement. */
   routeId: string | null;
+  /** Provider's planned duration for the CURRENT route — the ETA basis. */
+  durationSeconds: number | null;
 };
 
 export type NavigationLifecycle = {
@@ -489,6 +491,7 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
       nextManeuver:
         active === null || nextMi === null ? null : positionAtRouteMile(active.geometry, nextMi),
       routeId: active === null ? null : active.routeId,
+      durationSeconds: active === null ? null : active.durationSeconds,
     };
   }
 
