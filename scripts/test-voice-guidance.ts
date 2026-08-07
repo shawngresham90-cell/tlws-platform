@@ -29,6 +29,9 @@ import {
   type VoiceRequest,
 } from '@/lib/navigator/voice-guidance';
 import { VoiceControls } from '@/components/navigator/VoiceControls';
+import { DrivingScreenView } from '@/components/navigator/DrivingScreen';
+import { GpsProvider } from '@/components/navigator/GpsProvider';
+import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import type { RemainingClocks } from '@/lib/trip-planner/types';
 
 let passed = 0;
@@ -527,6 +530,99 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
   check(
     'exactly ONE voice instance (single speech owner)',
     (screen.match(/createVoiceGuidance\(/g) ?? []).length === 1,
+  );
+
+  // ---- co-existence with the pilot round-1/round-2 driving screen ----
+  // N7 was authored against an earlier screen. Everything below exists
+  // because the rebase onto the map-bearing screen is exactly where voice
+  // could silently displace shipped driver-facing behavior — or where the
+  // map work could silently displace voice. Each pin names the behavior
+  // it protects so a future edit knows what it is breaking.
+  check(
+    'voice did not displace the live map: the screen still mounts NavigationMap',
+    /<NavigationMap/.test(screen) && /mapSlot=\{/.test(screen),
+  );
+  check(
+    'the map still renders ABOVE the fold of the guidance, via mapSlot',
+    /\{mapSlot\}/.test(screen),
+  );
+  check(
+    'round-2 trip-start handoff survives (driver is taken to the guidance)',
+    /focusNavigationKey=\{focusNavigationKey\}/.test(screen) &&
+      /lcState === 'navigating' && prev === 'route-ready'/.test(screen),
+  );
+  check(
+    'the focus latch and the voice latch use SEPARATE refs (neither clobbers the other)',
+    /prevStateRef/.test(screen) && /prevLcStateRef/.test(screen),
+  );
+  check(
+    'US driver units survive: distance through formatDriverDistanceMi, speed in mph',
+    /formatDriverDistanceMi\(view\.remainingMi\)/.test(screen) && /\bmph\b/.test(screen),
+  );
+  check(
+    'reroute path is untouched by voice (no speech gate before requestReroute)',
+    /lifecycle\.requestReroute\(/.test(screen) &&
+      !/voice[\s\S]{0,80}requestReroute/.test(screen) &&
+      !/await\s+voice/.test(screen),
+  );
+  check(
+    'voice speaks a replacement route from the routeId, not from the reroute CALL',
+    /spokenRouteIdRef/.test(screen),
+  );
+}
+
+// -------------------- behavioral: voice + map on ONE rendered screen
+// Regex pins above prove the wiring is written; this proves it actually
+// renders. A driver must get the maneuver, the map and the voice control
+// on the same surface — not one at the cost of another.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  const view = {
+    status: 'navigating' as const,
+    maneuvers: {
+      next: {
+        action: 'turn',
+        instruction: 'Turn right onto US-27 North',
+        direction: 'right',
+        mileMi: 4.6,
+      },
+      following: null,
+      distanceMi: 0.4,
+    },
+    remainingMi: 12.3,
+    routeMile: 4.2,
+    totalMi: 16.5,
+    speedMph: 58,
+    lastKnown: false,
+  };
+  const html = renderToStaticMarkup(
+    createElement(
+      GpsProvider,
+      null,
+      createElement(
+        SafetyLockProvider,
+        null,
+        createElement(DrivingScreenView, {
+          view: view as never,
+          watching: true,
+          onStart: () => {},
+          onStop: () => {},
+          voice: v,
+          mapSlot: createElement('div', { 'data-test-map': 'live' }, 'MAP'),
+          focusNavigationKey: 'trip-start-1',
+        }),
+      ),
+    ),
+  );
+  check('rendered screen shows the maneuver instruction', html.includes('US-27 North'));
+  check('rendered screen shows the live map slot', html.includes('data-test-map="live"'));
+  check('rendered screen shows the voice control', html.includes('Mute voice'));
+  check('rendered screen shows US distance units, not meters', /12\.3\s*mi/.test(html));
+  check('rendered screen shows speed in mph', /58\s*mph/.test(html));
+  check(
+    'the map is not pushed below the voice control',
+    html.indexOf('data-test-map="live"') < html.indexOf('Mute voice'),
   );
 }
 
