@@ -1,5 +1,10 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
+import {
+  CLASSROOM_PHOTO_HEIGHT,
+  CLASSROOM_PHOTO_SRC,
+  CLASSROOM_PHOTO_WIDTH,
+} from '@/lib/classroom/classroom-photo';
 
 /**
  * The empty-classroom photograph for the "The Room Is Empty." state.
@@ -23,16 +28,15 @@ import { cn } from '@/lib/utils/cn';
  * they should match the real file's pixel dimensions.
  */
 
-/** Where the owner-supplied photograph lives. */
-export const EMPTY_CLASSROOM_SRC = '/images/classroom/empty-classroom.jpg';
-
 /**
- * Intrinsic pixel dimensions of EMPTY_CLASSROOM_SRC — 4:3. Read from the
- * committed file, and pinned against it by the harness so the two can never
- * drift apart.
+ * Path and intrinsic dimensions now live in lib/classroom/classroom-photo,
+ * because the homepage band shows the same file and a second literal is how
+ * a duplicate asset eventually gets committed. Re-exported under the original
+ * names so this module's public surface is unchanged.
  */
-export const ASSET_WIDTH = 1536;
-export const ASSET_HEIGHT = 1152;
+export const EMPTY_CLASSROOM_SRC = CLASSROOM_PHOTO_SRC;
+export const ASSET_WIDTH = CLASSROOM_PHOTO_WIDTH;
+export const ASSET_HEIGHT = CLASSROOM_PHOTO_HEIGHT;
 
 /** Alt text is fixed copy, not a prop — the brief specifies this wording. */
 export const EMPTY_CLASSROOM_ALT = 'Empty classroom awaiting the next training session';
