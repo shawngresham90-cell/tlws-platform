@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { NavigationLifecycle } from '@/lib/navigator/navigation-lifecycle';
 import type { PilotLog } from '@/lib/navigator/pilot-mode';
 import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
 import type { PositionFix } from '@/lib/navigator/types';
+import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import { DestinationSearch } from './DestinationSearch';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -14,9 +16,10 @@ import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
  * when Pilot Mode is active (flag on AND non-production host), so
  * production builds keep the N5 placeholder text.
  *
- * Scope discipline: destination entry is coordinate + facility-class
- * entry for parked-truck testing. No geocoding, no search, no favorites —
- * those would be new navigation features, and P1 adds none.
+ * Pilot round 1: destination entry is now real SEARCH — address,
+ * business, truck stop, warehouse, or city — and the driver never sees a
+ * coordinate. Raw latitude/longitude entry survives only as a collapsed
+ * developer affordance for bench testing a specific point.
  */
 
 const FACILITIES: readonly DestinationFacility[] = [
@@ -51,11 +54,24 @@ export function PilotTripControls({
   const [destLat, setDestLat] = useState('');
   const [destLng, setDestLng] = useState('');
   const [facility, setFacility] = useState<DestinationFacility>('warehouse');
+  const [picked, setPicked] = useState<DestinationCandidate | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   const state = lifecycle.state();
   const summary = lifecycle.summary();
+
+  // A stable object for the search: this component re-renders on every GPS
+  // tick, and a fresh literal here made the search effect restart (and
+  // re-issue a request) once per second. Identity changes only when the
+  // truck actually moves ~110 m.
+  const lat = fix?.lat ?? null;
+  const lng = fix?.lng ?? null;
+  const searchOrigin = useMemo(
+    () => (lat === null || lng === null ? null : { lat, lng }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lat === null ? null : lat.toFixed(3), lng === null ? null : lng.toFixed(3)],
+  );
 
   async function planRoute() {
     if (busy) return;
@@ -63,17 +79,20 @@ export function PilotTripControls({
       setNote('Waiting for a GPS fix — the trip origin is your current position.');
       return;
     }
-    const lat = Number(destLat);
-    const lng = Number(destLng);
+    // A searched place wins; the developer coordinate box is the fallback.
+    const usingSearch = picked !== null;
+    const lat = usingSearch ? picked.position.lat : Number(destLat);
+    const lng = usingSearch ? picked.position.lng : Number(destLng);
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
       Math.abs(lat) > 90 ||
       Math.abs(lng) > 180
     ) {
-      setNote('Enter a valid destination latitude and longitude.');
+      setNote('Search for a destination and choose it from the list.');
       return;
     }
+    const chosenFacility = usingSearch ? picked.facility : facility;
     const now = Date.now();
     setBusy(true);
     setNote(null);
@@ -84,10 +103,11 @@ export function PilotTripControls({
         truck: DEFAULT_TRUCK_PROFILE,
         departAtMs: now,
       },
-      // Typed coordinates carry no verified provenance — the arrival
-      // engine will honestly complete such trips as destination-unverified
-      // unless entrance data exists (none does for typed points).
-      { position: { lat, lng }, facility, positionSource: 'unknown' },
+      // A searched place still carries no VERIFIED truck entrance — the
+      // provider's pin is the front door, not the gate — so provenance
+      // stays 'unknown' and the arrival engine keeps completing such trips
+      // as destination-unverified. Only the facility class improves.
+      { position: { lat, lng }, facility: chosenFacility, positionSource: 'unknown' },
       now,
     );
     setBusy(false);
@@ -109,41 +129,73 @@ export function PilotTripControls({
 
       {state === 'idle' ? (
         <div className="space-y-3">
-          <label className="block text-lg text-ink/80">
-            Destination latitude
-            <input
-              className={inputClass}
-              inputMode="decimal"
-              value={destLat}
-              onChange={(e) => setDestLat(e.target.value)}
-              aria-label="Destination latitude"
-            />
-          </label>
-          <label className="block text-lg text-ink/80">
-            Destination longitude
-            <input
-              className={inputClass}
-              inputMode="decimal"
-              value={destLng}
-              onChange={(e) => setDestLng(e.target.value)}
-              aria-label="Destination longitude"
-            />
-          </label>
-          <label className="block text-lg text-ink/80">
-            Facility type
-            <select
-              className={inputClass}
-              value={facility}
-              onChange={(e) => setFacility(e.target.value as DestinationFacility)}
-              aria-label="Destination facility type"
-            >
-              {FACILITIES.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </label>
+          <DestinationSearch
+            origin={searchOrigin}
+            disabled={busy}
+            onPick={(place) => {
+              setPicked(place);
+              setNote(null);
+            }}
+            onClear={() => setPicked(null)}
+          />
+
+          {picked !== null ? (
+            <p className="text-xl text-ink">
+              Destination: <span className="font-semibold">{picked.title}</span>
+              {picked.address ? <span className="text-ink/70"> — {picked.address}</span> : null}
+            </p>
+          ) : null}
+
+          {/* Developer-only coordinate entry: collapsed, never part of the
+              driver flow, kept for bench-testing an exact point. */}
+          <details className="text-base text-ink/60">
+            <summary className="min-h-16 cursor-pointer text-lg text-ink/70">
+              Developer: enter coordinates instead
+            </summary>
+            <div className="mt-2 space-y-3">
+              <label className="block text-lg text-ink/80">
+                Destination latitude
+                <input
+                  className={inputClass}
+                  inputMode="decimal"
+                  value={destLat}
+                  onChange={(e) => {
+                    setDestLat(e.target.value);
+                    setPicked(null);
+                  }}
+                  aria-label="Destination latitude"
+                />
+              </label>
+              <label className="block text-lg text-ink/80">
+                Destination longitude
+                <input
+                  className={inputClass}
+                  inputMode="decimal"
+                  value={destLng}
+                  onChange={(e) => {
+                    setDestLng(e.target.value);
+                    setPicked(null);
+                  }}
+                  aria-label="Destination longitude"
+                />
+              </label>
+              <label className="block text-lg text-ink/80">
+                Facility type
+                <select
+                  className={inputClass}
+                  value={facility}
+                  onChange={(e) => setFacility(e.target.value as DestinationFacility)}
+                  aria-label="Destination facility type"
+                >
+                  {FACILITIES.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
           <p className="text-base text-ink/60">
             Truck: pilot default — {DEFAULT_TRUCK_PROFILE.lengthFt} ft,{' '}
             {DEFAULT_TRUCK_PROFILE.heightFt} ft tall,{' '}

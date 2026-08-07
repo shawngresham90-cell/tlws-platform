@@ -1,7 +1,10 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DrivingView } from '@/lib/navigator/navigation-controller';
+import type { MapData } from '@/lib/navigator/navigation-lifecycle';
+import type { LatLng } from '@/lib/map/bounds';
 import {
   createNavigationLifecycle,
   type NavigationLifecycle,
@@ -12,6 +15,7 @@ import {
   type PilotLog,
   type PilotMode,
 } from '@/lib/navigator/pilot-mode';
+import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { useGps } from './GpsProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
@@ -35,6 +39,17 @@ import { PilotTripControls } from './PilotTripControls';
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
+// Leaflet is browser-only and must never run during SSR; it also must not
+// weigh on the first paint of a screen whose job is guidance.
+const NavigationMap = dynamic(() => import('./NavigationMap').then((m) => m.NavigationMap), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-72 w-full items-center justify-center rounded-card border border-line text-lg text-muted sm:h-96">
+      Loading map…
+    </div>
+  ),
+});
+
 export function DrivingScreenView({
   view,
   watching,
@@ -43,6 +58,8 @@ export function DrivingScreenView({
   lifecycleLine = null,
   destinationSlot = null,
   hosSourceLabel = DEFAULT_HOS_LABEL,
+  mapSlot = null,
+  focusNavigationKey = null,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -53,6 +70,15 @@ export function DrivingScreenView({
   /** Pilot Mode replaces the placeholder in the stationary-only gate. */
   destinationSlot?: ReactNode;
   hosSourceLabel?: string;
+  /** The live navigation map, mounted under the maneuver card. */
+  mapSlot?: ReactNode;
+  /**
+   * Changes when a trip STARTS. The start control lives at the bottom of
+   * the page (inside the stationary-only gate), so without this the driver
+   * is left looking at the trip controls while the maneuver card and map
+   * are off-screen above — the round-2 road test's exact complaint.
+   */
+  focusNavigationKey?: string | null;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -67,14 +93,30 @@ export function DrivingScreenView({
   };
 
   const m = view.maneuvers?.next ?? null;
+
+  // When a trip starts, put the driver on the guidance — not on the
+  // controls they just used, which sit below the fold.
+  const navTopRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (focusNavigationKey === null) return;
+    const el = navTopRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  }, [focusNavigationKey]);
+
   return (
     <div className="space-y-6">
       {/* Maneuver card — the largest element, ≥32px text, never scrolls away. */}
-      <section aria-label="Next maneuver" className="rounded-card border border-line p-6">
+      <section
+        ref={navTopRef}
+        aria-label="Next maneuver"
+        className="scroll-mt-4 rounded-card border border-line p-6"
+      >
         {m ? (
           <>
             <p className="text-2xl text-ink/80">
-              In {view.maneuvers?.distanceMi?.toFixed(1) ?? '—'} mi
+              In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
             </p>
             <p className="text-4xl font-semibold text-ink">{m.instruction}</p>
             {view.maneuvers?.following ? (
@@ -89,6 +131,11 @@ export function DrivingScreenView({
           </p>
         )}
       </section>
+
+      {/* The map answers "where am I, what road is this, where am I going" —
+          it sits directly under the maneuver card and never above it: the
+          instruction is still the largest thing on the screen. */}
+      {mapSlot}
 
       {/* Status as TEXT — never color alone; live region for changes. */}
       <p aria-live="polite" role="status" className="text-xl font-semibold text-ink">
@@ -105,7 +152,7 @@ export function DrivingScreenView({
             : '—'}
         </dd>
         <dt>Distance remaining</dt>
-        <dd>{view.remainingMi !== null ? `${view.remainingMi.toFixed(1)} mi` : '—'}</dd>
+        <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
         <dt>Speed</dt>
         <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
       </dl>
@@ -209,11 +256,50 @@ export function DrivingScreen() {
   // outlives its owner (GpsProvider tears the watch down the same way).
   useEffect(() => () => void lifecycle.cancel(Date.now()), [lifecycle]);
 
+  // Bring the driver to the guidance exactly ONCE per trip, on the
+  // route-ready → navigating transition. Later states (off-route,
+  // rerouting, final-approach) must not re-scroll: a driver who has
+  // deliberately scrolled to their HOS clocks should stay there.
+  const prevStateRef = useRef<string | null>(null);
+  const [focusTick, setFocusTick] = useState(0);
+  useEffect(() => {
+    const prev = prevStateRef.current;
+    prevStateRef.current = lcState;
+    if (lcState === 'navigating' && prev === 'route-ready') setFocusTick((t) => t + 1);
+  }, [lcState]);
+
   const tripLoaded = lcState !== 'idle' && lcState !== 'planning' && lcState !== 'completed';
+
+  // Map data is a read-only projection of the live session; it is recomputed
+  // with the view so a replacement route redraws the moment it lands.
+  const mapData: MapData = useMemo(
+    () => lifecycle.mapData(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lifecycle, view, lcState],
+  );
+  const truckPosition: LatLng | null =
+    position.fix === null ? null : { lat: position.fix.lat, lng: position.fix.lng };
+
+  const focusNavigationKey = focusTick === 0 ? null : `trip-start-${focusTick}`;
+
   return (
     <DrivingScreenView
       view={view}
       watching={watching}
+      focusNavigationKey={focusNavigationKey}
+      mapSlot={
+        watching || mapData.geometry.length > 0 ? (
+          <NavigationMap
+            geometry={mapData.geometry}
+            position={truckPosition}
+            headingDeg={position.headingDeg}
+            speedMph={view.speedMph}
+            destination={mapData.destination}
+            nextManeuver={mapData.nextManeuver}
+            routeId={mapData.routeId}
+          />
+        ) : null
+      }
       onStart={() => {
         start();
         bump();

@@ -160,6 +160,12 @@ export function validateRoute(
           `The route ends ${gapMi.toFixed(1)} mi from the requested destination.`,
         ),
       );
+      // Pilot diagnosability: the measured distance rides as its own CODE
+      // (clients surface codes, not messages). Sanitized — a distance in
+      // miles, never a coordinate.
+      problems.push(
+        problem(`destination-distance:${gapMi.toFixed(1)}mi`, 'Measured endpoint gap.'),
+      );
     } else if (gapMi > DESTINATION_REVIEW_MI) {
       reviews.push(
         problem(
@@ -167,6 +173,7 @@ export function validateRoute(
           `The route ends ${gapMi.toFixed(2)} mi from the requested destination — plausibly provider snapping, needs review.`,
         ),
       );
+      reviews.push(problem(`destination-distance:${gapMi.toFixed(1)}mi`, 'Measured endpoint gap.'));
     }
   }
 

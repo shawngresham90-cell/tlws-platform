@@ -69,6 +69,13 @@ export type NavigationSession = {
   /** Frozen after completion; null while the trip is live. */
   summary(): TripSummary | null;
   isActive(): boolean;
+  /**
+   * The route currently being navigated — the REPLACEMENT after a reroute,
+   * not the route the session was built with. Read-only; null once the
+   * trip completes and the engines are released. (Pilot round 1: the
+   * navigation map must redraw on reroute.)
+   */
+  currentSession(): RouteSession | null;
 };
 
 export type NavigationSessionConfig = {
@@ -145,6 +152,8 @@ export function createNavigationSession(
         speedMph: fix.speedMph,
         nearestPlannedStopM: fix.nearestPlannedStopM,
         remainingMi,
+        // Pilot round 1: a loose fix is drift, never departure evidence.
+        accuracyM: fix.accuracyM,
       });
     }
 
@@ -173,6 +182,10 @@ export function createNavigationSession(
       // Never replace the route during final approach or arrival.
       return { outcome: 'not-eligible' };
     }
+    // A request whose promise never settles would otherwise hold the
+    // controller's single-flight slot forever and silently block every
+    // later reroute. Retire it once past its own timeout (pilot round 1).
+    reroute.expireInFlight(tMs);
     const detectorState = detector.state().state;
     const position = lastMatch === null ? null : lastMatchPosition();
     if (position === null) return { outcome: 'not-eligible' };
@@ -223,5 +236,6 @@ export function createNavigationSession(
     snapshot,
     summary: () => tripSummary,
     isActive: () => tripSummary === null,
+    currentSession: () => reroute?.currentSession() ?? null,
   };
 }

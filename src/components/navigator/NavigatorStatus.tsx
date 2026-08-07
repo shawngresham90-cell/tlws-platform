@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui';
+import { formatAccuracyFt } from '@/lib/navigator/format-units';
 import { useGps } from './GpsProvider';
 import type { PositionHealth, PositionState } from '@/lib/navigator/types';
 
@@ -102,7 +103,7 @@ export function NavigatorStatusView({
             : 'Waiting for first fix…'}
         </dd>
         <dt className="font-semibold">Accuracy</dt>
-        <dd>{fix ? `±${Math.round(fix.accuracyM)} m` : '—'}</dd>
+        <dd>{fix ? formatAccuracyFt(fix.accuracyM) : '—'}</dd>
         <dt className="font-semibold">Speed</dt>
         <dd>
           {position.speedMph !== null ? `${Math.round(position.speedMph)} mph` : 'Needs two fixes'}

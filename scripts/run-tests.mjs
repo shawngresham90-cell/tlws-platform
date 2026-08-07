@@ -54,6 +54,11 @@ for (const name of harnesses) {
         '--jsx=automatic',
         '--alias:@=./src',
         '--alias:server-only=./scripts/shims/server-only.ts',
+        // Components may import stylesheets (Leaflet ships its own). Next
+        // handles CSS; these offline harnesses only exercise behavior, so
+        // stylesheets bundle to nothing rather than failing on their
+        // relative image URLs.
+        '--loader:.css=empty',
         `--outfile=${out}`,
         '--log-level=error',
       ],

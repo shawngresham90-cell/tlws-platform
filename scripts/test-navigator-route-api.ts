@@ -42,9 +42,13 @@ import {
   parseHereResponse,
   createHereRoutingPort,
   routeCacheKey,
+  summarizeHereResponseShape,
   type HereFetch,
   type HereRouteOutcome,
 } from '@/lib/trip-planner/here-routing';
+import { redactCoordinates } from '@/lib/navigator/pilot-mode';
+import { decodeFlexiblePolyline } from '@/lib/trip-planner/flexible-polyline';
+import { encodeTestPolyline } from './helpers/flexible-polyline-encode';
 import type { RoutingRequest } from '@/lib/trip-planner/providers';
 import type { TruckProfile } from '@/lib/trip-planner/types';
 
@@ -265,6 +269,11 @@ async function main() {
         p.get('departureTime') !== null,
     );
     check('serializer: transport mode is truck', p.get('transportMode') === 'truck');
+    check(
+      'serializer: return= requests instructions alongside actions (v8 ships instruction TEXT only with `instructions`)',
+      p.get('return') === 'polyline,summary,actions,instructions',
+      p.get('return'),
+    );
 
     // Unit conversions, pinned exactly (a wrong unit is as bad as a missing field).
     check('serializer: 13.5 ft height → 411 cm', p.get('truck[height]') === '411');
@@ -694,6 +703,270 @@ async function main() {
     }
   }
 
+  // ---------------- 6b. pilot defect regressions — destination mismatch
+  // (live pilot on deploy-preview-251: rejected:destination-mismatch).
+  // The decode/concat pipeline is pinned against the OFFICIAL HERE
+  // flexible-polyline spec vector, and the endpoint-distance tiers are
+  // pinned with the measured-distance diagnostic code.
+  {
+    const SPEC = 'BFoz5xJ67i1B1B7PzIhaxL7Y'; // heremaps/flexible-polyline README vector
+    const SPEC_PTS = [
+      [50.10228, 8.69821],
+      [50.10201, 8.69567],
+      [50.10063, 8.6915],
+      [50.09878, 8.68752],
+    ];
+    const body = {
+      routes: [
+        {
+          sections: [
+            {
+              polyline: SPEC,
+              summary: { length: 1000, duration: 60 },
+              actions: [{ action: 'depart', instruction: 'Go', offset: 0 }],
+            },
+            {
+              polyline: SPEC,
+              summary: { length: 1000, duration: 60 },
+              actions: [{ action: 'arrive', instruction: 'Arrive', offset: 3 }],
+            },
+          ],
+        },
+      ],
+    };
+    const parsed = parseHereResponse(body);
+    check('spec vector: parse succeeds on a multi-section route', parsed !== null);
+    if (parsed) {
+      const last = parsed.positions[parsed.positions.length - 1];
+      check(
+        'spec vector: decode is exact and LAT-FIRST (no lat/lng reversal)',
+        Math.abs(parsed.positions[0].lat - SPEC_PTS[0][0]) < 1e-9 &&
+          Math.abs(parsed.positions[0].lng - SPEC_PTS[0][1]) < 1e-9,
+        parsed.positions[0],
+      );
+      check(
+        'spec vector: multi-section concat keeps order; final point = last section last',
+        parsed.positions.length === 8 &&
+          Math.abs(last.lat - SPEC_PTS[3][0]) < 1e-9 &&
+          Math.abs(last.lng - SPEC_PTS[3][1]) < 1e-9,
+        last,
+      );
+      check(
+        'spec vector: arrive offset rebased into the concatenated geometry',
+        parsed.maneuvers[parsed.maneuvers.length - 1].offset === 7,
+      );
+      const mv = validateRoute(
+        { lat: SPEC_PTS[3][0], lng: SPEC_PTS[3][1] },
+        {
+          kind: 'parsed',
+          route: {
+            summary: { meters: 2000, seconds: 120 },
+            firstPosition: parsed.positions[0],
+            lastPosition: last,
+            geometryPointCount: parsed.positions.length,
+            maneuvers: parsed.maneuvers,
+            notices: [],
+          },
+        },
+      );
+      check(
+        'multi-section route validates clean against its true endpoint',
+        mv.state === 'valid',
+        mv,
+      );
+    }
+
+    const goodRoute: ParsedRouteForValidation = {
+      summary: { meters: 214_000, seconds: 7_800 },
+      firstPosition: ORIGIN,
+      lastPosition: DEST,
+      geometryPointCount: 900,
+      maneuvers: [
+        { action: 'depart', instruction: 'Head north.', offset: 0 },
+        { action: 'arrive', instruction: 'Arrive.', offset: 899 },
+      ],
+      notices: [],
+    };
+    const at = (dLatDeg: number) => ({ lat: DEST.lat + dLatDeg, lng: DEST.lng });
+    const v = (lastPosition: { lat: number; lng: number }) =>
+      validateRoute(DEST, { kind: 'parsed', route: { ...goodRoute, lastPosition } });
+
+    const exact = v(DEST);
+    check(
+      'fixture: EXACT endpoint → valid, no destination codes',
+      exact.state === 'valid' &&
+        !exact.problems.some((p) => p.code.startsWith('destination')) &&
+        !exact.warnings.some((w) => w.code.startsWith('destination')),
+    );
+    const snap = v(at(0.3 / 69.0937)); // ~0.3 mi — normal legal road snapping
+    check('fixture: normal road snapping (0.3 mi) → still valid', snap.state === 'valid', snap);
+    const entrance = v(at(0.8 / 69.0937)); // ~0.8 mi — warehouse entrance offset
+    check(
+      'fixture: warehouse entrance offset (0.8 mi) → requires-review with measured distance',
+      entrance.state === 'requires-review' &&
+        entrance.problems.some((p) => p.code === 'destination-offset') &&
+        entrance.problems.some((p) => p.code === 'destination-distance:0.8mi'),
+      entrance.problems.map((p) => p.code),
+    );
+    const wrong = v(at(5 / 69.0937)); // ~5 mi — genuinely wrong destination
+    check(
+      'fixture: genuinely wrong destination (5 mi) → rejected with measured distance',
+      wrong.state === 'rejected' &&
+        wrong.problems.some((p) => p.code === 'destination-mismatch') &&
+        wrong.problems.some((p) => p.code === 'destination-distance:5.0mi'),
+      wrong.problems.map((p) => p.code),
+    );
+    const reversed = v({ lat: DEST.lng, lng: DEST.lat }); // swapped lat/lng
+    check(
+      'fixture: reversed lat/lng → rejected, distance code exposes the absurd gap',
+      reversed.state === 'rejected' &&
+        reversed.problems.some((p) => p.code === 'destination-mismatch') &&
+        reversed.problems.some((p) => p.code.startsWith('destination-distance:')),
+      reversed.problems.map((p) => p.code),
+    );
+
+    // --- ROOT CAUSE of the 7.5 mi live gap: alphabet chars 62/63 ----------
+    // The decoder's table had '-' and '_' SWAPPED vs the published spec
+    // ('-' = 62, '_' = 63). Both chars still "decoded" — to the wrong
+    // value — so one corrupted delta shifted every later point in that
+    // dimension by a constant. The README spec vector contains neither
+    // character, which is why the pins above never caught it. These pins
+    // exercise both characters directly and via a full round-trip.
+    //
+    // 'BF-BA': version 1, precision 5, then varint 62 ('-'=62 low chunk,
+    // continuation + 'B') → zigzag 62 = +31 → lat 0.00031; 'A' → lng 0.
+    const dash = decodeFlexiblePolyline('BF-BA').positions;
+    check(
+      "alphabet: '-' decodes as index 62 per spec (swapped table gave -0.00032)",
+      dash.length === 1 && Math.abs(dash[0][0] - 0.00031) < 1e-12 && Math.abs(dash[0][1]) < 1e-12,
+      dash,
+    );
+    // 'BF_BA': varint 63 → zigzag 63 = -32 → lat -0.00032.
+    const under = decodeFlexiblePolyline('BF_BA').positions;
+    check(
+      "alphabet: '_' decodes as index 63 per spec (swapped table gave +0.00031)",
+      under.length === 1 &&
+        Math.abs(under[0][0] - -0.00032) < 1e-12 &&
+        Math.abs(under[0][1]) < 1e-12,
+      under,
+    );
+    // Round-trip through the spec-faithful test encoder with deltas chosen
+    // so the encoding provably CONTAINS both characters — the exact class
+    // of polyline the old table silently corrupted.
+    const rtPts: [number, number][] = [
+      [34.9157, -85.1095], // the live pilot's requested destination area
+      [34.91601, -85.1095], // lat delta +31 → encodes with '-'
+      [34.91569, -85.1095], // lat delta -32 → encodes with '_'
+      [34.917, -84.9769], // large mixed delta
+    ];
+    const rtEncoded = encodeTestPolyline(rtPts);
+    check(
+      "alphabet round-trip: fixture encoding really contains '-' and '_'",
+      rtEncoded.includes('-') && rtEncoded.includes('_'),
+      rtEncoded,
+    );
+    const rtDecoded = decodeFlexiblePolyline(rtEncoded).positions;
+    let rtMaxErr = Infinity;
+    if (rtDecoded.length === rtPts.length) {
+      rtMaxErr = 0;
+      for (let i = 0; i < rtPts.length; i++) {
+        rtMaxErr = Math.max(
+          rtMaxErr,
+          Math.abs(rtDecoded[i][0] - rtPts[i][0]),
+          Math.abs(rtDecoded[i][1] - rtPts[i][1]),
+        );
+      }
+    }
+    check(
+      'alphabet round-trip: decode(encode(pts)) is exact — no constant-offset drift',
+      rtMaxErr < 1e-9,
+      { rtMaxErr, rtDecoded },
+    );
+
+    // --- live no-maneuvers reproduction (deploy-preview-251 retest) -------
+    // return=actions WITHOUT instructions ships actions with NO instruction
+    // text; the parser's leniency rule drops every one → zero maneuvers →
+    // the validator refuses guidance. Reproduce that exact response shape.
+    const liveShape = {
+      routes: [
+        {
+          sections: [
+            {
+              polyline: SPEC,
+              summary: { length: 214_000, duration: 7_800 },
+              actions: [
+                { action: 'depart', duration: 60, length: 500, offset: 0 },
+                { action: 'arrive', duration: 30, length: 200, offset: 3 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const lp = parseHereResponse(liveShape);
+    check(
+      'live shape: text-less actions parse to ZERO maneuvers and ZERO instructions (not a crash)',
+      lp !== null && lp.maneuvers.length === 0 && lp.instructions.length === 0,
+      lp && { maneuvers: lp.maneuvers.length, instructions: lp.instructions.length },
+    );
+    if (lp) {
+      const lv = validateRoute(
+        { lat: SPEC_PTS[3][0], lng: SPEC_PTS[3][1] },
+        {
+          kind: 'parsed',
+          route: {
+            summary: { meters: lp.meters, seconds: lp.seconds },
+            firstPosition: lp.positions[0],
+            lastPosition: lp.positions[lp.positions.length - 1],
+            geometryPointCount: lp.positions.length,
+            maneuvers: lp.maneuvers,
+            notices: [],
+          },
+        },
+      );
+      check(
+        'live shape: validator stays FAIL-CLOSED — requires-review with no-maneuvers, never usable',
+        lv.state === 'requires-review' && lv.problems.some((p) => p.code === 'no-maneuvers'),
+        lv,
+      );
+    }
+    // The sanitized shape summary must identify this incident from the
+    // response alone: action count present, `instruction` absent from the
+    // first action's field list.
+    const shape = summarizeHereResponseShape(liveShape, 4);
+    check(
+      'shape summary: exact structure-only string for the live no-maneuvers shape',
+      shape ===
+        'routes:1;sections:1;actions:2;fields:polyline.summary.actions;' +
+          'action0:action.duration.length.offset;notices:none;positions:4',
+      shape,
+    );
+    const hostile = {
+      routes: [
+        {
+          sections: [
+            {
+              'polyline?<>': 'apiKey=SECRET123',
+              summary: { length: 1, duration: 1 },
+              actions: [{ 'instruction!': 'Turn at the warehouse, 34.9157 north' }],
+              notices: [{ code: 'weird/code&x=1' }],
+            },
+          ],
+        },
+      ],
+    };
+    const hs = summarizeHereResponseShape(hostile as unknown, 2);
+    check(
+      'shape summary: values never read — no secrets, no text, no decimal numbers can escape',
+      !hs.includes('SECRET') &&
+        !hs.includes('Turn') &&
+        !hs.includes('=') &&
+        !/\d+\.\d+/.test(hs) &&
+        hs.includes('weirdcodex1'),
+      hs,
+    );
+  }
+
   // --------------------------------------- 7. endpoint + regression structure
   {
     const endpoint = readFileSync('src/app/api/navigator/route/route.ts', 'utf8');
@@ -715,6 +988,74 @@ async function main() {
       code.indexOf('hereRouting.route(') < code.indexOf('validateRoute('),
     );
     check('endpoint: no console/log of URLs or keys', !/console\./.test(code));
+    check(
+      'endpoint: missing HERE_API_KEY answers a DISTINCT provider-not-configured 503 (pilot diagnosability)',
+      code.includes('provider-not-configured') &&
+        code.includes('!process.env.HERE_API_KEY') &&
+        /503/.test(code),
+    );
+    check(
+      'endpoint: config pre-check runs before the limiter is charged',
+      code.indexOf('provider-not-configured') <
+        code.indexOf('guardedParseWithLimiter(navigatorLimiter'),
+    );
+    check(
+      'endpoint: provider-failure carries the bucketed adapter cause (codes only, no URL/key)',
+      /onOutcome/.test(code) && code.includes('provider-cause:'),
+    );
+    check(
+      'endpoint: the config message never echoes key material',
+      !/process\.env\.HERE_API_KEY\s*\}/.test(code) && !/\$\{[^}]*HERE_API_KEY/.test(code),
+    );
+    check(
+      'endpoint: provider HTTP status + sanitized note surfaced on failures',
+      /onProviderHttpError/.test(code) && code.includes('provider-http:'),
+    );
+    check(
+      'endpoint: destination-mismatch rejection echoes the snapped route end (route-ends-at)',
+      code.includes('route-ends-at:') &&
+        code.includes("p.code === 'destination-mismatch'") &&
+        /end\.lat\.toFixed\(4\)/.test(code) &&
+        /end\.lng\.toFixed\(4\)/.test(code),
+    );
+    check(
+      'endpoint: route-ends-at is attached only after validateRoute, in the 422 branch',
+      code.indexOf('validateRoute(') < code.indexOf('route-ends-at:'),
+    );
+    check(
+      'pilot log: a route-ends-at code is fully coordinate-redacted (AD-7)',
+      redactCoordinates('rejected:destination-mismatch,route-ends-at:41.1234,-95.6789') ===
+        'rejected:destination-mismatch,route-ends-at:[coord],[coord]',
+    );
+
+    const adapter = strip(readFileSync('src/lib/trip-planner/here-routing.ts', 'utf8'));
+    check(
+      'adapter: provider-HTTP observer is sanitized (key pattern stripped, capped)',
+      /apiKey=\[\^&\\s"'\]\*/.test(adapter.replace(/\s/g, '')) ||
+        (adapter.includes('onProviderHttpError') && adapter.includes('apiKey=REDACTED')),
+    );
+    check(
+      'adapter: observer is optional and swallowed (planner behavior unchanged)',
+      /onProviderHttpError\?\./.test(adapter),
+    );
+    const poly = readFileSync('src/lib/trip-planner/flexible-polyline.ts', 'utf8');
+    check(
+      "decoder: alphabet ends with '-','_' (spec indices 62/63), never the swapped pair",
+      poly.includes("0123456789-_'") && !poly.includes("0123456789_-'"),
+    );
+    check(
+      'endpoint: sanitized response-shape diagnostic wired (temporary, PR #251)',
+      /onResponseShape/.test(code) && code.includes('provider-shape:'),
+    );
+    check(
+      'endpoint: shape resets before each provider call (no stale cross-request diagnostics)',
+      code.includes('lastResponseShape = null') &&
+        code.indexOf('lastResponseShape = null') < code.indexOf('hereRouting.route('),
+    );
+    check(
+      'endpoint: shape attaches to requires-review (the non-usable outcome under investigation)',
+      code.includes("verdict.state === 'requires-review' && lastResponseShape !== null"),
+    );
 
     const apiUtil = strip(readFileSync('src/lib/trip-planner/api-util.ts', 'utf8'));
     check(

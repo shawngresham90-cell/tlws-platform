@@ -8,7 +8,10 @@
  * with the published spec (github.com/heremaps/flexible-polyline).
  */
 
-const ENCODING_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+// Must match the published spec exactly ('-' = 62, '_' = 63) — a swapped
+// pair here would round-trip cleanly against a decoder with the same swap
+// while both disagree with HERE's real wire format.
+const ENCODING_TABLE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
 function encodeUnsigned(value: number, out: string[]): void {
   let v = value;

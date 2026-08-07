@@ -94,7 +94,16 @@ export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
   p.set('origin', `${req.origin.lat.toFixed(6)},${req.origin.lng.toFixed(6)}`);
   p.set('destination', `${req.destination.lat.toFixed(6)},${req.destination.lng.toFixed(6)}`);
   for (const w of req.waypoints) p.append('via', `${w.lat.toFixed(6)},${w.lng.toFixed(6)}`);
-  p.set('return', 'polyline,summary,actions');
+  // v8 semantics: `actions` returns the structured action list but the
+  // human-readable `instruction` TEXT field only ships when `instructions`
+  // is ALSO requested. Without it every action arrives text-less, the
+  // parser's leniency rule drops them all, and validation correctly
+  // refuses guidance with no-maneuvers (live pilot, deploy-preview-251).
+  p.set('return', 'polyline,summary,actions,instructions');
+  // US driver UI: instruction text must never read in meters ("Go for
+  // 33 m" was misread as miles in the live pilot). Applies to the
+  // instruction wording only; summary/length fields stay metric.
+  p.set('units', 'imperial');
   p.set('departureTime', new Date(req.departAtMs).toISOString());
   const t = req.truck;
   p.set('truck[height]', String(Math.round(t.heightFt * CM_PER_FT)));
@@ -305,6 +314,56 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   };
 }
 
+/**
+ * TEMPORARY pilot diagnostic (PR #251): a sanitized, structure-only summary
+ * of a provider response — counts and field NAMES only. No VALUE from the
+ * payload is ever read into the output, so it cannot carry a coordinate,
+ * the key, or any user data. `positionCount` comes from the caller's parse
+ * so the geometry is not decoded twice.
+ */
+export function summarizeHereResponseShape(json: unknown, positionCount: number): string {
+  const safeName = (k: string) => k.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 24);
+  const routes = (json as HereResponse)?.routes;
+  if (!Array.isArray(routes)) return 'routes:none';
+  const parts: string[] = [`routes:${routes.length}`];
+  const sections = routes[0]?.sections;
+  if (!Array.isArray(sections)) {
+    parts.push('sections:none');
+  } else {
+    parts.push(`sections:${sections.length}`);
+    parts.push(
+      `actions:${sections
+        .map((s) => (Array.isArray(s?.actions) ? s.actions.length : 'none'))
+        .join('+')}`,
+    );
+    const first = sections[0];
+    parts.push(
+      `fields:${
+        first && typeof first === 'object'
+          ? Object.keys(first).slice(0, 12).map(safeName).join('.') || 'none'
+          : 'none'
+      }`,
+    );
+    // The discriminator for the no-maneuvers incident: which fields does
+    // the FIRST action actually carry (e.g. is `instruction` present)?
+    const firstAction = Array.isArray(first?.actions) ? first.actions[0] : undefined;
+    parts.push(
+      `action0:${
+        firstAction && typeof firstAction === 'object'
+          ? Object.keys(firstAction).slice(0, 10).map(safeName).join('.') || 'none'
+          : 'none'
+      }`,
+    );
+    const noticeCodes = sections
+      .flatMap((s) => (Array.isArray(s?.notices) ? s.notices : []))
+      .map((n) => safeName(typeof n?.code === 'string' && n.code ? n.code : 'untyped'))
+      .slice(0, 8);
+    parts.push(`notices:${noticeCodes.length > 0 ? noticeCodes.join('.') : 'none'}`);
+  }
+  parts.push(`positions:${positionCount}`);
+  return parts.join(';').slice(0, 300);
+}
+
 /** Downsample decoded geometry into cumulative route-mile points. */
 export function toRoutePoints(
   positions: LatLng[],
@@ -360,6 +419,23 @@ export type HereRoutingOptions = {
    * depends on it. Default: no observer, byte-identical planner behavior.
    */
   onOutcome?: (outcome: HereRouteOutcome) => void;
+  /**
+   * Optional provider-HTTP observer (pilot diagnostics): fired when the
+   * provider answers non-200 (with the status and a short, sanitized
+   * body snippet — never the key, never the URL) or when the fetch
+   * throws (status null, note 'network-or-timeout'). Purely additive;
+   * exceptions from the observer are swallowed. Default: no observer,
+   * byte-identical planner behavior.
+   */
+  onProviderHttpError?: (status: number | null, note: string) => void;
+  /**
+   * Optional response-shape observer (TEMPORARY pilot diagnostic, PR #251):
+   * fired once per live provider response with the sanitized structure
+   * summary from `summarizeHereResponseShape` — counts and field names,
+   * never values. Purely additive; exceptions from the observer are
+   * swallowed. Default: no observer, byte-identical planner behavior.
+   */
+  onResponseShape?: (shape: string) => void;
   /**
    * Retain the FULL decoded geometry on results (N8b). Default FALSE:
    * the planner never needs it and its cache must not grow by holding
@@ -443,15 +519,42 @@ export function createHereRoutingPort(
     return callsInWindow < hourlyCap;
   };
 
+  // Provider-HTTP observer (pilot diagnostics). The 4xx body is HERE's
+  // own error JSON (title/cause/action) and never contains the key; the
+  // snippet is sanitized and capped anyway so nothing secret-shaped can
+  // pass through even if the provider changes its error format.
+  const reportHttp = (status: number | null, note: string): void => {
+    try {
+      const safe = note
+        .replace(/apiKey=[^&\s"']*/gi, 'apiKey=REDACTED')
+        .replace(/[^\x20-\x7E]/g, ' ')
+        .slice(0, 200);
+      opts.onProviderHttpError?.(status, safe);
+    } catch {
+      // The observer can never affect routing.
+    }
+  };
+
   const getJson = async (url: string): Promise<unknown | null> => {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const res = await fetchFn(url);
         if (res.status === 200) return await res.json();
         // 4xx will not fix itself; retrying only spends quota.
-        if (res.status < 500) return null;
+        if (res.status < 500) {
+          let body = '';
+          try {
+            body = JSON.stringify(await res.json());
+          } catch {
+            body = '(unreadable body)';
+          }
+          reportHttp(res.status, body);
+          return null;
+        }
+        reportHttp(res.status, '(5xx, will retry once)');
       } catch {
         // network/timeout — one retry, then give up
+        reportHttp(null, 'network-or-timeout');
       }
     }
     return null;
@@ -470,6 +573,11 @@ export function createHereRoutingPort(
         return null;
       }
       const parsed = parseHereResponse(json);
+      try {
+        opts.onResponseShape?.(summarizeHereResponseShape(json, parsed?.positions.length ?? 0));
+      } catch {
+        // The observer can never affect routing.
+      }
       if (!parsed) {
         emit('malformed-response');
         return null;
