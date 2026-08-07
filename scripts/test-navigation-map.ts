@@ -150,8 +150,12 @@ function northRoute(n = 200) {
   );
   check('map: no API key, no key-bearing tile host', !/apiKey|access_token/i.test(map));
   check(
-    'map: uses the platform tile source already in production',
-    map.includes('tile.openstreetmap.org'),
+    // The tile source moved into the map-style registry (map-first
+    // milestone) so the basemap seam has ONE home; the map draws whatever
+    // that registry resolves.
+    'map: uses the platform tile source already in production, via the style registry',
+    readFileSync('src/lib/navigator/map-style.ts', 'utf8').includes('tile.openstreetmap.org') &&
+      map.includes('resolveMapStyle('),
   );
   check('map: draws the route line', map.includes('L.polyline('));
   check(
