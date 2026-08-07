@@ -382,6 +382,65 @@ check(
   /The Room Is Empty\./.test(pageText),
 );
 
+/* ---- empty-state visual (owner-approved addition)
+ *
+ * The photograph is an OWNER-SUPPLIED asset. These checks pin the wiring —
+ * component, placement, alt text, responsive behaviour and the supporting
+ * sentence — so the layout cannot regress. The asset-file check is reported
+ * separately and deliberately does NOT fail the harness: the binary is
+ * delivered by the owner, not by this repository's source. */
+const emptyVisual = fs.readFileSync(
+  path.join(process.cwd(), 'src/components/classroom/EmptyClassroomVisual.tsx'),
+  'utf8',
+);
+check('empty-state visual component is rendered in the hero', /<EmptyClassroomVisual/.test(page));
+check(
+  'the visual sits with the empty-state copy, ABOVE the countdown',
+  page.indexOf('<EmptyClassroomVisual') > page.indexOf('The Room Is Empty.') &&
+    page.indexOf('<EmptyClassroomVisual') < page.indexOf('<ClassroomCountdown'),
+);
+check(
+  'supporting sentence is present, verbatim',
+  /No class is in session right now\. Check back when the next session begins\./.test(pageText),
+);
+check(
+  'supporting sentence follows the image, not the headline',
+  page.indexOf('No class is in session right now') > page.indexOf('<EmptyClassroomVisual'),
+);
+check(
+  'alt text is exactly the approved wording',
+  emptyVisual.includes("'Empty classroom awaiting the next training session'"),
+);
+check('the visual uses next/image, not a bare <img>', /from 'next\/image'/.test(emptyVisual));
+check('no base64 image data is embedded', !/data:image\//.test(emptyVisual + page));
+/* Scope this to the JSX: the file's doc comment explains WHY object-cover is
+   wrong here, and matching that prose would fail a correct implementation. */
+const emptyVisualJsx = emptyVisual.slice(emptyVisual.indexOf('export function'));
+check(
+  'natural aspect ratio is preserved — h-auto, never object-cover',
+  emptyVisualJsx.includes('h-auto w-full') && !emptyVisualJsx.includes('object-cover'),
+);
+check(
+  'a sizes hint is supplied so phones do not download the full-resolution file',
+  /sizes="\(min-width: 1024px\) 640px, 100vw"/.test(emptyVisual),
+);
+check(
+  'the asset path lives under public/images/',
+  /const EMPTY_CLASSROOM_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(emptyVisual),
+);
+/* Reported, not enforced — see the note above. */
+const assetPath = path.join(process.cwd(), 'public/images/classroom/empty-classroom.jpg');
+console.log(
+  fs.existsSync(assetPath)
+    ? 'NOTE: owner-supplied classroom photograph IS present.'
+    : 'NOTE: owner-supplied classroom photograph is NOT yet in public/images/classroom/ — ' +
+        'the empty state will render a broken image until it is added.',
+);
+
+/* ---- the rest of the classroom page is untouched */
+check('countdown still present', /<ClassroomCountdown/.test(page));
+check('both hero CTAs still present', /<AmazonListCta/.test(page) && /<CashAppCta/.test(page));
+
 /* ---- approved section order */
 const SECTION_ORDER = [
   'Why this list exists',
