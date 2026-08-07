@@ -1,6 +1,7 @@
 import { Button, Container, Eyebrow } from '@/components/ui';
 import { HeroShirtPromo } from './HeroShirtPromo';
 import { TruckParkingMarquee } from './TruckParkingMarquee';
+import { NavigatorMarquee } from './NavigatorMarquee';
 
 /**
  * Hero — THE CALL (cinematic flow beat 1). Leads with the one thing that
@@ -70,10 +71,14 @@ export function Hero() {
           </div>
 
           {/* Promo column: TEMPORARY shirt merchandising (remove when it sells
-              out) with the Truck Parking marquee tile DIRECTLY beneath it. */}
+              out), the Truck Parking marquee tile DIRECTLY beneath it, and the
+              Navigator pilot tile DIRECTLY beneath that. The Navigator tile
+              renders only while the Navigator flag is on, so the column
+              collapses back to two tiles in production. */}
           <div className="mt-10 flex w-full max-w-sm flex-col gap-5 xl:mt-0 xl:justify-self-end">
             <HeroShirtPromo />
             <TruckParkingMarquee />
+            <NavigatorMarquee />
           </div>
         </div>
       </Container>

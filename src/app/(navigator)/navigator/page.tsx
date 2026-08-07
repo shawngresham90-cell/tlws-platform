@@ -3,6 +3,7 @@ import { Container, Eyebrow, Section } from '@/components/ui';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { NavigatorStatus } from '@/components/navigator/NavigatorStatus';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { requirePilotAccess } from '@/lib/navigator-api/pilot-session';
 
 /**
  * Navigator Phase 1 surface: position display only — no guidance, no map,
@@ -15,6 +16,8 @@ import { buildMetadata } from '@/lib/seo/metadata';
  * deliberately — an unreleased surface must default closed.
  */
 
+export const dynamic = 'force-dynamic';
+
 const ENABLED = process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED === 'true';
 
 export const metadata = buildMetadata({
@@ -25,8 +28,9 @@ export const metadata = buildMetadata({
   noindex: true,
 });
 
-export default function NavigatorPreviewPage() {
+export default async function NavigatorPreviewPage() {
   if (!ENABLED) notFound();
+  await requirePilotAccess('/navigator');
   return (
     <Section>
       {/* Width is narrowed by an inner element: Container hardcodes

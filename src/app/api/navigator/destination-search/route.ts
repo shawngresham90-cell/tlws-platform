@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { clientKey, errorJson } from '@/lib/trip-planner/api-util';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
+import { requestHasPilotAccess } from '@/lib/navigator-api/pilot-access';
 import {
   buildDiscoverUrl,
   parseDiscoverResponse,
@@ -40,6 +41,13 @@ const searchLimiter = new RateLimiter({
 export async function GET(req: NextRequest) {
   if (process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED !== 'true') {
     return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
+  }
+  // Rail 1c — pilot gate. Ordered AFTER the flag so a disabled deploy keeps
+  // answering 404 (the route does not exist) rather than 401 (it exists,
+  // guess the password). Before the limiter and the key check so an
+  // unauthorized caller can neither spend a token nor probe configuration.
+  if (!(await requestHasPilotAccess(req))) {
+    return errorJson(401, 'pilot-access-required', 'Navigator pilot access is required.');
   }
   const apiKey = process.env.HERE_API_KEY;
   if (!apiKey) {
