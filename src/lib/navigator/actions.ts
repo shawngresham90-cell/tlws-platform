@@ -24,7 +24,14 @@ export type UIAction =
   | 'enter-text'
   | 'browse-directory'
   | 'open-deep-settings'
-  | 'view-trip-summary';
+  | 'view-trip-summary'
+  // --- driving-map affordances (map-first milestone) ------------------
+  /** Free pan/zoom browsing of the map away from the truck. */
+  | 'browse-map'
+  /** Whole-route overview: takes the camera off the truck. */
+  | 'route-overview'
+  /** Switching basemap style (standard/satellite). */
+  | 'change-map-style';
 
 /** True = allowed while MOVING (or UNKNOWN). False = stationary only. */
 export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
@@ -41,6 +48,13 @@ export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
   'browse-directory': false,
   'open-deep-settings': false,
   'view-trip-summary': false,
+  // Map browsing is exactly the kind of attention sink doc 06 locks: the
+  // camera follows the truck while moving, and Recenter (part of
+  // 'view-status') stays one touch away. Overview and style switching are
+  // deliberate, two-handed decisions — stationary only.
+  'browse-map': false,
+  'route-overview': false,
+  'change-map-style': false,
 };
 
 /** Default-deny lookup: unknown or unmapped actions are locked. */

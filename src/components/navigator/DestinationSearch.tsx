@@ -6,6 +6,10 @@ import {
   MIN_SEARCH_LENGTH,
   type DestinationCandidate,
 } from '@/lib/navigator-api/destination-search';
+import {
+  createSearchCoordinator,
+  type SearchCoordinator,
+} from '@/lib/navigator-api/search-coordination';
 import { searchDestinations } from './search-port';
 
 /**
@@ -55,9 +59,10 @@ export function DestinationSearch({
   // still holds the picked title, so the effect would immediately search
   // again for it and repopulate the list under the driver's finger.
   const [settled, setSettled] = useState(false);
-  // Only the newest search may write state — a slow earlier response must
-  // never overwrite a newer list.
-  const seqRef = useRef(0);
+  // Owns request sequencing, same-query caching and staleness. One per
+  // mounted search box.
+  const coordRef = useRef<SearchCoordinator | null>(null);
+  if (coordRef.current === null) coordRef.current = createSearchCoordinator();
   // The live origin, read at FIRE time. Kept in a ref so a moving truck
   // never re-triggers the effect (see originKey below).
   const originRef = useRef(origin);
@@ -78,30 +83,46 @@ export function DestinationSearch({
       setSearching(false);
       return;
     }
-    const mySeq = ++seqRef.current;
     setSearching(true);
     const timer = setTimeout(() => {
       const at = originRef.current;
-      if (at === null) {
+      const coord = coordRef.current;
+      if (at === null || coord === null) {
         setSearching(false);
         return;
       }
-      void searchDestinations(q, at)
+      // The coordinator decides whether this query is worth a provider
+      // transaction at all, and whether an answer is still current when
+      // it lands. Retyping a query the driver already searched costs
+      // nothing.
+      const decision = coord.next(q, { settled: false });
+      if (decision.kind === 'idle') {
+        setSearching(false);
+        return;
+      }
+      if (decision.kind === 'cached') {
+        setResults(decision.places);
+        setStatus(decision.places.length === 0 ? 'No places found. Try a different search.' : null);
+        setSearching(false);
+        return;
+      }
+      void searchDestinations(decision.query, at)
         .then((outcome) => {
-          if (mySeq !== seqRef.current) return;
           if (outcome.kind === 'failure') {
-            setResults([]);
-            setStatus('Search unavailable right now.');
+            if (coord.accept(decision.seq, [])) {
+              setResults([]);
+              setStatus('Search unavailable right now.');
+            }
             return;
           }
+          // A slower earlier response can never overwrite a newer one.
+          if (!coord.accept(decision.seq, outcome.places)) return;
           setResults(outcome.places);
           setStatus(
             outcome.places.length === 0 ? 'No places found. Try a different search.' : null,
           );
         })
-        .finally(() => {
-          if (mySeq === seqRef.current) setSearching(false);
-        });
+        .finally(() => setSearching(false));
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query, originKey, settled]);
@@ -151,10 +172,10 @@ export function DestinationSearch({
                   type="button"
                   className="min-h-16 w-full rounded-card border border-line px-4 py-3 text-left text-ink"
                   onClick={() => {
-                    // Selecting ENDS the search: bump the sequence so any
-                    // in-flight response is ignored, mark settled so the
-                    // effect stops, and clear the list and the status line.
-                    seqRef.current += 1;
+                    // Selecting ENDS the search: abandon any in-flight
+                    // response, mark settled so the effect stops, and
+                    // clear the list and the status line.
+                    coordRef.current?.cancel();
                     setSettled(true);
                     setSearching(false);
                     setResults([]);
