@@ -3,6 +3,7 @@ import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { ClassroomCountdown } from '@/components/classroom/ClassroomCountdown';
 import { AmazonListCta, CashAppCta } from '@/components/classroom/ClassroomCtas';
+import { EmptyClassroomVisual } from '@/components/classroom/EmptyClassroomVisual';
 import {
   CAMPAIGN_CITY,
   CAMPAIGN_DESTINATION,
@@ -84,6 +85,13 @@ export default function SupplyTheClassroomPage() {
         <p className="mt-5 max-w-2xl text-lg text-muted">
           There is a room in {CAMPAIGN_CITY} with a date on it and nothing inside. Everything a
           driver will learn in there still has to get there first. This is the load list.
+        </p>
+
+        {/* The room itself. Sits with the empty-state copy, above the
+            countdown — the headline says the room is empty, this shows it. */}
+        <EmptyClassroomVisual className="mt-8 max-w-2xl" />
+        <p className="mt-4 max-w-2xl text-lg text-muted">
+          No class is in session right now. Check back when the next session begins.
         </p>
 
         <div className="mt-10 border-2 border-ink/15 bg-asphalt-700 p-6 sm:p-8">

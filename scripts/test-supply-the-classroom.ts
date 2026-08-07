@@ -382,6 +382,111 @@ check(
   /The Room Is Empty\./.test(pageText),
 );
 
+/* ---- empty-state visual (owner-approved addition)
+ *
+ * The photograph is an OWNER-SUPPLIED asset. These checks pin the wiring —
+ * component, placement, alt text, responsive behaviour and the supporting
+ * sentence — so the layout cannot regress. The asset-file check is reported
+ * separately and deliberately does NOT fail the harness: the binary is
+ * delivered by the owner, not by this repository's source. */
+const emptyVisual = fs.readFileSync(
+  path.join(process.cwd(), 'src/components/classroom/EmptyClassroomVisual.tsx'),
+  'utf8',
+);
+check('empty-state visual component is rendered in the hero', /<EmptyClassroomVisual/.test(page));
+check(
+  'the visual sits with the empty-state copy, ABOVE the countdown',
+  page.indexOf('<EmptyClassroomVisual') > page.indexOf('The Room Is Empty.') &&
+    page.indexOf('<EmptyClassroomVisual') < page.indexOf('<ClassroomCountdown'),
+);
+check(
+  'supporting sentence is present, verbatim',
+  /No class is in session right now\. Check back when the next session begins\./.test(pageText),
+);
+check(
+  'supporting sentence follows the image, not the headline',
+  page.indexOf('No class is in session right now') > page.indexOf('<EmptyClassroomVisual'),
+);
+check(
+  'alt text is exactly the approved wording',
+  emptyVisual.includes("'Empty classroom awaiting the next training session'"),
+);
+check('the visual uses next/image, not a bare <img>', /from 'next\/image'/.test(emptyVisual));
+check('no base64 image data is embedded', !/data:image\//.test(emptyVisual + page));
+/* Scope this to the JSX: the file's doc comment explains WHY object-cover is
+   wrong here, and matching that prose would fail a correct implementation. */
+const emptyVisualJsx = emptyVisual.slice(emptyVisual.indexOf('export function'));
+check(
+  'natural aspect ratio is preserved — h-auto, never object-cover',
+  emptyVisualJsx.includes('h-auto w-full') && !emptyVisualJsx.includes('object-cover'),
+);
+check(
+  'a sizes hint is supplied so phones do not download the full-resolution file',
+  /sizes="\(min-width: 1024px\) 672px, 100vw"/.test(emptyVisual),
+);
+check(
+  'the asset path lives under public/images/',
+  /const EMPTY_CLASSROOM_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(emptyVisual),
+);
+
+/* The photograph itself. It is committed, so these are real assertions: a
+   missing file means the live empty state renders a broken frame. */
+const assetPath = path.join(process.cwd(), 'public/images/classroom/empty-classroom.jpg');
+check('the owner-supplied photograph is committed', fs.existsSync(assetPath));
+
+/**
+ * Intrinsic dimensions straight out of the JPEG's SOF marker — no image
+ * library, because this repository has none and should not gain one just to
+ * run its tests. Walks the segment chain rather than scanning for bytes,
+ * so payload data that happens to look like a marker cannot fool it.
+ */
+function jpegSize(buf: Buffer): { width: number; height: number } | null {
+  if (buf.readUInt16BE(0) !== 0xffd8) return null;
+  let i = 2;
+  while (i < buf.length - 9) {
+    if (buf[i] !== 0xff) return null;
+    const marker = buf[i + 1];
+    const len = buf.readUInt16BE(i + 2);
+    // SOF0..SOF15, excluding DHT (c4), JPG (c8) and DAC (cc).
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+    }
+    i += 2 + len;
+  }
+  return null;
+}
+
+if (fs.existsSync(assetPath)) {
+  const bytes = fs.readFileSync(assetPath);
+  const dims = jpegSize(bytes);
+  const declaredW = Number(/export const ASSET_WIDTH = (\d+)/.exec(emptyVisual)?.[1]);
+  const declaredH = Number(/export const ASSET_HEIGHT = (\d+)/.exec(emptyVisual)?.[1]);
+  check('the photograph is a readable JPEG', dims !== null, dims);
+  check(
+    'declared width matches the real file — no first-paint layout shift',
+    dims?.width === declaredW,
+    `declared ${declaredW}, actual ${dims?.width}`,
+  );
+  check(
+    'declared height matches the real file',
+    dims?.height === declaredH,
+    `declared ${declaredH}, actual ${dims?.height}`,
+  );
+  /* A master big enough to serve a 2x desktop column, small enough that the
+     repository does not carry a camera-original around forever. */
+  check('the photograph is at least as wide as the desktop column', (dims?.width ?? 0) >= 672);
+  check(
+    'the photograph is compressed for the web (< 400 KB master)',
+    bytes.length < 400_000,
+    `${bytes.length} bytes`,
+  );
+  check('no stray upload left at the repository root', !fs.existsSync('image-1785940014760.jpg'));
+}
+
+/* ---- the rest of the classroom page is untouched */
+check('countdown still present', /<ClassroomCountdown/.test(page));
+check('both hero CTAs still present', /<AmazonListCta/.test(page) && /<CashAppCta/.test(page));
+
 /* ---- approved section order */
 const SECTION_ORDER = [
   'Why this list exists',
