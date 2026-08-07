@@ -243,27 +243,47 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
       !/analytics|trackEvent|plausible/i.test(src),
     );
     // The network carve-out is by MODULE KIND, not by file name: only
-    // `*-port.ts` modules may transmit, so the surface that can send
-    // anything stays small, named, and reviewable, and every COMPONENT
-    // stays fetch-free. Two ports exist:
-    //   route-port.ts  — the driver-initiated route request (N8a)
-    //   search-port.ts — destination search (pilot round 1); sends the
-    //                    typed query and the truck position, because
-    //                    results must be biased to where the truck is
-    // Both talk ONLY to first-party, flag-gated /api/navigator endpoints;
-    // neither stores, logs, or forwards anything. Endpoint exclusivity is
-    // additionally pinned in test-navigator-pilot.ts.
+    // `*-port.ts` modules may reach outside the component layer, so the
+    // surface that can send anything stays small, named, and reviewable,
+    // and every COMPONENT stays fetch-free.
+    //
+    // Ports come in two kinds, and conflating them is how a rail rots:
+    //
+    //   NETWORK ports transmit. They must talk ONLY to first-party,
+    //   flag-gated /api/navigator endpoints, and never to an absolute
+    //   URL:
+    //     route-port.ts  — the driver-initiated route request (N8a)
+    //     search-port.ts — destination search (pilot round 1); sends the
+    //                      typed query and the truck position, because
+    //                      results must be biased to where the truck is
+    //
+    //   DEVICE ports touch a browser capability and transmit NOTHING:
+    //     speech-port.ts — browser speech synthesis (N7), output only
+    //
+    // The kind is decided by what the module DOES (does it call fetch?),
+    // not by its name, because a name cannot be verified. A device port
+    // is then held to the same fetch-free standard as a component — so
+    // the day someone adds a request to speech-port.ts, this fails.
+    // Endpoint exclusivity is additionally pinned in
+    // test-navigator-pilot.ts, and `speechSynthesis` is pinned to
+    // speech-port.ts alone in test-safety-invariants.ts.
     const isPort = /-port\.ts$/.test(f);
+    const transmits = /\bfetch\s*\(/.test(src);
     if (!isPort) {
-      check(
-        `privacy ${f}: no fetch in a COMPONENT (transmission lives in ports only)`,
-        !/\bfetch\s*\(/.test(src),
-      );
-    } else {
+      check(`privacy ${f}: no fetch in a COMPONENT (transmission lives in ports only)`, !transmits);
+    } else if (transmits) {
       check(
         `privacy ${f}: fetch aimed only at a first-party /api/navigator endpoint`,
         /['"`]\/api\/navigator\//.test(src) && !/https?:\/\//.test(src),
       );
+    } else {
+      // A DEVICE port earns no network budget just by being named a port.
+      check(
+        `privacy ${f}: device port transmits nothing (no fetch, no remote URL)`,
+        !transmits && !/https?:\/\//.test(src) && !/XMLHttpRequest|WebSocket|EventSource/.test(src),
+      );
+    }
+    if (isPort) {
       check(
         `privacy ${f}: transmits nothing beyond the request (no storage, no forwarding)`,
         !/localStorage|sessionStorage|indexedDB|navigator\.sendBeacon/i.test(src),

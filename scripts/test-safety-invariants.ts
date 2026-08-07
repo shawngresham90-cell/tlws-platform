@@ -1,8 +1,7 @@
 /**
- * N4 merge-blocking safety invariants (doc 06 §7), adapted honestly to the
- * Phase 2A surface: invariants for capabilities that do not exist yet
- * (voice announcements N7, off-route/reroute N8) are enforced as
- * ABSENCE — the code that could violate them must not exist at all.
+ * N4 merge-blocking safety invariants (doc 06 §7). With N7 voice merged
+ * on top of the N8 stack, every invariant is now BEHAVIORAL — enforced
+ * against the real engines, not by asserting code absence.
  *
  *   1. UNKNOWN resolves to locked — every entry path.
  *   2. Every UIAction has an explicit permission mapping (default-deny).
@@ -11,7 +10,7 @@
  *   5. Off-route/reroute discipline (behavioral): 5a — replacement may
  *      spend ONLY from a CONFIRMED off-route state; 5b — off-route never
  *      fires within 150 m of a planned stop (doc 06 §7 item 5).
- *   6. Announcements: none exist yet (N7) — asserted absent.
+ *   6. Maneuvers never announce twice (real N7 announcer + guidance).
  *   7. The exit control is reachable in every lock state.
  *
  * Run:
@@ -23,6 +22,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createSafetyLock, OVERRIDE_DURATION_MS } from '@/lib/navigator/safety-lock';
 import { ACTION_PERMISSIONS, allowedWhileMoving, type UIAction } from '@/lib/navigator/actions';
+import { createManeuverAnnouncer, createVoiceGuidance } from '@/lib/navigator/voice-guidance';
 import { createOffRouteDetector } from '@/lib/navigator/off-route-detector';
 import { createRerouteController } from '@/lib/navigator/reroute-controller';
 import { createRouteSession } from '@/lib/navigator/route-session';
@@ -135,18 +135,57 @@ function componentMotionChecksAbsent(): boolean {
   }
 }
 
-// INVARIANTS 5 & 6 — announcements do not exist yet (N7); off-route and
-// replacement (N8d/N8e) are enforced BEHAVIORALLY: confirmed-only spend
-// and the doc 06 §7 planned-stop exclusion.
+// INVARIANT 6 — maneuvers never announce twice (doc 06 §7 item 6), a
+// BEHAVIORAL invariant against the real N7 announcer: the same maneuver
+// tier can never fire two announcements no matter how many ticks see it,
+// and the guidance module independently refuses a repeated id. The old
+// absence pin retires WITH ITS TEETH KEPT: the pure module still may not
+// touch the browser (purity gate), and speechSynthesis may appear ONLY
+// in the sanctioned component adapter (checked here).
 {
-  const libDir = 'src/lib/navigator';
-  let announce = false;
-  for (const f of readdirSync(libDir)) {
-    const src = strip(readFileSync(join(libDir, f), 'utf8'));
-    if (/speechSynthesis|announce/i.test(src)) announce = true;
+  const view = {
+    next: { action: 'exit', instruction: 'Take exit 320', direction: 'right', mileMi: 100 },
+    following: null,
+    distanceMi: 0.4,
+  };
+  const announcer = createManeuverAnnouncer();
+  const ids: string[] = [];
+  for (let i = 0; i < 50; i++) {
+    for (const r of announcer.collect({ ...view, distanceMi: 0.4 - i * 0.005 }, 60)) ids.push(r.id);
   }
-  check('invariant 6: no announcement code exists (N7)', !announce);
+  check(
+    'invariant 6: 50 shrinking-distance ticks → every (maneuver, tier) at most once',
+    new Set(ids).size === ids.length && ids.length <= 3,
+    ids,
+  );
 
+  const spoken: string[] = [];
+  const voice = createVoiceGuidance({
+    supported: true,
+    speak: (t) => spoken.push(t),
+    cancel: () => {},
+  });
+  const req = { id: 'maneuver:x:approach', priority: 'normal' as const, text: 'Take exit 320' };
+  voice.request(req);
+  check(
+    'invariant 6: guidance module refuses a repeated announcement id',
+    voice.request(req) === 'dropped-repeat' && spoken.length === 1,
+  );
+
+  // speechSynthesis stays confined to the one sanctioned adapter.
+  const offenders: string[] = [];
+  for (const dir of ['src/lib/navigator', 'src/components/navigator']) {
+    for (const f of readdirSync(dir)) {
+      const src = strip(readFileSync(join(dir, f), 'utf8'));
+      if (/speechSynthesis/i.test(src) && f !== 'speech-port.ts') offenders.push(f);
+    }
+  }
+  check('invariant 6: speechSynthesis only in speech-port.ts', offenders.length === 0, offenders);
+}
+
+// INVARIANT 5 — off-route and replacement (N8d/N8e) enforced BEHAVIORALLY:
+// confirmed-only spend and the doc 06 §7 planned-stop exclusion.
+{
   // Invariant 5a — with N8e, route replacement exists but is CAGED:
   // only a CONFIRMED off-route state may spend a provider transaction,
   // and the trailing-hour budget is a hard stop. Proven against the real

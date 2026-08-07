@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DrivingView } from '@/lib/navigator/navigation-controller';
-import type { MapData } from '@/lib/navigator/navigation-lifecycle';
+import type { LifecycleState, MapData } from '@/lib/navigator/navigation-lifecycle';
 import type { LatLng } from '@/lib/map/bounds';
 import {
   createNavigationLifecycle,
@@ -16,12 +16,22 @@ import {
   type PilotMode,
 } from '@/lib/navigator/pilot-mode';
 import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
+import {
+  createManeuverAnnouncer,
+  createStatusAnnouncer,
+  createVoiceGuidance,
+  tripVoiceRequest,
+  type ManeuverAnnouncer,
+  type VoiceGuidance,
+} from '@/lib/navigator/voice-guidance';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
+import { createBrowserSpeechPort } from './speech-port';
 import { useGps } from './GpsProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
 import { PilotTripControls } from './PilotTripControls';
+import { VoiceControls } from './VoiceControls';
 
 /**
  * Driving screen (milestone N5 visuals; milestone P1 wires the completed
@@ -60,6 +70,7 @@ export function DrivingScreenView({
   hosSourceLabel = DEFAULT_HOS_LABEL,
   mapSlot = null,
   focusNavigationKey = null,
+  voice,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -79,6 +90,8 @@ export function DrivingScreenView({
    * are off-screen above — the round-2 road test's exact complaint.
    */
   focusNavigationKey?: string | null;
+  /** N7 voice guidance; static test renders may omit it. */
+  voice?: VoiceGuidance;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -164,7 +177,17 @@ export function DrivingScreenView({
       <HosStrip
         drivingActive={view.status === 'navigating' || view.status === 'position-degraded'}
         sourceLabel={hosSourceLabel}
+        voice={voice}
       />
+
+      {/* Voice enable/mute (milestone N7) — allowed while moving by the
+          shared permission map, like the exit control. Voice starts
+          muted; nothing speaks until the driver enables it. */}
+      {voice ? (
+        <LockGate action="mute-voice" lockedLabel="Voice mute">
+          <VoiceControls voice={voice} />
+        </LockGate>
+      ) : null}
 
       <MotionLockOverlay />
 
@@ -236,6 +259,19 @@ export function DrivingScreen() {
   const [, setRev] = useState(0);
   const bump = () => setRev((r) => r + 1);
 
+  // Voice guidance (N7) — ONE instance, ONE speech owner, created MUTED:
+  // nothing is ever spoken on page load; the driver enables it through
+  // VoiceControls. Announcers live in refs so StrictMode double-effects
+  // hit the same announce-once state and stay silent.
+  const voiceRef = useRef<VoiceGuidance | null>(null);
+  if (voiceRef.current === null) {
+    voiceRef.current = createVoiceGuidance(createBrowserSpeechPort(), { startMuted: true });
+  }
+  const maneuverAnnouncerRef = useRef<ManeuverAnnouncer>(createManeuverAnnouncer());
+  const statusAnnouncerRef = useRef(createStatusAnnouncer());
+  const spokenRouteIdRef = useRef<string | null>(null);
+  const prevLcStateRef = useRef<LifecycleState>('idle');
+
   // One lifecycle tick per gated position update. GpsProvider re-renders
   // every second while a watch is active, so cadence rides that tick; the
   // lifecycle is reference-idempotent against double renders.
@@ -252,9 +288,78 @@ export function DrivingScreen() {
     void lifecycle.requestReroute(Date.now(), accuracyM).then(bump);
   }, [lcState, position, lifecycle]);
 
-  // Unmount = leaving the screen: cancel any live trip so no engine
-  // outlives its owner (GpsProvider tears the watch down the same way).
-  useEffect(() => () => void lifecycle.cancel(Date.now()), [lifecycle]);
+  // Voice reacts to the lifecycle, in a fixed order per tick:
+  // route replacement → fresh maneuver announcer + "Route updated." once;
+  // trip end → stale speech dies, then ONE honest completion sentence
+  // (cancellation stays silent); GPS degradations via the status
+  // announcer; maneuvers only while a trip is actually active. Every
+  // request carries an announce-once id, so re-renders and StrictMode
+  // double-effects are silent drops, never double-speak.
+  useEffect(() => {
+    const voice = voiceRef.current!;
+    const snap = lifecycle.snapshot();
+    const prev = prevLcStateRef.current;
+    prevLcStateRef.current = snap.state;
+
+    const active =
+      snap.state === 'navigating' ||
+      snap.state === 'off-route' ||
+      snap.state === 'rerouting' ||
+      snap.state === 'final-approach';
+
+    // Route replacement: kill stale guidance instantly, restart maneuver
+    // announcements for the new geometry, say so exactly once.
+    if (active && snap.routeId !== null) {
+      if (spokenRouteIdRef.current === null) {
+        spokenRouteIdRef.current = snap.routeId; // trip start, not a swap
+      } else if (spokenRouteIdRef.current !== snap.routeId) {
+        spokenRouteIdRef.current = snap.routeId;
+        maneuverAnnouncerRef.current = createManeuverAnnouncer();
+        voice.clearPending();
+        const req = tripVoiceRequest({ kind: 'route-replaced', routeId: snap.routeId });
+        if (req) voice.request(req);
+      }
+    }
+
+    // Trip end: no old maneuver speech after arrival — clear first, then
+    // the one honest completion announcement (silence for cancellation).
+    if (snap.state === 'arrived' && prev !== 'arrived' && snap.summary !== null) {
+      voice.clearPending();
+      const req = tripVoiceRequest({
+        kind: 'trip-ended',
+        routeId: snap.summary.routeId,
+        endReason: snap.summary.endReason,
+      });
+      if (req) voice.request(req);
+    }
+    if (snap.state === 'completed' && prev !== 'completed') {
+      voice.clearPending();
+      spokenRouteIdRef.current = null;
+      maneuverAnnouncerRef.current = createManeuverAnnouncer();
+    }
+
+    // GPS truth is spoken whether or not a trip is loaded (denied /
+    // unavailable / degraded / lost) — never silently stale.
+    for (const req of statusAnnouncerRef.current.collect(view.status)) voice.request(req);
+
+    // Maneuvers speak only while the trip is live.
+    if (active && view.maneuvers !== null) {
+      for (const req of maneuverAnnouncerRef.current.collect(view.maneuvers, view.speedMph)) {
+        voice.request(req);
+      }
+    }
+  }, [view, lifecycle]);
+
+  // Unmount = leaving the screen: stale speech dies with the surface and
+  // any live trip is cancelled so no engine outlives its owner
+  // (GpsProvider tears the watch down the same way).
+  useEffect(
+    () => () => {
+      voiceRef.current?.clearPending();
+      void lifecycle.cancel(Date.now());
+    },
+    [lifecycle],
+  );
 
   // Bring the driver to the guidance exactly ONCE per trip, on the
   // route-ready → navigating transition. Later states (off-route,
@@ -306,11 +411,14 @@ export function DrivingScreen() {
       }}
       onStop={() => {
         // Stopping the preview also cancels any live pilot trip — the
-        // summary stays honest ('cancelled'), the engines are released.
+        // summary stays honest ('cancelled'), the engines are released,
+        // and any speech dies with it (stop is silent by design).
+        voiceRef.current?.clearPending();
         lifecycle.cancel(Date.now());
         stop();
         bump();
       }}
+      voice={voiceRef.current}
       lifecycleLine={
         pilot.active && lcState !== 'idle'
           ? `Pilot trip state: ${lcState.replace(/-/g, ' ')}`
