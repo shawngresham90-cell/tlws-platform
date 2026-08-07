@@ -422,20 +422,66 @@ check(
 );
 check(
   'a sizes hint is supplied so phones do not download the full-resolution file',
-  /sizes="\(min-width: 1024px\) 640px, 100vw"/.test(emptyVisual),
+  /sizes="\(min-width: 1024px\) 672px, 100vw"/.test(emptyVisual),
 );
 check(
   'the asset path lives under public/images/',
   /const EMPTY_CLASSROOM_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(emptyVisual),
 );
-/* Reported, not enforced — see the note above. */
+
+/* The photograph itself. It is committed, so these are real assertions: a
+   missing file means the live empty state renders a broken frame. */
 const assetPath = path.join(process.cwd(), 'public/images/classroom/empty-classroom.jpg');
-console.log(
-  fs.existsSync(assetPath)
-    ? 'NOTE: owner-supplied classroom photograph IS present.'
-    : 'NOTE: owner-supplied classroom photograph is NOT yet in public/images/classroom/ — ' +
-        'the empty state will render a broken image until it is added.',
-);
+check('the owner-supplied photograph is committed', fs.existsSync(assetPath));
+
+/**
+ * Intrinsic dimensions straight out of the JPEG's SOF marker — no image
+ * library, because this repository has none and should not gain one just to
+ * run its tests. Walks the segment chain rather than scanning for bytes,
+ * so payload data that happens to look like a marker cannot fool it.
+ */
+function jpegSize(buf: Buffer): { width: number; height: number } | null {
+  if (buf.readUInt16BE(0) !== 0xffd8) return null;
+  let i = 2;
+  while (i < buf.length - 9) {
+    if (buf[i] !== 0xff) return null;
+    const marker = buf[i + 1];
+    const len = buf.readUInt16BE(i + 2);
+    // SOF0..SOF15, excluding DHT (c4), JPG (c8) and DAC (cc).
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+    }
+    i += 2 + len;
+  }
+  return null;
+}
+
+if (fs.existsSync(assetPath)) {
+  const bytes = fs.readFileSync(assetPath);
+  const dims = jpegSize(bytes);
+  const declaredW = Number(/export const ASSET_WIDTH = (\d+)/.exec(emptyVisual)?.[1]);
+  const declaredH = Number(/export const ASSET_HEIGHT = (\d+)/.exec(emptyVisual)?.[1]);
+  check('the photograph is a readable JPEG', dims !== null, dims);
+  check(
+    'declared width matches the real file — no first-paint layout shift',
+    dims?.width === declaredW,
+    `declared ${declaredW}, actual ${dims?.width}`,
+  );
+  check(
+    'declared height matches the real file',
+    dims?.height === declaredH,
+    `declared ${declaredH}, actual ${dims?.height}`,
+  );
+  /* A master big enough to serve a 2x desktop column, small enough that the
+     repository does not carry a camera-original around forever. */
+  check('the photograph is at least as wide as the desktop column', (dims?.width ?? 0) >= 672);
+  check(
+    'the photograph is compressed for the web (< 400 KB master)',
+    bytes.length < 400_000,
+    `${bytes.length} bytes`,
+  );
+  check('no stray upload left at the repository root', !fs.existsSync('image-1785940014760.jpg'));
+}
 
 /* ---- the rest of the classroom page is untouched */
 check('countdown still present', /<ClassroomCountdown/.test(page));

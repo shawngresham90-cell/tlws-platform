@@ -27,14 +27,12 @@ import { cn } from '@/lib/utils/cn';
 export const EMPTY_CLASSROOM_SRC = '/images/classroom/empty-classroom.jpg';
 
 /**
- * Intrinsic pixel dimensions of EMPTY_CLASSROOM_SRC.
- *
- * PLACEHOLDER — set these to the real dimensions of the supplied file. They
- * do not distort the photograph (see ASPECT RATIO above); a mismatch only
- * costs a first-paint layout shift.
+ * Intrinsic pixel dimensions of EMPTY_CLASSROOM_SRC — 4:3. Read from the
+ * committed file, and pinned against it by the harness so the two can never
+ * drift apart.
  */
-export const ASSET_WIDTH = 1600;
-export const ASSET_HEIGHT = 1067;
+export const ASSET_WIDTH = 1536;
+export const ASSET_HEIGHT = 1152;
 
 /** Alt text is fixed copy, not a prop — the brief specifies this wording. */
 export const EMPTY_CLASSROOM_ALT = 'Empty classroom awaiting the next training session';
@@ -47,10 +45,12 @@ export function EmptyClassroomVisual({ className }: { className?: string }) {
         alt={EMPTY_CLASSROOM_ALT}
         width={ASSET_WIDTH}
         height={ASSET_HEIGHT}
-        // Full bleed of the content column on phones and tablets; capped by
-        // the figure's own max-width on desktop, so the optimizer never sends
-        // a 1600px file to a 390px screen.
-        sizes="(min-width: 1024px) 640px, 100vw"
+        // Full bleed of the content column on phones and tablets; on desktop
+        // the figure is capped at max-w-2xl, whose real rendered width is
+        // 672px. Declaring that exactly means the optimizer picks a candidate
+        // at least as wide as the box — the photograph is never upscaled, and
+        // a 390px phone never downloads the full-resolution file.
+        sizes="(min-width: 1024px) 672px, 100vw"
         className="h-auto w-full"
       />
     </figure>
