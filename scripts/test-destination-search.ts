@@ -14,6 +14,8 @@
  *   --outfile=/tmp/test-destination-search.cjs && node /tmp/...
  */
 import { readFileSync } from 'node:fs';
+import { createSearchCoordinator, SEARCH_CACHE_MAX } from '@/lib/navigator-api/search-coordination';
+import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import {
   buildDiscoverUrl,
   parseDiscoverResponse,
@@ -193,8 +195,10 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   const search = readFileSync('src/components/navigator/DestinationSearch.tsx', 'utf8');
   check('ui: search debounces before spending a transaction', /DEBOUNCE_MS\s*=\s*\d+/.test(search));
   check(
+    // Round 3 moved sequencing into the search coordinator, which is
+    // exercised behaviourally further down (a slow answer is REJECTED).
     'ui: stale responses cannot overwrite newer results',
-    search.includes('seqRef') && search.includes('mySeq !== seqRef.current'),
+    search.includes('coord.accept(decision.seq') && search.includes('createSearchCoordinator'),
   );
   check(
     `ui: no request below ${MIN_SEARCH_LENGTH} characters`,
@@ -278,7 +282,7 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   );
   check(
     'settle-fix: selection retires any in-flight response',
-    /seqRef\.current \+= 1;[\s\S]{0,120}setSettled\(true\)/.test(search),
+    /coordRef\.current\?\.cancel\(\);[\s\S]{0,120}setSettled\(true\)/.test(search),
   );
   check(
     'settle-fix: selection clears the results list and the searching flag',
@@ -300,6 +304,163 @@ const AT = { lat: 34.9157, lng: -85.1095 };
     'settle-fix: "Searching…" is bound to the searching flag alone',
     search.includes("{searching ? 'Searching…' : (status ?? '')}"),
   );
+}
+
+// ===== ROUND-3 BEHAVIOURAL COVERAGE: bounded provider calls ==============
+// The round-2 pins above are structural — they prove the CODE says the
+// right thing. These run the real coordinator and assert the things that
+// actually cost money and cause flashing: how many provider requests a
+// typing session issues, and which answers are allowed to land.
+{
+  const place = (id: string): DestinationCandidate => ({
+    id,
+    title: id,
+    address: '',
+    position: { lat: 34.9, lng: -85.1 },
+    facility: 'unknown',
+    distanceMi: null,
+  });
+
+  // --- a query below the minimum never spends -----------------------------
+  {
+    const c = createSearchCoordinator();
+    for (const q of ['', 'a', 'ab', '  ']) c.next(q);
+    check('bounded: short queries issue ZERO provider calls', c.callCount() === 0, c.callCount());
+  }
+
+  // --- one request per distinct query -------------------------------------
+  {
+    const c = createSearchCoordinator();
+    const d1 = c.next('442 Indian Lake Ct');
+    check('bounded: a fresh query asks for one request', d1.kind === 'request');
+    if (d1.kind === 'request') c.accept(d1.seq, [place('a')]);
+    check('bounded: exactly one provider call so far', c.callCount() === 1);
+
+    // The driver deletes and retypes the SAME address — the live pilot's
+    // "rapid typing/deleting/retyping" case. It must cost nothing.
+    const d2 = c.next('442 Indian Lake Ct');
+    check('dedupe: retyping the same query is served from cache', d2.kind === 'cached');
+    check('dedupe: …and issues NO second provider call', c.callCount() === 1, c.callCount());
+    check(
+      'dedupe: the cached answer is the same result the driver already saw',
+      d2.kind === 'cached' && d2.places[0].id === 'a',
+    );
+    check(
+      'dedupe: case and spacing differences still hit the cache',
+      c.next('  442 INDIAN   LAKE ct  ').kind === 'cached' && c.callCount() === 1,
+    );
+  }
+
+  // --- a realistic typing burst stays bounded ------------------------------
+  {
+    const c = createSearchCoordinator();
+    // Every prefix the debounce might let through while typing an address.
+    const typed = ['442', '442 ', '442 I', '442 In', '442 Ind', '442 Indian'];
+    for (const q of typed) {
+      const d = c.next(q);
+      if (d.kind === 'request') c.accept(d.seq, [place(q)]);
+    }
+    // '442' and '442 ' normalise to the same query, so six keystrokes cost
+    // five requests — one per DISTINCT query, which is the actual bound.
+    const distinct = new Set(typed.map((q) => q.trim().toLowerCase())).size;
+    check(
+      'bounded: a typing burst costs one call per DISTINCT query, no more',
+      c.callCount() === distinct,
+      { calls: c.callCount(), distinct },
+    );
+    // Backspacing back through those prefixes costs nothing at all.
+    const before = c.callCount();
+    for (const q of [...typed].reverse()) c.next(q);
+    check('bounded: backspacing through typed prefixes spends nothing', c.callCount() === before);
+  }
+
+  // --- stale responses can never win --------------------------------------
+  {
+    const c = createSearchCoordinator();
+    const slow = c.next('pilot');
+    const fast = c.next('pilot travel center');
+    check('stale: two distinct queries produced two requests', c.callCount() === 2);
+    const fastOk = fast.kind === 'request' && c.accept(fast.seq, [place('newest')]);
+    check('stale: the NEWEST response is accepted', fastOk);
+    const slowOk = slow.kind === 'request' && c.accept(slow.seq, [place('older')]);
+    check('stale: the older, slower response is REJECTED', slowOk === false);
+  }
+
+  // --- selecting a destination stops the search ----------------------------
+  {
+    const c = createSearchCoordinator();
+    const d = c.next('costco');
+    check('settle: a search was in flight', d.kind === 'request');
+    c.cancel(); // what selecting a result does
+    const landed = d.kind === 'request' && c.accept(d.seq, [place('late')]);
+    check('settle: a response landing after selection is dropped', landed === false);
+    check(
+      'settle: a settled box issues no further calls',
+      c.next('costco distribution', { settled: true }).kind === 'idle' && c.callCount() === 1,
+    );
+  }
+
+  // --- the driver is stationary; GPS still ticks ---------------------------
+  {
+    // The component keys its effect on a COARSE origin (see the structural
+    // pin above), so ordinary GPS jitter never reaches the coordinator at
+    // all. Even if it did, the query is unchanged and therefore cached.
+    const c = createSearchCoordinator();
+    const first = c.next('442 Indian Lake Ct');
+    if (first.kind === 'request') c.accept(first.seq, [place('a')]);
+    for (let tick = 0; tick < 60; tick++) c.next('442 Indian Lake Ct');
+    check(
+      'gps: 60 position updates with an unchanged query cost ZERO extra calls',
+      c.callCount() === 1,
+      c.callCount(),
+    );
+  }
+
+  // --- the cache itself is bounded ----------------------------------------
+  {
+    const c = createSearchCoordinator();
+    for (let i = 0; i < SEARCH_CACHE_MAX + 8; i++) {
+      const d = c.next(`query number ${i}`);
+      if (d.kind === 'request') c.accept(d.seq, [place(`p${i}`)]);
+    }
+    const calls = c.callCount();
+    // The oldest entries were evicted, so re-asking for #0 spends again —
+    // proving the cache cannot grow without bound.
+    c.next('query number 0');
+    check(
+      'bounded: the answer cache evicts oldest and never grows unbounded',
+      c.callCount() === calls + 1,
+    );
+    check(
+      'bounded: a recent query is still cached after eviction',
+      c.next(`query number ${SEARCH_CACHE_MAX + 7}`).kind === 'cached',
+    );
+  }
+
+  // --- the component actually uses it -------------------------------------
+  {
+    const search = readFileSync('src/components/navigator/DestinationSearch.tsx', 'utf8');
+    check(
+      'wiring: the search box owns one coordinator',
+      search.includes('createSearchCoordinator()'),
+    );
+    check(
+      'wiring: every provider call goes through a coordinator decision',
+      search.includes("decision.kind === 'cached'") && search.includes("decision.kind === 'idle'"),
+    );
+    check(
+      'wiring: responses are gated by accept(), so stale answers are dropped',
+      search.includes('coord.accept(decision.seq'),
+    );
+    check(
+      'wiring: selecting a destination cancels the in-flight request',
+      search.includes('coordRef.current?.cancel()'),
+    );
+    check(
+      'wiring: the loading flag is cleared exactly once per attempt',
+      search.includes('.finally(() => setSearching(false))'),
+    );
+  }
 }
 
 console.log(`destination-search: ${passed} passed, ${failed} failed`);
