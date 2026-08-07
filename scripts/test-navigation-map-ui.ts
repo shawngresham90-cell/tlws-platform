@@ -67,7 +67,8 @@ const T0 = 1_754_000_000_000;
     // Measured in Chromium: 38% of the surface in portrait, 95% in
     // landscape. The map is the flex-1 child with a guaranteed floor.
     '1. the map takes every pixel the readouts do not, with a floor',
-    /flex-1[^"]*"[\s\S]{0,80}\{mapSlot\}/.test(screen) && screen.includes('min-h-[38dvh] flex-1'),
+    screen.includes('min-h-[38dvh] flex-1') &&
+      screen.includes('<div className={mapWrapCls}>{mapSlot}</div>'),
   );
   check(
     '1. dvh (not vh) so mobile browser chrome cannot hide the bottom controls',
@@ -80,6 +81,24 @@ const T0 = 1_754_000_000_000;
   check(
     '1. full-screen is layout only — no browser fullscreen API',
     !/requestFullscreen|webkitRequestFullscreen|document\.fullscreen/.test(screen + map),
+  );
+  // The transition defect this pins: two separate return trees made React
+  // unmount and rebuild the whole subtree at route-ready → navigating,
+  // tearing down and recreating the Leaflet instance mid-trip.
+  check(
+    '1. ONE tree for both modes — the map has a single mount point',
+    (screen.match(/\{mapSlot\}/g) ?? []).length === 1,
+    (screen.match(/\{mapSlot\}/g) ?? []).length,
+  );
+  check(
+    '1. the surface switches by CLASS, not by returning a different tree',
+    screen.includes('const shellCls = fullScreen') &&
+      screen.includes('const surfaceCls = fullScreen') &&
+      !/if \(fullScreen\) \{\s*return \(/.test(screen),
+  );
+  check(
+    '1. landscape re-arranges with grid placement, never by reordering the DOM',
+    screen.includes('landscape:grid') && screen.includes('landscape:col-start-2'),
   );
   check(
     '1. the map-first surface is used ONLY while guidance is live',
@@ -143,7 +162,10 @@ const T0 = 1_754_000_000_000;
   check('4. speed', screen.includes('mph') && screen.includes('Speed'));
   check('4. distance remaining', screen.includes('formatDriverDistanceMi(view.remainingMi)'));
   check('4. arrival estimate', screen.includes('{etaText ?? ') && screen.includes('Arrive'));
-  check('4. HOS strip stays on the driving surface', screen.includes('<HosStrip drivingActive'));
+  check(
+    '4. HOS strip stays on the driving surface',
+    screen.includes('<HosStrip') && screen.includes('drivingActive={'),
+  );
 
   // ETA maths, from the provider's planned duration.
   check(
@@ -185,7 +207,7 @@ const T0 = 1_754_000_000_000;
   check(
     '5. pilot/destination controls live in that lower region, after the map',
     screen.indexOf('{mapSlot}') < surfaceEnd &&
-      surfaceEnd < screen.lastIndexOf('{destinationSlot}'),
+      surfaceEnd < screen.lastIndexOf('{destinationSlot ??'),
   );
   const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
   check('5. the pilot debug log is still collapsed by default', !/<details\s+open/.test(controls));
@@ -206,7 +228,8 @@ const T0 = 1_754_000_000_000;
   // 360, 375 and in both landscape sizes. The fixes are pinned here.
   check(
     '7. landscape switches to a two-column layout so the map keeps the height',
-    screen.includes('landscape:flex-row') && screen.includes('landscape:w-['),
+    screen.includes('landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)]') &&
+      screen.includes('landscape:col-start-2'),
   );
   check(
     '7. the map can never be squeezed to nothing in portrait',
@@ -222,7 +245,8 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '7. the readout column and its rows never shrink the map away',
-    (screen.match(/shrink-0/g) ?? []).length >= 4,
+    screen.includes("const colOne = fullScreen ? 'shrink-0") &&
+      (screen.match(/shrink-0/g) ?? []).length >= 3,
   );
   check(
     '7. the HOS strip yields its space in landscape rather than crushing the map',

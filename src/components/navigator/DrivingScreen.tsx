@@ -191,142 +191,131 @@ export function DrivingScreenView({
     </dl>
   );
 
-  // ---- ACTIVE NAVIGATION: a map-first application surface, not a page ----
-  // Viewport-filling by layout (no browser fullscreen API): the driving
-  // surface is exactly one dynamic viewport tall, so mobile browser chrome
-  // never covers the bottom controls, and the site's header/footer sit
-  // behind it instead of competing with guidance. Pilot and debug controls
-  // live BELOW that surface — reachable by scrolling, never in the way.
-  if (fullScreen) {
-    return (
-      <div className="fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-asphalt">
-        {/* Portrait stacks card → map → readouts. Landscape puts the card
-            and readouts in a narrow left column so the map keeps the full
-            (short) height instead of being squeezed to nothing. */}
-        <div className="flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] landscape:flex-row">
-          <div className="flex min-h-0 flex-col gap-2 landscape:w-[38%] landscape:shrink-0">
-            {maneuverCard}
-            <p
-              aria-live="polite"
-              role="status"
-              className="shrink-0 truncate text-sm font-semibold text-ink"
-            >
-              {statusText[view.status]}
-              {view.lastKnown ? ' (last known)' : ''}
-            </p>
-            {compactStrip}
-            <div className="shrink-0 landscape:hidden">
-              <HosStrip drivingActive sourceLabel={hosSourceLabel} />
-            </div>
-            <div className="flex shrink-0 gap-2">
-              {overviewSlot}
-              <LockGate action="stop-navigation" lockedLabel="Stop navigation">
-                <button
-                  type="button"
-                  onClick={onStop}
-                  className="min-h-16 w-full rounded-card border border-line px-4 text-lg font-semibold text-ink"
-                  aria-label="Stop navigation and discard position"
-                >
-                  Stop
-                </button>
-              </LockGate>
-            </div>
-          </div>
+  // ---- ONE tree for both modes -------------------------------------------
+  // Active navigation is a viewport-filling application surface (no browser
+  // fullscreen API); every other state is the ordinary page. Critically the
+  // ELEMENT ORDER is identical in both, and only classes change: React
+  // therefore keeps the map component MOUNTED across the
+  // route-ready → navigating transition. Two separate trees would unmount
+  // it, tearing down and rebuilding the Leaflet instance mid-trip — a
+  // visible reload exactly when the driver starts moving.
+  const shellCls = fullScreen
+    ? 'fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-asphalt'
+    : '';
+  // Portrait stacks card → map → readouts. Landscape becomes a two-column
+  // grid — readouts left, map spanning the right — WITHOUT reordering the
+  // DOM, so the map still never remounts.
+  const surfaceCls = fullScreen
+    ? 'flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
+      'landscape:grid landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)] ' +
+      'landscape:grid-rows-[auto_auto_auto_1fr] landscape:items-start'
+    : 'space-y-6';
+  const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
+  const mapWrapCls = fullScreen
+    ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line ' +
+      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 landscape:h-full landscape:min-h-0'
+    : '';
 
-          {/* The map takes every pixel the readouts do not, and can never
-              be squeezed to nothing on a small phone. */}
-          <div className="relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line landscape:min-h-0">
-            {mapSlot}
-          </div>
+  return (
+    <div className={shellCls}>
+      <div className={surfaceCls}>
+        <div className={colOne}>{maneuverCard}</div>
+
+        {/* The map: the driving surface's primary element, and the one
+            component that must survive the layout switch untouched. */}
+        <div className={mapWrapCls}>{mapSlot}</div>
+
+        {/* Status as TEXT — never color alone; live region for changes. */}
+        <p
+          aria-live="polite"
+          role="status"
+          className={
+            fullScreen
+              ? `${colOne} truncate text-sm font-semibold text-ink`
+              : 'text-xl font-semibold text-ink'
+          }
+        >
+          {statusText[view.status]}
+          {view.lastKnown ? ' (last known)' : ''}
+        </p>
+
+        <div className={colOne}>
+          {fullScreen ? (
+            compactStrip
+          ) : (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
+              <dt>Route progress</dt>
+              <dd>
+                {view.routeMile !== null && view.totalMi !== null
+                  ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
+                  : '—'}
+              </dd>
+              <dt>Distance remaining</dt>
+              <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
+              <dt>Speed</dt>
+              <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
+            </dl>
+          )}
         </div>
 
-        {/* Below the driving surface: everything that must not compete
-            with guidance. Off-viewport until deliberately scrolled to. */}
-        <div className="space-y-4 p-4">
-          <MotionLockOverlay />
-          {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
-          {mapStyleSlot}
-          <LockGate action="edit-destination" lockedLabel="Destination entry">
-            {destinationSlot}
+        {/* Permanent HOS strip (milestone N6) — the driver's clocks against
+            the drive, in every screen state. In landscape the map needs the
+            height more than the clocks need the space. */}
+        <div className={fullScreen ? `${colOne} landscape:hidden` : ''}>
+          <HosStrip
+            drivingActive={
+              fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
+            }
+            sourceLabel={hosSourceLabel}
+          />
+        </div>
+
+        {/* Stop is the always-visible exit control — allowed while moving. */}
+        <div className={fullScreen ? `${colOne} flex gap-2` : ''}>
+          {fullScreen ? overviewSlot : null}
+          <LockGate action="stop-navigation" lockedLabel="Stop navigation">
+            {watching ? (
+              <button
+                type="button"
+                onClick={onStop}
+                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                aria-label="Stop navigation and discard position"
+              >
+                {fullScreen ? 'Stop' : 'Stop navigation'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onStart}
+                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                aria-label="Enable location and start the driving preview"
+              >
+                Enable location
+              </button>
+            )}
           </LockGate>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      {maneuverCard}
+      {/* Below the driving surface: everything that must not compete with
+          guidance. In full-screen this sits past the fold; on the ordinary
+          page it simply continues. */}
+      <div className={fullScreen ? 'space-y-4 p-4' : 'mt-6 space-y-6'}>
+        <MotionLockOverlay />
+        {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
+        {mapStyleSlot}
 
-      {/* The map answers "where am I, what road is this, where am I going" —
-          it sits directly under the maneuver card and never above it: the
-          instruction is still the largest thing on the screen. */}
-      {mapSlot}
-
-      {/* Status as TEXT — never color alone; live region for changes. */}
-      <p aria-live="polite" role="status" className="text-xl font-semibold text-ink">
-        {statusText[view.status]}
-        {view.lastKnown ? ' (last known)' : ''}
-      </p>
-      {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
-
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
-        <dt>Route progress</dt>
-        <dd>
-          {view.routeMile !== null && view.totalMi !== null
-            ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
-            : '—'}
-        </dd>
-        <dt>Distance remaining</dt>
-        <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
-        <dt>Speed</dt>
-        <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
-      </dl>
-
-      {/* Permanent HOS strip (milestone N6) — the driver's clocks against
-          the drive, in every screen state. Clocks only count down while
-          guidance is genuinely active; the label says exactly where its
-          numbers come from. */}
-      <HosStrip
-        drivingActive={view.status === 'navigating' || view.status === 'position-degraded'}
-        sourceLabel={hosSourceLabel}
-      />
-
-      <MotionLockOverlay />
-
-      {/* Stop is the always-visible exit control — allowed while moving. */}
-      <LockGate action="stop-navigation" lockedLabel="Stop navigation">
-        {watching ? (
-          <button
-            type="button"
-            onClick={onStop}
-            className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
-            aria-label="Stop navigation and discard position"
-          >
-            Stop navigation
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onStart}
-            className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
-            aria-label="Enable location and start the driving preview"
-          >
-            Enable location
-          </button>
-        )}
-      </LockGate>
-
-      {/* Stationary-only affordance — gated by the shared map,
-          demonstrating default-deny end to end. Pilot Mode mounts the
-          trip controls here; otherwise the honest placeholder stands. */}
-      <LockGate action="edit-destination" lockedLabel="Destination entry">
-        {destinationSlot ?? (
-          <p className="text-xl text-ink/80">
-            Destination entry unlocks here when routing ships (a later milestone).
-          </p>
-        )}
-      </LockGate>
+        {/* Stationary-only affordance — gated by the shared map,
+            demonstrating default-deny end to end. Pilot Mode mounts the
+            trip controls here; otherwise the honest placeholder stands. */}
+        <LockGate action="edit-destination" lockedLabel="Destination entry">
+          {destinationSlot ?? (
+            <p className="text-xl text-ink/80">
+              Destination entry unlocks here when routing ships (a later milestone).
+            </p>
+          )}
+        </LockGate>
+      </div>
     </div>
   );
 }
