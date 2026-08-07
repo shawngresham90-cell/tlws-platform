@@ -64,8 +64,10 @@ const T0 = 1_754_000_000_000;
     screen.includes('fixed inset-0') && screen.includes('h-[100dvh]'),
   );
   check(
-    '1. the map takes every pixel the card and strip do not',
-    /min-h-0 flex-1[^>]*>\s*\{mapSlot\}/.test(screen) || screen.includes('min-h-0 flex-1'),
+    // Measured in Chromium: 38% of the surface in portrait, 95% in
+    // landscape. The map is the flex-1 child with a guaranteed floor.
+    '1. the map takes every pixel the readouts do not, with a floor',
+    /flex-1[^"]*"[\s\S]{0,80}\{mapSlot\}/.test(screen) && screen.includes('min-h-[38dvh] flex-1'),
   );
   check(
     '1. dvh (not vh) so mobile browser chrome cannot hide the bottom controls',
@@ -199,13 +201,32 @@ const T0 = 1_754_000_000_000;
 
 // ============================== 7. portrait / landscape ==================
 {
+  // Browser-measured (Chromium, 8 viewports) before these pins existed:
+  // stacking everything vertically squeezed the map to ZERO height at 320,
+  // 360, 375 and in both landscape sizes. The fixes are pinned here.
   check(
-    '7. landscape compacts the card so the map keeps the height',
-    (screen.match(/landscape:/g) ?? []).length >= 4,
+    '7. landscape switches to a two-column layout so the map keeps the height',
+    screen.includes('landscape:flex-row') && screen.includes('landscape:w-['),
   );
   check(
-    '7. portrait is the default (landscape rules are the override)',
-    screen.includes('landscape:text-') && screen.includes('text-4xl'),
+    '7. the map can never be squeezed to nothing in portrait',
+    screen.includes('min-h-[38dvh]'),
+  );
+  check(
+    '7. the maneuver card is capped so it cannot eat the map',
+    screen.includes('max-h-[28dvh]') && screen.includes('overflow-hidden'),
+  );
+  check(
+    '7. instruction text scales down on narrow phones (320 px) and up on wide',
+    screen.includes('text-2xl font-semibold leading-tight text-ink sm:text-4xl'),
+  );
+  check(
+    '7. the readout column and its rows never shrink the map away',
+    (screen.match(/shrink-0/g) ?? []).length >= 4,
+  );
+  check(
+    '7. the HOS strip yields its space in landscape rather than crushing the map',
+    screen.includes('landscape:hidden'),
   );
 }
 

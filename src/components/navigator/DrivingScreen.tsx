@@ -142,17 +142,21 @@ export function DrivingScreenView({
     <section
       ref={navTopRef}
       aria-label="Next maneuver"
-      className="scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-4 shadow-lg sm:p-6"
+      className="max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-3 shadow-lg sm:p-6"
     >
       {m ? (
         <>
-          <p className="text-2xl text-ink/80 landscape:text-xl">
+          <p className="text-xl text-ink/80 sm:text-2xl">
             In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
           </p>
-          <p className="text-4xl font-semibold text-ink landscape:text-3xl">{m.instruction}</p>
-          {roadName ? <p className="text-xl text-ink/80 landscape:text-lg">on {roadName}</p> : null}
+          {/* Sized so the map still owns the screen on a 320 px phone: the
+              instruction is the largest text, but it may not eat the map. */}
+          <p className="text-2xl font-semibold leading-tight text-ink sm:text-4xl">
+            {m.instruction}
+          </p>
+          {roadName ? <p className="text-base text-ink/80 sm:text-xl">on {roadName}</p> : null}
           {view.maneuvers?.following ? (
-            <p className="mt-2 text-xl text-ink/70 landscape:mt-1 landscape:text-base">
+            <p className="mt-1 truncate text-base text-ink/70 sm:text-xl">
               then {view.maneuvers.following.instruction}
             </p>
           ) : null}
@@ -167,22 +171,22 @@ export function DrivingScreenView({
 
   // Compact bottom readout for the driving surface.
   const compactStrip = (
-    <dl className="grid grid-cols-3 gap-2 rounded-card border border-line bg-asphalt/95 px-3 py-2 text-center text-ink">
+    <dl className="grid shrink-0 grid-cols-3 gap-2 rounded-card border border-line bg-asphalt/95 px-3 py-1 text-center text-ink">
       <div>
-        <dt className="text-sm text-ink/70">Speed</dt>
-        <dd className="text-2xl font-semibold landscape:text-xl">
+        <dt className="text-xs text-ink/70">Speed</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">
           {view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}
         </dd>
       </div>
       <div>
-        <dt className="text-sm text-ink/70">Remaining</dt>
-        <dd className="text-2xl font-semibold landscape:text-xl">
+        <dt className="text-xs text-ink/70">Remaining</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">
           {formatDriverDistanceMi(view.remainingMi)}
         </dd>
       </div>
       <div>
-        <dt className="text-sm text-ink/70">Arrive</dt>
-        <dd className="text-2xl font-semibold landscape:text-xl">{etaText ?? '—'}</dd>
+        <dt className="text-xs text-ink/70">Arrive</dt>
+        <dd className="text-xl font-semibold sm:text-2xl">{etaText ?? '—'}</dd>
       </div>
     </dl>
   );
@@ -196,34 +200,43 @@ export function DrivingScreenView({
   if (fullScreen) {
     return (
       <div className="fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-asphalt">
-        <div className="flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {maneuverCard}
-
-          {/* The map takes every pixel the card and strip do not. */}
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-card border border-line">
-            {mapSlot}
+        {/* Portrait stacks card → map → readouts. Landscape puts the card
+            and readouts in a narrow left column so the map keeps the full
+            (short) height instead of being squeezed to nothing. */}
+        <div className="flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] landscape:flex-row">
+          <div className="flex min-h-0 flex-col gap-2 landscape:w-[38%] landscape:shrink-0">
+            {maneuverCard}
+            <p
+              aria-live="polite"
+              role="status"
+              className="shrink-0 truncate text-sm font-semibold text-ink"
+            >
+              {statusText[view.status]}
+              {view.lastKnown ? ' (last known)' : ''}
+            </p>
+            {compactStrip}
+            <div className="shrink-0 landscape:hidden">
+              <HosStrip drivingActive sourceLabel={hosSourceLabel} />
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {overviewSlot}
+              <LockGate action="stop-navigation" lockedLabel="Stop navigation">
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="min-h-16 w-full rounded-card border border-line px-4 text-lg font-semibold text-ink"
+                  aria-label="Stop navigation and discard position"
+                >
+                  Stop
+                </button>
+              </LockGate>
+            </div>
           </div>
 
-          <p aria-live="polite" role="status" className="text-base font-semibold text-ink">
-            {statusText[view.status]}
-            {view.lastKnown ? ' (last known)' : ''}
-          </p>
-
-          {compactStrip}
-          <HosStrip drivingActive sourceLabel={hosSourceLabel} />
-
-          <div className="flex gap-2">
-            {overviewSlot}
-            <LockGate action="stop-navigation" lockedLabel="Stop navigation">
-              <button
-                type="button"
-                onClick={onStop}
-                className="min-h-16 w-full rounded-card border border-line px-4 text-lg font-semibold text-ink"
-                aria-label="Stop navigation and discard position"
-              >
-                Stop
-              </button>
-            </LockGate>
+          {/* The map takes every pixel the readouts do not, and can never
+              be squeezed to nothing on a small phone. */}
+          <div className="relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line landscape:min-h-0">
+            {mapSlot}
           </div>
         </div>
 
