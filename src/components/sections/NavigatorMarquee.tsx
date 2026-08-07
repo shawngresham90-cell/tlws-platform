@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
-import { navigatorFlagEnabled } from '@/lib/navigator-api/pilot-access';
+import { PILOT_ACCESS_PATH } from '@/lib/navigator-api/pilot-access';
 
 /**
  * Navigator marquee tile — pilot access to the truck GPS Navigator, sitting
@@ -17,17 +17,22 @@ import { navigatorFlagEnabled } from '@/lib/navigator-api/pilot-access';
  * idiom the Navigator itself uses — drawn in the same brand palette as the
  * truck on the parking tile.
  *
- * Renders NOTHING when NEXT_PUBLIC_NAVIGATOR_ENABLED is off. Without the flag
- * the Navigator routes are 404s, and a homepage tile pointing at a 404 is
- * worse than no tile. This is also what keeps production unchanged: the flag
- * is off there, so the homepage gains nothing until the owner turns it on.
+ * ALWAYS RENDERS. Tile visibility is deliberately decoupled from
+ * NEXT_PUBLIC_NAVIGATOR_ENABLED: the flag governs whether the Navigator
+ * RUNTIME is live on a deploy, not whether the public may see that the pilot
+ * exists. Drivers can find the pilot and ask for the password on production
+ * while /drive, /navigator and the Navigator APIs stay shut.
+ *
+ * The destination is the PASSWORD GATE, not /drive. That is what makes an
+ * always-visible tile safe: the gate is the one Navigator route with no flag
+ * check and no token requirement, so this link can never land on a 404, and
+ * it can never reach the Navigator itself without a correct password. An
+ * already-unlocked driver is forwarded straight through by the gate.
  */
 export function NavigatorMarquee({ className }: { className?: string }) {
-  if (!navigatorFlagEnabled()) return null;
-
   return (
     <Link
-      href="/drive"
+      href={PILOT_ACCESS_PATH}
       aria-label="Navigator — pilot access. Opens the truck GPS Navigator pilot."
       className={cn(
         'group/marquee relative block w-full max-w-sm select-none rounded-card',

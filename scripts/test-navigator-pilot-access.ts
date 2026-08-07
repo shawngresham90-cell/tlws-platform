@@ -89,7 +89,10 @@ async function main() {
    * ---------------------------------------------------------------- */
   check('1a: Navigator tile renders when the flag is on', navMarkup.length > 0);
   check('1b: the tile is on the rendered homepage hero', heroMarkup.includes('Navigator'));
-  check('1c: the tile links to the Navigator entry', navMarkup.includes('href="/drive"'));
+  check(
+    '1c: the tile links to the PASSWORD GATE, never straight at the Navigator',
+    navMarkup.includes(`href="${PILOT_ACCESS_PATH}"`) && !navMarkup.includes('href="/drive"'),
+  );
   check(
     '1d: the tile is a real card, not a bare text link',
     navMarkup.includes('marquee-lights') && navMarkup.includes('aspect-square'),
@@ -596,12 +599,12 @@ async function main() {
     searchApiSrc.indexOf('pilot-access-required') < searchApiSrc.indexOf('searchLimiter.allow'),
   );
   check(
-    '19i: the tile is flag-gated too — no card pointing at a 404',
-    marqueeSrc.includes('navigatorFlagEnabled()') && marqueeSrc.includes('return null'),
+    '19i: the tile is NOT flag-gated — visibility is decoupled from the runtime',
+    !marqueeSrc.includes('navigatorFlagEnabled()') && !marqueeSrc.includes('return null'),
   );
   check(
-    '19j: the access page is flag-gated',
-    accessPageSrc.includes('navigatorFlagEnabled()') && accessPageSrc.includes('notFound()'),
+    '19j: the access page is NOT flag-gated — the tile must always reach it',
+    !accessPageSrc.includes('notFound()'),
   );
   check(
     '19k: pages carry their own guard, not just the middleware',
@@ -614,16 +617,80 @@ async function main() {
       /if \(!\(await requestHasPilotAccess\(req\)\)\)/.test(searchApiSrc),
   );
 
-  /* With the flag off the tile disappears entirely. */
+  /* ---------------------------------------------------------------- *
+   * 19m-19t — TILE VISIBILITY IS DECOUPLED FROM RUNTIME ENABLEMENT
+   *
+   * The owner wants the Navigator tile on the live homepage while the
+   * Navigator itself stays shut. So with the flag OFF the tile must still
+   * render, unchanged, still below Truck Parking, still pointing at the gate
+   * — while every protected surface keeps 404ing.
+   * ---------------------------------------------------------------- */
   process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED = 'false';
+  const navMarkupFlagOff = renderToStaticMarkup(createElement(NavigatorMarquee));
+  const heroMarkupFlagOff = renderToStaticMarkup(createElement(Hero));
+
+  check('19m: flag off ⇒ the Navigator tile STILL renders', navMarkupFlagOff.length > 0);
   check(
-    '19m: flag off ⇒ no Navigator tile on the homepage',
-    renderToStaticMarkup(createElement(NavigatorMarquee)) === '',
+    '19n: flag off ⇒ the tile is byte-identical to the flag-on tile',
+    navMarkupFlagOff === navMarkup,
   );
   check(
-    '19n: flag off ⇒ the rest of the hero is unchanged',
-    renderToStaticMarkup(createElement(Hero)).includes('href="/directory/parking"'),
+    '19o: flag off ⇒ the tile is still on the homepage hero',
+    heroMarkupFlagOff.includes('aria-label="Navigator'),
   );
+  const offAnchors = heroMarkupFlagOff.split('<a ').slice(1);
+  const offParking = offAnchors.findIndex((a) => a.startsWith('aria-label="Truck Parking'));
+  const offNavigator = offAnchors.findIndex((a) => a.startsWith('aria-label="Navigator'));
+  check(
+    '19p: flag off ⇒ still DIRECTLY below Truck Parking',
+    offParking >= 0 && offNavigator === offParking + 1,
+    `parking=${offParking} navigator=${offNavigator}`,
+  );
+  check(
+    '19q: flag off ⇒ the tile still points at the password gate',
+    navMarkupFlagOff.includes(`href="${PILOT_ACCESS_PATH}"`),
+  );
+  check(
+    '19r: flag off ⇒ the tile keeps the same card size/layout classes',
+    navMarkupFlagOff.includes('aspect-square') &&
+      navMarkupFlagOff.includes('max-w-sm') &&
+      navMarkupFlagOff.includes('marquee-lights'),
+  );
+  check(
+    '19s: flag off ⇒ the rest of the hero is unchanged',
+    heroMarkupFlagOff.includes('href="/directory/parking"'),
+  );
+  /* The gate stays reachable with the flag off — that is what makes an
+     always-visible tile safe rather than a link to a 404. */
+  check(
+    '19t: flag off ⇒ the gate is still reachable — no 404 path on the access page at all',
+    !accessPageSrc.includes('notFound'),
+  );
+  check(
+    '19v: an authorized visitor is only forwarded when the runtime is ON',
+    /if \(authorized && runtimeEnabled\) redirect\(next\)/.test(accessPageSrc),
+  );
+  check(
+    '19w: with the runtime OFF an authorized visitor is told, not redirected into a 404',
+    accessPageSrc.indexOf('if (authorized && runtimeEnabled) redirect(next)') <
+      accessPageSrc.indexOf('if (authorized) {') &&
+      accessPageSrc.includes('isn’t running on this deploy'),
+  );
+  check(
+    '19x: the gate never prints an environment-variable name to the public',
+    !accessPageSrc.includes('NAVIGATOR_PREVIEW_PASSWORD'),
+  );
+  /* ...while every PROTECTED surface still refuses to exist. */
+  for (const [label, src] of [
+    ['/drive', drivePageSrc],
+    ['/navigator', navPageSrc],
+  ] as const) {
+    check(
+      `19u: flag off ⇒ ${label} still 404s (flag check retained)`,
+      src.includes("process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED === 'true'") &&
+        src.includes('notFound()'),
+    );
+  }
   process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED = 'true';
   // Dummy Supabase values so the middleware's session refresh can construct a
   // client offline. Without them a gate BYPASS would crash here instead of

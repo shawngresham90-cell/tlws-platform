@@ -72,9 +72,10 @@ export function Hero() {
 
           {/* Promo column: TEMPORARY shirt merchandising (remove when it sells
               out), the Truck Parking marquee tile DIRECTLY beneath it, and the
-              Navigator pilot tile DIRECTLY beneath that. The Navigator tile
-              renders only while the Navigator flag is on, so the column
-              collapses back to two tiles in production. */}
+              Navigator pilot tile DIRECTLY beneath that. The Navigator tile is
+              always present — it points at the pilot password gate, not at the
+              Navigator itself, so it is safe on a deploy where the Navigator
+              runtime is switched off. */}
           <div className="mt-10 flex w-full max-w-sm flex-col gap-5 xl:mt-0 xl:justify-self-end">
             <HeroShirtPromo />
             <TruckParkingMarquee />
