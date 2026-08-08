@@ -238,6 +238,29 @@ async function main() {
         }
 
         const maneuver = document.querySelector('[aria-label="Next maneuver"]');
+        // Hierarchy and clipping. The card is capped at 28dvh with
+        // overflow-hidden, so on a short screen its lower lines — the road
+        // name and the "then …" preview — can vanish with no indication
+        // that anything was cut. Measure it rather than assume.
+        let card = null;
+        if (maneuver) {
+          const cr = maneuver.getBoundingClientRect();
+          const lines = Array.from(maneuver.querySelectorAll('p')).map((p) => {
+            const pr = p.getBoundingClientRect();
+            return {
+              text: p.textContent.trim().replace(/\s+/g, ' ').slice(0, 34),
+              px: Math.round(parseFloat(getComputedStyle(p).fontSize)),
+              bottom: Math.round(pr.bottom - cr.top),
+              clipped: pr.bottom > cr.bottom + 1,
+            };
+          });
+          card = {
+            h: Math.round(cr.height),
+            contentH: maneuver.scrollHeight,
+            clipped: maneuver.scrollHeight > Math.round(cr.height) + 1,
+            lines,
+          };
+        }
         const maneuverVisible =
           maneuver !== null && visibleRect(maneuver).h > 8 && reallyOnTop(maneuver);
 
@@ -253,7 +276,15 @@ async function main() {
           const label = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 44);
           targets.push({ label, w: Math.round(r.width), h: Math.round(r.height) });
         }
-        const tooSmall = targets.filter((t) => t.h < minTap || t.w < minTap);
+        // Map attribution is a licence requirement and is small by
+        // convention everywhere; it is not a driving control and holding
+        // it to a 48 px floor would just make the report cry wolf. It is
+        // still counted and named, just not treated as a failure.
+        const isAttribution = (t) =>
+          /leaflet|openstreetmap|opentopomap|mapbox|carto|© /i.test(t.label);
+        const undersized = targets.filter((t) => t.h < minTap || t.w < minTap);
+        const tooSmall = undersized.filter((t) => !isAttribution(t));
+        const smallAttribution = undersized.filter(isAttribution).length;
 
         // Is the map-first layout actually engaged? If the site footer is
         // reachable, the driver is looking at an ordinary page, not the
@@ -272,6 +303,7 @@ async function main() {
           offenders,
           maneuverPresent: maneuver !== null,
           maneuverVisibleWithoutScrolling: maneuverVisible,
+          card,
           maneuverText: maneuver
             ? maneuver.textContent.trim().replace(/\s+/g, ' ').slice(0, 70)
             : null,
@@ -281,6 +313,7 @@ async function main() {
           mapClippedBy: mapVis ? Math.round(mapVis.full.height - mapVis.h) : 0,
           controlCount: targets.length,
           tooSmall: tooSmall.slice(0, 5),
+          smallAttribution,
           footerReachable: footerLink !== undefined,
         };
       },
@@ -302,6 +335,7 @@ async function main() {
       !m.maneuverVisibleWithoutScrolling ||
       m.tooSmall.length > 0 ||
       m.mapClippedBy > 8 ||
+      (m.card && m.card.clipped) ||
       m.footerReachable;
     if (bad) failures += 1;
     console.log(
@@ -322,6 +356,7 @@ async function main() {
       !m.maneuverVisibleWithoutScrolling ||
       m.tooSmall.length > 0 ||
       m.mapClippedBy > 8 ||
+      (m.card && m.card.clipped) ||
       m.footerReachable;
     if (!bad) continue;
     printed += 1;
@@ -341,6 +376,14 @@ async function main() {
       console.log(
         `    map is laid out ${m.mapHeightLaidOut}px tall in a ${m.vh}px viewport — ${m.mapClippedBy}px off-screen`,
       );
+    }
+    if (m.card && m.card.clipped) {
+      console.log(
+        `    maneuver card clipped: ${m.card.contentH}px of content in a ${m.card.h}px box`,
+      );
+      for (const l of m.card.lines) {
+        console.log(`      ${l.px}px ${l.clipped ? 'CUT ' : '    '}"${l.text}"`);
+      }
     }
     if (m.footerReachable) {
       console.log(
