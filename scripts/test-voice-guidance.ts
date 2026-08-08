@@ -30,7 +30,13 @@ import {
   type SpeechPort,
   type VoiceRequest,
 } from '@/lib/navigator/voice-guidance';
-import { VoiceControls } from '@/components/navigator/VoiceControls';
+import { VoiceControls, VOICE_ENABLED_CONFIRMATION } from '@/components/navigator/VoiceControls';
+import {
+  createSpeechPort,
+  SPEECH_LANG,
+  type SynthLike,
+  type UtteranceLike,
+} from '@/components/navigator/speech-port';
 import { DrivingScreenView } from '@/components/navigator/DrivingScreen';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
@@ -964,10 +970,157 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
     'speech-port degrades silently when speechSynthesis is missing',
     /supported:\s*false/.test(port) && /'speechSynthesis' in window/.test(port),
   );
+  check(
+    'speech-port asks for no voice permission and enumerates no voices',
+    !/getVoices|permission/i.test(port),
+  );
   const lib = strip(readFileSync('src/lib/navigator/voice-guidance.ts', 'utf8'));
   check(
     'pure module never touches speechSynthesis directly (port-injected)',
     !/speechSynthesis/.test(lib),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The browser adapter itself (Block 2 / priority D). It was the one part of
+// the voice stack with no behavioural coverage — only a source grep — so
+// its globals are now injected and the real code runs here.
+{
+  function makeUtterance(text: string): UtteranceLike {
+    return { text, lang: '', onend: null, onerror: null };
+  }
+  function fakeSynth() {
+    const spoken: UtteranceLike[] = [];
+    let paused = false;
+    let resumes = 0;
+    let cancels = 0;
+    const synth: SynthLike = {
+      speak(u) {
+        spoken.push(u);
+      },
+      cancel() {
+        cancels++;
+      },
+      resume() {
+        resumes++;
+        paused = false;
+      },
+      get paused() {
+        return paused;
+      },
+    };
+    return {
+      synth,
+      spoken,
+      pause: () => {
+        paused = true;
+      },
+      counts: () => ({ resumes, cancels }),
+    };
+  }
+
+  // No engine at all — the honest degradation path.
+  const dead = createSpeechPort(null, makeUtterance);
+  check('adapter: no speechSynthesis → unsupported', dead.supported === false);
+  let threw = false;
+  try {
+    dead.speak('anything', () => {});
+    dead.cancel();
+  } catch {
+    threw = true;
+  }
+  check('adapter: an unsupported port is a no-op, never a throw', !threw);
+
+  const f = fakeSynth();
+  const p = createSpeechPort(f.synth, makeUtterance);
+  let doneCount = 0;
+  p.speak('Turn right onto Broad St.', () => {
+    doneCount++;
+  });
+  check('adapter: the utterance reaches the engine', f.spoken.length === 1);
+  check(
+    'adapter: every utterance is tagged US English, not the system language',
+    f.spoken[0].lang === SPEECH_LANG && SPEECH_LANG === 'en-US',
+  );
+  check('adapter: onDone waits for the engine', doneCount === 0);
+  f.spoken[0].onend?.();
+  check('adapter: onend completes the utterance', doneCount === 1);
+  // Engines fire both in some orders; the port must promise exactly one.
+  f.spoken[0].onerror?.();
+  f.spoken[0].onend?.();
+  check('adapter: onDone fires exactly once however the engine ends it', doneCount === 1);
+
+  const g = fakeSynth();
+  const p2 = createSpeechPort(g.synth, makeUtterance);
+  p2.speak('first', () => {});
+  check('adapter: a running queue is not resumed needlessly', g.counts().resumes === 0);
+  // The failure this pins: a backgrounded tab leaves the queue PAUSED, and
+  // a paused queue accepts utterances forever without speaking one — the
+  // driver gets silence for the rest of the trip and no error to show.
+  g.pause();
+  p2.speak('second', () => {});
+  check(
+    'adapter: a paused queue is resumed before speaking',
+    g.counts().resumes === 1 && g.spoken.length === 2,
+  );
+  p2.cancel();
+  check('adapter: cancel reaches the engine', g.counts().cancels === 1);
+}
+
+// ---------------------------------------------------------------------------
+// Enabling voice confirms itself out loud (Block 2 / priority D).
+{
+  check(
+    'the confirmation is a real sentence, not a placeholder',
+    typeof VOICE_ENABLED_CONFIRMATION === 'string' && /\w/.test(VOICE_ENABLED_CONFIRMATION),
+  );
+  const ctl = strip(readFileSync('src/components/navigator/VoiceControls.tsx', 'utf8'));
+  // WebKit refuses speechSynthesis that was never started by a user
+  // gesture. If the first speak() waits for the first maneuver — a timer,
+  // not a gesture — an iPhone stays silent for the whole trip with
+  // nothing on screen to say so. So the confirmation is spoken from
+  // inside the click handler, immediately after unmute.
+  check(
+    'enabling voice speaks immediately, inside the gesture that enabled it',
+    /voice\.unmute\(\);[\s\S]{0,200}voice\.request\(\{[\s\S]{0,200}VOICE_ENABLED_CONFIRMATION/.test(
+      ctl,
+    ),
+  );
+  check(
+    'the confirmation id is fresh each time, so announce-once cannot swallow it',
+    /enableSeq\.current \+= 1/.test(ctl) && /voice-enabled:\$\{enableSeq\.current\}/.test(ctl),
+  );
+  check(
+    'muting stays silent — the driver asked for quiet',
+    !/voice\.mute\(\);\s*setMuted\(true\);\s*voice\.request/.test(ctl),
+  );
+
+  // And it really is spoken: run the whole chain, port included.
+  const f2 = (() => {
+    const spoken: string[] = [];
+    const port: SpeechPort = {
+      supported: true,
+      speak: (text, onDone) => {
+        spoken.push(text);
+        onDone();
+      },
+      cancel: () => {},
+    };
+    return { port, spoken };
+  })();
+  const v = createVoiceGuidance(f2.port, { startMuted: true });
+  check(
+    'muted voice says nothing',
+    v.request({ id: 'x', priority: 'normal', text: 'hi' }) === 'dropped-muted',
+  );
+  v.unmute();
+  check(
+    'once enabled the confirmation is actually spoken',
+    v.request({
+      id: 'voice-enabled:1',
+      priority: 'normal',
+      text: VOICE_ENABLED_CONFIRMATION,
+    }) === 'spoken' && f2.spoken[0] === VOICE_ENABLED_CONFIRMATION,
   );
 }
 
