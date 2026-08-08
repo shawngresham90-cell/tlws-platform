@@ -173,11 +173,21 @@ function northRoute(n = 200) {
     'map: redraws only when the route identity changes',
     map.includes('drawnRouteRef') && map.includes('routeId ?? '),
   );
+  /*
+   * Handlers still start DISABLED at construction — the map is never
+   * interactive before the LockGate has said so. What changed (owner road
+   * test) is which of them the gate may later enable while moving: zoom
+   * yes, drag no. That split is asserted in test-navigation-map-ui §11/§17.
+   */
   check(
-    'map: cannot be panned or zoomed by a braced hand while driving',
+    'map: every gesture handler starts disabled until the lock allows it',
     map.includes('dragging: false') &&
       map.includes('scrollWheelZoom: false') &&
       map.includes('touchZoom: false'),
+  );
+  check(
+    'map: still contains no speed check of its own',
+    !/speedMph\s*[<>]=?\s*\d/.test(map) && !map.includes('MOVING_SPEED'),
   );
   check('map: cleans up its Leaflet instance on unmount', map.includes('mapRef.current?.remove()'));
   check(

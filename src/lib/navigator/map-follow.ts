@@ -23,10 +23,23 @@ export type FollowState = {
   mode: FollowMode;
   /** When the map left following, for the auto-return timer. */
   detachedAtMs: number | null;
+  /**
+   * Zoom the driver chose by hand, or null to use the speed-derived
+   * navigation zoom.
+   *
+   * Zooming is NOT detaching (owner decision, road test): a driver zooming
+   * out to see what is coming still wants the camera glued to the truck.
+   * Without this the next GPS fix would call setView with the speed zoom
+   * and silently undo them a second later — the map would fight the
+   * gesture, which is exactly the complaint. Recenter clears it.
+   */
+  zoomOverride: number | null;
 };
 
 export type FollowEvent =
   | { kind: 'user-panned'; tMs: number }
+  /** Pinch or the +/- buttons. Allowed while moving; does not detach. */
+  | { kind: 'user-zoomed'; zoom: number }
   | { kind: 'recenter' }
   | { kind: 'overview'; tMs: number }
   | { kind: 'route-replaced' }
@@ -42,29 +55,43 @@ export const AUTO_RECENTER_MS = 12_000;
 export const INITIAL_FOLLOW_STATE: FollowState = Object.freeze({
   mode: 'following',
   detachedAtMs: null,
+  zoomOverride: null,
 });
 
 export function followReducer(state: FollowState, event: FollowEvent): FollowState {
   switch (event.kind) {
     case 'user-panned':
       // Panning out of overview keeps it detached, not overview: the
-      // driver is now steering the camera by hand either way.
-      return { mode: 'detached', detachedAtMs: event.tMs };
+      // driver is now steering the camera by hand either way. Their zoom
+      // choice rides along — recentering is what restores the nav zoom.
+      return { mode: 'detached', detachedAtMs: event.tMs, zoomOverride: state.zoomOverride };
+    case 'user-zoomed':
+      // Mode is deliberately untouched. Zooming while following stays
+      // following; zooming while detached or in overview stays there.
+      return { ...state, zoomOverride: event.zoom };
     case 'recenter':
     case 'navigation-started':
-      return { mode: 'following', detachedAtMs: null };
+      return { mode: 'following', detachedAtMs: null, zoomOverride: null };
     case 'route-replaced':
       // A replacement route is new guidance — never leave the driver
       // looking at the old view of a route that no longer exists.
-      return { mode: 'following', detachedAtMs: null };
+      return { mode: 'following', detachedAtMs: null, zoomOverride: null };
     case 'overview':
       // Toggle: a second press returns to the truck.
       return state.mode === 'overview'
-        ? { mode: 'following', detachedAtMs: null }
-        : { mode: 'overview', detachedAtMs: event.tMs };
+        ? { mode: 'following', detachedAtMs: null, zoomOverride: null }
+        : { mode: 'overview', detachedAtMs: event.tMs, zoomOverride: state.zoomOverride };
     default:
       return state;
   }
+}
+
+/**
+ * The zoom the camera should use: the driver's hand-set zoom when they have
+ * one, otherwise the speed-derived navigation zoom.
+ */
+export function followZoom(state: FollowState, navigationZoom: number): number {
+  return state.zoomOverride ?? navigationZoom;
 }
 
 /** Recenter is visible exactly when the camera is not on the truck. */

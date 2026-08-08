@@ -11,6 +11,7 @@ import {
   shouldAutoRecenter,
   shouldTrackPosition,
   INITIAL_FOLLOW_STATE,
+  followZoom,
   type FollowState,
 } from '@/lib/navigator/map-follow';
 import { resolveMapStyle, type MapStyleId } from '@/lib/navigator/map-style';
@@ -26,7 +27,7 @@ import { resolveMapStyle, type MapStyleId } from '@/lib/navigator/map-style';
  *
  * Read-only by construction: it receives geometry and positions and owns no
  * engine, so it can never advance, replace, or mutate a route. Motion
- * policy is not decided here either — the screen passes `canBrowse` down
+ * policy is not decided here either — the screen passes `canZoom` down
  * from the shared LockGate, and this component only obeys it.
  */
 
@@ -43,7 +44,8 @@ export function NavigationMap({
   nextManeuver,
   routeId,
   styleId = 'standard',
-  canBrowse = false,
+  canZoom = false,
+  canPan = false,
   navigating = false,
   overviewToggleKey = 0,
 }: {
@@ -61,7 +63,10 @@ export function NavigationMap({
    * the screen's LockGate, never by this component (doc 06 §1: one
    * authority for motion policy).
    */
-  canBrowse?: boolean;
+  /** LockGate: may the driver change zoom right now? */
+  canZoom?: boolean;
+  /** LockGate: may the driver drag the camera off the truck right now? */
+  canPan?: boolean;
   /** True while guidance is live — enables heading-up and auto-recenter. */
   navigating?: boolean;
   /**
@@ -126,7 +131,12 @@ export function NavigationMap({
           dispatch({ kind: 'user-panned', tMs: Date.now() });
         };
         map.on('dragstart', onUserMove);
-        map.on('zoomstart', onUserMove);
+        // Zoom is NOT a pan: it records the driver's zoom and leaves follow
+        // mode alone. zoomend (not zoomstart) carries the settled level.
+        map.on('zoomend', () => {
+          if (selfMoveRef.current) return;
+          dispatch({ kind: 'user-zoomed', zoom: map.getZoom() });
+        });
         leafletRef.current = L;
         mapRef.current = map;
         setReady(true);
@@ -166,12 +176,16 @@ export function NavigationMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || map === null) return;
-    const handlers = [map.dragging, map.scrollWheelZoom, map.touchZoom, map.doubleClickZoom];
-    for (const h of handlers) {
-      if (canBrowse) h.enable();
+    // Two permissions, not one. Zoom rides along with driving; dragging the
+    // camera off the truck does not. Both come from the shared LockGate —
+    // this component still contains no speed check of its own.
+    for (const h of [map.scrollWheelZoom, map.touchZoom, map.doubleClickZoom]) {
+      if (canZoom) h.enable();
       else h.disable();
     }
-  }, [ready, canBrowse]);
+    if (canPan) map.dragging.enable();
+    else map.dragging.disable();
+  }, [ready, canZoom, canPan]);
 
   // --- draw the route; redraw only when the ROUTE changes -----------------
   useEffect(() => {
@@ -258,7 +272,11 @@ export function NavigationMap({
     if (!shouldTrackPosition(followRef.current)) return;
     if (shouldRecenter(position, lastCenteredRef.current)) {
       selfMoveRef.current = true;
-      map.setView([position.lat, position.lng], navigationZoom(speedMph), { animate: false });
+      map.setView(
+        [position.lat, position.lng],
+        followZoom(followRef.current, navigationZoom(speedMph)),
+        { animate: false },
+      );
       selfMoveRef.current = false;
       lastCenteredRef.current = { ...position };
     }
@@ -293,10 +311,9 @@ export function NavigationMap({
     selfMoveRef.current = true;
     map.setZoom(map.getZoom() + delta);
     selfMoveRef.current = false;
-    // Zooming by button is still leaving the follow camera behind, and the
-    // driver should see Recenter — but only when they zoom away from the
-    // navigation zoom, so a single tap does not feel like a trap.
-    dispatch({ kind: 'user-panned', tMs: Date.now() });
+    // A button zoom is the same intent as a pinch: keep following, keep the
+    // driver's level. No Recenter prompt, because nothing detached.
+    dispatch({ kind: 'user-zoomed', zoom: map.getZoom() });
   };
 
   const recenter = () => {
