@@ -121,10 +121,26 @@ function northRoute(n = 200) {
     'lifecycle: the map follows the CURRENT route, so a reroute redraws',
     src.includes('nav?.currentSession() ?? routeSession'),
   );
+  // This used to match the copy expression inline. The copy is now made
+  // once per ROUTE and cached, because doing it per call meant tens of
+  // thousands of allocations a second on a long haul (measured: 1.7 ms
+  // per call at 20,000 points, versus 0.005 ms cached). The property the
+  // check exists to protect — the caller never receives a reference into
+  // the live session — is unchanged and now stronger, since the cached
+  // copy is frozen. test-navigation-stability asserts the same thing at
+  // runtime rather than by reading the source.
   check(
     'lifecycle: positions are copied, never handed out by reference',
-    src.includes('active.geometry.map((p) => ({ ...p.position }))') &&
+    src.includes('active.geometry.map((p) => Object.freeze({ ...p.position }))') &&
       src.includes('{ ...destinationInfo.position }'),
+  );
+  check(
+    'lifecycle: the copy is cached per route, not rebuilt every tick',
+    src.includes('mapGeometryCache') && src.includes('mapGeometryCache.source !== active'),
+  );
+  check(
+    'lifecycle: the cache is released with the engines',
+    /function releaseEngines[\s\S]{0,900}mapGeometryCache = null/.test(src),
   );
   check(
     'lifecycle: routeId rides along as the redraw trigger',

@@ -155,7 +155,17 @@ export function DrivingScreenView({
     <section
       ref={navTopRef}
       aria-label="Next maneuver"
-      className="max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-3 shadow-lg sm:p-6"
+      // The cap keeps the map owning the screen. It used to be a flat
+      // 28dvh with overflow-hidden, which on a short screen cut the card
+      // mid-glyph and gave no sign anything had been cut: measured at
+      // 568x320 during navigation, 248 px of content in a 90 px box, and
+      // what got cut was the INSTRUCTION — "Turn right onto Old Mill Road
+      // towa". Losing the road name is a nuisance; losing the turn is the
+      // whole point of the screen. On a short viewport the cap rises so
+      // the distance and two lines of instruction always fit. The 600 px
+      // threshold is measured, not guessed: a 568 px-tall phone in
+      // portrait still overflowed at 480.
+      className="max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] sm:p-6"
     >
       {m ? (
         <>
@@ -163,13 +173,24 @@ export function DrivingScreenView({
             In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
           </p>
           {/* Sized so the map still owns the screen on a 320 px phone: the
-              instruction is the largest text, but it may not eat the map. */}
-          <p className="text-2xl font-semibold leading-tight text-ink sm:text-4xl">
+              instruction is the largest text, but it may not eat the map.
+              Clamped rather than clipped — two lines and an ellipsis says
+              "there is more"; a hard cut mid-word says nothing at all. */}
+          <p className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl">
             {m.instruction}
           </p>
-          {roadName ? <p className="text-base text-ink/80 sm:text-xl">on {roadName}</p> : null}
+          {/* The two supporting lines are the ones that go when there is
+              no room. Dropped deliberately on a short screen rather than
+              left to be sliced by the cap — and the road name costs least
+              of all, since the provider's instruction already names the
+              road ("Turn right onto Old Mill Road" / "on Old Mill Road"). */}
+          {roadName ? (
+            <p className="text-base text-ink/80 [@media(max-height:600px)]:hidden sm:text-xl">
+              on {roadName}
+            </p>
+          ) : null}
           {view.maneuvers?.following ? (
-            <p className="mt-1 truncate text-base text-ink/70 sm:text-xl">
+            <p className="mt-1 truncate text-base text-ink/70 [@media(max-height:600px)]:hidden sm:text-xl">
               then {view.maneuvers.following.instruction}
             </p>
           ) : null}
@@ -224,9 +245,19 @@ export function DrivingScreenView({
       'landscape:grid-rows-[auto_auto_auto_1fr] landscape:items-start'
     : 'space-y-6';
   const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
+  // The map is pinned to the VIEWPORT in landscape, not to the grid. It
+  // used to be `h-full`, which is 100% of the grid — and the grid's three
+  // auto rows are the left column's content, which on a 320 px-tall phone
+  // on its side needs about 500 px. Measured in Chromium at 568x320: the
+  // grid ran to 510 px, the map with it, and 190 px of the map — the edge
+  // its own Recenter and zoom controls sit on — was below the fold before
+  // the driver touched anything. Sizing off the viewport makes the map
+  // exactly as tall as the screen no matter what the left column does.
+  // (`p-2` is 0.5rem top and bottom, hence the 1rem.)
   const mapWrapCls = fullScreen
     ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line ' +
-      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 landscape:h-full landscape:min-h-0'
+      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 ' +
+      'landscape:h-[calc(100dvh-1rem)] landscape:min-h-0'
     : '';
 
   return (
@@ -419,6 +450,15 @@ export function DrivingScreen() {
     const snap = lifecycle.snapshot();
     const prev = prevLcStateRef.current;
     prevLcStateRef.current = snap.state;
+
+    // Speech watchdog. A browser speech engine can accept an utterance
+    // and then never report it finished — backgrounded tab, an OS
+    // interruption, a known iOS behavior. The queue would jam and the
+    // driver would silently stop being told about turns for the rest of
+    // the trip. This effect runs on every position update, which is the
+    // cadence the watchdog needs; it does nothing unless an utterance
+    // has genuinely been outstanding far too long.
+    voice.tick(Date.now());
 
     const active =
       snap.state === 'navigating' ||

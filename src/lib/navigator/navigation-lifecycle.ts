@@ -208,6 +208,13 @@ const NO_ROUTE_VIEW: DrivingView = Object.freeze({
   speedMph: null,
 });
 
+/**
+ * Transition-log bound. Generous — a single trip spends about seven
+ * entries, so this holds roughly seventy consecutive trips — but finite,
+ * because the lifecycle can outlive many trips in one mounted screen.
+ */
+export const MAX_TRANSITION_LOG = 500;
+
 /** States in which the engine stack is live and ticks feed it. */
 const ACTIVE_STATES: readonly LifecycleState[] = [
   'navigating',
@@ -231,6 +238,9 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
   // object; without this guard the matcher/detector/arrival stack would
   // ingest the same fix twice and double-count its evidence.
   let lastTickInput: PositionState | null = null;
+  // The map's copy of the route line, kept per ROUTE rather than per call
+  // (see mapData). Cleared with the engines.
+  let mapGeometryCache: { source: RouteSession; geometry: readonly LatLng[] } | null = null;
 
   const transitionLog: LifecycleTransition[] = [];
   const violationLog: string[] = [];
@@ -249,6 +259,12 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     const from = state;
     state = to;
     transitionLog.push(Object.freeze({ from, to, tMs, cause }));
+    // A trip costs a handful of transitions; a lifecycle that survives a
+    // day of trips would otherwise grow this forever. Bounded like the
+    // detector's own event log, oldest dropped first. `violationLog` is
+    // deliberately NOT bounded — it must stay empty, so anything in it
+    // is worth keeping in full.
+    if (transitionLog.length > MAX_TRANSITION_LOG) transitionLog.shift();
     deps.log?.record(tMs, `transition:${from}>${to}`, cause);
     return true;
   }
@@ -263,6 +279,15 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     destinationInfo = null;
     lastNavSnapshot = null;
     lastView = NO_ROUTE_VIEW;
+    // The de-duplication guard has to go too, for two separate reasons.
+    // It holds the driver's last position after the trip is over, which
+    // AD-7 says must not outlive the session; and a trip that starts
+    // before the GPS layer has published a NEW state object would have
+    // its first tick swallowed as a duplicate of the previous trip's
+    // last one — the new trip's engines would sit at mile zero until the
+    // next fix landed.
+    lastTickInput = null;
+    mapGeometryCache = null;
   }
 
   function snapshot(): LifecycleSnapshot {
@@ -390,6 +415,20 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
       });
     }
 
+    // A replacement fetch that opens a socket and then stalls — an
+    // ordinary thing on a mobile connection — never settles its promise,
+    // so `requestReroute` is still awaiting it and the lifecycle would
+    // hold 'rerouting' for the rest of the trip: the screen says
+    // "rerouting" forever and no later reroute can ever be attempted.
+    // The reroute controller already knows how to retire an overdue
+    // request; it just cannot be reached from inside the await. Ticks
+    // can. When one is retired we land wherever the engines honestly
+    // are, and the stale response is dropped when it eventually arrives.
+    if (state === 'rerouting' && nav.expireInFlight(tMs)) {
+      const derived = lastNavSnapshot === null ? 'navigating' : deriveEngineState(lastNavSnapshot);
+      transition(derived, tMs, 'reroute-timed-out');
+    }
+
     // While a reroute is in flight the lifecycle holds 'rerouting';
     // requestReroute() derives the landing state when it resolves.
     if (state !== 'rerouting' && lastNavSnapshot !== null) {
@@ -483,10 +522,29 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     // moment it lands; fall back to the planned session before navigation
     // starts. Positions are copied — the caller cannot reach into the
     // frozen session geometry.
+    //
+    // The copy is made ONCE PER ROUTE, not once per call. The driving
+    // screen recomputes this on every accepted fix — once a second, for
+    // hours — and at full provider resolution a long haul carries tens of
+    // thousands of points, so copying per call meant tens of thousands of
+    // allocations a second thrown away immediately (the map redraws only
+    // when the route id changes). Measured at 20,000 points: 1.7 ms per
+    // call on a desktop CPU, a second of CPU per ten minutes of driving,
+    // before any phone penalty. Route identity is the cache key because a
+    // session's geometry is immutable — a replacement route is a
+    // different object, and that is exactly when the copy must be redone.
     const active = nav?.currentSession() ?? routeSession;
+    if (active === null) {
+      mapGeometryCache = null;
+    } else if (mapGeometryCache === null || mapGeometryCache.source !== active) {
+      mapGeometryCache = {
+        source: active,
+        geometry: Object.freeze(active.geometry.map((p) => Object.freeze({ ...p.position }))),
+      };
+    }
     const nextMi = lastView.maneuvers?.next?.mileMi ?? null;
     return {
-      geometry: active === null ? [] : active.geometry.map((p) => ({ ...p.position })),
+      geometry: mapGeometryCache?.geometry ?? [],
       destination: destinationInfo === null ? null : { ...destinationInfo.position },
       nextManeuver:
         active === null || nextMi === null ? null : positionAtRouteMile(active.geometry, nextMi),
