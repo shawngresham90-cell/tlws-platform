@@ -144,3 +144,92 @@ jobs:
           done
           echo "Assertions still failing after 4 attempts."
           exit 1
+
+      # ---------------------------------------------------------------- #
+      # DIAGNOSTIC ONLY (Exit 369 investigation).                          #
+      #                                                                    #
+      # Every step below is `if: always()` so a failing gate above no      #
+      # longer skips them — that is the whole reason they exist. They      #
+      # OBSERVE and never fail the job: the job's red/green must keep      #
+      # meaning exactly what it meant before, which is "the gates above    #
+      # passed". GET only. Nothing is purged, revalidated or deployed.     #
+      #                                                                    #
+      # Response headers are printed through an ALLOWLIST. Production      #
+      # sends a Supabase session cookie on these routes, so a blind header #
+      # dump would leak an auth token into public CI logs. set-cookie and  #
+      # authorization are never matched.                                   #
+      # ---------------------------------------------------------------- #
+
+      - name: DIAG cache headers — Exit 369 vs a working exit
+        if: always()
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          ALLOW='^(cache-status|netlify-cdn-cache-control|cdn-cache-control|cache-control|age|etag|last-modified|x-nf-request-id|x-nextjs-cache|x-nextjs-prerender|x-nextjs-stale-time|x-nf-render-mode|netlify-vary|server|date|content-type):'
+          probe() {
+            echo "=== $1"
+            code=$(curl -sS -o /dev/null -D /tmp/hdr.txt -w '%{http_code}' --max-time 30 "$BASE$1")
+            echo "  http_status: $code"
+            grep -iE "$ALLOW" /tmp/hdr.txt | sed 's/^/  /' || echo "  (no allowlisted cache headers returned)"
+            rm -f /tmp/hdr.txt
+          }
+          probe /directory/i75/exit-369
+          probe /directory/i75/exit-201
+          # Second pass: an entry that is stale-while-revalidate should change
+          # its cache-status / age between two closely spaced requests.
+          echo "### second pass 10s later"
+          sleep 10
+          probe /directory/i75/exit-369
+          probe /directory/i75/exit-201
+          exit 0
+
+      - name: DIAG sitemap contains the exit URLs
+        if: always()
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          MAP=$(curl -sS --max-time 60 "$BASE/sitemap.xml")
+          echo "sitemap bytes: $(printf '%s' "$MAP" | wc -c)"
+          echo "total <loc> entries: $(printf '%s' "$MAP" | grep -c '<loc>' || true)"
+          echo "total exit URLs:     $(printf '%s' "$MAP" | grep -cE '/directory/i[0-9]+/exit-' || true)"
+          for u in /directory/i75/exit-369 /directory/i75/exit-201 /directory/i75/exit-60 /directory/i75/exit-207; do
+            if printf '%s' "$MAP" | grep -qF "$u<"; then echo "PRESENT $u"; else echo "ABSENT  $u"; fi
+          done
+          exit 0
+
+      - name: DIAG bounded control set (valid exits 200, nonexistent 404)
+        if: always()
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          # Exits taken from current production facets: 369 (11 rows, subject),
+          # 201 (8 rows), 60 (5 rows), 207 (1 row). 399 has zero rows and must
+          # 404. Five requests — bounded on purpose, no crawling.
+          check() {
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$BASE$1")
+            if [ "$code" = "$2" ]; then echo "MATCH    $1 -> $code (expected $2)";
+            else echo "MISMATCH $1 -> $code (expected $2)"; fi
+          }
+          check /directory/i75/exit-369 200
+          check /directory/i75/exit-201 200
+          check /directory/i75/exit-60  200
+          check /directory/i75/exit-207 200
+          check /directory/i75/exit-399 404
+          exit 0
+
+      - name: DIAG sitemap exit-URL shape (is the truncation structured?)
+        if: always()
+        run: |
+          BASE="https://truckinglifewithshawn.com"
+          MAP=$(curl -sS --max-time 60 "$BASE/sitemap.xml")
+          echo "### exit URLs per corridor present in the sitemap"
+          printf '%s' "$MAP" \
+            | grep -oE '/directory/i[0-9]+/exit-[a-z0-9-]+' \
+            | sed -E 's#/directory/(i[0-9]+)/exit-.*#\1#' \
+            | sort | uniq -c | sort -rn
+          echo
+          echo "### every I-75 exit present in the sitemap (sorted)"
+          printf '%s' "$MAP" \
+            | grep -oE '/directory/i75/exit-[a-z0-9-]+' \
+            | sed -E 's#.*/exit-##' | sort -u | tr '\n' ' '
+          echo
+          echo "### detail URLs present"
+          printf '%s' "$MAP" | grep -cE '/directory/location/' || true
+          exit 0
