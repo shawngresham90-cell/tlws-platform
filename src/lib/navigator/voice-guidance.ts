@@ -2,7 +2,9 @@
  * Voice guidance core (Navigator milestone N7) — speech OUTPUT only, per
  * docs/navigator/06-safety.md §3. Three priorities with fixed behaviour:
  *
- *   critical  preempts anything speaking
+ *   critical  jumps the queue; preempts anything speaking EXCEPT a
+ *             maneuver, which it waits for rather than cutting the turn
+ *             in half (see the critical branch of request())
  *   normal    queued in order
  *   passive   dropped entirely if anything is speaking or queued
  *
@@ -23,6 +25,14 @@ import type { ManeuverView } from './maneuver-engine';
 import type { DrivingScreenStatus } from './navigation-controller';
 
 export type VoicePriority = 'critical' | 'normal' | 'passive';
+
+/**
+ * The supersession group every maneuver line carries. It does two jobs:
+ * a newer stage of the same turn evicts an older one still queued, and a
+ * critical line will not cut a maneuver mid-sentence. Exported so the
+ * announcer that stamps it and the guard that honours it cannot drift.
+ */
+export const MANEUVER_GROUP = 'maneuver';
 
 export type VoiceRequest = {
   /** Announce-once key. The same id is never spoken twice, ever. */
@@ -189,6 +199,20 @@ export function createVoiceGuidance(port: SpeechPort, options: VoiceOptions = {}
       if (req.priority === 'critical') {
         announced.add(req.id);
         evictSuperseded(req);
+        // A critical line jumps the queue — but it does not cut a TURN
+        // out of the driver's ear. An HOS clock crossing at 30 minutes
+        // is important and can wait the two seconds a maneuver line
+        // takes; the turn cannot, and it would never come back, because
+        // its announce-once flag is already set. The result on the road
+        // was "Turn right onto Old M—" followed by a clock warning, and
+        // the driver missing the turn.
+        //
+        // Anything genuinely instantaneous would need a new priority
+        // above this one; nothing today is.
+        if (speaking !== null && speaking.group === MANEUVER_GROUP) {
+          queue.unshift(req);
+          return 'queued';
+        }
         stopCurrent();
         speakNow(req);
         return 'spoken';
@@ -362,8 +386,9 @@ export function createManeuverAnnouncer(): ManeuverAnnouncer {
         id: `maneuver:${key}:${due}`,
         priority: 'normal',
         // One group for every maneuver line: a newer stage evicts an older
-        // stage still waiting in the queue.
-        group: 'maneuver',
+        // stage still waiting in the queue, and a critical line waits for
+        // it rather than cutting the turn in half.
+        group: MANEUVER_GROUP,
         text: due === 'execute' ? body : `${distanceText(view.distanceMi)}, ${body}`,
       });
       return out;
