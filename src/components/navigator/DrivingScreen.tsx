@@ -28,6 +28,8 @@ import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route
 import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
+import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
+import { createBrowserWakePort } from './wake-lock-port';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
 import { MapStyleControl } from './MapStyleControl';
 import { useSafetyLock } from './SafetyLockProvider';
@@ -420,6 +422,15 @@ export function DrivingScreen() {
   if (voiceRef.current === null) {
     voiceRef.current = createVoiceGuidance(createBrowserSpeechPort(), { startMuted: true });
   }
+  // Screen wake (Block 2 / priority I). A phone sleeps its screen in
+  // thirty seconds; on the driving surface that means the next maneuver
+  // is on a dark screen and the only way to see it is to touch the
+  // phone. The controller owns the policy; this is just its single
+  // instance, alive for as long as the screen is.
+  const wakeRef = useRef<ScreenWake | null>(null);
+  if (wakeRef.current === null) {
+    wakeRef.current = createScreenWake(createBrowserWakePort());
+  }
   const maneuverAnnouncerRef = useRef<ManeuverAnnouncer>(createManeuverAnnouncer());
   const statusAnnouncerRef = useRef(createStatusAnnouncer());
   const spokenRouteIdRef = useRef<string | null>(null);
@@ -511,6 +522,34 @@ export function DrivingScreen() {
       }
     }
   }, [view, lifecycle]);
+
+  /*
+   * Screen wake, driven by the two facts the controller needs.
+   *
+   * The visibility listener is not optional politeness: the browser
+   * RELEASES a wake lock whenever the page hides, and returning does not
+   * restore it. Without this, a driver who takes a call loses the screen
+   * for the rest of the trip. Releasing on cleanup matters just as much
+   * — a lock held over an idle page is a battery bug in a cab where the
+   * phone may sit for hours.
+   */
+  useEffect(() => {
+    const wake = wakeRef.current;
+    if (wake === null) return;
+    wake.setActive(ACTIVE_LIFECYCLE_STATES.includes(lcState));
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => wake.setVisible(!document.hidden);
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [lcState]);
+
+  useEffect(
+    () => () => {
+      wakeRef.current?.setActive(false);
+    },
+    [],
+  );
 
   // Unmount = leaving the screen: stale speech dies with the surface and
   // any live trip is cancelled so no engine outlives its owner
