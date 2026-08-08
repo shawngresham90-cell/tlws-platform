@@ -208,6 +208,13 @@ const NO_ROUTE_VIEW: DrivingView = Object.freeze({
   speedMph: null,
 });
 
+/**
+ * Transition-log bound. Generous — a single trip spends about seven
+ * entries, so this holds roughly seventy consecutive trips — but finite,
+ * because the lifecycle can outlive many trips in one mounted screen.
+ */
+export const MAX_TRANSITION_LOG = 500;
+
 /** States in which the engine stack is live and ticks feed it. */
 const ACTIVE_STATES: readonly LifecycleState[] = [
   'navigating',
@@ -249,6 +256,12 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     const from = state;
     state = to;
     transitionLog.push(Object.freeze({ from, to, tMs, cause }));
+    // A trip costs a handful of transitions; a lifecycle that survives a
+    // day of trips would otherwise grow this forever. Bounded like the
+    // detector's own event log, oldest dropped first. `violationLog` is
+    // deliberately NOT bounded — it must stay empty, so anything in it
+    // is worth keeping in full.
+    if (transitionLog.length > MAX_TRANSITION_LOG) transitionLog.shift();
     deps.log?.record(tMs, `transition:${from}>${to}`, cause);
     return true;
   }
@@ -263,6 +276,14 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     destinationInfo = null;
     lastNavSnapshot = null;
     lastView = NO_ROUTE_VIEW;
+    // The de-duplication guard has to go too, for two separate reasons.
+    // It holds the driver's last position after the trip is over, which
+    // AD-7 says must not outlive the session; and a trip that starts
+    // before the GPS layer has published a NEW state object would have
+    // its first tick swallowed as a duplicate of the previous trip's
+    // last one — the new trip's engines would sit at mile zero until the
+    // next fix landed.
+    lastTickInput = null;
   }
 
   function snapshot(): LifecycleSnapshot {
