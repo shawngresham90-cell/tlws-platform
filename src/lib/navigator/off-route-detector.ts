@@ -207,7 +207,22 @@ export function createOffRouteDetector(config: Partial<DetectorConfig> = {}): Of
       input.speedMph !== null &&
       input.speedMph < cfg.suppressDestinationSpeedMph
     ) {
-      return 'destination-approach';
+      // …unless the truck is driving the planned roadway the WRONG WAY
+      // at real road speed. The destination-approach rule exists for a
+      // truck creeping around a yard looking for the gate, which is slow
+      // and directionless; a sustained 180-degree heading disagreement
+      // above `wrongDirectionSpeedMph` is neither, and it is the one
+      // piece of evidence a lateral measurement can never supply.
+      //
+      // Found by the Block 2 scenario harness: the last mile of EVERY
+      // trip — and the whole of any trip shorter than a mile — silently
+      // disabled off-route detection below 25 mph, so a driver who
+      // turned around at 22 mph in town was never told. Verified: with
+      // this exemption that turnaround is caught; without it, never.
+      const wrongWay =
+        input.match.reasons.includes('opposing-heading') &&
+        input.speedMph >= cfg.wrongDirectionSpeedMph;
+      if (!wrongWay) return 'destination-approach';
     }
     return null;
   }
