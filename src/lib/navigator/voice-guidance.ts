@@ -22,6 +22,7 @@
 import type { RemainingClocks } from '@/lib/trip-planner/types';
 import type { HosWarning } from './hos-strip';
 import type { ManeuverView } from './maneuver-engine';
+import { normalizeInstruction } from './maneuver-text';
 import type { DrivingScreenStatus } from './navigation-controller';
 
 export type VoicePriority = 'critical' | 'normal' | 'passive';
@@ -381,7 +382,17 @@ export function createManeuverAnnouncer(): ManeuverAnnouncer {
         if (tier === due) break;
       }
 
-      const body = chained ? `${next.instruction}, then ${chained.instruction}` : next.instruction;
+      // Spoken text is the normalized instruction: HERE appends the length
+      // of the road AFTER the turn ("Turn right onto Broad St. Go for 1.3
+      // mi."), which a voice reads out on every single maneuver while the
+      // announcement's own "In half a mile" already gave the distance that
+      // matters. Keys stay on the RAW text so announce-once is unaffected.
+      const nextText = normalizeInstruction(next.instruction) ?? next.instruction;
+      const chainedText =
+        chained === null
+          ? null
+          : (normalizeInstruction(chained.instruction) ?? chained.instruction);
+      const body = chainedText === null ? nextText : `${nextText}, then ${chainedText}`;
       out.push({
         id: `maneuver:${key}:${due}`,
         priority: 'normal',

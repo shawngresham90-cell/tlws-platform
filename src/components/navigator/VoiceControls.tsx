@@ -1,7 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { VoiceGuidance } from '@/lib/navigator/voice-guidance';
+
+/**
+ * Spoken the instant voice is enabled, from inside the click handler.
+ *
+ * Two jobs, one line. It tells the driver the speaker actually works —
+ * otherwise "enabled" is a claim about a button, and the first evidence
+ * either way is a turn they may miss. And it is the FIRST `speak()` call
+ * of the session, made during a real user gesture: WebKit refuses
+ * speechSynthesis that was never started by one, so a Navigator that
+ * waits for the first maneuver to speak would stay silent for the whole
+ * trip on an iPhone, with nothing on screen to say so.
+ */
+export const VOICE_ENABLED_CONFIRMATION = 'Voice guidance on.';
 
 /**
  * The one-touch mute control (milestone N7) — always available, moving or
@@ -27,6 +40,9 @@ export function VoiceControls({
   compact?: boolean;
 }) {
   const [muted, setMuted] = useState(() => voice.snapshot().muted);
+  // Announce-once means the confirmation needs a fresh id every time, so
+  // enabling voice a second time confirms a second time.
+  const enableSeq = useRef(0);
 
   if (!voice.snapshot().supported) {
     return compact ? (
@@ -50,6 +66,12 @@ export function VoiceControls({
         if (muted) {
           voice.unmute();
           setMuted(false);
+          enableSeq.current += 1;
+          voice.request({
+            id: `voice-enabled:${enableSeq.current}`,
+            priority: 'normal',
+            text: VOICE_ENABLED_CONFIRMATION,
+          });
         } else {
           voice.mute();
           setMuted(true);

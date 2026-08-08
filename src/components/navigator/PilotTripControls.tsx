@@ -42,6 +42,7 @@ export function PilotTripControls({
   lifecycle,
   fix,
   debugLog,
+  buildReport = null,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -49,8 +50,17 @@ export function PilotTripControls({
   fix: PositionFix | null;
   /** Present only when Pilot Mode debug logging is on. */
   debugLog: PilotLog | null;
+  /**
+   * Assembles the road-test report from live session state. Supplied by
+   * the driving screen, which is the only place that can see all of it.
+   * Null hides the affordance entirely.
+   */
+  buildReport?: ((note: string) => string) | null;
   onChanged: () => void;
 }) {
+  const [reportNote, setReportNote] = useState('');
+  const [reportText, setReportText] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<string | null>(null);
   const [destLat, setDestLat] = useState('');
   const [destLng, setDestLng] = useState('');
   const [facility, setFacility] = useState<DestinationFacility>('warehouse');
@@ -286,6 +296,73 @@ export function PilotTripControls({
         <p role="status" className="text-lg text-ink/80">
           {note}
         </p>
+      ) : null}
+
+      {/*
+        Road-test report. It lives inside this component, which the
+        driving screen already renders inside the stationary-only
+        'edit-destination' gate — so it inherits that rail rather than
+        inventing a second one. Writing a note at speed is exactly what
+        doc 06 locks.
+
+        The report is always SHOWN as well as copied: the clipboard API
+        is unavailable on insecure origins and refused by some mobile
+        browsers outside a trusted gesture, and a button that silently
+        does nothing is worse than no button. Showing it also means the
+        driver can read what they are about to send before they send it.
+      */}
+      {buildReport ? (
+        <details className="text-base text-ink/70">
+          <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
+            Road-test report
+          </summary>
+          <label className="mt-2 block text-lg text-ink/80" htmlFor="road-test-note">
+            What happened? (optional)
+          </label>
+          <textarea
+            id="road-test-note"
+            value={reportNote}
+            onChange={(e) => setReportNote(e.target.value)}
+            rows={3}
+            className="mt-1 w-full rounded-card border border-line bg-transparent p-3 text-lg text-ink"
+          />
+          <button
+            type="button"
+            className={`${buttonClass} mt-2`}
+            onClick={() => {
+              const text = buildReport(reportNote);
+              setReportText(text);
+              const clip =
+                typeof navigator !== 'undefined' && navigator.clipboard
+                  ? navigator.clipboard
+                  : null;
+              if (clip === null) {
+                setCopyState('Clipboard unavailable — select the text below and copy it.');
+                return;
+              }
+              clip.writeText(text).then(
+                () => setCopyState('Copied.'),
+                () => setCopyState('Copy refused — select the text below and copy it.'),
+              );
+            }}
+          >
+            Copy road-test report
+          </button>
+          {copyState ? (
+            <p role="status" className="mt-2 text-lg text-ink/80">
+              {copyState}
+            </p>
+          ) : null}
+          {reportText ? (
+            <textarea
+              readOnly
+              aria-label="Road-test report"
+              value={reportText}
+              rows={12}
+              className="mt-2 w-full rounded-card border border-line bg-transparent p-3 font-mono text-sm text-ink"
+            />
+          ) : null}
+        </details>
       ) : null}
 
       {debugLog ? (

@@ -442,6 +442,87 @@ function obsAt(over: Partial<ArrivalObservation> & { tMs: number }): ArrivalObse
   check('cancel: controller inert afterwards', c.observe(obsAt({ tMs: T0 + 9000 })).completed);
 }
 
+// ------------- Block 2 / priority E: arrival evidence must be sustained
+{
+  /*
+   * A truck hunting for the dock inside a large yard: it circles at
+   * 19 mph — below the 20 mph abort — and stops briefly at stop signs.
+   * Every stop is a qualifying fix. Before the fix, those three stops
+   * accumulated across four minutes and arrival was DECLARED while the
+   * truck was still driving around, because elapsed time was measured
+   * from the first stop and the rolling fixes in between were treated as
+   * "ambiguous" and left the tally alone.
+   */
+  const yard = createArrivalController(SESSION, VERIFIED_DEST);
+  yard.observe(
+    obsAt({
+      tMs: T0,
+      match: endMatch({ routeMile: TOTAL - 0.3, confidence: 'high' }),
+      speedMph: 20,
+    }),
+  );
+  check('yard: in the approach window', yard.snapshot().state === 'final-approach');
+
+  let t = T0 + 5_000;
+  let declaredEarly = false;
+  for (let stop = 0; stop < 3; stop += 1) {
+    // A brief stop at a stop sign — a qualifying fix.
+    const s = yard.observe(obsAt({ tMs: t, speedMph: 2 }));
+    if (s.completed) declaredEarly = true;
+    t += 60_000;
+    // …then a full minute of rolling around the yard at 19 mph.
+    for (let i = 0; i < 6; i += 1) {
+      const r = yard.observe(obsAt({ tMs: t - 60_000 + i * 10_000 + 5_000, speedMph: 19 }));
+      if (r.completed) declaredEarly = true;
+    }
+  }
+  check('yard: never declared arrived while still rolling', !declaredEarly);
+  check('yard: no summary exists', yard.summary() === null);
+  check(
+    'yard: rolling fixes reset the tally rather than holding it',
+    yard.snapshot().qualifyingFixes === 0,
+    yard.snapshot(),
+  );
+
+  // And the ordinary pull-in still arrives: park, and stay parked.
+  const parked = createArrivalController(SESSION, VERIFIED_DEST);
+  parked.observe(
+    obsAt({
+      tMs: t,
+      match: endMatch({ routeMile: TOTAL - 0.3, confidence: 'high' }),
+      speedMph: 20,
+    }),
+  );
+  parked.observe(obsAt({ tMs: t + 1_000, speedMph: 3 }));
+  parked.observe(obsAt({ tMs: t + 6_000, speedMph: 1 }));
+  const done = parked.observe(obsAt({ tMs: t + 12_000, speedMph: 0 }));
+  check('yard: a genuine pull-in still arrives', done.state === 'arrived' && done.completed);
+
+  /*
+   * Evidence restarted after a reset must still be able to complete: the
+   * episode clock has to restart with it, or `elapsed` stays measured
+   * from a null start and the truck can sit at the dock forever without
+   * ever being told it has arrived.
+   */
+  const restart = createArrivalController(SESSION, VERIFIED_DEST);
+  restart.observe(
+    obsAt({
+      tMs: t,
+      match: endMatch({ routeMile: TOTAL - 0.3, confidence: 'high' }),
+      speedMph: 20,
+    }),
+  );
+  restart.observe(obsAt({ tMs: t + 1_000, speedMph: 2 })); // candidate
+  restart.observe(obsAt({ tMs: t + 3_000, speedMph: 19 })); // reset
+  restart.observe(obsAt({ tMs: t + 5_000, speedMph: 2 }));
+  restart.observe(obsAt({ tMs: t + 10_000, speedMph: 1 }));
+  const after = restart.observe(obsAt({ tMs: t + 16_000, speedMph: 0 }));
+  check(
+    'yard: parking after a reset still completes',
+    after.completed && after.state === 'arrived',
+  );
+}
+
 // -------------------------------- integration: the composed N8 stack
 async function integration() {
   const port = async (req: ReplacementRequest): Promise<ReplacementFetchResult> => {

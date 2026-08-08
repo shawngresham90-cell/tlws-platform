@@ -18,6 +18,7 @@
  */
 import {
   createGpsSession,
+  CLOCK_RESET_MS,
   MAX_ACCURACY_M,
   MAX_IMPLIED_SPEED_MPH,
   STALE_AFTER_MS,
@@ -245,6 +246,54 @@ check('constants: jump gate is 100 mph', MAX_IMPLIED_SPEED_MPH === 100);
   check('reset: fix dropped', st.fix === null);
   check('reset: health back to unavailable', st.health === 'unavailable');
   check('reset: speed/heading cleared', st.speedMph === null && st.headingDeg === null);
+}
+
+// ---- Block 2 / priority F: the device clock moving is not the stream
+// replaying. `position.timestamp` is wall-clock; a phone that picks up an
+// NTP correction mid-trip hands back a time EARLIER than the one before
+// it, and the out-of-order rule then rejects every fix until real time
+// catches up. A clock nudged back half an hour used to mean half an hour
+// with no position at all — health stuck on 'lost', nothing on screen
+// that could explain it.
+{
+  const s = createGpsSession();
+  s.ingestFix(fix({ tMs: T0 }));
+  const nudged = s.ingestFix(fix({ tMs: T0 - 2_000, lat: 35.002 }));
+  check(
+    'clock: a small step back is still rejected as out-of-order',
+    nudged.lastFixMs === T0 && nudged.fix?.lat === 35.0,
+  );
+
+  const jumped = s.ingestFix(fix({ tMs: T0 - 30 * 60_000, lat: 35.004, speedMps: 20 }));
+  check(
+    'clock: a half-hour step back re-baselines instead of going blind',
+    jumped.fix?.lat === 35.004 && jumped.lastFixMs === T0 - 30 * 60_000,
+  );
+  check('clock: the re-baselined fix is healthy, not degraded', jumped.health === 'good');
+  check(
+    'clock: device speed survives the re-baseline',
+    jumped.speedMph !== null && Math.abs(jumped.speedMph - 20 * 2.236936) < 0.01,
+  );
+
+  // Derived quantities span the discontinuity and would be nonsense, so
+  // the re-baseline fix reports them exactly as the FIRST fix of a
+  // session does — null — rather than inventing a speed from a negative
+  // interval.
+  const s2 = createGpsSession();
+  s2.ingestFix(fix({ tMs: T0 }));
+  const derived = s2.ingestFix(fix({ tMs: T0 - CLOCK_RESET_MS - 1, lat: 35.01 }));
+  check(
+    'clock: no speed or heading is invented across the discontinuity',
+    derived.speedMph === null && derived.headingDeg === null,
+  );
+
+  // And the session keeps working afterwards on the new timeline.
+  const resumed = s2.ingestFix(fix({ tMs: T0 - CLOCK_RESET_MS - 1 + 3_600_000, lat: 35.02 }));
+  check(
+    'clock: normal derivation resumes on the new timeline',
+    resumed.speedMph !== null && resumed.speedMph > 0,
+  );
+  check('clock: the boundary is a named constant, not a literal', CLOCK_RESET_MS === 60_000);
 }
 
 console.log(`gps-session: ${passed} passed, ${failed} failed`);
