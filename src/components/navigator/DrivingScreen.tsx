@@ -26,7 +26,8 @@ import {
 } from '@/lib/navigator/voice-guidance';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { createBrowserSpeechPort } from './speech-port';
-import { formatEta, roadNameFromInstruction } from '@/lib/navigator/driving-hud';
+import { formatEta } from '@/lib/navigator/driving-hud';
+import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
 import { MapStyleControl } from './MapStyleControl';
 import { useSafetyLock } from './SafetyLockProvider';
@@ -177,7 +178,7 @@ export function DrivingScreenView({
               Clamped rather than clipped — two lines and an ellipsis says
               "there is more"; a hard cut mid-word says nothing at all. */}
           <p className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl">
-            {m.instruction}
+            {normalizeInstruction(m.instruction) ?? m.instruction}
           </p>
           {/* The two supporting lines are the ones that go when there is
               no room. Dropped deliberately on a short screen rather than
@@ -191,7 +192,9 @@ export function DrivingScreenView({
           ) : null}
           {view.maneuvers?.following ? (
             <p className="mt-1 truncate text-base text-ink/70 [@media(max-height:600px)]:hidden sm:text-xl">
-              then {view.maneuvers.following.instruction}
+              then{' '}
+              {normalizeInstruction(view.maneuvers.following.instruction) ??
+                view.maneuvers.following.instruction}
             </p>
           ) : null}
         </>

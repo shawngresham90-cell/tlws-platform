@@ -34,12 +34,8 @@ import {
   enabledMapStyles,
   resolveMapStyle,
 } from '@/lib/navigator/map-style';
-import {
-  formatClockTime,
-  formatEta,
-  remainingSeconds,
-  roadNameFromInstruction,
-} from '@/lib/navigator/driving-hud';
+import { formatClockTime, formatEta, remainingSeconds } from '@/lib/navigator/driving-hud';
+import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { ACTION_PERMISSIONS, allowedWhileMoving, type UIAction } from '@/lib/navigator/actions';
 import { MapStyleControl } from '@/components/navigator/MapStyleControl';
 
@@ -123,7 +119,14 @@ const T0 = 1_754_000_000_000;
 
 // ============================== 3. the card's four facts =================
 {
-  check('3. next maneuver instruction', screen.includes('{m.instruction}'));
+  check(
+    '3. next maneuver instruction, normalized before it is shown',
+    screen.includes('normalizeInstruction(m.instruction) ?? m.instruction'),
+  );
+  check(
+    '3. the "then" line is normalized too',
+    screen.includes('normalizeInstruction(view.maneuvers.following.instruction)'),
+  );
   check(
     '3. distance to the maneuver, in driver units',
     screen.includes('formatDriverDistanceMi(view.maneuvers?.distanceMi)'),
@@ -156,6 +159,85 @@ const T0 = 1_754_000_000_000;
     '3. an absurdly long capture is refused rather than shown',
     roadNameFromInstruction(`Turn onto ${'x'.repeat(80)}`) === null,
   );
+
+  // Block 2 / priority C. Every string below is HERE v8 `instructions`
+  // phrasing with units=imperial — the shape the pilot actually receives.
+
+  // The defect: the capture ran to the sentence end, so a trailing
+  // signage clause became part of the road name and the card read
+  // "on Old Mill Road toward the receiving gate" under the very
+  // instruction it came from (observed at 568x320 in Chromium).
+  check(
+    '3. a trailing "toward" clause is not part of the road name',
+    roadNameFromInstruction('Turn right onto Old Mill Road toward the receiving gate.') ===
+      'Old Mill Road',
+  );
+  check(
+    '3. interstate signage clause dropped, route number kept',
+    roadNameFromInstruction('Keep left onto I-75 N toward Chattanooga.') === 'I-75 N',
+  );
+  check(
+    '3. HERE\'s "Go for" tail never reaches the road name',
+    roadNameFromInstruction('Head northwest on Chestnut St. Go for 0.2 mi.') === 'Chestnut St',
+  );
+  check(
+    '3. a "for" clause in the same sentence is dropped',
+    roadNameFromInstruction('Continue on I-24 W for 12.4 mi') === 'I-24 W',
+  );
+  check(
+    '3. abbreviation dots stay inside the name',
+    roadNameFromInstruction('Turn left onto U.S. 41 toward Ringgold.') === 'U.S. 41',
+  );
+  // The arrival sentence is the reason only the FIRST sentence is read.
+  check(
+    '3. "It will be on the right" is not a road name',
+    roadNameFromInstruction('Arrive at your destination. It will be on the right.') === null,
+  );
+  check(
+    '3. a bare side-of-road phrase is refused',
+    roadNameFromInstruction('Your destination is on the right') === null,
+  );
+
+  // Instruction normalization: HERE appends the length of the road AFTER
+  // the turn, while the card's line above it shows the distance TO the
+  // turn. Two different distances, one glance.
+  check(
+    '3. the trailing segment length is stripped from the instruction',
+    normalizeInstruction('Turn right onto Broad St. Go for 1.3 mi.') ===
+      'Turn right onto Broad St.',
+  );
+  check(
+    '3. stripping survives the decimal point in the distance',
+    normalizeInstruction('Keep left onto I-75 N. Go for 0.4 mi.') === 'Keep left onto I-75 N.',
+  );
+  check(
+    '3. metric wording is stripped as well (live pilot saw "Go for 33 m")',
+    normalizeInstruction('Take the ramp. Go for 33 m.') === 'Take the ramp.',
+  );
+  check(
+    '3. feet are stripped',
+    normalizeInstruction('Turn right onto Dock St. Go for 300 ft.') === 'Turn right onto Dock St.',
+  );
+  check(
+    '3. an instruction with no distance tail is returned unchanged',
+    normalizeInstruction('Arrive at your destination.') === 'Arrive at your destination.',
+  );
+  check(
+    '3. a distance INSIDE the instruction is left alone',
+    normalizeInstruction('Take exit 350 toward US-41') === 'Take exit 350 toward US-41',
+  );
+  check(
+    '3. whitespace is collapsed so the clamp counts real characters',
+    normalizeInstruction('  Turn   right\n onto Broad St.  ') === 'Turn right onto Broad St.',
+  );
+  // Never leave the maneuver line blank: a redundant instruction beats
+  // no instruction.
+  check(
+    '3. an instruction that is ONLY the distance keeps its text',
+    normalizeInstruction('Go for 1.3 mi.') === 'Go for 1.3 mi.',
+  );
+  check('3. null/empty normalizes to null', normalizeInstruction(null) === null);
+  check('3. blank normalizes to null', normalizeInstruction('   ') === null);
 }
 
 // ============================== 4. compact secondary info =================
@@ -198,6 +280,12 @@ const T0 = 1_754_000_000_000;
   check(
     '4. the ETA core reads no clock of its own (navigator purity)',
     !/new Date|Date\.now/.test(readFileSync('src/lib/navigator/driving-hud.ts', 'utf8')),
+  );
+  check(
+    '4. the maneuver-text core is clock-free and I/O-free too',
+    !/new Date|Date\.now|fetch\(|localStorage/.test(
+      readFileSync('src/lib/navigator/maneuver-text.ts', 'utf8'),
+    ),
   );
 }
 

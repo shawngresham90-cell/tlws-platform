@@ -330,6 +330,49 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
   check('maneuver announcements are normal priority', prep[0].priority === 'normal');
 
   /*
+   * Block 2 / priority C+D: HERE's instruction text ends with the length
+   * of the road AFTER the turn ("Turn right onto Broad St. Go for 1.3
+   * mi."). Spoken, that is a second distance in the same breath as the
+   * announcement's own "In half a mile" — and "mi." is at the mercy of
+   * whatever the TTS voice does with the abbreviation. It is stripped
+   * before speaking; the announce-once KEY still uses the raw text, so
+   * the change cannot alter what fires or how often.
+   */
+  {
+    const verbose = {
+      action: 'turn',
+      instruction: 'Turn right onto Broad St. Go for 1.3 mi.',
+      direction: 'right',
+      mileMi: 50,
+    };
+    const v = createManeuverAnnouncer();
+    const line = v.collect({ next: verbose, following: null, distanceMi: 0.45 }, 60);
+    check(
+      'spoken text drops the provider segment length',
+      line.length === 1 && line[0].text === 'In half a mile, Turn right onto Broad St.',
+    );
+    check(
+      'the announce-once key still keys on the RAW instruction',
+      line[0].id === `maneuver:50@${verbose.instruction}:approach`,
+    );
+
+    const second = {
+      action: 'turn',
+      instruction: 'Turn left onto Dock St. Go for 300 ft.',
+      direction: 'left',
+      mileMi: 50.2,
+    };
+    const c = createManeuverAnnouncer();
+    const chainedLine = c.collect({ next: verbose, following: second, distanceMi: 1.8 }, 60);
+    check(
+      'both halves of a chained line are normalized',
+      chainedLine.length === 1 &&
+        chainedLine[0].text ===
+          'In 1.8 miles, Turn right onto Broad St., then Turn left onto Dock St.',
+    );
+  }
+
+  /*
    * ANTI-CHATTER. This assertion previously required all three due tiers to
    * come out "together" from one collect(). That was the owner's road-test
    * complaint in test form: an announcer meeting a maneuver already inside a
