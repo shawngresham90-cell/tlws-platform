@@ -24,9 +24,13 @@ import {
   featuredUsage,
   isHeldBrand,
   isWithinWindow,
+  TERM_HEALTH_LABEL,
+  currentTerm,
+  parsePlacementNotes,
   placementNoteLine,
   placementTouchSummary,
   promotionBlockers,
+  termHealth,
   termEnd,
   windowBlockers,
   windowStatus,
@@ -393,6 +397,96 @@ check(
   }).includes('through'),
 );
 
+/* ----------------------------------------------------- the term register */
+// A featured listing has no end date in the database, so the agreed term lives
+// in the CRM note or nowhere. These assert the note survives the round trip and
+// that an overdue placement is actually reported as overdue.
+const activatedNote = placementNoteLine(
+  {
+    kind: 'featured-listing',
+    target: 'Hamilton Truck and Tire Service',
+    billing: 'monthly',
+    startsAt: '2026-08-01T00:00:00Z',
+    endsAt: '2026-09-01T23:59:59Z',
+    reviewer: 'Shawn',
+    action: 'activated',
+  },
+  '2026-08-01T10:00:00Z',
+);
+const parsedTerms = parsePlacementNotes(activatedNote);
+check('term: one line parses to one term', parsedTerms.length === 1, parsedTerms.length);
+check('term: kind round-trips', parsedTerms[0]?.kind === 'featured-listing');
+check('term: target round-trips', parsedTerms[0]?.target === 'Hamilton Truck and Tire Service');
+check('term: billing round-trips', parsedTerms[0]?.billing === 'monthly');
+check('term: start round-trips', parsedTerms[0]?.startsOn === '2026-08-01');
+check('term: end round-trips', parsedTerms[0]?.endsOn === '2026-09-01');
+check('term: reviewer round-trips', parsedTerms[0]?.reviewer === 'Shawn');
+check('term: recorded date round-trips', parsedTerms[0]?.recordedOn === '2026-08-01');
+
+const stoppedNote = placementNoteLine(
+  {
+    kind: 'featured-listing',
+    target: 'Hamilton Truck and Tire Service',
+    billing: null,
+    startsAt: null,
+    endsAt: null,
+    reviewer: 'Shawn',
+    action: 'deactivated',
+  },
+  '2026-08-20T10:00:00Z',
+);
+check('term: an inquiry note yields no term', parsePlacementNotes('Just an inquiry.').length === 0);
+check('term: an empty note yields no term', parsePlacementNotes(null).length === 0);
+check(
+  'term: both lines parse',
+  parsePlacementNotes(`${activatedNote}\n\n${stoppedNote}`).length === 2,
+);
+check(
+  'term: a later deactivation clears the current term',
+  currentTerm(`${activatedNote}\n\n${stoppedNote}`) === null,
+);
+check(
+  'term: reactivating after a stop is the current term',
+  currentTerm(`${activatedNote}\n\n${stoppedNote}\n\n${activatedNote}`)?.endsOn === '2026-09-01',
+);
+check('term: an activation alone is current', currentTerm(activatedNote)?.billing === 'monthly');
+check(
+  'term: inquiry text alongside a placement line still parses',
+  currentTerm(`Regarding directory listing: X (/directory/location/x)\n\n${activatedNote}`)
+    ?.target === 'Hamilton Truck and Tire Service',
+);
+
+const liveTerm = currentTerm(activatedNote);
+check(
+  'health: mid-term is running',
+  termHealth(liveTerm, new Date('2026-08-10T12:00:00Z')) === 'running',
+);
+check(
+  'health: within seven days of the end is due-soon',
+  termHealth(liveTerm, new Date('2026-08-28T12:00:00Z')) === 'due-soon',
+);
+check(
+  'health: past the end date is overdue',
+  termHealth(liveTerm, new Date('2026-09-02T12:00:00Z')) === 'overdue',
+);
+check(
+  'health: the last second of the end date is not yet overdue',
+  termHealth(liveTerm, new Date('2026-09-01T23:59:58Z')) !== 'overdue',
+);
+check(
+  'health: before the start is scheduled',
+  termHealth(liveTerm, new Date('2026-07-20T12:00:00Z')) === 'scheduled',
+);
+check('health: no term recorded is reported as such', termHealth(null) === 'no-term-recorded');
+check(
+  'health: a term with no end date cannot be judged, and says so',
+  liveTerm !== null && termHealth({ ...liveTerm, endsOn: null }) === 'no-term-recorded',
+);
+check(
+  'health: overdue is labelled unmistakably',
+  /PAST ITS END DATE/.test(TERM_HEALTH_LABEL.overdue),
+);
+
 /* ------------------------------------------------------------ claim review */
 check('verified maps to closed_won', CLAIM_DECISION_STAGE.verified === 'closed_won');
 check('rejected maps to closed_lost', CLAIM_DECISION_STAGE.rejected === 'closed_lost');
@@ -580,6 +674,22 @@ check(
 check(
   'the placements console admits a featured listing does not self-expire',
   /no end date in the database/i.test(src.placementPage),
+);
+check('the placements console surfaces recorded terms', /Terms on record/.test(src.placementPage));
+check(
+  'the placements console warns on overdue terms',
+  /past the end date you agreed/i.test(src.placementPage),
+);
+check(
+  'the placements console carries the activation checklist',
+  /Activation checklist/.test(src.placementPage) &&
+    /Calendar reminder created/i.test(src.placementPage),
+);
+check(
+  'the checklist puts cleared payment before every other step',
+  src.placementPage.indexOf('Payment has cleared') > -1 &&
+    src.placementPage.indexOf('Payment has cleared') <
+      src.placementPage.indexOf('Calendar reminder created'),
 );
 check(
   'the placements console warns about the every-corridor wildcard',

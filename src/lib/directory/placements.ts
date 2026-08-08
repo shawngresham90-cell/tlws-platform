@@ -293,3 +293,95 @@ export function placementTouchSummary(r: PlacementRecord): string {
   const term = r.endsAt ? ` through ${r.endsAt.slice(0, 10)}` : ' (no end date)';
   return `${PLACEMENT_LABEL[r.kind]} ${r.action}: ${r.target}${r.action === 'activated' ? term : ''}`;
 }
+
+/* ------------------------------------------------------- the term register */
+
+export type RecordedTerm = {
+  kind: PlacementKind;
+  target: string;
+  billing: 'monthly' | 'annual' | null;
+  startsOn: string | null;
+  endsOn: string | null;
+  reviewer: string;
+  recordedOn: string;
+  action: 'activated' | 'deactivated';
+};
+
+const NOTE_RE =
+  /^Placement (activated|deactivated): (Featured listing|Corridor sponsor) — (.+?)(?: · billing (monthly|annual))?(?: · from (\d{4}-\d{2}-\d{2}))?(?: · to (\d{4}-\d{2}-\d{2}))?(?: · by (.+?))? · on (\d{4}-\d{2}-\d{2})\s*$/gim;
+
+const KIND_BY_LABEL: Record<string, PlacementKind> = {
+  'Featured listing': 'featured-listing',
+  'Corridor sponsor': 'corridor-sponsor',
+};
+
+/**
+ * Read every placement line back out of a CRM note, newest last.
+ *
+ * This is the inverse of `placementNoteLine`, and it is the only way to know
+ * when a featured listing was meant to end: `locations.is_featured` is a bare
+ * boolean with no window, so the agreed term lives in the note or nowhere.
+ * A note that does not match yields an empty list rather than a guess.
+ */
+export function parsePlacementNotes(notes: string | null | undefined): RecordedTerm[] {
+  const out: RecordedTerm[] = [];
+  if (!notes) return out;
+  NOTE_RE.lastIndex = 0;
+  for (const m of notes.matchAll(NOTE_RE)) {
+    const kind = KIND_BY_LABEL[m[2]];
+    if (!kind) continue;
+    out.push({
+      action: m[1] as 'activated' | 'deactivated',
+      kind,
+      target: m[3].trim(),
+      billing: (m[4] as 'monthly' | 'annual') ?? null,
+      startsOn: m[5] ?? null,
+      endsOn: m[6] ?? null,
+      reviewer: (m[7] ?? '').trim(),
+      recordedOn: m[8],
+    });
+  }
+  return out;
+}
+
+/**
+ * The term currently in force for a CRM row: the latest activation, unless a
+ * later line stopped it. Null when the note records no live placement.
+ */
+export function currentTerm(notes: string | null | undefined): RecordedTerm | null {
+  const all = parsePlacementNotes(notes);
+  for (let i = all.length - 1; i >= 0; i--) {
+    if (all[i].action === 'deactivated') return null;
+    if (all[i].action === 'activated') return all[i];
+  }
+  return null;
+}
+
+export type TermHealth = 'no-term-recorded' | 'scheduled' | 'running' | 'due-soon' | 'overdue';
+
+/**
+ * How urgently a recorded term needs attention. `overdue` is the one that
+ * matters: a featured listing past its end date is inventory being given away,
+ * and the slot cannot be sold to anyone else while it sits there.
+ */
+export function termHealth(
+  term: RecordedTerm | null,
+  now: Date = new Date(),
+  dueSoonDays = 7,
+): TermHealth {
+  if (!term || !term.endsOn) return 'no-term-recorded';
+  const end = Date.parse(`${term.endsOn}T23:59:59Z`);
+  if (Number.isNaN(end)) return 'no-term-recorded';
+  const start = term.startsOn ? Date.parse(`${term.startsOn}T00:00:00Z`) : null;
+  if (start !== null && !Number.isNaN(start) && now.getTime() < start) return 'scheduled';
+  if (now.getTime() > end) return 'overdue';
+  return end - now.getTime() <= dueSoonDays * 86400000 ? 'due-soon' : 'running';
+}
+
+export const TERM_HEALTH_LABEL: Record<TermHealth, string> = {
+  'no-term-recorded': 'No term on record',
+  scheduled: 'Starts later',
+  running: 'Running',
+  'due-soon': 'Ends within 7 days',
+  overdue: 'PAST ITS END DATE',
+};
