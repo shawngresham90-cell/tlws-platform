@@ -1,11 +1,10 @@
 /**
  * Display helpers for the driving HUD (map-first milestone): the arrival
- * estimate and the road name shown on the maneuver card.
+ * estimate shown on the maneuver card.
  *
- * Both are deliberately conservative. An ETA that jitters every second is
- * worse than no ETA, and a road name guessed wrong is worse than a blank
- * line — so each returns null rather than something the driver would have
- * to double-check.
+ * Deliberately conservative. An ETA that jitters every second is worse
+ * than no ETA, so these return null rather than something the driver
+ * would have to double-check.
  *
  * Pure: values in, strings out. The caller supplies the clock.
  */
@@ -83,29 +82,6 @@ export function formatEta(
   return formatClockTime(arriveMs, tzOffsetMinutes);
 }
 
-/** Longest road name worth putting on the card. */
-const MAX_ROAD_NAME = 40;
-
-/**
- * Best-effort road name out of a provider instruction.
- *
- * HERE's turn-by-turn text names the road the maneuver puts you on
- * ("Turn right onto Battlefield Parkway"), so the name is genuinely IN the
- * data — it is read here, never invented. A dedicated field would be
- * better (it needs `return=spans` with road names, a provider-request
- * change that is out of scope for a UI milestone), so anything that does
- * not match an explicit "onto"/"toward" phrasing returns null and the card
- * simply shows no road line.
- */
-export function roadNameFromInstruction(instruction: string | null | undefined): string | null {
-  if (typeof instruction !== 'string' || instruction.trim() === '') return null;
-  // "…onto Battlefield Pkwy." / "…toward I-75 South." — stop at sentence
-  // end or a trailing clause so the name never swallows the rest.
-  const match = /\b(?:onto|toward|towards|on)\s+([^.,;]+)/i.exec(instruction);
-  if (!match) return null;
-  const name = match[1].trim().replace(/\s+/g, ' ');
-  if (name.length === 0 || name.length > MAX_ROAD_NAME) return null;
-  // A "road name" that is really a direction word is not a road name.
-  if (/^(the|left|right|ramp|exit|highway|freeway|street|road)$/i.test(name)) return null;
-  return name;
-}
+// The road-name reader moved to `maneuver-text.ts`, where it sits next to
+// the instruction normalizer it shares its parsing rules with — and where
+// voice guidance can reach it without importing a HUD module.

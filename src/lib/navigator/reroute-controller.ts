@@ -86,6 +86,13 @@ export type RerouteStats = {
   successes: number;
   rejectedReplacements: number;
   providerFailures: number;
+  /**
+   * Transport failures refunded to the budget — a request that never
+   * reached the provider costs nothing, so it must not ration a later one
+   * that could actually succeed. Counted so the refund is auditable
+   * rather than invisible.
+   */
+  budgetRefunds: number;
   staleDropped: number;
   hourlyWindowCount: number;
   sessionCount: number;
@@ -141,6 +148,15 @@ export const REROUTE_DEFAULTS: RerouteConfig = {
 
 const HOUR_MS = 3_600_000;
 
+/**
+ * Failure reasons that mean the request never reached the provider, and
+ * therefore cost nothing. `network` is the route port's fetch/timeout
+ * outcome; `port-threw` is a port that raised before any call. Anything
+ * else — a malformed route, a rejected replacement, an HTTP status —
+ * got as far as the provider and stays charged.
+ */
+const TRANSPORT_FAILURES: ReadonlySet<string> = new Set(['network', 'port-threw']);
+
 function requestKey(origin: LatLng, destination: LatLng): string {
   return `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}|${destination.lat.toFixed(3)},${destination.lng.toFixed(3)}`;
 }
@@ -181,6 +197,7 @@ export function createRerouteController(
     successes: 0,
     rejectedReplacements: 0,
     providerFailures: 0,
+    budgetRefunds: 0,
     staleDropped: 0,
     hourlyWindowCount: 0,
     sessionCount: 0,
@@ -242,6 +259,30 @@ export function createRerouteController(
 
     if (fetched.kind === 'failure') {
       stats.providerFailures += 1;
+      /*
+       * A request that never reached the provider costs nothing, so it is
+       * refunded to the budget.
+       *
+       * The budgets exist to cap provider SPEND. Charging a failed fetch
+       * against them protects nothing and costs the driver the thing the
+       * budget was never meant to ration: a truck goes off-route in a
+       * dead-signal stretch — a canyon, a mountain pass, exactly where a
+       * wrong turn is most likely — and every attempt fails at the
+       * transport layer while still burning one of the six calls an hour.
+       * By the time signal returns, the app knows the truck is off route
+       * and has no budget left to fix it.
+       *
+       * Only transport failures qualify. A malformed or rejected route
+       * DID reach the provider and stays charged. The escalating failure
+       * cooldown is untouched either way — that is the rate limiter, and
+       * this is the money limiter. They are not the same rail.
+       */
+      if (TRANSPORT_FAILURES.has(fetched.reason)) {
+        stats.providerCalls -= 1;
+        const at = callTimes.lastIndexOf(input.tMs);
+        if (at >= 0) callTimes.splice(at, 1);
+        stats.budgetRefunds += 1;
+      }
       failureCooldown(input.tMs);
       return { outcome: 'provider-failure', reason: fetched.reason };
     }

@@ -26,7 +26,12 @@ import {
 } from '@/lib/navigator/voice-guidance';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { createBrowserSpeechPort } from './speech-port';
-import { formatEta, roadNameFromInstruction } from '@/lib/navigator/driving-hud';
+import { formatEta } from '@/lib/navigator/driving-hud';
+import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
+import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
+import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
+import { offlineNotice } from '@/lib/navigator/network-status';
+import { createBrowserWakePort } from './wake-lock-port';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
 import { MapStyleControl } from './MapStyleControl';
 import { useSafetyLock } from './SafetyLockProvider';
@@ -92,6 +97,7 @@ export function DrivingScreenView({
   etaText = null,
   overviewSlot = null,
   mapStyleSlot = null,
+  offlineText = null,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -123,6 +129,8 @@ export function DrivingScreenView({
   overviewSlot?: ReactNode;
   /** Map-style picker, already wrapped in its own LockGate. */
   mapStyleSlot?: ReactNode;
+  /** Offline notice in navigation's terms; null when online or unknown. */
+  offlineText?: string | null;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -145,7 +153,16 @@ export function DrivingScreenView({
     if (focusNavigationKey === null) return;
     const el = navTopRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      // `html { scroll-behavior: auto }` under reduced motion does NOT
+      // override an explicit `behavior: 'smooth'` passed here — the
+      // argument wins. So the preference is read directly, or a driver
+      // who asked for no motion gets an animated scroll anyway at the one
+      // moment the screen jumps on its own.
+      const reduced =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
     }
   }, [focusNavigationKey]);
 
@@ -176,8 +193,23 @@ export function DrivingScreenView({
               instruction is the largest text, but it may not eat the map.
               Clamped rather than clipped — two lines and an ellipsis says
               "there is more"; a hard cut mid-word says nothing at all. */}
-          <p className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl">
-            {m.instruction}
+          {/*
+            A live region, and the ONLY one on the card. A driver using a
+            screen reader with voice guidance muted — and voice starts
+            muted by design — was never told a turn was coming at all;
+            they had to keep asking. The instruction text changes exactly
+            once per maneuver, so announcing it is the accessible analogue
+            of the announce-once policy voice already follows.
+
+            The distance line above is deliberately NOT part of it: it
+            changes every second, and a live region that fires every
+            second is one a driver turns off.
+          */}
+          <p
+            aria-live="polite"
+            className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl"
+          >
+            {normalizeInstruction(m.instruction) ?? m.instruction}
           </p>
           {/* The two supporting lines are the ones that go when there is
               no room. Dropped deliberately on a short screen rather than
@@ -191,7 +223,9 @@ export function DrivingScreenView({
           ) : null}
           {view.maneuvers?.following ? (
             <p className="mt-1 truncate text-base text-ink/70 [@media(max-height:600px)]:hidden sm:text-xl">
-              then {view.maneuvers.following.instruction}
+              then{' '}
+              {normalizeInstruction(view.maneuvers.following.instruction) ??
+                view.maneuvers.following.instruction}
             </p>
           ) : null}
         </>
@@ -233,8 +267,14 @@ export function DrivingScreenView({
   // route-ready → navigating transition. Two separate trees would unmount
   // it, tearing down and rebuilding the Leaflet instance mid-trip — a
   // visible reload exactly when the driver starts moving.
+  // z-50, not z-40: the site-wide offline banner is `fixed top-16 z-40`
+  // and is mounted AFTER {children} in the root layout, so at equal z it
+  // painted over this surface — 64 px down, which is the maneuver card.
+  // A site banner about parking and weather may not cover a turn. Above
+  // it, the driving surface owns the whole viewport and says its own,
+  // navigation-specific thing about being offline.
   const shellCls = fullScreen
-    ? 'fixed inset-0 z-40 overflow-y-auto overscroll-contain bg-asphalt'
+    ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-asphalt'
     : '';
   // Portrait stacks card → map → readouts. Landscape becomes a two-column
   // grid — readouts left, map spanning the right — WITHOUT reordering the
@@ -282,6 +322,24 @@ export function DrivingScreenView({
           {statusText[view.status]}
           {view.lastKnown ? ' (last known)' : ''}
         </p>
+
+        {/* Network, in navigation's terms. The route and its maneuvers
+            were downloaded when the trip was planned and live in memory,
+            and matching, off-route detection and arrival are all pure —
+            so offline costs exactly one thing, and the line says which. */}
+        {offlineText ? (
+          <p
+            aria-live="polite"
+            role="status"
+            className={
+              fullScreen
+                ? `${colOne} text-sm font-semibold text-ink`
+                : 'text-xl font-semibold text-ink'
+            }
+          >
+            {offlineText}
+          </p>
+        ) : null}
 
         <div className={colOne}>
           {fullScreen ? (
@@ -417,6 +475,15 @@ export function DrivingScreen() {
   if (voiceRef.current === null) {
     voiceRef.current = createVoiceGuidance(createBrowserSpeechPort(), { startMuted: true });
   }
+  // Screen wake (Block 2 / priority I). A phone sleeps its screen in
+  // thirty seconds; on the driving surface that means the next maneuver
+  // is on a dark screen and the only way to see it is to touch the
+  // phone. The controller owns the policy; this is just its single
+  // instance, alive for as long as the screen is.
+  const wakeRef = useRef<ScreenWake | null>(null);
+  if (wakeRef.current === null) {
+    wakeRef.current = createScreenWake(createBrowserWakePort());
+  }
   const maneuverAnnouncerRef = useRef<ManeuverAnnouncer>(createManeuverAnnouncer());
   const statusAnnouncerRef = useRef(createStatusAnnouncer());
   const spokenRouteIdRef = useRef<string | null>(null);
@@ -509,6 +576,53 @@ export function DrivingScreen() {
     }
   }, [view, lifecycle]);
 
+  /*
+   * Network. `navigator.onLine` is optimistic — false is reliable, true
+   * only means an interface exists — so the state starts null (say
+   * nothing) and only a definite false produces a notice.
+   */
+  const [online, setOnline] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || typeof window === 'undefined') return;
+    setOnline(navigator.onLine);
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  /*
+   * Screen wake, driven by the two facts the controller needs.
+   *
+   * The visibility listener is not optional politeness: the browser
+   * RELEASES a wake lock whenever the page hides, and returning does not
+   * restore it. Without this, a driver who takes a call loses the screen
+   * for the rest of the trip. Releasing on cleanup matters just as much
+   * — a lock held over an idle page is a battery bug in a cab where the
+   * phone may sit for hours.
+   */
+  useEffect(() => {
+    const wake = wakeRef.current;
+    if (wake === null) return;
+    wake.setActive(ACTIVE_LIFECYCLE_STATES.includes(lcState));
+    if (typeof document === 'undefined') return;
+    const onVisibility = () => wake.setVisible(!document.hidden);
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [lcState]);
+
+  useEffect(
+    () => () => {
+      wakeRef.current?.setActive(false);
+    },
+    [],
+  );
+
   // Unmount = leaving the screen: stale speech dies with the surface and
   // any live trip is cancelled so no engine outlives its owner
   // (GpsProvider tears the watch down the same way).
@@ -545,6 +659,39 @@ export function DrivingScreen() {
     position.fix === null ? null : { lat: position.fix.lat, lng: position.fix.lng };
 
   const focusNavigationKey = focusTick === 0 ? null : `trip-start-${focusTick}`;
+
+  /*
+   * Road-test report. Assembled here because this is the only place that
+   * can see the whole session at once — lifecycle, trip summary, GPS
+   * health, voice, screen wake, and the pilot log. The report module owns
+   * every privacy rail; nothing is pre-filtered on the way in, so a new
+   * field can never be added that quietly skips the scrubber.
+   */
+  const buildReport = (note: string): string =>
+    buildRoadTestReport({
+      generatedMs: Date.now(),
+      pilot,
+      lifecycleState: lcState,
+      trip: lifecycle.summary(),
+      log: logRef.current?.entries() ?? [],
+      logDropped: logRef.current?.dropped() ?? 0,
+      gps: {
+        health: position.health,
+        accuracyM: Number.isFinite(position.accuracyM) ? position.accuracyM : null,
+        speedMph: position.speedMph,
+      },
+      voice: voiceRef.current?.snapshot() ?? null,
+      wake: wakeRef.current?.snapshot() ?? null,
+      device: {
+        userAgent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+        viewport:
+          typeof window === 'undefined'
+            ? null
+            : { width: window.innerWidth, height: window.innerHeight },
+        online: typeof navigator === 'undefined' ? null : navigator.onLine,
+      },
+      note,
+    });
 
   // Map-first surface only while guidance is genuinely live; every other
   // state keeps the ordinary page so nothing else on the site changes.
@@ -634,10 +781,12 @@ export function DrivingScreen() {
             lifecycle={lifecycle}
             fix={position.fix}
             debugLog={pilot.debugLogging ? logRef.current : null}
+            buildReport={buildReport}
             onChanged={bump}
           />
         ) : null
       }
+      offlineText={offlineNotice({ online, navigating: fullScreen })}
       hosSourceLabel={
         tripLoaded
           ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'
