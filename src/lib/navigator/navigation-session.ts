@@ -64,6 +64,14 @@ export type NavigationSession = {
     tMs: number,
     accuracyM: number | null,
   ): Promise<RerouteResult | { outcome: 'not-eligible' }>;
+  /**
+   * Retire a replacement request that has outlived its own timeout, so a
+   * hung fetch cannot hold the controller's single-flight slot forever.
+   * Returns true only when a request was actually retired. Callers drive
+   * this from their tick loop — `maybeReroute` also calls it, but a
+   * caller wedged waiting on the hung request can never reach that.
+   */
+  expireInFlight(tMs: number): boolean;
   cancel(tMs: number): TripSummary;
   snapshot(): NavigationSnapshot;
   /** Frozen after completion; null while the trip is live. */
@@ -232,6 +240,7 @@ export function createNavigationSession(
   return {
     ingest: ingestTracked,
     maybeReroute,
+    expireInFlight: (tMs: number) => reroute?.expireInFlight(tMs) ?? false,
     cancel,
     snapshot,
     summary: () => tripSummary,

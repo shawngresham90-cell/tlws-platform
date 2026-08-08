@@ -411,6 +411,20 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
       });
     }
 
+    // A replacement fetch that opens a socket and then stalls — an
+    // ordinary thing on a mobile connection — never settles its promise,
+    // so `requestReroute` is still awaiting it and the lifecycle would
+    // hold 'rerouting' for the rest of the trip: the screen says
+    // "rerouting" forever and no later reroute can ever be attempted.
+    // The reroute controller already knows how to retire an overdue
+    // request; it just cannot be reached from inside the await. Ticks
+    // can. When one is retired we land wherever the engines honestly
+    // are, and the stale response is dropped when it eventually arrives.
+    if (state === 'rerouting' && nav.expireInFlight(tMs)) {
+      const derived = lastNavSnapshot === null ? 'navigating' : deriveEngineState(lastNavSnapshot);
+      transition(derived, tMs, 'reroute-timed-out');
+    }
+
     // While a reroute is in flight the lifecycle holds 'rerouting';
     // requestReroute() derives the landing state when it resolves.
     if (state !== 'rerouting' && lastNavSnapshot !== null) {

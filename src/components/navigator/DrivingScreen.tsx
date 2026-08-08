@@ -420,6 +420,15 @@ export function DrivingScreen() {
     const prev = prevLcStateRef.current;
     prevLcStateRef.current = snap.state;
 
+    // Speech watchdog. A browser speech engine can accept an utterance
+    // and then never report it finished — backgrounded tab, an OS
+    // interruption, a known iOS behavior. The queue would jam and the
+    // driver would silently stop being told about turns for the rest of
+    // the trip. This effect runs on every position update, which is the
+    // cadence the watchdog needs; it does nothing unless an utterance
+    // has genuinely been outstanding far too long.
+    voice.tick(Date.now());
+
     const active =
       snap.state === 'navigating' ||
       snap.state === 'off-route' ||
