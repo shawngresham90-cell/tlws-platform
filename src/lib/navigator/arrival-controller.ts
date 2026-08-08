@@ -226,8 +226,10 @@ export function createArrivalController(
       }
       case 'arrival-candidate': {
         if (qualifies(obs, distanceM)) {
+          // Evidence restarts cleanly after a reset below.
+          if (episodeStartMs === null) episodeStartMs = obs.tMs;
           qualifying += 1;
-          const elapsed = episodeStartMs === null ? 0 : obs.tMs - episodeStartMs;
+          const elapsed = obs.tMs - episodeStartMs;
           if (qualifying >= cfg.confirmFixes && elapsed >= cfg.minElapsedMs) {
             state =
               entrance.verified || entrance.kind === 'probable-entrance'
@@ -247,8 +249,30 @@ export function createArrivalController(
           qualifying = 0;
           episodeStartMs = null;
           state = 'final-approach';
+        } else if (
+          distanceM > arrivalRadiusM ||
+          (obs.speedMph !== null && obs.speedMph > cfg.maxArrivalSpeedMph)
+        ) {
+          /*
+           * Not ambiguous — this is the truck still moving, or the truck
+           * outside the facility. Evidence starts over.
+           *
+           * Holding the tally through these was too generous: doc 05 asks
+           * for "< 5 mph SUSTAINED 10 s", and elapsed time is measured
+           * from the episode start, so a truck circling a yard at 19 mph
+           * (below the 20 mph abort) with three brief stops at stop signs
+           * inside the radius would collect three qualifying fixes over
+           * several minutes and be declared arrived while it was still
+           * driving around looking for the dock. Guidance would stop
+           * before the driver was anywhere.
+           *
+           * Ambiguity that is genuinely ambiguous — a low-confidence match,
+           * a fix with no route mile — still holds the tally, which is what
+           * the tolerance was for.
+           */
+          qualifying = 0;
+          episodeStartMs = null;
         }
-        // Ambiguous observations hold the candidate without growing it.
         break;
       }
       case 'arrived':

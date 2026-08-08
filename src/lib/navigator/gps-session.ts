@@ -29,6 +29,20 @@ export const MAX_ACCURACY_M = 50;
 export const STALE_AFTER_MS = 10_000;
 export const MAX_IMPLIED_SPEED_MPH = 100;
 
+/**
+ * How far a fix's timestamp may fall BEHIND the last accepted one before
+ * it is read as the device clock having moved rather than the stream
+ * replaying the past.
+ *
+ * `position.timestamp` is wall-clock, and a phone that picks up an NTP
+ * correction mid-trip can hand back a time earlier than the one before
+ * it. The out-of-order rule then rejects every fix until real time
+ * catches up — a clock nudged back half an hour is half an hour with no
+ * position at all, health stuck on 'lost', and nothing on screen that
+ * could explain it. Past this bound the session re-baselines instead.
+ */
+export const CLOCK_RESET_MS = 60_000;
+
 const MPS_TO_MPH = 2.236936;
 
 const INITIAL_STATE: PositionState = {
@@ -85,11 +99,20 @@ export function createGpsSession(): GpsSession {
       return state;
     }
 
-    const prev = state.fix;
+    let prev = state.fix;
 
     // Out-of-order or duplicate timestamps make speed math meaningless —
-    // and a stream replaying the past is spurious by definition.
-    if (prev && raw.tMs <= prev.tMs) return state;
+    // and a stream replaying the past is spurious by definition. A LARGE
+    // step backwards is a different animal: that is the device clock, not
+    // the stream, so the session re-baselines on this fix rather than
+    // going blind until real time catches up (see CLOCK_RESET_MS).
+    if (prev && raw.tMs <= prev.tMs) {
+      if (prev.tMs - raw.tMs < CLOCK_RESET_MS) return state;
+      // Re-baseline: every derived quantity spans the discontinuity and
+      // is therefore meaningless, so this fix is treated exactly like the
+      // first fix of a session — device speed and heading only.
+      prev = null;
+    }
 
     // Jump gate: a fix implying > 100 mph from the last ACCEPTED fix is a
     // teleport, not a truck. Discarded without touching health — the next
