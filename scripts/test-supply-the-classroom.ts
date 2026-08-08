@@ -57,6 +57,7 @@ const page = read('src/app/(marketing)/supply-the-classroom/page.tsx');
 const ctas = read('src/components/classroom/ClassroomCtas.tsx');
 const countdown = read('src/components/classroom/ClassroomCountdown.tsx');
 const homeBand = read('src/components/sections/SupplyClassroom.tsx');
+const emptyVisual = read('src/components/classroom/EmptyClassroomVisual.tsx');
 const home = read('src/app/page.tsx');
 const sitemap = read('src/app/sitemap.ts');
 /**
@@ -288,6 +289,121 @@ check(
     CLASSROOM_EVENTS.cashAppClick === 'classroom_cashapp_click',
 );
 check('homepage CTA fires its event', /trackEvent\(CLASSROOM_EVENTS\.homeCtaClick/.test(homeBand));
+
+/* ---------------------------------------------------------------- *
+ * HOMEPAGE BAND: the classroom photograph
+ *
+ * The same photograph now appears in two places. These checks exist to
+ * keep that "same" true — one file, one path constant, one set of
+ * dimensions — and to keep the band's existing copy and CTA from being
+ * disturbed by the layout change that made room for it.
+ * ---------------------------------------------------------------- */
+const photoModule = read('src/lib/classroom/classroom-photo.ts');
+
+check('1: the homepage band renders the classroom photograph', /<Image/.test(homeBand));
+check(
+  '2: it uses the shared asset constant, not a second path literal',
+  /src=\{CLASSROOM_PHOTO_SRC\}/.test(homeBand) &&
+    !/['"]\/images\/classroom\//.test(stripComments(homeBand)),
+);
+check(
+  '2b: the path is defined exactly once, in the shared module',
+  /export const CLASSROOM_PHOTO_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(
+    photoModule,
+  ) && !/['"]\/images\/classroom\//.test(stripComments(emptyVisual)),
+);
+check(
+  '2c: both surfaces take their dimensions from the shared module',
+  /width=\{CLASSROOM_PHOTO_WIDTH\}/.test(homeBand) &&
+    /height=\{CLASSROOM_PHOTO_HEIGHT\}/.test(homeBand) &&
+    /ASSET_WIDTH = CLASSROOM_PHOTO_WIDTH/.test(emptyVisual),
+);
+
+/* 3 — exactly ONE classroom image file in the repository. */
+const classroomDir = path.join(process.cwd(), 'public/images/classroom');
+const classroomFiles = fs.existsSync(classroomDir) ? fs.readdirSync(classroomDir) : [];
+check(
+  '3: exactly one classroom image asset exists',
+  classroomFiles.length === 1 && classroomFiles[0] === 'empty-classroom.jpg',
+  classroomFiles,
+);
+check(
+  '3b: no stray image was added elsewhere in public/',
+  !fs
+    .readdirSync(path.join(process.cwd(), 'public'), { recursive: true } as never)
+    .some(
+      (f) => typeof f === 'string' && /classroom/i.test(f) && !f.startsWith('images/classroom'),
+    ),
+);
+
+check(
+  '4: homepage alt text is the approved wording',
+  homeBand.includes('alt="Empty classroom being prepared for Trucking Life Academy"'),
+);
+check(
+  '5: the existing homepage heading is unchanged',
+  /<h2 className="display-section text-3xl sm:text-4xl">The room is empty<\/h2>/.test(homeBand),
+);
+check(
+  '6: the existing body copy is unchanged',
+  /Help equip Trucking Life Academy before doors open \{CAMPAIGN_OPENS_LABEL\}\. Pick a real\s+item off the supply list and it ships straight to the classroom\./.test(
+    homeBand,
+  ),
+);
+check(
+  '7: the CTA still points at the internal campaign page, never straight to Amazon',
+  /href=\{CAMPAIGN_PATH\}/.test(homeBand) && !/amazon\./i.test(stripComments(homeBand)),
+);
+check('7b: the CTA label is unchanged', homeBand.includes('View the Amazon List'));
+check(
+  '7c: the CTA keeps its 48px minimum target and focus ring',
+  /min-h-\[48px\]/.test(homeBand) && /focus-visible:ring-4/.test(homeBand),
+);
+
+/* 8 — two columns on desktop, one on mobile, with the photo placed between
+   the copy and the button in source order so a phone reads copy -> photo ->
+   button. */
+check(
+  '8: desktop is a two-column grid with the photo in the right-hand column',
+  /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(0,40%\)\]/.test(homeBand) &&
+    /lg:col-start-2/.test(homeBand),
+);
+check(
+  '8b: the photo sits between the copy and the button in source order',
+  homeBand.indexOf('The room is empty') < homeBand.indexOf('<Image') &&
+    homeBand.indexOf('<Image') < homeBand.indexOf('View the Amazon List'),
+);
+check(
+  '8c: the right-hand column is within the approved 35-45% of the card',
+  /minmax\(0,40%\)/.test(homeBand),
+);
+
+/* 9 — nothing that can force overflow or crop the room. */
+check(
+  '9: the photograph is never cropped or stretched',
+  /className="h-auto w-full"/.test(homeBand) && !/object-cover/.test(stripComments(homeBand)),
+);
+check(
+  '9b: a sizes hint is declared so a phone never fetches the full-resolution file',
+  /sizes="\(min-width: 1280px\) 404px, \(min-width: 1024px\) 36vw, 100vw"/.test(homeBand),
+);
+check(
+  '9c: the grid columns can shrink below their content (no overflow floor)',
+  /minmax\(0,1fr\)/.test(homeBand),
+);
+check('9d: no base64 image data on the homepage band', !/data:image\//.test(homeBand));
+
+/* 10 — the campaign page's own image is untouched by all of this. */
+check(
+  '10: /supply-the-classroom still renders its own visual, unchanged',
+  /<EmptyClassroomVisual/.test(page) &&
+    emptyVisual.includes("'Empty classroom awaiting the next training session'") &&
+    /className="h-auto w-full"/.test(emptyVisual),
+);
+check(
+  '10b: the two surfaces describe the photograph differently, on purpose',
+  !emptyVisual.includes('Empty classroom being prepared for Trucking Life Academy'),
+);
 check('Amazon CTA fires its event', /trackEvent\(CLASSROOM_EVENTS\.amazonClick/.test(ctas));
 check('Cash App CTA fires its event', /trackEvent\(CLASSROOM_EVENTS\.cashAppClick/.test(ctas));
 check(
@@ -389,10 +505,6 @@ check(
  * sentence — so the layout cannot regress. The asset-file check is reported
  * separately and deliberately does NOT fail the harness: the binary is
  * delivered by the owner, not by this repository's source. */
-const emptyVisual = fs.readFileSync(
-  path.join(process.cwd(), 'src/components/classroom/EmptyClassroomVisual.tsx'),
-  'utf8',
-);
 check('empty-state visual component is rendered in the hero', /<EmptyClassroomVisual/.test(page));
 check(
   'the visual sits with the empty-state copy, ABOVE the countdown',
@@ -426,7 +538,7 @@ check(
 );
 check(
   'the asset path lives under public/images/',
-  /const EMPTY_CLASSROOM_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(emptyVisual),
+  /const CLASSROOM_PHOTO_SRC = '\/images\/classroom\/empty-classroom\.jpg'/.test(photoModule),
 );
 
 /* The photograph itself. It is committed, so these are real assertions: a
@@ -459,8 +571,8 @@ function jpegSize(buf: Buffer): { width: number; height: number } | null {
 if (fs.existsSync(assetPath)) {
   const bytes = fs.readFileSync(assetPath);
   const dims = jpegSize(bytes);
-  const declaredW = Number(/export const ASSET_WIDTH = (\d+)/.exec(emptyVisual)?.[1]);
-  const declaredH = Number(/export const ASSET_HEIGHT = (\d+)/.exec(emptyVisual)?.[1]);
+  const declaredW = Number(/export const CLASSROOM_PHOTO_WIDTH = (\d+)/.exec(photoModule)?.[1]);
+  const declaredH = Number(/export const CLASSROOM_PHOTO_HEIGHT = (\d+)/.exec(photoModule)?.[1]);
   check('the photograph is a readable JPEG', dims !== null, dims);
   check(
     'declared width matches the real file — no first-paint layout shift',
