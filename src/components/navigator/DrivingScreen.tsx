@@ -29,6 +29,7 @@ import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
+import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
 import { createBrowserWakePort } from './wake-lock-port';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
 import { MapStyleControl } from './MapStyleControl';
@@ -588,6 +589,39 @@ export function DrivingScreen() {
 
   const focusNavigationKey = focusTick === 0 ? null : `trip-start-${focusTick}`;
 
+  /*
+   * Road-test report. Assembled here because this is the only place that
+   * can see the whole session at once — lifecycle, trip summary, GPS
+   * health, voice, screen wake, and the pilot log. The report module owns
+   * every privacy rail; nothing is pre-filtered on the way in, so a new
+   * field can never be added that quietly skips the scrubber.
+   */
+  const buildReport = (note: string): string =>
+    buildRoadTestReport({
+      generatedMs: Date.now(),
+      pilot,
+      lifecycleState: lcState,
+      trip: lifecycle.summary(),
+      log: logRef.current?.entries() ?? [],
+      logDropped: logRef.current?.dropped() ?? 0,
+      gps: {
+        health: position.health,
+        accuracyM: Number.isFinite(position.accuracyM) ? position.accuracyM : null,
+        speedMph: position.speedMph,
+      },
+      voice: voiceRef.current?.snapshot() ?? null,
+      wake: wakeRef.current?.snapshot() ?? null,
+      device: {
+        userAgent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+        viewport:
+          typeof window === 'undefined'
+            ? null
+            : { width: window.innerWidth, height: window.innerHeight },
+        online: typeof navigator === 'undefined' ? null : navigator.onLine,
+      },
+      note,
+    });
+
   // Map-first surface only while guidance is genuinely live; every other
   // state keeps the ordinary page so nothing else on the site changes.
   const fullScreen = ACTIVE_LIFECYCLE_STATES.includes(lcState);
@@ -676,6 +710,7 @@ export function DrivingScreen() {
             lifecycle={lifecycle}
             fix={position.fix}
             debugLog={pilot.debugLogging ? logRef.current : null}
+            buildReport={buildReport}
             onChanged={bump}
           />
         ) : null
