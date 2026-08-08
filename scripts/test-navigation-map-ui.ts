@@ -620,9 +620,31 @@ const T0 = 1_754_000_000_000;
     '21. map movement is NOT announced repeatedly (no live region on the map)',
     !/aria-live[^>]*>[\s\S]{0,200}ref=\{containerRef\}/.test(map) && !map.includes('aria-live'),
   );
+  /*
+   * 22 used to cap polite live regions at two, under the name "exactly
+   * one" — the count and the name already disagreed. The count was
+   * standing in for the thing that actually matters, which is CADENCE: a
+   * live region attached to something that changes every tick is one a
+   * driver turns off, and then hears nothing at all.
+   *
+   * Block 2 / priority K added a third, deliberately: the maneuver
+   * instruction. Voice starts muted by design, so a screen-reader user
+   * with voice off was never told a turn was coming. Instruction text
+   * changes once per maneuver — the same cadence voice announces at.
+   *
+   * So the rule is stated as what it is. The bound stays tight enough to
+   * catch a sprinkling of live regions, and the per-tick fields are named
+   * explicitly. `navigator-accessibility` proves the distance line — the
+   * one field that changes every second — is NOT live.
+   */
   check(
-    '22. exactly one polite status region on the driving surface',
-    (screen.match(/aria-live="polite"/g) ?? []).length <= 2,
+    '22. few polite regions, and none of them per-tick',
+    (screen.match(/aria-live="polite"/g) ?? []).length <= 3,
+    (screen.match(/aria-live="polite"/g) ?? []).length,
+  );
+  check(
+    '22. the per-second distance and speed are never live regions',
+    !/aria-live[^>]{0,40}>\s*\n?\s*(In \{formatDriverDistanceMi|\{view\.speedMph)/.test(screen),
   );
   check(
     '23. reduced motion stays safe — no animation classes, no smooth camera',

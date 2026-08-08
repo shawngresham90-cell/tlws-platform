@@ -153,7 +153,16 @@ export function DrivingScreenView({
     if (focusNavigationKey === null) return;
     const el = navTopRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      // `html { scroll-behavior: auto }` under reduced motion does NOT
+      // override an explicit `behavior: 'smooth'` passed here — the
+      // argument wins. So the preference is read directly, or a driver
+      // who asked for no motion gets an animated scroll anyway at the one
+      // moment the screen jumps on its own.
+      const reduced =
+        typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
     }
   }, [focusNavigationKey]);
 
@@ -184,7 +193,22 @@ export function DrivingScreenView({
               instruction is the largest text, but it may not eat the map.
               Clamped rather than clipped — two lines and an ellipsis says
               "there is more"; a hard cut mid-word says nothing at all. */}
-          <p className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl">
+          {/*
+            A live region, and the ONLY one on the card. A driver using a
+            screen reader with voice guidance muted — and voice starts
+            muted by design — was never told a turn was coming at all;
+            they had to keep asking. The instruction text changes exactly
+            once per maneuver, so announcing it is the accessible analogue
+            of the announce-once policy voice already follows.
+
+            The distance line above is deliberately NOT part of it: it
+            changes every second, and a live region that fires every
+            second is one a driver turns off.
+          */}
+          <p
+            aria-live="polite"
+            className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl"
+          >
             {normalizeInstruction(m.instruction) ?? m.instruction}
           </p>
           {/* The two supporting lines are the ones that go when there is
