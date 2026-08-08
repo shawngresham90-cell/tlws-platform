@@ -25,6 +25,8 @@ import {
   speakableMinutes,
   hosVoiceText,
   MANEUVER_THRESHOLDS_MI,
+  MANEUVER_GROUP,
+  STUCK_UTTERANCE_MS,
   type SpeechPort,
   type VoiceRequest,
 } from '@/lib/navigator/voice-guidance';
@@ -95,21 +97,101 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
   );
 }
 
-// critical preemption
+// critical preemption of an ORDINARY line. These ids used to be called
+// "maneuver-a"/"maneuver-b", which read as if this covered turns; they
+// carry no maneuver group and never did. Renamed so the distinction from
+// the block below is visible.
 {
   const f = fakePort();
   const v = createVoiceGuidance(f.port);
-  v.request(req('maneuver-a', 'normal'));
-  v.request(req('maneuver-b', 'normal'));
+  v.request(req('line-a', 'normal'));
+  v.request(req('line-b', 'normal'));
   check('critical preempts mid-utterance', v.request(req('alert', 'critical')) === 'spoken');
   check('preemption cancelled the engine once', f.cancels() === 1);
-  check('critical spoke without waiting', f.spoken.join(',') === 'maneuver-a,alert');
+  check('critical spoke without waiting', f.spoken.join(',') === 'line-a,alert');
   f.finish(); // alert ends
+  check('queued normal resumes after the critical', f.spoken.join(',') === 'line-a,alert,line-b');
+  check('the preempted utterance is NOT replayed', !f.spoken.slice(1).includes('line-a'));
+}
+
+// A critical line must NOT cut a turn out of the driver's ear. The
+// maneuver's announce-once flag is already set by the time it is
+// speaking, so a preempted turn is gone for good — the driver hears
+// "Turn right onto Old M—" and then a clock warning, and misses the
+// turn. An HOS crossing can wait the two seconds the turn takes.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  const turn: VoiceRequest = {
+    id: 'maneuver:3@Turn right onto Old Mill Road.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn right onto Old Mill Road.',
+  };
+  check('the turn starts speaking', v.request(turn) === 'spoken');
+  const hos = req('hos:drive:critical', 'critical');
+  check('an HOS critical waits for the turn', v.request(hos) === 'queued');
+  check('nothing was cancelled', f.cancels() === 0);
+  check('the turn is still the one being spoken', v.snapshot().speakingId === turn.id);
+  check('only the turn has been spoken so far', f.spoken.length === 1, f.spoken);
+  f.finish(); // the turn completes normally
   check(
-    'queued normal resumes after the critical',
-    f.spoken.join(',') === 'maneuver-a,alert,maneuver-b',
+    'the critical speaks the moment the turn finishes',
+    f.spoken.join(',') === 'Turn right onto Old Mill Road.,hos:drive:critical',
+    f.spoken,
   );
-  check('the preempted utterance is NOT replayed', !f.spoken.slice(1).includes('maneuver-a'));
+  check(
+    'the turn was never replayed',
+    f.spoken.filter((t) => t.startsWith('Turn right')).length === 1,
+  );
+}
+
+// The critical still goes FIRST among things waiting: it jumps ahead of
+// queued normal lines, it just does not cut the turn already speaking.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  v.request({
+    id: 'maneuver:1@Turn left.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn left.',
+  });
+  v.request(req('status-line', 'normal'));
+  v.request(req('hos:break:imminent', 'critical'));
+  f.finish(); // the turn ends
+  check(
+    'the critical jumped ahead of the queued normal',
+    f.spoken[1] === 'hos:break:imminent',
+    f.spoken,
+  );
+  f.finish();
+  check(
+    'the normal line follows',
+    f.spoken.join(',') === 'Turn left.,hos:break:imminent,status-line',
+  );
+}
+
+// A stuck turn must not hold a critical hostage forever: the watchdog
+// retires it and the critical is next out.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  v.request({
+    id: 'maneuver:2@Turn right.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn right.',
+  });
+  v.request(req('hos:drive:imminent', 'critical'));
+  const T = 1_700_000_000_000;
+  v.tick(T);
+  v.tick(T + STUCK_UTTERANCE_MS + 1000);
+  check(
+    'a never-ending turn does not trap the critical',
+    f.spoken.join(',') === 'Turn right.,hos:drive:imminent',
+    f.spoken,
+  );
 }
 
 // passive drop
