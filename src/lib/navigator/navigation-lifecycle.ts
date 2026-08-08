@@ -238,6 +238,9 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
   // object; without this guard the matcher/detector/arrival stack would
   // ingest the same fix twice and double-count its evidence.
   let lastTickInput: PositionState | null = null;
+  // The map's copy of the route line, kept per ROUTE rather than per call
+  // (see mapData). Cleared with the engines.
+  let mapGeometryCache: { source: RouteSession; geometry: readonly LatLng[] } | null = null;
 
   const transitionLog: LifecycleTransition[] = [];
   const violationLog: string[] = [];
@@ -284,6 +287,7 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     // last one — the new trip's engines would sit at mile zero until the
     // next fix landed.
     lastTickInput = null;
+    mapGeometryCache = null;
   }
 
   function snapshot(): LifecycleSnapshot {
@@ -518,10 +522,29 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     // moment it lands; fall back to the planned session before navigation
     // starts. Positions are copied — the caller cannot reach into the
     // frozen session geometry.
+    //
+    // The copy is made ONCE PER ROUTE, not once per call. The driving
+    // screen recomputes this on every accepted fix — once a second, for
+    // hours — and at full provider resolution a long haul carries tens of
+    // thousands of points, so copying per call meant tens of thousands of
+    // allocations a second thrown away immediately (the map redraws only
+    // when the route id changes). Measured at 20,000 points: 1.7 ms per
+    // call on a desktop CPU, a second of CPU per ten minutes of driving,
+    // before any phone penalty. Route identity is the cache key because a
+    // session's geometry is immutable — a replacement route is a
+    // different object, and that is exactly when the copy must be redone.
     const active = nav?.currentSession() ?? routeSession;
+    if (active === null) {
+      mapGeometryCache = null;
+    } else if (mapGeometryCache === null || mapGeometryCache.source !== active) {
+      mapGeometryCache = {
+        source: active,
+        geometry: Object.freeze(active.geometry.map((p) => Object.freeze({ ...p.position }))),
+      };
+    }
     const nextMi = lastView.maneuvers?.next?.mileMi ?? null;
     return {
-      geometry: active === null ? [] : active.geometry.map((p) => ({ ...p.position })),
+      geometry: mapGeometryCache?.geometry ?? [],
       destination: destinationInfo === null ? null : { ...destinationInfo.position },
       nextManeuver:
         active === null || nextMi === null ? null : positionAtRouteMile(active.geometry, nextMi),

@@ -1139,6 +1139,50 @@ async function main() {
     check('bounded log: no violations across 200 trips', life.violations().length === 0);
   }
 
+  // Scenario 12 — the map projection is a COPY, and it is cheap. The
+  // driving screen recomputes it on every accepted fix, so it must
+  // neither hand out a reference into the live session nor rebuild the
+  // whole route line each time.
+  {
+    const life = createNavigationLifecycle({
+      planPort: async () => planResultFor(ROUTE_A, 'projection'),
+      replacementPort: async () => ({ kind: 'failure', reason: 'not-used' }),
+    });
+    const outcome = await life.plan(
+      {
+        origin: ROUTE_A.positions[0],
+        destination: ROUTE_A.positions[ROUTE_A.positions.length - 1],
+        truck: TRUCK,
+        departAtMs: T0,
+      },
+      destinationFor(ROUTE_A),
+      T0,
+    );
+    if (!outcome.ok) throw new Error('projection plan failed');
+    const session = outcome.session;
+    const a = life.mapData();
+    const b = life.mapData();
+
+    check(
+      'projection: no reference into the live session escapes',
+      a.geometry[0] !== session.geometry[0].position,
+    );
+    check(
+      'projection: the copy is faithful',
+      a.geometry.length === session.geometry.length &&
+        a.geometry[0].lat === session.geometry[0].position.lat &&
+        a.geometry[0].lng === session.geometry[0].position.lng,
+    );
+    check('projection: repeated calls reuse the same array', a.geometry === b.geometry);
+    check(
+      'projection: the caller cannot mutate what it was handed',
+      Object.isFrozen(a.geometry) && Object.isFrozen(a.geometry[0]),
+    );
+    life.startNavigation(T0 + 1000);
+    life.cancel(T0 + 2000);
+    check('projection: released with the engines', life.mapData().geometry.length === 0);
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed) process.exit(1);
 }
