@@ -25,18 +25,27 @@ export function positionAtRouteMile(
   if (mile <= geometry[0].routeMile) return { ...geometry[0].position };
   const last = geometry[geometry.length - 1];
   if (mile >= last.routeMile) return { ...last.position };
-  for (let i = 1; i < geometry.length; i++) {
-    const b = geometry[i];
-    if (b.routeMile < mile) continue;
-    const a = geometry[i - 1];
-    const span = b.routeMile - a.routeMile;
-    const t = span <= 0 ? 0 : (mile - a.routeMile) / span;
-    return {
-      lat: a.position.lat + (b.position.lat - a.position.lat) * t,
-      lng: a.position.lng + (b.position.lng - a.position.lng) * t,
-    };
+  // Binary search, not a scan: route miles are non-decreasing by
+  // construction (normalizeGeometry guarantees it), the driving screen
+  // calls this on every accepted fix, and at full provider resolution a
+  // long haul carries tens of thousands of points. Find the first index
+  // whose mile is at or past the target; the endpoint cases above mean
+  // it always exists and is never zero.
+  let lo = 1;
+  let hi = geometry.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (geometry[mid].routeMile < mile) lo = mid + 1;
+    else hi = mid;
   }
-  return { ...last.position };
+  const b = geometry[lo];
+  const a = geometry[lo - 1];
+  const span = b.routeMile - a.routeMile;
+  const t = span <= 0 ? 0 : (mile - a.routeMile) / span;
+  return {
+    lat: a.position.lat + (b.position.lat - a.position.lat) * t,
+    lng: a.position.lng + (b.position.lng - a.position.lng) * t,
+  };
 }
 
 /**

@@ -25,6 +25,8 @@ import {
   speakableMinutes,
   hosVoiceText,
   MANEUVER_THRESHOLDS_MI,
+  MANEUVER_GROUP,
+  STUCK_UTTERANCE_MS,
   type SpeechPort,
   type VoiceRequest,
 } from '@/lib/navigator/voice-guidance';
@@ -95,21 +97,101 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
   );
 }
 
-// critical preemption
+// critical preemption of an ORDINARY line. These ids used to be called
+// "maneuver-a"/"maneuver-b", which read as if this covered turns; they
+// carry no maneuver group and never did. Renamed so the distinction from
+// the block below is visible.
 {
   const f = fakePort();
   const v = createVoiceGuidance(f.port);
-  v.request(req('maneuver-a', 'normal'));
-  v.request(req('maneuver-b', 'normal'));
+  v.request(req('line-a', 'normal'));
+  v.request(req('line-b', 'normal'));
   check('critical preempts mid-utterance', v.request(req('alert', 'critical')) === 'spoken');
   check('preemption cancelled the engine once', f.cancels() === 1);
-  check('critical spoke without waiting', f.spoken.join(',') === 'maneuver-a,alert');
+  check('critical spoke without waiting', f.spoken.join(',') === 'line-a,alert');
   f.finish(); // alert ends
+  check('queued normal resumes after the critical', f.spoken.join(',') === 'line-a,alert,line-b');
+  check('the preempted utterance is NOT replayed', !f.spoken.slice(1).includes('line-a'));
+}
+
+// A critical line must NOT cut a turn out of the driver's ear. The
+// maneuver's announce-once flag is already set by the time it is
+// speaking, so a preempted turn is gone for good — the driver hears
+// "Turn right onto Old M—" and then a clock warning, and misses the
+// turn. An HOS crossing can wait the two seconds the turn takes.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  const turn: VoiceRequest = {
+    id: 'maneuver:3@Turn right onto Old Mill Road.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn right onto Old Mill Road.',
+  };
+  check('the turn starts speaking', v.request(turn) === 'spoken');
+  const hos = req('hos:drive:critical', 'critical');
+  check('an HOS critical waits for the turn', v.request(hos) === 'queued');
+  check('nothing was cancelled', f.cancels() === 0);
+  check('the turn is still the one being spoken', v.snapshot().speakingId === turn.id);
+  check('only the turn has been spoken so far', f.spoken.length === 1, f.spoken);
+  f.finish(); // the turn completes normally
   check(
-    'queued normal resumes after the critical',
-    f.spoken.join(',') === 'maneuver-a,alert,maneuver-b',
+    'the critical speaks the moment the turn finishes',
+    f.spoken.join(',') === 'Turn right onto Old Mill Road.,hos:drive:critical',
+    f.spoken,
   );
-  check('the preempted utterance is NOT replayed', !f.spoken.slice(1).includes('maneuver-a'));
+  check(
+    'the turn was never replayed',
+    f.spoken.filter((t) => t.startsWith('Turn right')).length === 1,
+  );
+}
+
+// The critical still goes FIRST among things waiting: it jumps ahead of
+// queued normal lines, it just does not cut the turn already speaking.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  v.request({
+    id: 'maneuver:1@Turn left.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn left.',
+  });
+  v.request(req('status-line', 'normal'));
+  v.request(req('hos:break:imminent', 'critical'));
+  f.finish(); // the turn ends
+  check(
+    'the critical jumped ahead of the queued normal',
+    f.spoken[1] === 'hos:break:imminent',
+    f.spoken,
+  );
+  f.finish();
+  check(
+    'the normal line follows',
+    f.spoken.join(',') === 'Turn left.,hos:break:imminent,status-line',
+  );
+}
+
+// A stuck turn must not hold a critical hostage forever: the watchdog
+// retires it and the critical is next out.
+{
+  const f = fakePort();
+  const v = createVoiceGuidance(f.port);
+  v.request({
+    id: 'maneuver:2@Turn right.:execute',
+    priority: 'normal',
+    group: MANEUVER_GROUP,
+    text: 'Turn right.',
+  });
+  v.request(req('hos:drive:imminent', 'critical'));
+  const T = 1_700_000_000_000;
+  v.tick(T);
+  v.tick(T + STUCK_UTTERANCE_MS + 1000);
+  check(
+    'a never-ending turn does not trap the critical',
+    f.spoken.join(',') === 'Turn right.,hos:drive:imminent',
+    f.spoken,
+  );
 }
 
 // passive drop
@@ -247,13 +329,143 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
   // announcements are normal priority (maneuvers queue, never preempt)
   check('maneuver announcements are normal priority', prep[0].priority === 'normal');
 
-  // a skipped-past tier still fires only its own announcement once
+  /*
+   * ANTI-CHATTER. This assertion previously required all three due tiers to
+   * come out "together" from one collect(). That was the owner's road-test
+   * complaint in test form: an announcer meeting a maneuver already inside a
+   * closer threshold — every reroute, a trip started near a turn, GPS back
+   * from a tunnel — read three near-identical sentences in a row.
+   *
+   * The property it was really protecting, announce-once per (maneuver,
+   * tier), is preserved and asserted harder below: the far tiers are burned
+   * silently, so they can never surface later either.
+   */
   const b = createManeuverAnnouncer();
   const jump = b.collect({ next: exit, following: null, distanceMi: 0.05 }, 60);
   check(
-    'jumping straight to execute distance fires each tier at most once, together',
-    jump.length === 3 && new Set(jump.map((r) => r.id)).size === 3,
+    'meeting a maneuver up close speaks ONCE, at the nearest due tier',
+    jump.length === 1 && jump[0].id.endsWith(':execute'),
+    jump.map((r) => r.id),
   );
+  check(
+    'the tiers it skipped are burned, not merely deferred',
+    b.collect({ next: exit, following: null, distanceMi: 0.04 }, 60).length === 0 &&
+      b.collect({ next: exit, following: null, distanceMi: 1.5 }, 60).length === 0,
+  );
+  // Mid-ladder: due at approach but not yet execute → exactly one line, and
+  // the still-distant execute tier remains available for later.
+  const b2 = createManeuverAnnouncer();
+  const mid = b2.collect({ next: exit, following: null, distanceMi: 0.3 }, 60);
+  check(
+    'entering at approach range speaks once, execute still to come',
+    mid.length === 1 && mid[0].id.endsWith(':approach'),
+    mid.map((r) => r.id),
+  );
+  const later = b2.collect({ next: exit, following: null, distanceMi: 0.05 }, 60);
+  check(
+    'execute still fires later, on its own',
+    later.length === 1 && later[0].id.endsWith(':execute'),
+  );
+  check('maneuver lines carry the supersession group', later[0].group === 'maneuver');
+
+  /*
+   * GPS JITTER. Distance is not monotonic in the real world: a fix can
+   * bounce back across a threshold it already crossed. Re-crossing must
+   * stay silent.
+   */
+  const j = createManeuverAnnouncer();
+  j.collect({ next: exit, following: null, distanceMi: 0.45 }, 60);
+  let jitterLines = 0;
+  for (const d of [0.52, 0.44, 0.51, 0.43, 0.55, 0.42]) {
+    jitterLines += j.collect({ next: exit, following: null, distanceMi: d }, 60).length;
+  }
+  check('threshold jitter produces no further speech', jitterLines === 0, jitterLines);
+
+  /*
+   * A FULL APPROACH at highway speed is three lines total, not a stream —
+   * one per stage, in order, however many GPS ticks arrive between them.
+   */
+  const full = createManeuverAnnouncer();
+  const spoken: string[] = [];
+  for (let d = 3.0; d >= 0.01; d -= 0.01) {
+    for (const r of full.collect({ next: exit, following: null, distanceMi: d }, 60)) {
+      spoken.push(r.id.split(':').pop()!);
+    }
+  }
+  check(
+    'a 3-mile approach yields exactly prepare, approach, execute — 3 lines from 300 ticks',
+    spoken.length === 3 && spoken.join(',') === 'prepare,approach,execute',
+    spoken,
+  );
+
+  /*
+   * QUEUE SUPERSESSION. A maneuver line still WAITING while a newer one
+   * comes due is obsolete — the driver must hear where they are now, not a
+   * backlog of where they were. Eviction is queue-only: the sentence already
+   * in the driver's ear is never cut mid-word to say something similar.
+   */
+  {
+    let speaking: (() => void) | null = null;
+    const spokenTexts: string[] = [];
+    const port = {
+      supported: true,
+      speak(text: string, onDone: () => void) {
+        spokenTexts.push(text);
+        speaking = onDone;
+      },
+      cancel() {
+        speaking = null;
+      },
+    };
+    const v = createVoiceGuidance(port);
+    v.request({
+      id: 'm1',
+      priority: 'normal',
+      text: 'In half a mile, turn right',
+      group: 'maneuver',
+    });
+    v.request({ id: 'm2', priority: 'normal', text: 'In 500 feet, turn right', group: 'maneuver' });
+    check('first maneuver line is speaking, second waits', v.snapshot().queuedIds.join() === 'm2');
+    v.request({ id: 'm3', priority: 'normal', text: 'Turn right', group: 'maneuver' });
+    check(
+      'a newer maneuver line evicts the stale queued one',
+      v.snapshot().queuedIds.join() === 'm3',
+      v.snapshot().queuedIds,
+    );
+    check('the utterance already speaking is never cut', v.snapshot().speakingId === 'm1');
+    check('only one line was actually voiced so far', spokenTexts.length === 1);
+    // Ungrouped traffic (HOS, status) is untouched by maneuver supersession.
+    v.request({ id: 'hos1', priority: 'normal', text: 'Break required in 30 minutes' });
+    v.request({ id: 'm4', priority: 'normal', text: 'Turn right now', group: 'maneuver' });
+    check(
+      'supersession never evicts other kinds of speech',
+      v.snapshot().queuedIds.includes('hos1'),
+      v.snapshot().queuedIds,
+    );
+    speaking!();
+    check(
+      'the driver next hears the queued HOS line',
+      spokenTexts[1] === 'Break required in 30 minutes',
+    );
+  }
+
+  /* Spoken distance buckets — no decimal readouts, no "In 1 miles". */
+  {
+    const d = createManeuverAnnouncer();
+    const one = d.collect({ next: exit, following: null, distanceMi: 0.97 }, 60);
+    check(
+      '0.97 mi reads as "In 1 mile", singular',
+      one[0].text.startsWith('In 1 mile,'),
+      one[0].text,
+    );
+    const q = createManeuverAnnouncer();
+    const quarter = q.collect({ next: exit, following: null, distanceMi: 0.25 }, 60);
+    check(
+      '0.25 mi reads as a quarter mile, not "In 1300 feet"',
+      quarter[0].text.startsWith('In a quarter mile,'),
+      quarter[0].text,
+    );
+  }
 
   // chained maneuvers: combined instruction, second prepare suppressed
   const c = createManeuverAnnouncer();

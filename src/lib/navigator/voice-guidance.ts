@@ -2,7 +2,9 @@
  * Voice guidance core (Navigator milestone N7) — speech OUTPUT only, per
  * docs/navigator/06-safety.md §3. Three priorities with fixed behaviour:
  *
- *   critical  preempts anything speaking
+ *   critical  jumps the queue; preempts anything speaking EXCEPT a
+ *             maneuver, which it waits for rather than cutting the turn
+ *             in half (see the critical branch of request())
  *   normal    queued in order
  *   passive   dropped entirely if anything is speaking or queued
  *
@@ -24,11 +26,29 @@ import type { DrivingScreenStatus } from './navigation-controller';
 
 export type VoicePriority = 'critical' | 'normal' | 'passive';
 
+/**
+ * The supersession group every maneuver line carries. It does two jobs:
+ * a newer stage of the same turn evicts an older one still queued, and a
+ * critical line will not cut a maneuver mid-sentence. Exported so the
+ * announcer that stamps it and the guard that honours it cannot drift.
+ */
+export const MANEUVER_GROUP = 'maneuver';
+
 export type VoiceRequest = {
   /** Announce-once key. The same id is never spoken twice, ever. */
   id: string;
   priority: VoicePriority;
   text: string;
+  /**
+   * Supersession group. A newer request in the same group makes older
+   * QUEUED requests obsolete and evicts them — a driver must hear the
+   * instruction for where they are now, not a backlog of where they were.
+   *
+   * Eviction touches the queue only, never the utterance already in the
+   * driver's ear: cutting speech mid-word to say something similar is its
+   * own kind of noise.
+   */
+  group?: string;
 };
 
 /** What happened to a request — exact, for tests and honest displays. */
@@ -70,8 +90,29 @@ export type VoiceGuidance = {
    * die instantly, but the driver's voice on/off choice stands.
    */
   clearPending(): void;
+  /**
+   * Caller-driven watchdog. A speech engine can accept an utterance and
+   * then never report it finished — a real speechSynthesis behavior when
+   * the tab backgrounds or the engine is interrupted by the OS. The
+   * queue would then be jammed for the rest of the trip and the driver
+   * would simply stop being told about turns, silently.
+   *
+   * Pass the current time on the caller's ordinary cadence. Nothing
+   * happens until an utterance has been outstanding for
+   * STUCK_UTTERANCE_MS across two ticks; then it is retired and the
+   * queue drains. Time arrives as an argument here, as everywhere else
+   * in this module — no clock is read.
+   */
+  tick(nowMs: number): void;
   snapshot(): VoiceSnapshot;
 };
+
+/**
+ * How long an utterance may be outstanding before the watchdog treats it
+ * as lost. A spoken maneuver line runs about three seconds; twenty is
+ * unambiguous without ever cutting off real speech.
+ */
+export const STUCK_UTTERANCE_MS = 20_000;
 
 export type VoiceOptions = {
   /**
@@ -91,23 +132,55 @@ export function createVoiceGuidance(port: SpeechPort, options: VoiceOptions = {}
   // Guards stale port callbacks: cancel() may still fire the old
   // utterance's onDone in some engines; only the live token advances.
   let token = 0;
+  // When the current utterance was first SEEN by the watchdog, not when
+  // it started — `request` takes no clock, and inventing one here would
+  // make this module read time.
+  let speakingSinceMs: number | null = null;
 
   function speakNow(req: VoiceRequest): void {
     speaking = req;
+    speakingSinceMs = null;
     const mine = ++token;
-    port.speak(req.text, () => {
+    const done = () => {
       if (mine !== token) return;
       speaking = null;
+      speakingSinceMs = null;
       const next = queue.shift();
       if (next) speakNow(next);
-    });
+    };
+    try {
+      port.speak(req.text, done);
+    } catch {
+      // A speech engine that throws is a broken speaker, not a broken
+      // truck: swallow it here so the exception never reaches the
+      // navigation effect that asked for the line, and treat it as an
+      // utterance that ended instantly so the queue keeps moving.
+      done();
+    }
+  }
+
+  /**
+   * Drop queued requests the incoming one makes obsolete. Same group only,
+   * queue only — see VoiceRequest.group.
+   */
+  function evictSuperseded(req: VoiceRequest): void {
+    if (req.group === undefined) return;
+    for (let i = queue.length - 1; i >= 0; i--) {
+      if (queue[i].group === req.group) queue.splice(i, 1);
+    }
   }
 
   function stopCurrent(): void {
     if (speaking === null) return;
     token++; // invalidate the pending onDone before cancelling
     speaking = null;
-    port.cancel();
+    speakingSinceMs = null;
+    try {
+      port.cancel();
+    } catch {
+      // Same reasoning as speak(): a throwing engine must not take the
+      // driving screen down with it.
+    }
   }
 
   return {
@@ -125,6 +198,21 @@ export function createVoiceGuidance(port: SpeechPort, options: VoiceOptions = {}
 
       if (req.priority === 'critical') {
         announced.add(req.id);
+        evictSuperseded(req);
+        // A critical line jumps the queue — but it does not cut a TURN
+        // out of the driver's ear. An HOS clock crossing at 30 minutes
+        // is important and can wait the two seconds a maneuver line
+        // takes; the turn cannot, and it would never come back, because
+        // its announce-once flag is already set. The result on the road
+        // was "Turn right onto Old M—" followed by a clock warning, and
+        // the driver missing the turn.
+        //
+        // Anything genuinely instantaneous would need a new priority
+        // above this one; nothing today is.
+        if (speaking !== null && speaking.group === MANEUVER_GROUP) {
+          queue.unshift(req);
+          return 'queued';
+        }
         stopCurrent();
         speakNow(req);
         return 'spoken';
@@ -132,12 +220,31 @@ export function createVoiceGuidance(port: SpeechPort, options: VoiceOptions = {}
 
       // normal: speak when idle, otherwise wait in order.
       announced.add(req.id);
+      evictSuperseded(req);
       if (speaking === null) {
         speakNow(req);
         return 'spoken';
       }
       queue.push(req);
       return 'queued';
+    },
+
+    tick(nowMs: number): void {
+      if (speaking === null) {
+        speakingSinceMs = null;
+        return;
+      }
+      if (speakingSinceMs === null) {
+        speakingSinceMs = nowMs;
+        return;
+      }
+      if (nowMs - speakingSinceMs < STUCK_UTTERANCE_MS) return;
+      // Retire the lost utterance and move on. `stopCurrent` invalidates
+      // its callback first, so a late `onDone` from a slow engine cannot
+      // double-advance the queue.
+      stopCurrent();
+      const next = queue.shift();
+      if (next) speakNow(next);
     },
 
     mute(): void {
@@ -194,12 +301,22 @@ export function tierThresholdMi(tier: ManeuverTier, speedMph: number | null): nu
   return speedMph !== null && speedMph >= 50 ? fast : slow;
 }
 
+/**
+ * Spoken distance, in coarse buckets a driver actually uses. Deliberately
+ * NOT a linear readout of GPS distance: "in 0.8 miles" then "in 0.7 miles"
+ * is the chatter this policy exists to prevent, and a truck driver steers
+ * by landmarks, not decimals.
+ */
 function distanceText(mi: number): string {
   if (mi >= 0.94) {
     const rounded = Math.round(mi * 10) / 10;
+    // "In 1 miles" is the kind of thing that makes a product feel fake.
+    if (rounded === 1) return 'In 1 mile';
     return `In ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} miles`;
   }
   if (mi >= 0.4) return 'In half a mile';
+  // 0.2-0.4 mi read as feet ("in 1,600 feet") is a number nobody pictures.
+  if (mi >= 0.2) return 'In a quarter mile';
   return `In ${Math.round((mi * 5280) / 100) * 100} feet`;
 }
 
@@ -231,20 +348,49 @@ export function createManeuverAnnouncer(): ManeuverAnnouncer {
           : null;
       if (chained) fired.add(`${maneuverKey(chained)}:prepare`);
 
+      /*
+       * AT MOST ONE announcement per tick, and it is the NEAREST tier that
+       * has come due.
+       *
+       * The previous policy emitted every due-and-unfired tier in the same
+       * call. Whenever the announcer met a maneuver already inside a closer
+       * threshold — every reroute (fresh announcer), a trip started near a
+       * turn, GPS resuming after a tunnel — the driver got two or three
+       * near-identical sentences back to back:
+       *
+       *   "In half a mile, turn right onto Highway 92."
+       *   "In 500 feet, turn right onto Highway 92."
+       *   "Turn right onto Highway 92."
+       *
+       * TIER_ORDER runs far → near, so the last match is the most urgent.
+       */
+      let due: ManeuverTier | null = null;
       for (const tier of TIER_ORDER) {
         const flag = `${key}:${tier}`;
         if (fired.has(flag)) continue;
         if (view.distanceMi > tierThresholdMi(tier, speedMph)) continue;
-        fired.add(flag);
-        const body = chained
-          ? `${next.instruction}, then ${chained.instruction}`
-          : next.instruction;
-        out.push({
-          id: `maneuver:${flag}`,
-          priority: 'normal',
-          text: tier === 'execute' ? body : `${distanceText(view.distanceMi)}, ${body}`,
-        });
+        due = tier;
       }
+      if (due === null) return out;
+
+      // Everything farther than the tier we are about to speak is now
+      // obsolete — announcing "in two miles" to a driver 300 feet from the
+      // turn is worse than saying nothing. Burn those flags silently.
+      for (const tier of TIER_ORDER) {
+        fired.add(`${key}:${tier}`);
+        if (tier === due) break;
+      }
+
+      const body = chained ? `${next.instruction}, then ${chained.instruction}` : next.instruction;
+      out.push({
+        id: `maneuver:${key}:${due}`,
+        priority: 'normal',
+        // One group for every maneuver line: a newer stage evicts an older
+        // stage still waiting in the queue, and a critical line waits for
+        // it rather than cutting the turn in half.
+        group: MANEUVER_GROUP,
+        text: due === 'execute' ? body : `${distanceText(view.distanceMi)}, ${body}`,
+      });
       return out;
     },
   };
