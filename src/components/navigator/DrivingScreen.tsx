@@ -224,9 +224,19 @@ export function DrivingScreenView({
       'landscape:grid-rows-[auto_auto_auto_1fr] landscape:items-start'
     : 'space-y-6';
   const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
+  // The map is pinned to the VIEWPORT in landscape, not to the grid. It
+  // used to be `h-full`, which is 100% of the grid — and the grid's three
+  // auto rows are the left column's content, which on a 320 px-tall phone
+  // on its side needs about 500 px. Measured in Chromium at 568x320: the
+  // grid ran to 510 px, the map with it, and 190 px of the map — the edge
+  // its own Recenter and zoom controls sit on — was below the fold before
+  // the driver touched anything. Sizing off the viewport makes the map
+  // exactly as tall as the screen no matter what the left column does.
+  // (`p-2` is 0.5rem top and bottom, hence the 1rem.)
   const mapWrapCls = fullScreen
     ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line ' +
-      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 landscape:h-full landscape:min-h-0'
+      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 ' +
+      'landscape:h-[calc(100dvh-1rem)] landscape:min-h-0'
     : '';
 
   return (
