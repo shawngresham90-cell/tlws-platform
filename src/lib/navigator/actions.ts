@@ -26,8 +26,19 @@ export type UIAction =
   | 'open-deep-settings'
   | 'view-trip-summary'
   // --- driving-map affordances (map-first milestone) ------------------
-  /** Free pan/zoom browsing of the map away from the truck. */
-  | 'browse-map'
+  /**
+   * Changing the map's zoom level — pinch, or the +/- buttons. Owner
+   * decision (road test): allowed WHILE MOVING. Zooming out to see what is
+   * coming is reading the road, and it does not take the camera off the
+   * truck — follow mode survives it.
+   */
+  | 'zoom-map'
+  /**
+   * Dragging the camera away from the truck. Stationary only: this is the
+   * attention sink doc 06 locks, because the driver ends up looking at
+   * somewhere they are not.
+   */
+  | 'pan-map'
   /** Whole-route overview: takes the camera off the truck. */
   | 'route-overview'
   /** Switching basemap style (standard/satellite). */
@@ -48,11 +59,14 @@ export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
   'browse-directory': false,
   'open-deep-settings': false,
   'view-trip-summary': false,
-  // Map browsing is exactly the kind of attention sink doc 06 locks: the
-  // camera follows the truck while moving, and Recenter (part of
-  // 'view-status') stays one touch away. Overview and style switching are
-  // deliberate, two-handed decisions — stationary only.
-  'browse-map': false,
+  // Zoom and pan were one permission ('browse-map', stationary-only) until
+  // the owner's road test split them. Zooming out for road context keeps
+  // the camera on the truck, so it rides along with driving; dragging the
+  // camera somewhere else does not, and stays locked. Recenter (part of
+  // 'view-status') remains one touch away either way. Overview and style
+  // switching are deliberate, two-handed decisions — stationary only.
+  'zoom-map': true,
+  'pan-map': false,
   'route-overview': false,
   'change-map-style': false,
 };
