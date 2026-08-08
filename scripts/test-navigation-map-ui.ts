@@ -24,6 +24,7 @@ import {
   shouldTrackPosition,
   INITIAL_FOLLOW_STATE,
   AUTO_RECENTER_MS,
+  followZoom,
   type FollowState,
 } from '@/lib/navigator/map-follow';
 import {
@@ -320,8 +321,12 @@ const T0 = 1_754_000_000_000;
     screen.includes('aria-label="Show the whole route, then return to your truck"'),
   );
   check(
-    '11. pinch/drag are real Leaflet handlers, toggled as a group',
-    map.includes('map.dragging') && map.includes('map.touchZoom') && map.includes('h.enable()'),
+    '11. pinch and drag are real Leaflet handlers, gated SEPARATELY',
+    map.includes('map.touchZoom') &&
+      map.includes('map.dragging.enable()') &&
+      map.includes('map.dragging.disable()') &&
+      map.includes('if (canZoom)') &&
+      map.includes('if (canPan)'),
   );
   check('11. controls meet the Navigator touch minimum', map.includes('min-h-16 min-w-16'));
 }
@@ -388,11 +393,71 @@ const T0 = 1_754_000_000_000;
   );
 }
 
+/* ============ 16b. zoom while moving does not detach the camera ==========
+ *
+ * Owner decision: a driver may zoom out for road context WITHOUT the map
+ * letting go of the truck. The trap this guards is subtle — without a
+ * remembered zoom, the very next GPS fix calls setView with the
+ * speed-derived navigation zoom and silently undoes the gesture a second
+ * later. That is the map fighting the driver, which is the complaint.
+ */
+{
+  const z = followReducer(INITIAL_FOLLOW_STATE, { kind: 'user-zoomed', zoom: 11 });
+  check('16b. zooming keeps follow mode', z.mode === 'following');
+  check('16b. zooming shows no Recenter prompt', !recenterVisible(z));
+  check('16b. the camera still tracks the truck', shouldTrackPosition(z));
+  check('16b. the driver zoom is remembered', z.zoomOverride === 11);
+  check('16b. and it wins over the speed zoom', followZoom(z, 16) === 11);
+  check(
+    '16b. with no override the speed zoom is used',
+    followZoom(INITIAL_FOLLOW_STATE, 16) === 16,
+  );
+  check(
+    '16b. zooming never starts the auto-recenter timer',
+    z.detachedAtMs === null && !shouldAutoRecenter(z, T0 + AUTO_RECENTER_MS * 10),
+  );
+  const rec = followReducer(z, { kind: 'recenter' });
+  check(
+    '16b. Recenter restores the navigation zoom',
+    rec.zoomOverride === null && followZoom(rec, 16) === 16,
+  );
+  const replaced = followReducer(z, { kind: 'route-replaced' });
+  check('16b. a replacement route also restores it', replaced.zoomOverride === null);
+  // Panning is a different intent and still detaches, but the driver's zoom
+  // rides along until they recenter.
+  const panned2 = followReducer(z, { kind: 'user-panned', tMs: T0 });
+  check(
+    '16b. panning still detaches, keeping the chosen zoom',
+    panned2.mode === 'detached' && panned2.zoomOverride === 11,
+  );
+  check(
+    '16b. zooming while detached does not silently re-attach',
+    followReducer(panned2, { kind: 'user-zoomed', zoom: 9 }).mode === 'detached',
+  );
+}
+
 // ====================== 17. moving-state safety ==========================
 {
+  /*
+   * OWNER DECISION (road test): the single 'browse-map' permission split
+   * into zoom and pan. Zooming out for road context keeps the camera on the
+   * truck, so it is allowed while moving; dragging the camera somewhere the
+   * truck is not remains the attention sink doc 06 locks.
+   *
+   * The property the old single assertion protected — free map BROWSING is
+   * not available while moving — is preserved by the pan half.
+   */
   check(
-    '17. free map browsing is a mapped action, stationary-only',
-    ACTION_PERMISSIONS['browse-map'] === false && !allowedWhileMoving('browse-map'),
+    '17. panning the camera off the truck is stationary-only',
+    ACTION_PERMISSIONS['pan-map'] === false && !allowedWhileMoving('pan-map'),
+  );
+  check(
+    '17. zoom is a mapped action, allowed while moving',
+    ACTION_PERMISSIONS['zoom-map'] === true && allowedWhileMoving('zoom-map'),
+  );
+  check(
+    '17. zoom and pan are separate permissions, not one',
+    ACTION_PERMISSIONS['zoom-map'] !== ACTION_PERMISSIONS['pan-map'],
   );
   check(
     '17. route overview is stationary-only',
@@ -414,7 +479,8 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '17. gating comes from the shared lock, not a local speed check',
-    screen.includes("permits('browse-map')") &&
+    screen.includes("permits('zoom-map')") &&
+      screen.includes("permits('pan-map')") &&
       !/speedMph\s*[<>]=?\s*\d/.test(map) &&
       !/speedMph\s*[<>]=?\s*\d/.test(screen),
   );

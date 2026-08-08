@@ -602,7 +602,8 @@ export function DrivingScreen() {
             nextManeuver={mapData.nextManeuver}
             routeId={mapData.routeId}
             styleId={styleId}
-            canBrowse={permits('browse-map')}
+            canZoom={permits('zoom-map')}
+            canPan={permits('pan-map')}
             navigating={fullScreen}
             overviewToggleKey={overviewToggleKey}
           />
