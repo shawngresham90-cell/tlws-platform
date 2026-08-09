@@ -26,6 +26,8 @@
  */
 
 import { redactCoordinates, type PilotLogEntry, type PilotMode } from './pilot-mode';
+import { buildIdLines, type BuildId } from './build-id';
+import { problemReportLines, type ProblemReport } from './problem-report';
 import type { TripSummary } from './arrival-controller';
 import type { VoiceSnapshot } from './voice-guidance';
 import type { WakeSnapshot } from './screen-wake';
@@ -51,6 +53,12 @@ export function scrub(text: string): string {
 export type RoadTestInput = {
   /** When the report was made. Supplied — this module reads no clock. */
   generatedMs: number;
+  /**
+   * Which build this happened on. Required, not optional: a report that
+   * cannot name its build is a story, and an optional field is one
+   * forgetful call site away from producing one.
+   */
+  build: BuildId;
   pilot: PilotMode;
   lifecycleState: string;
   /** Trip summary when one completed; null while a trip is live. */
@@ -74,6 +82,8 @@ export type RoadTestInput = {
   };
   /** Whatever the driver typed. Scrubbed like everything else. */
   note?: string | null;
+  /** Set when the driver reported a specific problem rather than a note. */
+  problem?: ProblemReport | null;
 };
 
 function offset(tMs: number, baseMs: number): string {
@@ -101,6 +111,17 @@ export function buildRoadTestReport(input: RoadTestInput): string {
   out.push(line('Pilot mode', input.pilot.active ? 'active' : `inactive (${input.pilot.reason})`));
   out.push(line('Lifecycle state', input.lifecycleState));
   out.push('');
+
+  // Directly under the header, before anything else: the first question
+  // asked of any report is "which build?", and it should not need scrolling.
+  out.push('BUILD');
+  for (const l of buildIdLines(input.build)) out.push(l);
+  out.push('');
+
+  if (input.problem != null) {
+    for (const l of problemReportLines(input.problem)) out.push(l);
+    out.push('');
+  }
 
   out.push('TRIP');
   if (input.trip === null) {

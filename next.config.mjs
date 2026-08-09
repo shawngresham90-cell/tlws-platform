@@ -2,6 +2,22 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  /*
+   * Pilot build identification. Netlify already injects COMMIT_REF and
+   * CONTEXT into the build environment; this only forwards them under
+   * NEXT_PUBLIC_ names so the client bundle can name the build a driver
+   * is running. No Netlify configuration changes, and the list is a
+   * whitelist of three non-sensitive values — never a spread of env.
+   *
+   * These are inputs, not output: `resolveBuildId` re-derives everything
+   * shown on screen through its own shape checks, so a mis-set variable
+   * renders as 'unknown' rather than being printed.
+   */
+  env: {
+    NEXT_PUBLIC_BUILD_COMMIT: process.env.COMMIT_REF ?? '',
+    NEXT_PUBLIC_BUILD_CONTEXT: process.env.CONTEXT ?? '',
+    NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.supabase.co' },

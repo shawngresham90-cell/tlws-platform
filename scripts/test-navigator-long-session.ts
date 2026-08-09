@@ -22,6 +22,7 @@ import { createScreenWake, type WakePort, type WakeSentinel } from '@/lib/naviga
 import { createVoiceGuidance, createManeuverAnnouncer } from '@/lib/navigator/voice-guidance';
 import type { SpeechPort } from '@/lib/navigator/voice-guidance';
 import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
+import { resolveBuildId } from '@/lib/navigator/build-id';
 import { createPilotLog, PILOT_LOG_MAX_ENTRIES } from '@/lib/navigator/pilot-mode';
 import { offlineNotice } from '@/lib/navigator/network-status';
 
@@ -161,6 +162,7 @@ async function main(): Promise<void> {
     // The report is built on demand, and a driver may build it repeatedly.
     const base = {
       generatedMs: T0 + 10 * HOUR,
+      build: resolveBuildId({ commitRef: '0123456789abcdef', context: 'deploy-preview' }),
       pilot: Object.freeze({ active: true, debugLogging: true, reason: 'pilot' as const }),
       lifecycleState: 'navigating',
       trip: null,

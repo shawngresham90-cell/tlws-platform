@@ -24,12 +24,15 @@ import {
   type ManeuverAnnouncer,
   type VoiceGuidance,
 } from '@/lib/navigator/voice-guidance';
+import { createDriverPhraseAnnouncer } from '@/lib/navigator/driver-greeting';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
 import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
+import { resolveBuildId } from '@/lib/navigator/build-id';
+import type { ProblemReport } from '@/lib/navigator/problem-report';
 import { offlineNotice } from '@/lib/navigator/network-status';
 import { createBrowserWakePort } from './wake-lock-port';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
@@ -57,6 +60,19 @@ import { VoiceControls } from './VoiceControls';
  */
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
+
+/*
+ * The running build, resolved once at module scope: these three values are
+ * inlined at build time by next.config, so they are constants for the life
+ * of the bundle and re-deriving them per render would be pure waste.
+ * `resolveBuildId` whitelists each one, so a mis-set variable renders as
+ * 'unknown' rather than reaching the screen or a report.
+ */
+const buildId = resolveBuildId({
+  commitRef: process.env.NEXT_PUBLIC_BUILD_COMMIT,
+  context: process.env.NEXT_PUBLIC_BUILD_CONTEXT,
+  builtAtIso: process.env.NEXT_PUBLIC_BUILD_TIME,
+});
 
 /**
  * States where guidance is genuinely live, and the screen becomes the
@@ -98,6 +114,7 @@ export function DrivingScreenView({
   overviewSlot = null,
   mapStyleSlot = null,
   offlineText = null,
+  onVoiceMutedChange,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -131,6 +148,8 @@ export function DrivingScreenView({
   mapStyleSlot?: ReactNode;
   /** Offline notice in navigation's terms; null when online or unknown. */
   offlineText?: string | null;
+  /** Driver turned voice on or off — see VoiceControls.onMutedChange. */
+  onVoiceMutedChange?: (muted: boolean) => void;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -383,7 +402,11 @@ export function DrivingScreenView({
           {fullScreen ? overviewSlot : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute">
-              <VoiceControls voice={voice} compact={fullScreen} />
+              <VoiceControls
+                voice={voice}
+                compact={fullScreen}
+                onMutedChange={onVoiceMutedChange}
+              />
             </LockGate>
           ) : null}
           <LockGate action="stop-navigation" lockedLabel="Stop navigation">
@@ -502,8 +525,33 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   }
   const maneuverAnnouncerRef = useRef<ManeuverAnnouncer>(createManeuverAnnouncer());
   const statusAnnouncerRef = useRef(createStatusAnnouncer());
+  const driverPhraseAnnouncerRef = useRef(createDriverPhraseAnnouncer());
   const spokenRouteIdRef = useRef<string | null>(null);
   const prevLcStateRef = useRef<LifecycleState>('idle');
+
+  /*
+   * The driver's first name. Ephemeral by owner decision: React state on
+   * the mounted screen, and nothing else — no localStorage, no
+   * sessionStorage, no cookie, no profile, no database row. A full reload
+   * loses it and the driver types it again.
+   *
+   * It exists to be SPOKEN. It is never put in a provider request, a
+   * routing URL, a diagnostic payload, the pilot log, or the road-test
+   * report — `buildReport` below is assembled without it, so there is no
+   * path from this state to anything that leaves the device.
+   */
+  const [firstName, setFirstName] = useState<string | null>(null);
+
+  /*
+   * Whether the driver has voice ON, mirrored from VoiceControls.
+   *
+   * The mute flag itself lives in the guidance module, which is not a
+   * React value — nothing re-renders when it changes. This mirror exists
+   * so the voice effect below can (a) re-run at the moment voice becomes
+   * usable and (b) refuse to offer a personalized line into a speaker
+   * that cannot make a sound. Voice starts muted, so this starts false.
+   */
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
 
   // One lifecycle tick per gated position update. GpsProvider re-renders
   // every second while a watch is active, so cadence rides that tick; the
@@ -590,7 +638,64 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         voice.request(req);
       }
     }
-  }, [view, lifecycle]);
+
+    /*
+     * The two personal lines, LAST in the tick and on purpose.
+     *
+     * Both are `passive`, which the guidance module drops outright when
+     * anything is speaking or queued — so asking after every other
+     * announcer has had its turn means a maneuver, an HOS warning, a
+     * status degradation or a completion line always claims the speaker
+     * first, within this tick and not merely on average. A dropped
+     * greeting is dropped, never queued behind the turn it lost to.
+     *
+     * Nothing is offered until the driver has actually turned voice on.
+     * That is not politeness — it is the mobile Safari contract: the
+     * FIRST utterance of a session must come from a real user gesture,
+     * and the one this app has is the Enable voice button, which speaks
+     * its own confirmation from inside the click handler. Offering into a
+     * muted engine produces `dropped-muted`, which the announcer
+     * deliberately does not treat as settled, so the line survives until
+     * the speaker genuinely exists.
+     *
+     * Every outcome is reported back. A phrase retires when the guidance
+     * module says it reached the driver — never merely because it was
+     * once offered.
+     *
+     * The local hour is read HERE, at the component edge, because the
+     * pure core may not read a clock; `getGreetingPeriod` takes the
+     * number. `getHours()` is the driver's own device zone, which is the
+     * time of day they are actually living in.
+     */
+    if (voiceEnabled) {
+      const announcer = driverPhraseAnnouncerRef.current;
+      for (const req of announcer.collect({
+        firstName,
+        localHour: new Date(Date.now()).getHours(),
+        lifecycleState: lcState,
+      })) {
+        announcer.note(req.id, voice.request(req));
+      }
+    }
+    /*
+     * `lcState` and `position` are the cadence, and their absence was the
+     * bug this list is fixing.
+     *
+     * `view` is NOT a cadence before a trip starts: the lifecycle's tick
+     * is inert outside an active trip and hands back the frozen
+     * NO_ROUTE_VIEW constant every time, so keyed on `view` alone this
+     * effect ran ONCE in the entire pre-navigation window — at the render
+     * that set the driver's name, while voice was still muted. The
+     * route-start phrase was never offered at all, because reaching
+     * `route-ready` changes neither `view` nor any other dependency here.
+     *
+     * `lcState` makes reaching `route-ready` an event. `position` restores
+     * the once-a-second cadence this effect's own comments already assumed
+     * it had — the same cadence the stuck-utterance watchdog needs, and
+     * the retry that lets a greeting land after the enable confirmation
+     * finishes. `voiceEnabled` makes turning voice on an event.
+     */
+  }, [view, lcState, position, voiceEnabled, lifecycle, firstName]);
 
   /*
    * Network. `navigator.onLine` is optimistic — false is reliable, true
@@ -683,9 +788,10 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * every privacy rail; nothing is pre-filtered on the way in, so a new
    * field can never be added that quietly skips the scrubber.
    */
-  const buildReport = (note: string): string =>
+  const buildReport = (input: { note: string; problem: ProblemReport | null }): string =>
     buildRoadTestReport({
       generatedMs: Date.now(),
+      build: buildId,
       pilot,
       lifecycleState: lcState,
       trip: lifecycle.summary(),
@@ -706,7 +812,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             : { width: window.innerWidth, height: window.innerHeight },
         online: typeof navigator === 'undefined' ? null : navigator.onLine,
       },
-      note,
+      note: input.note,
+      problem: input.problem,
     });
 
   // Map-first surface only while guidance is genuinely live; every other
@@ -786,6 +893,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         bump();
       }}
       voice={voiceRef.current}
+      onVoiceMutedChange={(muted) => setVoiceEnabled(!muted)}
       lifecycleLine={
         pilot.active && lcState !== 'idle'
           ? `Pilot trip state: ${lcState.replace(/-/g, ' ')}`
@@ -798,6 +906,9 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             fix={position.fix}
             debugLog={pilot.debugLogging ? logRef.current : null}
             buildReport={buildReport}
+            build={buildId}
+            firstName={firstName}
+            onFirstName={setFirstName}
             onChanged={bump}
           />
         ) : null
