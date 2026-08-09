@@ -29,6 +29,7 @@ export const VOICE_ENABLED_CONFIRMATION = 'Voice guidance on.';
 export function VoiceControls({
   voice,
   compact = false,
+  onMutedChange,
 }: {
   voice: VoiceGuidance;
   /**
@@ -38,6 +39,21 @@ export function VoiceControls({
    * still carried in the words plus aria-pressed, never in color.
    */
   compact?: boolean;
+  /**
+   * Fired when the driver turns voice on or off.
+   *
+   * The mute flag lives inside the guidance module, which is not a React
+   * value — so a screen that needs to REACT to voice becoming available
+   * has no way to know it happened. Without this, enabling voice re-renders
+   * this button and nothing else, and any effect waiting for a working
+   * speaker waits forever. That is exactly what silenced the personalized
+   * greeting on a real phone.
+   *
+   * This click is also the gesture that unlocks `speechSynthesis` on
+   * mobile Safari, so "voice just became usable" and "the engine is now
+   * unlocked" are the same instant, and this is where both are announced.
+   */
+  onMutedChange?: (muted: boolean) => void;
 }) {
   const [muted, setMuted] = useState(() => voice.snapshot().muted);
   // Announce-once means the confirmation needs a fresh id every time, so
@@ -72,9 +88,14 @@ export function VoiceControls({
             priority: 'normal',
             text: VOICE_ENABLED_CONFIRMATION,
           });
+          // After the confirmation is requested, so a listener that reacts
+          // by offering a passive line finds the speaker already claimed
+          // and is dropped rather than racing the confirmation.
+          onMutedChange?.(false);
         } else {
           voice.mute();
           setMuted(true);
+          onMutedChange?.(true);
         }
       }}
       className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
