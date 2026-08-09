@@ -20,6 +20,7 @@ import {
   createManeuverAnnouncer,
   createStatusAnnouncer,
   createVoiceGuidance,
+  rerouteVoiceRequest,
   tripVoiceRequest,
   type ManeuverAnnouncer,
   type VoiceGuidance,
@@ -114,6 +115,7 @@ export function DrivingScreenView({
   overviewSlot = null,
   mapStyleSlot = null,
   offlineText = null,
+  offRouteText = null,
   onVoiceMutedChange,
 }: {
   view: DrivingView;
@@ -148,6 +150,11 @@ export function DrivingScreenView({
   mapStyleSlot?: ReactNode;
   /** Offline notice in navigation's terms; null when online or unknown. */
   offlineText?: string | null;
+  /**
+   * Off-route / rerouting state, in one short line. Null when on route.
+   * It never contains an instruction — see the driving screen's note.
+   */
+  offRouteText?: string | null;
   /** Driver turned voice on or off — see VoiceControls.onMutedChange. */
   onVoiceMutedChange?: (muted: boolean) => void;
 }) {
@@ -323,6 +330,31 @@ export function DrivingScreenView({
     <div className={shellCls}>
       <div className={surfaceCls}>
         <div className={colOne}>{maneuverCard}</div>
+
+        {/* Off route. Sits directly under the maneuver card because it is
+            the reason that card may no longer apply. Deliberately a
+            STATE, never an instruction: the app has no verified
+            truck-turnaround data, so it never says which way to go. */}
+        {/*
+            Deliberately NOT a live region. The driving surface budgets
+            polite regions at three (navigation-map-ui §22) precisely so
+            they stay worth hearing, and this state's assistive channel is
+            VOICE — "You're off route. Rerouting." is announced once per
+            departure through the existing arbitration. A fourth region
+            saying the same thing a beat later is the sprinkling that
+            budget exists to prevent.
+        */}
+        {offRouteText ? (
+          <p
+            className={
+              fullScreen
+                ? `${colOne} shrink-0 rounded-card border border-line bg-asphalt/95 px-3 py-1 text-base font-semibold text-ink`
+                : 'rounded-card border border-line px-3 py-2 text-xl font-semibold text-ink'
+            }
+          >
+            {offRouteText}
+          </p>
+        ) : null}
 
         {/* The map: the driving surface's primary element, and the one
             component that must survive the layout switch untouched. */}
@@ -553,6 +585,18 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    */
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
+  /*
+   * Off-route episodes, and whether the app is currently holding out for a
+   * replacement that does not require an unverified turnaround.
+   *
+   * The episode number is what makes "say it once" mean once PER DEPARTURE
+   * rather than once per trip: a driver who leaves the route, recovers, and
+   * leaves again is told both times. It rides in the voice id, so the
+   * existing announce-once ledger does the enforcing.
+   */
+  const offRouteEpisodeRef = useRef(0);
+  const [awaitingSafeReroute, setAwaitingSafeReroute] = useState(false);
+
   // One lifecycle tick per gated position update. GpsProvider re-renders
   // every second while a watch is active, so cadence rides that tick; the
   // lifecycle is reference-idempotent against double renders.
@@ -566,7 +610,15 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     if (lcState !== 'off-route') return;
     const accuracyM =
       position.fix !== null && Number.isFinite(position.accuracyM) ? position.accuracyM : null;
-    void lifecycle.requestReroute(Date.now(), accuracyM).then(bump);
+    void lifecycle.requestReroute(Date.now(), accuracyM).then((result) => {
+      // A VALID route we refuse to drive: its first move opposed the way
+      // the truck is pointed. Say so, show so, and keep going forward —
+      // the current route context stands and a later attempt may find a
+      // path that starts in the truck's actual direction.
+      if (result.outcome === 'unsafe-reversal') setAwaitingSafeReroute(true);
+      else if (result.outcome === 'replaced') setAwaitingSafeReroute(false);
+      bump();
+    });
   }, [lcState, position, lifecycle]);
 
   // Voice reacts to the lifecycle, in a fixed order per tick:
@@ -611,6 +663,29 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       }
     }
 
+    /*
+     * OFF ROUTE — the sentence the road test found missing.
+     *
+     * A new episode begins on the transition INTO off-route, never on a
+     * tick while already there, so the driver is told once per departure
+     * and not once a second. Recovery closes the episode, so a second
+     * departure later is a new event and is announced again.
+     *
+     * `normal` priority: it queues behind a maneuver rather than cutting
+     * one in half. A driver mid-turn needs the turn; this line is still
+     * true two seconds later.
+     */
+    if (snap.state === 'off-route' && prev !== 'off-route' && prev !== 'rerouting') {
+      offRouteEpisodeRef.current += 1;
+      voice.request(
+        rerouteVoiceRequest({ kind: 'off-route', episode: offRouteEpisodeRef.current }),
+      );
+    }
+    if (snap.state === 'navigating' && (prev === 'off-route' || prev === 'rerouting')) {
+      // Back on a route: the episode is over and any hold is released.
+      setAwaitingSafeReroute(false);
+    }
+
     // Trip end: no old maneuver speech after arrival — clear first, then
     // the one honest completion announcement (silence for cancellation).
     if (snap.state === 'arrived' && prev !== 'arrived' && snap.summary !== null) {
@@ -631,6 +706,22 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     // GPS truth is spoken whether or not a trip is loaded (denied /
     // unavailable / degraded / lost) — never silently stale.
     for (const req of statusAnnouncerRef.current.collect(view.status)) voice.request(req);
+
+    /*
+     * A valid replacement was refused for implying a turnaround this app
+     * cannot verify. The driver is told what is happening WITHOUT being
+     * told to turn around — no truck-suitable turnaround has been
+     * identified, and none can be with the data this app has. Same
+     * episode key, so it is said once per departure, not once a second.
+     */
+    if (awaitingSafeReroute) {
+      voice.request(
+        rerouteVoiceRequest({
+          kind: 'awaiting-safe-replacement',
+          episode: offRouteEpisodeRef.current,
+        }),
+      );
+    }
 
     // Maneuvers speak only while the trip is live.
     if (active && view.maneuvers !== null) {
@@ -695,7 +786,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
      * the retry that lets a greeting land after the enable confirmation
      * finishes. `voiceEnabled` makes turning voice on an event.
      */
-  }, [view, lcState, position, voiceEnabled, lifecycle, firstName]);
+  }, [view, lcState, position, voiceEnabled, awaitingSafeReroute, lifecycle, firstName]);
 
   /*
    * Network. `navigator.onLine` is optimistic — false is reliable, true
@@ -822,6 +913,22 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const [styleId, setStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE);
   const [overviewToggleKey, setOverviewToggleKey] = useState(0);
 
+  /*
+   * The off-route line. Two states, and NEITHER is an instruction.
+   *
+   * The road test's defect was guidance that implied a U-turn the app had
+   * not identified, could not verify, and would not have been able to for
+   * a 70-foot combination. So this says what is happening and nothing
+   * about which way to go: no turnaround is named here or anywhere else,
+   * because naming one from generic geometry is the hazard itself.
+   */
+  const offRouteText =
+    lcState === 'off-route' || lcState === 'rerouting'
+      ? awaitingSafeReroute
+        ? 'OFF ROUTE · Finding a truck-safe way back. Continue safely.'
+        : 'OFF ROUTE · Rerouting…'
+      : null;
+
   const roadName = roadNameFromInstruction(view.maneuvers?.next?.instruction ?? null);
   // The core stays clock-free: the component supplies both "now" and the
   // device's zone offset.
@@ -914,6 +1021,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         ) : null
       }
       offlineText={offlineNotice({ online, navigating: fullScreen })}
+      offRouteText={offRouteText}
       hosSourceLabel={
         tripLoaded
           ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'

@@ -25,6 +25,7 @@ import type { LatLng } from '@/lib/map/bounds';
 import type { RouteAvoidance } from '@/lib/trip-planner/providers';
 import { validateNavigatorTruckProfile } from './truck-validation';
 import { createRouteSession, type RouteSession } from './route-session';
+import { checkInitialReversal, IMPLICIT_REVERSAL } from './reversal-guard';
 import type { OffRouteState } from './off-route-detector';
 
 export type ReplacementRequest = {
@@ -71,6 +72,14 @@ export type RerouteRefusal =
 
 export type RerouteResult =
   | { outcome: 'replaced'; session: RouteSession }
+  /**
+   * A VALID replacement that was refused because its first actionable
+   * move opposes the truck's current direction of travel — an implicit,
+   * unverified turnaround. The current route is untouched and navigation
+   * continues; the caller keeps the driver moving forward and may try
+   * again once the cooldown lapses. See `reversal-guard`.
+   */
+  | { outcome: 'unsafe-reversal'; reason: typeof IMPLICIT_REVERSAL; relativeDeg: number | null }
   | { outcome: 'refused'; reason: RerouteRefusal; retryAtMs: number | null }
   | { outcome: 'rejected'; problems: { code: string; message: string }[] }
   | { outcome: 'provider-failure'; reason: string }
@@ -85,6 +94,8 @@ export type RerouteStats = {
   duplicatesSuppressed: number;
   successes: number;
   rejectedReplacements: number;
+  /** Valid routes refused for beginning with an implicit reversal. */
+  reversalsRefused: number;
   providerFailures: number;
   /**
    * Transport failures refunded to the budget — a request that never
@@ -104,6 +115,20 @@ export type RerouteControllerInput = {
   /** Position accuracy of the current fix, meters (null = unknown). */
   accuracyM: number | null;
   tMs: number;
+  /**
+   * The truck's CURRENT direction of travel and road speed.
+   *
+   * Not used to build the request — nothing here reaches the provider —
+   * but to judge the answer. A replacement whose first actionable move
+   * opposes the way the truck is already pointed implies a turnaround
+   * this app cannot verify is legal for a 70-foot combination, so it is
+   * never promoted to guidance. See `reversal-guard`.
+   *
+   * Optional so existing callers and fixtures keep compiling; absent
+   * heading simply means the guard cannot answer and says so.
+   */
+  headingDeg?: number | null;
+  speedMph?: number | null;
 };
 
 export type RerouteController = {
@@ -196,6 +221,7 @@ export function createRerouteController(
     duplicatesSuppressed: 0,
     successes: 0,
     rejectedReplacements: 0,
+    reversalsRefused: 0,
     providerFailures: 0,
     budgetRefunds: 0,
     staleDropped: 0,
@@ -307,6 +333,45 @@ export function createRerouteController(
       lastFailedKeyMs = input.tMs;
       failureCooldown(input.tMs);
       return { outcome: 'rejected', problems: created.problems };
+    }
+
+    /*
+     * The route is VALID and still may not be usable.
+     *
+     * Owner road test: westbound on 278, driver turns north onto Butler,
+     * provider returns a route whose first move is south on Butler. Valid
+     * geometry, correct destination, and an unannounced U-turn a truck
+     * has no verified place to make. Promoting that to turn guidance is
+     * the defect this guard exists to stop.
+     *
+     * Treated like a rejection for spend and cooldown — the call DID
+     * reach the provider, so it stays charged, and the escalating
+     * cooldown keeps a reversing provider from being hammered — but with
+     * its own outcome, because "we got a route and will not use it" is
+     * not the same fact as "the route was malformed", and the driver is
+     * told something different for each.
+     *
+     * The current session is untouched. The truck keeps its existing
+     * route context and keeps moving forward while a later attempt looks
+     * for a path that starts the way the truck is already going.
+     */
+    const reversal = checkInitialReversal({
+      position: input.currentPosition,
+      headingDeg: input.headingDeg ?? null,
+      speedMph: input.speedMph ?? null,
+      accuracyM: input.accuracyM,
+      geometry: created.session.geometry.map((g) => g.position),
+    });
+    if (reversal.reversal) {
+      stats.reversalsRefused += 1;
+      lastFailedKey = key;
+      lastFailedKeyMs = input.tMs;
+      failureCooldown(input.tMs);
+      return {
+        outcome: 'unsafe-reversal',
+        reason: IMPLICIT_REVERSAL,
+        relativeDeg: reversal.relativeDeg,
+      };
     }
 
     // Success: swap the session, bump the epoch, reset the ladder.
