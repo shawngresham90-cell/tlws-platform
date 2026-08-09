@@ -32,6 +32,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import {
   createDriverPhraseAnnouncer,
+  type DriverPhraseAnnouncer,
   getGreetingPeriod,
   greetingText,
   greetingVoiceRequest,
@@ -47,6 +48,7 @@ import {
   createHosAnnouncer,
   MANEUVER_GROUP,
   type SpeechPort,
+  type VoiceGuidance,
   type VoiceRequest,
 } from '@/lib/navigator/voice-guidance';
 import {
@@ -66,6 +68,7 @@ import type { PositionState } from '@/lib/navigator/types';
 import type { LatLng } from '@/lib/map/bounds';
 import type { RemainingClocks, TruckProfile } from '@/lib/trip-planner/types';
 import { DriverNameEntry } from '@/components/navigator/DriverNameEntry';
+import { VOICE_ENABLED_CONFIRMATION } from '@/components/navigator/VoiceControls';
 
 let passed = 0;
 let failed = 0;
@@ -277,7 +280,7 @@ const ROUTE_SAID = "Here's your route, Shawn. Now let's get it!";
     'architecture: the personal phrases are requested AFTER the maneuver announcer',
     screen.indexOf('maneuverAnnouncerRef.current.collect') > 0 &&
       screen.indexOf('maneuverAnnouncerRef.current.collect') <
-        screen.indexOf('driverPhraseAnnouncerRef.current.collect'),
+        screen.indexOf('driverPhraseAnnouncerRef.current;'),
   );
 }
 
@@ -463,6 +466,19 @@ const routeStart = (): VoiceRequest => routeStartVoiceRequest(NAME)!;
 // =====================================================================
 // 4. THE ANNOUNCER WINDOW — renders, remounts, duplicate notifications
 // =====================================================================
+/**
+ * One component tick, exactly as DrivingScreen does it: collect what is
+ * eligible, request it, and report the OUTCOME back. Tests that skipped
+ * the report would pass while the shipped code silently gave up.
+ */
+function offer(
+  a: DriverPhraseAnnouncer,
+  v: VoiceGuidance,
+  input: { firstName: string | null; localHour: number | null; lifecycleState: LifecycleState },
+): void {
+  for (const r of a.collect(input)) a.note(r.id, v.request(r));
+}
+
 const at = (lifecycleState: LifecycleState) => ({
   firstName: NAME,
   localHour: HOUR,
@@ -475,11 +491,11 @@ const at = (lifecycleState: LifecycleState) => ({
   const v = createVoiceGuidance(f.port);
   const a = createDriverPhraseAnnouncer();
   for (let i = 0; i < 50; i++) {
-    for (const r of a.collect(at('idle'))) v.request(r);
+    offer(a, v, at('idle'));
     f.finish();
   }
   for (let i = 0; i < 50; i++) {
-    for (const r of a.collect(at('route-ready'))) v.request(r);
+    offer(a, v, at('route-ready'));
     f.finish();
   }
   check(
@@ -493,7 +509,7 @@ const at = (lifecycleState: LifecycleState) => ({
   const v = createVoiceGuidance(f.port);
   const a = createDriverPhraseAnnouncer();
   for (const s of ['idle', 'planning', 'route-ready', 'route-ready', 'route-ready'] as const) {
-    for (const r of a.collect(at(s))) v.request(r);
+    offer(a, v, at(s));
     f.finish();
   }
   check(
@@ -509,9 +525,9 @@ const at = (lifecycleState: LifecycleState) => ({
   const v = createVoiceGuidance(f.port);
   for (let mount = 0; mount < 3; mount++) {
     const a = createDriverPhraseAnnouncer();
-    for (const r of a.collect(at('idle'))) v.request(r);
+    offer(a, v, at('idle'));
     f.finish();
-    for (const r of a.collect(at('route-ready'))) v.request(r);
+    offer(a, v, at('route-ready'));
     f.finish();
   }
   check('announcer: three remounts still say each phrase once', f.spoken.length === 2, f.spoken);
@@ -583,7 +599,7 @@ const at = (lifecycleState: LifecycleState) => ({
     'planning',
     'route-ready',
   ] as const) {
-    for (const r of a.collect(at(s))) v.request(r);
+    offer(a, v, at(s));
     f.finish();
   }
   check(
@@ -734,9 +750,7 @@ function session() {
     spoken: f.spoken,
     /** One React tick: offer what is eligible, then let speech finish. */
     say(lifecycleState: LifecycleState) {
-      for (const r of a.collect({ firstName: NAME, localHour: HOUR, lifecycleState })) {
-        v.request(r);
-      }
+      offer(a, v, { firstName: NAME, localHour: HOUR, lifecycleState });
       f.finish();
     },
   };
@@ -903,6 +917,253 @@ async function main() {
       'route-start: a second planned route in the same session stays silent',
       s.spoken.filter((x) => x === ROUTE_SAID).length === 1,
       s.spoken,
+    );
+  }
+
+  // ===================================================================
+  // 5b. THE REAL-PHONE FAILURE (owner road test, PR #270)
+  //
+  // Nothing was spoken on a real phone: no greeting, no route-start line.
+  // The cause was NOT arbitration and NOT the ledger — it was that the
+  // effect offering these lines could not run.
+  //
+  //   `lifecycle.tick()` is INERT outside an active trip and hands back
+  //   the frozen NO_ROUTE_VIEW constant, so `view` is referentially
+  //   identical for the whole pre-navigation window. Keyed on `view`, the
+  //   effect ran exactly ONCE before a trip started — on the render that
+  //   set the name, while voice was still muted — and the route-start
+  //   phrase was never offered at all, because arriving at `route-ready`
+  //   changed no dependency.
+  //
+  // Both halves are pinned below: the announcer must survive an engine
+  // that could not speak, and the wiring must give it a cadence.
+  // ===================================================================
+
+  // (1)(2) A name entered while voice is MUTED must not consume anything.
+  {
+    const f = fakePort();
+    const v = createVoiceGuidance(f.port, { startMuted: true });
+    const a = createDriverPhraseAnnouncer();
+    const collected = a.collect(at('idle'));
+    check('phone(1): the greeting is offered even though voice is muted', collected.length === 1);
+    const outcome = v.request(collected[0]);
+    check('phone(1): a muted engine reports dropped-muted', outcome === 'dropped-muted', outcome);
+    a.note(collected[0].id, outcome);
+    check(
+      'phone(2): dropped-muted does NOT settle the greeting — it is offered again',
+      a.collect(at('idle')).some((r) => r.id === GREETING_VOICE_ID),
+      'the greeting was consumed by a speaker that never made a sound',
+    );
+    check('phone(2): and nothing was spoken', f.spoken.length === 0, f.spoken);
+  }
+
+  // (3)(4)(5) The real sequence: name while muted, then the Enable voice
+  // gesture (which speaks its own confirmation), then the greeting.
+  {
+    const f = fakePort();
+    const v = createVoiceGuidance(f.port, { startMuted: true });
+    const a = createDriverPhraseAnnouncer();
+
+    offer(a, v, at('idle')); // name entered, voice still off
+    check('phone(4): still silent while voice is off', f.spoken.length === 0, f.spoken);
+
+    // The Enable voice gesture: unmute, then the confirmation, exactly as
+    // VoiceControls does it from inside the click handler.
+    v.unmute();
+    const confirm = v.request({
+      id: 'voice-enabled:1',
+      priority: 'normal',
+      text: VOICE_ENABLED_CONFIRMATION,
+    });
+    check('phone(3): the enable gesture speaks its confirmation', confirm === 'spoken');
+
+    // The tick triggered by that gesture finds the speaker busy.
+    const duringConfirm = a.collect(at('idle'));
+    const busyOutcome = v.request(duringConfirm[0]);
+    a.note(duringConfirm[0].id, busyOutcome);
+    check(
+      'phone(5): the greeting loses to the confirmation and is DROPPED',
+      busyOutcome === 'dropped-passive-busy',
+      busyOutcome,
+    );
+    check(
+      'phone(5): dropped-passive-busy does not queue it behind the confirmation',
+      !v.snapshot().queuedIds.includes(GREETING_VOICE_ID),
+      v.snapshot().queuedIds,
+    );
+    check(
+      'phone(5): and the enable confirmation did NOT burn the greeting',
+      a.collect(at('idle')).some((r) => r.id === GREETING_VOICE_ID),
+    );
+
+    // The confirmation ends; the next ordinary tick lands the greeting.
+    f.finish();
+    offer(a, v, at('idle'));
+    check(
+      'phone(4): the greeting speaks once voice is genuinely available',
+      f.spoken.length === 2 && f.spoken[1] === GREETING_SAID,
+      f.spoken,
+    );
+    f.finish();
+
+    // And never again, no matter how many ticks follow.
+    for (let i = 0; i < 20; i++) offer(a, v, at('idle'));
+    check('phone(12): twenty further ticks stay silent', f.spoken.length === 2, f.spoken);
+  }
+
+  // (6)(7) The safety rules are untouched by any of the above.
+  {
+    for (const [label, blocker] of [
+      [
+        'maneuver',
+        {
+          id: 'maneuver:9:execute',
+          priority: 'normal',
+          group: MANEUVER_GROUP,
+          text: 'Turn right.',
+        },
+      ],
+      ['HOS', { id: 'hos:driving:critical', priority: 'critical', text: 'Driving limit in 20.' }],
+    ] as const) {
+      const f = fakePort();
+      const v = createVoiceGuidance(f.port);
+      const a = createDriverPhraseAnnouncer();
+      v.request(blocker as VoiceRequest);
+      const req = a.collect(at('idle'))[0];
+      const outcome = v.request(req);
+      a.note(req.id, outcome);
+      check(
+        `phone(6/7): ${label} speech still drops the greeting`,
+        outcome === 'dropped-passive-busy',
+        outcome,
+      );
+      check(
+        `phone(6/7): ${label} speech still never queues it`,
+        !v.snapshot().queuedIds.includes(GREETING_VOICE_ID),
+      );
+      f.finish();
+      check(
+        `phone(6/7): and no stale greeting trails the ${label} line`,
+        f.spoken.length === 1,
+        f.spoken,
+      );
+    }
+  }
+
+  // (9) A device with no speech engine at all must not be recorded as a
+  // success — the phrase is simply never delivered, and never consumed.
+  {
+    const silent: SpeechPort = { supported: false, speak: () => {}, cancel: () => {} };
+    const v = createVoiceGuidance(silent);
+    const a = createDriverPhraseAnnouncer();
+    const req = a.collect(at('route-ready'))[0];
+    const outcome = v.request(req);
+    check(
+      'phone(9): an unsupported engine reports dropped-unavailable',
+      outcome === 'dropped-unavailable',
+      outcome,
+    );
+    a.note(req.id, outcome);
+    check(
+      'phone(9): which does NOT falsely mark the phrase delivered',
+      a.collect(at('route-ready')).length > 0,
+      'an absent speech engine consumed the phrase',
+    );
+  }
+
+  // (8) Route-ready with voice genuinely on says it once.
+  {
+    const f = fakePort();
+    const v = createVoiceGuidance(f.port);
+    const a = createDriverPhraseAnnouncer();
+    for (let i = 0; i < 10; i++) {
+      offer(a, v, at('route-ready'));
+      f.finish();
+    }
+    check(
+      'phone(8): route-ready speaks greeting then route-start, once each',
+      f.spoken.length === 2 && f.spoken[0] === GREETING_SAID && f.spoken[1] === ROUTE_SAID,
+      f.spoken,
+    );
+  }
+
+  // (11) Once guidance begins, neither line can ever be produced again —
+  // including one that was never successfully spoken.
+  {
+    const f = fakePort();
+    const v = createVoiceGuidance(f.port, { startMuted: true });
+    const a = createDriverPhraseAnnouncer();
+    offer(a, v, at('idle')); // muted: nothing said, nothing consumed
+    offer(a, v, at('route-ready')); // still muted
+    check('phone(11): nothing was spoken while muted', f.spoken.length === 0, f.spoken);
+    v.unmute(); // the driver enables voice AFTER starting the trip
+    for (const s of ['navigating', 'off-route', 'rerouting', 'final-approach'] as const) {
+      for (let i = 0; i < 5; i++) offer(a, v, at(s));
+    }
+    check(
+      'phone(11): no stale greeting or route line replays during guidance',
+      f.spoken.length === 0,
+      f.spoken,
+    );
+  }
+
+  // (13) The ledger remains the announce-once authority: a fresh announcer
+  // (a remount) against a voice that already said the line is told so.
+  {
+    const f = fakePort();
+    const v = createVoiceGuidance(f.port);
+    offer(createDriverPhraseAnnouncer(), v, at('idle'));
+    f.finish();
+    const remounted = createDriverPhraseAnnouncer();
+    const req = remounted.collect(at('idle'))[0];
+    const outcome = v.request(req);
+    check('phone(13): the ledger reports the repeat', outcome === 'dropped-repeat', outcome);
+    remounted.note(req.id, outcome);
+    check(
+      'phone(13): and dropped-repeat DOES settle it (it was heard already)',
+      !remounted.collect(at('idle')).some((r) => r.id === GREETING_VOICE_ID),
+    );
+    check('phone(13): still only one greeting was ever spoken', f.spoken.length === 1, f.spoken);
+  }
+
+  // ---- The wiring itself. A static render cannot run an effect, so the
+  // dependency list that caused the failure is pinned by source.
+  {
+    const screen = strip(readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8'));
+    const depsAt = screen.indexOf('driverPhraseAnnouncerRef.current;');
+    check('wiring: the phrase-offering effect was found', depsAt > 0);
+    const closeAt = screen.indexOf('}, [', depsAt);
+    const deps = screen.slice(closeAt, screen.indexOf(']', closeAt) + 1);
+    for (const dep of ['lcState', 'position', 'voiceEnabled', 'firstName']) {
+      check(
+        `wiring: the voice effect depends on ${dep}`,
+        new RegExp(`\\b${dep}\\b`).test(deps),
+        deps,
+      );
+    }
+    check(
+      'wiring: outcomes are fed back to the announcer',
+      /\.note\(\s*req\.id\s*,\s*voice\.request\(req\)\s*\)/.test(screen),
+      'DrivingScreen offers phrases without reporting the outcome',
+    );
+    check(
+      'wiring: phrases are only offered once voice is genuinely enabled',
+      /if\s*\(voiceEnabled\)/.test(screen),
+    );
+    check(
+      'wiring: the enabled mirror starts false (voice starts muted)',
+      /useState\(false\)/.test(screen.slice(screen.indexOf('const [voiceEnabled'))),
+    );
+
+    const controls = strip(readFileSync('src/components/navigator/VoiceControls.tsx', 'utf8'));
+    check(
+      'wiring: VoiceControls reports the enable gesture',
+      /onMutedChange\?\.\(false\)/.test(controls) && /onMutedChange\?\.\(true\)/.test(controls),
+      'the mute control does not tell the screen voice became usable',
+    );
+    check(
+      'wiring: it reports AFTER requesting the confirmation, so a passive line loses the race',
+      controls.indexOf('VOICE_ENABLED_CONFIRMATION,') < controls.indexOf('onMutedChange?.(false)'),
     );
   }
 

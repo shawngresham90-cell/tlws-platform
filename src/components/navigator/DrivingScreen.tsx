@@ -114,6 +114,7 @@ export function DrivingScreenView({
   overviewSlot = null,
   mapStyleSlot = null,
   offlineText = null,
+  onVoiceMutedChange,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -147,6 +148,8 @@ export function DrivingScreenView({
   mapStyleSlot?: ReactNode;
   /** Offline notice in navigation's terms; null when online or unknown. */
   offlineText?: string | null;
+  /** Driver turned voice on or off — see VoiceControls.onMutedChange. */
+  onVoiceMutedChange?: (muted: boolean) => void;
 }) {
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
@@ -399,7 +402,11 @@ export function DrivingScreenView({
           {fullScreen ? overviewSlot : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute">
-              <VoiceControls voice={voice} compact={fullScreen} />
+              <VoiceControls
+                voice={voice}
+                compact={fullScreen}
+                onMutedChange={onVoiceMutedChange}
+              />
             </LockGate>
           ) : null}
           <LockGate action="stop-navigation" lockedLabel="Stop navigation">
@@ -535,6 +542,17 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    */
   const [firstName, setFirstName] = useState<string | null>(null);
 
+  /*
+   * Whether the driver has voice ON, mirrored from VoiceControls.
+   *
+   * The mute flag itself lives in the guidance module, which is not a
+   * React value — nothing re-renders when it changes. This mirror exists
+   * so the voice effect below can (a) re-run at the moment voice becomes
+   * usable and (b) refuse to offer a personalized line into a speaker
+   * that cannot make a sound. Voice starts muted, so this starts false.
+   */
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+
   // One lifecycle tick per gated position update. GpsProvider re-renders
   // every second while a watch is active, so cadence rides that tick; the
   // lifecycle is reference-idempotent against double renders.
@@ -631,19 +649,53 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
      * first, within this tick and not merely on average. A dropped
      * greeting is dropped, never queued behind the turn it lost to.
      *
+     * Nothing is offered until the driver has actually turned voice on.
+     * That is not politeness — it is the mobile Safari contract: the
+     * FIRST utterance of a session must come from a real user gesture,
+     * and the one this app has is the Enable voice button, which speaks
+     * its own confirmation from inside the click handler. Offering into a
+     * muted engine produces `dropped-muted`, which the announcer
+     * deliberately does not treat as settled, so the line survives until
+     * the speaker genuinely exists.
+     *
+     * Every outcome is reported back. A phrase retires when the guidance
+     * module says it reached the driver — never merely because it was
+     * once offered.
+     *
      * The local hour is read HERE, at the component edge, because the
      * pure core may not read a clock; `getGreetingPeriod` takes the
      * number. `getHours()` is the driver's own device zone, which is the
      * time of day they are actually living in.
      */
-    for (const req of driverPhraseAnnouncerRef.current.collect({
-      firstName,
-      localHour: new Date(Date.now()).getHours(),
-      lifecycleState: snap.state,
-    })) {
-      voice.request(req);
+    if (voiceEnabled) {
+      const announcer = driverPhraseAnnouncerRef.current;
+      for (const req of announcer.collect({
+        firstName,
+        localHour: new Date(Date.now()).getHours(),
+        lifecycleState: lcState,
+      })) {
+        announcer.note(req.id, voice.request(req));
+      }
     }
-  }, [view, lifecycle, firstName]);
+    /*
+     * `lcState` and `position` are the cadence, and their absence was the
+     * bug this list is fixing.
+     *
+     * `view` is NOT a cadence before a trip starts: the lifecycle's tick
+     * is inert outside an active trip and hands back the frozen
+     * NO_ROUTE_VIEW constant every time, so keyed on `view` alone this
+     * effect ran ONCE in the entire pre-navigation window — at the render
+     * that set the driver's name, while voice was still muted. The
+     * route-start phrase was never offered at all, because reaching
+     * `route-ready` changes neither `view` nor any other dependency here.
+     *
+     * `lcState` makes reaching `route-ready` an event. `position` restores
+     * the once-a-second cadence this effect's own comments already assumed
+     * it had — the same cadence the stuck-utterance watchdog needs, and
+     * the retry that lets a greeting land after the enable confirmation
+     * finishes. `voiceEnabled` makes turning voice on an event.
+     */
+  }, [view, lcState, position, voiceEnabled, lifecycle, firstName]);
 
   /*
    * Network. `navigator.onLine` is optimistic — false is reliable, true
@@ -841,6 +893,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         bump();
       }}
       voice={voiceRef.current}
+      onVoiceMutedChange={(muted) => setVoiceEnabled(!muted)}
       lifecycleLine={
         pilot.active && lcState !== 'idle'
           ? `Pilot trip state: ${lcState.replace(/-/g, ' ')}`

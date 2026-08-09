@@ -47,6 +47,13 @@
  *   construction: maneuver, reroute and arrival speech only exist once
  *   guidance is live, and by then the greeting can no longer be offered.
  *
+ *   "Offerable" is not "said". A phrase is retired only when the guidance
+ *   module reports that it actually reached the driver — see
+ *   SETTLING_OUTCOMES. The first version of this module had no such
+ *   feedback: it offered each phrase and assumed the offer landed. On a
+ *   real phone it did not, and there was nothing in the design that could
+ *   notice.
+ *
  * Why `route-ready` alone proves "this is the INITIAL route":
  *
  *   `LIFECYCLE_TRANSITIONS` admits exactly one edge into `route-ready`,
@@ -64,7 +71,7 @@
  */
 
 import type { LifecycleState } from './navigation-lifecycle';
-import type { VoiceRequest } from './voice-guidance';
+import type { VoiceOutcome, VoiceRequest } from './voice-guidance';
 
 /**
  * Long enough for the first names people actually have, short enough that
@@ -204,6 +211,41 @@ export type DriverPhraseInput = {
   lifecycleState: LifecycleState;
 };
 
+/**
+ * Outcomes that SETTLE a phrase — after one of these it is never offered
+ * again for the life of the session.
+ *
+ * This is the distinction the first cut of this feature got wrong, and it
+ * is why nothing was heard on a real phone. `VoiceOutcome` already names
+ * the two failures and they are not the same failure:
+ *
+ *   'dropped-muted' / 'dropped-unavailable'
+ *       The ENGINE could not speak — voice is off, or the device has no
+ *       speech at all. Nothing about the driver's situation has changed
+ *       and no audio was produced. Settling here means the greeting is
+ *       consumed by the fact that voice starts muted, which is every
+ *       session. NOT settled.
+ *
+ *   'dropped-passive-busy'
+ *       The phrase LOST to speech that outranks it. Also not settled —
+ *       but the only speech that can exist while a phrase is still
+ *       offerable is the voice-enable confirmation and GPS status, and
+ *       losing a race with "Voice guidance on." is not a reason to lose
+ *       the greeting for good. Staleness is prevented by the WINDOW, not
+ *       by this outcome: the greeting stops being offered the instant
+ *       guidance goes live, and the route-start phrase the instant the
+ *       machine leaves `route-ready`. Neither can ever be offered while
+ *       maneuver, reroute or arrival speech exists.
+ *
+ *   'spoken'          the driver heard it.
+ *   'dropped-repeat'  the guidance ledger already has this id — it was
+ *                     spoken earlier in this session.
+ *
+ * Announce-once itself still belongs entirely to the ledger inside
+ * `createVoiceGuidance`; this only decides when to stop asking.
+ */
+const SETTLING_OUTCOMES: readonly VoiceOutcome[] = ['spoken', 'dropped-repeat'];
+
 export type DriverPhraseAnnouncer = {
   /**
    * Requests that are still eligible this tick, in speaking order. Both
@@ -212,12 +254,21 @@ export type DriverPhraseAnnouncer = {
    * anything already speaking or queued drops them.
    */
   collect(input: DriverPhraseInput): VoiceRequest[];
+  /**
+   * Report what `VoiceGuidance.request` did with a collected request. The
+   * caller MUST do this for every request it collects — without it a
+   * phrase that was actually spoken would keep being offered, and one that
+   * was never speakable would be silently given up on.
+   */
+  note(id: string, outcome: VoiceOutcome): void;
 };
 
 export function createDriverPhraseAnnouncer(): DriverPhraseAnnouncer {
-  // Window state only — never a record of what was SAID. That belongs to
-  // the guidance ledger, which is the one place announce-once lives.
+  // Window state and settlement only — never a record of what was SAID.
+  // That belongs to the guidance ledger, the one place announce-once lives.
   let greetingWindowOpen = true;
+  let greetingSettled = false;
+  let routeStartSettled = false;
 
   return {
     collect(input: DriverPhraseInput): VoiceRequest[] {
@@ -230,7 +281,7 @@ export function createDriverPhraseAnnouncer(): DriverPhraseAnnouncer {
       if (greetingWindowOpen && !GREETING_STATES.includes(input.lifecycleState)) {
         greetingWindowOpen = false;
       }
-      if (greetingWindowOpen) {
+      if (greetingWindowOpen && !greetingSettled) {
         const req = greetingVoiceRequest(input.localHour, input.firstName);
         if (req !== null) out.push(req);
       }
@@ -240,12 +291,18 @@ export function createDriverPhraseAnnouncer(): DriverPhraseAnnouncer {
       // note. A reroute, a replacement route, a failed plan, a refused
       // route, a re-render and a repeated lifecycle notification all fail
       // this test or are absorbed by the ledger's stable id.
-      if (input.lifecycleState === 'route-ready') {
+      if (input.lifecycleState === 'route-ready' && !routeStartSettled) {
         const req = routeStartVoiceRequest(input.firstName);
         if (req !== null) out.push(req);
       }
 
       return out;
+    },
+
+    note(id: string, outcome: VoiceOutcome): void {
+      if (!SETTLING_OUTCOMES.includes(outcome)) return;
+      if (id === GREETING_VOICE_ID) greetingSettled = true;
+      else if (id === ROUTE_START_VOICE_ID) routeStartSettled = true;
     },
   };
 }
