@@ -15,6 +15,7 @@ import {
   type FollowState,
 } from '@/lib/navigator/map-follow';
 import { resolveMapStyle, type MapStyleId } from '@/lib/navigator/map-style';
+import { vehicleMarkerRotationDeg, vehicleMarkerSvg, VEHICLE_MARKER_PX } from './vehicle-marker';
 
 /**
  * The driving map (map-first milestone). Fills its container — the driving
@@ -242,7 +243,12 @@ export function NavigationMap({
 
     if (truckRef.current === null) {
       truckRef.current = L.marker([position.lat, position.lng], {
-        icon: L.divIcon({ className: '', html: '', iconSize: [36, 36], iconAnchor: [18, 18] }),
+        icon: L.divIcon({
+          className: '',
+          html: '',
+          iconSize: [VEHICLE_MARKER_PX, VEHICLE_MARKER_PX],
+          iconAnchor: [VEHICLE_MARKER_PX / 2, VEHICLE_MARKER_PX / 2],
+        }),
         interactive: false,
         zIndexOffset: 1000,
         title: 'Your truck',
@@ -253,14 +259,18 @@ export function NavigationMap({
     }
     const el = truckRef.current.getElement();
     if (el) {
-      el.textContent = '➤';
-      el.style.cssText +=
-        ';display:flex;align-items:center;justify-content:center;font-size:20px;color:#0f172a;' +
-        'background:#38bdf8;border:3px solid #f8fafc;border-radius:9999px;' +
-        'box-shadow:0 2px 6px rgba(0,0,0,.6);';
-      // Heading-up: the arrow points where the truck is going. The canvas
+      // Heading-up: the marker points where the truck is going. The canvas
       // itself stays north-up so road labels remain readable.
-      const rotate = headingDeg === null || !Number.isFinite(headingDeg) ? 0 : headingDeg - 90;
+      const rotate = vehicleMarkerRotationDeg(headingDeg);
+      // The branded TL marker replaces the generic blue arrow. Same box,
+      // same anchor, same rotation — only the artwork changed. The badge
+      // draws its own ring and body, so the circle/border/background that
+      // used to be CSS lives in the SVG now; the drop shadow stays here
+      // because it has to fall outside the artwork.
+      el.innerHTML = vehicleMarkerSvg(rotate);
+      el.style.cssText +=
+        ';display:flex;align-items:center;justify-content:center;' +
+        'filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));';
       el.style.transform += ` rotate(${rotate}deg)`;
     }
 
