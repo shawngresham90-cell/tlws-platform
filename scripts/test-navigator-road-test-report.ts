@@ -17,6 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { buildRoadTestReport, scrub, type RoadTestInput } from '@/lib/navigator/road-test-report';
 import type { PilotLogEntry } from '@/lib/navigator/pilot-mode';
+import { resolveBuildId } from '@/lib/navigator/build-id';
 
 let passed = 0;
 let failed = 0;
@@ -37,6 +38,11 @@ function entry(over: Partial<PilotLogEntry> & { tMs: number }): PilotLogEntry {
 function input(over: Partial<RoadTestInput> = {}): RoadTestInput {
   return {
     generatedMs: T0,
+    build: resolveBuildId({
+      commitRef: 'abc1234def5678',
+      context: 'deploy-preview',
+      builtAtIso: '2026-08-09T12:00:00.000Z',
+    }),
     pilot: Object.freeze({ active: true, debugLogging: true, reason: 'pilot' as const }),
     lifecycleState: 'navigating',
     trip: null,
@@ -213,7 +219,20 @@ function input(over: Partial<RoadTestInput> = {}): RoadTestInput {
   );
   check(
     'affordance: the driver can add their own account of what happened',
-    controls.includes('road-test-note') && controls.includes('What happened?'),
+    controls.includes('road-test-note') && controls.includes('Anything to add?'),
+  );
+  // The note became optional when the category picker landed: a triager
+  // reads the category first, and a driver at the end of a shift will tap
+  // a list long after they have stopped being willing to type. The note
+  // survives — this pins that it stayed OPTIONAL rather than becoming the
+  // only way to say anything.
+  check(
+    'affordance: the note is explicitly optional',
+    /Anything to add\?.*optional/s.test(controls),
+  );
+  check(
+    'affordance: and it is length-capped in the markup, not just in the model',
+    controls.includes('maxLength={MAX_NOTE_CHARS}'),
   );
   check(
     'wiring: the screen assembles the report from live session state',
