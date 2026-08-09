@@ -15,6 +15,7 @@ import {
   type ProblemReport,
 } from '@/lib/navigator/problem-report';
 import { DestinationSearch } from './DestinationSearch';
+import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
 
 /**
@@ -297,6 +298,7 @@ export function PilotTripControls({
           >
             Complete trip
           </button>
+          <PostTripFeedback />
         </div>
       ) : null}
 
@@ -312,6 +314,7 @@ export function PilotTripControls({
           >
             New trip
           </button>
+          <PostTripFeedback />
         </div>
       ) : null}
 
