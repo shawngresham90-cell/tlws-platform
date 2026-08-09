@@ -4,7 +4,7 @@ import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { DrivingScreen } from '@/components/navigator/DrivingScreen';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { requirePilotAccess } from '@/lib/navigator-api/pilot-session';
+import { isPilotAuthorized, requirePilotAccess } from '@/lib/navigator-api/pilot-session';
 
 /**
  * Navigator Phase 2A surface: the basic driving screen (N5, visual only)
@@ -35,6 +35,15 @@ export const metadata = buildMetadata({
 export default async function DrivePreviewPage() {
   if (!ENABLED) notFound();
   await requirePilotAccess('/drive');
+  /*
+   * requirePilotAccess has already redirected anyone unauthorized, so this
+   * is `true` by the time the page renders. It is read and passed anyway
+   * rather than assumed: the driving screen's pilot rail should depend on
+   * the server's actual verdict, not on the inference that reaching this
+   * line implies one. If the gate above is ever loosened, the screen
+   * closes with it instead of quietly staying open.
+   */
+  const authorized = await isPilotAuthorized();
   return (
     <Section>
       <Container>
@@ -50,7 +59,7 @@ export default async function DrivePreviewPage() {
           </p>
           <GpsProvider>
             <SafetyLockProvider>
-              <DrivingScreen />
+              <DrivingScreen authorized={authorized} />
             </SafetyLockProvider>
           </GpsProvider>
         </div>

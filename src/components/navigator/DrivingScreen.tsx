@@ -433,25 +433,41 @@ export function DrivingScreenView({
   );
 }
 
-export function DrivingScreen() {
+export function DrivingScreen({ authorized = false }: { authorized?: boolean } = {}) {
   const { position, watching, start, stop } = useGps();
   // Motion policy comes from the ONE shared map (doc 06 §1); the map
   // component never decides for itself whether browsing is permitted.
   const { permits } = useSafetyLock();
 
-  // Pilot Mode resolves default-deny: the server pass has no hostname, so
-  // it renders inactive; the client re-resolves once after mount.
+  /*
+   * Pilot Mode. `authorized` is the SERVER's verdict on the pilot cookie,
+   * handed down by a page that already refused to render for anyone
+   * without it — the client never re-derives access, and never sees the
+   * password.
+   *
+   * This replaced a hostname check that refused the production domain
+   * outright, which is why a driver who had entered the correct password
+   * on the live site still got the N5 placeholder instead of the real
+   * Navigator. The hostname survives here for one purpose only: whether
+   * the debug ring buffer runs. That is why the effect still exists —
+   * `window` is not available during the server pass.
+   */
   const [pilot, setPilot] = useState<PilotMode>(() =>
-    resolvePilotMode({ flagValue: process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED, hostname: null }),
+    resolvePilotMode({
+      flagValue: process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED,
+      authorized,
+      hostname: null,
+    }),
   );
   useEffect(() => {
     setPilot(
       resolvePilotMode({
         flagValue: process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED,
+        authorized,
         hostname: window.location.hostname,
       }),
     );
-  }, []);
+  }, [authorized]);
 
   const logRef = useRef<PilotLog | null>(null);
   if (logRef.current === null) logRef.current = createPilotLog();
