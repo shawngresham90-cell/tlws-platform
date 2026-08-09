@@ -7,7 +7,9 @@ import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
 import type { PositionFix } from '@/lib/navigator/types';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
 import { DestinationSearch } from './DestinationSearch';
+import { TruckProfilePanel } from './TruckProfilePanel';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -206,12 +208,13 @@ export function PilotTripControls({
               </label>
             </div>
           </details>
-          <p className="text-base text-ink/60">
-            Truck: pilot default — {DEFAULT_TRUCK_PROFILE.lengthFt} ft,{' '}
-            {DEFAULT_TRUCK_PROFILE.heightFt} ft tall,{' '}
-            {DEFAULT_TRUCK_PROFILE.grossWeightLbs.toLocaleString()} lbs,{' '}
-            {DEFAULT_TRUCK_PROFILE.axles} axles.
-          </p>
+          {/* The one-line summary this replaces named four numbers and
+              implied the rest were handled. The panel shows every value a
+              driver would check against a cab card, and says plainly which
+              restrictions the request does NOT ask the provider to route
+              around — vehicle type, per-axle weight, trailer count and
+              hazmat tunnel category. */}
+          <TruckProfilePanel truck={DEFAULT_TRUCK_PROFILE} />
           <button type="button" className={buttonClass} onClick={() => void planRoute()}>
             {busy ? 'Requesting route…' : 'Plan validated truck route'}
           </button>
@@ -228,6 +231,7 @@ export function PilotTripControls({
             Route ready: {lifecycle.view().totalMi?.toFixed(1) ?? '—'} mi. Navigation has not
             started.
           </p>
+          <RouteCheck lifecycle={lifecycle} />
           <button
             type="button"
             className={buttonClass}
@@ -384,6 +388,38 @@ export function PilotTripControls({
           </ul>
         </details>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Route plausibility, shown only at route-ready — before the driver
+ * commits, which is the one moment looking at it costs nothing.
+ *
+ * Advisory by construction. It never blocks Start navigation, because a
+ * truck route is SUPPOSED to be longer than the straight line: it goes
+ * around the low bridge. Blocking on length would systematically refuse
+ * the correct routes.
+ */
+function RouteCheck({ lifecycle }: { lifecycle: NavigationLifecycle }) {
+  const data = lifecycle.mapData();
+  if (data.destination === null || data.geometry.length === 0) return null;
+  const findings = assessRoutePlausibility({
+    geometry: data.geometry,
+    destination: data.destination,
+    reportedMiles: lifecycle.view().totalMi ?? null,
+  });
+  if (findings.length === 0) return null;
+  return (
+    <div role="status" className="rounded-card border border-line p-4">
+      <p className="text-lg font-semibold text-ink">Worth a look before you start</p>
+      <ul className="mt-2 space-y-1">
+        {findings.map((f) => (
+          <li key={f.code} className="text-lg text-ink/80">
+            {f.message}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
