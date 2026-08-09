@@ -17,6 +17,7 @@ import {
 import { DestinationSearch } from './DestinationSearch';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
+import { DriverNameEntry } from './DriverNameEntry';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -53,6 +54,8 @@ export function PilotTripControls({
   debugLog,
   buildReport = null,
   build = null,
+  firstName = null,
+  onFirstName,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -68,6 +71,17 @@ export function PilotTripControls({
   buildReport?: ((input: { note: string; problem: ProblemReport | null }) => string) | null;
   /** The running build, shown so a driver can quote it. */
   build?: BuildId | null;
+  /**
+   * The driver's sanitized first name, held in memory by the driving
+   * screen for the life of the mounted session. Null until they give one.
+   */
+  firstName?: string | null;
+  /**
+   * Accepts an already-sanitized first name. Optional: a caller with no
+   * use for a name (static test renders) simply omits it and the field
+   * does not mount.
+   */
+  onFirstName?: (firstName: string) => void;
   onChanged: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
@@ -151,6 +165,12 @@ export function PilotTripControls({
       </p>
 
       <PilotOnboarding />
+
+      {/* First name, for the spoken greeting and the route-start line. It
+          sits here — inside the stationary-only gate this whole component
+          already renders in — because typing is what the motion lock
+          exists to prevent. The name never leaves memory. */}
+      {onFirstName ? <DriverNameEntry firstName={firstName} onAccept={onFirstName} /> : null}
 
       {/* The build a driver is running, in one line they can read aloud on
           the phone or quote in a message. Every generated report carries

@@ -24,6 +24,7 @@ import {
   type ManeuverAnnouncer,
   type VoiceGuidance,
 } from '@/lib/navigator/voice-guidance';
+import { createDriverPhraseAnnouncer } from '@/lib/navigator/driver-greeting';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
 import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
@@ -517,8 +518,22 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   }
   const maneuverAnnouncerRef = useRef<ManeuverAnnouncer>(createManeuverAnnouncer());
   const statusAnnouncerRef = useRef(createStatusAnnouncer());
+  const driverPhraseAnnouncerRef = useRef(createDriverPhraseAnnouncer());
   const spokenRouteIdRef = useRef<string | null>(null);
   const prevLcStateRef = useRef<LifecycleState>('idle');
+
+  /*
+   * The driver's first name. Ephemeral by owner decision: React state on
+   * the mounted screen, and nothing else — no localStorage, no
+   * sessionStorage, no cookie, no profile, no database row. A full reload
+   * loses it and the driver types it again.
+   *
+   * It exists to be SPOKEN. It is never put in a provider request, a
+   * routing URL, a diagnostic payload, the pilot log, or the road-test
+   * report — `buildReport` below is assembled without it, so there is no
+   * path from this state to anything that leaves the device.
+   */
+  const [firstName, setFirstName] = useState<string | null>(null);
 
   // One lifecycle tick per gated position update. GpsProvider re-renders
   // every second while a watch is active, so cadence rides that tick; the
@@ -605,7 +620,30 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         voice.request(req);
       }
     }
-  }, [view, lifecycle]);
+
+    /*
+     * The two personal lines, LAST in the tick and on purpose.
+     *
+     * Both are `passive`, which the guidance module drops outright when
+     * anything is speaking or queued — so asking after every other
+     * announcer has had its turn means a maneuver, an HOS warning, a
+     * status degradation or a completion line always claims the speaker
+     * first, within this tick and not merely on average. A dropped
+     * greeting is dropped, never queued behind the turn it lost to.
+     *
+     * The local hour is read HERE, at the component edge, because the
+     * pure core may not read a clock; `getGreetingPeriod` takes the
+     * number. `getHours()` is the driver's own device zone, which is the
+     * time of day they are actually living in.
+     */
+    for (const req of driverPhraseAnnouncerRef.current.collect({
+      firstName,
+      localHour: new Date(Date.now()).getHours(),
+      lifecycleState: snap.state,
+    })) {
+      voice.request(req);
+    }
+  }, [view, lifecycle, firstName]);
 
   /*
    * Network. `navigator.onLine` is optimistic — false is reliable, true
@@ -816,6 +854,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             debugLog={pilot.debugLogging ? logRef.current : null}
             buildReport={buildReport}
             build={buildId}
+            firstName={firstName}
+            onFirstName={setFirstName}
             onChanged={bump}
           />
         ) : null
