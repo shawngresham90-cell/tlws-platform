@@ -220,41 +220,100 @@ async function main() {
   console.log('— Pilot Mode configuration —');
 
   check(
-    'flag off → inactive (flag-off), even on localhost',
-    resolvePilotMode({ flagValue: undefined, hostname: 'localhost' }).reason === 'flag-off',
+    'flag off → inactive (flag-off), even authorized on localhost',
+    resolvePilotMode({ flagValue: undefined, authorized: true, hostname: 'localhost' }).reason ===
+      'flag-off',
   );
   check(
-    "flag 'false' → inactive",
-    !resolvePilotMode({ flagValue: 'false', hostname: 'localhost' }).active,
+    "flag 'false' → inactive even when authorized",
+    !resolvePilotMode({ flagValue: 'false', authorized: true, hostname: 'localhost' }).active,
+  );
+
+  /*
+   * The second rail is AUTHORIZATION, not a hostname. It used to be a
+   * hostname, and that was the production defect: a driver who entered the
+   * correct pilot password on the live site was refused pilot mode by the
+   * domain name and shown the N5 placeholder instead of the real
+   * Navigator. Replacing the proxy with the fact makes the rail stricter —
+   * preview no longer grants pilot status on the strength of a domain.
+   */
+  check(
+    'flag on + NOT authorized → inactive (unauthorized), on any host',
+    resolvePilotMode({ flagValue: 'true', authorized: false, hostname: 'localhost' }).reason ===
+      'unauthorized',
   );
   check(
-    'flag on + no hostname (SSR) → inactive default-deny',
-    resolvePilotMode({ flagValue: 'true', hostname: null }).reason === 'unknown-host',
+    'flag on + authorization omitted → inactive default-deny',
+    resolvePilotMode({ flagValue: 'true', hostname: 'localhost' }).reason === 'unauthorized',
   );
   check(
-    'flag on + production host → inactive (production-host)',
-    resolvePilotMode({ flagValue: 'true', hostname: 'truckinglifewithshawn.com' }).reason ===
-      'production-host',
+    'flag on + authorized null → inactive default-deny',
+    resolvePilotMode({ flagValue: 'true', authorized: null, hostname: 'localhost' }).reason ===
+      'unauthorized',
   );
   check(
-    'flag on + www production host → inactive',
-    resolvePilotMode({ flagValue: 'true', hostname: 'www.truckinglifewithshawn.com' }).reason ===
-      'production-host',
+    'a preview host does NOT grant pilot mode without authorization',
+    !resolvePilotMode({
+      flagValue: 'true',
+      authorized: false,
+      hostname: 'deploy-preview-247--tlws.netlify.app',
+    }).active,
+  );
+
+  /* THE FIX: an authorized pilot on the production domain gets the real
+     Navigator, which is what this whole change exists to deliver. */
+  const prod = resolvePilotMode({
+    flagValue: 'true',
+    authorized: true,
+    hostname: 'truckinglifewithshawn.com',
+  });
+  check(
+    'flag on + AUTHORIZED on production → ACTIVE pilot',
+    prod.active && prod.reason === 'pilot',
   );
   check(
-    'production check is case/port tolerant',
-    resolvePilotMode({ flagValue: 'true', hostname: 'WWW.TruckingLifeWithShawn.com:443' })
-      .reason === 'production-host',
+    'www production, authorized → ACTIVE pilot',
+    resolvePilotMode({
+      flagValue: 'true',
+      authorized: true,
+      hostname: 'www.truckinglifewithshawn.com',
+    }).active,
   );
+  check('production pilot does NOT get the debug ring buffer', !prod.debugLogging);
+  check(
+    'host matching for debug logging stays case/port tolerant',
+    !resolvePilotMode({
+      flagValue: 'true',
+      authorized: true,
+      hostname: 'WWW.TruckingLifeWithShawn.com:443',
+    }).debugLogging,
+  );
+  check(
+    'an unknown host counts as production for debug logging',
+    !resolvePilotMode({ flagValue: 'true', authorized: true, hostname: null }).debugLogging,
+  );
+
   const preview = resolvePilotMode({
     flagValue: 'true',
+    authorized: true,
     hostname: 'deploy-preview-247--tlws.netlify.app',
   });
   check('flag on + deploy preview → ACTIVE pilot', preview.active && preview.reason === 'pilot');
   check('pilot activation carries debug logging', preview.debugLogging);
   check(
-    'flag on + localhost → active (local development)',
-    resolvePilotMode({ flagValue: 'true', hostname: 'localhost' }).active,
+    'flag on + authorized localhost → active (local development)',
+    resolvePilotMode({ flagValue: 'true', authorized: true, hostname: 'localhost' }).active,
+  );
+  /*
+   * Local development is not an exemption either. It never was in
+   * practice: requirePilotAccess already redirected an unauthorized
+   * visitor before the driving screen rendered, on every host. What
+   * changed is that the screen's own rail now agrees with that gate
+   * instead of diverging from it on a hostname.
+   */
+  check(
+    'flag on + unauthorized localhost → inactive',
+    !resolvePilotMode({ flagValue: 'true', authorized: false, hostname: 'localhost' }).active,
   );
 
   const log = createPilotLog(5);
@@ -799,6 +858,43 @@ async function main() {
   /* --------------------------------- 14. component wiring (structural) */
   console.log('— Component wiring: structural source checks —');
   const drivingSrc = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+
+  /*
+   * The production defect, pinned at the wiring. The driving screen must
+   * take the server's authorization verdict as a prop and must NOT decide
+   * access from a hostname; the /drive page must read that verdict from
+   * the same server-side check that already gated the route.
+   */
+  const drivePage = readFileSync('src/app/(navigator)/drive/page.tsx', 'utf8');
+  check(
+    'fix: the driving screen accepts the server authorization verdict',
+    /DrivingScreen\(\{\s*authorized/.test(drivingSrc),
+  );
+  check(
+    'fix: and passes it into resolvePilotMode',
+    /resolvePilotMode\(\{[\s\S]{0,160}authorized,/.test(drivingSrc),
+  );
+  check(
+    'fix: the screen never decides access from a production hostname',
+    !/production-host|PRODUCTION_HOST_SUFFIX/.test(drivingSrc),
+  );
+  check(
+    'fix: the /drive page still enforces the gate server-side',
+    drivePage.includes("requirePilotAccess('/drive')"),
+  );
+  check(
+    'fix: and hands the verified verdict to the screen',
+    drivePage.includes('isPilotAuthorized()') &&
+      drivePage.includes('<DrivingScreen authorized={authorized} />'),
+  );
+  check(
+    'security: the screen never reads the pilot password',
+    !/NAVIGATOR_PREVIEW_PASSWORD/.test(drivingSrc) && !/NAVIGATOR_PREVIEW_PASSWORD/.test(drivePage),
+  );
+  check(
+    'security: authorization crosses to the client as a boolean, never a token',
+    !/PILOT_COOKIE_NAME|verifyPilotToken/.test(drivingSrc),
+  );
   const portSrc = readFileSync('src/components/navigator/route-port.ts', 'utf8');
   const controlsSrc = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
   const pageSrc = readFileSync('src/app/(navigator)/drive/page.tsx', 'utf8');
