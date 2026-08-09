@@ -8,6 +8,7 @@ import type { PositionFix } from '@/lib/navigator/types';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import { DestinationSearch } from './DestinationSearch';
+import { PostTripFeedback } from './PostTripFeedback';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -274,6 +275,9 @@ export function PilotTripControls({
           >
             Complete trip
           </button>
+          {/* Asked once the trip is over and the truck is stopped, inside
+              the gate this component already renders in. */}
+          <PostTripFeedback />
         </div>
       ) : null}
 
@@ -289,6 +293,7 @@ export function PilotTripControls({
           >
             New trip
           </button>
+          <PostTripFeedback />
         </div>
       ) : null}
 
