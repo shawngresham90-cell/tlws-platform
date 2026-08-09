@@ -24,6 +24,7 @@ import { createRouteSession, type RouteSession } from '@/lib/navigator/route-ses
 import type { LatLng } from '@/lib/map/bounds';
 import type { TruckProfile } from '@/lib/trip-planner/types';
 import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
+import { resolveBuildId } from '@/lib/navigator/build-id';
 import { offlineNotice } from '@/lib/navigator/network-status';
 
 let passed = 0;
@@ -238,6 +239,7 @@ async function main(): Promise<void> {
     // it does not have, and must survive every subsystem being null.
     const report = buildRoadTestReport({
       generatedMs: T0,
+      build: resolveBuildId({ commitRef: 'feedfacecafe', context: 'deploy-preview' }),
       pilot: Object.freeze({ active: true, debugLogging: true, reason: 'pilot' as const }),
       lifecycleState: 'rerouting',
       trip: null,

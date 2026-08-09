@@ -30,6 +30,8 @@ import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
 import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
+import { resolveBuildId } from '@/lib/navigator/build-id';
+import type { ProblemReport } from '@/lib/navigator/problem-report';
 import { offlineNotice } from '@/lib/navigator/network-status';
 import { createBrowserWakePort } from './wake-lock-port';
 import { DEFAULT_MAP_STYLE, type MapStyleId } from '@/lib/navigator/map-style';
@@ -57,6 +59,19 @@ import { VoiceControls } from './VoiceControls';
  */
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
+
+/*
+ * The running build, resolved once at module scope: these three values are
+ * inlined at build time by next.config, so they are constants for the life
+ * of the bundle and re-deriving them per render would be pure waste.
+ * `resolveBuildId` whitelists each one, so a mis-set variable renders as
+ * 'unknown' rather than reaching the screen or a report.
+ */
+const buildId = resolveBuildId({
+  commitRef: process.env.NEXT_PUBLIC_BUILD_COMMIT,
+  context: process.env.NEXT_PUBLIC_BUILD_CONTEXT,
+  builtAtIso: process.env.NEXT_PUBLIC_BUILD_TIME,
+});
 
 /**
  * States where guidance is genuinely live, and the screen becomes the
@@ -683,9 +698,10 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * every privacy rail; nothing is pre-filtered on the way in, so a new
    * field can never be added that quietly skips the scrubber.
    */
-  const buildReport = (note: string): string =>
+  const buildReport = (input: { note: string; problem: ProblemReport | null }): string =>
     buildRoadTestReport({
       generatedMs: Date.now(),
+      build: buildId,
       pilot,
       lifecycleState: lcState,
       trip: lifecycle.summary(),
@@ -706,7 +722,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             : { width: window.innerWidth, height: window.innerHeight },
         online: typeof navigator === 'undefined' ? null : navigator.onLine,
       },
-      note,
+      note: input.note,
+      problem: input.problem,
     });
 
   // Map-first surface only while guidance is genuinely live; every other
@@ -798,6 +815,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             fix={position.fix}
             debugLog={pilot.debugLogging ? logRef.current : null}
             buildReport={buildReport}
+            build={buildId}
             onChanged={bump}
           />
         ) : null

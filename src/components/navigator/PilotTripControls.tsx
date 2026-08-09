@@ -7,7 +7,15 @@ import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
 import type { PositionFix } from '@/lib/navigator/types';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import type { BuildId } from '@/lib/navigator/build-id';
+import {
+  MAX_NOTE_CHARS,
+  PROBLEM_CATEGORIES,
+  buildProblemReport,
+  type ProblemReport,
+} from '@/lib/navigator/problem-report';
 import { DestinationSearch } from './DestinationSearch';
+import { PilotOnboarding } from './PilotOnboarding';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -43,6 +51,7 @@ export function PilotTripControls({
   fix,
   debugLog,
   buildReport = null,
+  build = null,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -55,10 +64,13 @@ export function PilotTripControls({
    * the driving screen, which is the only place that can see all of it.
    * Null hides the affordance entirely.
    */
-  buildReport?: ((note: string) => string) | null;
+  buildReport?: ((input: { note: string; problem: ProblemReport | null }) => string) | null;
+  /** The running build, shown so a driver can quote it. */
+  build?: BuildId | null;
   onChanged: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
+  const [reportCategory, setReportCategory] = useState<string>('');
   const [reportText, setReportText] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<string | null>(null);
   const [destLat, setDestLat] = useState('');
@@ -136,6 +148,17 @@ export function PilotTripControls({
       <p className="text-lg font-semibold text-ink">
         Pilot trip controls <span className="font-normal text-ink/60">(preview builds only)</span>
       </p>
+
+      <PilotOnboarding />
+
+      {/* The build a driver is running, in one line they can read aloud on
+          the phone or quote in a message. Every generated report carries
+          the same identifier, so a screenshot and a report always agree. */}
+      {build ? (
+        <p className="text-base text-ink/60">
+          Build: <span className="font-mono text-ink/80">{build.label}</span>
+        </p>
+      ) : null}
 
       {state === 'idle' ? (
         <div className="space-y-3">
@@ -314,15 +337,46 @@ export function PilotTripControls({
       {buildReport ? (
         <details className="text-base text-ink/70">
           <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
-            Road-test report
+            Report a navigation problem
           </summary>
-          <label className="mt-2 block text-lg text-ink/80" htmlFor="road-test-note">
-            What happened? (optional)
+
+          {/* The category is a tap and the note is optional, in that order.
+              A triager reads the category first, and a driver at the end of
+              a shift will pick from a list long after they have stopped
+              being willing to type. */}
+          <fieldset className="mt-2">
+            <legend className="text-lg text-ink/80">What kind of problem was it?</legend>
+            <div className="mt-1 space-y-1">
+              {PROBLEM_CATEGORIES.map((c) => (
+                <label key={c.id} className="flex min-h-16 items-center gap-3 text-lg text-ink">
+                  <input
+                    type="radio"
+                    name="problem-category"
+                    value={c.id}
+                    checked={reportCategory === c.id}
+                    onChange={() => {
+                      setReportCategory(c.id);
+                      setCopyState(null);
+                    }}
+                    className="size-6 shrink-0"
+                  />
+                  <span>
+                    {c.label}
+                    <span className="block text-base text-ink/60">{c.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <label className="mt-3 block text-lg text-ink/80" htmlFor="road-test-note">
+            Anything to add? (optional, {MAX_NOTE_CHARS} characters)
           </label>
           <textarea
             id="road-test-note"
             value={reportNote}
             onChange={(e) => setReportNote(e.target.value)}
+            maxLength={MAX_NOTE_CHARS}
             rows={3}
             className="mt-1 w-full rounded-card border border-line bg-transparent p-3 text-lg text-ink"
           />
@@ -330,7 +384,15 @@ export function PilotTripControls({
             type="button"
             className={`${buttonClass} mt-2`}
             onClick={() => {
-              const text = buildReport(reportNote);
+              const built = buildProblemReport({
+                categoryId: reportCategory,
+                note: reportNote,
+              });
+              if (!built.ok) {
+                setCopyState(built.reason);
+                return;
+              }
+              const text = buildReport({ note: '', problem: built.report });
               setReportText(text);
               const clip =
                 typeof navigator !== 'undefined' && navigator.clipboard
@@ -346,7 +408,7 @@ export function PilotTripControls({
               );
             }}
           >
-            Copy road-test report
+            Copy problem report
           </button>
           {copyState ? (
             <p role="status" className="mt-2 text-lg text-ink/80">
@@ -356,7 +418,7 @@ export function PilotTripControls({
           {reportText ? (
             <textarea
               readOnly
-              aria-label="Road-test report"
+              aria-label="Problem report"
               value={reportText}
               rows={12}
               className="mt-2 w-full rounded-card border border-line bg-transparent p-3 font-mono text-sm text-ink"
