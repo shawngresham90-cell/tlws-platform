@@ -4,9 +4,10 @@
 limits anywhere else, this file wins.
 
 Every line below was verified against the code on **2026-08-10** at `main`
-= `b6a1260`. `scripts/test-navigator-pilot-docs.ts` re-verifies the
-mechanical ones on every test run, so this document cannot quietly go stale
-while the code moves underneath it.
+= `b6a1260`; the off-route reversal row was updated the same day after
+PR #272 merged (`main` = `1ee4932`). `scripts/test-navigator-pilot-docs.ts`
+re-verifies the mechanical ones on every test run, so this document cannot
+quietly go stale while the code moves underneath it.
 
 **Read this before you hand the password to anybody.**
 

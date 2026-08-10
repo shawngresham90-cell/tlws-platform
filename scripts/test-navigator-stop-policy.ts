@@ -496,12 +496,18 @@ function registerBlocks(doc: string): Block[] {
     'register: warns that the public flag is inlined at build time',
     /inlined into the bundle at build time|inlined at build time/i.test(REGISTER_FLAT),
   );
+  // Rolling back a build that contains #272 removes a P0 guard. The register
+  // must say so next to the target, where the owner is looking when deciding.
+  check(
+    'register: warns that rolling back past #272 removes a P0 guard',
+    /removes a P0 guard/.test(REGISTER_FLAT) && /read the strip first/i.test(REGISTER_FLAT),
+  );
 
   // The labels these documents promise are the labels the code renders. A
   // register that shows a driver a different string than the build strip
   // does is worse than one that shows nothing.
   for (const [full, doc, where] of [
-    ['b6a1260a17e9f01c007782791c0a28f8bf08b55c', REGISTER_FLAT, 'register (production)'],
+    ['1ee4932aa4a70925f5e6424e9f396ed6691b4bf6', REGISTER_FLAT, 'register (production)'],
     ['94fc6591707fa6e1cc2a335cd660ce393a9ec749', ROLLBACK_FLAT, 'rollback doc (target)'],
   ] as const) {
     const label = resolveBuildId({ commitRef: full, context: 'production' }).label;

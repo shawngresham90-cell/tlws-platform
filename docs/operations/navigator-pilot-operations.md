@@ -50,8 +50,10 @@ been resolved by the owner, and both records mark it so.
 
 ## The rest of the set
 
-These ship in sibling draft PRs and land in the same folder. Listed here so
-this page stays the single entry point.
+All in this folder. Every one of these has merged to `main` except the
+observability memo, which is still an open draft (PR #275) — nothing in it
+is switched on, and it stays a draft until the owner makes the persistence
+decision it ends with. Listed here so this page stays the single entry point.
 
 | Document | Answers |
 |---|---|
@@ -79,10 +81,11 @@ build if:
 - **anything in the app imports the stop-policy module.** It classifies; it
   does not act. No field report may ever switch off a driver's navigation.
 
-The sibling PRs bring their own gates: `navigator-pilot-docs` re-derives the
-limitations list from the request builder, `navigator-pilot-events` feeds
-twenty hostile strings through the event schema, `navigator-adversarial`
-does the same to every driver-facing input, `navigator-provider-volume`
-re-reads every rate limit from its own source file, and
-`navigator-state-combinations` drives ten pairs of real states through the
-real ports.
+The rest of the set brought its own gates, which run in the normal suite
+too: `navigator-pilot-docs` re-derives the limitations list from the request
+builder, `navigator-adversarial` feeds hostile strings to every
+driver-facing input, `navigator-provider-volume` re-reads every rate limit
+from its own source file, and `navigator-state-combinations` drives ten
+pairs of real states through the real ports. One gate is still in its draft
+PR: `navigator-pilot-events`, which feeds twenty hostile strings through the
+observability event schema (#275).
