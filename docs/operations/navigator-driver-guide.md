@@ -123,6 +123,13 @@ Usually the routing service or your signal. Your current route keeps working;
 you just will not get a new one. Not an emergency — but tell me what the
 screen said, because "I couldn't tell what was wrong" is itself a finding.
 
+### If it asks for the pilot password again
+
+That is normal — **the pilot password lasts 12 hours**, then it asks again.
+Nothing is broken and you have not been locked out. Pull over, enter it
+again, and carry on. Tell me if it happened mid-trip and whether the trip
+survived re-entry, because that is worth knowing.
+
 ---
 
 ## When you are stopped: report

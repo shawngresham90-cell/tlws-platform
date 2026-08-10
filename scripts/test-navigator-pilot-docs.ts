@@ -314,7 +314,7 @@ const URL_PARAMS = (() => {
     check(`playbook: covers "${required}"`, PLAYBOOK.includes(required), required);
   }
 
-  // Every incident answers the same six questions, so nothing is half-written.
+  // Every incident answers the same seven questions, so nothing is half-written.
   const blocks = PLAYBOOK.split(/^## \d+ · /m).slice(1);
   check('playbook: 14 blocks to inspect', blocks.length === 14, blocks.length);
   for (const [i, block] of blocks.entries()) {
@@ -330,7 +330,33 @@ const URL_PARAMS = (() => {
       `playbook: incident ${i + 1} says whether to keep using Navigator`,
       /\*\*Keep using Navigator\?\*\*/.test(block),
     );
+    // Incident 14 writes it as "Engineering triage, in this order:" — same field.
+    check(
+      `playbook: incident ${i + 1} has an engineering triage line`,
+      /\*\*Engineering triage/.test(block),
+    );
     check(`playbook: incident ${i + 1} has a resume line`, /\*\*Resume/.test(block));
+  }
+
+  // The banner at the top advertises the field list. It drifted once already —
+  // it promised six while every entry answered seven — so it is now pinned to
+  // the fields actually asserted above rather than left as free prose. Scoped
+  // to the preamble so the incidents themselves cannot satisfy it.
+  const banner = flat(PLAYBOOK.slice(0, PLAYBOOK.indexOf('\n## ')));
+  check(
+    'playbook: banner advertises seven questions, not six',
+    /the same seven questions/.test(banner),
+  );
+  for (const field of [
+    '**Severity**',
+    '**Tell the driver**',
+    '**Pilot posture**',
+    '**Collect**',
+    '**Keep using Navigator?**',
+    '**Engineering triage**',
+    '**Resume when**',
+  ]) {
+    check(`playbook: banner names ${field}`, banner.includes(field), field);
   }
 
   check(
@@ -354,13 +380,21 @@ const URL_PARAMS = (() => {
     'guide: marks the report destination as an owner decision',
     /OWNER DECISION REQUIRED — REPORT DESTINATION/.test(GUIDE_FLAT),
   );
-  // The negative that matters: no address may be invented here.
+  // The negative that matters: no destination of ANY kind may be invented here.
+  // Email and phone were the obvious two; a Slack channel, a chat workspace or a
+  // form URL would fill the blank just as wrongly, so they are guarded too.
   const addresses = [...GUIDE.matchAll(/[\w.+-]+@[\w-]+\.[\w.]+/g)].map((m) => m[0]);
   check('guide: invents no email address to send reports to', addresses.length === 0, addresses);
   check(
     'guide: invents no phone number either',
     !/\b(?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/.test(GUIDE),
   );
+  const channels = [...GUIDE.matchAll(/\b(?:slack|discord|teams|whatsapp|telegram)\b/gi)].map(
+    (m) => m[0],
+  );
+  check('guide: invents no chat channel to send reports to', channels.length === 0, channels);
+  const links = [...GUIDE.matchAll(/(?:https?:\/\/|\bwww\.)\S+/gi)].map((m) => m[0]);
+  check('guide: invents no form or link destination', links.length === 0, links);
   check('guide: leaves a blank for the owner to fill', /Send your report to: `_+`/.test(GUIDE));
 
   for (const [what, re] of [
@@ -386,6 +420,9 @@ const URL_PARAMS = (() => {
     ['what to do if the map position is wrong', /If the map shows you in the wrong place/i],
     ['what to do if the route looks wrong', /If the route looks wrong/i],
     ['what to do if it freezes', /If the app freezes or goes blank/i],
+    // Matches incident 13 and Wave 0 step 11.4: the driver must be told the
+    // 12-hour re-ask is by design, or a normal expiry reads as a lockout.
+    ['the pilot password lasts 12 hours', /the pilot password lasts 12 hours/i],
     ['how to make a report', /Tap \*\*Report a problem\*\*/i],
     ['what the build number is for', /Every report needs it/i],
     ['when to stop using it', /Stop using Navigator and call me immediately if/i],

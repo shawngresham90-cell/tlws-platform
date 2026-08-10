@@ -3,10 +3,10 @@
 **Fourteen things that can go wrong, and what to do about each one.**
 
 Written for the owner, on a phone, while something is happening. Each entry
-answers the same six questions in the same order, so you never have to hunt:
+answers the same seven questions in the same order, so you never have to hunt:
 
 > **Severity** · **Tell the driver** · **Pilot posture** · **Collect** ·
-> **Keep using Navigator?** · **Resume when**
+> **Keep using Navigator?** · **Engineering triage** · **Resume when**
 
 **Posture** is CONTINUE / PAUSE EXPANSION / STOP, and it maps to the ids in
 the pilot stop policy. When an entry names a stop-policy condition, that
