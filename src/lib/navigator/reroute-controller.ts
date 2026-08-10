@@ -25,6 +25,7 @@ import type { LatLng } from '@/lib/map/bounds';
 import type { RouteAvoidance } from '@/lib/trip-planner/providers';
 import { validateNavigatorTruckProfile } from './truck-validation';
 import { createRouteSession, type RouteSession } from './route-session';
+import { checkInitialReversal, projectAhead, IMPLICIT_REVERSAL } from './reversal-guard';
 import type { OffRouteState } from './off-route-detector';
 
 export type ReplacementRequest = {
@@ -71,6 +72,14 @@ export type RerouteRefusal =
 
 export type RerouteResult =
   | { outcome: 'replaced'; session: RouteSession }
+  /**
+   * A VALID replacement that was refused because its first actionable
+   * move opposes the truck's current direction of travel — an implicit,
+   * unverified turnaround. The current route is untouched and navigation
+   * continues; the caller keeps the driver moving forward and may try
+   * again once the cooldown lapses. See `reversal-guard`.
+   */
+  | { outcome: 'unsafe-reversal'; reason: typeof IMPLICIT_REVERSAL; relativeDeg: number | null }
   | { outcome: 'refused'; reason: RerouteRefusal; retryAtMs: number | null }
   | { outcome: 'rejected'; problems: { code: string; message: string }[] }
   | { outcome: 'provider-failure'; reason: string }
@@ -85,6 +94,14 @@ export type RerouteStats = {
   duplicatesSuppressed: number;
   successes: number;
   rejectedReplacements: number;
+  /** Valid routes refused for beginning with an implicit reversal. */
+  reversalsRefused: number;
+  /**
+   * Reroutes rescued by re-asking from a forward anchor after the first
+   * answer pointed backwards — the Garmin-like save, counted so it is
+   * visible rather than folded into `successes`.
+   */
+  forwardAnchorRecoveries: number;
   providerFailures: number;
   /**
    * Transport failures refunded to the budget — a request that never
@@ -104,6 +121,20 @@ export type RerouteControllerInput = {
   /** Position accuracy of the current fix, meters (null = unknown). */
   accuracyM: number | null;
   tMs: number;
+  /**
+   * The truck's CURRENT direction of travel and road speed.
+   *
+   * Not used to build the request — nothing here reaches the provider —
+   * but to judge the answer. A replacement whose first actionable move
+   * opposes the way the truck is already pointed implies a turnaround
+   * this app cannot verify is legal for a 70-foot combination, so it is
+   * never promoted to guidance. See `reversal-guard`.
+   *
+   * Optional so existing callers and fixtures keep compiling; absent
+   * heading simply means the guard cannot answer and says so.
+   */
+  headingDeg?: number | null;
+  speedMph?: number | null;
 };
 
 export type RerouteController = {
@@ -196,6 +227,8 @@ export function createRerouteController(
     duplicatesSuppressed: 0,
     successes: 0,
     rejectedReplacements: 0,
+    reversalsRefused: 0,
+    forwardAnchorRecoveries: 0,
     providerFailures: 0,
     budgetRefunds: 0,
     staleDropped: 0,
@@ -213,6 +246,114 @@ export function createRerouteController(
     const backoff = ladder[Math.min(consecutiveFailures, ladder.length - 1)];
     consecutiveFailures += 1;
     cooldownUntil = tMs + backoff;
+  }
+
+  /**
+   * One provider call, its budget accounting, its staleness check, and
+   * route-session validation — the whole of "ask for a replacement and
+   * see whether it is usable".
+   *
+   * Extracted because a reroute may now make TWO calls: the ordinary one
+   * from where the truck is, and, when that answer points backwards, one
+   * from a forward anchor. Both must be charged, both must be checked for
+   * staleness, and both must go through the same validator. Duplicating
+   * that was how the second call would have quietly skipped a rail.
+   */
+  type FetchOutcome =
+    | { ok: true; session: RouteSession }
+    | { ok: false; kind: 'stale' }
+    | { ok: false; kind: 'failure'; reason: string }
+    | { ok: false; kind: 'rejected'; problems: { code: string; message: string }[] };
+
+  async function fetchReplacement(
+    request: ReplacementRequest,
+    input: RerouteControllerInput,
+    mySeq: number,
+    myEpoch: number,
+  ): Promise<FetchOutcome> {
+    stats.providerCalls += 1;
+    callTimes.push(input.tMs);
+
+    let fetched: ReplacementFetchResult;
+    try {
+      fetched = await port(request);
+    } catch {
+      fetched = { kind: 'failure', reason: 'port-threw' };
+    }
+
+    // Stale rejection: superseded (expired by the caller) or the session
+    // changed while we were waiting — this answer belongs to a world that
+    // no longer exists. It must not replace anything.
+    if (mySeq <= expiredSeq || myEpoch !== epoch) {
+      stats.staleDropped += 1;
+      return { ok: false, kind: 'stale' };
+    }
+
+    if (fetched.kind === 'failure') {
+      stats.providerFailures += 1;
+      /*
+       * A request that never reached the provider costs nothing, so it is
+       * refunded to the budget.
+       *
+       * The budgets exist to cap provider SPEND. Charging a failed fetch
+       * against them protects nothing and costs the driver the thing the
+       * budget was never meant to ration: a truck goes off-route in a
+       * dead-signal stretch — a canyon, a mountain pass, exactly where a
+       * wrong turn is most likely — and every attempt fails at the
+       * transport layer while still burning one of the six calls an hour.
+       * By the time signal returns, the app knows the truck is off route
+       * and has no budget left to fix it.
+       *
+       * Only transport failures qualify. A malformed or rejected route
+       * DID reach the provider and stays charged.
+       */
+      if (TRANSPORT_FAILURES.has(fetched.reason)) {
+        stats.providerCalls -= 1;
+        const at = callTimes.lastIndexOf(input.tMs);
+        if (at >= 0) callTimes.splice(at, 1);
+        stats.budgetRefunds += 1;
+      }
+      return { ok: false, kind: 'failure', reason: fetched.reason };
+    }
+
+    const created = createRouteSession({
+      routeId: `${session.routeId}-r${sessionCount + 1}`,
+      truck: request.truck,
+      origin: request.origin,
+      destination: request.destination,
+      positions: fetched.positions,
+      distanceMiles: fetched.distanceMiles,
+      durationSeconds: fetched.durationSeconds,
+      maneuvers: fetched.maneuvers,
+      avoid: request.avoid,
+      validationState: fetched.validationState,
+      warnings: fetched.warnings,
+    });
+    if (!created.ok) {
+      stats.rejectedReplacements += 1;
+      return { ok: false, kind: 'rejected', problems: created.problems };
+    }
+    return { ok: true, session: created.session };
+  }
+
+  /** Turn a failed fetch into the outcome the caller sees, with its rails. */
+  function finishFailed(
+    outcome: Exclude<FetchOutcome, { ok: true }>,
+    input: RerouteControllerInput,
+    key: string,
+  ): RerouteResult {
+    if (outcome.kind === 'stale') return { outcome: 'stale-dropped' };
+    if (outcome.kind === 'failure') {
+      failureCooldown(input.tMs);
+      return { outcome: 'provider-failure', reason: outcome.reason };
+    }
+    // A rejected replacement NEVER touches the current session, and the
+    // identical request would be rejected identically — so it IS a
+    // duplicate worth suppressing.
+    lastFailedKey = key;
+    lastFailedKeyMs = input.tMs;
+    failureCooldown(input.tMs);
+    return { outcome: 'rejected', problems: outcome.problems };
   }
 
   async function execute(
@@ -239,78 +380,123 @@ export function createRerouteController(
     }
 
     const myEpoch = epoch;
-    stats.providerCalls += 1;
-    callTimes.push(input.tMs);
+    const first = await fetchReplacement(request, input, mySeq, myEpoch);
+    if (!first.ok) return finishFailed(first, input, key);
+    const created = first;
 
-    let fetched: ReplacementFetchResult;
-    try {
-      fetched = await port(request);
-    } catch (e) {
-      fetched = { kind: 'failure', reason: e instanceof Error ? 'port-threw' : 'port-threw' };
-    }
+    /*
+     * The route is VALID and still may not be usable.
+     *
+     * Owner road test: westbound on 278, driver turns north onto Butler,
+     * provider returns a route whose first move is south on Butler. Valid
+     * geometry, correct destination, and an unannounced U-turn a truck
+     * has no verified place to make. Promoting that to turn guidance is
+     * the defect this guard exists to stop.
+     *
+     * Treated like a rejection for spend and cooldown — the call DID
+     * reach the provider, so it stays charged, and the escalating
+     * cooldown keeps a reversing provider from being hammered — but with
+     * its own outcome, because "we got a route and will not use it" is
+     * not the same fact as "the route was malformed", and the driver is
+     * told something different for each.
+     *
+     * The current session is untouched. The truck keeps its existing
+     * route context and keeps moving forward while a later attempt looks
+     * for a path that starts the way the truck is already going.
+     */
+    /**
+     * Judge a candidate from the point the truck will actually be
+     * standing on when it starts following it.
+     *
+     * For the ordinary request that is the truck's current position. For
+     * a forward-anchored request it is the ANCHOR — the truck reaches
+     * that point by continuing to drive, and the question there is the
+     * same one: does the route then go on, or does it turn around? A
+     * route that doubles back half a mile later is still a U-turn, and
+     * judging it from the truck would hide that behind the leg the truck
+     * has yet to drive.
+     */
+    const judge = (candidate: RouteSession, from: LatLng) =>
+      checkInitialReversal({
+        position: from,
+        headingDeg: input.headingDeg ?? null,
+        speedMph: input.speedMph ?? null,
+        accuracyM: input.accuracyM,
+        geometry: candidate.geometry.map((g) => g.position),
+      });
 
-    // Stale rejection: superseded (expired by the caller) or the session
-    // changed while we were waiting — this answer belongs to a world that
-    // no longer exists. It must not replace anything.
-    if (mySeq <= expiredSeq || myEpoch !== epoch) {
-      stats.staleDropped += 1;
-      return { outcome: 'stale-dropped' };
-    }
+    let accepted = created.session;
+    const reversal = judge(accepted, input.currentPosition);
+    if (reversal.reversal) {
+      stats.reversalsRefused += 1;
 
-    if (fetched.kind === 'failure') {
-      stats.providerFailures += 1;
       /*
-       * A request that never reached the provider costs nothing, so it is
-       * refunded to the budget.
+       * REFUSING IS NOT ENOUGH — the second road test.
        *
-       * The budgets exist to cap provider SPEND. Charging a failed fetch
-       * against them protects nothing and costs the driver the thing the
-       * budget was never meant to ration: a truck goes off-route in a
-       * dead-signal stretch — a canyon, a mountain pass, exactly where a
-       * wrong turn is most likely — and every attempt fails at the
-       * transport layer while still burning one of the six calls an hour.
-       * By the time signal returns, the app knows the truck is off route
-       * and has no budget left to fix it.
+       * Northbound on 92, the driver passed the turn at Charles Hardy.
+       * The provider answered with a route back the way they came; #272
+       * correctly refused to speak it, and then had nothing to offer.
+       * "Rerouting…" with no next route is its own failure: a Garmin in
+       * the same spot keeps the truck rolling north and finds a way
+       * around.
        *
-       * Only transport failures qualify. A malformed or rejected route
-       * DID reach the provider and stays charged. The escalating failure
-       * cooldown is untouched either way — that is the rate limiter, and
-       * this is the money limiter. They are not the same rail.
+       * So before giving up, ask ONCE more from a FORWARD ANCHOR — a
+       * point half a mile up the road the truck is already on. Providers
+       * snap an origin to the nearest road, so a route computed from
+       * there cannot begin with the U-turn: the truck reaches the anchor
+       * simply by continuing to drive.
+       *
+       * No provider parameter is invented for this. The only thing that
+       * changes is WHERE we say the trip starts, which is an ordinary
+       * field this request already carries.
+       *
+       * Bounded on purpose: exactly one extra call, only after a
+       * reversal, only with a usable heading, and only with hourly and
+       * session budget left for it. Both calls are charged.
        */
-      if (TRANSPORT_FAILURES.has(fetched.reason)) {
-        stats.providerCalls -= 1;
-        const at = callTimes.lastIndexOf(input.tMs);
-        if (at >= 0) callTimes.splice(at, 1);
-        stats.budgetRefunds += 1;
-      }
-      failureCooldown(input.tMs);
-      return { outcome: 'provider-failure', reason: fetched.reason };
-    }
+      const anchor = projectAhead(input.currentPosition, input.headingDeg ?? null);
+      const budgetLeft = callTimes.length < cfg.maxPerHour && sessionCount + 1 < cfg.maxPerSession;
+      const forward =
+        anchor !== null && budgetLeft
+          ? await fetchReplacement({ ...request, origin: anchor }, input, mySeq, myEpoch)
+          : null;
 
-    const created = createRouteSession({
-      routeId: `${session.routeId}-r${sessionCount + 1}`,
-      truck: request.truck,
-      origin: request.origin,
-      destination: request.destination,
-      positions: fetched.positions,
-      distanceMiles: fetched.distanceMiles,
-      durationSeconds: fetched.durationSeconds,
-      maneuvers: fetched.maneuvers,
-      avoid: request.avoid,
-      validationState: fetched.validationState,
-      warnings: fetched.warnings,
-    });
-    if (!created.ok) {
-      // A rejected replacement NEVER touches the current session.
-      stats.rejectedReplacements += 1;
-      lastFailedKey = key;
-      lastFailedKeyMs = input.tMs;
-      failureCooldown(input.tMs);
-      return { outcome: 'rejected', problems: created.problems };
+      if (forward === null || !forward.ok) {
+        /*
+         * Nothing safe to offer yet. The failure ladder still applies —
+         * a provider that reverses once tends to reverse again — but the
+         * duplicate-suppression key is deliberately NOT set here.
+         *
+         * That key exists to stop us re-spending on a request that will
+         * fail identically. This request will NOT be identical: the next
+         * attempt is anchored further up the road because the truck has
+         * moved. Marking it a duplicate is what turned a refusal into a
+         * dead end on the road, and it is the accounting bug this fixes.
+         */
+        failureCooldown(input.tMs);
+        return {
+          outcome: 'unsafe-reversal',
+          reason: IMPLICIT_REVERSAL,
+          relativeDeg: reversal.relativeDeg,
+        };
+      }
+
+      const forwardReversal = judge(forward.session, anchor as LatLng);
+      if (forwardReversal.reversal) {
+        stats.reversalsRefused += 1;
+        failureCooldown(input.tMs);
+        return {
+          outcome: 'unsafe-reversal',
+          reason: IMPLICIT_REVERSAL,
+          relativeDeg: forwardReversal.relativeDeg,
+        };
+      }
+      stats.forwardAnchorRecoveries += 1;
+      accepted = forward.session;
     }
 
     // Success: swap the session, bump the epoch, reset the ladder.
-    session = created.session;
+    session = accepted;
     epoch += 1;
     sessionCount += 1;
     stats.sessionCount = sessionCount;

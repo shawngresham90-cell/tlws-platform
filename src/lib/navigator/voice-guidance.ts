@@ -526,6 +526,57 @@ export function tripVoiceRequest(ev: TripVoiceEvent): VoiceRequest | null {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Off-route / rerouting status (P0, owner road test).
+//
+// The road test found the driver was never TOLD. The truck left the route,
+// the app knew, and the next thing the driver heard was a turn instruction
+// for a route that silently assumed a U-turn. Leaving the route is exactly
+// the moment a driver needs one short sentence.
+//
+// One group for both lines, so a still-queued "off route" is evicted by the
+// newer "continue safely" rather than the driver hearing a stale pair. And
+// `normal`, not `critical`: it must never cut a turn in half — a driver
+// mid-maneuver needs the maneuver, and this line is still true afterwards.
+
+/** The supersession group shared by the off-route status lines. */
+export const REROUTE_STATUS_GROUP = 'reroute-status';
+
+export type RerouteVoiceEvent =
+  /** Departure confirmed — said once per off-route episode. */
+  | { kind: 'off-route'; episode: number }
+  /**
+   * A valid replacement was refused for implying an unverified turnaround.
+   * Says what is happening WITHOUT telling the truck to turn around, because
+   * no truck-suitable turnaround has been identified — none can be, with the
+   * data this app has.
+   */
+  | { kind: 'awaiting-safe-replacement'; episode: number };
+
+export const OFF_ROUTE_SPEECH = "You're off route. Rerouting.";
+export const AWAITING_SAFE_REPLACEMENT_SPEECH = 'Rerouting. Continue safely.';
+
+/**
+ * Ids carry the EPISODE, not just the kind: one announcement per departure,
+ * and a second departure after the truck recovers is a new event that
+ * deserves to be spoken again.
+ */
+export function rerouteVoiceRequest(ev: RerouteVoiceEvent): VoiceRequest {
+  return ev.kind === 'off-route'
+    ? {
+        id: `off-route:${ev.episode}`,
+        priority: 'normal',
+        group: REROUTE_STATUS_GROUP,
+        text: OFF_ROUTE_SPEECH,
+      }
+    : {
+        id: `reroute-unsafe:${ev.episode}`,
+        priority: 'normal',
+        group: REROUTE_STATUS_GROUP,
+        text: AWAITING_SAFE_REPLACEMENT_SPEECH,
+      };
+}
+
 export type StatusAnnouncer = {
   collect(status: DrivingScreenStatus): VoiceRequest[];
 };

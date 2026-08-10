@@ -1,6 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
   PILOT_ACCESS_PATH,
@@ -11,6 +11,11 @@ import {
   sanitizeNextPath,
   verifyPilotPassword,
 } from '@/lib/navigator-api/pilot-access';
+import {
+  UNLOCK_THROTTLED,
+  allowUnlockAttempt,
+  unlockClientKey,
+} from '@/lib/navigator-api/pilot-unlock-throttle';
 
 /**
  * Server action for the Navigator pilot password screen.
@@ -24,12 +29,22 @@ import {
  * Failures redirect back with `error=1` and nothing else. The response does
  * not distinguish "wrong password" from "password too short" or reveal any
  * property of the expected value.
+ *
+ * The attempt is THROTTLED BEFORE IT IS VERIFIED. Spending the token first
+ * means a correct submission costs the same as a wrong one, so the presence
+ * of throttling can never answer "was that guess right?". It also means
+ * this is the point at which a brute-force attempt stops, rather than after
+ * a comparison that would have been fast either way. See the throttle
+ * module for why the buckets are per-IP and not global.
  */
 export async function unlockNavigatorAction(formData: FormData): Promise<void> {
   const password = String(formData.get('password') ?? '');
   const next = sanitizeNextPath(String(formData.get('next') ?? ''));
   const back = `${PILOT_ACCESS_PATH}?next=${encodeURIComponent(next)}`;
 
+  if (!allowUnlockAttempt(unlockClientKey(headers()))) {
+    redirect(`${back}&error=${UNLOCK_THROTTLED}`);
+  }
   if (!pilotConfigured()) redirect(`${back}&error=notconfigured`);
   if (!verifyPilotPassword(password)) redirect(`${back}&error=1`);
 
