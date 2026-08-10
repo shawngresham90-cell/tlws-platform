@@ -564,9 +564,14 @@ function registerBlocks(doc: string): Block[] {
   );
   check('wave 1: caps the wave at 2–3 drivers', /2–3\. Hard stop/.test(WAVE1_FLAT));
   check('wave 1: refuses to invent statistical significance', /not statistical/i.test(WAVE1_FLAT));
+  // The destination decision was open until 2026-08-10, when the owner
+  // selected an address. The record must say resolved AND name it — and the
+  // old decision-required marker may not linger anywhere in the document.
   check(
-    'wave 1: marks the report destination as an owner decision',
-    /OWNER DECISION REQUIRED — REPORT DESTINATION/.test(WAVE1_FLAT),
+    'wave 1: records the report destination as owner-resolved',
+    /E19's owner decision — resolved 2026-08-10/.test(WAVE1_FLAT) &&
+      WAVE1_FLAT.includes('shawngresham90@gmail.com') &&
+      !/OWNER DECISION REQUIRED/.test(WAVE1_FLAT),
   );
   check(
     'wave 1: quotes the real provider limits',
@@ -639,6 +644,12 @@ function registerBlocks(doc: string): Block[] {
   check(
     'index: sends the reader to the fuller list',
     /navigator-known-limitations\.md/.test(INDEX),
+  );
+  check(
+    'index: no longer holds the report destination over the gate',
+    /Resolved 2026-08-10/.test(INDEX_FLAT) &&
+      INDEX_FLAT.includes('shawngresham90@gmail.com') &&
+      /No longer blocking — formerly Wave 1 entry requirement E19/.test(INDEX_FLAT),
   );
   check('index: still names #272 as the standing blocker', /PR #272/.test(INDEX_FLAT));
   check(
