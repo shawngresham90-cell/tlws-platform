@@ -85,13 +85,14 @@ had been given first. A screenshot of the maneuver card if one survives.
 
 **Keep using Navigator?** No.
 
-**Engineering triage** This is the defect PR #272 exists to fix, and **#272
-is unmerged and not road-verified**. On the production build there is no
-reversal check on a replacement route at all. Treat a report of this as
-expected behaviour of the current build, not as a surprise — and as a hard
-stop regardless.
+**Engineering triage** This is the defect PR #272 exists to fix. **#272
+merged to `main` on 2026-08-10 but is not road-verified**, and a production
+build deployed from before the merge has no reversal check on a replacement
+route at all — check the build sha in the report against `1ee4932` before
+assuming the guard was even present. Either way, a report of this is a hard
+stop.
 
-**Resume when** #272 is merged, road-verified by the owner, and a fixture
+**Resume when** the owner road retest of #272's fixes passes and a fixture
 reproduces the specific geometry.
 
 ---

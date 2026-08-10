@@ -484,20 +484,30 @@ function registerBlocks(doc: string): Block[] {
     'register: does not claim production state it cannot see',
     /NOT VERIFIED FROM THIS REPOSITORY/.test(REGISTER_FLAT),
   );
+  // #272 merged 2026-08-10; merging is not road verification. The register
+  // must carry the retest status and may not still describe #272 as unmerged.
   check(
-    'register: records #272 as unmerged and unverified',
-    /READY FOR OWNER ROAD RETEST/.test(REGISTER_FLAT),
+    'register: records #272 as merged but not road-verified',
+    /READY FOR OWNER ROAD RETEST/.test(REGISTER_FLAT) &&
+      /Merged, not deployed/.test(REGISTER_FLAT) &&
+      !/it is unmerged/i.test(REGISTER_FLAT),
   );
   check(
     'register: warns that the public flag is inlined at build time',
     /inlined into the bundle at build time|inlined at build time/i.test(REGISTER_FLAT),
+  );
+  // Rolling back a build that contains #272 removes a P0 guard. The register
+  // must say so next to the target, where the owner is looking when deciding.
+  check(
+    'register: warns that rolling back past #272 removes a P0 guard',
+    /removes a P0 guard/.test(REGISTER_FLAT) && /read the strip first/i.test(REGISTER_FLAT),
   );
 
   // The labels these documents promise are the labels the code renders. A
   // register that shows a driver a different string than the build strip
   // does is worse than one that shows nothing.
   for (const [full, doc, where] of [
-    ['b6a1260a17e9f01c007782791c0a28f8bf08b55c', REGISTER_FLAT, 'register (production)'],
+    ['1ee4932aa4a70925f5e6424e9f396ed6691b4bf6', REGISTER_FLAT, 'register (production)'],
     ['94fc6591707fa6e1cc2a335cd660ce393a9ec749', ROLLBACK_FLAT, 'rollback doc (target)'],
   ] as const) {
     const label = resolveBuildId({ commitRef: full, context: 'production' }).label;
@@ -549,7 +559,11 @@ function registerBlocks(doc: string): Block[] {
     !/\bPASS\b\s*\|/.test(WAVE0.replace(/\| PASS \| \|/g, '')),
   );
   check('wave 0: records NOT STARTED', /NOT STARTED/.test(WAVE0_FLAT));
-  check('wave 0: covers the #272 reroute section', /PR #272, not yet on `main`/.test(WAVE0_FLAT));
+  check(
+    'wave 0: covers the #272 reroute section, merged but retest not performed',
+    /PR #272, on `main` since 2026-08-10, road retest NOT PERFORMED/.test(WAVE0_FLAT) &&
+      !/PR #272 is unmerged/.test(WAVE0_FLAT),
+  );
   const shieldCount = (WAVE0.match(/🛑/g) ?? []).length;
   check('wave 0: marks the safety-critical lines', shieldCount >= 15, shieldCount);
   check(

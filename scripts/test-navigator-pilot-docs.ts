@@ -279,7 +279,14 @@ const URL_PARAMS = (() => {
     'limits: records the vehicle-type gap as unresolved rather than fixed',
     /Nothing was guessed/i.test(LIMITS_FLAT),
   );
-  check('limits: is honest that #272 is unmerged', /PR #272, which is unmerged/i.test(LIMITS_FLAT));
+  // #272 merged 2026-08-10. The document must say merged AND not
+  // road-verified — the second half is the one that keeps Wave 1 honest.
+  check(
+    'limits: is honest that #272 is merged but not road-verified',
+    /merged but not road-verified/i.test(LIMITS_FLAT) &&
+      /road retest is \*\*NOT PERFORMED\*\*/i.test(LIMITS.replace(/\s+/g, ' ')) &&
+      !/which is unmerged/i.test(LIMITS_FLAT),
+  );
   check(
     'limits: does not promise legal routing',
     /No route is guaranteed legal/i.test(LIMITS_FLAT) &&

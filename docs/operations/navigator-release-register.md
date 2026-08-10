@@ -33,12 +33,12 @@ compiles and its fixtures agree with it. Only a drive proves it navigates.
 |---|---|
 | Production branch | `main` |
 | Deployment model | Netlify, auto-deploy on push to `main` (`netlify.toml`; `DEPLOY.md`) |
-| Latest `main` commit | `b6a1260a17e9f01c007782791c0a28f8bf08b55c` |
-| Short sha (as shown to drivers) | `b6a1260` |
-| Commit date | 2026-08-09T19:02:47-04:00 |
-| Subject | Navigator: audit what the truck profile actually sends, and check the route (#267) |
-| Expected on-screen build label | `pilot 2.0 · b6a1260 · production · <build time>` |
-| **Actually deployed to production?** | **NOT VERIFIED FROM THIS REPOSITORY.** Netlify state is not readable here. Owner confirms by opening the pilot build strip and reading the short sha. |
+| Latest `main` commit | `1ee4932aa4a70925f5e6424e9f396ed6691b4bf6` |
+| Short sha (as shown to drivers) | `1ee4932` |
+| Commit date | 2026-08-10T12:17:00-04:00 |
+| Subject | P0: a replacement route may not imply a truck turnaround, and refusing one is not enough (#272) |
+| Expected on-screen build label | `pilot 2.0 · 1ee4932 · production · <build time>` |
+| **Actually deployed to production?** | **NOT VERIFIED FROM THIS REPOSITORY.** Netlify state is not readable here. Owner confirms by opening the pilot build strip and reading the short sha. **If the strip shows `b6a1260` or anything older, the deploy predates the #272 merge and has no off-route reversal check** — see the incident playbook, incident 2. |
 | Owner verified in production on | *(blank — owner fills)* |
 
 > The build label is derived, not stored: `resolveBuildId` whitelists
@@ -53,7 +53,7 @@ compiles and its fixtures agree with it. Only a drive proves it navigates.
 
 | Field | Value |
 |---|---|
-| Previous commit on `main` | `94fc6591707fa6e1cc2a335cd660ce393a9ec749` |
+| Target commit on `main` | `94fc6591707fa6e1cc2a335cd660ce393a9ec749` — no longer the commit immediately before the tip; it is the newest commit with drill evidence |
 | Short sha | `94fc659` |
 | Commit date | 2026-08-09T10:50:32-04:00 |
 | Subject | Navigator: the truck on the map wears the TL mark (#271) |
@@ -61,20 +61,29 @@ compiles and its fixtures agree with it. Only a drive proves it navigates.
 | Evidence | Rollback drill 2026-08-10: worktree checked out at this sha, **22 Navigator harnesses, all passed**; production build succeeded. No road drive. |
 | Owner verified in production on | *(blank — no drive recorded)* |
 
-**What rolling back to `94fc659` gives up:** everything #267 added — the
-truck-profile coverage audit, the route-plausibility advisory, and the truck
-routing disclosures in the profile panel. It does **not** give up the map
+**What rolling back to `94fc659` gives up** depends on what the running
+build contains — read the strip first. From #267: the truck-profile coverage
+audit, the route-plausibility advisory, and the truck routing disclosures in
+the profile panel. If the running build is `1ee4932` or later it also gives
+up the pilot password rate limit (#276) and **the #272 off-route reversal
+guard — rolling back a build that contains #272 removes a P0 guard and
+re-opens the turnaround defect it exists to stop.** Weigh that against
+whatever you are rolling back to escape. It does **not** give up the map
 marker, the greeting, the route-start phrase, the diagnostic snapshot, the
-problem report, or post-trip feedback; all of those predate it.
+problem report, or post-trip feedback; all of those are in `94fc659`.
 
-**What rolling back does *not* undo:** nothing from PR #272 — it is unmerged.
+**What rolling back does *not* undo:** if the running build predates the
+#272 merge (strip shows `b6a1260` or older), nothing from PR #272 — no
+production deploy recorded here has ever contained it, so there is nothing
+to lose.
 
-### Not deployed
+### Merged, not deployed
 
 | Field | Value |
 |---|---|
-| PR #272 head | `2f0df02f522d2e3fb78f252c36e25a86fc897a80` (`2f0df02`) |
-| State | Open **draft**, not merged, CI green |
+| PR #272 final head | `1594d01827eddbbbaef3eb0610321fa00cc7b34c` (`1594d01`) |
+| Merged into `main` as | `1ee4932aa4a70925f5e6424e9f396ed6691b4bf6` (`1ee4932`), 2026-08-10 |
+| State | **Merged**, CI green on the merge commit |
 | Status | **READY FOR OWNER ROAD RETEST — NOT YET VERIFIED ON ROAD** |
 | Blocks | Wave 1 GO. See the Wave 1 gate. |
 

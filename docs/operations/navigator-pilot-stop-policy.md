@@ -177,8 +177,9 @@ that produced it. It does not act.
 
 ## Current standing decision
 
-**PR #272 has not been road-verified.** It is green, drafted, and unmerged,
-and it addresses `unsafe-turnaround-implied`, `stale-maneuver-after-reroute`
+**PR #272 has not been road-verified.** It merged to `main` on 2026-08-10 —
+merging is not road verification — and it addresses
+`unsafe-turnaround-implied`, `stale-maneuver-after-reroute`
 and `severe-gps-error-undisclosed` — three P0 conditions on the list above,
 all three found on real road tests rather than in a fixture.
 

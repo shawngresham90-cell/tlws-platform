@@ -106,11 +106,12 @@ do not defeat your own safety feature to test it.
 | 7.8 | Muting does not silence the on-screen guidance too | |
 | 7.9 | Voice survives the screen locking and unlocking | |
 
-## 8. Missed turn and reroute — **PR #272, not yet on `main`**
+## 8. Missed turn and reroute — **PR #272, on `main` since 2026-08-10, road retest NOT PERFORMED**
 
-> These lines test the fixes in PR #272, which is **unmerged and unverified
-> on the road**. Run this section against the #272 preview build, and record
-> the preview build sha separately. Until this section passes, Wave 1 is NO GO.
+> These lines test the fixes in PR #272, which is **merged but unverified
+> on the road**. Run this section against a `main` build containing #272 —
+> `1ee4932` or later, read off the build strip — and record that sha. Until
+> this section passes, Wave 1 is NO GO.
 
 | | Item | Mark |
 |---|---|---|
@@ -182,6 +183,7 @@ exactly like a `FAIL` does.
 
 **NOT STARTED.** No line on this checklist has been marked by anyone.
 
-Section 8 cannot be run against `main` at all: PR #272 is unmerged. Run it
-against the #272 preview build and record that sha separately from the
-production sha.
+Section 8 can now be run against `main`: PR #272 merged on 2026-08-10 at
+`1ee4932`. Run it against a build at that sha or later, confirmed off the
+build strip — a production build deployed from before the merge does not
+contain the fixes this section tests.
