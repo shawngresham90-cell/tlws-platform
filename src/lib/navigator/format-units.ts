@@ -29,3 +29,20 @@ export function formatAccuracyFt(accuracyM: number): string {
   const ft = Math.max(10, Math.round((accuracyM * FEET_PER_METER) / 10) * 10);
   return `±${ft} ft`;
 }
+
+/**
+ * Truck height the way a driver reads it off a bridge placard: 13.5 → "13′6″".
+ * Inches round to the nearest whole inch and carry into feet at 12, so
+ * 12.999 is "13′0″", never "12′12″". Prime marks, not quotes — the same
+ * glyphs the placard uses.
+ */
+export function formatTruckHeightFtIn(heightFt: number): string {
+  if (!Number.isFinite(heightFt) || heightFt < 0) return '—';
+  let ft = Math.floor(heightFt);
+  let inches = Math.round((heightFt - ft) * 12);
+  if (inches === 12) {
+    ft += 1;
+    inches = 0;
+  }
+  return `${ft}′${inches}″`;
+}

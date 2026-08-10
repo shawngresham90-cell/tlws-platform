@@ -42,7 +42,8 @@ export const VEHICLE_MARKER_PX = 36;
  * not reach. Amber is the TLWS accent; asphalt is the badge body; the
  * near-white ring is what keeps the marker legible on a dark basemap, a
  * light one, and satellite imagery alike — and against the route line,
- * which is itself yellow, so the marker may not be. */
+ * drawn in the blueprint's electric cyan, so the amber nose stays
+ * unmistakably the truck. */
 const AMBER = '#F5A623';
 const ASPHALT = '#141414';
 const RING = '#f8fafc';

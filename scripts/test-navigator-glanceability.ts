@@ -180,16 +180,29 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   const instrSize = instrMatch === null ? 0 : sizeOf(instrMatch[0]);
 
   const distMatch = /<p class="([^"]*)">\s*In\s/.exec(surface);
-  const distSize = distMatch === null ? 0 : sizeOf(distMatch[0]);
 
-  check('hierarchy: the TURN is the largest thing on the screen', instrSize >= 5, instrSize);
+  /*
+   * Design Blueprint Phase 1 inverted the top of this hierarchy, by owner
+   * decision (blueprint law 5: numerals are the biggest thing on screen):
+   * the DISTANCE numeral is now the largest element, and the instruction
+   * is the largest PROSE beneath it. The distance line's size comes from
+   * the --size-maneuver design variable (60px — larger than every Tailwind
+   * size class this surface uses), so the static proof is that the
+   * distance <p> reads that variable, in the data face, with tabular
+   * figures — and that no other element reaches even the instruction.
+   */
   check(
-    'hierarchy: the distance to it comes second, never equal',
-    distSize > 0 && distSize < instrSize,
-    { instrSize, distSize },
+    'hierarchy: the distance numeral is the largest thing on the screen',
+    distMatch !== null &&
+      distMatch[1].includes('var(--size-maneuver)') &&
+      distMatch[1].includes('font-data') &&
+      distMatch[1].includes('num-data'),
+    distMatch?.[1],
   );
+  check('hierarchy: the TURN is the largest prose on the screen', instrSize >= 5, instrSize);
 
-  // Nothing else on the surface may tie or beat the instruction.
+  // Nothing else on the surface may tie or beat the instruction on the
+  // Tailwind scale…
   const others = [...surface.matchAll(/<(?:p|div|dl|dd|dt|button)\b[^>]*class="([^"]*)"/g)]
     .map((m) => m[1])
     .filter((c) => !c.includes('line-clamp-2'));
@@ -198,6 +211,16 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
     biggestOther,
     instrSize,
   });
+  // …and nothing may borrow the maneuver numeral's size variable: at most
+  // the distance line and its decorative arrow (which shares the visual
+  // row and is aria-hidden) may read it. Anything else claiming that size
+  // is a new largest element smuggled past the token scan.
+  const maneuverSized = (surface.match(/var\(--size-maneuver\)/g) ?? []).length;
+  check(
+    'hierarchy: only the distance row reads the maneuver size',
+    maneuverSized >= 1 && maneuverSized <= 2,
+    maneuverSized,
+  );
 
   // The map is the surface's primary element and must not be crowded out.
   check(

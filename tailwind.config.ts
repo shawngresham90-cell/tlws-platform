@@ -61,10 +61,38 @@ const config: Config = {
         line: '#2A2A2E', // hairline dividers + placard borders
         ink: '#F2F0EB', // Reflective White — warm primary text
         muted: '#A3A39B', // secondary text (warmed to match ink)
+        // Navigator cockpit tokens (Navigator Design Blueprint §12). Values
+        // live in src/app/(navigator)/navigator-design.css so night/day is a
+        // CSS-variable flip; these aliases only make them addressable as
+        // Tailwind classes inside Navigator components. Semantic, never
+        // decorative: route/good/warn/danger each mean exactly one thing,
+        // and nav-brand (TLWS yellow) is parked-screen branding only —
+        // never on the active Drive Mode map or its chrome.
+        nav: {
+          // DEFAULT exists for the token guard, which reads any `-nav`
+          // suffix in source (including prose like "skip-nav" in comments)
+          // as this family; it aliases the background like `bg` below.
+          DEFAULT: 'var(--nav-bg)',
+          bg: 'var(--nav-bg)',
+          surface: 'var(--nav-surface)',
+          'surface-2': 'var(--nav-surface-2)',
+          text: 'var(--nav-text)',
+          'text-dim': 'var(--nav-text-dim)',
+          route: 'var(--nav-route)',
+          'route-alt': 'var(--nav-route-alt)',
+          good: 'var(--nav-good)',
+          warn: 'var(--nav-warn)',
+          danger: 'var(--nav-danger)',
+          brand: 'var(--nav-brand)',
+        },
       },
       fontFamily: {
         display: ['var(--font-anton)', 'Impact', 'sans-serif'],
         body: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        // Navigator data face (blueprint §4): numerals only. Resolves to
+        // Inter until the owner takes the Barlow Semi Condensed font-file
+        // decision; pair with .num-data for tabular figures.
+        data: ['var(--font-data)'],
       },
       fontSize: {
         // Deliberate scale — display is heavy and tight, body is readable
@@ -78,6 +106,12 @@ const config: Config = {
       borderRadius: {
         // Placard radius — 8px: industrial, not consumer-soft (blueprint §2.4)
         card: '8px',
+        // Navigator cockpit radius (Navigator Design Blueprint §12) — 16px
+        // cards on the driving surface, value owned by navigator-design.css.
+        // Named `cockpit`, not `nav-card`: the design-tokens harness reads
+        // any `-nav-` utility as the nav COLOUR family, so the radius key
+        // must not contain the colour family's name.
+        cockpit: 'var(--radius-card)',
       },
       keyframes: {
         'fade-up': {
