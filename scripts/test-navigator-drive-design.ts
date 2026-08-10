@@ -334,11 +334,15 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   check('route: drawn in --nav-route cyan', MAP.includes("'#33C7FF'"));
   check('route: the old yellow line is gone', !/#facc15/i.test(MAP));
 
-  // Severity colors appear in DrivingScreen only as the off-route advisory
-  // treatment — never as a state invented by the screen.
+  // Severity colors appear in DrivingScreen only as warning-rail EDGES
+  // (Phase 2) — the advisory/critical left border beside real state words.
+  // Never a fill, never a text color, never a good-state the screen
+  // invents for itself.
   check(
-    'semantic: the only warn use on the screen is the off-route rail',
-    (SCREEN.match(/nav-warn/g) ?? []).length === 2 && !/nav-danger|nav-good/.test(SCREEN),
+    'semantic: warn/danger appear only as rail edges beside words',
+    [...SCREEN.matchAll(/nav-(?:warn|danger)/g)].length > 0 &&
+      !/(?<!border-l-)nav-(?:warn|danger)/.test(SCREEN) &&
+      !/nav-good/.test(SCREEN),
   );
   // The HOS bar pairs its color with the warning line's words.
   check(

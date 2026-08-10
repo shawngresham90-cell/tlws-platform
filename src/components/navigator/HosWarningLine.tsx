@@ -23,10 +23,16 @@ export function HosWarningLine({ warning }: { warning: HosWarning }) {
         ? 'Warning: '
         : '';
   return (
+    /* Phase 2 rail treatment: the semantic edge beside the words that
+       already carry the meaning ("Warning:", "Urgent:") — never instead
+       of them. Red only for the critical clock; every lesser state is
+       amber. The live-region behavior above is pinned and unchanged. */
     <p
       aria-live={warning.severity === 'critical' ? 'assertive' : 'polite'}
       role="status"
-      className="mt-2 text-xl font-semibold text-ink"
+      className={`mt-2 rounded-cockpit border border-line border-l-4 ${
+        warning.severity === 'critical' ? 'border-l-nav-danger' : 'border-l-nav-warn'
+      } bg-nav-surface-2 px-3 py-1 text-xl font-semibold text-ink`}
     >
       {prefix}
       {warning.text}

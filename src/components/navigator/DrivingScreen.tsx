@@ -17,6 +17,7 @@ import {
 } from '@/lib/navigator/pilot-mode';
 import { formatDriverDistanceMi, formatTruckHeightFtIn } from '@/lib/navigator/format-units';
 import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
+import { statusSeverity, severityGlyph } from '@/lib/navigator/status-severity';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import {
   createManeuverAnnouncer,
@@ -186,6 +187,12 @@ export function DrivingScreenView({
   /** Driver turned voice on or off — see VoiceControls.onMutedChange. */
   onVoiceMutedChange?: (muted: boolean) => void;
 }) {
+  // Warning-rail severity, read from the existing status — presentation
+  // only, computed nowhere else so the rail can never disagree with the
+  // words beside it.
+  const statusSev = statusSeverity(view.status);
+  const statusGlyph = severityGlyph(statusSev);
+
   const statusText: Record<DrivingView['status'], string> = {
     'no-route':
       'Route unavailable — no route is loaded. Plan a trip first; turn-by-turn routes arrive in a later milestone.',
@@ -376,30 +383,34 @@ export function DrivingScreenView({
   // Portrait stacks card → map → readouts. Landscape becomes a two-column
   // grid — readouts left, map spanning the right — WITHOUT reordering the
   // DOM, so the map still never remounts.
-  // The status row carries a minmax floor rather than plain auto: the map
-  // spans all four rows at an explicit viewport height (a measured road-
-  // test fix that stays), and Chromium's track sizing lets that spanning
-  // item collapse a plain auto row to 0 — the status line then paints
-  // under the trip bar. The floor guarantees the row its one line of text.
+  // Landscape rows are IMPLICIT, one per left-column item (every item
+  // carries col-start-1), so each honest line — status, off-route,
+  // offline — sizes to its own content. The template-plus-spanning-map
+  // arrangement this replaces let Chromium's track sizing collapse
+  // conditional rows to 0px, painting the warning rail's lines over each
+  // other exactly when more than one thing was wrong.
   const surfaceCls = fullScreen
     ? 'flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'landscape:grid landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)] ' +
-      'landscape:grid-rows-[auto_minmax(1.75rem,auto)_auto_1fr] landscape:items-start'
+      'landscape:auto-rows-min landscape:items-start'
     : 'space-y-6';
   const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
-  // The map is pinned to the VIEWPORT in landscape, not to the grid. It
-  // used to be `h-full`, which is 100% of the grid — and the grid's three
-  // auto rows are the left column's content, which on a 320 px-tall phone
-  // on its side needs about 500 px. Measured in Chromium at 568x320: the
-  // grid ran to 510 px, the map with it, and 190 px of the map — the edge
-  // its own Recenter and zoom controls sit on — was below the fold before
-  // the driver touched anything. Sizing off the viewport makes the map
-  // exactly as tall as the screen no matter what the left column does.
-  // (`p-2` is 0.5rem top and bottom, hence the 1rem.)
+  // The map is pinned to the VIEWPORT in landscape, not to the grid — the
+  // road-test finding that produced this rule stands: on a 320 px-tall
+  // phone on its side the left column can need 500 px, and a map sized by
+  // the grid followed it below the fold, taking its own Recenter and zoom
+  // controls with it. The pinning is now absolute positioning against the
+  // fixed shell (same 0.5rem margins the grid padding gave it) instead of
+  // an explicit height on a row-spanning grid item: a fixed-height span
+  // let Chromium collapse the left column's conditional rows to 0px, and
+  // an absolutely-positioned map cannot influence row sizing at all. The
+  // left offset mirrors the grid's minmax(0,38%) first column plus the
+  // gap. (landscape:col-start-2 is inert on an absolute item and kept for
+  // the structural pins that read it.)
   const mapWrapCls = fullScreen
     ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-cockpit border border-line ' +
-      'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 ' +
-      'landscape:h-[calc(100dvh-1rem)] landscape:min-h-0'
+      'landscape:absolute landscape:inset-y-2 landscape:right-2 ' +
+      'landscape:left-[calc(0.38*(100vw-1rem)+1rem)] landscape:col-start-2 landscape:min-h-0'
     : '';
 
   return (
@@ -431,6 +442,7 @@ export function DrivingScreenView({
                 : 'rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-xl font-semibold text-ink'
             }
           >
+            <span aria-hidden="true">⚠ </span>
             {offRouteText}
           </p>
         ) : null}
@@ -439,16 +451,31 @@ export function DrivingScreenView({
             component that must survive the layout switch untouched. */}
         <div className={mapWrapCls}>{mapSlot}</div>
 
-        {/* Status as TEXT — never color alone; live region for changes. */}
+        {/* Status as TEXT — never color alone; live region for changes.
+            Phase 2 warning rail: the SAME line, dressed by severity. While
+            healthy it stays a quiet one-liner (the always-on status text
+            is a pinned honesty invariant, not rail chrome); a degraded
+            state earns the amber advisory edge, a state where navigation
+            genuinely is not running earns the red one — each beside a
+            distinct aria-hidden shape, so severity never rides on color
+            alone. Purely presentational: the controller's status is read,
+            never interpreted, and no voice request originates here. */}
         <p
           aria-live="polite"
           role="status"
           className={
             fullScreen
-              ? `${colOne} truncate text-base font-semibold text-ink`
+              ? `${colOne} truncate text-base font-semibold text-ink motion-safe:transition-colors motion-safe:duration-200${
+                  statusSev === 'critical'
+                    ? ' rounded-cockpit border border-line border-l-4 border-l-nav-danger bg-nav-surface px-3 py-1'
+                    : statusSev === 'advisory'
+                      ? ' rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-nav-surface px-3 py-1'
+                      : ''
+                }`
               : 'text-xl font-semibold text-ink'
           }
         >
+          {statusGlyph ? <span aria-hidden="true">{statusGlyph} </span> : null}
           {statusText[view.status]}
           {view.lastKnown ? ' (last known)' : ''}
         </p>
@@ -457,16 +484,20 @@ export function DrivingScreenView({
             were downloaded when the trip was planned and live in memory,
             and matching, off-route detection and arrival are all pure —
             so offline costs exactly one thing, and the line says which. */}
+        {/* Rendering at all means the network is genuinely degraded, so
+            this line always wears the advisory treatment — words first,
+            shape beside them, amber never alone. */}
         {offlineText ? (
           <p
             aria-live="polite"
             role="status"
             className={
               fullScreen
-                ? `${colOne} text-base font-semibold text-ink`
+                ? `${colOne} rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-nav-surface px-3 py-1 text-base font-semibold text-ink`
                 : 'text-xl font-semibold text-ink'
             }
           >
+            <span aria-hidden="true">⚠ </span>
             {offlineText}
           </p>
         ) : null}
