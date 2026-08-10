@@ -63,6 +63,7 @@ const flat = (s: string) => s.replace(/^\s*>\s?/gm, '').replace(/\s+/g, ' ');
 const VOLUME_FLAT = flat(VOLUME_DOC);
 const A11Y_FLAT = flat(A11Y_DOC);
 const read = (p: string) => readFileSync(p, 'utf8');
+const VOLUME_SRC = read('src/lib/navigator/provider-volume.ts');
 
 /* --------------------------------- 1. the caps are the code's caps */
 {
@@ -237,6 +238,19 @@ const read = (p: string) => readFileSync(p, 'utf8');
   check(
     'doc: admits the search-product quota is unknown',
     /a quota this repository does not record/.test(VOLUME_FLAT),
+  );
+  // The worst-case section calls itself "the ceiling the code enforces".
+  // That is true of truck transactions and NOT of searches, which have a
+  // rate limit but no per-trip cap. The distinction has to be stated in the
+  // section that makes the claim, or the claim over-reaches.
+  check(
+    'doc: excludes searches from the enforced-ceiling claim',
+    /Search calls are deliberately absent from this table/.test(VOLUME_FLAT) &&
+      /not capped per trip or per session/.test(VOLUME_FLAT),
+  );
+  check(
+    'module: labels its worst-case search figure an estimate, not a bound',
+    /REPRESENTATIVE HIGH ESTIMATE/.test(VOLUME_SRC) && /it is not a bound/.test(VOLUME_SRC),
   );
   check('doc: warns that per-IP limits are not per-driver limits', /share an IP/.test(VOLUME_FLAT));
   check(

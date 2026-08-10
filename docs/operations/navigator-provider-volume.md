@@ -92,6 +92,12 @@ Not a forecast. This is **the ceiling the code enforces**: one plan per
 trip, then the **hourly** reroute rail (6/hour) spent for every hour driven.
 Nothing in the app can exceed it without a budget constant changing.
 
+**Search calls are deliberately absent from this table.** They are rate
+limited (30/minute/IP) but not capped per trip or per session, so there is
+no enforced ceiling to publish — a driver who keeps typing keeps spending.
+The model carries a representative high figure for them; it is an estimate,
+and it is not quoted as a bound.
+
 | Drivers | Route plans | Reroutes | **Truck transactions** | % of allowance |
 |---:|---:|---:|---:|---:|
 | **3** | 132 | 3,960 | **4,092** | **81.8%** ✅ |

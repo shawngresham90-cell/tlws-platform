@@ -199,6 +199,16 @@ export function expectedMonthlyVolume(
  * the app can exceed it without a budget changing, which is the point: it
  * still bounds the blast radius of a defect that reroutes in a loop — it
  * just bounds it per hour rather than per trip.
+ *
+ * WHICH COLUMN IS ACTUALLY ENFORCED
+ *
+ * `truckTransactions` — route plans plus reroutes — is the enforced part,
+ * and it is the only column the volume document publishes as a ceiling.
+ * `searchCalls` is NOT enforced per trip: the search endpoint is rate
+ * limited (30 per minute per IP) but has no per-trip or per-session cap,
+ * so a driver who keeps typing keeps spending. Its figure here is a
+ * REPRESENTATIVE HIGH ESTIMATE — one saturated minute of typing per trip —
+ * not a bound the code can hold. Do not quote it as one.
  */
 export function worstCaseMonthlyVolume(
   drivers: number,
@@ -208,8 +218,10 @@ export function worstCaseMonthlyVolume(
   // One plan per trip, then the hourly rail spent for every hour driven.
   const routePlans = trips;
   const reroutes = trips * a.drivingHoursPerTrip * REROUTE_DEFAULTS.maxPerHour;
-  // Search has no per-session cap, only a per-minute limiter. A driver
-  // typing continuously for a minute is the ceiling that matters.
+  // Estimate, not a ceiling: search has no per-trip or per-session cap, only
+  // a per-minute limiter, so nothing stops a driver typing for five minutes
+  // and spending five times this. One saturated minute per trip is a
+  // defensible high figure; it is not a bound. See the docblock.
   const searchCalls = trips * SEARCHES_PER_MINUTE_PER_IP;
   return breakdown(drivers, trips, searchCalls, routePlans, reroutes, a.failedFraction);
 }
