@@ -205,6 +205,18 @@ export function NavigationMap({
       // rules — only the paint changed.
       L.polyline(line, { color: '#0f172a', weight: 12, opacity: 0.55 }).addTo(layer);
       L.polyline(line, { color: '#33C7FF', weight: 6, opacity: 1 }).addTo(layer);
+      // Pre-drive briefing overview (design blueprint Phase 3): a route
+      // drawn BEFORE guidance is live is framed whole, origin to
+      // destination, so the flight-briefing map answers "where does this
+      // go?" at a glance. Live guidance is untouched — with `navigating`
+      // true this never runs, and the follow logic keeps sole authority
+      // over the mid-drive camera.
+      const map = mapRef.current;
+      if (!navigating && map !== null) {
+        selfMoveRef.current = true;
+        map.fitBounds(L.latLngBounds(line), { padding: [40, 40], animate: false });
+        selfMoveRef.current = false;
+      }
     }
     // A replacement route means new guidance: never leave the camera
     // parked on the old one.
@@ -212,7 +224,7 @@ export function NavigationMap({
       dispatch({ kind: 'route-replaced' });
     }
     drawnRouteRef.current = key;
-  }, [ready, geometry, routeId, dispatch]);
+  }, [ready, geometry, routeId, navigating, dispatch]);
 
   // --- destination + next maneuver ---------------------------------------
   useEffect(() => {
@@ -246,9 +258,18 @@ export function NavigationMap({
   }, [ready, destination, nextManeuver]);
 
   // --- the truck, and following it ---------------------------------------
+  // Guidance going live hands the camera straight back to the truck: the
+  // briefing overview (above) may have framed the whole route, and the
+  // recenter threshold would otherwise hold that framing until the truck
+  // had travelled far enough to trip it. Clearing the last-centered
+  // memory makes the next tick center immediately — in the old flow the
+  // camera was already on the truck, so this is a same-spot no-op there.
+  const wasNavigatingRef = useRef(navigating);
   useEffect(() => {
     const L = leafletRef.current;
     const map = mapRef.current;
+    if (navigating && !wasNavigatingRef.current) lastCenteredRef.current = null;
+    wasNavigatingRef.current = navigating;
     if (!ready || L === null || map === null || position === null) return;
 
     if (truckRef.current === null) {

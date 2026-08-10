@@ -15,11 +15,13 @@ import {
   type ProblemReport,
 } from '@/lib/navigator/problem-report';
 import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
+import { formatEta } from '@/lib/navigator/driving-hud';
 import { DestinationSearch } from './DestinationSearch';
 import { TruckProfilePanel } from './TruckProfilePanel';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
 import { DriverNameEntry } from './DriverNameEntry';
+import { RouteBriefing } from './RouteBriefing';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
@@ -269,28 +271,28 @@ export function PilotTripControls({
         <p className="text-xl text-ink/80">Requesting a validated truck route…</p>
       ) : null}
 
+      {/* Route-ready is the flight briefing (design blueprint Phase 3):
+          destination, the provider's numbers, the truck the plan request
+          actually carried, the provider's own major roads, and only the
+          warnings the app genuinely has. Presentation only — Start and
+          Discard call the SAME lifecycle transitions they always did,
+          and the plausibility advisory renders unchanged inside it. */}
       {state === 'route-ready' ? (
-        <div className="space-y-3">
-          <p className="text-xl text-ink">
-            Route ready: {lifecycle.view().totalMi?.toFixed(1) ?? '—'} mi. Navigation has not
-            started.
-          </p>
-          <RouteCheck lifecycle={lifecycle} />
-          <button
-            type="button"
-            className={buttonClass}
-            onClick={() => act(() => lifecycle.startNavigation(Date.now()))}
-          >
-            Start navigation
-          </button>
-          <button
-            type="button"
-            className={buttonClass}
-            onClick={() => act(() => lifecycle.discardRoute(Date.now()))}
-          >
-            Discard route
-          </button>
-        </div>
+        <RouteBriefing
+          destination={picked}
+          totalMi={lifecycle.view().totalMi}
+          etaText={formatEta(
+            lifecycle.view().remainingMi,
+            lifecycle.view().totalMi,
+            lifecycle.routeBrief()?.durationSeconds ?? null,
+            Date.now(),
+            new Date().getTimezoneOffset(),
+          )}
+          brief={lifecycle.routeBrief()}
+          plausibilitySlot={<RouteCheck lifecycle={lifecycle} />}
+          onStart={() => act(() => lifecycle.startNavigation(Date.now()))}
+          onDiscard={() => act(() => lifecycle.discardRoute(Date.now()))}
+        />
       ) : null}
 
       {state === 'navigating' ||
