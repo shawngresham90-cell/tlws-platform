@@ -64,24 +64,42 @@ export function HosStrip({
     }
   });
 
+  /*
+   * The bar wears the semantic state color the warning line already states
+   * in words (never color alone): green while the clocks are comfortable,
+   * amber once a clock is getting tight, red when a stop is imminent.
+   * Sodium amber — the site's money accent — left this surface with the
+   * cockpit restyle: on the driving screen amber may only ever mean
+   * "warning".
+   */
+  const barColor =
+    view.warning.severity === 'critical'
+      ? 'bg-nav-danger'
+      : view.warning.severity === 'none'
+        ? 'bg-nav-good'
+        : 'bg-nav-warn';
+
   return (
-    <section aria-label="Hours of service" className="rounded-card border border-line p-4">
+    <section
+      aria-label="Hours of service"
+      className="rounded-cockpit border border-line bg-nav-surface p-4"
+    >
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
         <dt>Drive time left</dt>
-        <dd className="font-semibold text-ink">{view.driveText}</dd>
+        <dd className="num-data font-semibold text-ink">{view.driveText}</dd>
         <dt>On-duty window left</dt>
-        <dd className="font-semibold text-ink">{view.windowText}</dd>
+        <dd className="num-data font-semibold text-ink">{view.windowText}</dd>
       </dl>
       {/* Text-labeled remaining bars — the numbers above carry the meaning;
           the bars are reinforcement, never the only signal. */}
-      <div aria-hidden="true" className="mt-2 h-2 w-full rounded-card bg-line">
+      <div aria-hidden="true" className="mt-2 h-2 w-full rounded-cockpit bg-line">
         <div
-          className="h-2 rounded-card bg-signal"
+          className={`h-2 rounded-cockpit ${barColor}`}
           style={{ width: `${Math.round(view.driveFraction * 100)}%` }}
         />
       </div>
       <HosWarningLine warning={view.warning} />
-      <p className="mt-2 text-sm text-muted">{sourceLabel}</p>
+      <p className="mt-2 text-base text-muted">{sourceLabel}</p>
     </section>
   );
 }

@@ -33,8 +33,8 @@ import { vehicleMarkerRotationDeg, vehicleMarkerSvg, VEHICLE_MARKER_PX } from '.
  */
 
 const CONTROL =
-  'flex min-h-16 min-w-16 items-center justify-center rounded-card border border-line ' +
-  'bg-asphalt/90 text-2xl font-semibold text-ink shadow-lg backdrop-blur';
+  'flex min-h-16 min-w-16 items-center justify-center rounded-cockpit border border-line ' +
+  'bg-nav-surface text-2xl font-semibold text-ink shadow-lg';
 
 export function NavigationMap({
   geometry,
@@ -198,8 +198,13 @@ export function NavigationMap({
     layer.clearLayers();
     if (geometry.length >= 2) {
       const line = geometry.map((p) => [p.lat, p.lng] as [number, number]);
+      // Route line per the design blueprint: electric cyan over a dark
+      // casing so it reads over any tile. Cyan replaced the previous
+      // yellow, which sat one hue from the TLWS brand yellow the blueprint
+      // bans from the drive map. Same geometry, same weights, same redraw
+      // rules — only the paint changed.
       L.polyline(line, { color: '#0f172a', weight: 12, opacity: 0.55 }).addTo(layer);
-      L.polyline(line, { color: '#facc15', weight: 6, opacity: 1 }).addTo(layer);
+      L.polyline(line, { color: '#33C7FF', weight: 6, opacity: 1 }).addTo(layer);
     }
     // A replacement route means new guidance: never leave the camera
     // parked on the old one.
@@ -226,13 +231,16 @@ export function NavigationMap({
       if (el) {
         el.textContent = glyph;
         el.style.cssText +=
-          ';display:flex;align-items:center;justify-content:center;font-size:15px;' +
-          `background:${bg};border:2px solid #f8fafc;border-radius:9999px;` +
+          ';display:flex;align-items:center;justify-content:center;font-size:16px;' +
+          `background:${bg};color:#0A0E13;border:2px solid #f8fafc;border-radius:9999px;` +
           'box-shadow:0 1px 4px rgba(0,0,0,.5);';
       }
     };
-    if (nextManeuver !== null) pin(nextManeuver, '↱', 'Next maneuver', '#1d4ed8');
-    if (destination !== null) pin(destination, '🏁', 'Destination', '#166534');
+    // Blueprint semantics: the next-maneuver pin wears the route color, the
+    // destination wears the good/open green. Dark glyphs on both so the
+    // symbol survives daylight glare.
+    if (nextManeuver !== null) pin(nextManeuver, '↱', 'Next maneuver', 'var(--nav-route)');
+    if (destination !== null) pin(destination, '🏁', 'Destination', 'var(--nav-good)');
   }, [ready, destination, nextManeuver]);
 
   // --- the truck, and following it ---------------------------------------

@@ -15,7 +15,9 @@ import {
   type PilotLog,
   type PilotMode,
 } from '@/lib/navigator/pilot-mode';
-import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
+import { formatDriverDistanceMi, formatTruckHeightFtIn } from '@/lib/navigator/format-units';
+import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
+import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import {
   createManeuverAnnouncer,
   createStatusAnnouncer,
@@ -76,6 +78,32 @@ const buildId = resolveBuildId({
 });
 
 /**
+ * The truck chip (blueprint §5): the profile the route was actually planned
+ * with, pinned over the map — always visible = always trusted. It shows the
+ * REAL planning input (`DEFAULT_TRUCK_PROFILE`, the same object the plan
+ * request sends) and says it is the pilot default, because implying a
+ * custom truck would be a lie. Display-only: no tap target, no pointer
+ * events, so it can never intercept a map gesture. Exported for the design
+ * harness.
+ */
+export function TruckChip() {
+  return (
+    <div
+      aria-label="Truck profile used for this route"
+      className="pointer-events-none absolute right-3 top-3 z-[1000] rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-right shadow-lg"
+    >
+      <div className="font-data num-data text-[length:var(--size-street)] font-bold leading-tight text-ink">
+        {formatTruckHeightFtIn(DEFAULT_TRUCK_PROFILE.heightFt)} ·{' '}
+        {DEFAULT_TRUCK_PROFILE.grossWeightLbs.toLocaleString('en-US')} lb
+      </div>
+      <div className="text-[length:var(--size-label)] leading-tight text-ink/70">
+        Pilot default profile
+      </div>
+    </div>
+  );
+}
+
+/**
  * States where guidance is genuinely live, and the screen becomes the
  * map-first driving surface instead of a page. 'route-ready' is NOT here:
  * the driver has not started yet and still needs the ordinary controls.
@@ -92,7 +120,7 @@ const ACTIVE_LIFECYCLE_STATES: readonly string[] = [
 const NavigationMap = dynamic(() => import('./NavigationMap').then((m) => m.NavigationMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-72 w-full items-center justify-center rounded-card border border-line text-lg text-muted sm:h-96">
+    <div className="flex h-72 w-full items-center justify-center rounded-cockpit border border-line bg-nav-surface text-lg text-muted sm:h-96">
       Loading map…
     </div>
   ),
@@ -192,8 +220,19 @@ export function DrivingScreenView({
     }
   }, [focusNavigationKey]);
 
+  // Within 0.3 mi of the turn the banner gains a route-colored bottom glow
+  // (blueprint §5): motion/emphasis signals imminence, color stays reserved
+  // for danger. Pure presentation of a distance the view already carries.
+  const imminent = (view.maneuvers?.distanceMi ?? Number.POSITIVE_INFINITY) < 0.3;
+
+  // The provider's own structured action/direction pair, mapped to an arrow
+  // by an omit-on-unknown whitelist — never parsed out of instruction prose.
+  const glyph = m ? maneuverGlyph(m.action, m.direction) : null;
+
   // A maneuver card that reads over any basemap: opaque backing, road
-  // name when the provider named one, and the following turn.
+  // name when the provider named one, and the following turn. Blueprint §5
+  // hierarchy: the DISTANCE is the largest thing on the screen (numerals
+  // are the product), the instruction is the largest prose beneath it.
   const maneuverCard = (
     <section
       ref={navTopRef}
@@ -208,17 +247,35 @@ export function DrivingScreenView({
       // the distance and two lines of instruction always fit. The 600 px
       // threshold is measured, not guessed: a 568 px-tall phone in
       // portrait still overflowed at 480.
-      className="max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-card border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] sm:p-6"
+      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] sm:p-6${imminent ? ' nav-imminent' : ''}`}
     >
       {m ? (
         <>
-          <p className="text-xl text-ink/80 sm:text-2xl">
-            In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
-          </p>
-          {/* Sized so the map still owns the screen on a 320 px phone: the
-              instruction is the largest text, but it may not eat the map.
-              Clamped rather than clipped — two lines and an ellipsis says
-              "there is more"; a hard cut mid-word says nothing at all. */}
+          <div className="flex items-center gap-3">
+            {glyph ? (
+              /* Reinforcement only, never the meaning: the instruction text
+                 below is the primary signal, so the arrow is aria-hidden
+                 and simply absent when the provider's action is one the
+                 whitelist does not know. */
+              <div
+                aria-hidden="true"
+                className="font-data text-[length:clamp(2.5rem,min(12vw,8dvh),var(--size-maneuver))] leading-none text-ink"
+              >
+                {glyph}
+              </div>
+            ) : null}
+            {/* The blueprint's huge numeral. Clamped by viewport so a 320px
+               phone still fits "In 127.5 mi" on one line; the ceiling is
+               the --size-maneuver design size (60px). */}
+            <p className="font-data num-data text-[length:clamp(2.5rem,min(15vw,9dvh),var(--size-maneuver))] font-bold leading-none tracking-tight text-ink">
+              In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
+            </p>
+          </div>
+          {/* The largest PROSE on the screen (the distance numeral above is
+              the only thing bigger — blueprint §5), sized so the map still
+              owns a 320 px phone. Clamped rather than clipped — two lines
+              and an ellipsis says "there is more"; a hard cut mid-word says
+              nothing at all. */}
           {/*
             A live region, and the ONLY one on the card. A driver using a
             screen reader with voice guidance muted — and voice starts
@@ -263,24 +320,38 @@ export function DrivingScreenView({
     </section>
   );
 
-  // Compact bottom readout for the driving surface.
+  // The trip bar (blueprint §5): three real values — speed from GPS,
+  // remaining from route progress, arrival from the provider's planned
+  // duration. Speed gets the blueprint's speed-cluster emphasis (48px
+  // ceiling); labels sit at the 16px drive-mode floor, tabular numerals so
+  // nothing jitters as it counts down. No posted-limit shield: the route
+  // response carries no speed-limit data, and a shield rendered from
+  // nothing would be the most dangerous fake on the screen.
   const compactStrip = (
-    <dl className="grid shrink-0 grid-cols-3 gap-2 rounded-card border border-line bg-asphalt/95 px-3 py-1 text-center text-ink">
+    <dl className="grid shrink-0 grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-1.5 text-center text-ink">
       <div>
-        <dt className="text-xs text-ink/70">Speed</dt>
-        <dd className="text-xl font-semibold sm:text-2xl">
+        <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Speed</dt>
+        {/* One line always: a value that stacks at 58 but not at 8 would
+            re-flow the whole bar as speed changes. 7.5vw fits "115 mph" in
+            a third of a 320px portrait screen; 6dvh keeps the same cell
+            honest in landscape, where the strip lives in the narrow left
+            rail and width is not the scarce dimension. The ceiling is the
+            --size-speed design size, reached on wide viewports. */}
+        <dd className="whitespace-nowrap font-data num-data text-[length:clamp(1.5rem,min(7.5vw,6dvh),var(--size-speed))] font-bold leading-none">
           {view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-ink/70">Remaining</dt>
-        <dd className="text-xl font-semibold sm:text-2xl">
+        <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Remaining</dt>
+        <dd className="font-data num-data text-[length:var(--size-trip)] font-semibold leading-tight">
           {formatDriverDistanceMi(view.remainingMi)}
         </dd>
       </div>
       <div>
-        <dt className="text-xs text-ink/70">Arrive</dt>
-        <dd className="text-xl font-semibold sm:text-2xl">{etaText ?? '—'}</dd>
+        <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Arrive</dt>
+        <dd className="font-data num-data text-[length:var(--size-trip)] font-semibold leading-tight">
+          {etaText ?? '—'}
+        </dd>
       </div>
     </dl>
   );
@@ -300,15 +371,20 @@ export function DrivingScreenView({
   // it, the driving surface owns the whole viewport and says its own,
   // navigation-specific thing about being offline.
   const shellCls = fullScreen
-    ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-asphalt'
+    ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-nav-bg'
     : '';
   // Portrait stacks card → map → readouts. Landscape becomes a two-column
   // grid — readouts left, map spanning the right — WITHOUT reordering the
   // DOM, so the map still never remounts.
+  // The status row carries a minmax floor rather than plain auto: the map
+  // spans all four rows at an explicit viewport height (a measured road-
+  // test fix that stays), and Chromium's track sizing lets that spanning
+  // item collapse a plain auto row to 0 — the status line then paints
+  // under the trip bar. The floor guarantees the row its one line of text.
   const surfaceCls = fullScreen
     ? 'flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'landscape:grid landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)] ' +
-      'landscape:grid-rows-[auto_auto_auto_1fr] landscape:items-start'
+      'landscape:grid-rows-[auto_minmax(1.75rem,auto)_auto_1fr] landscape:items-start'
     : 'space-y-6';
   const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
   // The map is pinned to the VIEWPORT in landscape, not to the grid. It
@@ -321,7 +397,7 @@ export function DrivingScreenView({
   // exactly as tall as the screen no matter what the left column does.
   // (`p-2` is 0.5rem top and bottom, hence the 1rem.)
   const mapWrapCls = fullScreen
-    ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-card border border-line ' +
+    ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-cockpit border border-line ' +
       'landscape:col-start-2 landscape:row-start-1 landscape:row-span-4 ' +
       'landscape:h-[calc(100dvh-1rem)] landscape:min-h-0'
     : '';
@@ -344,12 +420,15 @@ export function DrivingScreenView({
             saying the same thing a beat later is the sprinkling that
             budget exists to prevent.
         */}
+        {/* Blueprint §5 warning-rail treatment for the one warning this
+            surface can honestly state: an amber advisory edge PAIRED with
+            the words — the text alone already carries the full meaning. */}
         {offRouteText ? (
           <p
             className={
               fullScreen
-                ? `${colOne} shrink-0 rounded-card border border-line bg-asphalt/95 px-3 py-1 text-base font-semibold text-ink`
-                : 'rounded-card border border-line px-3 py-2 text-xl font-semibold text-ink'
+                ? `${colOne} shrink-0 rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-asphalt/95 px-3 py-1 text-base font-semibold text-ink`
+                : 'rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-xl font-semibold text-ink'
             }
           >
             {offRouteText}
@@ -366,7 +445,7 @@ export function DrivingScreenView({
           role="status"
           className={
             fullScreen
-              ? `${colOne} truncate text-sm font-semibold text-ink`
+              ? `${colOne} truncate text-base font-semibold text-ink`
               : 'text-xl font-semibold text-ink'
           }
         >
@@ -384,7 +463,7 @@ export function DrivingScreenView({
             role="status"
             className={
               fullScreen
-                ? `${colOne} text-sm font-semibold text-ink`
+                ? `${colOne} text-base font-semibold text-ink`
                 : 'text-xl font-semibold text-ink'
             }
           >
@@ -430,7 +509,9 @@ export function DrivingScreenView({
             would eat the map's floor on a 320 px phone. Mute is allowed
             while moving by the shared permission map, like Stop, so it
             must live here on the driving surface and not below the fold. */}
-        <div className={fullScreen ? `${colOne} flex gap-2` : ''}>
+        {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
+            touch targets, so a glove aiming for Stop cannot land on Mute. */}
+        <div className={fullScreen ? `${colOne} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute">
@@ -446,7 +527,7 @@ export function DrivingScreenView({
               <button
                 type="button"
                 onClick={onStop}
-                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-xl font-semibold text-ink"
                 aria-label="Stop navigation and discard position"
               >
                 {fullScreen ? 'Stop' : 'Stop navigation'}
@@ -455,7 +536,7 @@ export function DrivingScreenView({
               <button
                 type="button"
                 onClick={onStart}
-                className="min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
+                className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-xl font-semibold text-ink"
                 aria-label="Enable location and start the driving preview"
               >
                 Enable location
@@ -988,7 +1069,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             <button
               type="button"
               onClick={() => setOverviewToggleKey((k) => k + 1)}
-              className="min-h-16 w-full rounded-card border border-line px-4 text-lg font-semibold text-ink"
+              className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-lg font-semibold text-ink"
               aria-label="Show the whole route, then return to your truck"
             >
               Overview
@@ -1003,20 +1084,26 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       }
       mapSlot={
         watching || mapData.geometry.length > 0 ? (
-          <NavigationMap
-            geometry={mapData.geometry}
-            position={truckPosition}
-            headingDeg={position.headingDeg}
-            speedMph={view.speedMph}
-            destination={mapData.destination}
-            nextManeuver={mapData.nextManeuver}
-            routeId={mapData.routeId}
-            styleId={styleId}
-            canZoom={permits('zoom-map')}
-            canPan={permits('pan-map')}
-            navigating={fullScreen}
-            overviewToggleKey={overviewToggleKey}
-          />
+          <>
+            <NavigationMap
+              geometry={mapData.geometry}
+              position={truckPosition}
+              headingDeg={position.headingDeg}
+              speedMph={view.speedMph}
+              destination={mapData.destination}
+              nextManeuver={mapData.nextManeuver}
+              routeId={mapData.routeId}
+              styleId={styleId}
+              canZoom={permits('zoom-map')}
+              canPan={permits('pan-map')}
+              navigating={fullScreen}
+              overviewToggleKey={overviewToggleKey}
+            />
+            {/* Map-anchored, display-only, present only while the surface
+                is the driving cockpit — the parked page already states the
+                full profile in the trip controls. */}
+            {fullScreen ? <TruckChip /> : null}
+          </>
         ) : null
       }
       onStart={() => {

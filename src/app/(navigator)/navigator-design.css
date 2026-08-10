@@ -1,0 +1,102 @@
+/**
+ * Navigator design tokens — Design Master Blueprint §12, Phase 1.
+ *
+ * Night is the DESIGN, day is the adaptation (blueprint law 3). The night
+ * palette therefore sits on :root as the default; [data-theme='day'] is the
+ * override. Nothing sets that attribute yet — automatic day/night switching
+ * (sunset/sunrise + tunnel detection, blueprint §3) needs a clock-and-
+ * position policy the pure navigator core deliberately does not own, so the
+ * day palette ships as a complete but DORMANT state. Flipping it on is a
+ * wiring decision, not a design one.
+ *
+ * Color = meaning, never decoration (law 4):
+ *   --nav-route   route line only — never a state, never an accent
+ *   --nav-good    good/open state only
+ *   --nav-warn    warnings/advisories only
+ *   --nav-danger  restrictions, closures, hard stops only
+ *   --nav-brand   TLWS yellow — parked-screen branding ONLY. Never on the
+ *                 active Drive Mode map or its chrome: it sits one hue away
+ *                 from warning amber, and a brand mark that can be mistaken
+ *                 for a warning is a safety bug, not a style choice.
+ *
+ * Every severity color is paired with words or a distinct shape at the use
+ * site — color alone never carries a meaning (law 9).
+ *
+ * --font-data: the blueprint's data face is Barlow Semi Condensed. This
+ * repository loads fonts as committed woff2 subsets via next/font/local,
+ * and adding a new family means adding font FILES — a licensing/asset
+ * decision that belongs to the owner, so Phase 1 does not take it. The
+ * token exists so every numeral already reads from the right variable;
+ * today it resolves to Inter (which has true tabular figures — pair with
+ * the site's .num-data utility). When the owner ships Barlow the token
+ * flips in one line and every numeral follows.
+ *
+ * --size-label is 16px, not the blueprint table's 14px: the blueprint's own
+ * hard floor — nothing under 16px visible while driving — wins over its
+ * label row. Parked screens may go smaller; Drive Mode may not.
+ */
+
+:root {
+  /* Night (default) */
+  --nav-bg: #0a0e13;
+  --nav-surface: #131a24;
+  --nav-surface-2: #1c2530;
+  --nav-text: #f2f5f8;
+  --nav-text-dim: #8a97a5;
+  --nav-route: #33c7ff;
+  --nav-route-alt: rgba(90, 107, 125, 0.5);
+  --nav-good: #2ecc71;
+  --nav-warn: #ffb020;
+  --nav-danger: #ff3b30;
+  --nav-brand: #ffeb00; /* parked screens only — NEVER on the drive map */
+
+  /* Type */
+  --font-data: var(--font-inter), system-ui, sans-serif; /* Barlow Semi Condensed pending owner decision */
+  --font-ui: var(--font-inter), system-ui, sans-serif;
+  --size-maneuver: 60px;
+  --size-speed: 48px;
+  --size-street: 26px;
+  --size-trip: 24px;
+  --size-label: 16px; /* drive-mode floor: nothing visible under 16px */
+
+  /* Touch */
+  --tap-drive: 64px;
+  --tap-min: 48px;
+  --tap-gap: 12px;
+
+  /* Shape & motion */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+  --ease-cam: 300ms ease-out;
+  --ease-ui: 200ms ease-out;
+}
+
+/* Day palette — complete, dormant. Route/good/warn/danger/brand unchanged:
+   meaning never changes between modes (blueprint §3). */
+[data-theme='day'] {
+  --nav-bg: #f4f5f7;
+  --nav-surface: #ffffff;
+  --nav-surface-2: #edf0f3;
+  --nav-text: #12181f;
+  --nav-text-dim: #5c6b7a;
+}
+
+/* Calm motion or none (blueprint §9): the tokens themselves go inert, so
+   every transition written against them respects the preference without
+   per-component opt-outs. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ease-cam: 0ms linear;
+    --ease-ui: 0ms linear;
+  }
+}
+
+/* The maneuver-imminent treatment (blueprint §5): within 0.3 mi the banner
+   gains a route-colored bottom glow. Motion signals imminence; color stays
+   reserved for danger — this is the route color, not a severity. The pulse
+   is a single soft fade-in driven by the UI ease token, so reduced motion
+   collapses it to an instant, static glow. */
+.nav-imminent {
+  box-shadow: inset 0 -2px 0 0 var(--nav-route);
+  transition: box-shadow var(--ease-ui);
+}
