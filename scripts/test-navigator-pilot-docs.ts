@@ -358,6 +358,15 @@ const URL_PARAMS = (() => {
   ]) {
     check(`playbook: banner names ${field}`, banner.includes(field), field);
   }
+  // This playbook says STOP; the stop policy says STOP IMMEDIATELY and the
+  // module's id is `stop-immediately`. Same posture, two spellings — the
+  // banner has to bridge them or an owner grepping one document for the
+  // other's word finds nothing at the moment it matters.
+  check(
+    'playbook: banner reconciles STOP with the policy id',
+    /STOP here is the policy's STOP IMMEDIATELY/.test(banner) &&
+      banner.includes('`stop-immediately`'),
+  );
 
   check(
     'playbook: rotates the secret BEFORE fixing the code',

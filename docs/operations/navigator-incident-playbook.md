@@ -9,8 +9,10 @@ answers the same seven questions in the same order, so you never have to hunt:
 > **Keep using Navigator?** · **Engineering triage** · **Resume when**
 
 **Posture** is CONTINUE / PAUSE EXPANSION / STOP, and it maps to the ids in
-the pilot stop policy. When an entry names a stop-policy condition, that
-condition's own owner actions and resume criterion apply too.
+the pilot stop policy — **STOP here is the policy's STOP IMMEDIATELY**
+(`stop-immediately`), shortened only because it is read on a phone. When an
+entry names a stop-policy condition, that condition's own owner actions and
+resume criterion apply too.
 
 **Two rules that override everything below.** First: if you are not sure how
 bad it is, treat it as worse. Second: the driver's safety instruction is
