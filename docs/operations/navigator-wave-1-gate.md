@@ -17,7 +17,7 @@ Three entry requirements are unmet, and one of them cannot be waived:
 
 | Blocker | State |
 |---|---|
-| **PR #272 owner road retest** | **NOT PERFORMED.** #272 is green, drafted, unmerged, and it fixes three P0-class conditions found on real drives — implied turnaround, stale maneuver after reroute, and a truck marker drawn off the roadway. Until the owner re-drives the Hwy 92 / Charles Hardy scenario and it passes, Wave 1 is NO GO. |
+| **PR #272 owner road retest** | **NOT PERFORMED.** #272 merged to `main` on 2026-08-10 (`1ee4932`) — merging is not road verification. It fixes three P0-class conditions found on real drives — implied turnaround, stale maneuver after reroute, and a truck marker drawn off the roadway. Until the owner re-drives the Hwy 92 / Charles Hardy scenario and it passes, Wave 1 is NO GO. |
 | **Wave 0 owner road test** | **NOT STARTED.** Zero of 63 lines marked. |
 | **Known-good rollback target** | **CANDIDATE only.** `94fc659` passes 22 Navigator harnesses and builds, but nobody has driven it. No row in the release register is graded KNOWN-GOOD. |
 
@@ -34,7 +34,7 @@ Every line is a hard gate. There is no "mostly."
 | | Requirement | How you know it's met |
 |---|---|---|
 | E1 | Wave 0 complete | Every line marked; every 🛑 line `PASS` |
-| E2 | **PR #272 owner road retest PASSED** | Section 8 of Wave 0 run against the #272 build, all 🛑 lines `PASS` |
+| E2 | **PR #272 owner road retest PASSED** | Section 8 of Wave 0 run against a `main` build containing #272 (`1ee4932` or later), all 🛑 lines `PASS` |
 | E3 | No open P0 | Stop-policy classifier returns `continue` with an empty `stopping` and empty `unconfirmedP0` |
 | E4 | No unresolved safety-critical P1 | Any P1 touching guidance, rerouting, position or voice is closed, not deferred |
 | E5 | Phone compatibility tested | At least one iOS Safari and one Android Chrome device have completed a full trip, including voice unlock |

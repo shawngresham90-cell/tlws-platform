@@ -484,9 +484,13 @@ function registerBlocks(doc: string): Block[] {
     'register: does not claim production state it cannot see',
     /NOT VERIFIED FROM THIS REPOSITORY/.test(REGISTER_FLAT),
   );
+  // #272 merged 2026-08-10; merging is not road verification. The register
+  // must carry the retest status and may not still describe #272 as unmerged.
   check(
-    'register: records #272 as unmerged and unverified',
-    /READY FOR OWNER ROAD RETEST/.test(REGISTER_FLAT),
+    'register: records #272 as merged but not road-verified',
+    /READY FOR OWNER ROAD RETEST/.test(REGISTER_FLAT) &&
+      /Merged, not deployed/.test(REGISTER_FLAT) &&
+      !/it is unmerged/i.test(REGISTER_FLAT),
   );
   check(
     'register: warns that the public flag is inlined at build time',
@@ -549,7 +553,11 @@ function registerBlocks(doc: string): Block[] {
     !/\bPASS\b\s*\|/.test(WAVE0.replace(/\| PASS \| \|/g, '')),
   );
   check('wave 0: records NOT STARTED', /NOT STARTED/.test(WAVE0_FLAT));
-  check('wave 0: covers the #272 reroute section', /PR #272, not yet on `main`/.test(WAVE0_FLAT));
+  check(
+    'wave 0: covers the #272 reroute section, merged but retest not performed',
+    /PR #272, on `main` since 2026-08-10, road retest NOT PERFORMED/.test(WAVE0_FLAT) &&
+      !/PR #272 is unmerged/.test(WAVE0_FLAT),
+  );
   const shieldCount = (WAVE0.match(/🛑/g) ?? []).length;
   check('wave 0: marks the safety-critical lines', shieldCount >= 15, shieldCount);
   check(

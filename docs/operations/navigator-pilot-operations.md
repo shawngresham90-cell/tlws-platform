@@ -21,8 +21,9 @@ for one person on a phone, not for a team with a rota.
 
 ## The standing blocker
 
-**PR #272 has not been verified on the road.** It is green, drafted, and
-unmerged, and it fixes three P0-class conditions found on real drives: a
+**PR #272 has not been verified on the road.** It merged to `main` on
+2026-08-10 — merging is not road verification. It fixes three P0-class
+conditions found on real drives: a
 replacement route implying an unverified truck turnaround, a missed turn that
 kept repeating after going off route, and the truck drawn beside the roadway
 instead of on it.

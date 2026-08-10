@@ -67,14 +67,17 @@ routing disclosures in the profile panel. It does **not** give up the map
 marker, the greeting, the route-start phrase, the diagnostic snapshot, the
 problem report, or post-trip feedback; all of those predate it.
 
-**What rolling back does *not* undo:** nothing from PR #272 — it is unmerged.
+**What rolling back does *not* undo:** nothing from PR #272 — it merged to
+`main` on 2026-08-10 but has not been part of any production deploy recorded
+here, so no rollback target contains it to lose.
 
-### Not deployed
+### Merged, not deployed
 
 | Field | Value |
 |---|---|
-| PR #272 head | `2f0df02f522d2e3fb78f252c36e25a86fc897a80` (`2f0df02`) |
-| State | Open **draft**, not merged, CI green |
+| PR #272 final head | `1594d01827eddbbbaef3eb0610321fa00cc7b34c` (`1594d01`) |
+| Merged into `main` as | `1ee4932aa4a70925f5e6424e9f396ed6691b4bf6` (`1ee4932`), 2026-08-10 |
+| State | **Merged**, CI green on the merge commit |
 | Status | **READY FOR OWNER ROAD RETEST — NOT YET VERIFIED ON ROAD** |
 | Blocks | Wave 1 GO. See the Wave 1 gate. |
 

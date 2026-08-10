@@ -68,7 +68,7 @@ routing while looking like a fix. See the open owner decision below.
 | **No route is guaranteed legal** | Validation checks that a route is *usable* — it has maneuvers, it ends where it was asked to, its implied speed is possible. It does not check that it is *legal*. |
 | **Only one route is requested** | No alternatives are asked for. You get the provider's answer, not a choice of three. |
 | **No verified truck-turnaround dataset exists** | Navigator cannot identify a place a 70-foot combination can legally and safely turn around, and it does not try. If a route ever implies one, that is a P0 — report it and stop. |
-| **Off-route reversal protection is not on `main` yet** | The guard that refuses a replacement route beginning with an implied turnaround lives in **PR #272, which is unmerged and not road-verified**. Until it merges, a replacement route on the production build has no reversal check at all. |
+| **Off-route reversal protection is merged but not road-verified** | The guard that refuses a replacement route beginning with an implied turnaround merged in **PR #272 on 2026-08-10** and is on `main`. No drive has verified it: the owner Hwy 92 / Charles Hardy road retest is **NOT PERFORMED**, and a production build deployed from before the merge still has no reversal check at all. |
 | **The plausibility advisory is an advisory** | It flags a route that looks wrong for a truck. It does not approve one that does not. |
 
 ## 4. Destinations and arrival
