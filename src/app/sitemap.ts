@@ -2,9 +2,15 @@ import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/seo/site';
 import { createStaticClient } from '@/lib/supabase/static';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
-import { getDirectoryFacets, getAllPublishedEntries } from '@/lib/directory/data';
+import {
+  getDirectoryFacets,
+  getAllPublishedEntries,
+  getParkingFacets,
+  getCatScaleFacets,
+} from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
+import { interstateToSlug, directionsForInterstate } from '@/lib/directory/corridor';
 import { isDetailIndexable } from '@/lib/directory/detail';
 import { detailHref } from '@/lib/directory/detail-slug';
 import { STORE_CATEGORIES, storeCategoryHref } from '@/lib/store/categories';
@@ -292,6 +298,56 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Directory facet URLs are additive — a DB hiccup still ships the rest.
+  }
+
+  // Corridor-flow pages (driver-first navigation, 2026-07-28/29): the Parking
+  // and CAT Scale State → Interstate → Direction steps plus the CAT Scale
+  // Near Me search. All indexable, self-canonical public pages — they shipped
+  // after the July sitemap audit and were never listed here. Facet-driven
+  // like the state/corridor loops above, so a step appears only when
+  // published listings exist behind it, matching each page's own gates.
+  entries.push({
+    url: `${SITE.url}/directory/cat-scales/near-me`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  });
+  try {
+    const flows = [
+      { base: '/directory/parking', facets: await getParkingFacets() },
+      { base: '/directory/cat-scales', facets: await getCatScaleFacets() },
+    ];
+    for (const { base, facets } of flows) {
+      for (const { code } of facets.states) {
+        if (!stateByCode(code)) continue;
+        const statePath = `${base}/${code.toLowerCase()}`;
+        entries.push({
+          url: `${SITE.url}${statePath}`,
+          lastModified: now,
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        });
+        for (const { designation } of facets.interstatesByState[code] ?? []) {
+          const corridorPath = `${statePath}/${interstateToSlug(designation)}`;
+          entries.push({
+            url: `${SITE.url}${corridorPath}`,
+            lastModified: now,
+            changeFrequency: 'weekly',
+            priority: 0.6,
+          });
+          for (const direction of directionsForInterstate(designation)) {
+            entries.push({
+              url: `${SITE.url}${corridorPath}/${direction}`,
+              lastModified: now,
+              changeFrequency: 'weekly',
+              priority: 0.6,
+            });
+          }
+        }
+      }
+    }
+  } catch {
+    // Corridor-flow URLs are additive too.
   }
 
   // Per-listing detail pages (Milestone 20). Only pages past the completeness
