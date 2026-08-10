@@ -620,9 +620,18 @@ async function main() {
     check('12: a second truck-profile route plans cleanly', second.ok, second);
     check('12: and reaches route-ready again', lc.state() === 'route-ready', lc.state());
     const html = renderControls(lc);
+    /*
+     * Design Blueprint Phase 3 inverted this pin, by owner instruction:
+     * route-ready is now the flight briefing, and the briefing must show
+     * the truck the route was ACTUALLY planned with — from the session's
+     * own profile via routeBrief(), not the idle-screen constant — with
+     * the routed-around/not-routed-around disclosure intact. The old
+     * assertion ("idle-only") protected the thin confirmation screen the
+     * briefing replaced.
+     */
     check(
-      '12: the profile panel is not shown at route-ready (idle-only)',
-      !html.includes('Truck used for this route'),
+      '12: the briefing shows the truck the route was planned with',
+      html.includes('Truck used for this route') && html.includes('Not routed around:'),
     );
     check(
       '12: no illegal transitions across two trips',

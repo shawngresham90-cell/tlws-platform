@@ -171,6 +171,24 @@ export type MapData = {
   matchedPosition: LatLng | null;
 };
 
+/**
+ * Everything the pre-drive BRIEFING needs, and nothing else (design
+ * blueprint Phase 3). Same construction rule as MapData: plain frozen
+ * copies, no engine reference escapes, so a briefing can never advance,
+ * replace, or mutate a route. The truck is the profile the plan request
+ * actually carried; the maneuvers are the provider's own instructions at
+ * their exact route miles (corridor source material — never geometry
+ * guessing); the warnings are whatever the validator let through as
+ * `valid-with-warning`.
+ */
+export type RouteBrief = Readonly<{
+  truck: Readonly<TruckProfile>;
+  maneuvers: readonly Readonly<{ instruction: string; mileMi: number }>[];
+  warnings: readonly string[];
+  distanceMiles: number;
+  durationSeconds: number;
+}>;
+
 export type NavigationLifecycle = {
   state(): LifecycleState;
   /** The driving-screen view for the CURRENT state (no-route when idle). */
@@ -178,6 +196,8 @@ export type NavigationLifecycle = {
   snapshot(): LifecycleSnapshot;
   /** Read-only geometry/destination projection for the navigation map. */
   mapData(): MapData;
+  /** Read-only briefing projection for the CURRENT route; null without one. */
+  routeBrief(): RouteBrief | null;
   /** idle → planning → route-ready | idle. Refused outside idle. */
   plan(req: PlanRequest, destination: DestinationInfo, tMs: number): Promise<PlanOutcome>;
   /** route-ready → navigating. Builds the full engine stack. */
@@ -599,11 +619,34 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
     };
   }
 
+  /**
+   * The briefing projection (design blueprint Phase 3). Resolves the
+   * current session exactly the way mapData does, and hands out plain
+   * frozen copies only — the briefing reads the route, it can never
+   * touch it.
+   */
+  function routeBrief(): RouteBrief | null {
+    const active = nav?.currentSession() ?? routeSession;
+    if (active === null) return null;
+    return Object.freeze({
+      truck: Object.freeze({ ...active.truck }),
+      maneuvers: Object.freeze(
+        active.maneuvers.map((m) =>
+          Object.freeze({ instruction: m.instruction, mileMi: m.mileMi }),
+        ),
+      ),
+      warnings: Object.freeze(active.warnings.slice()),
+      distanceMiles: active.distanceMiles,
+      durationSeconds: active.durationSeconds,
+    });
+  }
+
   return {
     state: () => state,
     view: () => lastView,
     snapshot,
     mapData,
+    routeBrief,
     plan,
     startNavigation,
     discardRoute,
