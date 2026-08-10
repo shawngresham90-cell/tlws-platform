@@ -220,9 +220,11 @@ export function NavigationMap({
     const layer = markerLayerRef.current;
     if (!ready || L === null || layer === null) return;
     layer.clearLayers();
+    // 36px boxes: the blueprint's pin floor — nothing on the map renders
+    // smaller than a glanceable target, matching the vehicle badge's size.
     const pin = (at: LatLng, glyph: string, label: string, bg: string) => {
       const marker = L.marker([at.lat, at.lng], {
-        icon: L.divIcon({ className: '', html: '', iconSize: [30, 30], iconAnchor: [15, 15] }),
+        icon: L.divIcon({ className: '', html: '', iconSize: [36, 36], iconAnchor: [18, 18] }),
         interactive: false,
         title: label,
         alt: label,
@@ -231,7 +233,7 @@ export function NavigationMap({
       if (el) {
         el.textContent = glyph;
         el.style.cssText +=
-          ';display:flex;align-items:center;justify-content:center;font-size:16px;' +
+          ';display:flex;align-items:center;justify-content:center;font-size:18px;' +
           `background:${bg};color:#0A0E13;border:2px solid #f8fafc;border-radius:9999px;` +
           'box-shadow:0 1px 4px rgba(0,0,0,.5);';
       }
@@ -346,7 +348,10 @@ export function NavigationMap({
   };
 
   return (
-    <div className="relative h-full w-full">
+    /* nav-map scopes the cockpit tile/attribution treatment defined in
+       navigator-design.css — presentation only, tiles and provider
+       untouched. */
+    <div className="nav-map relative h-full w-full">
       <div
         ref={containerRef}
         role="region"
