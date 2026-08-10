@@ -7,6 +7,7 @@ import {
   sanitizeNextPath,
 } from '@/lib/navigator-api/pilot-access';
 import { isPilotAuthorized } from '@/lib/navigator-api/pilot-session';
+import { UNLOCK_THROTTLED } from '@/lib/navigator-api/pilot-unlock-throttle';
 import { unlockNavigatorAction } from './actions';
 
 /**
@@ -91,7 +92,16 @@ export default async function NavigatorAccessPage({
             role="alert"
             className="mb-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm font-medium text-diesel-300"
           >
-            Incorrect password.
+            {/*
+              The throttle fires BEFORE the password is compared, so this
+              message reveals nothing about the guess — a correct one and a
+              wrong one are throttled identically. It says how to recover
+              and nothing about how many attempts remain, which would hand
+              an attacker a progress bar.
+            */}
+            {error === UNLOCK_THROTTLED
+              ? 'Too many attempts from this connection. Wait a couple of minutes and try again.'
+              : 'Incorrect password.'}
           </p>
         )}
 
