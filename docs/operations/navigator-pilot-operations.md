@@ -38,11 +38,12 @@ holds a gate shut.** The fuller set, including the ones that are limitations
 rather than blockers (the provider vehicle-type parameter, the unmodelled
 truck-profile fields, satellite imagery, whether reports persist), lives in
 [Known limitations](./navigator-known-limitations.md). Decision 1 below
-appears in both, deliberately: it is the one that is both.
+appears in both, deliberately: it was the one that was both. It has since
+been resolved by the owner, and both records mark it so.
 
 | # | Decision | Blocks |
 |---|---|---|
-| 1 | **Where does a driver send a problem report?** Nothing in this repository names a destination, and the only address defined anywhere is the privacy contact — which is not a pilot support channel. | Wave 1 entry requirement E19 |
+| 1 | **Where does a driver send a problem report?** ✅ **Resolved 2026-08-10** — the owner selected `shawngresham90@gmail.com`. Recorded in the driver guide and the known-limitations list, and pinned by test: any other destination in the guide fails the build. | No longer blocking — formerly Wave 1 entry requirement E19 |
 | 2 | **Does changing `NAVIGATOR_PREVIEW_PASSWORD` in Netlify take effect without a redeploy?** It is the fastest access stop in the system, and whether it works instantly is not knowable from this repository. Test it once on a quiet day. | Nothing yet — but you want the answer *before* you need it |
 | 3 | **Is a publishable Netlify deploy still retained for the rollback target?** Deploy retention is a Netlify setting. A rollback plan whose target has been garbage-collected is not a plan. | Wave 1 entry requirement E9 |
 
