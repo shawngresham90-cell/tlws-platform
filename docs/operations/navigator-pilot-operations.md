@@ -31,7 +31,14 @@ Until the owner re-drives the Hwy 92 / Charles Hardy scenario and section 8
 of the Wave 0 checklist passes, **Wave 1 is NO GO** — regardless of what
 every other gate says.
 
-## Open owner decisions
+## Open owner decisions that block a wave
+
+**This is not the complete list of open decisions — it is the subset that
+holds a gate shut.** The fuller set, including the ones that are limitations
+rather than blockers (the provider vehicle-type parameter, the unmodelled
+truck-profile fields, satellite imagery, whether reports persist), lives in
+[Known limitations](./navigator-known-limitations.md). Decision 1 below
+appears in both, deliberately: it is the one that is both.
 
 | # | Decision | Blocks |
 |---|---|---|
@@ -46,7 +53,7 @@ this page stays the single entry point.
 
 | Document | Answers |
 |---|---|
-| `navigator-incident-playbook.md` | 14 incidents, six questions each: severity, what to tell the driver, posture, evidence, keep using it?, resume when |
+| `navigator-incident-playbook.md` | 14 incidents, seven questions each: severity, what to tell the driver, posture, evidence, keep using it?, engineering triage, resume when |
 | `navigator-driver-guide.md` | What an outside driver reads before their first trip |
 | `navigator-known-limitations.md` | The one authoritative list, re-derived from the code by test |
 | `navigator-observability.md` | What a session emits today, a privacy-first event schema, and the persistence decision |

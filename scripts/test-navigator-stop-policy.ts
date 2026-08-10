@@ -33,7 +33,7 @@
  *     --format=cjs --alias:@=./src --jsx=automatic \
  *     --outfile=/tmp/test-navigator-stop-policy.cjs && node /tmp/test-navigator-stop-policy.cjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   P0_CONDITIONS,
@@ -573,6 +573,77 @@ function registerBlocks(doc: string): Block[] {
     /6\/hour\/IP/.test(WAVE1_FLAT) &&
       /30\/min\/IP/.test(WAVE1_FLAT) &&
       /5,000 truck transactions\/month/.test(WAVE1_FLAT),
+  );
+}
+
+/* --------------------------------------- 7. the index that points at it all */
+{
+  // The index is the page an owner opens first, and until now nothing
+  // checked it. It carries two claims that can rot without anyone noticing:
+  // it summarises documents that live in sibling PRs, and it prints a list
+  // of owner decisions that is deliberately SHORTER than the full one.
+  const INDEX = readFileSync('docs/operations/navigator-pilot-operations.md', 'utf8');
+  const INDEX_FLAT = flat(INDEX);
+
+  for (const doc of [
+    'navigator-pilot-stop-policy.md',
+    'navigator-rollback.md',
+    'navigator-wave-0-road-test.md',
+    'navigator-wave-1-gate.md',
+    'navigator-release-register.md',
+    'navigator-incident-playbook.md',
+    'navigator-driver-guide.md',
+    'navigator-known-limitations.md',
+    'navigator-observability.md',
+    'navigator-provider-volume.md',
+    'navigator-accessibility-audit.md',
+  ]) {
+    check(`index: points at ${doc}`, INDEX.includes(doc), doc);
+  }
+
+  // The four that exist on THIS branch must actually be there. The rest
+  // arrive with their own PRs, so their presence is not asserted here —
+  // asserting it would fail the branch that owns the index.
+  for (const p of [
+    'docs/operations/navigator-pilot-stop-policy.md',
+    'docs/operations/navigator-rollback.md',
+    'docs/operations/navigator-wave-0-road-test.md',
+    'docs/operations/navigator-wave-1-gate.md',
+  ]) {
+    check(`index: ${p} is not a dead link on this branch`, existsSync(p), p);
+  }
+
+  // The playbook field count the index advertises has to match the field
+  // names it then prints. It said six while listing six of seven once.
+  check(
+    'index: describes the playbook as seven questions',
+    /14 incidents, seven questions each/.test(INDEX_FLAT),
+  );
+  for (const field of [
+    'severity',
+    'posture',
+    'keep using it?',
+    'engineering triage',
+    'resume when',
+  ]) {
+    check(`index: playbook summary names "${field}"`, INDEX_FLAT.includes(field), field);
+  }
+
+  // The decisions table here is the wave-blocking SUBSET. If it stops
+  // saying so, a reader takes three as the whole list.
+  check(
+    'index: scopes its decision table to wave blockers',
+    /Open owner decisions that block a wave/.test(INDEX_FLAT) &&
+      /not the complete list of open decisions/.test(INDEX_FLAT),
+  );
+  check(
+    'index: sends the reader to the fuller list',
+    /navigator-known-limitations\.md/.test(INDEX),
+  );
+  check('index: still names #272 as the standing blocker', /PR #272/.test(INDEX_FLAT));
+  check(
+    'index: still says Wave 1 is NO GO',
+    /\*\*Wave 1 is NO GO\*\*/.test(INDEX_FLAT) && /🔴 NO GO/.test(INDEX),
   );
 }
 
