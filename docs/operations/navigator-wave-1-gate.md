@@ -66,7 +66,7 @@ Every line is a hard gate. There is no "mostly."
 |---|---|---|
 | E17 | Outside-driver guide ready and sent | Each driver confirms they have read it |
 | E18 | Known limitations disclosed to each driver | Specifically the ones about vehicle profile and turnarounds |
-| E19 | Issue-report procedure ready | Including **where the report goes** — see the open owner decision below |
+| E19 | Issue-report procedure ready | Reports go to `shawngresham90@gmail.com` — owner-selected 2026-08-10, see below |
 | E20 | Each driver has confirmed they will not follow an unsafe instruction | In their own words, not a checkbox |
 
 ### Provider
@@ -78,22 +78,22 @@ Every line is a hard gate. There is no "mostly."
 
 ---
 
-## ⚠ Open owner decision that blocks E19
+## ✅ E19's owner decision — resolved 2026-08-10
 
-**Where does a driver send a problem report?**
+**Where does a driver send a problem report?** Answered: the owner selected
+**`shawngresham90@gmail.com`** on 2026-08-10.
 
-The app generates a plain-text report and copies it to the clipboard. It does
-not send it anywhere, and nothing in this repository names a destination. The
-only contact address defined anywhere in the codebase is
-`privacy@truckinglifewithshawn.com`, which is the privacy contact and is
-**not** a pilot support channel.
+The app still sends nothing automatically — a report is generated, copied to
+the driver's clipboard, and the driver sends it to the address above. The
+driver guide names it, and `test-navigator-pilot-docs` pins it: any *other*
+email, phone number, chat channel or form link appearing in the guide fails
+the build, so the destination can only change on the owner's word.
 
-**OWNER DECISION REQUIRED — REPORT DESTINATION.** Pick one and write it into
-the outside-driver guide before any driver gets the password. Do not leave a
-driver holding a report with nowhere to put it at 2 a.m.
-
-Nothing has been invented here on purpose: guessing a destination would send
-truck-route defect reports somewhere nobody is reading.
+The destination was deliberately never guessed at while it was open —
+guessing would have sent truck-route defect reports somewhere nobody was
+reading. This closes the destination half of E19; whether the issue-report
+procedure is actually *ready* is still checked at the gate like every other
+entry, and every other blocker in this document stands unchanged.
 
 ---
 
