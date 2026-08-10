@@ -505,13 +505,23 @@ async function main(): Promise<void> {
       increments,
     );
 
-    // That one place must be the SUCCESS path — after the replacement
-    // session has been created and swapped in.
+    // That one place must be the SUCCESS path — the swap, the epoch bump
+    // and the charge, contiguous and in that order.
+    //
+    // The right-hand side of the swap is deliberately NOT pinned. An earlier
+    // version required the literal `session = created.session;`, which named
+    // one particular way of spelling "the replacement we accepted". #272
+    // introduces a second accepted candidate (the forward-anchor retry) and
+    // assigns through a local instead — same invariant, different spelling,
+    // and the assertion failed on a change that did not break it. Pinning
+    // the ORDER of the three statements is both stronger than the old
+    // proximity window and indifferent to what the accepted session is
+    // called.
     const at = code.indexOf('sessionCount += 1');
     const before = code.slice(Math.max(0, at - 400), at);
     check(
       'budget semantics: and it is on the success path, after the swap',
-      /session = created\.session;/.test(before) && /epoch \+= 1;/.test(before),
+      /session = [^;\n]+;\s*epoch \+= 1;\s*$/.test(before),
       before.slice(-160),
     );
     check(
