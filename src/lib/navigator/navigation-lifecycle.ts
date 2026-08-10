@@ -152,6 +152,23 @@ export type MapData = {
   routeId: string | null;
   /** Provider's planned duration for the CURRENT route — the ETA basis. */
   durationSeconds: number | null;
+  /**
+   * Where the MATCHER says the truck is on the route line, when it is
+   * confident enough to say. Null whenever it is not.
+   *
+   * Road test: the marker was visibly beside Hwy 92 rather than on it.
+   * The map was drawing the raw fix, and a raw fix carries the platform's
+   * error — eight to fifteen metres on a good day, which at map zoom is
+   * a lane or two of displacement. The matcher already computes where
+   * that fix corresponds to on the road; it was simply never shown.
+   *
+   * This is NOT snapping-to-route. It is offered only when the match is
+   * confident and genuinely close to the line; when the match is doubtful
+   * the value is null and the caller draws the honest raw position,
+   * because a marker glued to a road the truck may have left is a lie
+   * that hides exactly the situation the driver most needs to see.
+   */
+  matchedPosition: LatLng | null;
 };
 
 export type NavigationLifecycle = {
@@ -214,6 +231,16 @@ const NO_ROUTE_VIEW: DrivingView = Object.freeze({
  * because the lifecycle can outlive many trips in one mounted screen.
  */
 export const MAX_TRANSITION_LOG = 500;
+
+/**
+ * How far off the line a HIGH-confidence match may still be and have the
+ * marker drawn on the road.
+ *
+ * Deliberately tighter than the matcher's own high-confidence bound: this
+ * governs what the driver SEES, and moving the marker further than a lane
+ * or two would be inventing a position rather than resolving GPS error.
+ */
+export const MATCHED_DISPLAY_LATERAL_M = 20;
 
 /** States in which the engine stack is live and ticks feed it. */
 const ACTIVE_STATES: readonly LifecycleState[] = [
@@ -543,7 +570,26 @@ export function createNavigationLifecycle(deps: LifecycleDeps): NavigationLifecy
       };
     }
     const nextMi = lastView.maneuvers?.next?.mileMi ?? null;
+    /*
+     * Confident AND close: 'high' means the matcher liked the lateral
+     * distance, the heading and the progression together, and the extra
+     * lateral bound keeps a high-confidence match on a parallel frontage
+     * road from dragging the marker across to the highway. Anything less
+     * draws raw.
+     */
+    const m = lastNavSnapshot?.match ?? null;
+    const matchedPosition =
+      active !== null &&
+      m !== null &&
+      m.matched &&
+      m.confidence === 'high' &&
+      m.routeMile !== null &&
+      m.lateralM !== null &&
+      m.lateralM <= MATCHED_DISPLAY_LATERAL_M
+        ? positionAtRouteMile(active.geometry, m.routeMile)
+        : null;
     return {
+      matchedPosition,
       geometry: mapGeometryCache?.geometry ?? [],
       destination: destinationInfo === null ? null : { ...destinationInfo.position },
       nextManeuver:

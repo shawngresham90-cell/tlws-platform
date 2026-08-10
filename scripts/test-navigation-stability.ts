@@ -42,6 +42,7 @@ import { createManeuverAnnouncer } from '@/lib/navigator/voice-guidance';
 import type { DestinationInfo } from '@/lib/navigator/truck-entrance';
 import type { TruckProfile } from '@/lib/trip-planner/types';
 import type { LatLng } from '@/lib/map/bounds';
+import { haversineMiles } from '@/lib/map/geo';
 import type { PositionState } from '@/lib/navigator/types';
 
 let passed = 0;
@@ -649,8 +650,27 @@ async function main() {
   const DEPART_LATERAL_M = 400;
   {
     const rig = await startTrip(ROUTE_A, 'trip-depart', (req) => {
-      const positions = offsetRouteTail(ROUTE_A, 1.0, DEPART_LATERAL_M, req.destination);
-      positions[0] = { ...req.origin };
+      /*
+       * A replacement starts AT THE TRUCK and runs forward — that is what
+       * a provider returns, and the reversal guard now enforces it.
+       *
+       * This used to splice the origin onto a tail beginning at mile 1.0,
+       * which by the time the reroute fires is ~0.2 mi BEHIND the truck.
+       * Read literally, that polyline asks the driver to reverse a fifth
+       * of a mile before going anywhere — an implicit U-turn, which is
+       * exactly the P0 the guard exists to refuse. The scenario never
+       * meant to describe that; it means "the driver drifted off and the
+       * route rejoins ahead". Dropping the points already behind the
+       * truck says that, and every assertion below is unchanged.
+       */
+      const tail = offsetRouteTail(ROUTE_A, 1.0, DEPART_LATERAL_M, req.destination);
+      let nearest = 0;
+      for (let i = 1; i < tail.length; i += 1) {
+        if (haversineMiles(req.origin, tail[i]) < haversineMiles(req.origin, tail[nearest])) {
+          nearest = i;
+        }
+      }
+      const positions = [{ ...req.origin }, ...tail.slice(nearest + 1)];
       return {
         kind: 'route',
         positions,

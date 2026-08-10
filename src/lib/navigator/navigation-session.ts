@@ -114,6 +114,7 @@ export function createNavigationSession(
   );
   let routeId = initialSession.routeId;
   let lastMatch: MapMatch | null = null;
+  let lastFix: NavigationFix | null = null;
   let tripSummary: TripSummary | null = null;
 
   function finalize(summary: TripSummary): void {
@@ -125,6 +126,7 @@ export function createNavigationSession(
     reroute = null;
     arrival = null;
     lastMatch = null;
+    lastFix = null;
   }
 
   function snapshot(): NavigationSnapshot {
@@ -144,6 +146,11 @@ export function createNavigationSession(
     }
     const match = matcher.match(fix);
     lastMatch = match;
+    // Kept for the reroute guard, which judges a REPLACEMENT route against
+    // the way the truck is actually travelling. Heading and speed are not
+    // otherwise needed after matching, and they are dropped with every
+    // other engine reference on completion (AD-7).
+    lastFix = fix;
 
     const arrivalView = arrival.snapshot();
     // Off-route detection stops mattering once arrival evidence is being
@@ -203,6 +210,10 @@ export function createNavigationSession(
       currentPosition: position,
       accuracyM,
       tMs,
+      // The truck's real direction of travel, so a replacement that would
+      // require an unverified turnaround is never promoted to guidance.
+      headingDeg: lastFix?.headingDeg ?? null,
+      speedMph: lastFix?.speedMph ?? null,
     });
     if (result.outcome === 'replaced') {
       // Rebuild the full engine stack on the replacement route. The trip
