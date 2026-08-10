@@ -150,6 +150,62 @@ function verdict(
 }
 
 /**
+ * How far ahead of the truck to anchor a second reroute request when the
+ * first one came back pointing backwards.
+ *
+ * This is the whole mechanism behind forward-progress rerouting, and it
+ * needs no provider parameter: ask for a route starting from a point the
+ * truck is ABOUT to reach rather than the one it is standing on, and any
+ * route from there necessarily begins by going forward. Providers snap an
+ * origin to the nearest road, so a point half a mile up the road the truck
+ * is already on lands on that road.
+ *
+ * Half a mile: far enough that the provider cannot answer with a turn the
+ * truck has already passed, close enough that it is still the same road
+ * and still reachable at highway speed within one reroute cycle.
+ */
+export const FORWARD_ANCHOR_MI = 0.5;
+
+const EARTH_RADIUS_MI = 3958.7613;
+
+/**
+ * A point `miles` ahead of `from` along `headingDeg` — the forward anchor.
+ *
+ * Great-circle destination formula rather than a flat-earth offset: at
+ * half a mile the difference is centimetres, but this is the one place a
+ * ROUTE REQUEST ORIGIN is synthesised, and an origin that drifts is an
+ * origin snapped to the wrong road.
+ *
+ * Returns null for an unusable heading, so a caller can never anchor a
+ * request on a guessed direction.
+ */
+export function projectAhead(
+  from: LatLng,
+  headingDeg: number | null,
+  miles: number = FORWARD_ANCHOR_MI,
+): LatLng | null {
+  if (!isUsableHeading(headingDeg)) return null;
+  if (!Number.isFinite(miles) || miles <= 0) return null;
+  const d = miles / EARTH_RADIUS_MI;
+  const brg = (normalizeHeading(headingDeg) * Math.PI) / 180;
+  const lat1 = (from.lat * Math.PI) / 180;
+  const lng1 = (from.lng * Math.PI) / 180;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brg),
+  );
+  const lng2 =
+    lng1 +
+    Math.atan2(
+      Math.sin(brg) * Math.sin(d) * Math.cos(lat1),
+      Math.cos(d) - Math.sin(lat1) * Math.sin(lat2),
+    );
+  return {
+    lat: (lat2 * 180) / Math.PI,
+    lng: (((lng2 * 180) / Math.PI + 540) % 360) - 180,
+  };
+}
+
+/**
  * Does this replacement route begin by asking the truck to reverse?
  *
  * FAILS OPEN, ALWAYS. Every case where the answer is unknown — no

@@ -723,8 +723,10 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       );
     }
 
-    // Maneuvers speak only while the trip is live.
-    if (active && view.maneuvers !== null) {
+    // Maneuvers speak only while the trip is live AND still ours. Off
+    // route, the next maneuver belongs to a route the truck has left.
+    const staleGuidance = snap.state === 'off-route' || snap.state === 'rerouting';
+    if (active && !staleGuidance && view.maneuvers !== null) {
       for (const req of maneuverAnnouncerRef.current.collect(view.maneuvers, view.speedMph)) {
         voice.request(req);
       }
@@ -867,8 +869,20 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lifecycle, view, lcState],
   );
+  /*
+   * Where to DRAW the truck.
+   *
+   * Raw GPS carries the platform's error, and on the road that showed as
+   * a marker sitting beside Hwy 92 instead of on it. When the matcher is
+   * confident and close to the line it can say where that fix corresponds
+   * to on the road, and that is what gets drawn. When it cannot, the raw
+   * fix is drawn — an honestly wrong position beats a confidently wrong
+   * one, because the moment the truck genuinely leaves the road is the
+   * moment a snapped marker would lie about it.
+   */
   const truckPosition: LatLng | null =
-    position.fix === null ? null : { lat: position.fix.lat, lng: position.fix.lng };
+    mapData.matchedPosition ??
+    (position.fix === null ? null : { lat: position.fix.lat, lng: position.fix.lng });
 
   const focusNavigationKey = focusTick === 0 ? null : `trip-start-${focusTick}`;
 
@@ -925,11 +939,30 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const offRouteText =
     lcState === 'off-route' || lcState === 'rerouting'
       ? awaitingSafeReroute
-        ? 'OFF ROUTE · Finding a truck-safe way back. Continue safely.'
-        : 'OFF ROUTE · Rerouting…'
+        ? 'OFF ROUTE · Continue safely while a new route is calculated.'
+        : 'OFF ROUTE · Rerouting — continue safely.'
       : null;
 
-  const roadName = roadNameFromInstruction(view.maneuvers?.next?.instruction ?? null);
+  /*
+   * OFF ROUTE RETIRES THE OLD MANEUVER.
+   *
+   * Road test: the driver passed the turn at Charles Hardy, and the app
+   * kept showing and speaking that turn — the controller is still tracking
+   * the route the truck has left, so it happily goes on naming a maneuver
+   * that is now behind them. A missed turn repeated is worse than
+   * silence: it is an instruction the driver cannot follow.
+   *
+   * So while off route, the maneuver view is dropped. The card shows the
+   * off-route state instead, and the announcer — which reads exactly this
+   * value — has nothing to say until a replacement route supplies a real
+   * next maneuver.
+   */
+  const guidanceStale = lcState === 'off-route' || lcState === 'rerouting';
+  const shownView: DrivingView = guidanceStale ? { ...view, maneuvers: null } : view;
+
+  const roadName = guidanceStale
+    ? null
+    : roadNameFromInstruction(view.maneuvers?.next?.instruction ?? null);
   // The core stays clock-free: the component supplies both "now" and the
   // device's zone offset.
   const nowMs = Date.now();
@@ -943,7 +976,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
 
   return (
     <DrivingScreenView
-      view={view}
+      view={shownView}
       watching={watching}
       focusNavigationKey={focusNavigationKey}
       fullScreen={fullScreen}

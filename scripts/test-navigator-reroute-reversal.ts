@@ -636,7 +636,14 @@ async function main() {
       result.outcome === 'unsafe-reversal' && result.reason === IMPLICIT_REVERSAL,
       result,
     );
-    check('repro: the provider WAS called (this is not a refusal to ask)', calls() === 1, calls());
+    // TWO calls now, and that is the fix: the first answer pointed back
+    // down Butler, so a second was asked from a forward anchor. Both are
+    // charged. Bounded at two per reroute attempt.
+    check(
+      'repro: the provider was asked twice — once here, once from a forward anchor',
+      calls() === 2,
+      calls(),
+    );
     check(
       'repro: the unsafe route is NOT promoted to guidance',
       lc.snapshot().routeId === routeBefore,
@@ -772,12 +779,12 @@ async function main() {
     );
     check(
       'wiring: the driver sees an OFF ROUTE state',
-      screen.includes('OFF ROUTE · Rerouting…'),
+      screen.includes('OFF ROUTE · Rerouting — continue safely.'),
       'no off-route indicator',
     );
     check(
       'wiring: and an honest line while holding out for a safe route',
-      screen.includes('OFF ROUTE · Finding a truck-safe way back. Continue safely.'),
+      screen.includes('OFF ROUTE · Continue safely while a new route is calculated.'),
     );
     check(
       'wiring: neither UI line tells the truck which way to go',
@@ -800,15 +807,29 @@ async function main() {
     const controller = readFileSync('src/lib/navigator/reroute-controller.ts', 'utf8');
     check(
       'wiring: the guard runs AFTER validation and BEFORE the session swap',
-      // lastIndexOf: the first occurrence is the import, not the call.
-      controller.lastIndexOf('checkInitialReversal({') > controller.indexOf('if (!created.ok)') &&
+      // The guard runs on a VALIDATED candidate (fetchReplacement returns
+      // only ok:true sessions) and before the swap.
+      controller.indexOf('const first = await fetchReplacement') <
+        controller.lastIndexOf('checkInitialReversal({') &&
         controller.lastIndexOf('checkInitialReversal({') <
-          controller.indexOf('session = created.session'),
+          controller.indexOf('session = accepted;'),
       'the unsafe route could still be promoted',
     );
     check(
-      'wiring: a refused reversal starts the failure cooldown (no hammering)',
-      /reversal\.reversal[\s\S]{0,400}failureCooldown\(input\.tMs\)/.test(controller),
+      'wiring: a refused reversal still starts the failure cooldown (no hammering)',
+      /forwardReversal\.reversal[\s\S]{0,200}failureCooldown\(input\.tMs\)/.test(controller),
+    );
+    check(
+      'wiring: and the forward-anchor retry is bounded by the existing budgets',
+      /callTimes\.length < cfg\.maxPerHour && sessionCount \+ 1 < cfg\.maxPerSession/.test(
+        controller,
+      ),
+      'the anchored retry can outrun the provider budget',
+    );
+    check(
+      'wiring: a reversal refusal does NOT set the duplicate-suppression key',
+      !/reversalsRefused[\s\S]{0,600}lastFailedKey = key/.test(controller),
+      'a refused reversal would block the next anchored attempt as a duplicate',
     );
     check('wiring: and is counted so it is auditable', /reversalsRefused \+= 1/.test(controller));
   }
