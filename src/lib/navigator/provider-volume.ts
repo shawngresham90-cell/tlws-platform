@@ -67,6 +67,12 @@ export type VolumeAssumptions = Readonly<{
   routePlansPerTrip: number;
   /** Off-route events producing a replacement request, per trip. */
   reroutesPerTrip: number;
+  /**
+   * Hours of driving in a trip. Only the worst case uses it, and it is
+   * the reason the worst case is not a per-trip constant — see
+   * `worstCaseMonthlyVolume`.
+   */
+  drivingHoursPerTrip: number;
   /** Fraction of requests that fail at the provider or in transit. */
   failedFraction: number;
 }>;
@@ -97,6 +103,8 @@ export const DEFAULT_ASSUMPTIONS: VolumeAssumptions = Object.freeze({
   // the assumption most worth replacing with a measurement — it is the
   // one that scales worst and the one Wave 1 will measure directly.
   reroutesPerTrip: 1.5,
+  // Five: two trips a day at five hours each is a legal driving day.
+  drivingHoursPerTrip: 5,
   // 5%: provider errors, timeouts and dead-zone transport failures. Note
   // that transport failures are REFUNDED to the reroute budget by the
   // controller, so they cost a call without buying one.
@@ -174,19 +182,32 @@ export function expectedMonthlyVolume(
 /**
  * The ceiling the code enforces, not a forecast.
  *
- * Every driver exhausts the per-session reroute budget on every trip and
- * plans the maximum the hourly limiter allows. Nothing in the app can
- * exceed this without a budget changing, which is the point: it bounds
- * the blast radius of a defect that reroutes in a loop.
+ * WHY THIS IS AN HOURLY FIGURE AND NOT A PER-SESSION ONE
+ *
+ * The obvious model would use `maxPerSession` — twelve — as the per-trip
+ * ceiling. That is wrong, and the state-combination harness proves it:
+ * `sessionCount` is incremented in exactly ONE place, on the SUCCESS
+ * path, after the replacement session is swapped in. A trip that never
+ * gets a usable route never advances it, so the per-session rail never
+ * fires and the only thing bounding provider calls is `maxPerHour`.
+ *
+ * That makes the two budgets different rails rather than two versions of
+ * the same one: `maxPerSession` caps ROUTE CHURN, `maxPerHour` caps
+ * SPEND. A spend model has to use the spend rail.
+ *
+ * The consequence is that the ceiling scales with TRIP LENGTH. Nothing in
+ * the app can exceed it without a budget changing, which is the point: it
+ * still bounds the blast radius of a defect that reroutes in a loop — it
+ * just bounds it per hour rather than per trip.
  */
 export function worstCaseMonthlyVolume(
   drivers: number,
   a: VolumeAssumptions = DEFAULT_ASSUMPTIONS,
 ): VolumeBreakdown {
   const trips = drivers * a.tripsPerDriverPerDay * a.drivingDaysPerMonth;
-  // One plan per trip, then the session budget spent to the last token.
+  // One plan per trip, then the hourly rail spent for every hour driven.
   const routePlans = trips;
-  const reroutes = trips * REROUTE_DEFAULTS.maxPerSession;
+  const reroutes = trips * a.drivingHoursPerTrip * REROUTE_DEFAULTS.maxPerHour;
   // Search has no per-session cap, only a per-minute limiter. A driver
   // typing continuously for a minute is the ceiling that matters.
   const searchCalls = trips * SEARCHES_PER_MINUTE_PER_IP;

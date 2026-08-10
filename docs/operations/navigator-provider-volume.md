@@ -19,16 +19,32 @@ that the caps quoted here still match the code they came from.
 | | Drivers the documented free allowance supports |
 |---|---|
 | **Under ordinary driving** | **42** |
-| **If every driver exhausts every budget on every trip** | **8** |
+| **If every driver spends the hourly reroute rail for every hour driven** | **3** |
 
-The gap between 42 and 8 is what the app's own reroute budgets are buying.
-It is also the honest answer to "what happens if a reroute defect ships":
-the blast radius is bounded at roughly a fifth of the headroom, not at
-infinity.
+The gap between 42 and 3 is what the reroute budgets are buying — and how
+much of it is left. It is also the honest answer to "what happens if a
+reroute defect ships": the blast radius is bounded, but at three drivers'
+worth of allowance, not at a comfortable margin.
 
 **Wave 1 is 2–3 drivers.** That sits at **7% of the allowance** under
-ordinary driving and **34% in the worst case the code permits** — safe by a
-wide margin under both. The volume question does not gate Wave 1.
+ordinary driving and **82% in the worst case the code permits** — inside
+both, but the worst case has almost no room left. The volume question does
+not gate Wave 1; a **fourth driver crosses the worst case**, which is one
+more reason the wave gate caps it at three.
+
+> ### ⚠ Correction, same session
+>
+> An earlier version of this model used `maxPerSession` (12) as the
+> per-trip ceiling and published **8 drivers** as the worst case. That was
+> wrong. The state-combination harness established that `sessionCount` is
+> incremented in exactly one place — on the **success** path — so a trip
+> that never gets a usable route never advances it, and the only rail
+> bounding provider calls is `maxPerHour`.
+>
+> The two budgets are different rails, not two versions of the same one:
+> **`maxPerSession` caps route churn, `maxPerHour` caps spend.** A spend
+> model has to use the spend rail, which makes the ceiling scale with
+> **trip length**. The corrected figure is **3**.
 
 ---
 
@@ -45,6 +61,7 @@ default is defended; each is a caller-replaceable argument.
 | Search calls per destination | **4** | `"walm"` … `"walmart d"` … `"walmart dc dal"`. Typeahead is debounced on the client, but a driver typing a warehouse name still fires several calls before tapping a result. |
 | Route plans per trip | **1.2** | One plan, plus the occasional re-plan before pulling out. |
 | **Reroutes per trip** | **1.5** | A missed turn or a closure on roughly every other trip. **This is the assumption most worth replacing with a measurement** — it scales worst, and it is the one Wave 1 measures directly. |
+| Driving hours per trip | **5** | Two trips a day at five hours each is a legal driving day. Used only by the worst case, and it is why the worst case is not a per-trip constant. |
 | Failed fraction | **5%** | Provider errors, timeouts, dead-zone transport failures. |
 
 > **These are estimates.** The only honest source for them is Wave 1, which
@@ -72,18 +89,19 @@ document — see "What this model cannot tell you".
 ## Worst case — every budget spent, every trip
 
 Not a forecast. This is **the ceiling the code enforces**: one plan per
-trip, then the per-session reroute budget (12) exhausted, on every trip.
+trip, then the **hourly** reroute rail (6/hour) spent for every hour driven.
 Nothing in the app can exceed it without a budget constant changing.
 
 | Drivers | Route plans | Reroutes | **Truck transactions** | % of allowance |
 |---:|---:|---:|---:|---:|
-| **3** | 132 | 1,584 | **1,716** | **34.3%** ✅ |
-| **10** | 440 | 5,280 | **5,720** | **114.4%** ❌ |
-| **50** | 2,200 | 26,400 | **28,600** | **572%** ❌ |
-| **100** | 4,400 | 52,800 | **57,200** | **1,144%** ❌ |
+| **3** | 132 | 3,960 | **4,092** | **81.8%** ✅ |
+| **10** | 440 | 13,200 | **13,640** | **272.8%** ❌ |
+| **50** | 2,200 | 66,000 | **68,200** | **1,364%** ❌ |
+| **100** | 4,400 | 132,000 | **136,400** | **2,728%** ❌ |
 
-**Ten drivers is where the ceiling crosses the allowance.** Below that, even
-a reroute defect that spends every token on every trip stays inside it.
+**Four drivers is where the ceiling crosses the allowance.** At three it is
+inside it with 18% to spare — which is not much, and is exactly the margin
+a reroute defect would eat.
 
 ---
 
@@ -96,7 +114,7 @@ the build.
 |---|---|---|
 | Route requests | **6 per hour, per IP** | route endpoint limiter |
 | Destination searches | **30 per minute, per IP** | search endpoint limiter |
-| Reroutes | **6 per hour, 12 per session**, per driver | `REROUTE_DEFAULTS` |
+| Reroutes | **6 per hour** (spend rail), **12 per session** (route-churn rail), per driver | `REROUTE_DEFAULTS` |
 | Reroute failure backoff | **30 s → 60 s → 120 s** | `REROUTE_DEFAULTS` |
 | Adapter live calls | **100 per hour, per warm instance** | routing adapter free-tier guard |
 | Documented free truck transactions | **5,000 per month** | the routing adapter's own header |
@@ -112,8 +130,15 @@ be small.
 
 **Transport failures are refunded to the budget.** A request that never
 reached the provider costs nothing, so it must not ration a later one that
-could succeed. That refund is why the worst-case reroute figure is bounded
-by *successful* budget spend rather than by attempt count.
+could succeed.
+
+**The two reroute budgets are different rails.** `maxPerSession` counts
+*successful replacements* — its counter increments only on the success path
+— so it caps how many times a route may be swapped, not how many calls a
+trip may make. `maxPerHour` is the one that caps spend, and it is the one
+this model uses. A **known consequence, recorded and not yet fixed**: an
+expired pilot session is charged against the budget even though its 401
+never reached the provider.
 
 ---
 
@@ -133,7 +158,8 @@ by *successful* budget spend rather than by attempt count.
 
 | Before | Do this |
 |---|---|
-| **Wave 1 (2–3 drivers)** | Nothing. 7% expected, 34% worst case. |
+| **Wave 1 (2–3 drivers)** | Nothing. 7% expected, 82% worst case. |
 | **A fourth driver** | Re-run the model with the reroutes-per-trip figure Wave 1 actually measured. That single number moves the answer more than the other six combined. |
-| **Ten or more** | Establish the real allowance for both products with the provider, and check the worst case — it crosses the documented free tier at exactly this point. |
+| **A fourth driver, again** | The worst case crosses the documented allowance at four. Either establish the real allowance with the provider, or accept that a reroute defect at four drivers can exhaust it. |
+| **Ten or more** | Establish the real allowance for both products with the provider. |
 | **Fifty or more** | Ordinary driving alone exceeds the documented allowance. This is a commercial decision before it is an engineering one. |

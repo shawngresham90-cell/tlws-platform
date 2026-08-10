@@ -148,7 +148,7 @@ const read = (p: string) => readFileSync(p, 'utf8');
     );
   }
 
-  const worstExpected: Record<number, number> = { 3: 1716, 10: 5720, 50: 28600, 100: 57200 };
+  const worstExpected: Record<number, number> = { 3: 4092, 10: 13640, 50: 68200, 100: 136400 };
   for (const drivers of MODELLED_WAVES) {
     const w = worstCaseMonthlyVolume(drivers);
     check(
@@ -162,13 +162,34 @@ const read = (p: string) => readFileSync(p, 'utf8');
     );
   }
   check('worst case: 3 drivers still fit', worstCaseMonthlyVolume(3).withinDocumentedFreeTier);
-  check('worst case: 10 drivers do not', !worstCaseMonthlyVolume(10).withinDocumentedFreeTier);
+  check(
+    'worst case: 4 drivers do not — the wave cap is also the volume cap',
+    !worstCaseMonthlyVolume(4).withinDocumentedFreeTier,
+  );
+  // The correction that produced these numbers: the worst case must use
+  // the HOURLY rail, because the per-session counter only advances on
+  // success and therefore never fires on a failing trip.
+  const CONTROLLER_SRC = read('src/lib/navigator/reroute-controller.ts');
+  const controllerCode = CONTROLLER_SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(
+    /^\s*\/\/.*$/gm,
+    '',
+  );
+  check(
+    'worst case: rests on maxPerHour, and the session counter really is success-only',
+    (controllerCode.match(/sessionCount \+= 1/g) ?? []).length === 1 &&
+      /session = created\.session;[\s\S]{0,120}sessionCount \+= 1/.test(controllerCode),
+  );
+  check(
+    'worst case: scales with trip length, not with a per-trip constant',
+    worstCaseMonthlyVolume(1, { ...DEFAULT_ASSUMPTIONS, drivingHoursPerTrip: 10 })
+      .truckTransactions > worstCaseMonthlyVolume(1).truckTransactions,
+  );
 
   const headroom = driversWithinFreeTier();
   check('headroom: 42 drivers under ordinary driving', headroom.expected === 42, headroom.expected);
   check(
-    'headroom: 8 drivers if every budget is spent',
-    headroom.worstCase === 8,
+    'headroom: 3 drivers if the hourly rail is spent every hour',
+    headroom.worstCase === 3,
     headroom.worstCase,
   );
   check(
@@ -202,7 +223,12 @@ const read = (p: string) => readFileSync(p, 'utf8');
     );
   }
   check('doc: publishes the 42-driver headroom', /\*\*42\*\*/.test(VOLUME_DOC));
-  check('doc: publishes the 8-driver worst-case headroom', /\*\*8\*\*/.test(VOLUME_DOC));
+  check('doc: publishes the 3-driver worst-case headroom', /\*\*3\*\*/.test(VOLUME_DOC));
+  check(
+    'doc: records the correction rather than quietly restating the number',
+    /Correction, same session/.test(VOLUME_FLAT) &&
+      /published \*\*8 drivers\*\* as the worst case/.test(VOLUME_FLAT),
+  );
   check('doc: names Wave 1 as safe on volume', /does not gate Wave 1/.test(VOLUME_FLAT));
   check(
     'doc: is explicit that the assumptions are estimates',
@@ -218,10 +244,9 @@ const read = (p: string) => readFileSync(p, 'utf8');
     /does \*\*not\*\* help rerouting/.test(VOLUME_FLAT),
   );
   check(
-    'doc: quotes the real reroute budget',
-    VOLUME_DOC.includes(
-      `**${REROUTE_DEFAULTS.maxPerHour} per hour, ${REROUTE_DEFAULTS.maxPerSession} per session**`,
-    ),
+    'doc: quotes both reroute rails, and names which is which',
+    VOLUME_DOC.includes(`**${REROUTE_DEFAULTS.maxPerHour} per hour** (spend rail)`) &&
+      VOLUME_DOC.includes(`**${REROUTE_DEFAULTS.maxPerSession} per session** (route-churn rail)`),
   );
 }
 
