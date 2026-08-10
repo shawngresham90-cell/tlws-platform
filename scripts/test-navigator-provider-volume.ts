@@ -175,10 +175,16 @@ const VOLUME_SRC = read('src/lib/navigator/provider-volume.ts');
     /^\s*\/\/.*$/gm,
     '',
   );
+  // The swap's right-hand side is not pinned — only that the charge follows
+  // the swap and the epoch bump immediately. Naming one particular accepted
+  // session (`created.session`) made this fail on #272, which adds a second
+  // accepted candidate and assigns through a local. The invariant the volume
+  // model depends on is "charged only after a successful swap", and that is
+  // what is asserted.
   check(
     'worst case: rests on maxPerHour, and the session counter really is success-only',
     (controllerCode.match(/sessionCount \+= 1/g) ?? []).length === 1 &&
-      /session = created\.session;[\s\S]{0,120}sessionCount \+= 1/.test(controllerCode),
+      /session = [^;\n]+;\s*epoch \+= 1;\s*sessionCount \+= 1/.test(controllerCode),
   );
   check(
     'worst case: scales with trip length, not with a per-trip constant',
