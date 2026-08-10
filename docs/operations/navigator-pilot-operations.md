@@ -39,6 +39,21 @@ every other gate says.
 | 2 | **Does changing `NAVIGATOR_PREVIEW_PASSWORD` in Netlify take effect without a redeploy?** It is the fastest access stop in the system, and whether it works instantly is not knowable from this repository. Test it once on a quiet day. | Nothing yet — but you want the answer *before* you need it |
 | 3 | **Is a publishable Netlify deploy still retained for the rollback target?** Deploy retention is a Netlify setting. A rollback plan whose target has been garbage-collected is not a plan. | Wave 1 entry requirement E9 |
 
+## The rest of the set
+
+These ship in sibling draft PRs and land in the same folder. Listed here so
+this page stays the single entry point.
+
+| Document | Answers |
+|---|---|
+| `navigator-incident-playbook.md` | 14 incidents, six questions each: severity, what to tell the driver, posture, evidence, keep using it?, resume when |
+| `navigator-driver-guide.md` | What an outside driver reads before their first trip |
+| `navigator-known-limitations.md` | The one authoritative list, re-derived from the code by test |
+| `navigator-observability.md` | What a session emits today, a privacy-first event schema, and the persistence decision |
+| `navigator-provider-volume.md` | How many drivers the routing allowance supports — 42 ordinary, 3 worst case |
+| `navigator-accessibility-audit.md` | Surface-by-surface, plus the one audio question that needs a device |
+| `navigator-security-probe-2026-08-10.md` | A real build, attacked, and the one defect it found |
+
 ## What keeps these documents honest
 
 `scripts/test-navigator-stop-policy.ts` runs in the normal suite and fails the
@@ -54,3 +69,11 @@ build if:
   actually render;
 - **anything in the app imports the stop-policy module.** It classifies; it
   does not act. No field report may ever switch off a driver's navigation.
+
+The sibling PRs bring their own gates: `navigator-pilot-docs` re-derives the
+limitations list from the request builder, `navigator-pilot-events` feeds
+twenty hostile strings through the event schema, `navigator-adversarial`
+does the same to every driver-facing input, `navigator-provider-volume`
+re-reads every rate limit from its own source file, and
+`navigator-state-combinations` drives ten pairs of real states through the
+real ports.
