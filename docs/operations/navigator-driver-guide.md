@@ -145,18 +145,16 @@ quiet week from a week nobody reported.
 3. Tap to copy. It copies a block of text.
 4. Send it to me.
 
-> ### ⚠ OWNER DECISION REQUIRED — REPORT DESTINATION
+> ### Report destination — owner-selected
 >
-> **Nothing in this application defines where a report goes.** Before this
-> guide is handed to any driver, the owner must fill in the line below —
-> an email address, a phone number for a text, whatever is actually going
-> to be read.
+> **Send your report to: `shawngresham90@gmail.com`**
 >
-> **Send your report to: `________________________`**
->
-> This has been deliberately left blank rather than guessed at. A driver
-> holding a truck-route defect report at 2 a.m. needs a real destination,
-> not one that was invented to fill a template.
+> This address was chosen by the owner on 2026-08-10. The line above was
+> deliberately left blank until the owner picked one, rather than guessed
+> at — a driver holding a truck-route defect report at 2 a.m. needs a real
+> destination, not one invented to fill a template. A test still fails the
+> build if any other destination ever appears in this guide, so the address
+> can only change here on the owner's word.
 
 The report contains what the app was doing, what build it was, and your note.
 **It does not contain where you were** — no coordinates, no track, no

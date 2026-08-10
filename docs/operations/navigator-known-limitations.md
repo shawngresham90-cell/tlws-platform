@@ -102,7 +102,7 @@ routing while looking like a fix. See the open owner decision below.
 |---|---|
 | **The pilot session lasts 12 hours** | After that the password is needed again. Enforced server-side from a signed timestamp, so a copied cookie expires too. |
 | **Your first name is session-only** | It is held in the screen's memory and nowhere else — no storage, no cookie, no database. **A page reload loses it.** This is deliberate. |
-| **Reports are not sent anywhere automatically** | A report is generated and copied to your clipboard. Nothing transmits it. Where it goes is an open owner decision (below). |
+| **Reports are not sent anywhere automatically** | A report is generated and copied to your clipboard. Nothing transmits it. The driver sends it to the owner-selected destination: `shawngresham90@gmail.com` (decision 2, below). |
 | **Nothing about the trip is retained** | No trip history, no route archive, no telemetry. When the tab closes, the session is gone. |
 
 ## 8. Provider limits and volume
@@ -124,12 +124,14 @@ a reroute that does not come. That distinction matters when a driver reports
 ## ⚠ Open owner decisions
 
 These are recorded rather than resolved. Each one was left alone because
-resolving it needs a decision only the owner can make.
+resolving it needs a decision only the owner can make. Decision 2 has since
+been made by the owner and is marked resolved below; it stays in the table
+so the record of who decided it, and when, survives.
 
 | # | Decision | Why it was not made here |
 |---|---|---|
 | 1 | **The provider vehicle-type parameter.** | Requires primary provider documentation, unreachable from the build environment. Guessing would change routing silently. The request is byte-for-byte unchanged. |
-| 2 | **Where a driver sends a problem report.** | Nothing in the repository names a destination. The only contact address defined anywhere is the privacy contact, which is not a pilot support channel. |
+| 2 | **Where a driver sends a problem report.** ✅ **Resolved 2026-08-10** — the owner selected `shawngresham90@gmail.com`. | The decision was the owner's to make and the owner made it. It is recorded in the driver guide and pinned by test: any *other* destination appearing there still fails the build. |
 | 3 | **Whether to model weight-per-axle, trailer count and tunnel category.** | Each is real work and each changes what the app claims to enforce. Adding a field to a screen without sending it on the wire would be worse than the gap. |
 | 4 | **Whether to license satellite imagery.** | A paid provider decision. |
 | 5 | **Whether pilot reports should persist.** | Persistence needs a store, a retention policy, and a privacy position. See the observability memo. |

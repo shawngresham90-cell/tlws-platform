@@ -20,9 +20,11 @@
  *
  *   - the document may not describe a field as sent when the builder does
  *     not send it. An over-claim is the dangerous kind of stale.
- *   - the driver guide may not name a report destination, because the
- *     repository does not define one. An invented address would route
- *     truck-route defect reports to nobody.
+ *   - the driver guide may name exactly ONE report destination — the
+ *     address the owner selected on 2026-08-10 — and nothing else. Any
+ *     other email, any phone number, any chat channel and any link still
+ *     fail, because an invented destination would route truck-route
+ *     defect reports to nobody.
  *
  * Run:
  *   npx esbuild scripts/test-navigator-pilot-docs.ts --bundle --platform=node \
@@ -385,15 +387,35 @@ const URL_PARAMS = (() => {
 
 /* ---------------------------------------------------- 5. driver guide */
 {
+  // The report destination was an owner decision, deliberately left blank
+  // until the owner made it. On 2026-08-10 the owner selected the address
+  // below. The guard's job is unchanged in spirit: no INVENTED destination
+  // may appear. Exactly this owner-approved address is allowed; changing it
+  // means changing this constant, which is an owner decision, on purpose.
+  const OWNER_APPROVED_REPORT_DESTINATION = 'shawngresham90@gmail.com';
+
   check(
-    'guide: marks the report destination as an owner decision',
-    /OWNER DECISION REQUIRED — REPORT DESTINATION/.test(GUIDE_FLAT),
+    'guide: records the destination as owner-selected, not invented',
+    /Report destination — owner-selected/.test(GUIDE_FLAT) &&
+      /chosen by the owner on 2026-08-10/.test(GUIDE_FLAT),
   );
-  // The negative that matters: no destination of ANY kind may be invented here.
+  check(
+    'guide: sends reports to exactly the owner-approved address',
+    GUIDE.includes(`**Send your report to: \`${OWNER_APPROVED_REPORT_DESTINATION}\`**`),
+  );
+  check(
+    'guide: no blank remains to suggest the decision is still open',
+    !/Send your report to: `_+`/.test(GUIDE) && !/OWNER DECISION REQUIRED/.test(GUIDE),
+  );
+  // The negative that matters: no OTHER destination of any kind may appear.
   // Email and phone were the obvious two; a Slack channel, a chat workspace or a
-  // form URL would fill the blank just as wrongly, so they are guarded too.
+  // form URL would fill the line just as wrongly, so they are guarded too.
   const addresses = [...GUIDE.matchAll(/[\w.+-]+@[\w-]+\.[\w.]+/g)].map((m) => m[0]);
-  check('guide: invents no email address to send reports to', addresses.length === 0, addresses);
+  check(
+    'guide: names no email address other than the owner-approved one',
+    addresses.length > 0 && addresses.every((a) => a === OWNER_APPROVED_REPORT_DESTINATION),
+    addresses,
+  );
   check(
     'guide: invents no phone number either',
     !/\b(?:\+?1[ .-]?)?\(?\d{3}\)?[ .-]\d{3}[ .-]\d{4}\b/.test(GUIDE),
@@ -404,7 +426,11 @@ const URL_PARAMS = (() => {
   check('guide: invents no chat channel to send reports to', channels.length === 0, channels);
   const links = [...GUIDE.matchAll(/(?:https?:\/\/|\bwww\.)\S+/gi)].map((m) => m[0]);
   check('guide: invents no form or link destination', links.length === 0, links);
-  check('guide: leaves a blank for the owner to fill', /Send your report to: `_+`/.test(GUIDE));
+  check(
+    'limits: records the same owner-selected destination',
+    LIMITS.includes(`\`${OWNER_APPROVED_REPORT_DESTINATION}\``) &&
+      /Resolved 2026-08-10/.test(LIMITS_FLAT),
+  );
 
   for (const [what, re] of [
     ['signs win', /Signs win\. Always\./i],
