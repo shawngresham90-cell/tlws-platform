@@ -751,21 +751,28 @@ async function main() {
   }
 
   // =================================================================
-  // 5. THE SCREEN WIRING — a static render cannot run an effect, so the
-  //    parts that must exist are pinned by source.
+  // 5. THE SCREEN WIRING — source pins freeze the SHAPE of the wiring.
+  //    They cannot prove the effects execute (a regex matches dead code
+  //    just as happily — that is exactly how the off-route announcement
+  //    stayed silent until the 2026-08 audit); the EXECUTION is proven
+  //    by test-navigator-offroute-voice.ts, which mounts the real screen
+  //    and drives a departure through the real engines.
   // =================================================================
   {
     const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
     check(
       'wiring: the off-route line is announced on the transition INTO off-route',
-      /snap\.state === 'off-route' && prev !== 'off-route'/.test(screen),
+      // The edge is detected from the render-scoped lcState — a snapshot
+      // taken here would already read 'rerouting', because the reroute
+      // effect above transitions synchronously before this effect runs.
+      /lcState === 'off-route' && prev !== 'off-route'/.test(screen),
       'the announcement is not edge-triggered — it would repeat every tick',
     );
     check(
       'wiring: the episode counter advances per departure, not per tick',
       /offRouteEpisodeRef\.current \+= 1/.test(screen) &&
         screen.indexOf('offRouteEpisodeRef.current += 1') >
-          screen.indexOf("snap.state === 'off-route' && prev !== 'off-route'"),
+          screen.indexOf("lcState === 'off-route' && prev !== 'off-route'"),
     );
     check(
       'wiring: an unsafe-reversal outcome sets the holding state',

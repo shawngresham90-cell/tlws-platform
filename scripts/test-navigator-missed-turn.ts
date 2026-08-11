@@ -245,7 +245,10 @@ async function main() {
     );
     check(
       '3: the off-route line is still announced exactly once per episode',
-      /snap\.state === 'off-route' && prev !== 'off-route'/.test(screen),
+      // Edge-detected from the render-scoped lcState (not a snapshot the
+      // earlier reroute effect has already advanced) — the execution of
+      // this wiring is proven by test-navigator-offroute-voice.ts.
+      /lcState === 'off-route' && prev !== 'off-route'/.test(screen),
     );
   }
 
