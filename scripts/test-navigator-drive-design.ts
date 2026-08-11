@@ -501,5 +501,51 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   check('modals: only the passenger override renders a dialog', offenders.length === 0, offenders);
 }
 
+/* ==================== 10. the parked map has a real box ================== */
+{
+  // Pilot round 3, "half the map blank": Leaflet measured its canvas on
+  // the parked page, where the map wrapper was a bare auto-height div —
+  // the mounted map computed to 0px tall — and the driving surface then
+  // inherited that stale canvas at trip start. Parked, the wrapper now
+  // grants the SAME box the dynamic-import placeholder promises, so the
+  // canvas is never born 0px and the pre-drive briefing framing is
+  // actually visible; before Enable location there is no map and no box.
+  const parkedProps = {
+    view: view as never,
+    watching: true,
+    onStart: () => {},
+    onStop: () => {},
+    voice: createVoiceGuidance(silent),
+    fullScreen: false,
+  };
+  const parked = renderToStaticMarkup(
+    createElement(
+      GpsProvider,
+      null,
+      createElement(
+        SafetyLockProvider,
+        null,
+        createElement(DrivingScreenView, {
+          ...parkedProps,
+          mapSlot: createElement('div', { 'data-test-map': 'live' }, 'MAP'),
+        }),
+      ),
+    ),
+  );
+  check(
+    'parked: the mounted map sits in the placeholder-sized box',
+    /class="[^"]*h-72[^"]*sm:h-96[^"]*"><div data-test-map="live"/.test(parked),
+    parked.match(/class="([^"]*)"><div data-test-map="live"/)?.[1],
+  );
+  const noMap = renderToStaticMarkup(
+    createElement(
+      GpsProvider,
+      null,
+      createElement(SafetyLockProvider, null, createElement(DrivingScreenView, parkedProps)),
+    ),
+  );
+  check('parked: no empty bordered box before a map exists', !noMap.includes('h-72'));
+}
+
 console.log(`navigator-drive-design: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
