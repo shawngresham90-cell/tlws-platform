@@ -98,7 +98,7 @@ export function VoiceControls({
           onMutedChange?.(true);
         }
       }}
-      className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-xl font-semibold text-ink"
+      className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
       aria-label={
         compact
           ? muted

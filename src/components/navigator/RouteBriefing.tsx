@@ -87,19 +87,19 @@ export function RouteBriefing({
       <dl className="grid grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-center text-ink">
         <div>
           <dt className="text-base leading-tight text-ink/70">Distance</dt>
-          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(1.5rem,6.5vw,1.875rem)] font-bold leading-tight">
+          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(22px,6.5vw,30px)] font-bold leading-tight">
             {formatDriverDistanceMi(totalMi)}
           </dd>
         </div>
         <div>
           <dt className="text-base leading-tight text-ink/70">Time (h:mm)</dt>
-          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(1.5rem,6.5vw,1.875rem)] font-bold leading-tight">
+          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(22px,6.5vw,30px)] font-bold leading-tight">
             {brief !== null ? formatHM(brief.durationSeconds / 60) : '—'}
           </dd>
         </div>
         <div>
           <dt className="text-base leading-tight text-ink/70">Arrive</dt>
-          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(1.5rem,6.5vw,1.875rem)] font-bold leading-tight">
+          <dd className="num-data whitespace-nowrap font-data text-[length:clamp(22px,6.5vw,30px)] font-bold leading-tight">
             {etaText ?? '—'}
           </dd>
         </div>
