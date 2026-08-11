@@ -13,14 +13,31 @@ import { buildMetadata } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
 
-export async function generateMetadata({ params }: { params: { category: string } }) {
+/** One parser for the page param, so metadata and page can never disagree. */
+function pageFrom(searchParams?: { page?: string }): number {
+  return Math.max(1, parseInt(searchParams?.page ?? '1', 10) || 1);
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: { category: string };
+  searchParams?: { page?: string };
+}) {
   const cat = await getCategoryBySlug(params.category);
-  if (!cat)
-    return buildMetadata({ title: 'Category not found', path: `/knowledge/${params.category}` });
+  // Unknown category 404s — emit no canonical and no robots directives for it,
+  // matching the directory pages' miss convention.
+  if (!cat) return {};
+  // Pages 2+ are real, linked, crawlable URLs with different articles, so each
+  // needs its own canonical and a distinct title rather than all 200-ing as
+  // duplicates of page 1.
+  const page = pageFrom(searchParams);
+  const base = cat.meta_title ?? `${cat.name} — Knowledge Center`;
   return buildMetadata({
-    title: cat.meta_title ?? `${cat.name} — Knowledge Center`,
+    title: page > 1 ? `${base} — Page ${page}` : base,
     description: cat.meta_description ?? cat.description ?? undefined,
-    path: `/knowledge/${cat.slug}`,
+    path: page > 1 ? `/knowledge/${cat.slug}?page=${page}` : `/knowledge/${cat.slug}`,
   });
 }
 
@@ -34,7 +51,7 @@ export default async function CategoryPage({
   const cat = await getCategoryBySlug(params.category);
   if (!cat) notFound();
 
-  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const page = pageFrom(searchParams);
   const [categories, { articles, total }] = await Promise.all([
     getCategories(),
     getCategoryArticles(cat.id, page),

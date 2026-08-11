@@ -24,6 +24,7 @@
 import sitemap from '@/app/sitemap';
 import robots from '@/app/robots';
 import { SITE } from '@/lib/seo/site';
+import { installPostgrestFake } from './helpers/postgrest-fake';
 
 let passed = 0;
 let failed = 0;
@@ -293,94 +294,12 @@ const TABLES: Record<string, Record<string, unknown>[]> = {
   kc_articles: KC_ARTICLES,
 };
 
-/* ------------------------------------------------------- PostgREST fake */
-
-/**
- * Just enough PostgREST semantics for the generator's reads: eq / is.null /
- * not.is.null / in.(…) / gt / ilike filters, order=<col>.asc|desc, limit,
- * and the exact count via Content-Range when `Prefer: count=exact` is sent
- * (which is how collectAllRows corroborates a complete scan). Anything the
- * data layer starts using that this fake doesn't speak fails loudly.
- */
-function applyFilter(rows: Record<string, unknown>[], col: string, raw: string) {
-  if (raw.startsWith('eq.')) {
-    const v = raw.slice(3);
-    return rows.filter((r) => String(r[col]) === v);
-  }
-  if (raw === 'is.null') return rows.filter((r) => r[col] == null);
-  if (raw === 'not.is.null') return rows.filter((r) => r[col] != null);
-  if (raw.startsWith('in.(') && raw.endsWith(')')) {
-    const values = raw
-      .slice(4, -1)
-      .split(',')
-      .map((s) => s.trim().replace(/^"(.*)"$/, '$1'));
-    return rows.filter((r) => values.includes(String(r[col])));
-  }
-  if (raw.startsWith('gt.')) {
-    const v = raw.slice(3);
-    return rows.filter((r) => String(r[col]) > v);
-  }
-  if (raw.startsWith('ilike.')) {
-    const pattern = raw.slice(6).replace(/[.+^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`^${pattern.replace(/[%*]/g, '.*')}$`, 'i');
-    return rows.filter((r) => r[col] != null && re.test(String(r[col])));
-  }
-  throw new Error(`PostgREST fake: unsupported filter ${col}=${raw}`);
-}
-
-function fakeRest(url: URL, prefer: string): Response {
-  const table = url.pathname.split('/').pop() ?? '';
-  const fixture = TABLES[table];
-  if (!fixture) throw new Error(`PostgREST fake: unknown table ${table}`);
-
-  let rows = [...fixture];
-  let order: string | null = null;
-  let limit: number | null = null;
-  for (const [key, value] of url.searchParams.entries()) {
-    if (key === 'select' || key === 'apikey') continue;
-    if (key === 'order') order = value;
-    else if (key === 'limit') limit = parseInt(value, 10);
-    else if (key === 'offset') throw new Error('PostgREST fake: offset unsupported');
-    else rows = applyFilter(rows, key, value);
-  }
-  const total = rows.length;
-  if (order) {
-    const [col, dir] = order.split('.');
-    rows.sort((a, b) => String(a[col]).localeCompare(String(b[col])));
-    if (dir === 'desc') rows.reverse();
-  }
-  if (limit != null) rows = rows.slice(0, limit);
-
-  const headers = new Headers({ 'content-type': 'application/json' });
-  if (/count=exact/.test(prefer)) {
-    headers.set(
-      'content-range',
-      rows.length === 0 ? `*/${total}` : `0-${rows.length - 1}/${total}`,
-    );
-  }
-  return new Response(JSON.stringify(rows), { status: 200, headers });
-}
-
-function installFake(): void {
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    const url = new URL(href);
-    if (!url.pathname.startsWith('/rest/v1/')) {
-      throw new Error(`PostgREST fake: unexpected request ${url.pathname}`);
-    }
-    const preferInit = new Headers(
-      init?.headers ?? (typeof input === 'object' && 'headers' in input ? input.headers : {}),
-    ).get('prefer');
-    return fakeRest(url, preferInit ?? '');
-  }) as typeof fetch;
-}
-
 /* ------------------------------------------------------------------ tests */
 
 async function main() {
   process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://placeholder.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'placeholder-anon-key';
-  installFake();
+  installPostgrestFake(TABLES);
 
   const entries = await sitemap();
   const urls = entries.map((e) => e.url);

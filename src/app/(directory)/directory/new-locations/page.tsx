@@ -18,13 +18,25 @@ const PATH = '/directory/new-locations';
 const PAGE_SIZE = 24;
 const MAX_PAGE = 50; // hard cap: newest is a discovery surface, not a full crawl
 
-export function generateMetadata(): Metadata {
+/** One parser for the page param, so metadata and page can never disagree. */
+function pageFrom(searchParams?: { page?: string }): number {
+  const raw = Number.parseInt(searchParams?.page ?? '1', 10);
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 1), MAX_PAGE) : 1;
+}
+
+export function generateMetadata({ searchParams }: { searchParams?: { page?: string } }): Metadata {
+  // Pages 2+ are real, linked, crawlable URLs with different content, so each
+  // needs its own canonical and a distinct title. A shared page-1 canonical
+  // across all 50 pages read as one duplicate cluster with an unreliable
+  // canonical hint.
+  const page = pageFrom(searchParams);
+  const suffix = page > 1 ? ` — Page ${page}` : '';
   return buildMetadata({
-    title: 'Newest Truck Stop & Parking Listings | Trucking Life with Shawn',
+    title: `Newest Truck Stop & Parking Listings${suffix} | Trucking Life with Shawn`,
     description:
       'The newest truck stops, parking, scales, and driver-service listings added to the ' +
       'directory — freshly verified locations, newest first.',
-    path: PATH,
+    path: page > 1 ? `${PATH}?page=${page}` : PATH,
   });
 }
 
@@ -44,8 +56,7 @@ export default async function NewLocationsPage({
 }: {
   searchParams?: { page?: string };
 }) {
-  const raw = Number.parseInt(searchParams?.page ?? '1', 10);
-  const page = Number.isFinite(raw) ? Math.min(Math.max(raw, 1), MAX_PAGE) : 1;
+  const page = pageFrom(searchParams);
   const offset = (page - 1) * PAGE_SIZE;
 
   // Fetch one extra to know whether a next page exists, without a count query.

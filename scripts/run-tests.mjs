@@ -54,6 +54,11 @@ for (const name of harnesses) {
         '--jsx=automatic',
         '--alias:@=./src',
         '--alias:server-only=./scripts/shims/server-only.ts',
+        // Server pages construct the cookie-scoped Supabase client via
+        // next/headers, which throws outside a request. Harnesses that import
+        // page modules get an empty cookie jar instead (no session — exactly
+        // the anon posture every public read already assumes).
+        '--alias:next/headers=./scripts/shims/next-headers.ts',
         // Components may import stylesheets (Leaflet ships its own). Next
         // handles CSS; these offline harnesses only exercise behavior, so
         // stylesheets bundle to nothing rather than failing on their

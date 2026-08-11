@@ -29,11 +29,9 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { category: string; slug: string } }) {
   const article = await getArticle(params.category, params.slug);
-  if (!article)
-    return buildMetadata({
-      title: 'Article not found',
-      path: `/knowledge/${params.category}/${params.slug}`,
-    });
+  // Unknown article 404s — emit no canonical and no robots directives for it,
+  // matching the directory pages' miss convention.
+  if (!article) return {};
   return buildMetadata({
     title: article.meta_title ?? article.title,
     description: article.meta_description ?? article.excerpt ?? undefined,
