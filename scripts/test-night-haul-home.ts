@@ -190,12 +190,39 @@ check('JourneyStrip: no invented image paths', !journey.includes("src: '/images/
 
 const hero = read('src/components/sections/Hero.tsx');
 check(
-  'Hero: shot-#1 seam is documented, not faked',
-  hero.includes('FUTURE PHOTO') && hero.includes('shot #1'),
+  'Hero: shot #1 landed — image-led from the two approved owner frames, seam closed',
+  hero.includes('/images/home/shawn-prostar-hero-mobile.webp') &&
+    hero.includes('/images/home/shawn-prostar-hero-desktop.webp') &&
+    !hero.includes('FUTURE PHOTO'),
 );
 check(
-  'Hero: still type-led — no image element added',
-  !hero.includes("from '@/components/media/CinematicStill'") && !hero.includes('next/image'),
+  'Hero: true art direction — one <picture>, portrait below 768, landscape from md',
+  hero.includes('getImageProps') &&
+    hero.includes('<picture>') &&
+    hero.includes('media="(min-width: 768px)"'),
+);
+check(
+  'Hero: zero CLS — explicit exact aspect box per frame (4:5 phone, 16:9 from md)',
+  hero.includes('aspect-[4/5]') && hero.includes('md:aspect-video'),
+);
+check(
+  'Hero: factual alt text, no keyword stuffing',
+  hero.includes(
+    'Shawn standing in front of a white International ProStar tractor-trailer at sunset.',
+  ),
+);
+check(
+  'Hero: LCP hint on the art-directed img (bypasses next/image auto-preload)',
+  hero.includes('priority: true'),
+);
+check(
+  'Hero: fetchpriority survives the production serializer (lowercase attribute; ' +
+    'React 18 drops the camelCase prop a raw <img> spread carries)',
+  hero.includes('fetchpriority:'),
+);
+check(
+  'Hero: photograph wears the CinematicStill house grade — layers over, never edits',
+  hero.includes('film-grain') && hero.includes('rgba(20,20,20,0.88)'),
 );
 
 /* -------------------------------------------------- focus + floors */

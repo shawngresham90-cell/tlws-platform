@@ -5,14 +5,22 @@ this list blocks *polish*, not *function* — the site is complete and honest
 without them. Nothing here should be improvised, stocked, or AI-generated;
 the design system is already built to receive each one.
 
-## 1. Hero photograph (highest impact)
+## 1. Hero photograph — RECEIVED 2026-08-11 ✅
 
-**The shot:** Shawn beside the truck — golden hour or sodium-lit night,
-landscape, subject left-of-center, room in the bottom third for a caption.
-**Unlocks:** the homepage hero graduates from type-led to image-led using
-the existing `CinematicStill` treatment. ~1 hour of code once the photo
-exists.
-**Spec:** ≥ 1920×1080, JPG/WebP, we compress to ≤ 200 KB.
+**Landed:** blueprint shot #1 exactly as specified — Shawn, Mossy Oak cap,
+arms crossed, ProStar + 53' trailer angled behind, golden hour, camera low.
+Two approved frames supplied by the owner (self-sent via Gmail, uploaded to
+the session), both already inside the ≤ 200 KB budget:
+
+| Owner's original file                  | Production asset path                          | Frame           |
+| -------------------------------------- | ---------------------------------------------- | --------------- |
+| `shawn-prostar-hero-mobile (1).webp`   | `public/images/home/shawn-prostar-hero-mobile.webp`  | 1080×1350, 4:5  |
+| `shawn-prostar-hero-desktop.webp`      | `public/images/home/shawn-prostar-hero-desktop.webp` | 1664×936, 16:9  |
+
+The homepage hero is image-led as planned: an art-directed `<picture>`
+(portrait on phones, landscape from md) wearing the `CinematicStill` house
+grade. **This delivery satisfies §1 only** — every other shot below is
+still pending until its real file arrives.
 
 ## 2. The full shot list
 
