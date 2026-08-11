@@ -35,12 +35,13 @@ as the blueprint's highway-signage layer.
   pointed at `/academy` while the hero and Door 1 point the same label at
   `/academy/apply` — one label, one destination now.
 
-## Photo seams (no photography exists yet — nothing was faked)
+## Photo seams (nothing was ever faked; real frames light seams up)
 
-- **Hero — blueprint shot #1** (Shawn + ProStar, golden hour): documented in
-  `Hero.tsx`; the type-led composition IS the design until the real frame
-  lands, then it graduates via the existing `CinematicStill` treatment
-  (`docs/design/owner-assets-needed.md` §1).
+- **Hero — blueprint shot #1** (Shawn + ProStar, golden hour): **LANDED
+  2026-08-11.** The owner supplied the real frame in both orientations and
+  the hero graduated to image-led exactly as the seam planned — art-directed
+  `<picture>`, `CinematicStill` house grade, verified caption
+  (`docs/design/owner-assets-needed.md` §1 has the file mapping).
 - **Journey strip — shots for beats 01/02/03** (archival driving photo,
   instructor shot #10, Dalton yard #6): `JourneyStrip` now carries a typed
   optional `photo` slot per beat rendering through `CinematicStill`; absent
