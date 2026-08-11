@@ -25,7 +25,7 @@ import { searchDestinations } from './search-port';
 const DEBOUNCE_MS = 350;
 
 const inputClass =
-  'min-h-16 w-full rounded-card border border-line bg-transparent px-4 text-xl text-ink';
+  'min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-4 text-xl text-ink';
 
 const FACILITY_LABEL: Record<string, string> = {
   'truck-stop': 'Truck stop',
@@ -37,6 +37,59 @@ const FACILITY_LABEL: Record<string, string> = {
   'customer-yard': 'Customer yard',
   unknown: '',
 };
+
+/**
+ * One destination card (Design Blueprint Phase 4). Every line is a REAL
+ * candidate field the provider returned — facility class from HERE's own
+ * categories, the place's name and postal address, and HERE's straight-
+ * line distance, said to be straight-line so nobody reads it as route
+ * distance. Nothing is inferred from the business name: a place called
+ * "Pilot" earns no parking, fuel, or shower claims here, because this app
+ * has no data source for any of that. Coordinates never render.
+ *
+ * The whole card is the button — one obvious tap, ≥64px, parked-only by
+ * the LockGate this surface already lives behind. Exported for the design
+ * harness, which renders it with fixture candidates.
+ */
+export function SearchResultCard({
+  place,
+  onSelect,
+}: {
+  place: DestinationCandidate;
+  onSelect: (candidate: DestinationCandidate) => void;
+}) {
+  const facility = FACILITY_LABEL[place.facility] ?? '';
+  return (
+    <button
+      type="button"
+      className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-4 py-3 text-left text-ink motion-safe:transition-colors motion-safe:duration-200 active:bg-nav-surface-2"
+      onClick={() => onSelect(place)}
+    >
+      <span className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          {facility ? (
+            <span className="block text-sm font-semibold uppercase tracking-[0.15em] text-ink/60">
+              {facility}
+            </span>
+          ) : null}
+          <span className="block text-xl font-semibold leading-snug">{place.title}</span>
+          {place.address ? (
+            <span className="block text-lg leading-snug text-ink/70">{place.address}</span>
+          ) : null}
+          {place.distanceMi !== null ? (
+            <span className="mt-1 block text-base text-ink/60">
+              <span className="num-data">≈ {place.distanceMi} mi</span> away · straight line
+            </span>
+          ) : null}
+        </span>
+        {/* Affordance only — the words and the tap target carry the action. */}
+        <span aria-hidden="true" className="shrink-0 text-3xl leading-none text-ink/40">
+          ›
+        </span>
+      </span>
+    </button>
+  );
+}
 
 export function DestinationSearch({
   origin,
@@ -164,38 +217,25 @@ export function DestinationSearch({
 
       {results.length > 0 ? (
         <ul className="space-y-2" aria-label="Destination search results">
-          {results.map((place) => {
-            const facility = FACILITY_LABEL[place.facility] ?? '';
-            return (
-              <li key={place.id}>
-                <button
-                  type="button"
-                  className="min-h-16 w-full rounded-card border border-line px-4 py-3 text-left text-ink"
-                  onClick={() => {
-                    // Selecting ENDS the search: abandon any in-flight
-                    // response, mark settled so the effect stops, and
-                    // clear the list and the status line.
-                    coordRef.current?.cancel();
-                    setSettled(true);
-                    setSearching(false);
-                    setResults([]);
-                    setQuery(place.title);
-                    setStatus(null);
-                    onPick(place);
-                  }}
-                >
-                  <span className="block text-xl font-semibold">{place.title}</span>
-                  {place.address ? (
-                    <span className="block text-lg text-ink/70">{place.address}</span>
-                  ) : null}
-                  <span className="block text-base text-ink/60">
-                    {facility ? `${facility} · ` : ''}
-                    {place.distanceMi !== null ? `${place.distanceMi} mi away` : ''}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+          {results.map((place) => (
+            <li key={place.id}>
+              <SearchResultCard
+                place={place}
+                onSelect={(chosen) => {
+                  // Selecting ENDS the search: abandon any in-flight
+                  // response, mark settled so the effect stops, and
+                  // clear the list and the status line.
+                  coordRef.current?.cancel();
+                  setSettled(true);
+                  setSearching(false);
+                  setResults([]);
+                  setQuery(chosen.title);
+                  setStatus(null);
+                  onPick(chosen);
+                }}
+              />
+            </li>
+          ))}
         </ul>
       ) : null}
     </div>
