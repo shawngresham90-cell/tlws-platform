@@ -223,3 +223,54 @@ Download is resumable, cancellable, and never blocks starting the trip online.
 
 HOS works with no cache at all because `hos-engine` is pure and needs only the
 driver's stated clocks.
+
+## Leaving the app mid-drive (pilot round 3, item 4)
+
+A driver takes a phone call or switches to another app mid-drive. What a
+web page can and cannot promise there is a platform fact, and this
+section is the honest record of both.
+
+### What the browser cannot promise
+
+A backgrounded web page does not get continuous GPS. Mobile operating
+systems throttle or fully suspend background pages: geolocation
+callbacks stop (iOS Safari stops them outright), timers slow to
+once-a-minute or nothing, and the OS may discard the tab entirely under
+memory pressure. **No web implementation can honestly guarantee
+continuous navigation while another app is foregrounded** — background
+location is a native-app capability (declared background modes on iOS, a
+foreground service on Android). If the pilot needs guidance to keep
+tracking through a call, that is the native-app line item, not a web fix.
+
+### What the Navigator does instead
+
+While the driver is away, honesty; the moment they return, immediacy.
+
+- **The tab survived (the common case).** The still-registered watch
+  delivers a fresh fix within about a second of returning, the staleness
+  gate has been reporting position honestly the whole time (no frozen
+  marker pretending to be live), and the screen-wake lock — which the
+  browser releases on hide — is re-acquired on the visibility change.
+- **The tab was discarded and the page reloads.** Trip restore
+  (`src/lib/navigator/trip-restore.ts`) puts the active trip back
+  through the lifecycle's own front door: the planned route, its
+  request, and its arrival context are kept in `sessionStorage` while
+  guidance is live, and a reload inside the 30-minute freshness window
+  re-plans from that snapshot — no network, no provider spend, no
+  destination re-entry — and resumes the GPS watch only when the
+  Permissions API positively reports `granted` (never a prompt on
+  load). The snapshot is the ROUTE and nothing about the driver: no
+  name, no GPS trail, no HOS. It clears when the trip arrives, is
+  stopped, or its window lapses, and it dies with the tab.
+- **What a restore does not bring back, by design.** Voice returns
+  muted — mobile Safari requires a user gesture for a session's first
+  utterance, so the driver taps voice back on. The driver's name is
+  ephemeral by owner decision and is typed again, or not. A route
+  replaced by a mid-trip reroute restores as the ORIGINAL planned
+  route; if the truck is no longer on it, off-route detection and the
+  caged rerouter recover exactly as they would after any missed turn.
+
+Proof: `scripts/bench/navigator-trip-restore.mjs` drives a production
+build to active navigation, hard-reloads the page, and fails unless
+guidance is back — same route, no questions, no provider re-spend, and
+the maneuver distance still counting down as the truck keeps moving.

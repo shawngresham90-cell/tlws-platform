@@ -1219,10 +1219,23 @@ async function main() {
     };
     for (const [label, path] of Object.entries(files)) {
       const src = strip(readFileSync(path, 'utf8'));
+      // The NAME persists nowhere — that rail is absolute. The driving
+      // screen does hold the one sanctioned storage path, trip restore
+      // (pilot round 3, item 4), which persists the planned ROUTE in
+      // sessionStorage; its harness (test-navigator-trip-restore) pins
+      // that the snapshot never contains the name. The sanctioned call
+      // shapes are scrubbed here; every other storage token stays
+      // banned in all four files.
+      const scrubbed =
+        label === 'screen'
+          ? src
+              .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
+              .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
+          : src;
       check(
         `persistence: ${label} introduces no storage, cookie or URL state`,
         !/localStorage|sessionStorage|indexedDB|document\.cookie|history\.(push|replace)State|URLSearchParams/i.test(
-          src,
+          scrubbed,
         ),
         path,
       );
