@@ -142,6 +142,25 @@ async function main() {
     !readdirSync(join(ROOT, 'src', 'app')).includes('auth'),
   );
 
+  /* ------------------------------------- external-only sources are 308 --- */
+  // /contact has no page and no internal link — its only traffic is external
+  // (bookmarks, business listings, indexed results). A temporary redirect
+  // tells Google to keep the dead URL indexed instead of consolidating onto
+  // the destination, so permanence here is a contract, not a default.
+  const contact = redirects.find((r) => r.source === '/contact');
+  check('contact: /contact is redirected', Boolean(contact));
+  check('contact: the redirect is permanent', contact?.permanent === true, contact?.permanent);
+  // /videos stays temporary ON PURPOSE: it points off-site (YouTube) and the
+  // owner may re-point it; permanence there is a business call, documented in
+  // the August 2026 SEO audit. This check pins today's decision either way so
+  // a silent flip shows up in review.
+  const videos = redirects.find((r) => r.source === '/videos');
+  check(
+    'videos: still redirected off-site',
+    videos?.destination.startsWith('https://') === true,
+    videos,
+  );
+
   console.log(`\nroute-redirects: ${passed} passed, ${failed} failed`);
   if (failed) process.exit(1);
 }

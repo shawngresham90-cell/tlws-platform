@@ -64,14 +64,32 @@ export function Footer() {
           <p className="mt-2 max-w-xs text-sm text-muted">
             {SITE.tagline} CDL-A training in {SITE.city}, {SITE.region}, off I-75.
           </p>
+          {/* rel="me" is the identity-verification token for the entity graph;
+              it composes with (never replaces) the noopener/noreferrer every
+              other outbound link on the site already carries. */}
           <div className="mt-4 flex gap-4 text-sm text-muted">
-            <a href={SITE.social.youtube} className="hover:text-signal" rel="me">
+            <a
+              href={SITE.social.youtube}
+              className="hover:text-signal"
+              target="_blank"
+              rel="me noopener noreferrer"
+            >
               YouTube
             </a>
-            <a href={SITE.social.facebook} className="hover:text-signal" rel="me">
+            <a
+              href={SITE.social.facebook}
+              className="hover:text-signal"
+              target="_blank"
+              rel="me noopener noreferrer"
+            >
               Facebook
             </a>
-            <a href={SITE.social.tiktok} className="hover:text-signal" rel="me">
+            <a
+              href={SITE.social.tiktok}
+              className="hover:text-signal"
+              target="_blank"
+              rel="me noopener noreferrer"
+            >
               TikTok
             </a>
           </div>

@@ -36,7 +36,11 @@ const nextConfig = {
       // to the sign-in that actually opens the dashboard.
       { source: '/login', destination: '/admin/login', permanent: true },
       { source: '/directory/trip-planner', destination: '/trip-planner', permanent: true },
-      { source: '/contact', destination: '/academy/faq', permanent: false },
+      // Permanent on purpose: no /contact page or internal link exists, so
+      // its only traffic is external (old bookmarks, business listings,
+      // indexed results). A temporary redirect told Google to keep the dead
+      // URL indexed forever instead of consolidating onto the FAQ.
+      { source: '/contact', destination: '/academy/faq', permanent: true },
       {
         source: '/videos',
         destination: 'https://www.youtube.com/@TruckingLifewithShawn',
