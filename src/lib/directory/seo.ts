@@ -1,15 +1,19 @@
 import { SITE } from '@/lib/seo/site';
 import { getReviewAggregates, getApprovedReviewsForSeo } from '@/lib/community/data';
 import type { ReviewAggregate, SeoReview } from '@/lib/community/data';
+import { isDetailIndexable } from './detail';
 import type { DirectoryEntry } from './types';
 
 /**
- * Structured data for public directory listings. Only published AND
- * indexable (admin-marked complete) entries are emitted — thin or unverified
- * rows still render as cards but stay out of SEO surfaces, per the
- * completeness doctrine from migration 002. APPROVED driver reviews
- * (Milestone 16) enrich entries with AggregateRating + Review objects and a
- * dateModified timestamp; pending reviews never reach this layer.
+ * Structured data for public directory listings. Only published entries past
+ * the deterministic completeness gate (isDetailIndexable — the same gate that
+ * decides detail-page noindex and sitemap membership) are emitted — thin rows
+ * still render as cards but stay out of SEO surfaces. The manual
+ * locations.is_indexable flag is NOT the gate here: it is false on every
+ * current row (see detail.ts), so filtering on it silently emitted no
+ * ItemList anywhere. APPROVED driver reviews (Milestone 16) enrich entries
+ * with AggregateRating + Review objects and a dateModified timestamp;
+ * pending reviews never reach this layer.
  */
 
 /** Weigh stations and rest areas are places, not businesses. */
@@ -117,7 +121,7 @@ export function listingListSchema(
   path: string,
   reviewSeo?: ReviewSeo,
 ): object | null {
-  const indexable = entries.filter((e) => e.indexable);
+  const indexable = entries.filter(isDetailIndexable);
   if (indexable.length === 0) return null;
   return {
     '@context': 'https://schema.org',
@@ -146,7 +150,7 @@ export async function listingListSchemaWithReviews(
   // indexable entries the two review-table scans below (up to 10,000 rating
   // rows + 2,000 review rows, per page regeneration) fed a result that was
   // discarded unread. Decide null first, spend second.
-  if (!entries.some((e) => e.indexable)) return null;
+  if (!entries.some(isDetailIndexable)) return null;
   const [aggregates, reviewsByLocation] = await Promise.all([
     getReviewAggregates(),
     getApprovedReviewsForSeo(),

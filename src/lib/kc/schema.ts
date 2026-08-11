@@ -10,7 +10,8 @@ export function articleSchema(article: KcArticle, category: KcCategory, url: str
     headline: article.title,
     description: article.meta_description ?? article.excerpt ?? undefined,
     articleSection: category.name,
-    keywords: article.tags.join(', '),
+    // Omit rather than emit keywords: "" for a tagless article.
+    ...(article.tags.length > 0 ? { keywords: article.tags.join(', ') } : {}),
     datePublished: article.published_at ?? undefined,
     dateModified: article.updated_at,
     author: {

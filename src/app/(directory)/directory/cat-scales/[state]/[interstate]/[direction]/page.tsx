@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section, Eyebrow } from '@/components/ui';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
+import { listingListSchema } from '@/lib/directory/seo';
 import { stateByCode } from '@/lib/directory/states';
 import { getCatScaleCorridorEntries } from '@/lib/directory/data';
 import {
@@ -36,9 +38,35 @@ export default async function CatScaleCorridorPage({ params }: { params: Params 
   if (!directionsForInterstate(designation).includes(direction)) notFound();
 
   const entries = await getCatScaleCorridorEntries(code, designation);
+  // Same gated ItemList every directory list page emits — entries past the
+  // completeness gate only, so the schema never vouches for thin rows.
+  const corridorListSchema = listingListSchema(
+    entries,
+    `${designation} ${direction} CAT Scales in ${state.name}`,
+    `/directory/cat-scales/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}/${direction}`,
+  );
 
   return (
     <Section className="!py-10 sm:!py-14">
+      <JsonLd
+        schema={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Directory', path: '/directory' },
+            { name: 'CAT Scales', path: '/directory/cat-scales' },
+            { name: state.name, path: `/directory/cat-scales/${params.state.toLowerCase()}` },
+            {
+              name: designation,
+              path: `/directory/cat-scales/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}`,
+            },
+            {
+              name: direction.charAt(0).toUpperCase() + direction.slice(1),
+              path: `/directory/cat-scales/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}/${direction}`,
+            },
+          ]),
+          ...(corridorListSchema ? [corridorListSchema] : []),
+        ]}
+      />
       <div className="mx-auto w-full max-w-xl">
         <Eyebrow>
           CAT Scales · {state.name} · {designation} · {direction}

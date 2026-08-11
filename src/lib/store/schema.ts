@@ -1,5 +1,6 @@
 import { SITE } from '@/lib/seo/site';
 import type { StoreProduct } from './types';
+import type { DirectProduct } from './direct';
 import { productHref, productReadiness, displayName } from './products';
 import { amazonProductUrl } from './amazon';
 
@@ -54,4 +55,35 @@ export function productSchema(p: StoreProduct): object {
     };
   }
   return base;
+}
+
+/**
+ * Product JSON-LD for a direct (Stan) product — the same phantom-offer
+ * doctrine as above, applied per product: the node exists ONLY when the owner
+ * has confirmed a price (`priceUsd` non-null; 0 is a real, confirmed free
+ * offer) and no policy gate blocks purchase. Everything else returns null and
+ * the page ships breadcrumb-only, exactly as the whole catalog did before.
+ * No availability and no AggregateRating are ever asserted — neither is
+ * tracked for direct products.
+ */
+export function directProductSchema(p: DirectProduct): object | null {
+  if (p.priceUsd === null || p.purchaseBlockedReason) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    '@id': `${SITE.url}/store/products/${p.slug}#product`,
+    name: p.name,
+    description: p.description,
+    category: p.category,
+    url: `${SITE.url}/store/products/${p.slug}`,
+    image: `${SITE.url}${p.image}`,
+    brand: { '@type': 'Brand', name: SITE.brand },
+    offers: {
+      '@type': 'Offer',
+      price: p.priceUsd.toFixed(2),
+      priceCurrency: 'USD',
+      url: p.stanUrl,
+      seller: { '@type': 'Organization', name: SITE.brand },
+    },
+  };
 }

@@ -14,6 +14,7 @@ import {
   type DirectProduct,
 } from '@/lib/store/direct';
 import { STORE_EVENTS } from '@/lib/store/analytics';
+import { directProductSchema } from '@/lib/store/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 
 /**
@@ -24,15 +25,16 @@ import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
  * bought together", and no affiliate disclosure — those belong to the
  * affiliate catalog and would be meaningless or misleading here.
  *
- * No Product JSON-LD is emitted. Structured data for a product wants an
- * `offers` block, and most of these have no confirmed price; publishing a
- * Product node without one, or with an invented one, is exactly the phantom-
- * offer problem the Amazon schema builder already refuses to create. Breadcrumb
- * markup is safe and is emitted.
+ * Product JSON-LD is emitted PER PRODUCT, only when the owner has confirmed a
+ * price and nothing blocks purchase (directProductSchema returns null
+ * otherwise). Publishing a Product node without a real offer, or with an
+ * invented one, is exactly the phantom-offer problem the Amazon schema
+ * builder refuses to create — unpriced/blocked products stay breadcrumb-only.
  */
 export function DirectProductView({ product }: { product: DirectProduct }) {
   const price = directPriceLabel(product);
   const cta = ctaState(product);
+  const productNode = directProductSchema(product);
   const alsoInCategory = DIRECT_PRODUCTS.filter(
     (p) => p.category === product.category && p.slug !== product.slug,
   ).slice(0, 3);
@@ -41,11 +43,14 @@ export function DirectProductView({ product }: { product: DirectProduct }) {
     <>
       <StoreEvents event={STORE_EVENTS.productView} props={{ product: product.slug }} />
       <JsonLd
-        schema={breadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Store', path: '/store' },
-          { name: product.name, path: `/store/products/${product.slug}` },
-        ])}
+        schema={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Store', path: '/store' },
+            { name: product.name, path: `/store/products/${product.slug}` },
+          ]),
+          ...(productNode ? [productNode] : []),
+        ]}
       />
 
       <Section className="border-b border-line">

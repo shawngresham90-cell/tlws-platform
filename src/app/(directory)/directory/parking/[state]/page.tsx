@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section, Eyebrow } from '@/components/ui';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { getParkingFacets } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
 import { interstateToSlug } from '@/lib/directory/corridor';
@@ -29,6 +30,14 @@ export default async function ParkingStatePage({ params }: { params: Params }) {
 
   return (
     <Section className="!py-10 sm:!py-14">
+      <JsonLd
+        schema={breadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Directory', path: '/directory' },
+          { name: 'Truck Parking', path: '/directory/parking' },
+          { name: state.name, path: `/directory/parking/${params.state.toLowerCase()}` },
+        ])}
+      />
       <div className="mx-auto w-full max-w-xl">
         <Eyebrow>Find parking · {state.name}</Eyebrow>
         <h1 className="display-section">Which interstate?</h1>

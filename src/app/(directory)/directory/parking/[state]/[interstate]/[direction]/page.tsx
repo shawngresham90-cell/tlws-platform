@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Section, Eyebrow } from '@/components/ui';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
+import { listingListSchema } from '@/lib/directory/seo';
 import { stateByCode } from '@/lib/directory/states';
 import { getParkingCorridorEntries } from '@/lib/directory/data';
 import {
@@ -37,9 +39,35 @@ export default async function ParkingCorridorPage({ params }: { params: Params }
   if (!directionsForInterstate(designation).includes(direction)) notFound();
 
   const entries = await getParkingCorridorEntries(code, designation);
+  // Same gated ItemList every directory list page emits — entries past the
+  // completeness gate only, so the schema never vouches for thin rows.
+  const corridorListSchema = listingListSchema(
+    entries,
+    `${designation} ${direction} truck parking in ${state.name}`,
+    `/directory/parking/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}/${direction}`,
+  );
 
   return (
     <Section className="!py-10 sm:!py-14">
+      <JsonLd
+        schema={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Directory', path: '/directory' },
+            { name: 'Truck Parking', path: '/directory/parking' },
+            { name: state.name, path: `/directory/parking/${params.state.toLowerCase()}` },
+            {
+              name: designation,
+              path: `/directory/parking/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}`,
+            },
+            {
+              name: direction.charAt(0).toUpperCase() + direction.slice(1),
+              path: `/directory/parking/${params.state.toLowerCase()}/${params.interstate.toLowerCase()}/${direction}`,
+            },
+          ]),
+          ...(corridorListSchema ? [corridorListSchema] : []),
+        ]}
+      />
       <div className="mx-auto w-full max-w-xl">
         <Eyebrow>
           {state.name} · {designation} · {direction}
