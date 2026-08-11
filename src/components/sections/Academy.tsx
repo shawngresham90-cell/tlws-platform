@@ -34,7 +34,7 @@ export function Academy() {
       />
       <FeatureGrid features={PILLARS} />
       <div className="mt-9">
-        <Button href="/academy">Apply to the Academy</Button>
+        <Button href="/academy/apply">Apply to the Academy</Button>
       </div>
     </Section>
   );

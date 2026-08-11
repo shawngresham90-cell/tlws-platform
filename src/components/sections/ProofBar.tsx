@@ -1,11 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { TEST_CATALOG } from '@/lib/tests/catalog';
+import { MileMarker } from '@/components/ui';
 
 /**
  * Live proof bar (blueprint §4 S2). Standing rule: no number renders here
  * unless it is real and current — live figures come straight from the
  * database and individually drop out on failure instead of showing a stale
  * or invented value. Static figures are repo-verified brand facts.
+ *
+ * Rendered as mile-marker posts (Night Haul §1.3): green roadside posts, the
+ * road's own idiom for "distance covered." Green, not amber — proof is
+ * wayfinding, not a money action, and this row used to spend 2–4 amber
+ * numerals of the one-amber-per-viewport budget on it. The flex-wrap row
+ * also ends the ragged orphan cell the old 2/4-column grid produced when a
+ * live stat dropped out and three cells remained.
  */
 type Stat = { value: string; label: string };
 
@@ -53,14 +61,14 @@ export async function ProofBar() {
 
   return (
     <section aria-label="Platform numbers" className="border-b border-line bg-asphalt-800">
-      <div className="mx-auto grid max-w-content grid-cols-2 gap-px px-5 motion-safe:animate-fade-up sm:px-8 lg:grid-cols-4">
+      <div className="mx-auto flex max-w-content flex-wrap justify-center gap-3 px-5 py-6 motion-safe:animate-fade-up sm:gap-4 sm:px-8">
         {stats.map((s) => (
-          <div key={s.label} className="py-6 text-center">
-            <p className="num-data font-display text-3xl uppercase text-signal sm:text-4xl">
-              {s.value}
-            </p>
-            <p className="mt-1 text-xs uppercase tracking-wide text-muted">{s.label}</p>
-          </div>
+          <MileMarker
+            key={s.label}
+            value={s.value}
+            label={s.label}
+            className="min-w-[9.5rem] flex-1 sm:max-w-[14rem]"
+          />
         ))}
       </div>
     </section>

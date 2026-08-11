@@ -16,6 +16,14 @@ import { NavigatorMarquee } from './NavigatorMarquee';
  *
  * No opening date is displayed until the owner confirms one — honest copy
  * over hype, per the design blueprint's own rule.
+ *
+ * FUTURE PHOTO: Night Haul master blueprint shot #1 — Shawn, Mossy Oak cap,
+ * arms crossed, ProStar + 53' trailer angled behind, golden hour, camera low.
+ * When that REAL frame exists, this hero graduates to image-led via the
+ * existing CinematicStill treatment (docs/design/owner-assets-needed.md §1):
+ * frame fills the right/back plane, headline keeps the dark left third.
+ * Until then the type-led composition IS the design — never a stock truck,
+ * never an AI person, never an empty frame waiting.
  */
 export function Hero() {
   return (

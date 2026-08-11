@@ -58,6 +58,30 @@ const config: Config = {
           DEFAULT: '#3E7C4F', // fills/borders
           300: '#7FC993', // text-safe on dark (≥6:1)
         },
+        // Guide-Sign Green — interstate guide-sign panels ONLY (Night Haul
+        // master blueprint §1.3): wayfinding surfaces styled like the highway
+        // signs drivers read all day. Deliberately distinct from `marker`
+        // (success/verified STATUS): a sign panel is navigation, not a status
+        // light, and the two greens must never blur into one meaning.
+        // ink (#F2F0EB) on DEFAULT measures ~5.7:1 — AA for the panel text.
+        guide: {
+          DEFAULT: '#1B6B3A', // panel fill
+          700: '#14522C', // exit-tab / pressed edge
+          300: '#6FBF8A', // text-safe green accents on dark (≥8:1 on asphalt)
+        },
+        // Deadline Red — the Night Haul blueprint's "brake-red": scarcity and
+        // deadline moments ONLY (a real price bump, real spots remaining).
+        // Distinct from `diesel` (errors/violations) so a deadline never
+        // dresses like a failure state — and never decorative, same house
+        // rule as every other red. Named `deadline`, not `brake`, because the
+        // token guard reads any `-brake-` suffix as this family and the
+        // road-ahead scene slugs legitimately contain air-brake-check.
+        // DEFAULT is fills/large-display only (~3.7:1 on asphalt); 300 is the
+        // text-safe shade (≥6:1 on asphalt and cab).
+        deadline: {
+          DEFAULT: '#D7263D',
+          300: '#F2778A',
+        },
         line: '#2A2A2E', // hairline dividers + placard borders
         ink: '#F2F0EB', // Reflective White — warm primary text
         muted: '#A3A39B', // secondary text (warmed to match ink)

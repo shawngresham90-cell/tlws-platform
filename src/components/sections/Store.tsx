@@ -23,7 +23,7 @@ export function Store() {
           <Link
             key={c.slug}
             href={storeCategoryHref(c.slug)}
-            className="flex items-center gap-3 rounded-card border border-line bg-asphalt-800 px-4 py-3 transition-colors hover:border-signal"
+            className="flex items-center gap-3 rounded-card border border-line bg-asphalt-800 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt transition-colors hover:border-signal"
           >
             <span aria-hidden="true" className="text-2xl">
               {c.icon}

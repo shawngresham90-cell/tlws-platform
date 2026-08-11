@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Section, Eyebrow, Button } from '@/components/ui';
+import { Section, Eyebrow, Button, GuideSignCard } from '@/components/ui';
 import { PurchaseCta } from '@/components/preschool/PurchaseCta';
 import { SpotsMeter } from '@/components/preschool/SpotsMeter';
 import { TrackedNavLink } from '@/components/preschool/TrackedNavLink';
@@ -51,7 +51,7 @@ export async function FourPaths() {
         {/* Door 1 — I want my CDL (money path: school + Pre-School) */}
         <div className="placard placard-money flex flex-col p-4 sm:p-6 lg:row-span-2">
           <h3 className="font-display text-2xl uppercase text-ink">I want my CDL</h3>
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-3 text-base text-muted">
             ELDT-compliant CDL-A training on real trucks in Dalton, GA — applying is free and
             collects no payment.
           </p>
@@ -64,7 +64,7 @@ export async function FourPaths() {
               Head start — {PRESCHOOL_PRICE_LABEL}
             </span>
             <h4 className="mt-3 font-display text-xl uppercase text-ink">CDL Pre-School</h4>
-            <p className="mt-2 flex-1 text-sm text-muted">
+            <p className="mt-2 flex-1 text-base text-muted">
               Prepare before CDL school. Learn the knowledge, expectations, and real-life
               preparation new drivers need before training begins.
             </p>
@@ -89,42 +89,42 @@ export async function FourPaths() {
           </div>
         </div>
 
-        {/* Doors 2–3 — free value, no amber */}
+        {/* Doors 2–3 — free value, no amber. Destinations render as
+            interstate guide-sign panels (Night Haul §1.3): green wayfinding
+            for free navigation, which also retires four amber text links
+            that sat under 48px with no focus ring. */}
         {FREE_DOORS.map((d) => (
           <div key={d.title} className="placard flex flex-col p-4 sm:p-6">
-            <h3 className="font-display text-xl uppercase text-ink">{d.title}</h3>
-            <p className="mt-2 flex-1 text-sm text-muted">{d.description}</p>
-            <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+            <h3 className="font-display text-2xl uppercase text-ink">{d.title}</h3>
+            <p className="mt-2 flex-1 text-base text-muted">{d.description}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {d.links.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
-                >
-                  {l.label} →
-                </Link>
+                <GuideSignCard key={l.href} href={l.href} title={l.label} className="p-3 sm:p-4" />
               ))}
-            </p>
+            </div>
           </div>
         ))}
 
-        {/* Door 4 — back the mission (money path) */}
+        {/* Door 4 — back the mission (money path). The placard's amber edge
+            carries the money signal; the links themselves ride ink with real
+            focus rings and 48px targets instead of spending two more amber
+            elements on this screen. */}
         <div className="placard placard-money flex flex-col p-4 sm:p-6">
-          <h3 className="font-display text-xl uppercase text-ink">I want to back the mission</h3>
-          <p className="mt-2 flex-1 text-sm text-muted">
+          <h3 className="font-display text-2xl uppercase text-ink">I want to back the mission</h3>
+          <p className="mt-2 flex-1 text-base text-muted">
             Fund the school as a founder and put your name on the wall — or take the full drive
             through where this is all going.
           </p>
-          <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+          <p className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
             <Link
               href="/founders"
-              className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
+              className="inline-block rounded-card py-3 font-semibold text-ink underline-offset-4 hover:text-signal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
             >
               Become a founder →
             </Link>
             <Link
               href="/road-ahead"
-              className="inline-block py-2 font-semibold text-signal underline-offset-4 hover:underline"
+              className="inline-block rounded-card py-3 font-semibold text-ink underline-offset-4 hover:text-signal hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt"
             >
               See The Road Ahead →
             </Link>

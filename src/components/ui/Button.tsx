@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils/cn';
 type Variant = 'primary' | 'secondary' | 'ghost' | 'tertiary';
 
 const base =
-  'inline-flex items-center justify-center font-display uppercase tracking-wide rounded-card ' +
+  'inline-flex min-h-12 items-center justify-center font-display uppercase tracking-wide rounded-card ' +
   'px-6 py-3 text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt';
 
