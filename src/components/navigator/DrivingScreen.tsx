@@ -407,11 +407,23 @@ export function DrivingScreenView({
   // left offset mirrors the grid's minmax(0,38%) first column plus the
   // gap. (landscape:col-start-2 is inert on an absolute item and kept for
   // the structural pins that read it.)
+  // Parked, the map gets the SAME box the dynamic-import placeholder
+  // promises (h-72/sm:h-96, cockpit border). It used to get no class at
+  // all: a bare auto-height div, in which the map's h-full computed to
+  // 0px — so the mounted map was invisible on the parked page (the Phase
+  // 3 briefing framing never showed), the placeholder's 288px box
+  // collapsed the moment Leaflet finished loading, and the canvas
+  // Leaflet measured at creation was 0px tall — the stale size the
+  // driving surface then inherited as the half-blank map. Height only
+  // when a map is actually mounted: before Enable location the slot is
+  // null and an empty bordered box would be a lie.
   const mapWrapCls = fullScreen
     ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-cockpit border border-line ' +
       'landscape:absolute landscape:inset-y-2 landscape:right-2 ' +
       'landscape:left-[calc(0.38*(100vw-1rem)+1rem)] landscape:col-start-2 landscape:min-h-0'
-    : '';
+    : mapSlot !== null
+      ? 'relative h-72 w-full overflow-hidden rounded-cockpit border border-line sm:h-96'
+      : '';
 
   return (
     <div className={shellCls}>

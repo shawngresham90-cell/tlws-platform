@@ -689,5 +689,48 @@ const T0 = 1_754_000_000_000;
   check('30. the map component performs no network I/O of its own', !/fetch\s*\(/.test(map));
 }
 
+// ====================== 31-34. the canvas follows its container ==========
+{
+  // Pilot round 3: "half the map, half blank." Reproduced in Chromium at
+  // 390x844 by walking the real pilot path (scripts/bench/
+  // navigator-half-map.mjs): at trip start the container grows from the
+  // parked box to the cockpit with NO window resize, and Leaflet — which
+  // re-measures on its own only for a window resize — kept the stale
+  // canvas: tiles covered 43% of the driving map and the route line's
+  // SVG believed the map was 0px tall. One synthetic window resize
+  // healed everything, proving the cure is a re-measure and nothing else.
+  check(
+    '31. a ResizeObserver watches the map container',
+    map.includes('new ResizeObserver') && map.includes('observer.observe(el)'),
+  );
+  check('31. the observer is disconnected on cleanup', map.includes('observer.disconnect()'));
+  check(
+    '32. a container change re-measures the canvas, instantly',
+    map.includes('map.invalidateSize({ animate: false })'),
+  );
+  // The resize path may re-measure and NOTHING else: no camera move, no
+  // zoom, no follow-state dispatch rides along with it.
+  const roBody = map.slice(map.indexOf('new ResizeObserver'), map.indexOf('observer.observe'));
+  check(
+    '33. the resize path touches no camera and no follow state',
+    roBody.length > 0 && !/setView|fitBounds|setZoom|dispatch\(/.test(roBody),
+  );
+  // The stale size was BORN in the parked page: the map wrapper there was
+  // a bare auto-height div, so the mounted map computed to 0px tall and
+  // that 0 was the canvas Leaflet measured. Parked, the wrapper now
+  // grants the same box the dynamic-import placeholder promises — and
+  // only while a map is actually mounted, so no empty bordered box
+  // renders before Enable location.
+  check(
+    '34. parked, the map wrapper grants the placeholder box only while a map is mounted',
+    screen.includes('mapSlot !== null') &&
+      screen.includes(
+        'relative h-72 w-full overflow-hidden rounded-cockpit border border-line sm:h-96',
+      ) &&
+      (screen.match(/h-72/g) ?? []).length >= 2 &&
+      (screen.match(/sm:h-96/g) ?? []).length >= 2,
+  );
+}
+
 console.log(`navigation-map-ui: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

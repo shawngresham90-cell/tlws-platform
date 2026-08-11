@@ -158,6 +158,40 @@ export function NavigationMap({
     };
   }, [dispatch]);
 
+  // --- the canvas follows its container -----------------------------------
+  /*
+   * Leaflet measures its container ONCE, at creation, and re-measures on
+   * its own only for a WINDOW resize (trackResize). This surface resizes
+   * the CONTAINER without any window event: the parked page's map box
+   * becomes the viewport-filling cockpit at trip start, and the
+   * portrait ↔ landscape class swap moves it again — all with the map
+   * deliberately kept mounted. Left stale, the canvas keeps rendering at
+   * the old size: tiles stop partway down the box and the route line's
+   * SVG still believes the old height — the pilot's "half the map, half
+   * blank" screen, healed only by accident whenever browser chrome fired
+   * a real window resize. Reproduced in Chromium at 390x844: tiles
+   * covered 43% of the driving map and the overlay SVG was 0px tall
+   * until one window resize re-measured it.
+   *
+   * A ResizeObserver re-measures on every container change instead.
+   * Camera policy is untouched: invalidateSize preserves the current
+   * center, fires no drag events (so follow state cannot see it as a
+   * user pan), and changes no zoom. Guarded: the observer is absent in
+   * the node test renders, and a map that failed to load has nothing to
+   * re-measure.
+   */
+  useEffect(() => {
+    const el = containerRef.current;
+    const map = mapRef.current;
+    if (!ready || el === null || map === null) return;
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ready]);
+
   // --- basemap style ------------------------------------------------------
   useEffect(() => {
     const L = leafletRef.current;
