@@ -194,8 +194,12 @@ check(
   journey.includes("src: '/images/journey/academy-instructor-portrait.webp'"),
 );
 check(
-  'JourneyStrip: exactly TWO beats have graduated — Drove it stays open',
-  (journey.match(/,\s*photo:\s*\{/g) ?? []).length === 2,
+  'JourneyStrip: Drove it carries the real archival driving frame, seam closed',
+  journey.includes("src: '/images/journey/shawn-drove-it.webp'"),
+);
+check(
+  'JourneyStrip: all THREE beats have graduated to real photographs',
+  (journey.match(/,\s*photo:\s*\{/g) ?? []).length === 3,
 );
 check(
   'JourneyStrip: factual yard alt text, no keyword stuffing',
@@ -207,6 +211,12 @@ check(
   'JourneyStrip: factual portrait alt text, no keyword stuffing, no name',
   journey.includes("alt: 'Trucking Life Academy instructor wearing an Academy shirt.'"),
 );
+check(
+  'JourneyStrip: factual archival alt text — no location/employer/date claims',
+  journey.includes(
+    "alt: 'Shawn during his trucking years with tractor-trailers parked behind him in a snowy mountain setting.'",
+  ),
+);
 /* The assets themselves must exist and be what the component declares — a
  * path with no real file behind it is exactly the fabricated-photo failure
  * this block was built to catch. Dims come from the WebP headers, not from
@@ -216,6 +226,7 @@ check(
 for (const asset of [
   { name: 'yard', file: 'trucking-life-academy-yard.webp', w: 1080, h: 810 },
   { name: 'portrait', file: 'academy-instructor-portrait.webp', w: 1080, h: 1350 },
+  { name: 'archival', file: 'shawn-drove-it.webp', w: 1080, h: 1440 },
 ]) {
   const buf = readFileSync(join(process.cwd(), 'public/images/journey', asset.file));
   check(

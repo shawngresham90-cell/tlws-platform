@@ -17,7 +17,11 @@ import { CinematicStill } from '@/components/media/CinematicStill';
  * CinematicStill the day the REAL frame exists — until then the beat renders
  * exactly as today: complete, type-led, no placeholder, no stock, no
  * AI-generated stand-in.
- *   01 Drove it    → an archival driving-days photograph (owner's own) — open
+ *   01 Drove it    → LANDED 2026-08-11: the owner's archival driving-days
+ *      photograph — Shawn in the foreground, tractor-trailers and a snowy
+ *      mountain behind. Full frame at its own 3:4 aspect: cropping tighter
+ *      would lose the trucks that make "Drove it" legible at a glance.
+ *      See docs/design/owner-assets-needed.md §1d.
  *   02 Taught it   → LANDED 2026-08-11: the owner's approved instructor
  *      portrait (blueprint shot #10's homepage role) — white Academy shirt,
  *      chest logo, dark studio ground. Rendered at its own 4:5 aspect: a
@@ -26,14 +30,24 @@ import { CinematicStill } from '@/components/media/CinematicStill';
  *   03 Building it → LANDED 2026-08-11: the owner's approved Academy yard
  *      wide (blueprint shot #6's homepage role) — branded 53' trailer, both
  *      tractors, low sun. See docs/design/owner-assets-needed.md §1b.
- * To light up the remaining beat: drop the file under public/images/journey/,
- * then set `photo: { src, alt, width, height }` on the beat — nothing else
- * changes.
+ * All three beats now carry their real frame; the seam mechanism stays for
+ * any future re-shoot: drop the file under public/images/journey/, then set
+ * `photo: { src, alt, width, height }` on the beat — nothing else changes.
  */
 type BeatPhoto = { src: string; alt: string; width: number; height: number };
 
 const BEATS: Array<{ index: string; beat: string; detail: string; photo?: BeatPhoto }> = [
-  { index: '01', beat: 'Drove it', detail: '17 years on the road, zero violations' },
+  {
+    index: '01',
+    beat: 'Drove it',
+    detail: '17 years on the road, zero violations',
+    photo: {
+      src: '/images/journey/shawn-drove-it.webp',
+      alt: 'Shawn during his trucking years with tractor-trailers parked behind him in a snowy mountain setting.',
+      width: 1080,
+      height: 1440,
+    },
+  },
   {
     index: '02',
     beat: 'Taught it',
