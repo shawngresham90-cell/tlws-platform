@@ -35,8 +35,27 @@ tractors at the tree line, low sun. Fills the Journey strip's beat 03 seam
 Delivered to the session at 1448×1086 (the upload pipeline re-encodes to
 WebP; the camera original stays with the owner). The production derivative
 is a plain proportional resize + WebP re-encode — full frame, no crop, no
-retouch, no generative edits. Journey beats 01 (Drove it) and 02 (Taught
-it) remain open seams.
+retouch, no generative edits. Beat 02 (Taught it) landed later the same
+day (§1c); beat 01 (Drove it) remains an open seam.
+
+## 1c. Journey "Taught it" portrait — RECEIVED 2026-08-11 ✅
+
+**Landed:** the instructor portrait the owner approved as Photo #7 — white
+Trucking Life Academy shirt with the chest logo clearly visible, dark
+studio background, portrait orientation. Fills the Journey strip's beat 02
+seam (the homepage role of blueprint shot #10).
+
+| Owner's original file | Production asset path                                    | Frame          |
+| --------------------- | -------------------------------------------------------- | -------------- |
+| `d3192a86-34012.png`  | `public/images/journey/academy-instructor-portrait.webp` | 1080×1350, 4:5 |
+
+Delivered to the session at 1122×1402 (the upload pipeline re-encodes; the
+camera original stays with the owner). The production derivative is a plain
+proportional resize + WebP re-encode — full frame, no crop, no retouch, no
+generative edits. It renders at its own 4:5 aspect inside the Journey
+column: a landscape crop cannot keep both the face and the Academy chest
+logo, so the portrait keeps its shape. Journey beat 01 (Drove it) is the
+last open seam.
 
 ### Also received 2026-08-11 — NOT published
 
