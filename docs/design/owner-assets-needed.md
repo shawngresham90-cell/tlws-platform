@@ -22,6 +22,34 @@ The homepage hero is image-led as planned: an art-directed `<picture>`
 grade. **This delivery satisfies §1 only** — every other shot below is
 still pending until its real file arrives.
 
+## 1b. Journey "Building it" photograph — RECEIVED 2026-08-11 ✅
+
+**Landed:** the Academy yard, wide — the branded 53' trailer face-on, both
+tractors at the tree line, low sun. Fills the Journey strip's beat 03 seam
+(the homepage role of blueprint shot #6).
+
+| Owner's original file                        | Production asset path                                   | Frame          |
+| -------------------------------------------- | ------------------------------------------------------- | -------------- |
+| `6e7652d9-5976-4659-aa55-ef9e0794a2e8.png`   | `public/images/journey/trucking-life-academy-yard.webp` | 1080×810, 4:3  |
+
+Delivered to the session at 1448×1086 (the upload pipeline re-encodes to
+WebP; the camera original stays with the owner). The production derivative
+is a plain proportional resize + WebP re-encode — full frame, no crop, no
+retouch, no generative edits. Journey beats 01 (Drove it) and 02 (Taught
+it) remain open seams.
+
+### Also received 2026-08-11 — NOT published
+
+- `54c6e884-59f8-4be5-8afd-9101cc5bc6b5(1).png` — **RECEIVED — candidate
+  Academy equipment / yard photograph.** Strong close view of the two
+  tractors. Reserved primarily for Academy-specific use; not committed to
+  the repo, not rendered anywhere yet.
+- `89e85c7f-248e-4be0-ba13-9ba033211ae0(1).png` — **RECEIVED — HOLD FOR
+  OWNER RELEASE CONFIRMATION.** Includes a minor. Not stored in the repo,
+  no public URL, not rendered on any page, excluded from OG/social. Nothing
+  ships from this file until the owner explicitly confirms release — see §4
+  (consent) below. Uploading it does not constitute release.
+
 ## 2. The full shot list
 
 See `cinematic-photography-guide.md` for the 12-shot list (cab at night,

@@ -12,23 +12,36 @@ import { CinematicStill } from '@/components/media/CinematicStill';
  * asks live in the doors above and the academy bridge below.
  */
 /**
- * FUTURE PHOTO SEAMS (Night Haul master blueprint, Part 2.3 "The journey"
- * strip). Each beat carries an optional `photo` slot that renders through
+ * PHOTO SEAMS (Night Haul master blueprint, Part 2.3 "The journey" strip).
+ * Each beat carries an optional `photo` slot that renders through
  * CinematicStill the day the REAL frame exists — until then the beat renders
  * exactly as today: complete, type-led, no placeholder, no stock, no
- * AI-generated stand-in. The three real frames, when shot:
- *   01 Drove it    → an archival driving-days photograph (owner's own)
- *   02 Taught it   → instructor-context shot (blueprint shot #10)
- *   03 Building it → the Dalton yard, wide (blueprint shot #6)
- * To light one up: drop the file under public/images/journey/, then set
- * `photo: { src, alt, width, height }` on the beat — nothing else changes.
+ * AI-generated stand-in.
+ *   01 Drove it    → an archival driving-days photograph (owner's own) — open
+ *   02 Taught it   → instructor-context shot (blueprint shot #10) — open
+ *   03 Building it → LANDED 2026-08-11: the owner's approved Academy yard
+ *      wide (blueprint shot #6's homepage role) — branded 53' trailer, both
+ *      tractors, low sun. See docs/design/owner-assets-needed.md §1b.
+ * To light up a remaining beat: drop the file under public/images/journey/,
+ * then set `photo: { src, alt, width, height }` on the beat — nothing else
+ * changes.
  */
 type BeatPhoto = { src: string; alt: string; width: number; height: number };
 
 const BEATS: Array<{ index: string; beat: string; detail: string; photo?: BeatPhoto }> = [
   { index: '01', beat: 'Drove it', detail: '17 years on the road, zero violations' },
   { index: '02', beat: 'Taught it', detail: 'CDL instructor & driver trainer' },
-  { index: '03', beat: 'Building it', detail: 'Trucking Life Academy — Dalton, GA' },
+  {
+    index: '03',
+    beat: 'Building it',
+    detail: 'Trucking Life Academy — Dalton, GA',
+    photo: {
+      src: '/images/journey/trucking-life-academy-yard.webp',
+      alt: 'Trucking Life Academy tractor-trailer and training trucks in the yard at sunset.',
+      width: 1080,
+      height: 810,
+    },
+  },
 ];
 
 export function JourneyStrip() {
