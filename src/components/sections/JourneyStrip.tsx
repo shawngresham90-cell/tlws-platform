@@ -18,11 +18,15 @@ import { CinematicStill } from '@/components/media/CinematicStill';
  * exactly as today: complete, type-led, no placeholder, no stock, no
  * AI-generated stand-in.
  *   01 Drove it    → an archival driving-days photograph (owner's own) — open
- *   02 Taught it   → instructor-context shot (blueprint shot #10) — open
+ *   02 Taught it   → LANDED 2026-08-11: the owner's approved instructor
+ *      portrait (blueprint shot #10's homepage role) — white Academy shirt,
+ *      chest logo, dark studio ground. Rendered at its own 4:5 aspect: a
+ *      landscape crop cannot hold both the face and the Academy chest logo.
+ *      See docs/design/owner-assets-needed.md §1c.
  *   03 Building it → LANDED 2026-08-11: the owner's approved Academy yard
  *      wide (blueprint shot #6's homepage role) — branded 53' trailer, both
  *      tractors, low sun. See docs/design/owner-assets-needed.md §1b.
- * To light up a remaining beat: drop the file under public/images/journey/,
+ * To light up the remaining beat: drop the file under public/images/journey/,
  * then set `photo: { src, alt, width, height }` on the beat — nothing else
  * changes.
  */
@@ -30,7 +34,17 @@ type BeatPhoto = { src: string; alt: string; width: number; height: number };
 
 const BEATS: Array<{ index: string; beat: string; detail: string; photo?: BeatPhoto }> = [
   { index: '01', beat: 'Drove it', detail: '17 years on the road, zero violations' },
-  { index: '02', beat: 'Taught it', detail: 'CDL instructor & driver trainer' },
+  {
+    index: '02',
+    beat: 'Taught it',
+    detail: 'CDL instructor & driver trainer',
+    photo: {
+      src: '/images/journey/academy-instructor-portrait.webp',
+      alt: 'Trucking Life Academy instructor wearing an Academy shirt.',
+      width: 1080,
+      height: 1350,
+    },
+  },
   {
     index: '03',
     beat: 'Building it',

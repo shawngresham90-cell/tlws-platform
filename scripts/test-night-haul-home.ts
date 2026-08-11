@@ -190,42 +190,54 @@ check(
   journey.includes("src: '/images/journey/trucking-life-academy-yard.webp'"),
 );
 check(
-  'JourneyStrip: exactly ONE beat has graduated — Drove it / Taught it stay open',
-  (journey.match(/,\s*photo:\s*\{/g) ?? []).length === 1,
+  'JourneyStrip: Taught it carries the real instructor portrait, seam closed',
+  journey.includes("src: '/images/journey/academy-instructor-portrait.webp'"),
 );
 check(
-  'JourneyStrip: factual alt text, no keyword stuffing',
+  'JourneyStrip: exactly TWO beats have graduated — Drove it stays open',
+  (journey.match(/,\s*photo:\s*\{/g) ?? []).length === 2,
+);
+check(
+  'JourneyStrip: factual yard alt text, no keyword stuffing',
   journey.includes(
     "alt: 'Trucking Life Academy tractor-trailer and training trucks in the yard at sunset.'",
   ),
 );
-/* The asset itself must exist and be what the component declares — a path
- * with no real file behind it is exactly the fabricated-photo failure this
- * block was built to catch. Dims come from the WebP VP8X header, not from
- * trusting the component. */
-const yardPath = 'public/images/journey/trucking-life-academy-yard.webp';
-const yardBuf = readFileSync(join(process.cwd(), yardPath));
 check(
-  'yard asset: real WebP on disk inside the ≤200 KB house budget',
-  yardBuf.length > 20_000 && yardBuf.length <= 200_000,
-  yardBuf.length,
+  'JourneyStrip: factual portrait alt text, no keyword stuffing, no name',
+  journey.includes("alt: 'Trucking Life Academy instructor wearing an Academy shirt.'"),
 );
-/* Dimensions per container form: extended (VP8X: 24-bit LE minus-one fields)
- * or simple lossy (`VP8 `: 14-bit LE fields after the 9D 01 2A start code). */
-const yardForm = yardBuf.subarray(12, 16).toString();
-const [yardW, yardH] =
-  yardForm === 'VP8X'
-    ? [1 + yardBuf.readUIntLE(24, 3), 1 + yardBuf.readUIntLE(27, 3)]
-    : [yardBuf.readUInt16LE(26) & 0x3fff, yardBuf.readUInt16LE(28) & 0x3fff];
-check(
-  'yard asset: 1080×810 per its WebP header, matching the component (zero CLS)',
-  (yardForm === 'VP8X' || yardForm === 'VP8 ') &&
-    yardW === 1080 &&
-    yardH === 810 &&
-    journey.includes('width: 1080') &&
-    journey.includes('height: 810'),
-  { yardForm, yardW, yardH },
-);
+/* The assets themselves must exist and be what the component declares — a
+ * path with no real file behind it is exactly the fabricated-photo failure
+ * this block was built to catch. Dims come from the WebP headers, not from
+ * trusting the component. Container forms: extended (VP8X: 24-bit LE
+ * minus-one fields) or simple lossy (`VP8 `: 14-bit LE fields after the
+ * 9D 01 2A start code). */
+for (const asset of [
+  { name: 'yard', file: 'trucking-life-academy-yard.webp', w: 1080, h: 810 },
+  { name: 'portrait', file: 'academy-instructor-portrait.webp', w: 1080, h: 1350 },
+]) {
+  const buf = readFileSync(join(process.cwd(), 'public/images/journey', asset.file));
+  check(
+    `${asset.name} asset: real WebP on disk inside the ≤200 KB house budget`,
+    buf.length > 20_000 && buf.length <= 200_000,
+    buf.length,
+  );
+  const form = buf.subarray(12, 16).toString();
+  const [w, h] =
+    form === 'VP8X'
+      ? [1 + buf.readUIntLE(24, 3), 1 + buf.readUIntLE(27, 3)]
+      : [buf.readUInt16LE(26) & 0x3fff, buf.readUInt16LE(28) & 0x3fff];
+  check(
+    `${asset.name} asset: ${asset.w}×${asset.h} per its WebP header, matching the component (zero CLS)`,
+    (form === 'VP8X' || form === 'VP8 ') &&
+      w === asset.w &&
+      h === asset.h &&
+      journey.includes(`width: ${asset.w}`) &&
+      journey.includes(`height: ${asset.h}`),
+    { form, w, h },
+  );
+}
 
 const hero = read('src/components/sections/Hero.tsx');
 check(
