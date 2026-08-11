@@ -147,7 +147,7 @@ export function NewsletterForm({ siteKey }: { siteKey: string }) {
         <button
           type="submit"
           aria-disabled={submitting}
-          className="rounded-card bg-signal px-6 py-3 font-display text-lg uppercase text-asphalt transition-colors hover:bg-signal-600 aria-disabled:opacity-60"
+          className="rounded-card bg-signal px-6 py-3 font-display text-lg uppercase text-asphalt transition-colors hover:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt aria-disabled:opacity-60"
         >
           {submitting ? 'Sending…' : 'Send it'}
         </button>

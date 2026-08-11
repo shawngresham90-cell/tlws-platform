@@ -17,6 +17,7 @@ import { FoundersWall } from '@/components/sections/FoundersWall';
 import { Sponsors } from '@/components/sections/Sponsors';
 import { Newsletter } from '@/components/sections/Newsletter';
 import { Reveal } from '@/components/motion/Reveal';
+import { ReflectiveTapeDivider } from '@/components/ui';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -46,6 +47,8 @@ export default function HomePage() {
       <Reveal>
         <FourPaths />
       </Reveal>
+      {/* Act break: doors → journey. One of the page's TWO tape bands. */}
+      <ReflectiveTapeDivider />
       {/* 4 — THE JOURNEY: drove it, taught it, building it */}
       <Reveal>
         <JourneyStrip />
@@ -76,6 +79,8 @@ export default function HomePage() {
       <Reveal>
         <Newsletter />
       </Reveal>
+      {/* Act break: the platform → the movement. Tape band two of two (hard cap). */}
+      <ReflectiveTapeDivider />
       {/* 7 — THE MOVEMENT: the drive, the channel, the founders, the shirt */}
       <Reveal>
         <RoadAheadTeaser />
