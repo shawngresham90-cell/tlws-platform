@@ -314,8 +314,9 @@ export default async function PreSchoolPage() {
           </div>
         </div>
       </Section>
-      {/* Reserve room so the mobile sticky CTA never covers the last content. */}
-      <div aria-hidden="true" className="h-24 sm:hidden" />
+      {/* Reserve room so the mobile sticky CTA — riding above the 56px tool
+          bar — never covers the last content. */}
+      <div aria-hidden="true" className="h-32 sm:hidden" />
     </>
   );
 }
