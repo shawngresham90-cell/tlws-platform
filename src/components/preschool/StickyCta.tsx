@@ -15,6 +15,13 @@ import {
  * Renders nothing on sm+ screens via CSS, adds no layout shift (fixed
  * overlay; the page reserves bottom padding separately), and goes through the
  * same exact URL + rel + analytics event as every other purchase button.
+ *
+ * Stacks directly ABOVE the persistent mobile tool bar, which owns bottom-0
+ * at z-50: the offset is the bar's exact 56px (3.5rem) min-height plus the
+ * device safe-area inset the bar absorbs, so the two never overlap. (Before
+ * this offset both bars docked at bottom-0 and the higher-z tool bar covered
+ * the purchase CTA's lower half on phones.) Keep the 3.5rem in lockstep with
+ * MobileToolBar's min-h-[56px] — scripts/test-mobile-toolbar.ts pins both.
  */
 export function StickyCta() {
   const [visible, setVisible] = useState(false);
@@ -29,7 +36,7 @@ export function StickyCta() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-asphalt/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+    <div className="fixed inset-x-0 bottom-[calc(3.5rem_+_env(safe-area-inset-bottom))] z-40 border-t border-line bg-asphalt/95 p-3 backdrop-blur sm:hidden">
       <a
         href={PRESCHOOL_PURCHASE_URL}
         target="_blank"

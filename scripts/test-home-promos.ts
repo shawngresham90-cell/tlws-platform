@@ -132,10 +132,14 @@ check(
   'header still links Truck Parking → /directory/parking',
   /Truck Parking[\s\S]{0,60}\/directory\/parking/.test(header),
 );
-const bottomBar = read('src/components/layout/MobileToolBar.tsx');
+// The bar's slot data moved to toolbar-tools.ts (contextual third slot);
+// the Parking entry itself is pinned exactly as before, at its new home.
+const toolbarTools = read('src/components/layout/toolbar-tools.ts');
 check(
   'mobile bottom bar Parking entry unchanged',
-  /\/directory\/parking/.test(bottomBar) && /Parking/.test(bottomBar),
+  toolbarTools.includes("href: '/directory/parking'") &&
+    toolbarTools.includes("label: 'Parking'") &&
+    read('src/components/layout/MobileToolBar.tsx').includes("from './toolbar-tools'"),
 );
 
 console.log(`home-promos: ${passed} passed, ${failed} failed`);

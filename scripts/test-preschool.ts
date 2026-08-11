@@ -396,7 +396,9 @@ for (const comp of [
 for (const placement of ['"hero"', '"after-curriculum"', '"offer"', '"final"']) {
   check(`purchase CTA placement ${placement}`, salesSrc2.includes(`placement=${placement}`));
 }
-check('sales page reserves sticky-bar space', salesSrc2.includes('h-24 sm:hidden'));
+// h-32 because the sticky bar now rides ABOVE the 56px mobile tool bar
+// (see StickyCta.tsx) — the reserved band covers the taller stack.
+check('sales page reserves sticky-bar space', salesSrc2.includes('h-32 sm:hidden'));
 
 const stickySrc = src('src/components/preschool/StickyCta.tsx');
 check('sticky uses exact URL constant', stickySrc.includes('PRESCHOOL_PURCHASE_URL'));
