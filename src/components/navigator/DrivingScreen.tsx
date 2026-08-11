@@ -266,7 +266,7 @@ export function DrivingScreenView({
                  whitelist does not know. */
               <div
                 aria-hidden="true"
-                className="font-data text-[length:clamp(2.5rem,min(12vw,8dvh),var(--size-maneuver))] leading-none text-ink"
+                className="font-data text-[length:clamp(40px,min(12vw,8dvh),var(--size-maneuver))] leading-none text-ink"
               >
                 {glyph}
               </div>
@@ -274,7 +274,7 @@ export function DrivingScreenView({
             {/* The blueprint's huge numeral. Clamped by viewport so a 320px
                phone still fits "In 127.5 mi" on one line; the ceiling is
                the --size-maneuver design size (60px). */}
-            <p className="font-data num-data text-[length:clamp(2.5rem,min(15vw,9dvh),var(--size-maneuver))] font-bold leading-none tracking-tight text-ink">
+            <p className="font-data num-data text-[length:clamp(40px,min(15vw,9dvh),var(--size-maneuver))] font-bold leading-none tracking-tight text-ink">
               In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
             </p>
           </div>
@@ -344,7 +344,7 @@ export function DrivingScreenView({
             honest in landscape, where the strip lives in the narrow left
             rail and width is not the scarce dimension. The ceiling is the
             --size-speed design size, reached on wide viewports. */}
-        <dd className="whitespace-nowrap font-data num-data text-[length:clamp(1.5rem,min(7.5vw,6dvh),var(--size-speed))] font-bold leading-none">
+        <dd className="whitespace-nowrap font-data num-data text-[length:clamp(24px,min(7.5vw,6dvh),var(--size-speed))] font-bold leading-none">
           {view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}
         </dd>
       </div>
@@ -558,7 +558,7 @@ export function DrivingScreenView({
               <button
                 type="button"
                 onClick={onStop}
-                className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-xl font-semibold text-ink"
+                className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
                 aria-label="Stop navigation and discard position"
               >
                 {fullScreen ? 'Stop' : 'Stop navigation'}
@@ -567,7 +567,7 @@ export function DrivingScreenView({
               <button
                 type="button"
                 onClick={onStart}
-                className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-xl font-semibold text-ink"
+                className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
                 aria-label="Enable location and start the driving preview"
               >
                 Enable location
@@ -1100,7 +1100,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             <button
               type="button"
               onClick={() => setOverviewToggleKey((k) => k + 1)}
-              className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface-2 px-4 text-lg font-semibold text-ink"
+              className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-lg font-semibold text-ink"
               aria-label="Show the whole route, then return to your truck"
             >
               Overview
