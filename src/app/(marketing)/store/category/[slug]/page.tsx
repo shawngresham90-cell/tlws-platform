@@ -19,7 +19,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const cat = storeCategory(params.slug);
-  if (!cat) return buildMetadata({ noindex: true });
+  // Unknown slugs 404 — return no metadata rather than a noindex card whose
+  // canonical (the buildMetadata default path) points at the homepage.
+  if (!cat) return {};
   return buildMetadata({
     title: `${cat.title} — Trucking Life Store`,
     description: `${cat.blurb} Hand-picked ${cat.title.toLowerCase()} recommendations for truck drivers, curated by Trucking Life.`,

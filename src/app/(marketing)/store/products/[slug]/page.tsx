@@ -46,7 +46,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     });
   }
   const p = storeProduct(params.slug);
-  if (!p) return buildMetadata({ noindex: true });
+  // Unknown slugs 404 — return no metadata rather than a noindex card whose
+  // canonical (the buildMetadata default path) points at the homepage.
+  if (!p) return {};
   return buildMetadata({
     title: `${displayName(p)} — Trucking Life Store`,
     description: `${p.tagline} ${p.description}`.slice(0, 155),

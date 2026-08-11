@@ -22,7 +22,9 @@ export function generateStaticParams() {
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const guide = storeGuide(params.slug);
-  if (!guide) return buildMetadata({ noindex: true });
+  // Unknown slugs 404 — return no metadata rather than a noindex card whose
+  // canonical (the buildMetadata default path) points at the homepage.
+  if (!guide) return {};
   return buildMetadata({
     title: `${guide.title} (2026) — Trucking Life Store`,
     description: guide.intro.slice(0, 155),
