@@ -185,8 +185,47 @@ check(
   'JourneyStrip: renders through CinematicStill when a frame lands',
   journey.includes('CinematicStill'),
 );
-check('JourneyStrip: no beat fabricates a photo today', !/,\s*photo:\s*\{/.test(journey));
-check('JourneyStrip: no invented image paths', !journey.includes("src: '/images/journey"));
+check(
+  'JourneyStrip: Building it carries the real Academy yard frame, seam closed',
+  journey.includes("src: '/images/journey/trucking-life-academy-yard.webp'"),
+);
+check(
+  'JourneyStrip: exactly ONE beat has graduated — Drove it / Taught it stay open',
+  (journey.match(/,\s*photo:\s*\{/g) ?? []).length === 1,
+);
+check(
+  'JourneyStrip: factual alt text, no keyword stuffing',
+  journey.includes(
+    "alt: 'Trucking Life Academy tractor-trailer and training trucks in the yard at sunset.'",
+  ),
+);
+/* The asset itself must exist and be what the component declares — a path
+ * with no real file behind it is exactly the fabricated-photo failure this
+ * block was built to catch. Dims come from the WebP VP8X header, not from
+ * trusting the component. */
+const yardPath = 'public/images/journey/trucking-life-academy-yard.webp';
+const yardBuf = readFileSync(join(process.cwd(), yardPath));
+check(
+  'yard asset: real WebP on disk inside the ≤200 KB house budget',
+  yardBuf.length > 20_000 && yardBuf.length <= 200_000,
+  yardBuf.length,
+);
+/* Dimensions per container form: extended (VP8X: 24-bit LE minus-one fields)
+ * or simple lossy (`VP8 `: 14-bit LE fields after the 9D 01 2A start code). */
+const yardForm = yardBuf.subarray(12, 16).toString();
+const [yardW, yardH] =
+  yardForm === 'VP8X'
+    ? [1 + yardBuf.readUIntLE(24, 3), 1 + yardBuf.readUIntLE(27, 3)]
+    : [yardBuf.readUInt16LE(26) & 0x3fff, yardBuf.readUInt16LE(28) & 0x3fff];
+check(
+  'yard asset: 1080×810 per its WebP header, matching the component (zero CLS)',
+  (yardForm === 'VP8X' || yardForm === 'VP8 ') &&
+    yardW === 1080 &&
+    yardH === 810 &&
+    journey.includes('width: 1080') &&
+    journey.includes('height: 810'),
+  { yardForm, yardW, yardH },
+);
 
 const hero = read('src/components/sections/Hero.tsx');
 check(
