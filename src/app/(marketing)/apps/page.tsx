@@ -46,7 +46,11 @@ const FREE: Product[] = [
   },
 ];
 
-/** $49 (was $149) is the only known price — never invent others. */
+/**
+ * $49 (was $149) is the only known price — never invent others. One constant
+ * feeds both the visible card and the JSON-LD Offer so they cannot drift.
+ */
+const DOT_SYSTEM_PRICE_USD = 49;
 const DOT_SYSTEM: Product[] = [
   {
     title: 'The Complete DOT Survival System',
@@ -60,7 +64,7 @@ const DOT_SYSTEM: Product[] = [
       'One-time price, lifetime access',
       'Every sale helps build the CDL school in Dalton, GA',
     ],
-    price: '$49',
+    price: `$${DOT_SYSTEM_PRICE_USD}`,
     wasPrice: '$149',
     href: `${STAN_STORE}/p/the-complete-dot-truckers-life-survival-system`,
     cta: 'View Bundle',
@@ -170,7 +174,7 @@ export default function AppsPage() {
             url: `${SITE.url}/apps#dot-system`,
             offers: {
               '@type': 'Offer',
-              price: '49.00',
+              price: DOT_SYSTEM_PRICE_USD.toFixed(2),
               priceCurrency: 'USD',
               availability: 'https://schema.org/InStock',
               url: `${STAN_STORE}/p/the-complete-dot-truckers-life-survival-system`,

@@ -79,13 +79,24 @@ export function faqSchema(faqs: { question: string; answer: string }[]): object 
   };
 }
 
+/**
+ * Serialize schema objects for a JSON-LD script tag. Every `<` is escaped as
+ * the JSON sequence backslash-u003c (identical meaning once parsed) because
+ * user-influenced strings
+ * flow through here — approved review bodies, DB article text — and an
+ * unescaped `</script>` inside any of them would end the tag early.
+ */
+export function jsonLdPayload(schema: object | object[]): string {
+  const payload = Array.isArray(schema) ? schema : [schema];
+  return JSON.stringify(payload).replace(/</g, '\\u003c');
+}
+
 /** Renders one or more schema objects into a single JSON-LD script tag. */
 export function JsonLd({ schema }: { schema: object | object[] }) {
-  const payload = Array.isArray(schema) ? schema : [schema];
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(payload) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdPayload(schema) }}
     />
   );
 }
