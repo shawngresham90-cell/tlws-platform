@@ -36,7 +36,7 @@ Delivered to the session at 1448×1086 (the upload pipeline re-encodes to
 WebP; the camera original stays with the owner). The production derivative
 is a plain proportional resize + WebP re-encode — full frame, no crop, no
 retouch, no generative edits. Beat 02 (Taught it) landed later the same
-day (§1c); beat 01 (Drove it) remains an open seam.
+day (§1c), and beat 01 (Drove it) closed the strip the same day (§1d).
 
 ## 1c. Journey "Taught it" portrait — RECEIVED 2026-08-11 ✅
 
@@ -54,8 +54,28 @@ camera original stays with the owner). The production derivative is a plain
 proportional resize + WebP re-encode — full frame, no crop, no retouch, no
 generative edits. It renders at its own 4:5 aspect inside the Journey
 column: a landscape crop cannot keep both the face and the Academy chest
-logo, so the portrait keeps its shape. Journey beat 01 (Drove it) is the
-last open seam.
+logo, so the portrait keeps its shape. Beat 01 (Drove it) landed the same
+day (§1d) — the Journey strip is now fully photographed.
+
+## 1d. Journey "Drove it" archival photograph — RECEIVED 2026-08-11 ✅
+
+**Landed:** the owner's archival driving-days photograph — Shawn in the
+foreground in winter gear, multiple tractor-trailers parked behind him,
+snow on the ground, a mountain across the background. Fills the Journey
+strip's beat 01 seam, completing all three beats.
+
+| Owner's original file    | Production asset path                    | Frame          |
+| ------------------------ | ---------------------------------------- | -------------- |
+| `20220109_112753(2).jpg` | `public/images/journey/shawn-drove-it.webp` | 1080×1440, 3:4 |
+
+Delivered to the session at 1086×1448 (the upload pipeline re-encodes; the
+camera original stays with the owner). The production derivative is a plain
+proportional resize + WebP re-encode — full frame, no crop, no retouch, no
+generative edits. It renders at its own 3:4 aspect inside the Journey
+column: cropping tighter would lose the parked trucks that make "Drove it"
+legible at a glance. The filename's date-like value is deliberately not
+surfaced as public copy — no location, employer, route, or date claims are
+made from the image alone.
 
 ### Also received 2026-08-11 — NOT published
 
