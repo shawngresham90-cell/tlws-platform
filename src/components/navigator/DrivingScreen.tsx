@@ -743,8 +743,21 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   useEffect(() => {
     const voice = voiceRef.current!;
     const snap = lifecycle.snapshot();
+    /*
+     * The previous/current state pair for EDGE detection uses the
+     * render-scoped `lcState`, never `snap.state`. The reroute effect
+     * above runs first (same component, declared earlier) and
+     * `requestReroute` transitions off-route → rerouting SYNCHRONOUSLY
+     * before its first await — so by the time this effect snapshots the
+     * machine, the off-route state it needs to observe is already gone.
+     * `lcState` is the value BOTH effects were handed by the render that
+     * scheduled them: on the departure render it is 'off-route' no matter
+     * what the earlier effect has since done to the machine. Snapshotting
+     * here instead is exactly the bug that made the road test's off-route
+     * announcement unreachable (2026-08 audit, Finding 1).
+     */
     const prev = prevLcStateRef.current;
-    prevLcStateRef.current = snap.state;
+    prevLcStateRef.current = lcState;
 
     // Speech watchdog. A browser speech engine can accept an utterance
     // and then never report it finished — backgrounded tab, an OS
@@ -787,13 +800,13 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
      * one in half. A driver mid-turn needs the turn; this line is still
      * true two seconds later.
      */
-    if (snap.state === 'off-route' && prev !== 'off-route' && prev !== 'rerouting') {
+    if (lcState === 'off-route' && prev !== 'off-route' && prev !== 'rerouting') {
       offRouteEpisodeRef.current += 1;
       voice.request(
         rerouteVoiceRequest({ kind: 'off-route', episode: offRouteEpisodeRef.current }),
       );
     }
-    if (snap.state === 'navigating' && (prev === 'off-route' || prev === 'rerouting')) {
+    if (lcState === 'navigating' && (prev === 'off-route' || prev === 'rerouting')) {
       // Back on a route: the episode is over and any hold is released.
       setAwaitingSafeReroute(false);
     }
