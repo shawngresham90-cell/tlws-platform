@@ -78,8 +78,16 @@ const ROUTE: RouteMaterial = {
   warnings: ['One warning survived validation.'],
 };
 
+/**
+ * The origin is a raw-fix-like point deliberately OFF the route's first
+ * coordinate: PilotTripControls builds the real one from the live GPS
+ * fix. The snapshot must never carry it, and the restored origin must
+ * be the route's own road-snapped start instead — provable only
+ * because the two differ.
+ */
+const RAW_FIX_ORIGIN = { lat: 35.0000731, lng: -85.0000442 };
 const REQUEST: PlanRequest = {
-  origin: LINE[0],
+  origin: RAW_FIX_ORIGIN,
   destination: DEST,
   truck: DEFAULT_TRUCK_PROFILE,
   departAtMs: T0,
@@ -130,6 +138,28 @@ function snapshot(mutate?: (snap: Record<string, unknown>) => void): string {
       '1. the plan request survives',
       trip.request.truck.heightFt === DEFAULT_TRUCK_PROFILE.heightFt &&
         trip.request.departAtMs === T0,
+    );
+    // The origin rail, both directions: the serialization carries no
+    // origin at all, and the restored request's origin is the VALIDATED
+    // route's first coordinate — never the raw fix the plan was made
+    // with, which here deliberately differs so the reconstruction is
+    // provable.
+    const rawJson = snapshot();
+    check('1. the serialized JSON has no request.origin', !/"origin"/.test(rawJson));
+    check(
+      '1. the stored request carries only destination, truck, departAtMs',
+      Object.keys((JSON.parse(rawJson) as { request: object }).request)
+        .sort()
+        .join(',') === 'departAtMs,destination,truck',
+    );
+    check(
+      "1. the restored origin is the route's own first coordinate",
+      trip.request.origin.lat === LINE[0].lat && trip.request.origin.lng === LINE[0].lng,
+    );
+    check(
+      '1. the restored origin is NOT the raw fix the plan was made with',
+      trip.request.origin.lat !== RAW_FIX_ORIGIN.lat &&
+        trip.request.origin.lng !== RAW_FIX_ORIGIN.lng,
     );
     check(
       '1. arrival context survives: facility, provenance, entrance',
@@ -222,8 +252,37 @@ function snapshot(mutate?: (snap: Record<string, unknown>) => void): string {
       snapshot((s) => void ((s.request as { truck: { heightFt: number } }).truck.heightFt = 0)),
     ],
     [
-      'request without origin',
-      snapshot((s) => void delete (s.request as Record<string, unknown>).origin),
+      'a stored request.origin — injected origins are never trusted',
+      snapshot((s) => void ((s.request as Record<string, unknown>).origin = RAW_FIX_ORIGIN)),
+    ],
+    [
+      'truck without fuelSafetyFactor',
+      snapshot(
+        (s) => void delete (s.request as { truck: Record<string, unknown> }).truck.fuelSafetyFactor,
+      ),
+    ],
+    [
+      'truck with zero fuelSafetyFactor',
+      snapshot(
+        (s) =>
+          void ((s.request as { truck: { fuelSafetyFactor: number } }).truck.fuelSafetyFactor = 0),
+      ),
+    ],
+    [
+      'truck with non-finite fuelSafetyFactor',
+      snapshot(
+        (s) =>
+          void ((s.request as { truck: { fuelSafetyFactor: number } }).truck.fuelSafetyFactor =
+            Number.NaN),
+      ),
+    ],
+    [
+      'truck with fuelSafetyFactor above 1 (more range than the tank has)',
+      snapshot(
+        (s) =>
+          void ((s.request as { truck: { fuelSafetyFactor: number } }).truck.fuelSafetyFactor =
+            1.01),
+      ),
     ],
     [
       'destination without position',

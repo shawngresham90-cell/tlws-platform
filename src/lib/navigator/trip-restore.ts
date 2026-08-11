@@ -9,10 +9,15 @@
  *
  * WHAT IS PERSISTED — the planned ROUTE, and nothing about the driver:
  * the provider's validated route material (identical in shape to what
- * the plan port returns), the plan request it answered, and the
- * destination's arrival context. The trip's origin point is the route's
- * own first coordinate, so the snapshot contains no information the
- * route itself does not.
+ * the plan port returns), the plan request it answered — WITHOUT its
+ * origin, because PilotTripControls builds that origin from the live
+ * GPS fix and fixes are never persisted — and the destination's
+ * arrival context. On restore the request's origin is reconstructed
+ * from the validated route's own first coordinate: the provider's
+ * road-snapped route start, so the snapshot carries no information the
+ * route itself does not, and no fix at all. A stored snapshot that
+ * DOES contain a request origin was not written by this module and is
+ * refused whole.
  *
  * WHAT IS NEVER PERSISTED: the driver's name (ephemeral by owner
  * decision), any GPS fix or position trail, HOS state, or anything else
@@ -142,6 +147,11 @@ function isTruck(t: unknown): t is TruckProfile {
     'mpg',
   ];
   if (!numeric.every((k) => isPositiveFinite(truck[k]))) return false;
+  // The fuel-planning fraction is a SHARE of tank range: beyond being
+  // positive and finite it can never exceed 1, and a profile missing it
+  // would hand downstream fuel planning an undefined.
+  const fuel = truck.fuelSafetyFactor;
+  if (!isPositiveFinite(fuel) || fuel > 1) return false;
   const hazmat = truck.hazmatClass;
   return hazmat === null || isText(hazmat, MAX_TEXT);
 }
@@ -149,11 +159,16 @@ function isTruck(t: unknown): t is TruckProfile {
 /** Serialize a snapshot. Pure: the caller supplies the clock and owns
  *  the storage write. */
 export function serializeTripSnapshot(input: TripSnapshotInput): string {
+  // The request is stored WITHOUT its origin: PilotTripControls builds
+  // that origin from the live GPS fix, and fixes are never persisted.
+  // parseTripSnapshot reconstructs a restore origin from the validated
+  // route's first coordinate instead.
+  const { origin: _origin, ...request } = input.request;
   return JSON.stringify({
     v: 1,
     savedAtMs: input.savedAtMs,
     route: input.route,
-    request: input.request,
+    request,
     destination: input.destination,
   });
 }
@@ -235,7 +250,13 @@ export function parseTripSnapshot(raw: string | null, nowMs: number): Restorable
   // ---- the plan request the material answered ----------------------------
   const request = snap.request as Record<string, unknown> | null;
   if (request === null || typeof request !== 'object') return null;
-  if (!isLatLng(request.origin) || !isLatLng(request.destination)) return null;
+  // A stored origin is refused, never read: the serializer does not
+  // write one (that origin is a raw GPS fix, and fixes are never
+  // persisted), so its presence means the snapshot was not our write.
+  // The restored origin is reconstructed below from the VALIDATED
+  // route's first coordinate — the provider's road-snapped route start.
+  if ('origin' in request) return null;
+  if (!isLatLng(request.destination)) return null;
   if (!isTruck(request.truck)) return null;
   if (!isPositiveFinite(request.departAtMs)) return null;
   const avoid =
@@ -291,7 +312,7 @@ export function parseTripSnapshot(raw: string | null, nowMs: number): Restorable
       warnings: rawWarnings as string[],
     },
     request: {
-      origin: request.origin,
+      origin: positions[0],
       destination: request.destination,
       truck: request.truck,
       ...(avoid === undefined ? {} : { avoid }),

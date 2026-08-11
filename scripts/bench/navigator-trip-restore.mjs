@@ -34,7 +34,7 @@
  *
  * Set CHROMIUM_PATH if the browser is not at /opt/pw-browsers/chromium.
  */
-import pkg from '/home/user/tlws-platform/node_modules/playwright/index.js';
+import pkg from 'playwright';
 const { chromium } = pkg;
 
 function arg(name, fallback = null) {

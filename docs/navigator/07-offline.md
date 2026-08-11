@@ -254,13 +254,15 @@ While the driver is away, honesty; the moment they return, immediacy.
 - **The tab was discarded and the page reloads.** Trip restore
   (`src/lib/navigator/trip-restore.ts`) puts the active trip back
   through the lifecycle's own front door: the planned route, its
-  request, and its arrival context are kept in `sessionStorage` while
+  request — stored **without** its origin, which is built from a live
+  GPS fix; the route's own first coordinate stands in for it on
+  restore — and its arrival context are kept in `sessionStorage` while
   guidance is live, and a reload inside the 30-minute freshness window
   re-plans from that snapshot — no network, no provider spend, no
   destination re-entry — and resumes the GPS watch only when the
   Permissions API positively reports `granted` (never a prompt on
   load). The snapshot is the ROUTE and nothing about the driver: no
-  name, no GPS trail, no HOS. It clears when the trip arrives, is
+  name, no GPS fix of any kind, no HOS. It clears when the trip arrives, is
   stopped, or its window lapses, and it dies with the tab.
 - **What a restore does not bring back, by design.** Voice returns
   muted — mobile Safari requires a user gesture for a session's first
