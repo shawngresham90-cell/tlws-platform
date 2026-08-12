@@ -183,13 +183,18 @@ async function measure(page) {
       }
     }
     // Essential controls: visible, inside the viewport, glove-sized.
-    const wanted = [/^Stop/, /Voice|Mute/, /Overview/, /Recenter/];
+    // Matched against aria-label AND visible text (the Overview button's
+    // accessible name describes the action, not the word on it). Recenter
+    // is deliberately NOT required: it exists only when the camera is
+    // detached (road-tested follow behavior) — the zoom pair is the map
+    // control that is always present.
+    const wanted = [/^Stop/, /Voice|Mute/, /overview/i, /Zoom in/, /Zoom out/];
     for (const btn of Array.from(document.querySelectorAll('button'))) {
-      const label = (btn.getAttribute('aria-label') ?? btn.textContent ?? '').trim();
+      const label = `${btn.getAttribute('aria-label') ?? ''} ${btn.textContent ?? ''}`.trim();
       if (!wanted.some((w) => w.test(label))) continue;
       const r = btn.getBoundingClientRect();
       out.controls.push({
-        label: label.slice(0, 30),
+        label: label.slice(0, 40),
         inViewport: r.left >= -1 && r.top >= -1 && r.right <= vw + 1 && r.bottom <= vh + 1,
         shortAxisPx: Math.round(Math.min(r.width, r.height)),
         visible: r.width > 0 && r.height > 0,
@@ -277,7 +282,7 @@ async function runCase(browser, { w, h }) {
       m1.distanceText !== null && m2.distanceText !== null && m1.distanceText !== m2.distanceText,
       `${m1.distanceText} → ${m2.distanceText}`,
     );
-    const missing = ['Stop', 'Voice|Mute', 'Overview', 'Recenter'].filter(
+    const missing = ['Stop', 'Voice|Mute', '[Oo]verview', 'Zoom in', 'Zoom out'].filter(
       (want) => !m2.controls.some((c) => new RegExp(want).test(c.label) && c.visible),
     );
     verdict('essential controls all present', missing.length === 0, missing.join(','));

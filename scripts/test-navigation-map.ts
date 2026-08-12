@@ -250,16 +250,19 @@ function northRoute(n = 200) {
     screen.includes('focusNavigationKey') && screen.includes('navTopRef'),
   );
   check(
-    'start-fix: the token scrolls the guidance into view',
-    /navTopRef\.current[\s\S]{0,200}scrollIntoView/.test(screen),
+    // Full-screen map: the guidance is the TOP of the cockpit's own
+    // scroll container, so the token resets the SHELL's scroll — never
+    // scrollIntoView, which walks every scrollable ancestor and scrolls
+    // the DOCUMENT under the fixed cockpit (invisible on screen, but it
+    // yanks the mobile URL bar: measured as the whole fixed surface
+    // shifting 24 px and the bottom controls off the viewport).
+    'start-fix: the token scrolls the COCKPIT SHELL to the guidance, never the document',
+    /shellRef\.current[\s\S]{0,700}scrollTo\(\{ top: 0/.test(screen) &&
+      !/scrollIntoView\(/.test(screen),
   );
   check(
-    'start-fix: the scroll target is the maneuver card (the top of guidance)',
-    /ref=\{navTopRef\}[\s\S]{0,120}aria-label="Next maneuver"/.test(screen),
-  );
-  check(
-    'start-fix: scrollIntoView is feature-detected (never throws in a test/older runtime)',
-    screen.includes("typeof el.scrollIntoView === 'function'"),
+    'start-fix: scrollTo is feature-detected (never throws in a test/older runtime)',
+    screen.includes("typeof shell.scrollTo === 'function'"),
   );
   check(
     'start-fix: fires only on the route-ready → navigating transition',

@@ -15,16 +15,44 @@ export function LockGate({
   action,
   children,
   lockedLabel,
+  compact = false,
 }: {
   action: string;
   children?: ReactNode;
   /** Accessible description of what is locked, e.g. "Destination entry". */
   lockedLabel: string;
+  /**
+   * Cockpit-row variant (full-screen map): the locked state renders as
+   * ONE row-sized button instead of the explanatory box. The full box
+   * measured 306 px tall in the driving surface's bottom band — most of
+   * it the passenger-access affordance for a control the driver cannot
+   * use anyway — and at that size it was the single biggest thing
+   * between the driver and the map. The POLICY is identical either way:
+   * children never render while locked, the shared map stays the only
+   * authority, and the button leads to the SAME press-and-hold passenger
+   * dialog — offered on an attempt, exactly as doc 06 §2 requires; the
+   * attempt is the tap.
+   */
+  compact?: boolean;
 }) {
   const { permits, grantOverride } = useSafetyLock();
   const [offering, setOffering] = useState(false);
 
   if (permits(action)) return <>{children}</>;
+
+  if (compact && !offering) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffering(true)}
+        className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink/80"
+        aria-label={`${lockedLabel} is locked while moving — passenger access`}
+      >
+        <span aria-hidden="true">🔒 </span>
+        {lockedLabel}
+      </button>
+    );
+  }
 
   // The gate never inspects motion itself (doc 06 §1 — the map through the
   // provider is the only authority); the copy names both lock reasons.

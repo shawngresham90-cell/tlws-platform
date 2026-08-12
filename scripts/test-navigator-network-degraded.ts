@@ -72,8 +72,10 @@ function check(name: string, cond: boolean, detail?: unknown) {
   check('layering: the site banner is still fixed at top-16 z-40', bannerZ40);
   check('layering: it is still mounted after {children}', bannerAfterChildren);
   check(
+    // (!mt-0 rides between z-50 and overflow: the parked page's space-y
+    // margin must not offset the fixed cockpit — full-screen map item.)
     'layering: so the driving surface must sit ABOVE it',
-    /fixed inset-0 z-50 overflow-y-auto/.test(screen),
+    /fixed inset-0 z-50 (?:!mt-0 )?overflow-y-auto/.test(screen),
   );
   check(
     'layering: and the old equal-z shell class is gone',

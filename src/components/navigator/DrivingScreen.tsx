@@ -238,12 +238,19 @@ export function DrivingScreenView({
   const m = view.maneuvers?.next ?? null;
 
   // When a trip starts, put the driver on the guidance — not on the
-  // controls they just used, which sit below the fold.
+  // controls they just used, which sit below the fold. The scroll is
+  // scoped to the SHELL (the cockpit's own scroll container), where the
+  // guidance is always at the top. It must never be scrollIntoView: that
+  // walks EVERY scrollable ancestor, and scrolling the document under a
+  // fixed cockpit is invisible on screen but yanks the mobile URL bar —
+  // measured in emulation as the whole fixed surface shifting 24 px down
+  // and the bottom controls off the viewport.
   const navTopRef = useRef<HTMLElement | null>(null);
+  const shellRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (focusNavigationKey === null) return;
-    const el = navTopRef.current;
-    if (el && typeof el.scrollIntoView === 'function') {
+    const shell = shellRef.current;
+    if (shell && typeof shell.scrollTo === 'function') {
       // `html { scroll-behavior: auto }` under reduced motion does NOT
       // override an explicit `behavior: 'smooth'` passed here — the
       // argument wins. So the preference is read directly, or a driver
@@ -253,7 +260,17 @@ export function DrivingScreenView({
         typeof window !== 'undefined' &&
         typeof window.matchMedia === 'function' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+      shell.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    }
+    // And anchor the BROWSER viewport: the parked page scrolls the
+    // document like any page, and a document left mid-scroll keeps the
+    // mobile browser-bar state that goes with it — measured as the whole
+    // fixed cockpit sitting 24 px low with the bottom controls pushed off
+    // screen. The cockpit covers the page completely, so collapsing the
+    // leftover scroll is invisible except for putting the fixed surface
+    // exactly where inset-0 says it is.
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo(0, 0);
     }
   }, [focusNavigationKey]);
 
@@ -407,8 +424,16 @@ export function DrivingScreenView({
   // A site banner about parking and weather may not cover a turn. Above
   // it, the driving surface owns the whole viewport and says its own,
   // navigation-specific thing about being offline.
+  // !mt-0: the parked /drive page stacks its blocks with space-y-6, and
+  // Tailwind's space-y is a margin-top on every later sibling — WHICH
+  // APPLIES TO FIXED ELEMENTS TOO. Left in place, the cockpit shell
+  // rendered 24 px below the viewport top and 24 px short (top:0 plus
+  // margin-top:24px), clipping the bottom control row off screen —
+  // measured, and invisible before this item because the old surface
+  // never reached the edges. The important modifier is required: the
+  // space-y selector outranks a plain utility.
   const shellCls = fullScreen
-    ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-nav-bg'
+    ? 'fixed inset-0 z-50 !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
     : '';
   /*
    * FULL-SCREEN MAP (pilot round 3, item "full-screen navigation map").
@@ -470,7 +495,7 @@ export function DrivingScreenView({
       : '';
 
   return (
-    <div className={shellCls}>
+    <div ref={shellRef} className={shellCls}>
       <div className={surfaceCls}>
         <div className={colOne}>{maneuverCard}</div>
 
@@ -515,8 +540,13 @@ export function DrivingScreenView({
             the map's own side controls. The conditional always renders a
             child slot (null when parked), so sibling INDEXES never shift
             and the map above cannot be remounted by the mode switch. */}
+        {/* On a short viewport the chip is the overlay the followed truck
+            would collide with (same threshold family as the maneuver
+            card's own short-screen drops): the profile stays one scroll
+            away on the parked page, and the plan request it mirrors is
+            unchanged. */}
         {fullScreen ? (
-          <div className="relative z-10 self-end">
+          <div className="relative z-10 self-end [@media(max-height:620px)]:hidden">
             <TruckChip docked />
           </div>
         ) : null}
@@ -599,9 +629,18 @@ export function DrivingScreenView({
         </div>
 
         {/* Permanent HOS strip (milestone N6) — the driver's clocks against
-            the drive, in every screen state. In landscape the map needs the
-            height more than the clocks need the space. */}
-        <div className={fullScreen ? `${colOne} landscape:hidden` : ''}>
+            the drive, on every PARKED state and the arrived screen. On the
+            full-screen cockpit it yields entirely: the landscape rule ("the
+            map needs the height more than the clocks need the space") now
+            covers both orientations, because the measured strip is ~230 px
+            tall and on a phone that band reaches the followed truck's own
+            marker. Repositioned, not removed: the component stays MOUNTED
+            (display:none), so the clocks keep counting the drive, the HOS
+            VOICE warnings still fire at their thresholds mid-trip, and the
+            burned clocks are back on screen the moment the trip ends.
+            A visual mid-drive clock treatment belongs to the decluttering
+            item, deliberately not begun here. */}
+        <div className={fullScreen ? 'hidden' : ''}>
           <HosStrip
             drivingActive={
               fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
@@ -622,7 +661,7 @@ export function DrivingScreenView({
         <div className={fullScreen ? `${colOne} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
           {voice ? (
-            <LockGate action="mute-voice" lockedLabel="Voice mute">
+            <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
               <VoiceControls
                 voice={voice}
                 compact={fullScreen}
@@ -630,7 +669,7 @@ export function DrivingScreenView({
               />
             </LockGate>
           ) : null}
-          <LockGate action="stop-navigation" lockedLabel="Stop navigation">
+          <LockGate action="stop-navigation" lockedLabel="Stop navigation" compact={fullScreen}>
             {watching ? (
               <button
                 type="button"
@@ -1416,7 +1455,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       etaText={etaText}
       overviewSlot={
         fullScreen ? (
-          <LockGate action="route-overview" lockedLabel="Route overview">
+          <LockGate action="route-overview" lockedLabel="Route overview" compact>
             <button
               type="button"
               onClick={() => setOverviewToggleKey((k) => k + 1)}

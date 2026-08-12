@@ -350,8 +350,13 @@ const T0 = 1_754_000_000_000;
       (screen.match(/shrink-0/g) ?? []).length >= 3,
   );
   check(
-    '7. the HOS strip yields its space in landscape rather than crushing the map',
-    screen.includes('landscape:hidden'),
+    // The landscape judgment ("the map needs the height more than the
+    // clocks need the space") now covers the whole full-screen cockpit:
+    // the measured strip was ~230 px tall and reached the followed
+    // truck's marker on a phone. Mounted but display:none, so the clocks
+    // keep counting and the HOS VOICE thresholds still fire mid-trip.
+    '7. the HOS strip yields the cockpit to the map, but stays mounted and counting',
+    /\{fullScreen \? 'hidden' : ''\}/.test(screen) && screen.includes('<HosStrip'),
   );
 }
 
