@@ -320,7 +320,7 @@ export function DrivingScreenView({
       // the distance and two lines of instruction always fit. The 600 px
       // threshold is measured, not guessed: a 568 px-tall phone in
       // portrait still overflowed at 480.
-      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] sm:p-6${imminent ? ' nav-imminent' : ''}`}
+      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] [@media(max-height:480px)]:max-h-[32dvh] [@media(max-height:480px)]:p-2 sm:p-6${imminent ? ' nav-imminent' : ''}`}
     >
       {m ? (
         <>
@@ -401,7 +401,7 @@ export function DrivingScreenView({
   // response carries no speed-limit data, and a shield rendered from
   // nothing would be the most dangerous fake on the screen.
   const compactStrip = (
-    <dl className="grid shrink-0 grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-1.5 text-center text-ink">
+    <dl className="grid shrink-0 grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-1.5 text-center text-ink [@media(max-height:480px)]:py-0.5">
       <div>
         <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Speed</dt>
         {/* One line always: a value that stacks at 58 but not at 8 would
@@ -492,11 +492,24 @@ export function DrivingScreenView({
    * today and simply stand ready.
    */
   const surfaceCls = fullScreen
-    ? 'relative flex h-[100dvh] flex-col gap-2 p-2 ' +
+    ? 'relative flex h-[100dvh] flex-col gap-2 p-2 [@media(max-height:480px)]:gap-1 ' +
       'pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]'
     : 'space-y-6';
   const colOne = fullScreen ? 'relative z-10 shrink-0 landscape:max-w-[38vw]' : '';
+  /*
+   * The BOTTOM band takes the width the screen actually has.
+   *
+   * The 38 vw cap belongs to the TOP overlays — the maneuver card and
+   * the honest lines — so a landscape driver keeps the right of the map
+   * open where they are looking ahead. Applied to the bottom band it
+   * backfired: at 844x390 the three-cell trip strip and the four-cell
+   * clock strip wrapped inside 320 px and grew to 86 px and 73 px, which
+   * pushed the Stop row 27 px off the bottom of the viewport. Full width
+   * un-wraps them (64 px and 56 px measured) and the band still sits
+   * below the followed truck, which rides the middle of the screen.
+   */
+  const colBottom = fullScreen ? 'relative z-10 shrink-0' : '';
   // Parked, the map gets the SAME box the dynamic-import placeholder
   // promises (h-72/sm:h-96, cockpit border). It used to get no class at
   // all: a bare auto-height div, in which the map's h-full computed to
@@ -628,7 +641,7 @@ export function DrivingScreenView({
             from here down (trip strip, HOS, controls) rides the bottom
             edge of the full-screen surface; the flex gap above it is open
             map. On the ordinary page it is just the next block. */}
-        <div className={fullScreen ? `${colOne} mt-auto` : ''}>
+        <div className={fullScreen ? `${colBottom} mt-auto` : ''}>
           {fullScreen ? (
             compactStrip
           ) : (
@@ -658,7 +671,7 @@ export function DrivingScreenView({
             from the map. Because the instance is never remounted, the
             clocks do not restart when guidance starts, when a reroute
             lands, or when the trip ends. */}
-        <div className={fullScreen ? colOne : ''}>
+        <div className={fullScreen ? colBottom : ''}>
           <HosStrip
             drivingActive={
               fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
@@ -695,7 +708,7 @@ export function DrivingScreenView({
             must live here on the driving surface and not below the fold. */}
         {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
-        <div className={fullScreen ? `${colOne} flex gap-3` : ''}>
+        <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>

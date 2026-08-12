@@ -103,7 +103,12 @@ export function HosCompactStrip({
     </>
   );
 
-  const shell = 'w-full rounded-cockpit border border-line bg-asphalt/90 px-2 py-1.5 text-left';
+  // The vertical padding yields on a short landscape phone — the same
+  // step the maneuver card and the truck chip already take there, and the
+  // one that keeps the bottom controls inside a 390 px-tall viewport.
+  const shell =
+    'w-full rounded-cockpit border border-line bg-asphalt/90 px-2 py-1.5 text-left ' +
+    '[@media(max-height:480px)]:py-0.5';
 
   if (!interactive || onOpen === undefined) {
     return (
