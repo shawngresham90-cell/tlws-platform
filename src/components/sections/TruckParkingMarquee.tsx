@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
+import { TILE_ICON_PLATE } from './NavigatorMarquee';
 
 /**
  * Truck Parking marquee tile — a premium, theater-marquee-style SQUARE
@@ -39,50 +40,56 @@ export function TruckParkingMarquee({ className }: { className?: string }) {
           <span className="absolute inset-x-6 top-2 h-[3px] rounded bg-diesel/80" />
           <span className="absolute inset-x-6 bottom-2 h-[3px] rounded bg-diesel/80" />
 
-          {/* Semi-truck + P badge — single inline SVG, brand colors. */}
-          <svg
-            viewBox="0 0 96 44"
-            className="mb-3 h-10 w-auto drop-shadow-[0_0_8px_rgba(255,176,32,0.45)] sm:h-12"
-            role="img"
-            aria-hidden="true"
-            focusable="false"
-          >
-            {/* trailer */}
-            <rect
-              x="2"
-              y="8"
-              width="52"
-              height="22"
-              rx="2"
-              fill="#1b1d21"
-              stroke="#ffb020"
-              strokeWidth="2"
-            />
-            {/* cab */}
-            <path
-              d="M56 12h14l10 9v9H56z"
-              fill="#1b1d21"
-              stroke="#ffb020"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            {/* wheels */}
-            <circle cx="16" cy="34" r="6" fill="#0c0d0f" stroke="#ffb020" strokeWidth="2" />
-            <circle cx="30" cy="34" r="6" fill="#0c0d0f" stroke="#ffb020" strokeWidth="2" />
-            <circle cx="70" cy="34" r="6" fill="#0c0d0f" stroke="#ffb020" strokeWidth="2" />
-            {/* P badge on the trailer */}
-            <rect x="20" y="12" width="16" height="14" rx="2" fill="#b3261e" />
-            <text
-              x="28"
-              y="23"
-              textAnchor="middle"
-              fontFamily="var(--font-anton), sans-serif"
-              fontSize="11"
-              fill="#ffffff"
+          {/* Parking sign + tractor-trailer silhouette — single inline SVG,
+              brand colors, original TLWS art (no other company's mark). The
+              artwork is unchanged; it now sits in TILE_ICON_PLATE, the same
+              square plate the Navigator card uses, so the two cards match on
+              size, corner radius, border and spacing. The plate the SVG used
+              to draw for itself is gone precisely so it is not double-framed —
+              the shared plate provides it. */}
+          <div className={cn(TILE_ICON_PLATE, 'mb-3')}>
+            <svg
+              viewBox="0 0 48 48"
+              className="h-full w-full drop-shadow-[0_0_8px_rgba(255,176,32,0.45)]"
+              role="img"
+              aria-hidden="true"
+              focusable="false"
             >
-              P
-            </text>
-          </svg>
+              {/* parking sign: red badge, white P drawn as a path (no font) */}
+              <rect
+                x="9"
+                y="8"
+                width="17"
+                height="16"
+                rx="3.5"
+                fill="#b3261e"
+                stroke="#ffffff"
+                strokeWidth="1.6"
+              />
+              <path
+                d="M14.5 20.5v-9h4.2a2.9 2.9 0 0 1 0 5.8h-4.2"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* tractor-trailer silhouette, nose right */}
+              <rect x="6" y="27" width="23" height="10.5" rx="1" fill="#ffb020" />
+              <path d="M30.5 37.5v-8.5h4.5l3.2-4h3l1.8 5v7.5z" fill="#ffb020" />
+              <circle cx="12" cy="38.5" r="3" fill="#1b1d21" stroke="#ffb020" strokeWidth="2" />
+              <circle cx="19.5" cy="38.5" r="3" fill="#1b1d21" stroke="#ffb020" strokeWidth="2" />
+              <circle cx="37" cy="38.5" r="3" fill="#1b1d21" stroke="#ffb020" strokeWidth="2" />
+              {/* ground line — pairs with the Navigator icon's route line */}
+              <path
+                d="M5 42.5h38"
+                stroke="#ffb020"
+                strokeOpacity="0.5"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
 
           <span className="text-center font-display text-3xl uppercase leading-none tracking-wide text-signal drop-shadow-[0_0_10px_rgba(255,176,32,0.55)] sm:text-4xl">
             Truck

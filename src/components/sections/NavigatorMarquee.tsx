@@ -1,6 +1,17 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { PILOT_ACCESS_PATH } from '@/lib/navigator-api/pilot-access';
+
+/**
+ * Shared ICON PLATE geometry for the two hero feature tiles. Both cards mount
+ * their artwork in this identical square: same size at each breakpoint, same
+ * corner radius, same 2px signal border, same black ground, same centring and
+ * the same `mb-3` gap to the header below. Declared here and imported by
+ * TruckParkingMarquee so the two can never drift apart.
+ */
+export const TILE_ICON_PLATE =
+  'flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[22%] border-2 border-signal/70 bg-black sm:h-32 sm:w-32';
 
 /**
  * Navigator marquee tile — pilot access to the truck GPS Navigator, sitting
@@ -12,10 +23,17 @@ import { PILOT_ACCESS_PATH } from '@/lib/navigator-api/pilot-access';
  * divergence in size or spacing would read as a mistake rather than a
  * distinct feature. Only the icon, label and destination differ.
  *
- * Icon is an inline SVG like every other icon in this project (there is no
- * icon dependency): a compass ring with a navigation arrow — the map/heading
- * idiom the Navigator itself uses — drawn in the same brand palette as the
- * truck on the parking tile.
+ * Icon is the OWNER-SUPPLIED Navigator artwork (approved 2026-08-12): the
+ * blue-route turn-by-turn screen on a phone. It is mounted UNCROPPED and
+ * undistorted inside TILE_ICON_PLATE — the square plate both hero tiles
+ * share — so the two cards match on size, radius, border and spacing while
+ * each keeps its own artwork at its true aspect. The source frame is 852×1846
+ * (a tall phone), so `object-contain` inside a square plate is the only way to
+ * be square-framed AND uncropped; the frame's black ground matches the
+ * artwork's own black corners, so the letterboxing is invisible.
+ *
+ * No words live inside the image: the header and description below are real
+ * text, so they scale, translate and read to a screen reader.
  *
  * ALWAYS RENDERS. Tile visibility is deliberately decoupled from
  * NEXT_PUBLIC_NAVIGATOR_ENABLED: the flag governs whether the Navigator
@@ -33,7 +51,7 @@ export function NavigatorMarquee({ className }: { className?: string }) {
   return (
     <Link
       href={PILOT_ACCESS_PATH}
-      aria-label="Navigator — pilot access. Opens the truck GPS Navigator pilot."
+      aria-label="Open TLWS Navigator"
       className={cn(
         'group/marquee relative block w-full max-w-sm select-none rounded-card',
         'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-asphalt',
@@ -53,40 +71,24 @@ export function NavigatorMarquee({ className }: { className?: string }) {
           <span className="absolute inset-x-6 top-2 h-[3px] rounded bg-diesel/80" />
           <span className="absolute inset-x-6 bottom-2 h-[3px] rounded bg-diesel/80" />
 
-          {/* Compass ring + heading arrow — single inline SVG, brand colors. */}
-          <svg
-            viewBox="0 0 48 48"
-            className="mb-3 h-10 w-auto drop-shadow-[0_0_8px_rgba(255,176,32,0.45)] sm:h-12"
-            role="img"
-            aria-hidden="true"
-            focusable="false"
-          >
-            {/* compass body */}
-            <circle cx="24" cy="24" r="20" fill="#1b1d21" stroke="#ffb020" strokeWidth="2" />
-            {/* cardinal ticks */}
-            <path
-              d="M24 5v4M24 39v4M5 24h4M39 24h4"
-              stroke="#ffb020"
-              strokeWidth="2"
-              strokeLinecap="round"
+          {/* Owner's Navigator artwork, centred at the top of the card and
+              mounted uncropped in the shared square plate. */}
+          <div className={cn(TILE_ICON_PLATE, 'mb-3')}>
+            <Image
+              src="/images/home/tlws-navigator-icon.webp"
+              alt=""
+              width={852}
+              height={1846}
+              sizes="(min-width: 640px) 128px, 112px"
+              className="h-full w-auto object-contain"
             />
-            {/* heading arrow — north half in diesel red, south half in asphalt */}
-            <path d="M24 12l8 22-8-6z" fill="#b3261e" />
-            <path d="M24 12l-8 22 8-6z" fill="#0c0d0f" stroke="#ffb020" strokeWidth="1.5" />
-          </svg>
+          </div>
 
           <span className="text-center font-display text-3xl uppercase leading-none tracking-wide text-signal drop-shadow-[0_0_10px_rgba(255,176,32,0.55)] sm:text-4xl">
-            Navigator
+            TLWS Navigator
           </span>
-          <span className="mt-2 text-center text-xs font-bold uppercase tracking-[0.35em] text-ink">
-            Pilot access
-          </span>
-          {/* Red accent chevron, subtle. */}
-          <span
-            aria-hidden="true"
-            className="mt-2 font-display text-lg leading-none text-diesel-300"
-          >
-            ▸▸▸
+          <span className="mt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-ink">
+            Truck-safe GPS navigation
           </span>
         </div>
       </div>
