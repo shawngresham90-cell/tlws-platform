@@ -22,6 +22,17 @@
  *   6. the maneuver distance keeps counting down (guidance is live, not
  *      a still image).
  *
+ * Final pilot milestone additions, measured at every width BEFORE the
+ * trip starts (the flow now drives the REAL parked map-top search, not
+ * the developer coordinate boxes):
+ *   7. the parked search sits at the top of the map, does not autofocus,
+ *      and never causes horizontal overflow;
+ *   8. typed results render inside the viewport, stay reachable with the
+ *      phone keyboard up (visual viewport shrunk ~45%), and selecting
+ *      one updates the chosen destination beside Start;
+ *   9. the truck-profile chip is GONE from the live map — the profile is
+ *      verified once, parked, on the panel.
+ *
  * With --expect full it FAILS unless coverage is ≥ the edge-to-edge
  * floor (95% portrait and landscape); with --expect baseline it only
  * records the numbers, PASSing so the "before" is capturable evidence.
@@ -118,6 +129,33 @@ function verdict(name, cond, detail = '') {
   if (!cond) failures += 1;
 }
 
+/** Synthetic search results — no provider spend, deterministic titles.
+ *  Six places so small screens genuinely have a list to reach into. */
+function syntheticPlaces() {
+  const dest = { lat: ORIGIN.lat + 6 / MI_PER_DEG_LAT, lng: ORIGIN.lng };
+  const places = [
+    {
+      id: 'bench:gate',
+      title: 'TLWS Receiving Gate',
+      address: '100 Depot Rd, Ringgold, GA 30736',
+      position: dest,
+      facility: 'warehouse',
+      distanceMi: null,
+    },
+  ];
+  for (let i = 2; i <= 6; i++) {
+    places.push({
+      id: `bench:filler-${i}`,
+      title: `Bench Distribution Center ${i}`,
+      address: `${i}00 Industrial Blvd, Ringgold, GA 30736`,
+      position: { lat: dest.lat + i * 0.01, lng: dest.lng },
+      facility: 'distribution-center',
+      distanceMi: null,
+    });
+  }
+  return { ok: true, places };
+}
+
 // The pilot cookie from the FIRST login, reused afterwards — the access
 // endpoint throttles repeated password submissions per IP.
 let savedStorageState = null;
@@ -154,6 +192,7 @@ async function measure(page) {
       distanceText: null,
       hos: null,
       truck: null,
+      searchInput: document.querySelector('input[type="search"]') !== null,
       statusPresent: /\bNavigating\b|Position approximate/.test(document.body.innerText),
     };
     const mapEl = document.querySelector('.leaflet-container');
@@ -243,7 +282,100 @@ async function measure(page) {
   });
 }
 
-async function driveToNavigating(context, page) {
+/**
+ * The parked map-top search, proven in the real browser at this exact
+ * viewport (final pilot milestone): placement over the map, no
+ * autofocus, results reachable — including with the phone keyboard up
+ * (emulated by shrinking the visual viewport ~45%) — and the pick
+ * landing on the Start surface. Ends with the destination CHOSEN.
+ */
+async function parkedSearchProof(page, w, h) {
+  const input = page.getByLabel(
+    'Search for a destination by address, business, truck stop, or city',
+  );
+  await input.waitFor({ timeout: 20_000 });
+  const overlay = await page.evaluate(() => {
+    const inp = document.querySelector('input[type="search"]');
+    const mapEl = document.querySelector('.leaflet-container');
+    if (!inp) return null;
+    const r = inp.getBoundingClientRect();
+    const m = mapEl ? mapEl.getBoundingClientRect() : null;
+    return {
+      rect: { left: Math.round(r.left), top: Math.round(r.top), w: Math.round(r.width) },
+      overMap: m !== null && r.top >= m.top - 1 && r.top <= m.top + m.height / 2,
+      hscroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      focused: document.activeElement === inp,
+    };
+  });
+  verdict('parked: search input present', overlay !== null);
+  if (overlay) {
+    verdict(
+      'parked: search sits at the top of the map',
+      overlay.overMap,
+      JSON.stringify(overlay.rect),
+    );
+    verdict(
+      'parked: no autofocus — the keyboard stays down until the driver taps',
+      !overlay.focused,
+    );
+    verdict('parked: no horizontal overflow with the search mounted', !overlay.hscroll);
+  }
+  await input.click();
+  await input.fill('receiving gate ringgold');
+  const firstCard = page.getByRole('button').filter({ hasText: 'TLWS Receiving Gate' }).first();
+  await firstCard.waitFor({ timeout: 10_000 });
+  const res = await page.evaluate(() => {
+    const list = document.querySelector('[aria-label="Destination search results"]');
+    const doc = document.documentElement;
+    if (!list) return null;
+    const cards = Array.from(list.querySelectorAll('button')).map((b) => b.getBoundingClientRect());
+    return {
+      count: cards.length,
+      hscroll: doc.scrollWidth > doc.clientWidth + 1,
+      withinX: cards.every((r) => r.left >= -1 && r.right <= window.innerWidth + 1),
+      noFakeDistance: !(list.textContent ?? '').includes('mi away'),
+    };
+  });
+  verdict(
+    'parked: results render',
+    res !== null && res.count >= 1,
+    res ? `${res.count} cards` : 'no list',
+  );
+  if (res) {
+    verdict(
+      'parked: result cards fit horizontally (no clipping/overflow)',
+      res.withinX && !res.hscroll,
+    );
+    verdict('parked: no distance line when the wire carried none', res.noFakeDistance);
+  }
+  // The phone keyboard eats roughly the bottom half of the visual
+  // viewport. The pick must stay REACHABLE in what remains: Playwright's
+  // click auto-scrolls, so a covered or clipped card fails here.
+  await page.setViewportSize({ width: w, height: Math.max(220, Math.round(h * 0.55)) });
+  await page.waitForTimeout(400);
+  const kb = await page.evaluate(() => ({
+    hscroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  }));
+  verdict('parked: keyboard-open — no horizontal overflow', !kb.hscroll);
+  let picked = true;
+  try {
+    await firstCard.click({ timeout: 8000 });
+  } catch {
+    picked = false;
+  }
+  verdict('parked: keyboard-open — the result is reachable and takes the tap', picked);
+  await page.setViewportSize({ width: w, height: h });
+  await page.waitForTimeout(400);
+  if (picked) {
+    const confirmed = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+    verdict(
+      'parked: selecting updated the chosen destination beside Start',
+      /Destination:\s*TLWS Receiving Gate/.test(confirmed),
+    );
+  }
+}
+
+async function driveToNavigating(context, page, { w, h }) {
   let cursorLat = ORIGIN.lat;
   async function feed(seconds, metersPerSecond) {
     const M_PER_DEG_LAT = 111320;
@@ -260,9 +392,10 @@ async function driveToNavigating(context, page) {
 
   await login(page);
   await feed(2, 0.3); // auto-resumed watch publishes parked fixes
-  await page.getByText('Developer: enter coordinates instead').click({ timeout: 20_000 });
-  await page.getByLabel('Destination latitude').fill(String(ORIGIN.lat + 6 / MI_PER_DEG_LAT));
-  await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
+  // The REAL driver flow (final milestone): search on the map, pick,
+  // one Start tap. The developer coordinate boxes are no longer the path
+  // this bench exercises.
+  await parkedSearchProof(page, w, h);
   await page.getByRole('button', { name: /^Start$/ }).click();
   await feed(3, 0.3);
   await feed(6, 12);
@@ -288,9 +421,17 @@ async function runCase(browser, { w, h }) {
       body: JSON.stringify(syntheticRoute()),
     }),
   );
+  // The search endpoint too: deterministic results, zero provider spend.
+  await context.route('**/api/navigator/destination-search*', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(syntheticPlaces()),
+    }),
+  );
   const page = await context.newPage();
   try {
-    const { feed } = await driveToNavigating(context, page);
+    const { feed } = await driveToNavigating(context, page, { w, h });
     await page.waitForTimeout(800);
 
     const m1 = await measure(page);
@@ -348,20 +489,18 @@ async function runCase(browser, { w, h }) {
       // The whole point: compact. It must stay a strip, not a card.
       verdict('HOS: stays compact (≤96px tall)', hos.heightPx <= 96, `${hos.heightPx}px`);
     }
-    // ---- compact truck summary ---------------------------------------------
-    const truck = m2.truck;
-    if (truck) {
-      console.log(`  truck chip ${truck.heightPx}px — ${truck.text}`);
-      verdict(
-        'truck: height, weight, axles and hazmat all stated',
-        truck.hasHeight && truck.hasWeight && truck.hasAxles && truck.hasHazmat,
-        JSON.stringify(truck),
-      );
-      verdict('truck: trailer count labelled rather than implied', truck.hasTrailers);
-      verdict('truck: inside the viewport', truck.inViewport);
-    } else {
-      console.log('  (truck chip hidden at this size — short-viewport rule)');
-    }
+    // ---- truck profile: must NOT ride the live map (final milestone) ------
+    // The docked chip repeated numbers the driver verified parked; its
+    // pixels belong to the map now. Presence here is a regression.
+    verdict(
+      'truck: no profile chip over the live map',
+      m2.truck === null,
+      m2.truck ? m2.truck.text : '',
+    );
+    // The search is a PARKED control: while guidance is live no text
+    // field exists, so no keyboard can open over the map and no result
+    // list can cover the live controls.
+    verdict('search: no text field during live guidance', m2.searchInput === false);
 
     if (m2.truckClear !== null) {
       verdict('truck position not covered by an overlay', m2.truckClear === true);
