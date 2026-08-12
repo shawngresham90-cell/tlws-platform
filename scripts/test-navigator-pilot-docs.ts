@@ -503,5 +503,54 @@ const URL_PARAMS = (() => {
   );
 }
 
+/* ---------------- heading-up: the blocker is recorded, not papered over */
+
+// The final pilot milestone required heading-up OR an honest, measured
+// blocker. The blocker shipped. These pins keep the record honest: the
+// evidence document exists with both measurements, the limitations doc
+// says plainly that navigation is north-up, the decision is the owner's
+// (decision 6), and the probe that produced the numbers is committed so
+// they can be reproduced.
+{
+  const BLOCKER = readFileSync('docs/operations/navigator-heading-up-blocker.md', 'utf8');
+  const BLOCKER_FLAT = flat(BLOCKER);
+  check(
+    'heading-up: the blocker doc says NOT IMPLEMENTED, on purpose',
+    /NOT IMPLEMENTED, on purpose/.test(BLOCKER_FLAT),
+  );
+  check(
+    'heading-up: the no-bearing-API measurement is recorded',
+    BLOCKER.includes('"hasBearing":false') && BLOCKER.includes('"leafletVersion":"1.9.4"'),
+  );
+  check(
+    'heading-up: the CSS-rotation coordinate desync is recorded with numbers',
+    BLOCKER.includes('{"x":200,"y":300}') && BLOCKER.includes('{"x":368,"y":363}'),
+  );
+  check(
+    'heading-up: the inverted-drag measurement is recorded',
+    BLOCKER.includes('"dLat":-0.011882'),
+  );
+  check(
+    'heading-up: icon-only rotation is explicitly NOT claimed as heading-up',
+    /Rotating only the truck icon does not satisfy/.test(BLOCKER_FLAT),
+  );
+  check(
+    'heading-up: the probe behind the numbers is committed and named',
+    BLOCKER.includes('scripts/bench/navigator-rotation-probe.mjs') &&
+      readFileSync('scripts/bench/navigator-rotation-probe.mjs', 'utf8').includes(
+        'latLngToContainerPoint',
+      ),
+  );
+  check(
+    'limits: north-up is a named limitation, with the blocker doc referenced',
+    /north-up, not heading-up/.test(LIMITS_FLAT) &&
+      LIMITS_FLAT.includes('navigator-heading-up-blocker.md'),
+  );
+  check(
+    'limits: heading-up is owner decision 6 — plugin vs MapLibre, not decided here',
+    /leaflet-rotate/.test(LIMITS_FLAT) && /MapLibre GL migration/.test(LIMITS_FLAT),
+  );
+}
+
 console.log(`navigator-pilot-docs: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

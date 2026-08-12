@@ -88,6 +88,7 @@ routing while looking like a fix. See the open owner decision below.
 | **Position is never stored** | Not in a database, not in local storage, not in a report. It exists in memory while the screen is open and then it is gone. |
 | **No satellite imagery** | The map is OpenStreetMap street tiles. Satellite needs a licensed provider and a paid tier; the satellite style exists in the code with **no tile URL**, deliberately, rather than pointing at somebody else's imagery. |
 | **No offline maps and no offline routing** | Both need the network. Tiles already loaded stay on screen; new ones do not arrive. |
+| **Navigation is north-up, not heading-up** | Leaflet — the one map renderer — has **no bearing API**, and CSS-rotating its container measurably breaks coordinate math, hit testing and panning (drag up moved the map south in the probe). Rotating only the truck icon is not heading-up and is not claimed to be. The truck marker does point along the direction of travel; the maneuver card, glyphs and voice are the turn-direction authority. Full evidence: `navigator-heading-up-blocker.md`. Fixing it is owner decision 6. |
 
 ## 6. Voice
 
@@ -167,6 +168,7 @@ so the record of who decided it, and when, survives.
 | 3 | **Whether to model weight-per-axle, trailer count and tunnel category.** | Each is real work and each changes what the app claims to enforce. Adding a field to a screen without sending it on the wire would be worse than the gap. |
 | 4 | **Whether to license satellite imagery.** | A paid provider decision. |
 | 5 | **Whether pilot reports should persist.** | Persistence needs a store, a retention policy, and a privacy position. See the observability memo. |
+| 6 | **How to get heading-up navigation: the `leaflet-rotate` plugin, or a MapLibre GL migration.** | Both add or replace a mapping dependency, which the final pilot milestone barred without stopping first. The blocker was measured, not assumed — Leaflet 1.9.4 has no bearing API, and the CSS-transform fake breaks coordinates and inverts panning (`navigator-heading-up-blocker.md`, probe committed at `scripts/bench/navigator-rotation-probe.mjs`). Path B is Path 1 of the map provider decision packet and would also unlock the blueprint's styling goals. |
 
 ---
 

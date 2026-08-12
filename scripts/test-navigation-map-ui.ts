@@ -67,7 +67,12 @@ const T0 = 1_754_000_000_000;
     // floor.
     '1. the map IS the surface: full-bleed background, single wrapper',
     screen.includes("? 'absolute inset-0 z-0 overflow-hidden'") &&
-      screen.includes('<div className={mapWrapCls}>{mapSlot}</div>'),
+      screen.includes('<div className={mapWrapCls}>') &&
+      // The wrapper's ONLY other occupant is the parked destination
+      // search (final pilot milestone), and its caller mounts it only
+      // while parked — live guidance keeps the background to the map
+      // alone.
+      /pilot\.active && !fullScreen && lcState === 'idle'/.test(screen),
   );
   check(
     '1. dvh (not vh) so mobile browser chrome cannot hide the bottom controls',

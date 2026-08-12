@@ -227,7 +227,14 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   check('ui: touch targets stay ≥64 px', (search.match(/min-h-16/g) ?? []).length >= 2);
 
   const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
-  check('controls: destination search is mounted', controls.includes('<DestinationSearch'));
+  // Final pilot milestone: the search box moved to the top of the parked
+  // map (the driving screen). The pick is ONE state, owned there, handed
+  // to the Start tap in the controls — the pins follow the components.
+  const screenSrc = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+  check(
+    'controls: destination search is mounted on the parked map',
+    screenSrc.includes('<DestinationSearch') && !controls.includes('<DestinationSearch'),
+  );
   check(
     'controls: a searched place supplies the plan coordinates',
     controls.includes('picked.position.lat') && controls.includes('picked.position.lng'),
@@ -242,7 +249,8 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   check(
     'controls: coordinate entry survives only as a collapsed developer affordance',
     controls.includes('Developer: enter coordinates instead') &&
-      controls.indexOf('<DestinationSearch') < controls.indexOf('Developer: enter coordinates'),
+      controls.includes('<details') &&
+      controls.indexOf('<details') < controls.indexOf('Developer: enter coordinates'),
   );
   check(
     'controls: a searched place never claims a verified entrance',
@@ -250,7 +258,7 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   );
   check(
     'controls: typing coordinates clears any searched place (one source of truth)',
-    (controls.match(/setPicked\(null\)/g) ?? []).length >= 2,
+    (controls.match(/onPicked\(null\)/g) ?? []).length >= 2,
   );
 }
 
@@ -260,7 +268,9 @@ const AT = { lat: 34.9157, lng: -85.1095 };
 // independent causes, both pinned here.
 {
   const search = readFileSync('src/components/navigator/DestinationSearch.tsx', 'utf8');
-  const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+  // The search's parent is the DRIVING SCREEN now (final pilot milestone
+  // moved the box onto the parked map), so the parent-side pins read it.
+  const screenSrc = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
 
   // CAUSE 1 — the effect depended on the `origin` OBJECT, and the driving
   // screen re-renders every GPS tick (1 Hz) with a fresh literal, so the
@@ -281,12 +291,12 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   );
   check(
     'flash-fix: the parent memoizes the origin object it passes down',
-    controls.includes('const searchOrigin = useMemo(') &&
-      controls.includes('origin={searchOrigin}'),
+    screenSrc.includes('const searchOrigin = useMemo(') &&
+      screenSrc.includes('origin={searchOrigin}'),
   );
   check(
     'flash-fix: the parent no longer builds a fresh origin literal inline',
-    !/origin=\{fix === null \? null : \{ lat: fix\.lat, lng: fix\.lng \}\}/.test(controls),
+    !/origin=\{fix === null \? null : \{ lat: fix\.lat, lng: fix\.lng \}\}/.test(screenSrc),
   );
 
   // CAUSE 2 — selecting a result left the picked title in the query box
@@ -312,7 +322,7 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   );
   check(
     'settle-fix: the parent clears its pick when the driver edits',
-    controls.includes('onClear={() => setPicked(null)}'),
+    screenSrc.includes('onClear={() => setPicked(null)}'),
   );
   // The status line is what visibly flashed; it must be driven by state
   // that can now hold still.

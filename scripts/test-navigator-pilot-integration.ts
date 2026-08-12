@@ -176,6 +176,11 @@ function renderControls(
       build: BUILD,
       firstName,
       onFirstName: () => {},
+      // The pick is OWNED by the driving screen now (final pilot
+      // milestone: the search box sits on the parked map); these static
+      // renders exercise the post-pick states, where no pick is needed.
+      picked: null,
+      onPicked: () => {},
       onChanged: () => {},
     }),
   );

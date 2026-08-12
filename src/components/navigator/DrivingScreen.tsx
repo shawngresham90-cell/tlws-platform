@@ -16,10 +16,9 @@ import {
   type PilotLog,
   type PilotMode,
 } from '@/lib/navigator/pilot-mode';
-import { formatDriverDistanceMi, formatTruckHeightFtIn } from '@/lib/navigator/format-units';
+import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
 import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
 import { statusSeverity, severityGlyph } from '@/lib/navigator/status-severity';
-import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import {
   createManeuverAnnouncer,
   createStatusAnnouncer,
@@ -57,6 +56,8 @@ import { useGps } from './GpsProvider';
 import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
+import { DestinationSearch } from './DestinationSearch';
+import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
 import { VoiceControls } from './VoiceControls';
 
@@ -88,53 +89,6 @@ const buildId = resolveBuildId({
   context: process.env.NEXT_PUBLIC_BUILD_CONTEXT,
   builtAtIso: process.env.NEXT_PUBLIC_BUILD_TIME,
 });
-
-/**
- * The truck chip (blueprint §5): the profile the route was actually planned
- * with, pinned over the map — always visible = always trusted. It shows the
- * REAL planning input (`DEFAULT_TRUCK_PROFILE`, the same object the plan
- * request sends) and says it is the pilot default, because implying a
- * custom truck would be a lie. Display-only: no tap target, no pointer
- * events, so it can never intercept a map gesture. Exported for the design
- * harness.
- *
- * `docked` (full-screen map): the chip rides the overlay column as an
- * ordinary flow item instead of pinning itself absolutely — the map now
- * owns the whole viewport, so a top-right absolute pin would sit under
- * the full-width maneuver card. Same content, same non-interactivity;
- * only the anchoring moves. This is the one truck-profile element the
- * full-screen item repositions, not a redesign of it.
- */
-export function TruckChip({ docked = false }: { docked?: boolean }) {
-  return (
-    <div
-      aria-label="Truck profile used for this route"
-      className={`pointer-events-none rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-right shadow-lg${
-        docked ? '' : ' absolute right-3 top-3 z-[1000]'
-      }`}
-    >
-      <div className="font-data num-data text-[length:var(--size-street)] font-bold leading-tight text-ink">
-        {formatTruckHeightFtIn(DEFAULT_TRUCK_PROFILE.heightFt)} ·{' '}
-        {DEFAULT_TRUCK_PROFILE.grossWeightLbs.toLocaleString('en-US')} lb ·{' '}
-        {DEFAULT_TRUCK_PROFILE.axles} axles
-      </div>
-      {/* Hazmat is a routing input the request genuinely carries, so it is
-          stated either way — "none" is information, not an omission. The
-          trailer count is NOT modelled anywhere in this app (see
-          truck-profile-coverage), and the compact summary says so rather
-          than leaving a driver to assume doubles were considered. */}
-      <div className="text-[length:var(--size-label)] leading-tight text-ink/70">
-        {DEFAULT_TRUCK_PROFILE.hazmatClass === null
-          ? 'No hazmat'
-          : `Hazmat ${DEFAULT_TRUCK_PROFILE.hazmatClass}`}{' '}
-        · trailers not set
-      </div>
-      <div className="text-[length:var(--size-label)] leading-tight text-ink/70">
-        Pilot default profile
-      </div>
-    </div>
-  );
-}
 
 /**
  * States where guidance is genuinely live, and the screen becomes the
@@ -181,6 +135,7 @@ export function DrivingScreenView({
   showIdleStartControl = true,
   hosRestoredClocks = null,
   onHosClocks,
+  mapSearchSlot = null,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -235,6 +190,13 @@ export function DrivingScreenView({
   hosRestoredClocks?: ClockState | null;
   /** Reports the live clocks so the owner can persist them. */
   onHosClocks?: (clocks: ClockState) => void;
+  /**
+   * Destination search, mounted OVER the parked map (final pilot
+   * milestone). Null while guidance is live — a driver in motion gets no
+   * text field, and the shared lock, not this component, is what decides
+   * that (the caller wraps this slot in the edit-destination LockGate).
+   */
+  mapSearchSlot?: ReactNode;
 }) {
   // Warning-rail severity, read from the existing status — presentation
   // only, computed nowhere else so the rail can never disagree with the
@@ -564,24 +526,44 @@ export function DrivingScreenView({
             component that must survive the layout switch untouched. In
             full-screen it is the z-0 BACKGROUND filling the whole
             surface; parked it stays the bordered page box. */}
-        <div className={mapWrapCls}>{mapSlot}</div>
+        <div className={mapWrapCls}>
+          {mapSlot}
+          {/* PARKED SEARCH, over the top of the map. The driver is
+              looking at the map, so "where are you going?" belongs
+              there — and putting it over the map instead of above it is
+              what keeps the parked page from growing back into the tall
+              stack the round-3 startup work removed. z-[500] clears
+              Leaflet's own panes (400) and sits under its controls
+              (1000); the wrapper is pointer-events-none so the map keeps
+              every pixel the control itself does not occupy, and the
+              inner scroll (max-h-full + overflow-y-auto) is what keeps a
+              long result list REACHABLE inside the map box instead of
+              clipped by its overflow-hidden — including with the phone
+              keyboard up, when the page can still scroll but this box
+              cannot grow. */}
+          {mapSearchSlot === null ? null : mapSlot !== null ? (
+            <div className="pointer-events-none absolute inset-0 z-[500] flex flex-col p-2">
+              <div className="pointer-events-auto min-h-0 max-h-full overflow-y-auto">
+                {mapSearchSlot}
+              </div>
+            </div>
+          ) : (
+            /* Cold start: permission not granted yet, so no map is
+               mounted — there is honestly nothing to overlay. The SAME
+               control renders in normal flow, in the exact spot the map
+               will occupy, so the search does not jump when the map
+               appears (auto-resume, or the first Start). */
+            mapSearchSlot
+          )}
+        </div>
 
-        {/* The truck chip, docked into the overlay column while the map
-            owns the screen (see TruckChip). self-end keeps it on the
-            right edge, out of the maneuver card's shadow and clear of
-            the map's own side controls. The conditional always renders a
-            child slot (null when parked), so sibling INDEXES never shift
-            and the map above cannot be remounted by the mode switch. */}
-        {/* On a short viewport the chip is the overlay the followed truck
-            would collide with (same threshold family as the maneuver
-            card's own short-screen drops): the profile stays one scroll
-            away on the parked page, and the plan request it mirrors is
-            unchanged. */}
-        {fullScreen ? (
-          <div className="relative z-10 self-end [@media(max-height:620px)]:hidden">
-            <TruckChip docked />
-          </div>
-        ) : null}
+        {/* NO TRUCK-PROFILE OVERLAY HERE, deliberately (final pilot
+            milestone). The chip repeated numbers the driver had already
+            checked on the parked screen — height, weight, axles, hazmat,
+            trailers — and repeating them mid-drive bought nothing except
+            map. The profile is verified once, before Start, on the
+            parked panel; the request that carries it is unchanged. The
+            space it occupied goes to the map, not to a replacement box. */}
 
         {/* Status as TEXT — never color alone; live region for changes.
             Phase 2 warning rail: the SAME line, dressed by severity. While
@@ -922,6 +904,43 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * path from this state to anything that leaves the device.
    */
   const [firstName, setFirstName] = useState<string | null>(null);
+
+  /*
+   * The chosen destination (final pilot milestone). The search box lives
+   * at the top of the parked map — this screen — while the Start tap that
+   * consumes the pick lives in PilotTripControls. ONE state, owned here,
+   * handed down to both: two components that each kept their own copy
+   * could disagree about where the truck is going, and the route planned
+   * would be the one the driver was not looking at.
+   */
+  const [picked, setPicked] = useState<DestinationCandidate | null>(null);
+  /*
+   * Whether a Start attempt is running right now, reported upward by
+   * PilotTripControls. The search must refuse edits while an attempt is
+   * live (the frozen tap-time destination is the guarantee; the disable
+   * is the honest signal), and the attempt's 'locating' phase is
+   * invisible to the lifecycle — its state is still 'idle' — so the
+   * controls say so themselves.
+   */
+  const [startPending, setStartPending] = useState(false);
+
+  /*
+   * The search-bias origin: a stable object, or null before the first
+   * fix. This screen re-renders on every GPS tick (1 Hz), and a fresh
+   * literal each render restarted the search effect — the round-2
+   * flashing. Identity changes only when the truck moves ~110 m. Null is
+   * honest and expected: the parked search runs BEFORE location exists
+   * (permission arrives with the Start tap), and the server's unbiased
+   * mode answers with no distances rather than distances from a fake
+   * center.
+   */
+  const fixLat = position.fix?.lat ?? null;
+  const fixLng = position.fix?.lng ?? null;
+  const searchOrigin = useMemo(
+    () => (fixLat === null || fixLng === null ? null : { lat: fixLat, lng: fixLng }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fixLat === null ? null : fixLat.toFixed(3), fixLng === null ? null : fixLng.toFixed(3)],
+  );
 
   /*
    * Whether the driver has voice ON, mirrored from VoiceControls.
@@ -1588,6 +1607,33 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       onHosClocks={(c) => {
         hosClocksRef.current = c;
       }}
+      /*
+       * The parked destination search, mounted at the top of the map
+       * (final pilot milestone). Only while the lifecycle is idle: the
+       * moment an attempt leaves 'idle' (planning, the briefing, live
+       * guidance) the box is gone, exactly like the old in-controls
+       * search that only rendered on the idle branch. Behind the SAME
+       * edit-destination gate as the controls below — the shared
+       * permission map, not this component, decides that a moving truck
+       * (or unknown motion after the setup window latches — doc 06 §1a)
+       * gets no text field. Typing requests nothing: location permission
+       * stays tied to the Start tap, and a search with no fix runs in
+       * the server's honest unbiased mode.
+       */
+      mapSearchSlot={
+        pilot.active && !fullScreen && lcState === 'idle' ? (
+          <LockGate action="edit-destination" lockedLabel="Destination search" compact>
+            <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
+              <DestinationSearch
+                origin={searchOrigin}
+                disabled={startPending}
+                onPick={setPicked}
+                onClear={() => setPicked(null)}
+              />
+            </div>
+          </LockGate>
+        ) : null
+      }
       destinationSlot={
         pilot.active ? (
           <PilotTripControls
@@ -1598,6 +1644,9 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             build={buildId}
             firstName={firstName}
             onFirstName={setFirstName}
+            picked={picked}
+            onPicked={setPicked}
+            onAttemptActive={setStartPending}
             onChanged={bump}
           />
         ) : null

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { NavigationLifecycle } from '@/lib/navigator/navigation-lifecycle';
 import type { PilotLog } from '@/lib/navigator/pilot-mode';
 import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
@@ -26,7 +26,6 @@ import {
   PLANNING_ROUTE_TEXT,
   STARTING_NAVIGATION_TEXT,
 } from '@/lib/navigator/trip-start';
-import { DestinationSearch } from './DestinationSearch';
 import { TruckProfilePanel } from './TruckProfilePanel';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
@@ -97,6 +96,9 @@ export function PilotTripControls({
   build = null,
   firstName = null,
   onFirstName,
+  picked,
+  onPicked,
+  onAttemptActive,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -134,6 +136,24 @@ export function PilotTripControls({
    * does not mount.
    */
   onFirstName?: (firstName: string) => void;
+  /**
+   * The chosen destination, OWNED BY THE DRIVING SCREEN (final pilot
+   * milestone). The search box moved onto the parked map, so the pick
+   * and the Start attempt that consumes it now live in two different
+   * components — one state, lifted, rather than two that can disagree
+   * about where the driver is going.
+   */
+  picked: DestinationCandidate | null;
+  onPicked: (place: DestinationCandidate | null) => void;
+  /**
+   * Reports whether a Start attempt is live. The lifted search box must
+   * refuse edits while one runs — the tap-time freeze is the guarantee,
+   * the disable is the honest signal — and the attempt's 'locating'
+   * phase is invisible from outside (lifecycle state is still 'idle'),
+   * so this component says so itself. Optional: static test renders
+   * that never start a trip simply omit it.
+   */
+  onAttemptActive?: (active: boolean) => void;
   onChanged: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
@@ -143,7 +163,6 @@ export function PilotTripControls({
   const [destLat, setDestLat] = useState('');
   const [destLng, setDestLng] = useState('');
   const [facility, setFacility] = useState<DestinationFacility>('warehouse');
-  const [picked, setPicked] = useState<DestinationCandidate | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   /*
@@ -170,19 +189,6 @@ export function PilotTripControls({
   const state = lifecycle.state();
   const summary = lifecycle.summary();
   const { position, watching, acquiring } = gps;
-  const fix = position.fix;
-
-  // A stable object for the search: this component re-renders on every GPS
-  // tick, and a fresh literal here made the search effect restart (and
-  // re-issue a request) once per second. Identity changes only when the
-  // truck actually moves ~110 m.
-  const lat = fix?.lat ?? null;
-  const lng = fix?.lng ?? null;
-  const searchOrigin = useMemo(
-    () => (lat === null || lng === null ? null : { lat, lng }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lat === null ? null : lat.toFixed(3), lng === null ? null : lng.toFixed(3)],
-  );
 
   /** The chosen destination: a searched place wins; the developer
    *  coordinate box is the fallback. Null = nothing valid chosen. */
@@ -387,6 +393,28 @@ export function PilotTripControls({
   }, [phase, lifecycle]);
 
   const attemptActive = phase !== 'idle';
+
+  /*
+   * Mirror the attempt's liveness upward for the lifted search box (it
+   * sits on the map, in the driving screen, and must disable while an
+   * attempt runs). An effect, not a render-time call: setting parent
+   * state during a child render is the exact interleaving React forbids.
+   */
+  useEffect(() => {
+    onAttemptActive?.(attemptActive);
+  }, [attemptActive, onAttemptActive]);
+
+  /*
+   * A fresh pick retires any failure line. The pick now happens in a
+   * different component, so the note cannot be cleared in the pick
+   * handler the way it was when the search lived here — the prop edge
+   * carries the same meaning: the driver answered the failure by
+   * choosing again.
+   */
+  useEffect(() => {
+    if (picked !== null) setNote(null);
+  }, [picked]);
+
   const progressText =
     phase === 'locating'
       ? GETTING_LOCATION_TEXT
@@ -410,22 +438,21 @@ export function PilotTripControls({
 
       {state === 'idle' ? (
         <div className="space-y-3">
-          <DestinationSearch
-            origin={searchOrigin}
-            disabled={attemptActive}
-            onPick={(place) => {
-              setPicked(place);
-              setNote(null);
-            }}
-            onClear={() => setPicked(null)}
-          />
-
+          {/* The search box itself now lives at the TOP OF THE PARKED MAP
+              (final pilot milestone) — the driver looks at the map, so
+              that is where "where are you going?" belongs. This surface
+              keeps the CONFIRMATION line, because the destination a tap
+              is about to commit to must be readable right beside Start. */}
           {picked !== null ? (
             <p className="text-xl text-ink">
               Destination: <span className="font-semibold">{picked.title}</span>
               {picked.address ? <span className="text-ink/70"> — {picked.address}</span> : null}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-lg text-ink/70">
+              Search for a destination on the map above, then tap Start.
+            </p>
+          )}
 
           {/* THE Start control — the whole simplified flow in one tap:
               just-in-time location permission, wait for a real fix, one
@@ -458,7 +485,7 @@ export function PilotTripControls({
                   value={destLat}
                   onChange={(e) => {
                     setDestLat(e.target.value);
-                    setPicked(null);
+                    onPicked(null);
                   }}
                   aria-label="Destination latitude"
                 />
@@ -471,7 +498,7 @@ export function PilotTripControls({
                   value={destLng}
                   onChange={(e) => {
                     setDestLng(e.target.value);
-                    setPicked(null);
+                    onPicked(null);
                   }}
                   aria-label="Destination longitude"
                 />

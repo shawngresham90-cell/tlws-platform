@@ -182,9 +182,11 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
 /* ==================== 5. selection feeds the same planning path ========== */
 {
   check(
-    'path: the trip controls still mount THIS search',
-    CONTROLS_SRC.includes('<DestinationSearch') &&
-      CONTROLS_SRC.includes('onClear={() => setPicked(null)}'),
+    // Final pilot milestone: the search box lives on the parked map (the
+    // driving screen); the pick it produces still feeds the controls.
+    'path: the parked map mounts THIS search',
+    SCREEN_SRC.includes('<DestinationSearch') &&
+      SCREEN_SRC.includes('onClear={() => setPicked(null)}'),
   );
   check(
     'path: the picked candidate plans through the same fields',
