@@ -19,6 +19,19 @@
  * MOVING, granted for 15 minutes, revoked by a stop/start cycle, never
  * persisted (this module cannot persist anything — it has no I/O). The
  * override log carries NO position, NO identity, NO speed.
+ *
+ * THE SETUP WINDOW (pilot round 3, startup simplification — doc 06 §1a):
+ * `setupWindow` is true while motion has been UNKNOWN continuously since
+ * this lock was created — the cold start, before any watch has produced
+ * a single MOVING or STATIONARY determination. In that window the app has
+ * ZERO motion evidence either way, and the owner's decision for the pilot
+ * is that a parked driver must be able to choose a destination and tap
+ * Start BEFORE granting location. The window latches shut forever the
+ * moment motion is first determined: after that, UNKNOWN goes back to
+ * being treated as MOVING, because once motion has been seen, absence of
+ * evidence is not evidence of stopping. What the window may unlock is not
+ * decided here — that stays in the shared ACTION_PERMISSIONS authority
+ * (actions.ts), which grants it to the trip-setup surface only.
  */
 
 import type { PositionState } from './types';
@@ -50,6 +63,14 @@ export type SafetyLockState = {
   overrideRemainingMs: number;
   /** True when the interface is usable despite motion (active override). */
   overrideActive: boolean;
+  /**
+   * True while motion has been UNKNOWN since this lock was created (the
+   * cold start — no watch determination has ever been made). Latches
+   * false forever on the first MOVING or STATIONARY determination. Only
+   * actions the shared map explicitly marks setup-window-permitted may
+   * read anything into it.
+   */
+  setupWindow: boolean;
 };
 
 export type SafetyLock = {
@@ -75,6 +96,12 @@ export function createSafetyLock(sessionId: string): SafetyLock {
   // Stop/start revocation: one full MOVING → STATIONARY → MOVING cycle
   // clears the grant, so track whether we stopped while an override ran.
   let stoppedDuringOverride = false;
+  // The setup window (doc 06 §1a): open until the FIRST motion
+  // determination, then shut for the life of this lock. Deliberately
+  // never re-opened — not on watch stop, not on position reset — because
+  // "the app stopped getting fixes" must never hand typing back to a
+  // driver who was last seen moving.
+  let everDetermined = false;
   const log: OverrideLogEntry[] = [];
 
   // Same-state calls return the SAME reference (matching the gps-session
@@ -89,13 +116,15 @@ export function createSafetyLock(sessionId: string): SafetyLock {
       locked: motion !== 'STATIONARY' && !overrideActive,
       overrideRemainingMs: overrideActive ? overrideUntilMs - nowMs : 0,
       overrideActive,
+      setupWindow: !everDetermined,
     };
     if (
       lastState &&
       lastState.motion === next.motion &&
       lastState.locked === next.locked &&
       lastState.overrideRemainingMs === next.overrideRemainingMs &&
-      lastState.overrideActive === next.overrideActive
+      lastState.overrideActive === next.overrideActive &&
+      lastState.setupWindow === next.setupWindow
     ) {
       return lastState;
     }
@@ -126,6 +155,7 @@ export function createSafetyLock(sessionId: string): SafetyLock {
       if (aboveSinceMs === null) aboveSinceMs = nowMs;
       if (motion !== 'MOVING' && nowMs - aboveSinceMs >= MOVING_DWELL_MS) {
         motion = 'MOVING';
+        everDetermined = true;
         if (stoppedDuringOverride && overrideUntilMs > nowMs) {
           // MOVING → STATIONARY → MOVING: the grant is revoked immediately.
           overrideUntilMs = 0;
@@ -137,6 +167,7 @@ export function createSafetyLock(sessionId: string): SafetyLock {
       if (belowSinceMs === null) belowSinceMs = nowMs;
       if (motion !== 'STATIONARY' && nowMs - belowSinceMs >= STATIONARY_DWELL_MS) {
         motion = 'STATIONARY';
+        everDetermined = true;
         if (overrideUntilMs > nowMs) stoppedDuringOverride = true;
       }
     } else {

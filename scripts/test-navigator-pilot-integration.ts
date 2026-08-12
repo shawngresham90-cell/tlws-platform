@@ -154,7 +154,23 @@ function renderControls(
   return renderToStaticMarkup(
     createElement(PilotTripControls, {
       lifecycle,
-      fix: { lat: LAT0, lng: LNG0, accuracyM: 8, tMs: T0, speedMph: 0, headingDeg: 0 },
+      // The gps bundle the driving screen injects (startup simplification):
+      // a good parked fix, watch already up, nothing acquiring.
+      gps: {
+        position: {
+          fix: { lat: LAT0, lng: LNG0, accuracyM: 8, tMs: T0, speedMph: 0, headingDeg: 0 },
+          health: 'good' as const,
+          lastFixMs: T0,
+          accuracyM: 8,
+          speedMph: 0,
+          headingDeg: 0,
+          deadReckoning: false,
+        },
+        watching: true,
+        acquiring: false,
+        start: () => {},
+        stop: () => {},
+      },
       debugLog: null,
       buildReport: () => 'REPORT',
       build: BUILD,

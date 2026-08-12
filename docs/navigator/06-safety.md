@@ -37,8 +37,40 @@ truck rolling at 4 mph in a queue is still in traffic.
 
 `UNKNOWN` arises from: no GPS permission · no fix yet · fix older than 10 s ·
 accuracy > 50 m · speed unavailable and underivable. **All are treated as
-MOVING.** A driver who denies location permission gets the locked interface, not
-the unlocked one.
+MOVING**, with exactly one carve-out — the cold-start setup window below.
+
+### 1a. The cold-start SETUP WINDOW (pilot round 3 — startup simplification)
+
+The simplified startup is **destination → Start**: location permission is
+requested BY the Start tap, after the destination is chosen. Before that tap
+there is no GPS at all, so motion is `UNKNOWN` — and under the plain rule
+above, the destination surface would be locked behind an enable-location step
+plus a 30-second stationary dwell. That was the old flow, and the pilot
+driver reported it as too many steps.
+
+So the lock carries one narrow, owner-decided exemption:
+
+- `setupWindow` is **true while motion has been `UNKNOWN` continuously since
+  the lock was created** — the cold start, when the app has zero motion
+  evidence either way (the state every parked phone app starts in).
+- While it is open, the shared permission map may admit actions explicitly
+  marked setup-window-permitted. That list is **one action wide**:
+  `edit-destination`, the trip-setup surface (destination search, the Start
+  tap, and the optional name field that lives on it). A harness pins the
+  list's size.
+- The window **latches shut on the FIRST `MOVING` or `STATIONARY`
+  determination and never re-opens** — not on watch stop, not on position
+  reset. Once motion has been seen, absence of evidence is not evidence of
+  stopping, and `UNKNOWN` goes back to being treated as `MOVING` for the
+  rest of the session.
+
+What this deliberately accepts: a driver already rolling with the page
+freshly open can type until the watch's first 10 seconds of speed evidence
+determine `MOVING`. What it deliberately refuses: any unlock after motion
+has ever been determined — a truck that loses GPS at 60 mph stays locked.
+A driver who denies location permission keeps the setup surface (they must
+be able to read the denial recovery and retry) but nothing else unlocks,
+and navigation cannot run without a fix.
 
 ### Capability matrix
 

@@ -173,14 +173,27 @@ const AT = { lat: 34.9157, lng: -85.1095 };
     'endpoint: query length bounded both ways',
     src.includes('MIN_SEARCH_LENGTH') && src.includes('MAX_SEARCH_LENGTH'),
   );
+  /*
+   * Startup simplification: the origin is OPTIONAL (search runs before
+   * location exists in the simplified flow), so 'origin-required' is
+   * gone — but a PRESENT origin is still validated before any provider
+   * call ('origin-invalid'), and the unbiased mode must carry both of
+   * its honesty rails: the documented CONUS center as the spatial
+   * context, and distances stripped so a from-Kansas number never reads
+   * as a from-the-truck one.
+   */
   check(
-    'endpoint: origin coordinate validated before any provider call',
-    src.includes('origin-required'),
+    'endpoint: a present origin coordinate is validated before any provider call',
+    src.includes('origin-invalid'),
+  );
+  check(
+    'endpoint: the unbiased mode strips straight-line distances',
+    src.includes('stripDistances') && /at === null \? stripDistances\(places\) : places/.test(src),
   );
   check(
     'endpoint: limiter and validation precede the provider fetch',
     src.indexOf('searchLimiter.allow') < src.indexOf('await fetch(') &&
-      src.indexOf('origin-required') < src.indexOf('await fetch('),
+      src.indexOf('origin-invalid') < src.indexOf('await fetch('),
   );
   check('endpoint: provider timeout bounded', src.includes('AbortSignal.timeout('));
   check(
@@ -219,9 +232,12 @@ const AT = { lat: 34.9157, lng: -85.1095 };
     'controls: a searched place supplies the plan coordinates',
     controls.includes('picked.position.lat') && controls.includes('picked.position.lng'),
   );
+  // The one-tap Start resolves the destination once (resolveDestination)
+  // and the frozen result's facility travels into the plan's arrival
+  // context — same guarantee, new plumbing.
   check(
     'controls: the searched facility class reaches arrival handling',
-    controls.includes('picked.facility') && controls.includes('facility: chosenFacility'),
+    controls.includes('picked.facility') && controls.includes('facility: dest.facility'),
   );
   check(
     'controls: coordinate entry survives only as a collapsed developer affordance',

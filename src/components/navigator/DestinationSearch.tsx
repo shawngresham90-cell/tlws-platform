@@ -131,16 +131,19 @@ export function DestinationSearch({
   useEffect(() => {
     if (settled) return;
     const q = query.trim();
-    if (q.length < MIN_SEARCH_LENGTH || originKey === null) {
+    if (q.length < MIN_SEARCH_LENGTH) {
       setResults([]);
       setSearching(false);
       return;
     }
     setSearching(true);
     const timer = setTimeout(() => {
+      // The origin is read at fire time and MAY be null: the simplified
+      // startup searches before location exists (permission arrives with
+      // the Start tap), and the server's unbiased mode answers then.
       const at = originRef.current;
       const coord = coordRef.current;
-      if (at === null || coord === null) {
+      if (coord === null) {
         setSearching(false);
         return;
       }
@@ -205,9 +208,13 @@ export function DestinationSearch({
         />
       </label>
 
+      {/* Honest bias note: with no position yet, results are real places
+          but are NOT sorted by distance from the truck, and no "mi away"
+          line renders (the server strips distances in unbiased mode). */}
       {origin === null ? (
         <p className="text-lg text-ink/70">
-          Waiting for a GPS fix — search finds places near your truck.
+          Location hasn&apos;t started yet — include the city or state. Results aren&apos;t sorted
+          by distance until it does.
         </p>
       ) : null}
 

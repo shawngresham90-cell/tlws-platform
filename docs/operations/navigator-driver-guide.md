@@ -48,14 +48,21 @@ be your only source during the pilot.
 
 - [ ] **Enter the pilot password.** I will send it to you directly. Do not
       forward it.
-- [ ] **Enter your first name** when it asks. It is only used to talk to you,
-      it is never stored, and a page reload loses it. That is on purpose.
-- [ ] **Turn voice on while you are stopped.** Phones will not let an app
-      speak until you have tapped something. If you skip this, Navigator will
-      be silent all trip and you will not know why.
 - [ ] **Set your destination and check it.** Read the address that comes back
       and make sure it is the place you actually mean — not a similarly-named
       one two towns over.
+- [ ] **Tap Start.** That one tap does the rest: the browser asks for
+      location if it needs to, Navigator waits for a real GPS fix, plans one
+      validated truck route, and starts guiding. If the route needs a second
+      look — a warning, or something unusual about its shape — it shows you
+      the briefing first and waits for you.
+- [ ] **Turn voice on while you are stopped** (optional, recommended).
+      Phones will not let an app speak until you have tapped something. If
+      you skip this, Navigator will be silent all trip and you will not know
+      why.
+- [ ] **Your first name is optional.** It is only used to talk to you, it is
+      never stored, a reload loses it, and leaving it blank changes nothing
+      about navigation.
 - [ ] **Look at the truck panel.** Check the height, width, length, weight and
       axle count it is using are yours.
 - [ ] **Write down the build number** shown on screen. It is a short code like

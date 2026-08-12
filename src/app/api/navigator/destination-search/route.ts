@@ -6,6 +6,7 @@ import { requestHasPilotAccess } from '@/lib/navigator-api/pilot-access';
 import {
   buildDiscoverUrl,
   parseDiscoverResponse,
+  stripDistances,
   MIN_SEARCH_LENGTH,
   MAX_SEARCH_LENGTH,
 } from '@/lib/navigator-api/destination-search';
@@ -69,21 +70,44 @@ export async function GET(req: NextRequest) {
   if (q.length > MAX_SEARCH_LENGTH) {
     return errorJson(422, 'query-too-long', 'Search text is too long.');
   }
-  const lat = Number(params.get('lat'));
-  const lng = Number(params.get('lng'));
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    return errorJson(422, 'origin-required', 'A current position is required to search nearby.');
+  /*
+   * The origin is OPTIONAL (startup simplification): the simplified flow
+   * searches before location exists, because permission is requested by
+   * the Start tap after the destination is chosen. Omitting BOTH params
+   * selects the unbiased mode — the documented CONUS center stands in as
+   * the spatial context (same parameter shape as every biased search)
+   * and the straight-line distances are stripped, because a distance
+   * from the unbiased center is not a distance from the truck. A
+   * MALFORMED origin is still refused: half an origin is a bug, not a
+   * request for the unbiased mode.
+   */
+  const rawLat = params.get('lat');
+  const rawLng = params.get('lng');
+  let at: { lat: number; lng: number } | null = null;
+  if (rawLat !== null || rawLng !== null) {
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      Math.abs(lat) > 90 ||
+      Math.abs(lng) > 180
+    ) {
+      return errorJson(422, 'origin-invalid', 'The search origin is not a real coordinate.');
+    }
+    at = { lat, lng };
   }
 
   try {
-    const res = await fetch(buildDiscoverUrl(q, { lat, lng }, apiKey), {
+    const res = await fetch(buildDiscoverUrl(q, at, apiKey), {
       signal: AbortSignal.timeout(5000),
     });
     if (res.status !== 200) {
       // Honest, sanitized: the status only, never the body or the URL.
       return errorJson(502, `provider-http:${res.status}`, 'The search provider refused.');
     }
-    return NextResponse.json({ ok: true, places: parseDiscoverResponse(await res.json()) });
+    const places = parseDiscoverResponse(await res.json());
+    return NextResponse.json({ ok: true, places: at === null ? stripDistances(places) : places });
   } catch {
     return errorJson(504, 'provider-timeout', 'The search provider did not answer in time.');
   }

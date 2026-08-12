@@ -79,22 +79,52 @@ export function classifyFacility(
 }
 
 /**
+ * Where an UNBIASED search centers (startup simplification): the
+ * simplified flow lets a driver search BEFORE location exists — location
+ * permission is requested by the Start tap, after the destination is
+ * chosen — so there may honestly be no position to bias around. HERE's
+ * discover endpoint requires a spatial context, and this app already
+ * sends `at` + `in=countryCode:USA` on every search; an unbiased search
+ * keeps the exact same parameter shape and centers `at` on the
+ * geographic center of the contiguous United States (near Lebanon,
+ * Kansas — a documented constant, not a guessed driver position). Two
+ * honesty rails ride with it: the response's straight-line distances are
+ * STRIPPED (a distance from Kansas is not a distance from the truck),
+ * and the search UI tells the driver results are not sorted by distance
+ * until location starts.
+ */
+export const UNBIASED_SEARCH_CENTER: LatLng = { lat: 39.8283, lng: -98.5795 };
+
+/**
  * Build the discover URL. `at` biases results to the truck's position —
  * a driver searching "Pilot" means the one down the road, not in Ohio.
+ * With no position yet (null), the unbiased center stands in and the
+ * caller must strip distances from the parsed response.
  */
 export function buildDiscoverUrl(
   query: string,
-  at: LatLng,
+  at: LatLng | null,
   apiKey: string,
   limit = MAX_SEARCH_RESULTS,
 ): string {
+  const center = at ?? UNBIASED_SEARCH_CENTER;
   const p = new URLSearchParams();
   p.set('q', query);
-  p.set('at', `${at.lat.toFixed(6)},${at.lng.toFixed(6)}`);
+  p.set('at', `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`);
   p.set('in', 'countryCode:USA');
   p.set('limit', String(Math.min(Math.max(limit, 1), 20)));
   p.set('apiKey', apiKey);
   return `${DISCOVER_BASE}?${p.toString()}`;
+}
+
+/**
+ * The unbiased-search honesty rail: HERE computes `distance` relative to
+ * whatever `at` was sent, so when `at` was the unbiased center those
+ * numbers describe Kansas, not the truck. They must never reach the
+ * driver's list.
+ */
+export function stripDistances(places: DestinationCandidate[]): DestinationCandidate[] {
+  return places.map((p) => (p.distanceMi === null ? p : { ...p, distanceMi: null }));
 }
 
 type HereDiscoverItem = {

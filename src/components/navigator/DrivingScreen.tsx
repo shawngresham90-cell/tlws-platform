@@ -156,6 +156,7 @@ export function DrivingScreenView({
   offlineText = null,
   offRouteText = null,
   onVoiceMutedChange,
+  showIdleStartControl = true,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -196,6 +197,16 @@ export function DrivingScreenView({
   offRouteText?: string | null;
   /** Driver turned voice on or off — see VoiceControls.onMutedChange. */
   onVoiceMutedChange?: (muted: boolean) => void;
+  /**
+   * Whether the idle (not-watching) slot of the bottom row offers the
+   * standalone "Enable location" control. The pilot's parked page hides
+   * it while the cold-start setup window is open — there the one-tap
+   * Start owns location — but it MUST return whenever the setup window
+   * has closed with the watch off (the way back after Stop), and it is
+   * always offered on the driving surface, where trip restore relies on
+   * it when the Permissions API cannot promise 'granted' (PR #302).
+   */
+  showIdleStartControl?: boolean;
 }) {
   // Warning-rail severity, read from the existing status — presentation
   // only, computed nowhere else so the rail can never disagree with the
@@ -585,7 +596,7 @@ export function DrivingScreenView({
               >
                 {fullScreen ? 'Stop' : 'Stop navigation'}
               </button>
-            ) : (
+            ) : showIdleStartControl ? (
               <button
                 type="button"
                 onClick={onStart}
@@ -594,7 +605,7 @@ export function DrivingScreenView({
               >
                 Enable location
               </button>
-            )}
+            ) : null}
           </LockGate>
         </div>
       </div>
@@ -623,10 +634,10 @@ export function DrivingScreenView({
 }
 
 export function DrivingScreen({ authorized = false }: { authorized?: boolean } = {}) {
-  const { position, watching, start, stop } = useGps();
+  const { position, watching, acquiring, start, stop } = useGps();
   // Motion policy comes from the ONE shared map (doc 06 §1); the map
   // component never decides for itself whether browsing is permitted.
-  const { permits } = useSafetyLock();
+  const { lock, permits } = useSafetyLock();
 
   /*
    * Pilot Mode. `authorized` is the SERVER's verdict on the pilot cookie,
@@ -710,9 +721,36 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   // nothing is ever spoken on page load; the driver enables it through
   // VoiceControls. Announcers live in refs so StrictMode double-effects
   // hit the same announce-once state and stay silent.
+  //
+  // The port is wrapped so FINISHING an utterance is a React event
+  // (`speechTick`, a dependency of the voice effect below). Passive
+  // phrases (the greeting, the route-start line) are retried by the
+  // voice effect, and that effect's only cadences used to be position
+  // updates and lifecycle changes — which exist once a watch is running.
+  // The simplified startup made "voice on, name set, no watch yet" an
+  // ordinary parked state, and there the effect simply never ran again
+  // after the enable-confirmation claimed the speaker: the greeting
+  // starved, and the route-start line then lost its single route-ready
+  // render to the still-unspoken greeting. Speech completion IS the
+  // event a passive retry is waiting for, so it re-runs the effect —
+  // event-driven, no polling, and the voice module's arbitration,
+  // ledger, priorities and watchdog are untouched.
+  const [speechTick, setSpeechTick] = useState(0);
   const voiceRef = useRef<VoiceGuidance | null>(null);
   if (voiceRef.current === null) {
-    voiceRef.current = createVoiceGuidance(createBrowserSpeechPort(), { startMuted: true });
+    const speechPort = createBrowserSpeechPort();
+    voiceRef.current = createVoiceGuidance(
+      {
+        supported: speechPort.supported,
+        speak: (text, onDone) =>
+          speechPort.speak(text, () => {
+            onDone();
+            setSpeechTick((t) => t + 1);
+          }),
+        cancel: () => speechPort.cancel(),
+      },
+      { startMuted: true },
+    );
   }
   // Screen wake (Block 2 / priority I). A phone sleeps its screen in
   // thirty seconds; on the driving surface that means the next maneuver
@@ -968,8 +1006,21 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
      * it had — the same cadence the stuck-utterance watchdog needs, and
      * the retry that lets a greeting land after the enable confirmation
      * finishes. `voiceEnabled` makes turning voice on an event.
+     * `speechTick` makes an utterance FINISHING an event — before it, a
+     * parked page with no watch had no cadence at all, and a passive
+     * phrase dropped for a busy speaker was never retried (startup
+     * simplification: voice now commonly turns on before any watch).
      */
-  }, [view, lcState, position, voiceEnabled, awaitingSafeReroute, lifecycle, firstName]);
+  }, [
+    view,
+    lcState,
+    position,
+    voiceEnabled,
+    awaitingSafeReroute,
+    lifecycle,
+    firstName,
+    speechTick,
+  ]);
 
   /*
    * Network. `navigator.onLine` is optimistic — false is reliable, true
@@ -1141,6 +1192,38 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     // Mount-once by design; the ref above enforces it against re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pilot.active, lifecycle, start]);
+
+  /*
+   * RESUME THE WATCH ON LOAD — under the SAME rail trip restore
+   * established (PR #302): only when the Permissions API POSITIVELY
+   * answers 'granted', so no prompt is ever possible from a load. The
+   * startup simplification extends that rail from "a restored trip" to
+   * the pilot's parked page, because a returning driver's destination
+   * search should be biased around the truck (that is what the origin
+   * exists for) and their Start should not have to wait out a first
+   * fix. 'prompt' and 'denied' do nothing here: the one-tap Start is
+   * the user gesture that may ask. Non-pilot builds never auto-start —
+   * the N5 preview keeps permission strictly behind its own button.
+   */
+  const watchResumeRef = useRef(false);
+  useEffect(() => {
+    if (watchResumeRef.current) return;
+    watchResumeRef.current = true;
+    if (!pilot.active) return;
+    const permissions = typeof navigator === 'undefined' ? undefined : navigator.permissions;
+    if (permissions && typeof permissions.query === 'function') {
+      void permissions
+        .query({ name: 'geolocation' })
+        .then((status) => {
+          if (status.state === 'granted') start();
+        })
+        .catch(() => {
+          /* unsure = no auto-start; Start remains the way in */
+        });
+    }
+    // Mount-once by design; the ref above enforces it against re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pilot.active, start]);
 
   // Unmount = leaving the screen: stale speech dies with the surface and
   // any live trip is cancelled so no engine outlives its owner
@@ -1350,11 +1433,21 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
           ? `Pilot trip state: ${lcState.replace(/-/g, ' ')}`
           : null
       }
+      /*
+       * The parked pilot page hides the standalone Enable-location button
+       * while the cold-start setup window is open: there, the one-tap
+       * Start owns location, and a second location button would be the
+       * old extra step back under a different name. It RETURNS when the
+       * window has closed with the watch off — after Stop, the honest way
+       * to hand the motion lock fresh truth again — and the driving
+       * surface always keeps it (trip restore's fallback, PR #302).
+       */
+      showIdleStartControl={!pilot.active || fullScreen || !lock.setupWindow}
       destinationSlot={
         pilot.active ? (
           <PilotTripControls
             lifecycle={lifecycle}
-            fix={position.fix}
+            gps={{ position, watching, acquiring, start, stop }}
             debugLog={pilot.debugLogging ? logRef.current : null}
             buildReport={buildReport}
             build={buildId}

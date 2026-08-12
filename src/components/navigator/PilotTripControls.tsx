@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { NavigationLifecycle } from '@/lib/navigator/navigation-lifecycle';
 import type { PilotLog } from '@/lib/navigator/pilot-mode';
 import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
-import type { PositionFix } from '@/lib/navigator/types';
+import type { PositionState } from '@/lib/navigator/types';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import type { BuildId } from '@/lib/navigator/build-id';
@@ -16,6 +16,16 @@ import {
 } from '@/lib/navigator/problem-report';
 import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
 import { formatEta } from '@/lib/navigator/driving-hud';
+import {
+  assessStartFix,
+  createStartAttempt,
+  GETTING_LOCATION_TEXT,
+  LOCATION_DENIED_TEXT,
+  LOCATION_UNAVAILABLE_TEXT,
+  NO_DESTINATION_TEXT,
+  PLANNING_ROUTE_TEXT,
+  STARTING_NAVIGATION_TEXT,
+} from '@/lib/navigator/trip-start';
 import { DestinationSearch } from './DestinationSearch';
 import { TruckProfilePanel } from './TruckProfilePanel';
 import { PostTripFeedback } from './PostTripFeedback';
@@ -25,15 +35,42 @@ import { RouteBriefing } from './RouteBriefing';
 
 /**
  * Pilot Mode trip controls (milestone P1) — the destination-entry and
- * trip-control surface that renders INSIDE the stationary-only
- * 'edit-destination' LockGate slot on the driving screen. Renders only
- * when Pilot Mode is active (flag on AND non-production host), so
- * production builds keep the N5 placeholder text.
+ * trip-control surface that renders INSIDE the 'edit-destination'
+ * LockGate slot on the driving screen (stationary or the cold-start
+ * setup window — doc 06 §1a). Renders only when Pilot Mode is active
+ * (flag on AND non-production host), so production builds keep the N5
+ * placeholder text.
  *
- * Pilot round 1: destination entry is now real SEARCH — address,
- * business, truck stop, warehouse, or city — and the driver never sees a
+ * Pilot round 1: destination entry is real SEARCH — address, business,
+ * truck stop, warehouse, or city — and the driver never sees a
  * coordinate. Raw latitude/longitude entry survives only as a collapsed
  * developer affordance for bench testing a specific point.
+ *
+ * Pilot round 3 (startup simplification): the parked flow is destination
+ * → ONE Start tap. That tap is the real user gesture that requests
+ * location permission (gps.start() runs inside the click handler, at the
+ * browser boundary); the attempt then waits for the GPS session to
+ * publish a usable fix, plans EXACTLY ONE validated truck route from it,
+ * and starts navigation the moment a clean route is accepted. A route
+ * that carries warnings or plausibility findings still pauses at the
+ * existing flight briefing — the pause exists precisely when there is
+ * something to read. Name stays optional and only feeds the spoken
+ * greeting; voice stays muted until its own tap. Every failure leaves
+ * the driver parked with one honest line and a working retry:
+ * permission denied, no fix (the platform's own 15 s watch bound is the
+ * only timeout in the flow), a refused plan, a rejected route.
+ *
+ * WHY startNavigation RIDES AN EFFECT, NOT THE PLAN CALLBACK: the
+ * personalized route-start greeting is offered by the driving screen's
+ * voice effect only on a render whose lifecycle state is 'route-ready'
+ * (driver-greeting.ts pins that proof to the transition table). Calling
+ * startNavigation inside the plan promise would skip that render and
+ * silently kill the greeting — the exact mechanism trip restore RELIES
+ * on to keep the greeting out of restores. So a clean plan sets phase
+ * 'starting' and lets the next render commit: this component's effect
+ * (child — runs first) starts navigation, then the driving screen's
+ * voice effect (parent — runs second) still observes the route-ready
+ * render it needs. One render, both jobs, no race.
  */
 
 const FACILITIES: readonly DestinationFacility[] = [
@@ -54,7 +91,7 @@ const buttonClass =
 
 export function PilotTripControls({
   lifecycle,
-  fix,
+  gps,
   debugLog,
   buildReport = null,
   build = null,
@@ -63,8 +100,19 @@ export function PilotTripControls({
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
-  /** Current gated GPS fix — the trip origin. Null disables planning. */
-  fix: PositionFix | null;
+  /**
+   * The GPS provider's surface, injected by the driving screen: the
+   * gated position state plus the watch controls the one-tap Start
+   * needs. start() is only ever called from inside the Start tap's click
+   * handler — the browser gesture that may show the permission prompt.
+   */
+  gps: {
+    position: PositionState;
+    watching: boolean;
+    acquiring: boolean;
+    start: () => void;
+    stop: () => void;
+  };
   /** Present only when Pilot Mode debug logging is on. */
   debugLog: PilotLog | null;
   /**
@@ -96,11 +144,33 @@ export function PilotTripControls({
   const [destLng, setDestLng] = useState('');
   const [facility, setFacility] = useState<DestinationFacility>('warehouse');
   const [picked, setPicked] = useState<DestinationCandidate | null>(null);
-  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+
+  /*
+   * The one-tap Start attempt. `phase` is what the driver sees (the
+   * honest progress line); the ref-held attempt guard is what makes the
+   * duplicate tap structurally inert — React state is asynchronous, so a
+   * second tap in the same frame must be refused by something
+   * synchronous. One begin() per attempt, one claimPlan() per begin().
+   */
+  const [phase, setPhase] = useState<'idle' | 'locating' | 'planning' | 'starting'>('idle');
+  const attemptRef = useRef(createStartAttempt());
+  /*
+   * The destination is FROZEN at tap time. The search stays disabled
+   * while an attempt runs, but freezing is the guarantee the disable
+   * only suggests: whatever happens to component state mid-attempt, the
+   * route that gets planned is the one the driver was looking at when
+   * they tapped Start.
+   */
+  const startDestRef = useRef<{
+    position: { lat: number; lng: number };
+    facility: DestinationFacility;
+  } | null>(null);
 
   const state = lifecycle.state();
   const summary = lifecycle.summary();
+  const { position, watching, acquiring } = gps;
+  const fix = position.fix;
 
   // A stable object for the search: this component re-renders on every GPS
   // tick, and a fresh literal here made the search effect restart (and
@@ -114,33 +184,134 @@ export function PilotTripControls({
     [lat === null ? null : lat.toFixed(3), lng === null ? null : lng.toFixed(3)],
   );
 
-  async function planRoute() {
-    if (busy) return;
-    if (fix === null) {
-      setNote('Waiting for a GPS fix — the trip origin is your current position.');
-      return;
-    }
-    // A searched place wins; the developer coordinate box is the fallback.
+  /** The chosen destination: a searched place wins; the developer
+   *  coordinate box is the fallback. Null = nothing valid chosen. */
+  function resolveDestination(): {
+    position: { lat: number; lng: number };
+    facility: DestinationFacility;
+  } | null {
     const usingSearch = picked !== null;
-    const lat = usingSearch ? picked.position.lat : Number(destLat);
-    const lng = usingSearch ? picked.position.lng : Number(destLng);
+    const dLat = usingSearch ? picked.position.lat : Number(destLat);
+    const dLng = usingSearch ? picked.position.lng : Number(destLng);
     if (
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lng) ||
-      Math.abs(lat) > 90 ||
-      Math.abs(lng) > 180
+      !Number.isFinite(dLat) ||
+      !Number.isFinite(dLng) ||
+      Math.abs(dLat) > 90 ||
+      Math.abs(dLng) > 180
     ) {
-      setNote('Search for a destination and choose it from the list.');
+      return null;
+    }
+    return {
+      position: { lat: dLat, lng: dLng },
+      facility: usingSearch ? picked.facility : facility,
+    };
+  }
+
+  /** End the attempt on a failure the driver must read. Parked, honest
+   *  line shown, Start available again — the safe retry. */
+  function failAttempt(message: string) {
+    attemptRef.current.end();
+    startDestRef.current = null;
+    setPhase('idle');
+    setNote(message);
+    onChanged();
+  }
+
+  /**
+   * THE Start tap. Everything that must happen inside a real user
+   * gesture happens here, synchronously: claiming the single attempt
+   * slot and starting (or re-arming) the one GPS watch, which is what
+   * makes the browser's permission prompt attributable to this tap.
+   */
+  function startTrip() {
+    if (!attemptRef.current.begin()) return; // duplicate tap: inert
+    const dest = resolveDestination();
+    if (dest === null) {
+      attemptRef.current.end();
+      setNote(NO_DESTINATION_TEXT);
       return;
     }
-    const chosenFacility = usingSearch ? picked.facility : facility;
-    const now = Date.now();
-    setBusy(true);
+    startDestRef.current = dest;
     setNote(null);
+    setPhase('locating');
+    if (!watching) {
+      // Just-in-time permission: the prompt (if the browser needs one)
+      // is caused by this tap. Already granted = the watch simply starts.
+      gps.start();
+    } else if (assessStartFix(position, acquiring, watching) === 'unusable') {
+      // A watch is up but its last answer was "no usable fix". Restart
+      // it inside the same gesture so the platform's own 15 s bound
+      // gets a fresh run — still exactly one live watch.
+      gps.stop();
+      gps.start();
+    }
+    // A usable fix (or the wait for one) is handled by the locating
+    // effect below — it fires on this same render commit.
+  }
+
+  /** Cancel a live attempt. The watch stays up on purpose: permission
+   *  was granted for navigation, the fix keeps the motion lock honest,
+   *  and the next Start is instant. Stop (on the driving surface) is
+   *  the control that discards position. */
+  function cancelStart() {
+    attemptRef.current.end();
+    startDestRef.current = null;
+    setPhase('idle');
+    setNote(null);
+    if (lifecycle.state() === 'planning') lifecycle.cancel(Date.now());
+    onChanged();
+  }
+
+  /*
+   * LOCATING: wait for the GPS session to publish a usable origin, on
+   * the session's own cadence (this component re-renders on every gated
+   * position update). No timer of ours exists to clean up — 'wait' can
+   * only persist while the platform still owes an answer, because the
+   * browser's watch bound (15 s) converts silence into an error, the
+   * session turns that into health, and health ends the attempt below.
+   */
+  const assessment = assessStartFix(position, acquiring, watching);
+  useEffect(() => {
+    if (phase !== 'locating') return;
+    if (assessment === 'wait') return;
+    if (assessment === 'denied') {
+      failAttempt(LOCATION_DENIED_TEXT);
+      return;
+    }
+    if (assessment === 'unusable') {
+      failAttempt(LOCATION_UNAVAILABLE_TEXT);
+      return;
+    }
+    // 'plan': claim the attempt's single plan ticket. A re-render racing
+    // this effect finds the ticket gone and does nothing.
+    if (!attemptRef.current.claimPlan()) return;
+    const origin = position.fix;
+    const dest = startDestRef.current;
+    if (origin === null || dest === null) {
+      // Unreachable by construction ('plan' implies a fix; begin() set
+      // the destination) — but a refused attempt beats a thrown render.
+      failAttempt(LOCATION_UNAVAILABLE_TEXT);
+      return;
+    }
+    setPhase('planning');
+    void planFrom(origin.lat, origin.lng, dest);
+    // The effect keys on the assessment/phase pair; everything else it
+    // reads is ref-held attempt state that must NOT retrigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, assessment, position]);
+
+  /** EXACTLY ONE validated plan request per attempt — the ticket above
+   *  is claimed, so this body cannot run twice for one Start tap. */
+  async function planFrom(
+    originLat: number,
+    originLng: number,
+    dest: { position: { lat: number; lng: number }; facility: DestinationFacility },
+  ) {
+    const now = Date.now();
     const outcome = await lifecycle.plan(
       {
-        origin: { lat: fix.lat, lng: fix.lng },
-        destination: { lat, lng },
+        origin: { lat: originLat, lng: originLng },
+        destination: dest.position,
         truck: DEFAULT_TRUCK_PROFILE,
         departAtMs: now,
       },
@@ -148,13 +319,82 @@ export function PilotTripControls({
       // provider's pin is the front door, not the gate — so provenance
       // stays 'unknown' and the arrival engine keeps completing such trips
       // as destination-unverified. Only the facility class improves.
-      { position: { lat, lng }, facility: chosenFacility, positionSource: 'unknown' },
+      {
+        position: dest.position,
+        facility: dest.facility,
+        positionSource: 'unknown',
+      },
       now,
     );
-    setBusy(false);
-    if (!outcome.ok) setNote(`Route refused: ${outcome.reason}`);
+    if (!outcome.ok) {
+      // The existing honest failure, verbatim: parked, reason shown,
+      // retry available. 'superseded' means the driver cancelled while
+      // the request flew — they already know; no message needed.
+      if (outcome.reason === 'superseded') return;
+      failAttempt(`Route refused: ${outcome.reason}`);
+      return;
+    }
+    /*
+     * Safely accepted — but "safely" is the operative word. A route the
+     * validator passed with WARNINGS, or one the plausibility check has
+     * findings about, pauses at the existing flight briefing: those
+     * surfaces exist to be read before committing, and auto-starting
+     * past them would delete exactly the pre-trip warnings this flow
+     * promised to preserve. A clean route proceeds without a pause.
+     */
+    if (routeNeedsBriefing(lifecycle)) {
+      attemptRef.current.end();
+      startDestRef.current = null;
+      setPhase('idle');
+      onChanged(); // route-ready renders the briefing; its Start commits
+      return;
+    }
+    /*
+     * onChanged BEFORE the phase flip, deliberately. Under React's
+     * automatic batching (the browser) the order is invisible — one
+     * commit carries both. Under a legacy-mode renderer (the behavioral
+     * harnesses) each update can commit alone, and this order guarantees
+     * the driving screen re-renders while the machine is at route-ready
+     * BEFORE the starting effect commits navigation — the render the
+     * voice effect must observe for the route-start greeting. Flipped,
+     * the greeting silently dies in exactly the environment built to
+     * catch that.
+     */
     onChanged();
+    setPhase('starting'); // the effect below finishes on this commit
   }
+
+  /*
+   * STARTING: runs on the route-ready render itself. This effect (child)
+   * fires before the driving screen's voice effect (parent), so by the
+   * time the greeting logic looks at that render's route-ready state,
+   * navigation is already underway — the greeting still speaks, the
+   * driver is already being guided, and no render ever shows a briefing
+   * that is about to vanish.
+   */
+  useEffect(() => {
+    if (phase !== 'starting') return;
+    if (lifecycle.state() === 'route-ready') {
+      lifecycle.startNavigation(Date.now());
+    }
+    attemptRef.current.end();
+    startDestRef.current = null;
+    setPhase('idle');
+    onChanged();
+    // onChanged is a fresh closure each parent render; the phase guard
+    // makes re-runs inert, so only the phase edge matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, lifecycle]);
+
+  const attemptActive = phase !== 'idle';
+  const progressText =
+    phase === 'locating'
+      ? GETTING_LOCATION_TEXT
+      : phase === 'planning'
+        ? PLANNING_ROUTE_TEXT
+        : phase === 'starting'
+          ? STARTING_NAVIGATION_TEXT
+          : null;
 
   function act(fn: () => unknown) {
     fn();
@@ -168,28 +408,11 @@ export function PilotTripControls({
         Pilot trip controls <span className="font-normal text-ink/60">(preview builds only)</span>
       </p>
 
-      <PilotOnboarding />
-
-      {/* First name, for the spoken greeting and the route-start line. It
-          sits here — inside the stationary-only gate this whole component
-          already renders in — because typing is what the motion lock
-          exists to prevent. The name never leaves memory. */}
-      {onFirstName ? <DriverNameEntry firstName={firstName} onAccept={onFirstName} /> : null}
-
-      {/* The build a driver is running, in one line they can read aloud on
-          the phone or quote in a message. Every generated report carries
-          the same identifier, so a screenshot and a report always agree. */}
-      {build ? (
-        <p className="text-base text-ink/60">
-          Build: <span className="font-mono text-ink/80">{build.label}</span>
-        </p>
-      ) : null}
-
       {state === 'idle' ? (
         <div className="space-y-3">
           <DestinationSearch
             origin={searchOrigin}
-            disabled={busy}
+            disabled={attemptActive}
             onPick={(place) => {
               setPicked(place);
               setNote(null);
@@ -203,6 +426,22 @@ export function PilotTripControls({
               {picked.address ? <span className="text-ink/70"> — {picked.address}</span> : null}
             </p>
           ) : null}
+
+          {/* THE Start control — the whole simplified flow in one tap:
+              just-in-time location permission, wait for a real fix, one
+              validated truck route, then navigation. Green like the
+              briefing's Start, because it is the same commitment; the
+              words carry the state while an attempt runs, and the button
+              refuses re-entry rather than queueing a second attempt. */}
+          <button
+            type="button"
+            onClick={startTrip}
+            disabled={attemptActive}
+            aria-busy={attemptActive}
+            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-80"
+          >
+            {progressText ?? 'Start'}
+          </button>
 
           {/* Developer-only coordinate entry: collapsed, never part of the
               driver flow, kept for bench-testing an exact point. */}
@@ -261,14 +500,22 @@ export function PilotTripControls({
               around — vehicle type, per-axle weight, trailer count and
               hazmat tunnel category. */}
           <TruckProfilePanel truck={DEFAULT_TRUCK_PROFILE} />
-          <button type="button" className={buttonClass} onClick={() => void planRoute()}>
-            {busy ? 'Requesting route…' : 'Plan validated truck route'}
-          </button>
         </div>
       ) : null}
 
-      {state === 'planning' ? (
-        <p className="text-xl text-ink/80">Requesting a validated truck route…</p>
+      {/* Honest progress + the way out, whatever lifecycle state the
+          attempt is passing through. role=status so a screen reader
+          hears the same phases the sighted driver watches. */}
+      {attemptActive ? (
+        <div className="space-y-3">
+          {state !== 'idle' ? <p className="text-xl text-ink/80">{progressText}</p> : null}
+          <p role="status" className="sr-only">
+            {progressText}
+          </p>
+          <button type="button" className={buttonClass} onClick={cancelStart}>
+            Cancel
+          </button>
+        </div>
       ) : null}
 
       {/* Route-ready is the flight briefing (design blueprint Phase 3):
@@ -349,6 +596,32 @@ export function PilotTripControls({
           {note}
         </p>
       ) : null}
+
+      {/* ---- optional, below the primary flow on purpose ---------------
+          The pilot driver's complaint was startup STEPS. Destination and
+          Start are the flow; everything from here down is optional and
+          never blocks navigation: the name only feeds the spoken
+          greeting (blank name = no personalized line, never a fabricated
+          one), and the pilot briefing remains one tap away. */}
+      {onFirstName ? (
+        <div className="space-y-2">
+          <p className="text-base text-ink/60">
+            Optional — a first name is only ever spoken, never stored.
+          </p>
+          <DriverNameEntry firstName={firstName} onAccept={onFirstName} />
+        </div>
+      ) : null}
+
+      {/* The build a driver is running, in one line they can read aloud on
+          the phone or quote in a message. Every generated report carries
+          the same identifier, so a screenshot and a report always agree. */}
+      {build ? (
+        <p className="text-base text-ink/60">
+          Build: <span className="font-mono text-ink/80">{build.label}</span>
+        </p>
+      ) : null}
+
+      <PilotOnboarding />
 
       {/*
         Road-test report. It lives inside this component, which the
@@ -477,6 +750,43 @@ export function PilotTripControls({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Does the just-planned route need the driver to READ something before
+ * navigation starts? Two sources, both already on the briefing surface:
+ * validator warnings ('valid-with-warning' routes) and plausibility
+ * findings — computed from EXACTLY the inputs RouteCheck renders from,
+ * so the pause decision and the briefing's content can never disagree.
+ * A clean route returns false and the one-tap flow proceeds straight to
+ * navigation; anything worth reading pauses at the existing briefing,
+ * whose own Start button commits.
+ *
+ * 'repeated-segment' deliberately does NOT gate the auto-start. Its
+ * metric counts geometry points per ~0.05-mile grid cell, so ordinary
+ * densely-sampled provider geometry — a dead-straight road drawn at
+ * 0.01-mile steps — measures as "revisits" (verified against the
+ * synthetic bench courses, which are straight lines and still measure
+ * 3–5). Gating on it would pause essentially every real route, which is
+ * the old flow back under a new name. The plausibility RULES are
+ * untouched: the advisory still renders on the briefing whenever the
+ * briefing shows, exactly as before — this is only a consumer choosing
+ * which findings force that surface in front of a driver who did not
+ * ask for it. The four that do are the ones that measure real route
+ * shape against the trip (degenerate-geometry, extreme-detour,
+ * doubles-back, destination-mismatch).
+ */
+function routeNeedsBriefing(lifecycle: NavigationLifecycle): boolean {
+  const brief = lifecycle.routeBrief();
+  if (brief === null) return false;
+  if (brief.warnings.length > 0) return true;
+  const data = lifecycle.mapData();
+  if (data.destination === null || data.geometry.length === 0) return false;
+  return assessRoutePlausibility({
+    geometry: data.geometry,
+    destination: data.destination,
+    reportedMiles: lifecycle.view().totalMi ?? null,
+  }).some((f) => f.code !== 'repeated-segment');
 }
 
 /**

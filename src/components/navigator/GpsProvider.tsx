@@ -154,28 +154,38 @@ export function GpsProvider({
       return;
     }
     activeRef.current = true;
+    // In BOTH callbacks the position truth is published BEFORE the
+    // acquiring flag clears. Under React's automatic batching the order
+    // is invisible, but these callbacks come from the platform, not a
+    // React event, and a legacy-mode renderer commits each update alone
+    // — in that world "acquisition over" landing before "…and here is
+    // why" is a visible intermediate state, and a consumer (the one-tap
+    // Start's assessment) read it as "the platform answered with
+    // nothing" while a denial was still in flight. Truth first, flags
+    // second: every observable intermediate is coherent.
     const cancel = activePort.watch(
       (fix) => {
         // Port contract says no callbacks after cancel; guard anyway so a
         // contract-violating injected port cannot repopulate dropped state.
         if (!activeRef.current) return;
-        setAcquiring(false);
         setPosition(session.ingestFix(fix));
+        setAcquiring(false);
       },
       (kind) => {
         if (!activeRef.current) return;
-        setAcquiring(false);
         if (kind === 'denied') {
           // Denial is terminal for this watch: the browser will not deliver
           // again. Tear the dead watch down so "Enable location" genuinely
           // comes back, but KEEP the denied state visible — resetting it
           // would hide why the preview stopped.
           setPosition(session.ingestError('denied'));
+          setAcquiring(false);
           teardown();
           setWatching(false);
           return;
         }
         setPosition(session.ingestError(kind));
+        setAcquiring(false);
       },
       WATCH_OPTIONS,
     );

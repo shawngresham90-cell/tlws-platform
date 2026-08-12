@@ -122,7 +122,15 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
     code.includes('No places found. Try a different search.'),
   );
   check('flow: the failure state exists', code.includes('Search unavailable right now.'));
-  check('flow: the GPS-wait state exists', code.includes('Waiting for a GPS fix'));
+  // Startup simplification: search now WORKS before location exists (the
+  // unbiased mode), so the old GPS-wait dead end became an honest bias
+  // note instead of a blocked search.
+  check(
+    'flow: the no-location state searches anyway and says so honestly',
+    code.includes('Location hasn') &&
+      code.includes('sorted') &&
+      !code.includes('Waiting for a GPS fix'),
+  );
   check(
     'flow: selection still cancels, settles, and hands the SAME candidate on',
     /coordRef\.current\?\.cancel\(\);[\s\S]{0,300}setSettled\(true\);[\s\S]{0,300}onPick\(chosen\)/.test(
@@ -182,7 +190,9 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
     'path: the picked candidate plans through the same fields',
     CONTROLS_SRC.includes('picked.position.lat') &&
       CONTROLS_SRC.includes('picked.position.lng') &&
-      CONTROLS_SRC.includes('facility: chosenFacility'),
+      // resolveDestination freezes the pick at Start-tap time; its
+      // facility is what reaches the plan's arrival context.
+      CONTROLS_SRC.includes('facility: dest.facility'),
   );
   check(
     'path: the Phase 3 briefing receives the selected destination unchanged',

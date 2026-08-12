@@ -13,12 +13,13 @@
  * plus a real parked-page box in DrivingScreen; this bench is the
  * end-to-end proof either way.
  *
- * What it does — the pilot's real path, with the viewport FIXED the whole
- * run so Leaflet's own window-resize handling can never mask the bug:
- * pilot gate → enable location → 34 s stationary dwell → plan route →
- * route-ready (measure + screenshot) → Start navigation → 14 s moving
- * dwell → measure tile coverage of the driving map WITHOUT any window
- * resize. Coverage is computed from DOM rects, so tile-image network
+ * What it does — the pilot's real path (the round-3 simplified startup),
+ * with the viewport FIXED the whole run so Leaflet's own window-resize
+ * handling can never mask the bug: pilot gate → destination (available at
+ * a cold start under the setup window; the granted watch auto-resumes on
+ * load) → measure the parked map → ONE Start tap (plan + auto-start) →
+ * 14 s moving dwell → measure tile coverage of the driving map WITHOUT
+ * any window resize. Coverage is computed from DOM rects, so tile-image network
  * failures cannot fake a result. If coverage fails, one synthetic window
  * resize is fired and measured again: healing implicates a stale canvas
  * size; not healing means a different bug.
@@ -198,10 +199,12 @@ async function main() {
     throw new Error('the pilot gate did not accept the password');
   }
 
-  await page.getByRole('button', { name: /Enable location/i }).click();
-  console.log('parking the truck (34 s to satisfy the stationary dwell)…');
-  await feed(34, 0.3);
-
+  // Simplified startup (pilot round 3): destination entry is available at
+  // a cold start (the setup window), permission is already granted so the
+  // watch auto-resumes on load, and ONE Start tap plans and begins the
+  // trip. The bench's measured transition is unchanged — the parked page
+  // box becomes the viewport-filling cockpit with no window resize.
+  await feed(3, 0.3); // the auto-resumed watch publishes parked fixes
   try {
     await page.getByText('Developer: enter coordinates instead').click({ timeout: 20_000 });
   } catch (err) {
@@ -211,15 +214,13 @@ async function main() {
   }
   await page.getByLabel('Destination latitude').fill(String(ORIGIN.lat + 6 / MI_PER_DEG_LAT));
   await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
-  await page.getByRole('button', { name: /Plan validated truck route/i }).click();
-  await page.getByRole('button', { name: /^Start navigation$/ }).waitFor({ timeout: 15_000 });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(500);
 
-  const parked = await measure(page, 'route-ready, parked page');
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/half-map-1-route-ready.png` });
+  const parked = await measure(page, 'parked page, before Start');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/half-map-1-parked.png` });
 
   // The transition under test: the container resizes, the window does not.
-  await page.getByRole('button', { name: /^Start navigation$/ }).click();
+  await page.getByRole('button', { name: /^Start$/ }).click();
   console.log('driving (14 s to satisfy the moving dwell)…');
   await feed(14, 27);
   await page.waitForTimeout(1500);

@@ -155,10 +155,11 @@ async function main() {
     throw new Error('the pilot gate did not accept the password');
   }
 
-  await page.getByRole('button', { name: /Enable location/i }).click();
-  console.log('parking the truck (34 s to satisfy the stationary dwell)…');
-  await feed(34, 0.3);
-
+  // Simplified startup (pilot round 3): destination entry is available at
+  // a cold start (the setup window), the granted watch auto-resumes on
+  // load, and ONE Start tap plans and begins the trip. Everything this
+  // bench asserts about the RESTORE is unchanged.
+  await feed(3, 0.3); // the auto-resumed watch publishes parked fixes
   try {
     await page.getByText('Developer: enter coordinates instead').click({ timeout: 20_000 });
   } catch (err) {
@@ -168,8 +169,9 @@ async function main() {
   }
   await page.getByLabel('Destination latitude').fill(String(ORIGIN.lat + 6 / MI_PER_DEG_LAT));
   await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
-  await page.getByRole('button', { name: /Plan validated truck route/i }).click();
-  await page.getByRole('button', { name: /^Start navigation$/ }).click({ timeout: 15_000 });
+  await page.getByRole('button', { name: /^Start$/ }).click();
+  console.log('one Start tap: fix → one validated plan → navigation…');
+  await feed(3, 0.3);
 
   console.log('driving (14 s to satisfy the moving dwell)…');
   await feed(14, 27);
