@@ -15,7 +15,7 @@ import {
   type SafetyLock,
   type SafetyLockState,
 } from '@/lib/navigator/safety-lock';
-import { allowedWhileMoving } from '@/lib/navigator/actions';
+import { allowedDuringSetupWindow, allowedWhileMoving } from '@/lib/navigator/actions';
 import { useGps } from './GpsProvider';
 
 /**
@@ -80,9 +80,17 @@ export function SafetyLockProvider({ children }: { children: ReactNode }) {
     [controller],
   );
 
+  // Three ways an action can be usable, all decided by shared maps and
+  // shared lock state — never per-component: the lock is open
+  // (STATIONARY or an active override), the action is explicitly
+  // permitted while moving, or the cold-start SETUP WINDOW is open and
+  // the action is one the setup map explicitly names (doc 06 §1a).
   const permits = useCallback(
-    (action: string) => !lock.locked || allowedWhileMoving(action),
-    [lock.locked],
+    (action: string) =>
+      !lock.locked ||
+      allowedWhileMoving(action) ||
+      (lock.setupWindow && allowedDuringSetupWindow(action)),
+    [lock.locked, lock.setupWindow],
   );
 
   const value = useMemo(() => ({ lock, grantOverride, permits }), [lock, grantOverride, permits]);

@@ -6,10 +6,13 @@
  * path, and both talk ONLY to first-party, flag-gated /api/navigator
  * endpoints.
  *
- * What crosses the wire: the driver's typed query and the truck's current
- * position (search must be biased to where the truck is). Nothing is
- * stored, logged, or sent anywhere else — the same discipline the route
- * request already follows for origin/destination.
+ * What crosses the wire: the driver's typed query and — when the truck
+ * HAS a position — that position, so results are biased to where the
+ * truck is. In the simplified startup flow the search can run before
+ * location exists (permission is requested by the Start tap); then the
+ * query travels ALONE and the server answers in its documented unbiased
+ * mode. Nothing is stored, logged, or sent anywhere else — the same
+ * discipline the route request already follows for origin/destination.
  */
 
 import type { LatLng } from '@/lib/map/bounds';
@@ -31,12 +34,12 @@ export type SearchOutcome =
  */
 export async function searchDestinations(
   query: string,
-  at: LatLng,
+  at: LatLng | null,
   fetchFn: SearchFetchLike = (input) => fetch(input),
 ): Promise<SearchOutcome> {
   const url =
     `/api/navigator/destination-search?q=${encodeURIComponent(query)}` +
-    `&lat=${at.lat}&lng=${at.lng}`;
+    (at === null ? '' : `&lat=${at.lat}&lng=${at.lng}`);
   let payload: unknown;
   try {
     const res = await fetchFn(url);

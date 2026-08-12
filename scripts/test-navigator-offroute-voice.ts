@@ -395,18 +395,12 @@ async function main(): Promise<void> {
     await Promise.resolve();
   });
 
-  // -- enable location (the app's own start path) ---------------------------
-  await act(async () => {
-    findButton(renderer, (l) => l.includes('Enable location')).props.onClick();
-  });
-  check('behavior: GPS watch started through the screen', emitFix !== null);
-
-  // -- park 35 virtual seconds: the safety lock's STATIONARY dwell ----------
-  for (let i = 0; i < 35; i++) {
-    await tick(START, { mph: 0, headingDeg: null });
-  }
+  // -- the simplified startup (pilot round 3): trip setup is available at
+  //    a cold start — the setup window (doc 06 §1a) — so there is no
+  //    Enable-location step and no stationary dwell to wait out before
+  //    the destination and the optional name/voice controls exist.
   check(
-    'behavior: destination entry unlocked once genuinely parked',
+    'behavior: trip setup available at a cold start (setup window)',
     renderedText(renderer).includes('Pilot trip controls'),
   );
 
@@ -440,7 +434,12 @@ async function main(): Promise<void> {
     spoken,
   );
 
-  // -- plan the trip via the developer coordinate entry ---------------------
+  // -- destination via the developer coordinate entry, then ONE Start ------
+  // The tap is the location gesture: the watch starts inside it, the
+  // attempt waits for the first usable fix, plans once, and a clean
+  // route auto-starts on the route-ready render — the same render the
+  // voice effect reads, which is what keeps the personalized route-start
+  // line alive (asserted below and at every reroute).
   routeResponder = () => ({ status: 200, payload: wireRoute('route-a', ROUTE_A) });
   const latInput = renderer.root.findAll(
     (n) => n.type === 'input' && n.props['aria-label'] === 'Destination latitude',
@@ -455,16 +454,21 @@ async function main(): Promise<void> {
     lngInput.props.onChange({ target: { value: String(DESTINATION.lng) } });
   });
   await act(async () => {
-    findButton(renderer, (l) => l.includes('Plan validated truck route')).props.onClick();
-    await Promise.resolve();
-    await Promise.resolve();
+    findButton(renderer, (l) => l.trim() === 'Start').props.onClick();
   });
-  check('behavior: route briefing reached', renderedText(renderer).includes('Route briefing'));
-
-  // -- start navigating -----------------------------------------------------
-  await act(async () => {
-    findButton(renderer, (l) => l.includes('Start navigation')).props.onClick();
-  });
+  check('behavior: the Start tap started the GPS watch', emitFix !== null);
+  check(
+    'behavior: honest progress while locating',
+    renderedText(renderer).includes('Getting location…'),
+  );
+  // Two parked fixes: the first usable one is the origin the plan uses.
+  await tick(START, { mph: 0, headingDeg: null });
+  await tick(START, { mph: 0, headingDeg: null });
+  check(
+    'behavior: a clean route went straight to navigating (no briefing pause)',
+    pilotState(renderer) === 'navigating',
+    renderedText(renderer).slice(0, 300),
+  );
 
   // -- follow route A north at 50 mph to ~mile 0.6 --------------------------
   const MPH = 50;

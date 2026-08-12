@@ -75,3 +75,36 @@ export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
 export function allowedWhileMoving(action: string): boolean {
   return ACTION_PERMISSIONS[action as UIAction] === true;
 }
+
+/**
+ * The SETUP WINDOW exemption (doc 06 §1a, pilot round 3 startup
+ * simplification): actions additionally permitted while the safety lock's
+ * cold-start window is open — motion UNKNOWN continuously since the lock
+ * was created, before any watch has ever produced a MOVING or STATIONARY
+ * determination.
+ *
+ * Why it exists: the simplified startup is destination → Start, with
+ * location permission requested BY the Start tap. Before that tap there
+ * is no GPS at all, so motion is UNKNOWN — and under the plain matrix the
+ * destination surface would be locked, which forced the old enable-
+ * location-then-wait-out-the-dwell flow the pilot driver reported as too
+ * many steps. In the window the app has zero motion evidence either way;
+ * the owner's decision is that trip setup is available then, exactly the
+ * way any parked phone app is.
+ *
+ * Why it is narrow: ONE action, the trip-setup surface. The window
+ * latches shut on the first motion determination and never re-opens
+ * (safety-lock.ts), so a driver who has ever been seen moving gets the
+ * full unknown-is-locked treatment for the rest of the session. Every
+ * other action keeps the plain matrix. Default-deny is preserved: an
+ * action absent from BOTH maps is locked, and the harness asserts this
+ * map stays this small.
+ */
+export const SETUP_WINDOW_PERMISSIONS: Partial<Record<UIAction, boolean>> = {
+  'edit-destination': true,
+};
+
+/** Default-deny lookup for the setup window. */
+export function allowedDuringSetupWindow(action: string): boolean {
+  return SETUP_WINDOW_PERMISSIONS[action as UIAction] === true;
+}

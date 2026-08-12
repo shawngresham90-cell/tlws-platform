@@ -9,12 +9,19 @@ import { useSafetyLock } from './SafetyLockProvider';
  */
 export function MotionLockOverlay() {
   const { lock } = useSafetyLock();
+  // During the cold-start setup window (doc 06 §1a) trip setup is
+  // available, so "controls limited" would be a lie — but so would
+  // "Parked", which claims motion knowledge that does not exist yet. The
+  // label says exactly what is true: setup is open, checks start with
+  // location.
   const label =
     lock.motion === 'STATIONARY'
       ? 'Parked — full controls available'
       : lock.motion === 'MOVING'
         ? 'Moving — controls limited for safety'
-        : 'Motion unknown — controls limited for safety';
+        : lock.setupWindow
+          ? 'Trip setup available — motion checks begin when location starts'
+          : 'Motion unknown — controls limited for safety';
   return (
     <div aria-live="polite" role="status" className="space-y-1 text-xl text-ink">
       <p className="font-semibold">{label}</p>

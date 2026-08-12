@@ -324,9 +324,16 @@ function renderBriefing(over: Record<string, unknown> = {}): string {
 /* ==================== 4. the wiring changes no behavior ================== */
 {
   const controls = strip(CONTROLS_SRC);
+  /*
+   * Two callers since the startup simplification, SAME transition: the
+   * briefing's Start button (warned routes — the driver commits after
+   * reading) and the one-tap flow's starting effect (clean routes —
+   * commits on the route-ready render). Anything beyond these two would
+   * be a third way to start a trip and must fail here.
+   */
   check(
-    'wiring: Start is the one existing lifecycle transition',
-    (controls.match(/lifecycle\.startNavigation\(Date\.now\(\)\)/g) ?? []).length === 1,
+    'wiring: startNavigation has exactly its two sanctioned callers',
+    (controls.match(/lifecycle\.startNavigation\(Date\.now\(\)\)/g) ?? []).length === 2,
   );
   check(
     'wiring: Discard is the one existing lifecycle transition',

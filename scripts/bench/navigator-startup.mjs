@@ -257,7 +257,11 @@ async function makeContext(browser, { mode = 'granted', width = 390, height = 84
       return r.fulfill({
         status: 502,
         contentType: 'application/json',
-        body: JSON.stringify({ ok: false, state: 'provider-failed', problems: [{ code: 'bench-injected' }] }),
+        body: JSON.stringify({
+          ok: false,
+          state: 'provider-failed',
+          problems: [{ code: 'bench-injected' }],
+        }),
       });
     }
     return r.fulfill({
@@ -348,7 +352,8 @@ async function mapCoverage(page) {
     const c = container.getBoundingClientRect();
     if (c.width === 0 || c.height === 0) return { width: c.width, height: c.height, coverage: 0 };
     const tiles = Array.from(container.querySelectorAll('img.leaflet-tile'));
-    const cols = 24, rows = 24;
+    const cols = 24,
+      rows = 24;
     let covered = 0;
     const rects = tiles.map((t) => t.getBoundingClientRect());
     for (let i = 0; i < cols; i++) {
@@ -390,7 +395,12 @@ async function runCurrentFlow(browser) {
     for (let i = 0; i < 45; i++) {
       await geo.emit(page, { lat: ORIGIN.lat, lng: ORIGIN.lng, speed: 0 });
       await page.waitForTimeout(1000);
-      if (await page.getByLabel(/Search for a destination/).isVisible().catch(() => false)) {
+      if (
+        await page
+          .getByLabel(/Search for a destination/)
+          .isVisible()
+          .catch(() => false)
+      ) {
         unlocked = true;
         break;
       }
@@ -410,7 +420,8 @@ async function runCurrentFlow(browser) {
 
     await feedMoving(page, 4, 12);
     const navigating = await isNavigating(page);
-    if (!navigating) console.log(`  [debug] page text: ${JSON.stringify((await bodyText(page)).slice(0, 900))}`);
+    if (!navigating)
+      console.log(`  [debug] page text: ${JSON.stringify((await bodyText(page)).slice(0, 900))}`);
     verdict('navigating after the full step sequence', navigating);
     verdict('exactly one route request', counters.route === 1, `saw ${counters.route}`);
 
@@ -435,15 +446,26 @@ scenarios.s1 = async (browser) => {
   try {
     await login(page);
     let c = await geo.counts(page);
-    verdict('s1: no geolocation watch before Start (prompt state)', c.watchCalls === 0, `watchCalls=${c.watchCalls}`);
+    verdict(
+      's1: no geolocation watch before Start (prompt state)',
+      c.watchCalls === 0,
+      `watchCalls=${c.watchCalls}`,
+    );
 
     await pickDestination(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await page.waitForTimeout(400);
 
     c = await geo.counts(page);
-    verdict('s1: the Start tap is the gesture that requests location', c.watchCalls === 1, `watchCalls=${c.watchCalls}`);
-    verdict('s1: honest progress while permission is pending', /Getting location/.test(await bodyText(page)));
+    verdict(
+      's1: the Start tap is the gesture that requests location',
+      c.watchCalls === 1,
+      `watchCalls=${c.watchCalls}`,
+    );
+    verdict(
+      's1: honest progress while permission is pending',
+      /Getting location/.test(await bodyText(page)),
+    );
     verdict('s1: no route request before a fix exists', counters.route === 0);
 
     await geo.grant(page);
@@ -489,8 +511,15 @@ scenarios.s2 = async (browser) => {
       const noHScroll = await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
       );
-      verdict(`s2@${width}: destination → Start → navigating (${seconds}s, no dwell)`, await isNavigating(page));
-      verdict(`s2@${width}: exactly one route request`, counters.route === 1, `saw ${counters.route}`);
+      verdict(
+        `s2@${width}: destination → Start → navigating (${seconds}s, no dwell)`,
+        await isNavigating(page),
+      );
+      verdict(
+        `s2@${width}: exactly one route request`,
+        counters.route === 1,
+        `saw ${counters.route}`,
+      );
       verdict(`s2@${width}: no horizontal scroll`, noHScroll);
       const c = await geo.counts(page);
       verdict(`s2@${width}: exactly one live watch`, c.active === 1, `active=${c.active}`);
@@ -515,7 +544,10 @@ scenarios.s3 = async (browser) => {
     const text = await bodyText(page);
     verdict('s3: one clear recovery message', /Location permission is denied/.test(text));
     verdict('s3: zero route requests', counters.route === 0, `saw ${counters.route}`);
-    verdict('s3: still parked (Start still offered)', await page.getByRole('button', { name: /^Start$/ }).isVisible());
+    verdict(
+      's3: still parked (Start still offered)',
+      await page.getByRole('button', { name: /^Start$/ }).isVisible(),
+    );
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/s3-denied.png` });
   } finally {
     await context.close();
@@ -537,7 +569,10 @@ scenarios.s4 = async (browser) => {
     await page.waitForTimeout(1200);
 
     const text = await bodyText(page);
-    verdict('s4: honest recovery on timeout', /couldn.t get a GPS fix|Location is unavailable/i.test(text));
+    verdict(
+      's4: honest recovery on timeout',
+      /couldn.t get a GPS fix|Location is unavailable/i.test(text),
+    );
     verdict('s4: zero route requests without a fix', counters.route === 0, `saw ${counters.route}`);
 
     // Safe retry: tap Start again, fixes arrive this time.
@@ -546,7 +581,11 @@ scenarios.s4 = async (browser) => {
     await page.waitForTimeout(500);
     await feedMoving(page, 3, 12);
     verdict('s4: retry reaches navigation', await isNavigating(page));
-    verdict('s4: exactly one route request across the retry', counters.route === 1, `saw ${counters.route}`);
+    verdict(
+      's4: exactly one route request across the retry',
+      counters.route === 1,
+      `saw ${counters.route}`,
+    );
   } finally {
     await context.close();
   }
@@ -565,7 +604,11 @@ scenarios.s5 = async (browser) => {
     for (let i = 0; i < 4; i++) await start.click({ force: true }).catch(() => {});
     await page.waitForTimeout(300);
     let c = await geo.counts(page);
-    verdict('s5: one location-start operation across 5 rapid taps', c.watchCalls === 1, `watchCalls=${c.watchCalls}`);
+    verdict(
+      's5: one location-start operation across 5 rapid taps',
+      c.watchCalls === 1,
+      `watchCalls=${c.watchCalls}`,
+    );
 
     await geo.grant(page);
     await feedParked(page, 2);
@@ -593,9 +636,15 @@ scenarios.s6 = async (browser) => {
     await feedMoving(page, 3, 12);
 
     const spoken = await geo.utterances(page);
-    const personal = spoken.filter((u) => /Good (morning|afternoon|evening)|Here.s your route/.test(u));
+    const personal = spoken.filter((u) =>
+      /Good (morning|afternoon|evening)|Here.s your route/.test(u),
+    );
     verdict('s6: navigating with a blank name', await isNavigating(page));
-    verdict('s6: no personalized line was fabricated', personal.length === 0, JSON.stringify(personal));
+    verdict(
+      's6: no personalized line was fabricated',
+      personal.length === 0,
+      JSON.stringify(personal),
+    );
     verdict('s6: one route request', counters.route === 1);
   } finally {
     await context.close();
@@ -620,9 +669,17 @@ scenarios.s7 = async (browser) => {
 
     const spoken = await geo.utterances(page);
     const routeStart = spoken.filter((u) => u === "Here's your route, Shawn. Now let's get it!");
-    verdict('s7: the personalized route-start line spoke exactly once', routeStart.length === 1, JSON.stringify(spoken));
+    verdict(
+      's7: the personalized route-start line spoke exactly once',
+      routeStart.length === 1,
+      JSON.stringify(spoken),
+    );
     const greeting = spoken.filter((u) => /^Good (morning|afternoon|evening), Shawn\.$/.test(u));
-    verdict('s7: the time-of-day greeting spoke exactly once', greeting.length === 1, JSON.stringify(greeting));
+    verdict(
+      's7: the time-of-day greeting spoke exactly once',
+      greeting.length === 1,
+      JSON.stringify(greeting),
+    );
     verdict('s7: navigating', await isNavigating(page));
   } finally {
     await context.close();
@@ -642,7 +699,11 @@ scenarios.s8 = async (browser) => {
     await feedMoving(page, 4, 12);
 
     const spoken = await geo.utterances(page);
-    verdict('s8: navigation began muted — zero utterances', spoken.length === 0, JSON.stringify(spoken));
+    verdict(
+      's8: navigation began muted — zero utterances',
+      spoken.length === 0,
+      JSON.stringify(spoken),
+    );
     verdict('s8: navigating', await isNavigating(page));
   } finally {
     await context.close();
@@ -658,10 +719,17 @@ scenarios.s9 = async (browser) => {
     await page.getByRole('button', { name: /Enable voice/i }).click();
     await page.waitForTimeout(400);
     const spoken = await geo.utterances(page);
-    verdict('s9: in-gesture confirmation spoke', spoken.includes('Voice guidance on.'), JSON.stringify(spoken));
+    verdict(
+      's9: in-gesture confirmation spoke',
+      spoken.includes('Voice guidance on.'),
+      JSON.stringify(spoken),
+    );
     // And mute works back off the same tap target.
     await page.getByRole('button', { name: /Mute voice/i }).click();
-    verdict('s9: mute control returned', await page.getByRole('button', { name: /Enable voice/i }).isVisible());
+    verdict(
+      's9: mute control returned',
+      await page.getByRole('button', { name: /Enable voice/i }).isVisible(),
+    );
   } finally {
     await context.close();
   }
@@ -681,15 +749,26 @@ scenarios.s10 = async (browser) => {
 
     const text = await bodyText(page);
     verdict('s10: honest refusal shown', /Route refused:/.test(text));
-    verdict('s10: still parked (Start available again)', await page.getByRole('button', { name: /^Start$/ }).isVisible());
-    verdict('s10: one request spent on the failed attempt', counters.route === 1, `saw ${counters.route}`);
+    verdict(
+      's10: still parked (Start available again)',
+      await page.getByRole('button', { name: /^Start$/ }).isVisible(),
+    );
+    verdict(
+      's10: one request spent on the failed attempt',
+      counters.route === 1,
+      `saw ${counters.route}`,
+    );
 
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 3, 12);
     verdict('s10: retry reaches navigation', await isNavigating(page));
-    verdict('s10: one request per attempt (2 total)', counters.route === 2, `saw ${counters.route}`);
+    verdict(
+      's10: one request per attempt (2 total)',
+      counters.route === 2,
+      `saw ${counters.route}`,
+    );
   } finally {
     await context.close();
   }
@@ -710,7 +789,10 @@ scenarios.s11 = async (browser) => {
     verdict('s11: destination entry LOCKED while moving', /Destination entry is locked/.test(text));
     verdict(
       's11: search input no longer reachable',
-      !(await page.getByLabel(/Search for a destination/).isVisible().catch(() => false)),
+      !(await page
+        .getByLabel(/Search for a destination/)
+        .isVisible()
+        .catch(() => false)),
     );
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/s11-moving-locked.png` });
   } finally {

@@ -36,12 +36,41 @@ function inProviders(child: ReturnType<typeof createElement>): string {
   );
 }
 
-// Default state (no fix → UNKNOWN → locked): stationary-only actions gate.
+/*
+ * Default state (no fix → UNKNOWN). Two regimes since the startup
+ * simplification (doc 06 §1a):
+ *
+ *   - 'edit-destination' is the ONE setup-window action: at a cold start
+ *     (motion UNKNOWN since the lock was created, no determination ever
+ *     made) it renders, because the simplified flow chooses a
+ *     destination BEFORE location exists. The window latches shut on the
+ *     first motion determination — the moving-lock case is exercised
+ *     with real fixes in test-safety-lock/test-navigator-startup, which
+ *     a static render cannot reach.
+ *
+ *   - every OTHER stationary-only action keeps the plain default-deny:
+ *     UNKNOWN is treated as MOVING, children are not rendered, and the
+ *     locked copy + passenger path stand. 'edit-truck-profile' proves it
+ *     here — deliberately an action absent from SETUP_WINDOW_PERMISSIONS.
+ */
 {
   const html = inProviders(
     createElement(
       LockGate,
       { action: 'edit-destination', lockedLabel: 'Destination entry' },
+      createElement('p', null, 'SETUP-WINDOW-CONTENT'),
+    ),
+  );
+  check(
+    'setup window: destination entry renders at a cold start (doc 06 §1a)',
+    html.includes('SETUP-WINDOW-CONTENT'),
+  );
+}
+{
+  const html = inProviders(
+    createElement(
+      LockGate,
+      { action: 'edit-truck-profile', lockedLabel: 'Truck profile' },
       createElement('p', null, 'SHOULD-NOT-RENDER'),
     ),
   );
@@ -57,6 +86,24 @@ function inProviders(child: ReturnType<typeof createElement>): string {
   check(
     'locked action: passenger path offered on attempt only (button present, dialog not)',
     html.includes('Passenger access') && !html.includes('I am not the driver'),
+  );
+}
+// The setup-window map itself stays exactly one action wide: widening it
+// is an owner decision this harness makes loud.
+{
+  const src = strip(readFileSync('src/lib/navigator/actions.ts', 'utf8'));
+  const mapBody = /SETUP_WINDOW_PERMISSIONS[^=]*=\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+  const entries = mapBody.split(',').filter((line) => line.includes(':'));
+  check(
+    'setup window: exactly ONE action is exempt, and it is edit-destination',
+    entries.length === 1 && /'edit-destination':\s*true/.test(mapBody),
+    mapBody.trim(),
+  );
+  const lockSrc = strip(readFileSync('src/lib/navigator/safety-lock.ts', 'utf8'));
+  check(
+    'setup window: latches shut on the FIRST determination and never re-opens',
+    (lockSrc.match(/everDetermined = true/g) ?? []).length === 2 &&
+      !/everDetermined = false/.test(lockSrc.replace(/let everDetermined = false/, '')),
   );
 }
 
@@ -91,9 +138,21 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     'overlay: aria-live status region',
     html.includes('aria-live="polite"') && html.includes('role="status"'),
   );
+  /*
+   * A cold-start render is inside the setup window, so the overlay says
+   * setup is available — claiming "controls limited" there would be a
+   * lie, and claiming "Parked" would invent motion knowledge. The
+   * post-determination UNKNOWN label survives in source for the state a
+   * static render cannot reach.
+   */
   check(
-    'overlay: unknown motion reads as limited controls',
-    html.includes('Motion unknown — controls limited for safety'),
+    'overlay: cold start reads as the setup window, honestly',
+    html.includes('Trip setup available — motion checks begin when location starts'),
+  );
+  const overlaySrc = readFileSync('src/components/navigator/MotionLockOverlay.tsx', 'utf8');
+  check(
+    'overlay: post-determination UNKNOWN still reads as limited controls',
+    overlaySrc.includes('Motion unknown — controls limited for safety'),
   );
 }
 
