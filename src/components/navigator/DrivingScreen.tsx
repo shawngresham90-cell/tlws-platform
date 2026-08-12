@@ -3,7 +3,8 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DrivingView } from '@/lib/navigator/navigation-controller';
-import type { LifecycleState, MapData } from '@/lib/navigator/navigation-lifecycle';
+import type { LifecycleState, MapData, PlanRequest } from '@/lib/navigator/navigation-lifecycle';
+import type { DestinationInfo } from '@/lib/navigator/truck-entrance';
 import type { LatLng } from '@/lib/map/bounds';
 import {
   createNavigationLifecycle,
@@ -30,6 +31,15 @@ import {
 } from '@/lib/navigator/voice-guidance';
 import { createDriverPhraseAnnouncer } from '@/lib/navigator/driver-greeting';
 import { createNavigatorPlanPort, createNavigatorReplacementPort } from './route-port';
+import {
+  createRestorablePlanPort,
+  parseTripSnapshot,
+  serializeTripSnapshot,
+  withPlanCapture,
+  RESTORE_REFRESH_MS,
+  TRIP_RESTORE_KEY,
+  type RouteMaterial,
+} from '@/lib/navigator/trip-restore';
 import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
@@ -650,13 +660,47 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
 
   const logRef = useRef<PilotLog | null>(null);
   if (logRef.current === null) logRef.current = createPilotLog();
+
+  /*
+   * Trip restore (pilot round 3, item 4) — the refs that make a reload
+   * mid-drive recoverable. All refs, no React state: nothing here draws.
+   *
+   * restorePayloadRef is armed with persisted route material immediately
+   * before the restore's plan() call and consumed by exactly that call.
+   * lastRouteRef holds the latest successful route material with the
+   * request it answered — every successful plan refreshes it, fresh and
+   * restored alike, via the port's onRoute seam. lastDestinationRef
+   * rides the plan-capture wrapper because arrival context (facility
+   * radius, entrances) travels beside the request, not inside it, and a
+   * trip restored without it would silently lose arrival honesty.
+   */
+  const restorePayloadRef = useRef<RouteMaterial | null>(null);
+  const lastRouteRef = useRef<{ req: PlanRequest; route: RouteMaterial } | null>(null);
+  const lastDestinationRef = useRef<DestinationInfo | null>(null);
+  const lastSavedMsRef = useRef(0);
+
   const lifecycleRef = useRef<NavigationLifecycle | null>(null);
   if (lifecycleRef.current === null) {
-    lifecycleRef.current = createNavigationLifecycle({
-      planPort: createNavigatorPlanPort(),
-      replacementPort: createNavigatorReplacementPort(),
-      log: logRef.current,
-    });
+    lifecycleRef.current = withPlanCapture(
+      createNavigationLifecycle({
+        planPort: createRestorablePlanPort(
+          createNavigatorPlanPort(),
+          () => {
+            const payload = restorePayloadRef.current;
+            restorePayloadRef.current = null;
+            return payload;
+          },
+          (req, route) => {
+            lastRouteRef.current = { req, route };
+          },
+        ),
+        replacementPort: createNavigatorReplacementPort(),
+        log: logRef.current,
+      }),
+      (_req, destination) => {
+        lastDestinationRef.current = destination;
+      },
+    );
   }
   const lifecycle = lifecycleRef.current;
   const [, setRev] = useState(0);
@@ -973,6 +1017,130 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     },
     [],
   );
+
+  /*
+   * PERSIST the active trip; CLEAR it when the trip genuinely ends.
+   *
+   * Written while guidance is live (the ACTIVE states), riding the
+   * position cadence but re-saved at most once per RESTORE_REFRESH_MS so
+   * a long drive's snapshot never ages toward the restore window. The
+   * snapshot is the planned route and its arrival context — never the
+   * driver's name, never a GPS trail, never HOS (see trip-restore.ts for
+   * the full rails). sessionStorage on purpose: per-tab, dies with it.
+   *
+   * Cleared on the TRANSITION into arrived/completed — a reload at the
+   * receiving gate must not resurrect navigation, and Stop cancels into
+   * completed so a driver who ended the trip stays in charge. NEVER
+   * cleared merely for being idle: the mount that precedes a restore is
+   * idle too, and clearing there would delete the snapshot the restore
+   * effect is about to read.
+   */
+  const prevPersistStateRef = useRef<LifecycleState>('idle');
+  useEffect(() => {
+    if (typeof sessionStorage === 'undefined') return;
+    const prev = prevPersistStateRef.current;
+    prevPersistStateRef.current = lcState;
+    try {
+      if (ACTIVE_LIFECYCLE_STATES.includes(lcState)) {
+        const planned = lastRouteRef.current;
+        const destination = lastDestinationRef.current;
+        const now = Date.now();
+        if (
+          planned !== null &&
+          destination !== null &&
+          now - lastSavedMsRef.current >= RESTORE_REFRESH_MS
+        ) {
+          sessionStorage.setItem(
+            TRIP_RESTORE_KEY,
+            serializeTripSnapshot({
+              route: planned.route,
+              request: planned.req,
+              destination,
+              savedAtMs: now,
+            }),
+          );
+          lastSavedMsRef.current = now;
+        }
+      } else if ((lcState === 'arrived' || lcState === 'completed') && prev !== lcState) {
+        sessionStorage.removeItem(TRIP_RESTORE_KEY);
+        lastSavedMsRef.current = 0;
+      }
+    } catch {
+      // Storage full or blocked: restore is an enhancement, never a crash.
+    }
+  }, [lcState, position]);
+
+  /*
+   * RESTORE (pilot round 3, item 4). The driver takes a call, the OS
+   * discards the tab, the browser reloads the page mid-drive — and
+   * without this the reload lands on the idle screen asking a rolling
+   * driver to re-plan. If a fresh snapshot of an active trip exists,
+   * this puts the trip back through the lifecycle's own front door:
+   * plan() served by the armed restore payload (no network, no provider
+   * spend, every transition invariant intact), then startNavigation().
+   *
+   * Gated on pilot.active (without it there is no route source), on the
+   * lifecycle still being idle (anything the driver started wins), and
+   * run once per mount (the ref also absorbs StrictMode's double
+   * effect). A stale or damaged snapshot is deleted, never partially
+   * trusted.
+   *
+   * The GPS watch restarts under the permission rail, not around it:
+   * start() is called from a load ONLY when the Permissions API
+   * positively answers 'granted' — the browser then resumes the watch
+   * the driver already approved mid-trip, with no prompt. Where the API
+   * is absent or unsure, the driving surface's own "Enable location"
+   * control is the way back, from a real tap. Voice cannot be resumed by
+   * code at all (mobile Safari: the first utterance must come from a
+   * user gesture), so it returns muted — like every fresh load, by
+   * design.
+   */
+  const restoreAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (restoreAttemptedRef.current) return;
+    restoreAttemptedRef.current = true;
+    if (!pilot.active) return;
+    if (typeof sessionStorage === 'undefined') return;
+    if (lifecycle.state() !== 'idle') return;
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(TRIP_RESTORE_KEY);
+    } catch {
+      return;
+    }
+    const parsed = parseTripSnapshot(raw, Date.now());
+    if (parsed === null) {
+      if (raw !== null) {
+        try {
+          sessionStorage.removeItem(TRIP_RESTORE_KEY);
+        } catch {
+          /* already unreadable — nothing to protect */
+        }
+      }
+      return;
+    }
+    restorePayloadRef.current = parsed.route;
+    void lifecycle.plan(parsed.request, parsed.destination, Date.now()).then((outcome) => {
+      restorePayloadRef.current = null; // consumed or refused — never lingers
+      if (!outcome.ok) return;
+      if (!lifecycle.startNavigation(Date.now())) return;
+      logRef.current?.record(Date.now(), 'trip-restored', parsed.route.routeId);
+      bump();
+      const permissions = typeof navigator === 'undefined' ? undefined : navigator.permissions;
+      if (permissions && typeof permissions.query === 'function') {
+        void permissions
+          .query({ name: 'geolocation' })
+          .then((status) => {
+            if (status.state === 'granted') start();
+          })
+          .catch(() => {
+            /* unsure = no auto-start; the Enable location control remains */
+          });
+      }
+    });
+    // Mount-once by design; the ref above enforces it against re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pilot.active, lifecycle, start]);
 
   // Unmount = leaving the screen: stale speech dies with the surface and
   // any live trip is cancelled so no engine outlives its owner

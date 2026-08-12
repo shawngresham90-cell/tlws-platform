@@ -263,9 +263,19 @@ const URL_PARAMS = (() => {
     const src = readFileSync(f, 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/^\s*\/\/.*$/gm, '');
+    // Trip restore (pilot round 3, item 4) is the driving screen's one
+    // sanctioned storage path — the planned ROUTE in sessionStorage,
+    // never the name, never a position trail. Discipline pinned in
+    // test-navigator-trip-restore; sanctioned call shapes scrubbed here,
+    // everything else still banned.
+    const scrubbed = f.endsWith('DrivingScreen.tsx')
+      ? src
+          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
+          .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
+      : src;
     check(
       `persistence: ${f} reaches no store`,
-      !/localStorage|sessionStorage|indexedDB|supabase/i.test(src),
+      !/localStorage|sessionStorage|indexedDB|supabase/i.test(scrubbed),
       f,
     );
   }

@@ -237,7 +237,23 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
       `privacy ${f}: no console logging at all`,
       !/console\s*\.\s*(log|info|warn|error|debug)/.test(src),
     );
-    check(`privacy ${f}: no storage APIs`, !/localStorage|sessionStorage|indexedDB/i.test(src));
+    // Trip restore (pilot round 3, item 4) is the ONE sanctioned storage
+    // path, on the driving screen only: the planned ROUTE in
+    // sessionStorage under its versioned key — never the name, never a
+    // position trail. Its own harness (test-navigator-trip-restore) pins
+    // that discipline, including that TRIP_RESTORE_KEY is the only key;
+    // here the sanctioned call shapes are scrubbed and every other
+    // storage token stays banned, in this file and every other.
+    const scrubbed =
+      f === 'DrivingScreen.tsx'
+        ? src
+            .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
+            .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
+        : src;
+    check(
+      `privacy ${f}: no storage APIs`,
+      !/localStorage|sessionStorage|indexedDB/i.test(scrubbed),
+    );
     check(
       `privacy ${f}: no analytics import (no coordinate leakage path)`,
       !/analytics|trackEvent|plausible/i.test(src),

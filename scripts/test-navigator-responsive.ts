@@ -157,10 +157,20 @@ const baseView: DrivingView = {
     'DrivingScreen.tsx',
   ]) {
     const src = strip(readFileSync(`src/components/navigator/${f}`, 'utf8'));
+    // Trip restore (pilot round 3, item 4): the driving screen's one
+    // sanctioned storage path — the planned ROUTE in sessionStorage,
+    // discipline pinned in test-navigator-trip-restore. Sanctioned call
+    // shapes scrubbed; every other banned token stands.
+    const scrubbed =
+      f === 'DrivingScreen.tsx'
+        ? src
+            .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
+            .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
+        : src;
     check(
       `privacy ${f}: no console/fetch/storage/analytics`,
       !/console\s*\.\s*(log|info|warn|error|debug)|\bfetch\s*\(|localStorage|sessionStorage|indexedDB|analytics|plausible/i.test(
-        src,
+        scrubbed,
       ),
     );
   }

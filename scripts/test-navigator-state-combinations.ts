@@ -546,6 +546,15 @@ async function main(): Promise<void> {
       'reload+name: the name is component state and nothing else',
       /useState<string \| null>\(null\)/.test(code(SCREEN)),
     );
+    // Trip restore (pilot round 3, item 4) writes the planned ROUTE to
+    // sessionStorage from the screen — the one sanctioned storage path,
+    // and the name is structurally outside it: the snapshot module
+    // never mentions the name, and the serialization is pinned
+    // name-free in test-navigator-trip-restore. The sanctioned call
+    // shapes are scrubbed; the name's own bans stay absolute.
+    const screenScrubbed = code(SCREEN)
+      .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
+      .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD');
     for (const [what, re] of [
       ['local storage', /localStorage/],
       ['session storage', /sessionStorage/],
@@ -555,10 +564,14 @@ async function main(): Promise<void> {
     ] as const) {
       check(
         `reload+name: the name never reaches ${what}`,
-        !re.test(code(SCREEN)) && !re.test(code(NAME)),
+        !re.test(screenScrubbed) && !re.test(code(NAME)),
         what,
       );
     }
+    check(
+      'reload+name: the trip-restore module itself never touches the name',
+      !/firstName|driverName/i.test(readFileSync('src/lib/navigator/trip-restore.ts', 'utf8')),
+    );
   }
 }
 
