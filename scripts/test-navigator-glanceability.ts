@@ -224,8 +224,10 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
 
   // The map is the surface's primary element and must not be crowded out.
   check(
-    'glance: the map still owns the space the readouts do not',
-    surface.includes('data-test-map="live"') && /min-h-\[38dvh\] flex-1/.test(surface),
+    // Full-screen map: the readouts float over an absolute z-0 map that
+    // owns the entire surface — the map no longer competes for space.
+    'glance: the map owns the whole surface behind the readouts',
+    surface.includes('data-test-map="live"') && /absolute inset-0 z-0/.test(surface),
   );
   // The maneuver comes FIRST, above the map: a driver looking down reads
   // the turn before anything else.
