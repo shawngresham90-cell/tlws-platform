@@ -219,16 +219,26 @@ function initScript(mode) {
   };
   const utterances = [];
   window.__speechTest = { utterances };
-  window.SpeechSynthesisUtterance = function (text) {
-    this.text = text; this.lang = ''; this.onend = null; this.onerror = null;
-  };
-  window.speechSynthesis = {
-    paused: false,
-    speak(u) { utterances.push(u.text); setTimeout(() => { if (u.onend) u.onend(); }, 30); },
-    cancel() {},
-    resume() {},
-    getVoices() { return []; },
-  };
+  // defineProperty, not assignment: window.speechSynthesis is a
+  // getter-only accessor, so a plain assignment fails SILENTLY and the
+  // app would talk to the real (mute, headless) engine while this
+  // recorder saw nothing.
+  Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+    configurable: true,
+    value: function (text) {
+      this.text = text; this.lang = ''; this.onend = null; this.onerror = null;
+    },
+  });
+  Object.defineProperty(window, 'speechSynthesis', {
+    configurable: true,
+    value: {
+      paused: false,
+      speak(u) { utterances.push(u.text); setTimeout(() => { if (u.onend) u.onend(); }, 30); },
+      cancel() {},
+      resume() {},
+      getVoices() { return []; },
+    },
+  });
 })();`;
 }
 
@@ -240,12 +250,18 @@ function verdict(name, cond, detail = '') {
   if (!cond) failures += 1;
 }
 
+// The pilot cookie from the FIRST login, reused by every later context:
+// the access endpoint throttles repeated password submissions per IP
+// (that is its job), and this bench runs a dozen scenarios.
+let savedStorageState = null;
+
 async function makeContext(browser, { mode = 'granted', width = 390, height = 844 } = {}) {
   const context = await browser.newContext({
     viewport: { width, height },
     isMobile: width < 700,
     hasTouch: width < 700,
     deviceScaleFactor: 2,
+    storageState: savedStorageState ?? undefined,
   });
   const counters = { route: 0, search: 0, searchWithoutOrigin: 0, routeFailures: 0 };
   let routeFailNext = { n: 0 };
@@ -286,13 +302,16 @@ async function makeContext(browser, { mode = 'granted', width = 390, height = 84
 }
 
 async function login(page) {
-  await page.goto(`${BASE}/navigator/access?next=/drive`, { waitUntil: 'domcontentloaded' });
-  await page.fill('input[type="password"]', PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForLoadState('networkidle');
   await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
   if (page.url().includes('/navigator/access')) {
-    throw new Error('the pilot gate did not accept the password');
+    await page.fill('input[type="password"]', PASSWORD);
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
+    if (page.url().includes('/navigator/access')) {
+      throw new Error('the pilot gate did not accept the password');
+    }
+    savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(600); // hydration
 }
