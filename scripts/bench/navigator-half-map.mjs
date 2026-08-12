@@ -107,7 +107,11 @@ async function measure(page, label) {
     if (!container) return { present: false };
     const c = container.getBoundingClientRect();
 
-    const tiles = Array.from(document.querySelectorAll('.nav-map .leaflet-tile'));
+    // The renderer is MapLibre now: one canvas, not a grid of tile
+    // images. The half-map defect is measured the same way — how far
+    // down the container the drawn picture actually reaches — by
+    // treating the canvas as the single "tile".
+    const tiles = Array.from(document.querySelectorAll('.nav-map .maplibregl-canvas'));
     const cols = 40;
     const rowsN = 60;
     const covered = new Uint8Array(cols * rowsN);
@@ -134,7 +138,11 @@ async function measure(page, label) {
       if (any) lastCoveredRow = gy;
     }
 
-    const svg = document.querySelector('.nav-map .leaflet-overlay-pane svg');
+    // The route line is drawn INTO that canvas by WebGL, so the old
+    // overlay-SVG measurement becomes the canvas's own drawing-buffer
+    // size: a stale-size renderer shows up as a buffer that no longer
+    // matches its container.
+    const svg = document.querySelector('.nav-map .maplibregl-canvas');
     const svgRect = svg ? svg.getBoundingClientRect() : null;
 
     return {

@@ -10,7 +10,7 @@
  * the round-3 one-tap startup, then MEASURES at every required width in
  * portrait and landscape:
  *
- *   1. map coverage: the leaflet container's viewport-clipped area as a
+ *   1. map coverage: the renderer container's viewport-clipped area as a
  *      percentage of the viewport (the before/after headline number);
  *   2. no horizontal overflow;
  *   3. the essential controls (Stop, voice, Overview) and the maneuver
@@ -188,6 +188,8 @@ async function measure(page) {
       coveragePct: 0,
       mapRect: null,
       truckClear: null,
+      truckCoveredBy: null,
+      truckPoint: null,
       controls: [],
       distanceText: null,
       hos: null,
@@ -195,7 +197,10 @@ async function measure(page) {
       searchInput: document.querySelector('input[type="search"]') !== null,
       statusPresent: /\bNavigating\b|Position approximate/.test(document.body.innerText),
     };
-    const mapEl = document.querySelector('.leaflet-container');
+    // MapLibre replaced Leaflet as the Navigator's renderer: the element
+    // that fills the box is `.maplibregl-map`, and the picture inside it
+    // is one WebGL canvas rather than a grid of tile images.
+    const mapEl = document.querySelector('.maplibregl-map');
     if (mapEl) {
       const r = mapEl.getBoundingClientRect();
       const left = Math.max(r.left, 0);
@@ -211,9 +216,9 @@ async function measure(page) {
         h: Math.round(r.height),
       };
     }
-    // The truck marker: the vehicle divIcon. Its center must resolve to
-    // something inside the map — an overlay sitting on the truck fails.
-    const marker = document.querySelector('.nav-map .leaflet-marker-pane .leaflet-marker-icon');
+    // The truck marker. Its center must resolve to something inside the
+    // map — an overlay sitting on the truck fails.
+    const marker = document.querySelector('[aria-label="Your truck"]');
     if (marker && mapEl) {
       const mr = marker.getBoundingClientRect();
       const cx = mr.left + mr.width / 2;
@@ -221,6 +226,13 @@ async function measure(page) {
       if (cx >= 0 && cy >= 0 && cx <= vw && cy <= vh) {
         const hit = document.elementFromPoint(cx, cy);
         out.truckClear = hit !== null && mapEl.contains(hit);
+        // Name what is on top when it fails — a bare boolean sends the
+        // reader hunting through a screenshot.
+        out.truckCoveredBy =
+          out.truckClear || hit === null
+            ? null
+            : `${hit.tagName.toLowerCase()}${hit.getAttribute('aria-label') ? `[${hit.getAttribute('aria-label')}]` : ''}.${String(hit.className ?? '').slice(0, 60)}`;
+        out.truckPoint = { x: Math.round(cx), y: Math.round(cy), vh };
       }
     }
     // Essential controls: visible, inside the viewport, glove-sized.
@@ -296,7 +308,7 @@ async function parkedSearchProof(page, w, h) {
   await input.waitFor({ timeout: 20_000 });
   const overlay = await page.evaluate(() => {
     const inp = document.querySelector('input[type="search"]');
-    const mapEl = document.querySelector('.leaflet-container');
+    const mapEl = document.querySelector('.maplibregl-map');
     if (!inp) return null;
     const r = inp.getBoundingClientRect();
     const m = mapEl ? mapEl.getBoundingClientRect() : null;
@@ -432,10 +444,15 @@ async function runCase(browser, { w, h }) {
   const page = await context.newPage();
   try {
     const { feed } = await driveToNavigating(context, page, { w, h });
-    await page.waitForTimeout(800);
+    // Let the camera SETTLE before measuring. The heading-up camera eases
+    // over ~450 ms per fix, and sampling mid-ease reads a picture that is
+    // still moving — which showed up as an obstruction check that passed
+    // or failed depending on the frame it happened to catch.
+    await page.waitForTimeout(1200);
 
     const m1 = await measure(page);
     await feed(5, 12);
+    await page.waitForTimeout(1200);
     const m2 = await measure(page);
 
     console.log(
@@ -503,7 +520,13 @@ async function runCase(browser, { w, h }) {
     verdict('search: no text field during live guidance', m2.searchInput === false);
 
     if (m2.truckClear !== null) {
-      verdict('truck position not covered by an overlay', m2.truckClear === true);
+      verdict(
+        'truck position not covered by an overlay',
+        m2.truckClear === true,
+        m2.truckClear === true
+          ? ''
+          : `covered by ${m2.truckCoveredBy ?? 'unknown'} at ${JSON.stringify(m2.truckPoint)}`,
+      );
     } else {
       console.log('  (truck marker off-viewport this frame — obstruction check skipped)');
     }

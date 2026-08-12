@@ -1,14 +1,24 @@
-# Navigator heading-up — measured technical blocker
+# Navigator heading-up — measured technical blocker (RESOLVED)
 
-**Status: NOT IMPLEMENTED, on purpose.** The final pilot milestone asked
-for heading-up live navigation — the truck's direction of travel pointing
-to the top of the screen, the map rotating around the followed truck. The
-required technical investigation was performed first, the blocker below
-was measured, and per the milestone's own instruction the feature was
-**not** faked. Live navigation remains north-up. The truck **marker**
-still rotates to the real heading (`vehicle-marker.ts`, unchanged since
-its own milestone) — and this document exists precisely so that nobody
-mistakes a rotating icon for heading-up.
+> **STATUS: RESOLVED by the MapLibre GL migration.** The owner authorized
+> path B below (known-limitations owner decision 6), and live guidance is
+> heading-up now: MapLibre carries a real camera bearing, so tiles, road
+> labels, the route line and every marker rotate together around the
+> truck. **This document is kept as the record of why the renderer had to
+> change** — the measurements are what justified adding a mapping
+> dependency, and the CSS-rotation findings in §2 remain a standing
+> prohibition (a harness pins that no map container is ever CSS-rotated).
+> Leaflet itself stays in the repository: the directory and parking maps
+> still use it.
+
+**Original status: NOT IMPLEMENTED, on purpose.** The pilot milestone
+asked for heading-up live navigation — the truck's direction of travel
+pointing to the top of the screen, the map rotating around the followed
+truck. The required technical investigation was performed first, the
+blocker below was measured, and per the milestone's own instruction the
+feature was **not** faked. Live navigation remained north-up, with the
+truck **marker** rotating to the real heading — and this document existed
+precisely so that nobody mistook a rotating icon for heading-up.
 
 Everything below was measured on **2026-08-12** against the shipped
 renderer, with the probe committed at
@@ -100,10 +110,23 @@ This document is that stop.
 | **A. `leaflet-rotate` plugin** | A third-party plugin that patches Leaflet's internal transform pipeline to add bearing | It exists; it monkey-patches core positioning internals, so every Navigator regression fix that touches map geometry (#301 ResizeObserver sizing, marker anchoring, the obstruction bench) would need re-verification on the patched pipeline | Maintenance health, correctness under Leaflet 1.9.4, touch behavior at scale — cannot be audited from this environment without adding the dependency |
 | **B. MapLibre GL migration** | Replace the Navigator's renderer with a vector engine that has native `bearing` (and tilt) | This is Path 1 of the existing map provider decision packet; it also unlocks the blueprint's styling goals; HERE routing/search are unaffected (tiles and routing are cleanly separated) | Tile source licensing/cost for vector tiles; the full migration burden (markers, overlays, controls, offline behavior, and re-proving #301/#302/#303/#304/#305 on the new renderer) |
 
-Neither was done. **Recorded as open owner decision 6 in
-`navigator-known-limitations.md`.** Until it is decided, live guidance is
-north-up, and the maneuver card, glyphs, and voice remain the
-turn-direction authority — which they already were.
+Neither was done at the time. **Recorded as open owner decision 6 in
+`navigator-known-limitations.md`**, and until it was decided live guidance
+stayed north-up.
+
+### What the owner chose, and what shipped
+
+**Path B.** The Navigator's renderer is MapLibre GL. What that decision
+actually cost and preserved, now that it is done:
+
+| | Outcome |
+| --- | --- |
+| Tiles | **Unchanged** — the same keyless OpenStreetMap raster, expressed as a MapLibre raster style. `{s}` becomes the `tiles` array MapLibre uses for the same subdomain rotation. No vector-tile provider was needed: bearing is a camera property, not a tile format. |
+| Attribution | **Unchanged and stronger** — the OSM credit now rides on the tile SOURCE in the style document, so it cannot be lost by editing the component. |
+| Routing / search providers | **Untouched.** Tiles and routing were always cleanly separated; HERE never entered this decision. |
+| Dependency | `maplibre-gl` added. `leaflet` **stays**: the directory and parking maps still use it, and removing it would break features this milestone never touched. |
+| Cockpit tile treatment | The old `saturate(0.78)` CSS filter became the renderer's `raster-saturation` paint property — MapLibre draws tiles, route and markers onto one canvas, so a CSS filter would have repainted the route line and the truck too. |
+| Re-proved on the new renderer | #301 half-map sizing, #302 restore with zero re-spend, #303 one-tap startup, #304 full-screen map, #305 HOS strip, #307 map-top search. |
 
 ## 5. Reproducing the measurement
 

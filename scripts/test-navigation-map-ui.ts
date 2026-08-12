@@ -391,7 +391,11 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '9. the map never draws a null tile url',
-    map.includes('if (style.tileUrl === null) return'),
+    // The style builder answers null for a style with no approved source
+    // (satellite), and the component keeps what is already drawn.
+    readFileSync('src/lib/navigator/map-style.ts', 'utf8').includes(
+      'if (tiles.length === 0) return null',
+    ) && map.includes('if (next === null) return'),
   );
   // No unapproved provider anywhere in the map surface.
   const hosts = [...(map + styleCtl).matchAll(/https?:\/\/([^/'"`\s{]+)/g)].map((m) => m[1]);
@@ -433,12 +437,20 @@ const T0 = 1_754_000_000_000;
     screen.includes('aria-label="Show the whole route, then return to your truck"'),
   );
   check(
-    '11. pinch and drag are real Leaflet handlers, gated SEPARATELY',
-    map.includes('map.touchZoom') &&
-      map.includes('map.dragging.enable()') &&
-      map.includes('map.dragging.disable()') &&
+    '11. pinch and drag are real renderer handlers, gated SEPARATELY',
+    map.includes('map.touchZoomRotate') &&
+      map.includes('map.dragPan.enable()') &&
+      map.includes('map.dragPan.disable()') &&
       map.includes('if (canZoom)') &&
       map.includes('if (canPan)'),
+  );
+  check(
+    // Rotation is the camera's job, never a gesture: a driver must not be
+    // able to twist the map away from the direction they are travelling.
+    '11. no gesture can rotate or pitch the map',
+    map.includes('dragRotate: false') &&
+      map.includes('touchPitch: false') &&
+      map.includes('disableRotation()'),
   );
   check('11. controls meet the Navigator touch minimum', map.includes('min-h-16 min-w-16'));
 }
@@ -602,7 +614,9 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '17. the map component itself makes no motion decision',
-    !/moving|isMoving|motionState/.test(map),
+    // `moving` appears in the heading controller's vocabulary, so the
+    // check names the component-level state this rule exists to forbid.
+    !/isMoving|motionState|MOVING_SPEED/.test(map),
   );
 }
 
@@ -611,26 +625,40 @@ const T0 = 1_754_000_000_000;
   check('18. current-position marker', map.includes("'Your truck'"));
   check('18. destination marker', map.includes("'Destination'"));
   check('18. next-maneuver marker', map.includes("'Next maneuver'"));
-  check('19. the route line is drawn as a polyline', map.includes('L.polyline('));
+  check(
+    '19. the route line is drawn as a line layer over a GeoJSON source',
+    map.includes("addSource('route'") && map.includes("type: 'line'"),
+  );
   check(
     '19. the line has a casing so it reads over any basemap',
-    (map.match(/L\.polyline\(/g) ?? []).length >= 2,
+    map.includes("id: 'route-casing'") && map.includes("id: 'route-line'"),
   );
   check(
     '20. a replacement route redraws (keyed on route identity)',
     map.includes('drawnRouteRef') && map.includes('routeId ?? '),
   );
   check(
-    '20. layers are cleared before redraw — no unbounded geometry history',
-    map.includes('layer.clearLayers()') && (map.match(/clearLayers\(\)/g) ?? []).length >= 2,
+    // MapLibre holds ONE route source for the life of the map: new
+    // geometry REPLACES the old data rather than stacking a new layer, so
+    // there is no geometry history to leak and no layer churn to flicker.
+    '20. new geometry replaces the old data — no unbounded geometry history',
+    map.includes('routeDataRef.current = routeGeoJson(geometry)') &&
+      map.includes('source.setData(data)') &&
+      (map.match(/addLayer\(/g) ?? []).length === 2 &&
+      !/removeLayer|removeSource/.test(map),
   );
   check(
     '20. exactly one truck marker is ever created',
-    map.includes('if (truckRef.current === null)') && map.includes('truckRef.current.setLatLng'),
+    map.includes('if (truckRef.current === null)') && map.includes('truckRef.current.setLngLat'),
   );
   check(
-    '20. the map is torn down on unmount (no leaked Leaflet instance)',
-    map.includes('mapRef.current?.remove()'),
+    '20. and the destination/maneuver pins are MOVED, never recreated per fix',
+    map.includes('destMarkerRef.current.setLngLat') &&
+      map.includes('maneuverMarkerRef.current.setLngLat'),
+  );
+  check(
+    '20. the map is torn down on unmount (no leaked renderer instance)',
+    map.includes('mapRef.current?.remove()') && map.includes('truckRef.current?.remove()'),
   );
 }
 
@@ -692,8 +720,13 @@ const T0 = 1_754_000_000_000;
   );
   const pkg = readFileSync('package.json', 'utf8');
   check(
-    '26. package.json still has only the leaflet map dependency',
-    pkg.includes('"leaflet"') && !/mapbox|maplibre|@react-google-maps|esri/i.test(pkg),
+    // MapLibre is the Navigator's renderer (owner decision 6); Leaflet
+    // stays because the DIRECTORY and parking maps still run on it. What
+    // must never appear is a keyed, metered or paid provider SDK.
+    '26. the map dependencies are the two open-source renderers, nothing keyed',
+    pkg.includes('"maplibre-gl"') &&
+      pkg.includes('"leaflet"') &&
+      !/mapbox-gl|@react-google-maps|esri|arcgis|@maptiler/i.test(pkg),
   );
   check(
     '27. no environment variable added or read by the map surface',
@@ -728,16 +761,13 @@ const T0 = 1_754_000_000_000;
     map.includes('new ResizeObserver') && map.includes('observer.observe(el)'),
   );
   check('31. the observer is disconnected on cleanup', map.includes('observer.disconnect()'));
-  check(
-    '32. a container change re-measures the canvas, instantly',
-    map.includes('map.invalidateSize({ animate: false })'),
-  );
+  check('32. a container change re-measures the canvas, instantly', map.includes('map.resize()'));
   // The resize path may re-measure and NOTHING else: no camera move, no
   // zoom, no follow-state dispatch rides along with it.
   const roBody = map.slice(map.indexOf('new ResizeObserver'), map.indexOf('observer.observe'));
   check(
     '33. the resize path touches no camera and no follow state',
-    roBody.length > 0 && !/setView|fitBounds|setZoom|dispatch\(/.test(roBody),
+    roBody.length > 0 && !/easeTo|jumpTo|fitBounds|setZoom|setBearing|dispatch\(/.test(roBody),
   );
   // The stale size was BORN in the parked page: the map wrapper there was
   // a bare auto-height div, so the mounted map computed to 0px tall and

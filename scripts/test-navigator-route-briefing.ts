@@ -368,11 +368,14 @@ function renderBriefing(over: Record<string, unknown> = {}): string {
   const code = strip(MAP_SRC);
   check(
     'map: the whole-route fit exists and runs only before guidance is live',
-    /if \(!navigating && map !== null\)[\s\S]{0,200}fitBounds/.test(code),
+    /if \(!navigating && geometry\.length >= 2\)[\s\S]{0,220}fitBounds/.test(code),
   );
   check(
-    'map: the fit never animates',
-    /fitBounds\(L\.latLngBounds\(line\), \{ padding: \[40, 40\], animate: false \}\)/.test(code),
+    // The briefing is a whole-route question, so the fit is north-up and
+    // instant — no animation, and no heading-up bearing on a map the
+    // truck is not driving yet.
+    'map: the fit never animates, and frames the route north-up',
+    /fitBounds\(boundsOf\(geometry\), \{ padding: 40, animate: false, bearing: 0 \}\)/.test(code),
   );
   check(
     'map: guidance going live hands the camera back to the truck',

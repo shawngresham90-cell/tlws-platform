@@ -160,9 +160,22 @@ function northRoute(n = 200) {
   check(
     // A `import type` is erased at compile time and is SSR-safe; a VALUE
     // import of leaflet would execute browser-only code during SSR.
-    'map: Leaflet is imported inside an effect (never a value import at module scope)',
-    map.includes("await import('leaflet')") &&
-      !/^import\s+(?!type\b)[^;]*from\s+'leaflet';$/m.test(map),
+    // MapLibre replaced Leaflet as the Navigator's renderer (owner
+    // decision 6) so live guidance can rotate the whole map. The SSR rule
+    // is unchanged: the renderer is browser-only and must never be a
+    // value import at module scope.
+    'map: MapLibre is imported inside an effect (never a value import at module scope)',
+    map.includes("import('maplibre-gl')") &&
+      map.includes('await loadMaplibre()') &&
+      !/^import\s+(?!type\b)[^;]*from\s+'maplibre-gl';$/m.test(map),
+  );
+  check(
+    // Prose may still explain WHY the renderer changed; what must be gone
+    // is every line of Leaflet code — imports, its CSS, and its API.
+    'map: no Leaflet code survives in the Navigator renderer',
+    !/from '@?leaflet|leaflet\/dist|L\.(map|marker|polyline|tileLayer|layerGroup|divIcon|latLngBounds)\(/.test(
+      map,
+    ),
   );
   check('map: no API key, no key-bearing tile host', !/apiKey|access_token/i.test(map));
   check(
@@ -173,27 +186,47 @@ function northRoute(n = 200) {
     readFileSync('src/lib/navigator/map-style.ts', 'utf8').includes('tile.openstreetmap.org') &&
       map.includes('resolveMapStyle('),
   );
-  check('map: draws the route line', map.includes('L.polyline('));
+  check(
+    // One GeoJSON source, two line layers, for the life of the map: a
+    // reroute calls setData rather than removing and re-adding layers,
+    // so replacement geometry can never flicker or reset the camera.
+    'map: draws the route as a data-updated line layer',
+    map.includes("addSource('route'") &&
+      map.includes("id: 'route-line'") &&
+      map.includes("id: 'route-casing'") &&
+      map.includes('applyRouteData(map, routeDataRef.current)') &&
+      map.includes('source.setData(data)'),
+  );
   check(
     'map: shows truck, next maneuver, and destination',
     map.includes("'Your truck'") &&
       map.includes("'Next maneuver'") &&
       map.includes("'Destination'"),
   );
-  check('map: truck marker rotates with heading', map.includes('rotate(${rotate}deg)'));
+  check(
+    // The marker is rotated in MAP space, so the icon and the road under
+    // it turn together — the icon is not spun independently of the world.
+    'map: truck marker rotates with heading, aligned to the map',
+    map.includes('.setRotation(markerRotation)') && map.includes("rotationAlignment: 'map'"),
+  );
+  check(
+    'map: the CAMERA carries the heading — the whole map rotates, not just the icon',
+    map.includes('cameraBearing(') && map.includes('bearing,') && map.includes('map.easeTo('),
+  );
+  check(
+    'map: rotation gestures are refused — bearing belongs to the heading controller',
+    map.includes('dragRotate: false') && map.includes('disableRotation()'),
+  );
   /*
-   * Heading-up is NOT implemented, and the forbidden fake must never
-   * appear: Leaflet has no bearing API, and CSS-rotating the container
-   * measurably desynchronizes coordinate math and inverts panning
-   * (docs/operations/navigator-heading-up-blocker.md — owner decision 6).
-   * The ONLY rotate in this component is the vehicle icon's own
-   * transform, asserted above. Anything rotating the container or a
-   * leaflet pane is a regression into the fake.
+   * Heading-up is REAL now — the renderer's own camera bearing. The fake
+   * the previous milestone measured and refused must still never appear:
+   * CSS-rotating a map container desynchronizes coordinate math and
+   * inverts panning (docs/operations/navigator-heading-up-blocker.md).
+   * MapLibre needs no transform, so there must be none.
    */
   check(
-    'map: the container is never CSS-rotated (no fake heading-up)',
-    (map.match(/rotate\(/g) ?? []).length === 1 &&
-      !/(container|pane|_mapEl|mapRef)[^\n]{0,80}rotate\(/i.test(map),
+    'map: the container is never CSS-rotated (the fake stays refused)',
+    !/transform[^\n]{0,60}rotate\(/.test(map) && !/style\.transform/.test(map),
   );
   check(
     'map: follows the truck using the pure helper',
@@ -211,15 +244,19 @@ function northRoute(n = 200) {
    */
   check(
     'map: every gesture handler starts disabled until the lock allows it',
-    map.includes('dragging: false') &&
-      map.includes('scrollWheelZoom: false') &&
-      map.includes('touchZoom: false'),
+    map.includes('dragPan: false') &&
+      map.includes('scrollZoom: false') &&
+      map.includes('touchZoomRotate: false') &&
+      map.includes('doubleClickZoom: false'),
   );
   check(
     'map: still contains no speed check of its own',
     !/speedMph\s*[<>]=?\s*\d/.test(map) && !map.includes('MOVING_SPEED'),
   );
-  check('map: cleans up its Leaflet instance on unmount', map.includes('mapRef.current?.remove()'));
+  check(
+    'map: cleans up its renderer instance on unmount',
+    map.includes('mapRef.current?.remove()') && map.includes('mapRef.current = null'),
+  );
   check(
     'map: read-only — owns no engine and cannot mutate a route',
     !/lifecycle|createNavigation|requestReroute|\.ingest\(/.test(map),
