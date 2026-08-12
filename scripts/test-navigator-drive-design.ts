@@ -251,8 +251,11 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
     /num-data[^"]*var\(--size-speed\)/.test(surface),
   );
   check(
+    // Two on the trip bar (remaining, arrive) plus the compact HOS
+    // strip's clock ceiling — clocks and trip values are the same class
+    // of number and read at the same size.
     'hierarchy: trip values read the trip size',
-    (surface.match(/var\(--size-trip\)/g) ?? []).length === 2,
+    (surface.match(/var\(--size-trip\)/g) ?? []).length >= 2,
   );
   check(
     'hierarchy: every strip label reads the label size',
@@ -284,8 +287,24 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   // sections and definition lists. Anything new must displace something.
   const sections = (surface.match(/<section\b/g) ?? []).length;
   const dls = (surface.match(/<dl\b/g) ?? []).length;
-  check('clusters: exactly two sections (maneuver banner, HOS strip)', sections === 2, sections);
-  check('clusters: exactly two dls (trip bar, HOS clocks)', dls === 2, dls);
+  // Pilot round 3: the HOS card became the compact strip, which is one
+  // tap target rather than a section+dl cluster — so the moving surface
+  // now carries FEWER clusters than the budget, not more. The budget is
+  // a ceiling; anything new still has to displace something.
+  check(
+    'clusters: at most two sections, and the maneuver banner is one',
+    sections <= 2 && sections >= 1,
+    sections,
+  );
+  check(
+    'clusters: at most two dls (trip bar, and the HOS card when open)',
+    dls <= 2 && dls >= 1,
+    dls,
+  );
+  check(
+    'clusters: the compact HOS strip is present and is ONE cluster',
+    (surface.match(/aria-label="Hours of service — compact/g) ?? []).length === 1,
+  );
 
   // The map is the hero — now literally the whole surface: an absolute
   // z-0 background. Nothing on the overlay column may claim remaining

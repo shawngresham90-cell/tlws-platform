@@ -350,13 +350,15 @@ const T0 = 1_754_000_000_000;
       (screen.match(/shrink-0/g) ?? []).length >= 3,
   );
   check(
-    // The landscape judgment ("the map needs the height more than the
-    // clocks need the space") now covers the whole full-screen cockpit:
-    // the measured strip was ~230 px tall and reached the followed
-    // truck's marker on a phone. Mounted but display:none, so the clocks
-    // keep counting and the HOS VOICE thresholds still fire mid-trip.
-    '7. the HOS strip yields the cockpit to the map, but stays mounted and counting',
-    /\{fullScreen \? 'hidden' : ''\}/.test(screen) && screen.includes('<HosStrip'),
+    // Pilot round 3 (compact HOS): the ~230 px card that yielded to the
+    // map in #304 is back as a 54 px four-clock strip — one mounted
+    // HosStrip instance, presentation switched by `compact`. Same
+    // instance means same clock state, same 60 s advance, same voice
+    // announcer, and no restart when the presentation changes.
+    '7. the HOS strip rides the cockpit COMPACT — one instance, both presentations',
+    /compact=\{fullScreen\}/.test(screen) &&
+      screen.includes('<HosStrip') &&
+      (screen.match(/<HosStrip/g) ?? []).length === 1,
   );
 }
 

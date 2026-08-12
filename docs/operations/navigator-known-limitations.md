@@ -97,6 +97,36 @@ routing while looking like a fix. See the open owner decision below.
 | **Voice quality is the phone's, not ours** | Navigator uses the device's own speech engine. |
 | **Silent switch and Bluetooth routing are the phone's business** | If the phone is muted or the audio is going somewhere you are not listening, Navigator cannot tell. |
 
+## 6a. Hours of service — a planning aid, not an ELD
+
+The driving screen shows four clocks (DRIVE, WINDOW, CYCLE, BREAK) and the
+parked screen shows the same four in detail. Every one of them is computed
+by the trip-planner HOS engine this app already had. **Navigator is not an
+ELD and does not claim to be one**; the display carries that sentence
+wherever the clocks appear.
+
+| Limitation | Detail |
+|---|---|
+| **The clocks start from a FRESH DRIVER, every session** | Nothing is connected to an ELD and there is no place to enter what you have already driven today. If you have been on duty for six hours before opening Navigator, the clocks do not know it. **Check your own logs.** |
+| **A reload keeps the clocks it has, but cannot recover the ones it never had** | Since round 3 the trip snapshot carries the clock state, so reloading mid-drive no longer hands you back a fresh eleven hours. It restores what this session had counted — not your real duty day. |
+| **Duty status is inferred, not logged** | Time burns while guidance is genuinely active. Time spent on duty but not navigating — loading, fuelling, inspections — is not counted, so the real window is always **shorter** than the screen says. |
+| **The 30-minute break is counted, not enforced** | The BREAK clock counts driving time since the last qualifying break in the engine's model. It cannot see a break you actually took while the app was closed. |
+| **Cycle is 70/8 by default** | The engine supports 60/7, but nothing in the pilot UI selects it. A 60-hour driver is shown a 70-hour cycle. |
+| **No violation is recorded or transmitted** | Overdue clocks are displayed, spoken, and nothing else. There is no log, no report, no upload. |
+
+### Conformance note (recorded, not fixed here)
+
+The engine models the federal property-carrying limits it was written for —
+11-hour driving, 14-hour window, 30-minute break, 60/7 and 70/8 cycles. It
+does **not** model: sleeper-berth splits, the short-haul exception, adverse
+driving conditions, personal conveyance, yard moves, or any state-specific
+or agricultural exemption. A driver using any of those will see clocks that
+disagree with their ELD, and **the ELD is the record**.
+
+This is written down rather than fixed because changing HOS rules is a
+rules-engine change with its own verification burden, and the round-3 item
+that surfaced it was a display change. Treated as an owner decision below.
+
 ## 7. Session and data
 
 | Limitation | Detail |
@@ -133,6 +163,7 @@ so the record of who decided it, and when, survives.
 |---|---|---|
 | 1 | **The provider vehicle-type parameter.** | Requires primary provider documentation, unreachable from the build environment. Guessing would change routing silently. The request is byte-for-byte unchanged. |
 | 2 | **Where a driver sends a problem report.** ✅ **Resolved 2026-08-10** — the owner selected `shawngresham90@gmail.com`. | The decision was the owner's to make and the owner made it. It is recorded in the driver guide and pinned by test: any *other* destination appearing there still fails the build. |
+| 3a | **Whether to extend the HOS engine to sleeper-berth splits, short-haul, adverse-driving and personal conveyance.** | Today a driver using any of those sees clocks that disagree with their ELD. The display says it is a planning aid, but the gap is real and it is a rules-engine change, not a screen change. |
 | 3 | **Whether to model weight-per-axle, trailer count and tunnel category.** | Each is real work and each changes what the app claims to enforce. Adding a field to a screen without sending it on the wire would be worse than the gap. |
 | 4 | **Whether to license satellite imagery.** | A paid provider decision. |
 | 5 | **Whether pilot reports should persist.** | Persistence needs a store, a retention policy, and a privacy position. See the observability memo. |

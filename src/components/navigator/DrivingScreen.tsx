@@ -44,6 +44,7 @@ import { createBrowserSpeechPort } from './speech-port';
 import { formatEta } from '@/lib/navigator/driving-hud';
 import { normalizeInstruction, roadNameFromInstruction } from '@/lib/navigator/maneuver-text';
 import { createScreenWake, type ScreenWake } from '@/lib/navigator/screen-wake';
+import type { ClockState } from '@/lib/trip-planner/types';
 import { buildRoadTestReport } from '@/lib/navigator/road-test-report';
 import { resolveBuildId } from '@/lib/navigator/build-id';
 import type { ProblemReport } from '@/lib/navigator/problem-report';
@@ -104,7 +105,7 @@ const buildId = resolveBuildId({
  * only the anchoring moves. This is the one truck-profile element the
  * full-screen item repositions, not a redesign of it.
  */
-export function TruckChip({ docked = false }: { docked?: boolean } = {}) {
+export function TruckChip({ docked = false }: { docked?: boolean }) {
   return (
     <div
       aria-label="Truck profile used for this route"
@@ -114,7 +115,19 @@ export function TruckChip({ docked = false }: { docked?: boolean } = {}) {
     >
       <div className="font-data num-data text-[length:var(--size-street)] font-bold leading-tight text-ink">
         {formatTruckHeightFtIn(DEFAULT_TRUCK_PROFILE.heightFt)} ·{' '}
-        {DEFAULT_TRUCK_PROFILE.grossWeightLbs.toLocaleString('en-US')} lb
+        {DEFAULT_TRUCK_PROFILE.grossWeightLbs.toLocaleString('en-US')} lb ·{' '}
+        {DEFAULT_TRUCK_PROFILE.axles} axles
+      </div>
+      {/* Hazmat is a routing input the request genuinely carries, so it is
+          stated either way — "none" is information, not an omission. The
+          trailer count is NOT modelled anywhere in this app (see
+          truck-profile-coverage), and the compact summary says so rather
+          than leaving a driver to assume doubles were considered. */}
+      <div className="text-[length:var(--size-label)] leading-tight text-ink/70">
+        {DEFAULT_TRUCK_PROFILE.hazmatClass === null
+          ? 'No hazmat'
+          : `Hazmat ${DEFAULT_TRUCK_PROFILE.hazmatClass}`}{' '}
+        · trailers not set
       </div>
       <div className="text-[length:var(--size-label)] leading-tight text-ink/70">
         Pilot default profile
@@ -166,6 +179,8 @@ export function DrivingScreenView({
   offRouteText = null,
   onVoiceMutedChange,
   showIdleStartControl = true,
+  hosRestoredClocks = null,
+  onHosClocks,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -216,6 +231,10 @@ export function DrivingScreenView({
    * it when the Permissions API cannot promise 'granted' (PR #302).
    */
   showIdleStartControl?: boolean;
+  /** Clocks recovered from a restored trip — see HosStrip.restoredClocks. */
+  hosRestoredClocks?: ClockState | null;
+  /** Reports the live clocks so the owner can persist them. */
+  onHosClocks?: (clocks: ClockState) => void;
 }) {
   // Warning-rail severity, read from the existing status — presentation
   // only, computed nowhere else so the rail can never disagree with the
@@ -301,7 +320,7 @@ export function DrivingScreenView({
       // the distance and two lines of instruction always fit. The 600 px
       // threshold is measured, not guessed: a 568 px-tall phone in
       // portrait still overflowed at 480.
-      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] sm:p-6${imminent ? ' nav-imminent' : ''}`}
+      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] [@media(max-height:480px)]:max-h-[32dvh] [@media(max-height:480px)]:p-2 sm:p-6${imminent ? ' nav-imminent' : ''}`}
     >
       {m ? (
         <>
@@ -382,7 +401,7 @@ export function DrivingScreenView({
   // response carries no speed-limit data, and a shield rendered from
   // nothing would be the most dangerous fake on the screen.
   const compactStrip = (
-    <dl className="grid shrink-0 grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-1.5 text-center text-ink">
+    <dl className="grid shrink-0 grid-cols-3 items-end gap-2 rounded-cockpit border border-line bg-nav-surface px-3 py-1.5 text-center text-ink [@media(max-height:480px)]:py-0.5">
       <div>
         <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Speed</dt>
         {/* One line always: a value that stacks at 58 but not at 8 would
@@ -473,11 +492,24 @@ export function DrivingScreenView({
    * today and simply stand ready.
    */
   const surfaceCls = fullScreen
-    ? 'relative flex h-[100dvh] flex-col gap-2 p-2 ' +
+    ? 'relative flex h-[100dvh] flex-col gap-2 p-2 [@media(max-height:480px)]:gap-1 ' +
       'pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]'
     : 'space-y-6';
   const colOne = fullScreen ? 'relative z-10 shrink-0 landscape:max-w-[38vw]' : '';
+  /*
+   * The BOTTOM band takes the width the screen actually has.
+   *
+   * The 38 vw cap belongs to the TOP overlays — the maneuver card and
+   * the honest lines — so a landscape driver keeps the right of the map
+   * open where they are looking ahead. Applied to the bottom band it
+   * backfired: at 844x390 the three-cell trip strip and the four-cell
+   * clock strip wrapped inside 320 px and grew to 86 px and 73 px, which
+   * pushed the Stop row 27 px off the bottom of the viewport. Full width
+   * un-wraps them (64 px and 56 px measured) and the band still sits
+   * below the followed truck, which rides the middle of the screen.
+   */
+  const colBottom = fullScreen ? 'relative z-10 shrink-0' : '';
   // Parked, the map gets the SAME box the dynamic-import placeholder
   // promises (h-72/sm:h-96, cockpit border). It used to get no class at
   // all: a bare auto-height div, in which the map's h-full computed to
@@ -609,7 +641,7 @@ export function DrivingScreenView({
             from here down (trip strip, HOS, controls) rides the bottom
             edge of the full-screen surface; the flex gap above it is open
             map. On the ordinary page it is just the next block. */}
-        <div className={fullScreen ? `${colOne} mt-auto` : ''}>
+        <div className={fullScreen ? `${colBottom} mt-auto` : ''}>
           {fullScreen ? (
             compactStrip
           ) : (
@@ -629,24 +661,42 @@ export function DrivingScreenView({
         </div>
 
         {/* Permanent HOS strip (milestone N6) — the driver's clocks against
-            the drive, on every PARKED state and the arrived screen. On the
-            full-screen cockpit it yields entirely: the landscape rule ("the
-            map needs the height more than the clocks need the space") now
-            covers both orientations, because the measured strip is ~230 px
-            tall and on a phone that band reaches the followed truck's own
-            marker. Repositioned, not removed: the component stays MOUNTED
-            (display:none), so the clocks keep counting the drive, the HOS
-            VOICE warnings still fire at their thresholds mid-trip, and the
-            burned clocks are back on screen the moment the trip ends.
-            A visual mid-drive clock treatment belongs to the decluttering
-            item, deliberately not begun here. */}
-        <div className={fullScreen ? 'hidden' : ''}>
+            the drive, in every screen state. ONE mounted instance owns the
+            clock state, the 60-second advance and the HOS voice announcer;
+            only the PRESENTATION changes. Parked it is the full card. In
+            the cockpit (#304's full-screen map) it is the compact
+            four-clock strip — DRIVE · WINDOW · CYCLE · BREAK, measured at
+            54 px against the 230 px card, which is what makes a visible
+            HOS display affordable again without taking the screen back
+            from the map. Because the instance is never remounted, the
+            clocks do not restart when guidance starts, when a reroute
+            lands, or when the trip ends. */}
+        <div className={fullScreen ? colBottom : ''}>
           <HosStrip
             drivingActive={
               fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
             }
             sourceLabel={hosSourceLabel}
             voice={voice}
+            compact={fullScreen}
+            restoredClocks={hosRestoredClocks}
+            onClocksChange={onHosClocks}
+            detailSlot={
+              fullScreen
+                ? (detail) =>
+                    detail === null ? null : (
+                      // The detailed clocks are a deep surface: the SAME
+                      // stationary-only rail every other one uses, through
+                      // the shared map. The compact strip above stays
+                      // readable while moving — only opening the panel is
+                      // gated, which is what doc 06 locks and why nothing
+                      // new was added to the permission map.
+                      <LockGate action="view-trip-summary" lockedLabel="Detailed clocks" compact>
+                        {detail}
+                      </LockGate>
+                    )
+                : undefined
+            }
           />
         </div>
 
@@ -658,7 +708,7 @@ export function DrivingScreenView({
             must live here on the driving surface and not below the fold. */}
         {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
-        <div className={fullScreen ? `${colOne} flex gap-3` : ''}>
+        <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
@@ -769,6 +819,16 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * trip restored without it would silently lose arrival honesty.
    */
   const restorePayloadRef = useRef<RouteMaterial | null>(null);
+  /*
+   * HOS clocks across a reload. `hosClocksRef` mirrors the strip's live
+   * state so the snapshot writer can include it; `restoredClocks` is what
+   * came back, handed to the strip to apply once. Clocks are duty
+   * counters — no position, no identity — and restoring them is the
+   * difference between a reload that resumes a shift and one that quietly
+   * hands a driver back eleven hours they have already used.
+   */
+  const hosClocksRef = useRef<ClockState | null>(null);
+  const [restoredClocks, setRestoredClocks] = useState<ClockState | null>(null);
   const lastRouteRef = useRef<{ req: PlanRequest; route: RouteMaterial } | null>(null);
   const lastDestinationRef = useRef<DestinationInfo | null>(null);
   const lastSavedMsRef = useRef(0);
@@ -1191,6 +1251,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
               request: planned.req,
               destination,
               savedAtMs: now,
+              ...(hosClocksRef.current === null ? {} : { clocks: hosClocksRef.current }),
             }),
           );
           lastSavedMsRef.current = now;
@@ -1254,6 +1315,9 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       return;
     }
     restorePayloadRef.current = parsed.route;
+    // Clocks first: they are applied by the strip on its next render, so
+    // they are in place before the restored trip starts burning them.
+    if (parsed.clocks !== undefined) setRestoredClocks(parsed.clocks);
     void lifecycle.plan(parsed.request, parsed.destination, Date.now()).then((outcome) => {
       restorePayloadRef.current = null; // consumed or refused — never lingers
       if (!outcome.ok) return;
@@ -1520,6 +1584,10 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
        * surface always keeps it (trip restore's fallback, PR #302).
        */
       showIdleStartControl={!pilot.active || fullScreen || !lock.setupWindow}
+      hosRestoredClocks={restoredClocks}
+      onHosClocks={(c) => {
+        hosClocksRef.current = c;
+      }}
       destinationSlot={
         pilot.active ? (
           <PilotTripControls

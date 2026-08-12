@@ -20,8 +20,22 @@
  * refused whole.
  *
  * WHAT IS NEVER PERSISTED: the driver's name (ephemeral by owner
- * decision), any GPS fix or position trail, HOS state, or anything else
- * about the person. Reroute replacement routes are not captured either —
+ * decision), any GPS fix or position trail, or anything else about the
+ * person.
+ *
+ * HOS CLOCKS ARE PERSISTED, and that reverses an earlier line in this
+ * header deliberately. The clocks are duty COUNTERS — minutes used,
+ * minutes elapsed, a rolling on-duty array and two plain timestamps.
+ * They carry no position, no identity and nothing about where the truck
+ * has been, so AD-7 is untouched. What made the old exclusion wrong is
+ * what a reload did without them: the trip came back and the clocks
+ * came back FULL, silently telling a driver eight hours into a shift
+ * that they had eleven hours of driving left. A wrong clock on that
+ * screen is more dangerous than no clock, so the snapshot now carries
+ * the state the driving screen already had in memory. The field is
+ * OPTIONAL: a snapshot written before this change still restores its
+ * trip (with today's fresh-clock behavior) rather than being refused
+ * whole, so a deploy mid-shift cannot strand a rolling driver. Reroute replacement routes are not captured either —
  * a reroute request's origin is a live truck position, and positions are
  * never written to storage (AD-7). A restore after an intervening
  * reroute therefore brings back the ORIGINAL planned route; if the truck
@@ -45,7 +59,7 @@
  */
 
 import type { LatLng } from '@/lib/map/bounds';
-import type { TruckProfile } from '@/lib/trip-planner/types';
+import type { ClockState, CycleRule, TruckProfile } from '@/lib/trip-planner/types';
 import type { RouteAvoidance } from '@/lib/trip-planner/providers';
 import {
   FACILITY_ARRIVAL_RADIUS_M,
@@ -67,6 +81,10 @@ export type TripSnapshotInput = {
   request: PlanRequest;
   destination: DestinationInfo;
   savedAtMs: number;
+  /** The driver's HOS clocks as they stood at savedAtMs. Optional: a
+   *  caller without clocks writes a snapshot that restores the trip
+   *  alone, exactly as this module did before. */
+  clocks?: ClockState;
 };
 
 export type RestorableTrip = TripSnapshotInput;
@@ -156,6 +174,59 @@ function isTruck(t: unknown): t is TruckProfile {
   return hazmat === null || isText(hazmat, MAX_TEXT);
 }
 
+/** Cycle rules the engine accepts. An unknown rule is refused, never
+ *  coerced: a 60-hour driver restored as a 70-hour one would be handed
+ *  ten hours that do not exist. */
+const CYCLE_RULES: readonly CycleRule[] = ['60/7', '70/8'];
+
+/** Upper bound on the rolling on-duty array — the engine keeps one
+ *  bucket per cycle day; anything longer is damage, not history. */
+const MAX_DAY_BUCKETS = 16;
+
+function isNonNegativeFinite(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0;
+}
+
+/**
+ * Validate a stored clock state. Strict for the same reason the route is
+ * strict: these numbers are read as the driver's remaining legal time, so
+ * a damaged snapshot must produce NO clocks (the screen falls back to a
+ * fresh state it labels honestly) rather than plausible-looking garbage.
+ */
+export function parseClockState(v: unknown): ClockState | null {
+  if (v === null || typeof v !== 'object') return null;
+  const c = v as Record<string, unknown>;
+  if (!isPositiveFinite(c.atMs) || !isPositiveFinite(c.dayBucketStartMs)) return null;
+  if (!CYCLE_RULES.includes(c.cycleRule as CycleRule)) return null;
+  if (!isNonNegativeFinite(c.drivingUsedMin)) return null;
+  if (!isNonNegativeFinite(c.drivingSinceBreakMin)) return null;
+  if (!isNonNegativeFinite(c.restStreakMin)) return null;
+  // -1 is the engine's own "no window open" sentinel; anything else must
+  // be a real elapsed count.
+  const windowElapsedMin = c.windowElapsedMin;
+  if (typeof windowElapsedMin !== 'number' || !Number.isFinite(windowElapsedMin)) return null;
+  if (windowElapsedMin < 0 && windowElapsedMin !== -1) return null;
+  const buckets = c.onDutyByDayMin;
+  if (
+    !Array.isArray(buckets) ||
+    buckets.length === 0 ||
+    buckets.length > MAX_DAY_BUCKETS ||
+    !buckets.every(isNonNegativeFinite)
+  ) {
+    return null;
+  }
+  return {
+    atMs: c.atMs,
+    cycleRule: c.cycleRule as CycleRule,
+    drivingUsedMin: c.drivingUsedMin,
+    windowElapsedMin,
+    drivingSinceBreakMin: c.drivingSinceBreakMin,
+    restStreakMin: c.restStreakMin,
+    onDutyByDayMin: buckets as number[],
+    dayBucketStartMs: c.dayBucketStartMs,
+  };
+}
+
 /** Serialize a snapshot. Pure: the caller supplies the clock and owns
  *  the storage write. */
 export function serializeTripSnapshot(input: TripSnapshotInput): string {
@@ -170,6 +241,7 @@ export function serializeTripSnapshot(input: TripSnapshotInput): string {
     route: input.route,
     request,
     destination: input.destination,
+    ...(input.clocks === undefined ? {} : { clocks: input.clocks }),
   });
 }
 
@@ -299,8 +371,14 @@ export function parseTripSnapshot(raw: string | null, nowMs: number): Restorable
     }));
   }
 
+  // Clocks are OPTIONAL and independently refusable: damaged clocks lose
+  // the clocks, never the trip. The screen then shows a fresh state with
+  // its existing provenance label rather than inventing a middle number.
+  const clocks = snap.clocks === undefined ? undefined : parseClockState(snap.clocks);
+
   return {
     savedAtMs,
+    ...(clocks === null || clocks === undefined ? {} : { clocks }),
     route: {
       kind: 'route',
       routeId: route.routeId,

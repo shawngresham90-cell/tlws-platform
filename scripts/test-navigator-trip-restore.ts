@@ -35,6 +35,7 @@ import {
 } from '@/lib/navigator/navigation-lifecycle';
 import type { DestinationInfo } from '@/lib/navigator/truck-entrance';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import { freshClockState } from '@/lib/trip-planner/hos-engine';
 import type { LatLng } from '@/lib/map/bounds';
 
 let passed = 0;
@@ -362,7 +363,37 @@ function snapshot(mutate?: (snap: Record<string, unknown>) => void): string {
     keys,
   );
   check('5. no driver name anywhere in the serialization', !/firstName|driverName/i.test(raw));
-  check('5. no HOS state anywhere in the serialization', !/hos/i.test(raw));
+  /*
+   * HOS CLOCKS ARE NOW A SANCTIONED SIXTH KEY (pilot round 3, compact
+   * HOS). The old pin here said "no HOS state anywhere", written when
+   * the only thing clocks could add was risk. What changed is the
+   * measured consequence of leaving them out: a reload mid-shift
+   * restored the trip and reset the clocks to a fresh eleven hours,
+   * which is a wrong number in the one place a wrong number is
+   * dangerous. Clocks are duty COUNTERS — no position, no identity, no
+   * trail — so the privacy rail this section exists to protect is
+   * unchanged, and the pin now says exactly that: clocks may appear,
+   * and only as counters.
+   */
+  const withClocks = JSON.parse(
+    serializeTripSnapshot({
+      route: ROUTE,
+      request: REQUEST,
+      destination: DESTINATION,
+      savedAtMs: T0,
+      clocks: freshClockState(T0),
+    }),
+  ) as Record<string, unknown>;
+  check(
+    '5. clocks are the ONLY sanctioned addition to the snapshot',
+    Object.keys(withClocks).sort().join(',') === 'clocks,destination,request,route,savedAtMs,v',
+    Object.keys(withClocks).sort(),
+  );
+  check(
+    '5. the persisted clocks carry counters only — never a position or a trail',
+    !/lat|lng|position|firstName|speed|heading/i.test(JSON.stringify(withClocks.clocks)),
+    withClocks.clocks,
+  );
   const lib = readFileSync('src/lib/navigator/trip-restore.ts', 'utf8');
   check('5. the pure module touches no storage API', !/sessionStorage\.|localStorage\./.test(lib));
   check('5. the pure module reads no clock', !/Date\.now\(\)/.test(lib));

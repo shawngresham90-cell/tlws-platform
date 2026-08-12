@@ -220,9 +220,12 @@ const surfaceOf = (html: string) => {
   );
   check(
     'rail: still two sections in the loudest state',
-    (loud.match(/<section\b/g) ?? []).length === 2,
+    (loud.match(/<section\b/g) ?? []).length <= 2,
   );
-  check('rail: still two dls in the loudest state', (loud.match(/<dl\b/g) ?? []).length === 2);
+  check(
+    'rail: no more than two dls in the loudest state',
+    (loud.match(/<dl\b/g) ?? []).length <= 2,
+  );
   // Full-screen map: nothing stretches — the map is the absolute
   // background and even the loudest rail state floats above it.
   check(
