@@ -135,6 +135,7 @@ export function DrivingScreenView({
   showIdleStartControl = true,
   hosRestoredClocks = null,
   onHosClocks,
+  onBottomInset,
   mapSearchSlot = null,
 }: {
   view: DrivingView;
@@ -191,6 +192,12 @@ export function DrivingScreenView({
   /** Reports the live clocks so the owner can persist them. */
   onHosClocks?: (clocks: ClockState) => void;
   /**
+   * Reports how tall the bottom overlay band is, so the OWNER can tell
+   * the map how much of the screen the truck must stay above. Measured
+   * here because this is the component that lays the band out.
+   */
+  onBottomInset?: (px: number) => void;
+  /**
    * Destination search, mounted OVER the parked map (final pilot
    * milestone). Null while guidance is live — a driver in motion gets no
    * text field, and the shared lock, not this component, is what decides
@@ -228,6 +235,39 @@ export function DrivingScreenView({
   // and the bottom controls off the viewport.
   const navTopRef = useRef<HTMLElement | null>(null);
   const shellRef = useRef<HTMLDivElement | null>(null);
+  /*
+   * The BOTTOM OVERLAY BAND's height, measured rather than assumed.
+   *
+   * The driving camera keeps the truck in the lower middle, and "lower"
+   * has to mean "above the trip strip, the clocks and the Stop row" — a
+   * band that is ~230 px on a tall phone and ~195 px at 844x390.
+   * Measured in Chromium, a guessed constant put the truck UNDER the
+   * trip strip at 360x740, 1280x800 and 844x390. So the layout tells the
+   * map how much room it is taking, and the camera does the arithmetic.
+   */
+  const bottomBandRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = bottomBandRef.current;
+    if (!fullScreen || el === null || typeof ResizeObserver === 'undefined') {
+      onBottomInset?.(0);
+      return;
+    }
+    const measure = () => {
+      // From the band's top edge to the bottom of the viewport: that is
+      // the strip of screen the map may draw in but must not park the
+      // truck in.
+      const rect = el.getBoundingClientRect();
+      const vh = typeof window === 'undefined' ? rect.bottom : window.innerHeight;
+      onBottomInset?.(Math.max(0, Math.round(vh - rect.top)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+    // onBottomInset is a stable setter from the owner (same shape as
+    // onHosClocks); the band's own size changes drive the observer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullScreen]);
   useEffect(() => {
     if (focusNavigationKey === null) return;
     const shell = shellRef.current;
@@ -623,7 +663,7 @@ export function DrivingScreenView({
             from here down (trip strip, HOS, controls) rides the bottom
             edge of the full-screen surface; the flex gap above it is open
             map. On the ordinary page it is just the next block. */}
-        <div className={fullScreen ? `${colBottom} mt-auto` : ''}>
+        <div ref={bottomBandRef} className={fullScreen ? `${colBottom} mt-auto` : ''}>
           {fullScreen ? (
             compactStrip
           ) : (
@@ -1479,6 +1519,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   // state keeps the ordinary page so nothing else on the site changes.
   const fullScreen = ACTIVE_LIFECYCLE_STATES.includes(lcState);
   const [styleId, setStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE);
+  /** The cockpit's bottom band height, measured by the view below. */
+  const [bottomInset, setBottomInset] = useState(0);
   const [overviewToggleKey, setOverviewToggleKey] = useState(0);
 
   /*
@@ -1570,6 +1612,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             canPan={permits('pan-map')}
             navigating={fullScreen}
             overviewToggleKey={overviewToggleKey}
+            bottomInsetPx={bottomInset}
           />
         ) : null
       }
@@ -1607,6 +1650,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       onHosClocks={(c) => {
         hosClocksRef.current = c;
       }}
+      onBottomInset={setBottomInset}
       /*
        * The parked destination search, mounted at the top of the map
        * (final pilot milestone). Only while the lifecycle is idle: the

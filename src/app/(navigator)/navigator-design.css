@@ -115,15 +115,16 @@
    The attribution control is OpenStreetMap's required credit: it stays
    readable — cockpit surface, dim-but-passing text, brighter links — and
    is styled, never hidden. */
-.nav-map .leaflet-tile {
-  filter: saturate(0.78);
-}
-.nav-map .leaflet-container .leaflet-control-attribution {
+.nav-map .maplibregl-ctrl-attrib {
   background: var(--nav-surface);
   color: var(--nav-text-dim);
   font-size: 12px;
   padding: 2px 6px;
 }
-.nav-map .leaflet-container .leaflet-control-attribution a {
+.nav-map .maplibregl-ctrl-attrib a {
   color: #a9b6c4;
 }
+/* The basemap's desaturation is a RENDERER paint property now
+   (`raster-saturation` on the basemap layer), not a CSS filter: MapLibre
+   draws tiles, route line and markers onto one canvas, so a CSS filter
+   would have repainted the route and the truck along with the roads. */

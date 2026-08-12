@@ -297,31 +297,50 @@ const surfaceOf = (html: string) => {
 /* ==================== 5. map refinement stays honest ===================== */
 {
   // The tile treatment is saturation-only: quieter, never a fake night
-  // map, never a repaint that could read as data.
-  const tileBlock = /\.nav-map \.leaflet-tile\s*\{([^}]*)\}/.exec(TOKENS)?.[1] ?? '';
+  // map, never a repaint that could read as data. It moved from a CSS
+  // filter to the renderer's own raster paint property in the MapLibre
+  // migration — MapLibre draws tiles, route and markers onto ONE canvas,
+  // so a CSS filter would have repainted the route line and the truck
+  // along with the roads.
+  const styleSrc = readFileSync('src/lib/navigator/map-style.ts', 'utf8');
   check(
-    'map: the tile filter exists and is saturation-only',
-    /filter:\s*saturate\(0\.\d+\)/.test(tileBlock),
+    'map: the tile treatment exists and is saturation-only',
+    /'raster-saturation': RASTER_SATURATION/.test(styleSrc) &&
+      /export const RASTER_SATURATION = -0\.\d+/.test(styleSrc),
   );
-  const sat = Number(/saturate\((0\.\d+)\)/.exec(tileBlock)?.[1] ?? 0);
-  check('map: desaturation is conservative (0.7–1.0)', sat >= 0.7 && sat < 1, sat);
+  const sat = Number(/RASTER_SATURATION = (-0\.\d+)/.exec(styleSrc)?.[1] ?? 0);
+  check('map: desaturation is conservative (equivalent to 0.7–1.0)', sat <= -0.05 && sat >= -0.3, sat);
   check(
     'map: no invert / hue-rotate / grayscale / brightness games',
-    !/invert|hue-rotate|grayscale|brightness|contrast|sepia/.test(tileBlock),
+    // Read the CODE, not the prose: the comment beside the paint property
+    // explains that nothing is inverted, and must not itself trip this.
+    !/raster-(?:hue-rotate|brightness|contrast)|invert|grayscale|sepia/.test(strip(styleSrc)),
+  );
+  check(
+    'map: and the old CSS tile filter is gone with the old renderer',
+    !/\.nav-map \.leaflet-tile/.test(TOKENS),
   );
 
   // Attribution: styled, present, readable — never hidden. display:none
   // or visibility tricks on the credit would violate the tile license.
   check(
     'map: attribution is styled on the cockpit surface',
-    /\.leaflet-control-attribution\s*\{[^}]*var\(--nav-surface\)/.test(TOKENS) &&
-      /\.leaflet-control-attribution\s*\{[^}]*var\(--nav-text-dim\)/.test(TOKENS),
+    /\.maplibregl-ctrl-attrib\s*\{[^}]*var\(--nav-surface\)/.test(TOKENS) &&
+      /\.maplibregl-ctrl-attrib\s*\{[^}]*var\(--nav-text-dim\)/.test(TOKENS),
   );
   check(
     'map: attribution is never hidden',
-    !/\.leaflet-control-attribution[^}]*display:\s*none/.test(TOKENS) &&
-      !/\.leaflet-control-attribution[^}]*visibility:\s*hidden/.test(TOKENS) &&
+    !/\.maplibregl-ctrl-attrib[^}]*display:\s*none/.test(TOKENS) &&
+      !/\.maplibregl-ctrl-attrib[^}]*visibility:\s*hidden/.test(TOKENS) &&
       !/attributionControl:\s*false/.test(MAP),
+  );
+  check(
+    // The OSM credit travels with the tile source itself, so it cannot be
+    // lost by editing the component: MapLibre renders whatever the style
+    // declares.
+    'map: the OSM credit rides on the tile source in the style document',
+    /attribution: style\.attribution/.test(styleSrc) &&
+      /openstreetmap\.org\/copyright/.test(styleSrc),
   );
 
   // The scope class is on the map component; the provider is untouched.
@@ -331,10 +350,14 @@ const surfaceOf = (html: string) => {
   // 36px pin floor, and exactly the three known navigation markers.
   check(
     'map: pins meet the 36px floor',
-    MAP.includes('iconSize: [36, 36]') && !/iconSize: \[(?:[12]\d|3[0-5]), /.test(MAP),
+    /width:36px;height:36px/.test(MAP) && !/width:(?:[12]\d|3[0-5])px;height:/.test(MAP),
   );
-  const titles = [...MAP.matchAll(/title: (?:'([^']+)'|label)/g)].length;
-  check('map: only the truck and the pin() helper create markers', titles === 2, titles);
+  const markerCtors = [...MAP.matchAll(/new maplibre\.Marker\(/g)].length;
+  check(
+    'map: exactly three marker constructions — truck, maneuver, destination',
+    markerCtors === 3,
+    markerCtors,
+  );
   for (const t of ["'Your truck'", "'Next maneuver'", "'Destination'"]) {
     check(`map: marker ${t} still present`, MAP.includes(t));
   }

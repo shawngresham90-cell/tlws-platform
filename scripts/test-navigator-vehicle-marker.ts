@@ -47,15 +47,27 @@ const MAP = strip(MAP_SRC);
   check('rotation: NaN does not guess', vehicleMarkerRotationDeg(Number.NaN) === 0);
   check('rotation: Infinity does not guess', vehicleMarkerRotationDeg(Infinity) === 0);
   check(
-    'rotation: the map still applies it to the element transform, as before',
-    /el\.style\.transform \+= ` rotate\(\$\{rotate\}deg\)`/.test(MAP),
-    'the heading transform changed — the marker no longer faces travel',
+    // The MapLibre migration moved the rotation from a CSS transform on
+    // the icon to the MARKER's own rotation, aligned to the map — so the
+    // truck and the road under it turn together instead of the icon
+    // spinning on a static world.
+    'rotation: the marker is rotated in MAP space, not by a CSS transform',
+    /\.setRotation\(markerRotation\)/.test(MAP) &&
+      /rotationAlignment: 'map'/.test(MAP) &&
+      !/style\.transform/.test(MAP),
+    'the heading rotation changed — the marker no longer faces travel',
   );
   check(
-    'rotation: and it is the SAME angle handed to the artwork',
-    /const rotate = vehicleMarkerRotationDeg\(headingDeg\)/.test(MAP) &&
-      /vehicleMarkerSvg\(rotate\)/.test(MAP),
-    MAP.slice(MAP.indexOf('const rotate'), MAP.indexOf('const rotate') + 160),
+    'rotation: the angle still comes from the shared artwork helper',
+    /const markerRotation = vehicleMarkerRotationDeg\(/.test(MAP),
+    MAP.slice(MAP.indexOf('const markerRotation'), MAP.indexOf('const markerRotation') + 160),
+  );
+  check(
+    // The artwork counter-rotates its wordmark to stay upright. On a
+    // rotating map "upright" is the marker's angle MINUS the camera's, and
+    // north-up (bearing 0) reduces to exactly the old behaviour.
+    'rotation: the artwork is counter-rotated by the SCREEN angle, so the wordmark stays upright',
+    /vehicleMarkerSvg\(markerRotation - bearing\)/.test(MAP),
   );
 }
 
@@ -128,21 +140,24 @@ const MAP = strip(MAP_SRC);
   );
   check('swap: the branded marker is what renders now', /vehicleMarkerSvg\(/.test(MAP));
   check(
-    'swap: the icon box and anchor still come from one constant',
-    /iconSize: \[VEHICLE_MARKER_PX, VEHICLE_MARKER_PX\]/.test(MAP) &&
-      /iconAnchor: \[VEHICLE_MARKER_PX \/ 2, VEHICLE_MARKER_PX \/ 2\]/.test(MAP),
-    'the marker can now be sized and anchored inconsistently',
+    // MapLibre centres a marker element on its coordinate by default, so
+    // the box is the only size that has to be stated — and it still comes
+    // from the one shared constant.
+    'swap: the icon box still comes from one constant',
+    /width:\$\{VEHICLE_MARKER_PX\}px;height:\$\{VEHICLE_MARKER_PX\}px/.test(MAP),
+    'the marker can now be sized inconsistently',
   );
   check(
     'swap: the anchor is still the centre of the box (unchanged from 36/18)',
     VEHICLE_MARKER_PX === 36,
     VEHICLE_MARKER_PX,
   );
-  check('swap: the marker still sits above the route line', /zIndexOffset: 1000/.test(MAP));
-  check('swap: and is still non-interactive', /interactive: false/.test(MAP));
+  // Markers are DOM elements above the canvas in MapLibre, so the truck
+  // is over the route line by construction rather than by a z-index rule.
+  check('swap: and is still non-interactive', /pointer-events:none/.test(MAP));
   check(
     'swap: it is still announced as the truck',
-    /title: 'Your truck'/.test(MAP) && /alt: 'Your truck'/.test(MAP),
+    /'aria-label', 'Your truck'/.test(MAP) && /'title', 'Your truck'/.test(MAP),
   );
 }
 
@@ -173,13 +188,19 @@ const MAP = strip(MAP_SRC);
     'shouldRecenter(position, lastCenteredRef.current)',
     'navigationZoom(speedMph)',
     "dispatch({ kind: 'recenter' })",
-    'truckRef.current.setLatLng([position.lat, position.lng])',
+    'truckRef.current.setLngLat([position.lng, position.lat])',
   ]) {
     check(`visual-only: map behaviour intact — ${call}`, MAP.includes(call), call);
   }
   check(
-    'visual-only: the follow/recenter effect dependencies are unchanged',
-    MAP.includes('[ready, position, headingDeg, speedMph, navigating, dispatch]'),
+    // The truck effect gained `geometry`: the heading controller reads the
+    // route's forward bearing when the receiver publishes no course. Every
+    // other dependency — and therefore the effect's 1 Hz cadence — is
+    // unchanged.
+    'visual-only: the follow/recenter effect keeps its cadence (plus route geometry)',
+    MAP.includes(
+      '[ready, position, headingDeg, speedMph, navigating, geometry, bottomInsetPx, dispatch]',
+    ),
     'the truck effect cadence changed',
   );
 }
