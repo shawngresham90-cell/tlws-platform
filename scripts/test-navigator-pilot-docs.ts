@@ -541,14 +541,30 @@ const URL_PARAMS = (() => {
         'latLngToContainerPoint',
       ),
   );
+  // Heading-up SHIPPED (owner decision 6, path B — the MapLibre
+  // migration). What the limitations doc must now say is what is still
+  // true: guidance rotates, everything else is north-up on purpose, the
+  // heading is inferred from movement, and no compass is read.
   check(
-    'limits: north-up is a named limitation, with the blocker doc referenced',
-    /north-up, not heading-up/.test(LIMITS_FLAT) &&
-      LIMITS_FLAT.includes('navigator-heading-up-blocker.md'),
+    'limits: heading-up guidance is stated, with north-up kept where it is clearer',
+    /Live guidance is heading-up; every other map is north-up/.test(LIMITS_FLAT),
   );
   check(
-    'limits: heading-up is owner decision 6 — plugin vs MapLibre, not decided here',
-    /leaflet-rotate/.test(LIMITS_FLAT) && /MapLibre GL migration/.test(LIMITS_FLAT),
+    'limits: the heading is described as inferred, never invented while parked',
+    /The heading is inferred, and says so/.test(LIMITS_FLAT) &&
+      /parked truck at a cold start has no heading/.test(LIMITS_FLAT),
+  );
+  check(
+    'limits: no compass / no orientation sensor is stated plainly',
+    /No compass/.test(LIMITS_FLAT) && /no motion permission is requested/.test(LIMITS_FLAT),
+  );
+  check(
+    'limits: owner decision 6 is recorded as RESOLVED by the MapLibre migration',
+    /\| 6 \|[\s\S]{0,400}Resolved/i.test(LIMITS_FLAT) && /MapLibre GL migration/.test(LIMITS_FLAT),
+  );
+  check(
+    'limits: and Leaflet is explained as still present for the directory maps',
+    /directory and parking maps\*{0,2} still use it/.test(LIMITS_FLAT),
   );
 }
 
