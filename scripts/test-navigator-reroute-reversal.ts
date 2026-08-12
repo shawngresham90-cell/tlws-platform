@@ -20,6 +20,8 @@
  *     --outfile=/tmp/test-navigator-reroute-reversal.cjs && node /tmp/test-navigator-reroute-reversal.cjs
  */
 import { readFileSync } from 'node:fs';
+import { buildHereRouteUrl } from '@/lib/trip-planner/here-routing';
+import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import {
   checkInitialReversal,
   REVERSAL_DEFAULTS,
@@ -378,29 +380,30 @@ function runFrom(from: LatLng, bearingDeg: number, n: number, stepDeg = 0.001): 
    * whitelist and is a documented HERE avoid feature — it is a value, not
    * a new parameter, and this fix did not touch it.)
    */
-  const here = readFileSync('src/lib/trip-planner/here-routing.ts', 'utf8');
-  const params = [...here.matchAll(/p\.set\('([^']+)'/g)].map((m) => m[1]).sort();
-  check(
-    'no-guessing: the provider request sets exactly the parameters it always did',
-    params.join(',') ===
-      [
-        'apiKey',
-        'avoid[features]',
-        'departureTime',
-        'destination',
-        'origin',
-        'return',
-        'transportMode',
-        'truck[axleCount]',
-        'truck[grossWeight]',
-        'truck[height]',
-        'truck[length]',
-        'truck[shippedHazardousGoods]',
-        'truck[width]',
-        'units',
-      ].join(','),
-    params,
-  );
+  /*
+   * Derived from the REAL request, not from source text. The truck→
+   * provider mapping moved into `here-truck-params.ts` (truck-route
+   * confidence milestone) so the driver's "Route planned for" summary is
+   * rendered from the same function that builds the request; a pin that
+   * grepped `p.set('...')` in one file would now miss a parameter added
+   * in the other. Building the URL catches a new parameter WHEREVER it is
+   * added, which is the property this check exists for.
+   */
+  const params = [
+    ...new URL(
+      buildHereRouteUrl(
+        {
+          origin: { lat: 33.7, lng: -84.4 },
+          destination: { lat: 34.0, lng: -85.0 },
+          waypoints: [],
+          truck: { ...DEFAULT_TRUCK_PROFILE, hazmatClass: '3' },
+          departAtMs: 1_770_000_000_000,
+          avoid: ['tollRoad'],
+        },
+        'test-key-not-a-real-one',
+      ),
+    ).searchParams.keys(),
+  ].sort();
   for (const guessed of ['vehicle[type]', 'truck[type]', 'truck[trailerCount]', 'heading']) {
     check(`no-guessing: no ${guessed} parameter was invented`, !params.includes(guessed), params);
   }

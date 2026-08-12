@@ -1,6 +1,14 @@
 import { haversineMiles } from '@/lib/map/geo';
 import type { LatLng } from '@/lib/map/bounds';
 import { buildRoute, type TruckProfile } from './types';
+import {
+  hazmatToHereGoods,
+  sanitizeAvoidances,
+  truckWireParams,
+  CM_PER_FT,
+  HERE_AVOID_FEATURES,
+  KG_PER_LB,
+} from './here-truck-params';
 import type { RoutingPort, RoutingRequest, RoutingResult } from './providers';
 import { decodeFlexiblePolyline } from './flexible-polyline';
 
@@ -34,8 +42,6 @@ export type HereFetch = (url: string) => Promise<{
 }>;
 
 const HERE_BASE = 'https://router.hereapi.com/v8/routes';
-const CM_PER_FT = 30.48;
-const KG_PER_LB = 0.45359237;
 const METERS_PER_MILE = 1609.344;
 
 /** Target spacing of sampled route points fed to weather/directory layers. */
@@ -43,49 +49,22 @@ const SAMPLE_MILES = 2;
 const MAX_ROUTE_POINTS = 400;
 const MAX_INSTRUCTIONS = 60;
 
-/**
- * US hazmat class (placard, "1".."9" with optional subclass like "2.1") →
- * HERE `shippedHazardousGoods` value. Conservative: unknown input maps to
- * `other` so restricted roads are still avoided rather than ignored.
+/*
+ * The truck→provider mapping, the hazmat table, the avoidance whitelist
+ * and the unit conversions all moved to `here-truck-params.ts` in the
+ * truck-route confidence milestone: the DRIVER'S "Route planned for"
+ * summary is rendered from the same function that builds this request, so
+ * a screen can never claim a restriction the wire did not carry. They are
+ * re-exported here because this module was their published home.
  */
-export function hazmatToHereGoods(hazmatClass: string | null): string | null {
-  if (!hazmatClass) return null;
-  const cls = hazmatClass.trim().charAt(0);
-  switch (cls) {
-    case '1':
-      return 'explosive';
-    case '2':
-      return 'gas';
-    case '3':
-      return 'flammable';
-    case '4':
-      return 'combustible';
-    case '5':
-      return 'organic';
-    case '6':
-      return 'poison';
-    case '7':
-      return 'radioactive';
-    case '8':
-      return 'corrosive';
-    case '9':
-      return 'other';
-    default:
-      return 'other';
-  }
-}
-
-/**
- * Whitelisted HERE v8 `avoid[features]` values. Anything not in this set is
- * DROPPED (never forwarded) so arbitrary strings can't reach the provider.
- */
-export const HERE_AVOID_FEATURES = new Set(['tollRoad', 'ferry', 'tunnel', 'dirtRoad', 'uTurns']);
-
-/** Filter avoidances to the provider-supported whitelist (pure, testable). */
-export function sanitizeAvoidances(avoid: readonly string[] | undefined): string[] {
-  if (!avoid) return [];
-  return [...new Set(avoid.filter((a) => HERE_AVOID_FEATURES.has(a)))];
-}
+export {
+  hazmatToHereGoods,
+  sanitizeAvoidances,
+  truckWireParams,
+  HERE_AVOID_FEATURES,
+  CM_PER_FT,
+  KG_PER_LB,
+};
 
 /** Build the v8 request URL. Exported pure for tests; the key is a param. */
 export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
@@ -105,16 +84,10 @@ export function buildHereRouteUrl(req: RoutingRequest, apiKey: string): string {
   // instruction wording only; summary/length fields stay metric.
   p.set('units', 'imperial');
   p.set('departureTime', new Date(req.departAtMs).toISOString());
-  const t = req.truck;
-  p.set('truck[height]', String(Math.round(t.heightFt * CM_PER_FT)));
-  p.set('truck[width]', String(Math.round(t.widthFt * CM_PER_FT)));
-  p.set('truck[length]', String(Math.round(t.lengthFt * CM_PER_FT)));
-  p.set('truck[grossWeight]', String(Math.round(t.grossWeightLbs * KG_PER_LB)));
-  p.set('truck[axleCount]', String(t.axles));
-  const goods = hazmatToHereGoods(t.hazmatClass);
-  if (goods) p.set('truck[shippedHazardousGoods]', goods);
-  const avoid = sanitizeAvoidances(req.avoid);
-  if (avoid.length > 0) p.set('avoid[features]', avoid.join(','));
+  // ONE authority for the truck parameters (here-truck-params.ts). `set`,
+  // never `append`, so a parameter can never be duplicated; the mapping
+  // itself yields each name at most once.
+  for (const wire of truckWireParams(req.truck, req.avoid)) p.set(wire.param, wire.value);
   p.set('apiKey', apiKey);
   return `${HERE_BASE}?${p.toString()}`;
 }
