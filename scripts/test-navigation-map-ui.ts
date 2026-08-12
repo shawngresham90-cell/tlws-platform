@@ -61,10 +61,12 @@ const T0 = 1_754_000_000_000;
     screen.includes('fixed inset-0') && screen.includes('h-[100dvh]'),
   );
   check(
-    // Measured in Chromium: 38% of the surface in portrait, 95% in
-    // landscape. The map is the flex-1 child with a guaranteed floor.
-    '1. the map takes every pixel the readouts do not, with a floor',
-    screen.includes('min-h-[38dvh] flex-1') &&
+    // Full-screen map (pilot round 3): measured in Chromium at ≥95%
+    // viewport coverage in BOTH orientations — the map is the absolute
+    // z-0 background of the whole surface, not a flex child with a
+    // floor.
+    '1. the map IS the surface: full-bleed background, single wrapper',
+    screen.includes("? 'absolute inset-0 z-0 overflow-hidden'") &&
       screen.includes('<div className={mapWrapCls}>{mapSlot}</div>'),
   );
   check(
@@ -94,8 +96,13 @@ const T0 = 1_754_000_000_000;
       !/if \(fullScreen\) \{\s*return \(/.test(screen),
   );
   check(
-    '1. landscape re-arranges with grid placement, never by reordering the DOM',
-    screen.includes('landscape:grid') && screen.includes('landscape:col-start-2'),
+    // Full-screen map (pilot round 3): the map is ALWAYS the whole
+    // surface, so landscape no longer needs a second layout system —
+    // the overlays cap their width to the old rail fraction and the DOM
+    // order never changes. The invariant this pins is unchanged: no
+    // reordering, no alternate tree for landscape.
+    '1. landscape re-arranges by capping overlay width, never by reordering the DOM',
+    screen.includes('landscape:max-w-[38vw]') && !screen.includes('landscape:grid'),
   );
   check(
     '1. the map-first surface is used ONLY while guidance is live',
@@ -316,13 +323,16 @@ const T0 = 1_754_000_000_000;
   // stacking everything vertically squeezed the map to ZERO height at 320,
   // 360, 375 and in both landscape sizes. The fixes are pinned here.
   check(
-    '7. landscape switches to a two-column layout so the map keeps the height',
-    screen.includes('landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)]') &&
-      screen.includes('landscape:col-start-2'),
+    // Both orientations now share one mechanism: the map is an absolute
+    // z-0 background filling the whole surface, so it keeps full height
+    // in landscape AND cannot be squeezed in portrait — by construction,
+    // not by a minimum.
+    '7. the map is the full-bleed background in every orientation',
+    screen.includes("? 'absolute inset-0 z-0 overflow-hidden'"),
   );
   check(
-    '7. the map can never be squeezed to nothing in portrait',
-    screen.includes('min-h-[38dvh]'),
+    '7. overlays are explicitly layered above the map (z-10 over z-0)',
+    screen.includes('relative z-10') && screen.includes('inset-0 z-0'),
   );
   check(
     '7. the maneuver card is capped so it cannot eat the map',
@@ -333,8 +343,10 @@ const T0 = 1_754_000_000_000;
     screen.includes('text-2xl font-semibold leading-tight text-ink sm:text-4xl'),
   );
   check(
-    '7. the readout column and its rows never shrink the map away',
-    screen.includes("const colOne = fullScreen ? 'shrink-0") &&
+    // With the map out of flow the overlays cannot shrink it at all;
+    // shrink-0 still keeps each overlay honest about its own height.
+    '7. the overlay rows keep their own height (and cannot touch the map)',
+    screen.includes("const colOne = fullScreen ? 'relative z-10 shrink-0") &&
       (screen.match(/shrink-0/g) ?? []).length >= 3,
   );
   check(

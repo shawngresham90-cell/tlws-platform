@@ -419,8 +419,14 @@ export function NavigationMap({
         </div>
       ) : null}
 
-      {/* Controls sit ON the map, right side, thumb-reachable. */}
-      <div className="pointer-events-none absolute bottom-4 right-3 flex flex-col gap-2">
+      {/* Controls sit ON the map, right side, thumb-reachable — anchored
+          at the vertical CENTER, not the bottom corner: on the
+          full-screen driving surface the bottom band belongs to the trip
+          strip and the Stop/voice row, and a bottom-pinned stack sat
+          underneath them. Center-right is clear of the maneuver card
+          above and the control row below at every tested size, and on
+          the parked page box it reads the same. */}
+      <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 flex-col gap-2">
         {recenterVisible(follow) ? (
           <button
             type="button"

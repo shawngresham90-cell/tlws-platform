@@ -287,12 +287,15 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   check('clusters: exactly two sections (maneuver banner, HOS strip)', sections === 2, sections);
   check('clusters: exactly two dls (trip bar, HOS clocks)', dls === 2, dls);
 
-  // The map is the hero: the one flex-1 element is the map wrapper, the
-  // banner is hard-capped, and nothing else may claim remaining space.
+  // The map is the hero — now literally the whole surface: an absolute
+  // z-0 background. Nothing on the overlay column may claim remaining
+  // flex space for itself; the space between the top and bottom overlay
+  // groups is open map (mt-auto), not a stretched readout.
   check(
-    'map hero: the map wrapper is the only flex-1 element',
-    (surface.match(/flex-1/g) ?? []).length === 1,
+    'map hero: the map is the full-bleed background, and nothing else grows',
+    surface.includes('absolute inset-0 z-0') && (surface.match(/flex-1/g) ?? []).length === 0,
   );
+  check('map hero: the bottom overlay group rides the bottom edge', surface.includes('mt-auto'));
   check('map hero: the banner is capped', surface.includes('max-h-[28dvh]'));
 
   // Kill list (blueprint §11), on the rendered surface.

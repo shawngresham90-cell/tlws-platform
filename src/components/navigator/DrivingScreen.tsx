@@ -96,12 +96,21 @@ const buildId = resolveBuildId({
  * custom truck would be a lie. Display-only: no tap target, no pointer
  * events, so it can never intercept a map gesture. Exported for the design
  * harness.
+ *
+ * `docked` (full-screen map): the chip rides the overlay column as an
+ * ordinary flow item instead of pinning itself absolutely — the map now
+ * owns the whole viewport, so a top-right absolute pin would sit under
+ * the full-width maneuver card. Same content, same non-interactivity;
+ * only the anchoring moves. This is the one truck-profile element the
+ * full-screen item repositions, not a redesign of it.
  */
-export function TruckChip() {
+export function TruckChip({ docked = false }: { docked?: boolean } = {}) {
   return (
     <div
       aria-label="Truck profile used for this route"
-      className="pointer-events-none absolute right-3 top-3 z-[1000] rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-right shadow-lg"
+      className={`pointer-events-none rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-right shadow-lg${
+        docked ? '' : ' absolute right-3 top-3 z-[1000]'
+      }`}
     >
       <div className="font-data num-data text-[length:var(--size-street)] font-bold leading-tight text-ink">
         {formatTruckHeightFtIn(DEFAULT_TRUCK_PROFILE.heightFt)} ·{' '}
@@ -401,33 +410,49 @@ export function DrivingScreenView({
   const shellCls = fullScreen
     ? 'fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-nav-bg'
     : '';
-  // Portrait stacks card → map → readouts. Landscape becomes a two-column
-  // grid — readouts left, map spanning the right — WITHOUT reordering the
-  // DOM, so the map still never remounts.
-  // Landscape rows are IMPLICIT, one per left-column item (every item
-  // carries col-start-1), so each honest line — status, off-route,
-  // offline — sizes to its own content. The template-plus-spanning-map
-  // arrangement this replaces let Chromium's track sizing collapse
-  // conditional rows to 0px, painting the warning rail's lines over each
-  // other exactly when more than one thing was wrong.
+  /*
+   * FULL-SCREEN MAP (pilot round 3, item "full-screen navigation map").
+   *
+   * While guidance is live the MAP is the surface: an absolutely
+   * positioned background filling the whole 100dvh box edge to edge, with
+   * every readout and control LAYERED above it as an overlay. The
+   * element order is IDENTICAL to the parked page and only classes
+   * change — the rule that keeps the Leaflet instance mounted across
+   * route-ready → navigating stands untouched, and the map's own
+   * ResizeObserver (#301) absorbs the container's growth to the full
+   * viewport.
+   *
+   * The overlay column is a flex stack over the map: maneuver card and
+   * the honest lines at the top, then `mt-auto` pushes the trip strip,
+   * HOS and the control row to the bottom edge. Everything in between is
+   * open map, and taps there reach it — overlays hit-test individually,
+   * empty flex space does not.
+   *
+   * Layering is explicit, never an accident of DOM order: the map wrap
+   * is z-0, every overlay is z-10. An absolutely positioned later
+   * sibling would otherwise paint OVER the in-flow card above it.
+   *
+   * Landscape needs no second layout system anymore: the map is already
+   * everywhere, so the overlays simply cap their width to the left ~38%
+   * (the same rail fraction the old grid used) and the right side stays
+   * open road. Same DOM, one mechanism, nothing for grid track sizing
+   * to collapse.
+   *
+   * Safe areas pad the OVERLAYS, not the map: the surface carries
+   * env(safe-area-inset-*) padding on all four sides so no control can
+   * sit under a notch or home indicator, while the map (positioned to
+   * the padding box, which includes the padded area) still paints edge
+   * to edge behind them. Note the site does not opt into
+   * viewport-fit=cover, so on notched phones the browser already keeps
+   * the page inside the safe viewport — the env() paddings are 0 there
+   * today and simply stand ready.
+   */
   const surfaceCls = fullScreen
-    ? 'flex h-[100dvh] flex-col gap-2 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
-      'landscape:grid landscape:grid-cols-[minmax(0,38%)_minmax(0,1fr)] ' +
-      'landscape:auto-rows-min landscape:items-start'
+    ? 'relative flex h-[100dvh] flex-col gap-2 p-2 ' +
+      'pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
+      'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]'
     : 'space-y-6';
-  const colOne = fullScreen ? 'shrink-0 landscape:col-start-1' : '';
-  // The map is pinned to the VIEWPORT in landscape, not to the grid — the
-  // road-test finding that produced this rule stands: on a 320 px-tall
-  // phone on its side the left column can need 500 px, and a map sized by
-  // the grid followed it below the fold, taking its own Recenter and zoom
-  // controls with it. The pinning is now absolute positioning against the
-  // fixed shell (same 0.5rem margins the grid padding gave it) instead of
-  // an explicit height on a row-spanning grid item: a fixed-height span
-  // let Chromium collapse the left column's conditional rows to 0px, and
-  // an absolutely-positioned map cannot influence row sizing at all. The
-  // left offset mirrors the grid's minmax(0,38%) first column plus the
-  // gap. (landscape:col-start-2 is inert on an absolute item and kept for
-  // the structural pins that read it.)
+  const colOne = fullScreen ? 'relative z-10 shrink-0 landscape:max-w-[38vw]' : '';
   // Parked, the map gets the SAME box the dynamic-import placeholder
   // promises (h-72/sm:h-96, cockpit border). It used to get no class at
   // all: a bare auto-height div, in which the map's h-full computed to
@@ -439,9 +464,7 @@ export function DrivingScreenView({
   // when a map is actually mounted: before Enable location the slot is
   // null and an empty bordered box would be a lie.
   const mapWrapCls = fullScreen
-    ? 'relative min-h-[38dvh] flex-1 overflow-hidden rounded-cockpit border border-line ' +
-      'landscape:absolute landscape:inset-y-2 landscape:right-2 ' +
-      'landscape:left-[calc(0.38*(100vw-1rem)+1rem)] landscape:col-start-2 landscape:min-h-0'
+    ? 'absolute inset-0 z-0 overflow-hidden'
     : mapSlot !== null
       ? 'relative h-72 w-full overflow-hidden rounded-cockpit border border-line sm:h-96'
       : '';
@@ -481,8 +504,22 @@ export function DrivingScreenView({
         ) : null}
 
         {/* The map: the driving surface's primary element, and the one
-            component that must survive the layout switch untouched. */}
+            component that must survive the layout switch untouched. In
+            full-screen it is the z-0 BACKGROUND filling the whole
+            surface; parked it stays the bordered page box. */}
         <div className={mapWrapCls}>{mapSlot}</div>
+
+        {/* The truck chip, docked into the overlay column while the map
+            owns the screen (see TruckChip). self-end keeps it on the
+            right edge, out of the maneuver card's shadow and clear of
+            the map's own side controls. The conditional always renders a
+            child slot (null when parked), so sibling INDEXES never shift
+            and the map above cannot be remounted by the mode switch. */}
+        {fullScreen ? (
+          <div className="relative z-10 self-end">
+            <TruckChip docked />
+          </div>
+        ) : null}
 
         {/* Status as TEXT — never color alone; live region for changes.
             Phase 2 warning rail: the SAME line, dressed by severity. While
@@ -503,7 +540,10 @@ export function DrivingScreenView({
                     ? ' rounded-cockpit border border-line border-l-4 border-l-nav-danger bg-nav-surface px-3 py-1'
                     : statusSev === 'advisory'
                       ? ' rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-nav-surface px-3 py-1'
-                      : ''
+                      : /* healthy: still the quiet one-liner — no rail edge,
+                           no border — but over a live map it needs its own
+                           backing to stay readable on any basemap. */
+                        ' self-start rounded-cockpit bg-asphalt/85 px-3 py-1'
                 }`
               : 'text-xl font-semibold text-ink'
           }
@@ -535,7 +575,11 @@ export function DrivingScreenView({
           </p>
         ) : null}
 
-        <div className={colOne}>
+        {/* mt-auto: the first item of the BOTTOM overlay group. Everything
+            from here down (trip strip, HOS, controls) rides the bottom
+            edge of the full-screen surface; the flex gap above it is open
+            map. On the ordinary page it is just the next block. */}
+        <div className={fullScreen ? `${colOne} mt-auto` : ''}>
           {fullScreen ? (
             compactStrip
           ) : (
@@ -1391,26 +1435,20 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       }
       mapSlot={
         watching || mapData.geometry.length > 0 ? (
-          <>
-            <NavigationMap
-              geometry={mapData.geometry}
-              position={truckPosition}
-              headingDeg={position.headingDeg}
-              speedMph={view.speedMph}
-              destination={mapData.destination}
-              nextManeuver={mapData.nextManeuver}
-              routeId={mapData.routeId}
-              styleId={styleId}
-              canZoom={permits('zoom-map')}
-              canPan={permits('pan-map')}
-              navigating={fullScreen}
-              overviewToggleKey={overviewToggleKey}
-            />
-            {/* Map-anchored, display-only, present only while the surface
-                is the driving cockpit — the parked page already states the
-                full profile in the trip controls. */}
-            {fullScreen ? <TruckChip /> : null}
-          </>
+          <NavigationMap
+            geometry={mapData.geometry}
+            position={truckPosition}
+            headingDeg={position.headingDeg}
+            speedMph={view.speedMph}
+            destination={mapData.destination}
+            nextManeuver={mapData.nextManeuver}
+            routeId={mapData.routeId}
+            styleId={styleId}
+            canZoom={permits('zoom-map')}
+            canPan={permits('pan-map')}
+            navigating={fullScreen}
+            overviewToggleKey={overviewToggleKey}
+          />
         ) : null
       }
       onStart={() => {

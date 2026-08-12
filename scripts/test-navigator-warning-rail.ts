@@ -223,7 +223,13 @@ const surfaceOf = (html: string) => {
     (loud.match(/<section\b/g) ?? []).length === 2,
   );
   check('rail: still two dls in the loudest state', (loud.match(/<dl\b/g) ?? []).length === 2);
-  check('rail: the map is still the only flex-1', (loud.match(/flex-1/g) ?? []).length === 1);
+  // Full-screen map: nothing stretches — the map is the absolute
+  // background and even the loudest rail state floats above it.
+  check(
+    'rail: nothing competes with the full-bleed map',
+    (loud.match(/flex-1/g) ?? []).length === 0,
+  );
+  check('rail: the map is still the full-bleed background', loud.includes('absolute inset-0 z-0'));
 }
 
 /* ==================== 3. the rail changes no behavior ==================== */
