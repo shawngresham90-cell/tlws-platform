@@ -103,7 +103,9 @@ async function main() {
    * ---------------------------------------------------------------- */
   const anchors = heroMarkup.split('<a ').slice(1);
   const parkingAnchorIndex = anchors.findIndex((a) => a.startsWith('aria-label="Truck Parking'));
-  const navigatorAnchorIndex = anchors.findIndex((a) => a.startsWith('aria-label="Navigator'));
+  const navigatorAnchorIndex = anchors.findIndex((a) =>
+    a.startsWith('aria-label="Open TLWS Navigator'),
+  );
   check('2a: the Truck Parking tile is present', parkingAnchorIndex >= 0);
   check('2b: the Navigator tile is present', navigatorAnchorIndex >= 0);
   check('2c: Navigator comes AFTER Truck Parking', navigatorAnchorIndex > parkingAnchorIndex);
@@ -148,15 +150,21 @@ async function main() {
     parkingMarkup.includes('href="/directory/parking"'),
   );
   check('4b: parking tile keeps its label', parkingMarkup.includes('Truck'));
-  // The two tiles share one icon family (48×48 app plate) but each keeps its
-  // own distinct glyph: the parking icon carries the P-sign path, which must
-  // never appear in the Navigator icon (and vice versa for the nav arrow).
+  // The two tiles share ONE icon plate (TILE_ICON_PLATE) but each keeps its own
+  // artwork: parking keeps its drawn P-sign glyph, the Navigator carries the
+  // owner's supplied image. Neither may leak into the other.
   check(
-    '4c: parking tile keeps its own icon, distinct from the Navigator arrow',
+    '4c: parking keeps its drawn glyph; the Navigator carries the owner image',
     parkingMarkup.includes('M14.5 20.5v-9') &&
       !navMarkup.includes('M14.5 20.5v-9') &&
-      navMarkup.includes('L6.2 7') &&
-      !parkingMarkup.includes('L6.2 7'),
+      navMarkup.includes('tlws-navigator-icon') &&
+      !parkingMarkup.includes('tlws-navigator-icon'),
+  );
+  check(
+    '4f: both tiles mount their art in the SAME shared square plate',
+    ['rounded-[22%]', 'border-signal/70', 'h-28', 'w-28', 'sm:h-32', 'sm:w-32'].every(
+      (cls) => navMarkup.includes(cls) && parkingMarkup.includes(cls),
+    ),
   );
   // The parking marquee may MENTION the Navigator icon (the two icons are
   // documented as one family) but must never link to it or import from it —
@@ -174,12 +182,25 @@ async function main() {
   );
 
   /* ---------------------------------------------------------------- *
-   * 5 — label is exactly "Navigator"
+   * 5 — card header, description and accessible name
    * ---------------------------------------------------------------- */
-  check('5a: visible label is Navigator', navMarkup.includes('>Navigator</span>'));
+  check('5a: visible header is TLWS Navigator', navMarkup.includes('>TLWS Navigator</span>'));
   check(
-    '5b: accessible name starts with the visible label',
-    navMarkup.includes('aria-label="Navigator —'),
+    '5b: the description sits below the header, as real text',
+    navMarkup.includes('>Truck-safe GPS navigation</span>') &&
+      navMarkup.indexOf('>TLWS Navigator</span>') <
+        navMarkup.indexOf('>Truck-safe GPS navigation</span>'),
+  );
+  check(
+    '5c: accessible name names the destination',
+    navMarkup.includes('aria-label="Open TLWS Navigator"'),
+  );
+  // The owner's artwork carries no words, so every word on the card is real
+  // text: the <img> alt stays empty (it is decorative inside the aria-hidden
+  // frame) and the accessible name comes from the anchor's own label.
+  check(
+    '5d: the icon is the owner artwork, mounted uncropped and undistorted',
+    navMarkup.includes('tlws-navigator-icon') && navMarkup.includes('object-contain'),
   );
 
   /* ---------------------------------------------------------------- *
@@ -651,11 +672,11 @@ async function main() {
   );
   check(
     '19o: flag off ⇒ the tile is still on the homepage hero',
-    heroMarkupFlagOff.includes('aria-label="Navigator'),
+    heroMarkupFlagOff.includes('aria-label="Open TLWS Navigator'),
   );
   const offAnchors = heroMarkupFlagOff.split('<a ').slice(1);
   const offParking = offAnchors.findIndex((a) => a.startsWith('aria-label="Truck Parking'));
-  const offNavigator = offAnchors.findIndex((a) => a.startsWith('aria-label="Navigator'));
+  const offNavigator = offAnchors.findIndex((a) => a.startsWith('aria-label="Open TLWS Navigator'));
   check(
     '19p: flag off ⇒ still DIRECTLY below Truck Parking',
     offParking >= 0 && offNavigator === offParking + 1,
