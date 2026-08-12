@@ -46,12 +46,21 @@ export function formatHM(minutes: number): string {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
 
-function severityFor(minutes: number): HosSeverity {
+/**
+ * The shipped escalation thresholds, as one function. Exported so the
+ * compact driving strip (hos-compact.ts) can dress its cells with the
+ * SAME severity the warning line and the voice announcer already use —
+ * a second copy of these numbers is exactly how a strip ends up
+ * disagreeing with the voice that warned about it.
+ */
+export function clockSeverity(minutes: number): HosSeverity {
   if (minutes <= CRITICAL_MIN) return 'critical';
   if (minutes <= WARNING_MIN) return 'warning';
   if (minutes <= NOTICE_MIN) return 'notice';
   return 'none';
 }
+
+const severityFor = clockSeverity;
 
 /**
  * The single binding warning: whichever clock runs out FIRST decides the

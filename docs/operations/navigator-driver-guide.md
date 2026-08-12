@@ -64,7 +64,14 @@ be your only source during the pilot.
       never stored, a reload loses it, and leaving it blank changes nothing
       about navigation.
 - [ ] **Look at the truck panel.** Check the height, width, length, weight and
-      axle count it is using are yours.
+      axle count it is using are yours. While you are driving, the same
+      numbers ride in the corner chip — height, weight, axles, hazmat — and
+      it says plainly that trailer count is not part of the profile.
+- [ ] **Glance at the clocks.** DRIVE, WINDOW, CYCLE and BREAK sit above the
+      controls while you navigate, and the one about to bite is marked. They
+      start from a **fresh driver every session** — Navigator is not an ELD
+      and cannot see what you drove before you opened it. **Your logs are the
+      record.** Tap the strip while parked to see the clocks in full.
 - [ ] **Write down the build number** shown on screen. It is a short code like
       `b6a1260`. Every report needs it.
 

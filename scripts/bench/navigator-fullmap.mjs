@@ -152,6 +152,8 @@ async function measure(page) {
       truckClear: null,
       controls: [],
       distanceText: null,
+      hos: null,
+      truck: null,
       statusPresent: /\bNavigating\b|Position approximate/.test(document.body.innerText),
     };
     const mapEl = document.querySelector('.leaflet-container');
@@ -203,6 +205,40 @@ async function measure(page) {
     const card = document.querySelector('[aria-label="Next maneuver"]');
     const dist = card ? /In ([\d.,]+ (?:mi|ft))/.exec(card.textContent ?? '') : null;
     out.distanceText = dist ? dist[1] : null;
+
+    // ---- compact HOS strip (pilot round 3) --------------------------------
+    const hos = document.querySelector('[aria-label^="Hours of service — compact"]');
+    if (hos) {
+      const r = hos.getBoundingClientRect();
+      const text = hos.textContent ?? '';
+      out.hos = {
+        heightPx: Math.round(r.height),
+        inViewport: r.top >= -1 && r.bottom <= vh + 1 && r.left >= -1 && r.right <= vw + 1,
+        labels: ['DRIVE', 'WINDOW', 'CYCLE', 'BREAK'].filter((l) => text.includes(l)),
+        // Clock values, e.g. "11:00" — four of them when all are known.
+        values: (text.match(/\d+:[0-5]\d/g) ?? []).slice(0, 4),
+        limitingMarked: hos.querySelector('[title="Limiting clock"]') !== null,
+        disclaimer: /not an ELD/i.test(text),
+        tappable: hos.tagName === 'BUTTON',
+        shortAxisPx: Math.round(Math.min(r.width, r.height)),
+      };
+    }
+    // ---- compact truck summary -------------------------------------------
+    const chip = document.querySelector('[aria-label="Truck profile used for this route"]');
+    if (chip) {
+      const r = chip.getBoundingClientRect();
+      const text = chip.textContent ?? '';
+      out.truck = {
+        inViewport: r.top >= -1 && r.bottom <= vh + 1,
+        heightPx: Math.round(r.height),
+        text: text.replace(/\s+/g, ' ').trim().slice(0, 90),
+        hasHeight: /13′6″|13'6/.test(text),
+        hasWeight: /80,000/.test(text),
+        hasAxles: /axles/.test(text),
+        hasHazmat: /hazmat/i.test(text),
+        hasTrailers: /trailers/i.test(text),
+      };
+    }
     return out;
   });
 }
@@ -292,6 +328,41 @@ async function runCase(browser, { w, h }) {
       bad.length === 0,
       JSON.stringify(bad),
     );
+    // ---- compact HOS strip ------------------------------------------------
+    const hos = m2.hos;
+    verdict('HOS: the compact strip is visible during guidance', hos !== null);
+    if (hos) {
+      console.log(
+        `  hos strip ${hos.heightPx}px — ${hos.labels.join('/')} ${JSON.stringify(hos.values)}`,
+      );
+      verdict('HOS: all four clocks are labelled', hos.labels.length === 4, hos.labels.join(','));
+      verdict(
+        'HOS: four clock values are shown',
+        hos.values.length === 4,
+        JSON.stringify(hos.values),
+      );
+      verdict('HOS: the limiting clock is marked', hos.limitingMarked);
+      verdict('HOS: the planning-aid/not-an-ELD line rides with it', hos.disclaimer);
+      verdict('HOS: inside the viewport, nothing clipped', hos.inViewport);
+      verdict('HOS: glove-sized tap target (≥44px)', hos.shortAxisPx >= 44, `${hos.shortAxisPx}px`);
+      // The whole point: compact. It must stay a strip, not a card.
+      verdict('HOS: stays compact (≤96px tall)', hos.heightPx <= 96, `${hos.heightPx}px`);
+    }
+    // ---- compact truck summary ---------------------------------------------
+    const truck = m2.truck;
+    if (truck) {
+      console.log(`  truck chip ${truck.heightPx}px — ${truck.text}`);
+      verdict(
+        'truck: height, weight, axles and hazmat all stated',
+        truck.hasHeight && truck.hasWeight && truck.hasAxles && truck.hasHazmat,
+        JSON.stringify(truck),
+      );
+      verdict('truck: trailer count labelled rather than implied', truck.hasTrailers);
+      verdict('truck: inside the viewport', truck.inViewport);
+    } else {
+      console.log('  (truck chip hidden at this size — short-viewport rule)');
+    }
+
     if (m2.truckClear !== null) {
       verdict('truck position not covered by an overlay', m2.truckClear === true);
     } else {
