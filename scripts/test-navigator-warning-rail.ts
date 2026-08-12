@@ -309,7 +309,11 @@ const surfaceOf = (html: string) => {
       /export const RASTER_SATURATION = -0\.\d+/.test(styleSrc),
   );
   const sat = Number(/RASTER_SATURATION = (-0\.\d+)/.exec(styleSrc)?.[1] ?? 0);
-  check('map: desaturation is conservative (equivalent to 0.7–1.0)', sat <= -0.05 && sat >= -0.3, sat);
+  check(
+    'map: desaturation is conservative (equivalent to 0.7–1.0)',
+    sat <= -0.05 && sat >= -0.3,
+    sat,
+  );
   check(
     'map: no invert / hue-rotate / grayscale / brightness games',
     // Read the CODE, not the prose: the comment beside the paint property

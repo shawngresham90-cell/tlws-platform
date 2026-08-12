@@ -761,10 +761,7 @@ const T0 = 1_754_000_000_000;
     map.includes('new ResizeObserver') && map.includes('observer.observe(el)'),
   );
   check('31. the observer is disconnected on cleanup', map.includes('observer.disconnect()'));
-  check(
-    '32. a container change re-measures the canvas, instantly',
-    map.includes('map.resize()'),
-  );
+  check('32. a container change re-measures the canvas, instantly', map.includes('map.resize()'));
   // The resize path may re-measure and NOTHING else: no camera move, no
   // zoom, no follow-state dispatch rides along with it.
   const roBody = map.slice(map.indexOf('new ResizeObserver'), map.indexOf('observer.observe'));
