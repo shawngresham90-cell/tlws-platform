@@ -366,23 +366,23 @@ async function isNavigating(page) {
 /** Map coverage measure, same construction as the half-map bench. */
 async function mapCoverage(page) {
   return page.evaluate(() => {
-    const container = document.querySelector('.leaflet-container');
+    // MapLibre draws the whole basemap into ONE canvas, so "how much of
+    // the box is map" is the canvas's own coverage of its container —
+    // the same half-map question, asked of the renderer we now ship.
+    const container = document.querySelector('.maplibregl-map');
     if (!container) return null;
     const c = container.getBoundingClientRect();
     if (c.width === 0 || c.height === 0) return { width: c.width, height: c.height, coverage: 0 };
-    const tiles = Array.from(container.querySelectorAll('img.leaflet-tile'));
-    const cols = 24,
-      rows = 24;
-    let covered = 0;
-    const rects = tiles.map((t) => t.getBoundingClientRect());
-    for (let i = 0; i < cols; i++) {
-      for (let j = 0; j < rows; j++) {
-        const x = c.left + ((i + 0.5) * c.width) / cols;
-        const y = c.top + ((j + 0.5) * c.height) / rows;
-        if (rects.some((r) => x >= r.left && x < r.right && y >= r.top && y < r.bottom)) covered++;
-      }
-    }
-    return { width: c.width, height: c.height, coverage: covered / (cols * rows) };
+    const canvas = container.querySelector('.maplibregl-canvas');
+    if (!canvas) return { width: c.width, height: c.height, coverage: 0 };
+    const r = canvas.getBoundingClientRect();
+    const w = Math.max(0, Math.min(r.right, c.right) - Math.max(r.left, c.left));
+    const h = Math.max(0, Math.min(r.bottom, c.bottom) - Math.max(r.top, c.top));
+    return {
+      width: c.width,
+      height: c.height,
+      coverage: (w * h) / Math.max(1, c.width * c.height),
+    };
   });
 }
 
