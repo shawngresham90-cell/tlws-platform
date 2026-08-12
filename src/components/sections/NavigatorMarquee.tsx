@@ -13,9 +13,11 @@ import { PILOT_ACCESS_PATH } from '@/lib/navigator-api/pilot-access';
  * distinct feature. Only the icon, label and destination differ.
  *
  * Icon is an inline SVG like every other icon in this project (there is no
- * icon dependency): a compass ring with a navigation arrow — the map/heading
- * idiom the Navigator itself uses — drawn in the same brand palette as the
- * truck on the parking tile.
+ * icon dependency): phone-GPS visual language — a rounded-square app plate
+ * with a route line taking one turn and a kite-shaped navigation arrow
+ * heading up-and-right. Original TLWS art in the brand palette; it shares
+ * its plate, corner radius, stroke weight and red-focal/amber-context
+ * system with the parking tile's icon so the two read as one family.
  *
  * ALWAYS RENDERS. Tile visibility is deliberately decoupled from
  * NEXT_PUBLIC_NAVIGATOR_ENABLED: the flag governs whether the Navigator
@@ -53,26 +55,61 @@ export function NavigatorMarquee({ className }: { className?: string }) {
           <span className="absolute inset-x-6 top-2 h-[3px] rounded bg-diesel/80" />
           <span className="absolute inset-x-6 bottom-2 h-[3px] rounded bg-diesel/80" />
 
-          {/* Compass ring + heading arrow — single inline SVG, brand colors. */}
+          {/* GPS route + navigation arrow — single inline SVG, brand colors.
+              App-style rounded plate, faint street grid, an amber route that
+              takes one turn, and the red kite arrow pointing up-and-right. */}
           <svg
             viewBox="0 0 48 48"
-            className="mb-3 h-10 w-auto drop-shadow-[0_0_8px_rgba(255,176,32,0.45)] sm:h-12"
+            className="mb-3 h-14 w-auto drop-shadow-[0_0_8px_rgba(255,176,32,0.45)] sm:h-16"
             role="img"
             aria-hidden="true"
             focusable="false"
           >
-            {/* compass body */}
-            <circle cx="24" cy="24" r="20" fill="#1b1d21" stroke="#ffb020" strokeWidth="2" />
-            {/* cardinal ticks */}
-            <path
-              d="M24 5v4M24 39v4M5 24h4M39 24h4"
+            {/* app plate */}
+            <rect
+              x="3"
+              y="3"
+              width="42"
+              height="42"
+              rx="11"
+              fill="#1b1d21"
               stroke="#ffb020"
               strokeWidth="2"
+            />
+            {/* faint map streets */}
+            <path
+              d="M3 18h42M30 3v14M14 32H3"
+              stroke="#ffd66b"
+              strokeOpacity="0.22"
+              strokeWidth="1.5"
+            />
+            {/* route: start dot, straight leg, one turn, on toward the arrow */}
+            <circle cx="13" cy="38" r="2.6" fill="#ffb020" />
+            <path
+              d="M13 38V27q0-5 5-5h7"
+              fill="none"
+              stroke="#ffb020"
+              strokeWidth="3"
               strokeLinecap="round"
             />
-            {/* heading arrow — north half in diesel red, south half in asphalt */}
-            <path d="M24 12l8 22-8-6z" fill="#b3261e" />
-            <path d="M24 12l-8 22 8-6z" fill="#0c0d0f" stroke="#ffb020" strokeWidth="1.5" />
+            <path
+              d="M29 22h3.5"
+              fill="none"
+              stroke="#ffb020"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeOpacity="0.45"
+            />
+            {/* navigation arrow, up-and-right */}
+            <g transform="translate(33.5 15.5) rotate(45)">
+              <path
+                d="M0 -8.5 L6.2 7 L0 3.4 L-6.2 7 Z"
+                fill="#b3261e"
+                stroke="#ffffff"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+            </g>
           </svg>
 
           <span className="text-center font-display text-3xl uppercase leading-none tracking-wide text-signal drop-shadow-[0_0_10px_rgba(255,176,32,0.55)] sm:text-4xl">

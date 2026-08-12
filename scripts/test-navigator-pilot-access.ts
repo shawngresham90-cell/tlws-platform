@@ -148,10 +148,25 @@ async function main() {
     parkingMarkup.includes('href="/directory/parking"'),
   );
   check('4b: parking tile keeps its label', parkingMarkup.includes('Truck'));
-  check('4c: parking tile keeps its own icon', parkingMarkup.includes('viewBox="0 0 96 44"'));
+  // The two tiles share one icon family (48×48 app plate) but each keeps its
+  // own distinct glyph: the parking icon carries the P-sign path, which must
+  // never appear in the Navigator icon (and vice versa for the nav arrow).
   check(
-    '4d: parking marquee source untouched by this change',
-    !parkingMarqueeSrc.includes('Navigator'),
+    '4c: parking tile keeps its own icon, distinct from the Navigator arrow',
+    parkingMarkup.includes('M14.5 20.5v-9') &&
+      !navMarkup.includes('M14.5 20.5v-9') &&
+      navMarkup.includes('L6.2 7') &&
+      !parkingMarkup.includes('L6.2 7'),
+  );
+  // The parking marquee may MENTION the Navigator icon (the two icons are
+  // documented as one family) but must never link to it or import from it —
+  // the tile's one destination stays the parking directory.
+  check(
+    '4d: parking marquee never links into the Navigator',
+    !parkingMarqueeSrc.includes('PILOT_ACCESS_PATH') &&
+      !parkingMarqueeSrc.includes("href: '/navigator") &&
+      !parkingMarkup.includes('href="/navigator') &&
+      parkingMarkup.includes('href="/directory/parking"'),
   );
   check(
     '4e: parking section source untouched by this change',
