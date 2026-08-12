@@ -181,6 +181,20 @@ function northRoute(n = 200) {
       map.includes("'Destination'"),
   );
   check('map: truck marker rotates with heading', map.includes('rotate(${rotate}deg)'));
+  /*
+   * Heading-up is NOT implemented, and the forbidden fake must never
+   * appear: Leaflet has no bearing API, and CSS-rotating the container
+   * measurably desynchronizes coordinate math and inverts panning
+   * (docs/operations/navigator-heading-up-blocker.md — owner decision 6).
+   * The ONLY rotate in this component is the vehicle icon's own
+   * transform, asserted above. Anything rotating the container or a
+   * leaflet pane is a regression into the fake.
+   */
+  check(
+    'map: the container is never CSS-rotated (no fake heading-up)',
+    (map.match(/rotate\(/g) ?? []).length === 1 &&
+      !/(container|pane|_mapEl|mapRef)[^\n]{0,80}rotate\(/i.test(map),
+  );
   check(
     'map: follows the truck using the pure helper',
     map.includes('shouldRecenter(') && map.includes('navigationZoom('),
