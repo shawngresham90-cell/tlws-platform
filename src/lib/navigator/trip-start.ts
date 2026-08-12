@@ -59,8 +59,8 @@ export const NO_DESTINATION_TEXT = 'Search for a destination and choose it from 
  * session cannot tell "never asked" from a real POSITION_UNAVAILABLE)
  * and `watching` (a live watch exists).
  *
- * `watching` is what separates "nothing YET" from "nothing, and that is
- * the answer": the cold pre-watch state and the post-timeout state carry
+ * `watching` is what tells "nothing YET" apart against "nothing, and
+ * that is the answer": the cold pre-watch state and the post-timeout state carry
  * the identical position snapshot (no fix, health 'unavailable'), and
  * only a live watch whose acquisition has ended has genuinely been
  * ANSWERED by the platform. Without it, an attempt racing its own
