@@ -127,7 +127,9 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
   // note instead of a blocked search.
   check(
     'flow: the no-location state searches anyway and says so honestly',
-    code.includes('Location hasn') && code.includes('sorted') && !code.includes('Waiting for a GPS fix'),
+    code.includes('Location hasn') &&
+      code.includes('sorted') &&
+      !code.includes('Waiting for a GPS fix'),
   );
   check(
     'flow: selection still cancels, settles, and hands the SAME candidate on',
