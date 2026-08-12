@@ -938,11 +938,15 @@ async function main() {
   check(
     // Superseded by pilot round 1, which the owner authorized after the
     // first live road test: coordinate entry is replaced by destination
-    // SEARCH. The scope rule that still binds is the one above — the
-    // controls perform no network I/O themselves; search is delegated to
-    // the sanctioned search-port, whose endpoint is pinned below.
-    'trip controls delegate search to the port, never fetching themselves',
-    controlsSrc.includes('<DestinationSearch') && !/fetch\(/.test(controlsSrc),
+    // SEARCH — and the final milestone moved the search box onto the
+    // parked map (the driving screen). The scope rule that still binds
+    // is the one above — neither surface performs network I/O itself;
+    // search is delegated to the sanctioned search-port, whose endpoint
+    // is pinned below.
+    'the driving surface delegates search to the port, never fetching itself',
+    drivingSrc.includes('<DestinationSearch') &&
+      !/fetch\(/.test(controlsSrc) &&
+      !/fetch\(/.test(drivingSrc),
   );
   const searchPortSrc = readFileSync('src/components/navigator/search-port.ts', 'utf8');
   check(

@@ -4,9 +4,10 @@
  * PR #304 gave the map the whole driving screen and the 230 px HOS card
  * yielded to it: clocks kept counting and the HOS voice kept firing, but
  * the driver could no longer SEE them. This pins the compact strip that
- * brings them back, the truck summary that replaces the large profile
- * panel during guidance, and — the part that matters most — that none of
- * it introduced a second HOS authority or a silent clock reset.
+ * brings them back, that the truck profile now shows ONCE (parked panel;
+ * the final milestone removed the cockpit chip that repeated it over the
+ * live map), and — the part that matters most — that none of it
+ * introduced a second HOS authority or a silent clock reset.
  *
  * What it pins:
  *   1. the pure compact view: four labelled clocks, values from the
@@ -25,8 +26,9 @@
  *      applied exactly once
  *   6. the detailed clocks open behind the EXISTING stationary-only gate
  *      while the compact strip stays readable while moving
- *   7. the truck summary states height, weight, axles and hazmat, and
- *      says plainly that trailer count is not modelled
+ *   7. the truck profile is shown ONCE, on the parked page — the docked
+ *      cockpit chip is gone (final pilot milestone) and no profile
+ *      overlay rides the live map
  *   8. the detailed truck panel still exists for the parked page
  *
  * Run:
@@ -46,7 +48,6 @@ import {
 } from '@/lib/navigator/hos-compact';
 import { HosCompactStrip, HOS_PLANNING_AID } from '@/components/navigator/HosCompactStrip';
 import { HosStrip } from '@/components/navigator/HosStrip';
-import { TruckChip } from '@/components/navigator/DrivingScreen';
 import { TruckProfilePanel } from '@/components/navigator/TruckProfilePanel';
 import {
   parseClockState,
@@ -436,26 +437,30 @@ function clocksWith(over: Partial<ClockState>): ClockState {
   );
 }
 
-/* ==================== 9. the compact truck summary ====================== */
+/* ========= 9. truck profile: parked panel ONCE, no cockpit chip ========= */
 {
-  const chip = renderToStaticMarkup(createElement(TruckChip, { docked: true }));
-  check('truck: height reads like a bridge placard', chip.includes('13′6″'));
+  /*
+   * FINAL PILOT MILESTONE: the docked truck chip is GONE. It repeated
+   * numbers the driver had already verified on the parked panel before
+   * Start — height, weight, axles, hazmat, trailers — and mid-drive the
+   * space it occupied belongs to the map. These pins are the absence:
+   * the component no longer exists, no profile figure rides the live
+   * map, and the removal is documented where the chip used to render so
+   * nobody "helpfully" adds it back.
+   */
+  check('truck: the docked chip component no longer exists', !/TruckChip/.test(SCREEN));
   check(
-    'truck: gross weight is the planned number',
-    chip.includes('80,000') && chip.includes('lb'),
+    'truck: no profile numbers ride the live map surface',
+    !SCREEN.includes('13′6″') && !SCREEN.includes('80,000') && !SCREEN.includes('5 axles'),
   );
-  check('truck: axle count is stated', chip.includes('5 axles'));
-  check('truck: hazmat status is stated even when there is none', chip.includes('No hazmat'));
   check(
-    'truck: trailer count is labelled as NOT modelled, never implied',
-    chip.includes('trailers not set'),
+    'truck: the removal is deliberate and documented in place',
+    SCREEN.includes('NO TRUCK-PROFILE OVERLAY HERE'),
   );
-  check('truck: still says whose numbers these are', chip.includes('Pilot default profile'));
   check(
-    'truck: display-only — never a tap target on the moving surface',
-    chip.includes('pointer-events-none') && !/<button|<a\b/.test(chip),
+    'truck: the freed space is promised to the map, not a replacement box',
+    SCREEN.includes('goes to the map, not to a replacement box'),
   );
-  check('truck: text at or above the drive floor', !/text-(?:xs|sm)\b/.test(chip));
   // The detailed panel remains for the parked page.
   const panel = renderToStaticMarkup(
     createElement(TruckProfilePanel, { truck: DEFAULT_TRUCK_PROFILE }),

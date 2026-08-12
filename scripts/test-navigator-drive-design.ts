@@ -22,7 +22,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync, readdirSync } from 'node:fs';
-import { DrivingScreenView, TruckChip } from '@/components/navigator/DrivingScreen';
+import { DrivingScreenView } from '@/components/navigator/DrivingScreen';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
@@ -394,21 +394,27 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   ]) {
     check(`honesty: no ${fake} on the driving screen`, !code.includes(fake));
   }
-  // The truck chip states the REAL planning input and says whose it is.
+  /*
+   * The truck profile shows ONCE, parked (final pilot milestone). The
+   * cockpit chip that repeated it over the live map is gone — its pixels
+   * belong to the map now — and the parked panel remains the one surface
+   * that states the REAL planning input and says whose numbers they are.
+   */
+  check('honesty: no truck-profile chip rides the live map', !/TruckChip/.test(SCREEN));
   check(
-    'honesty: the truck chip reads the real default profile',
-    SCREEN.includes('DEFAULT_TRUCK_PROFILE.heightFt') &&
-      SCREEN.includes('DEFAULT_TRUCK_PROFILE.grossWeightLbs') &&
-      SCREEN.includes('Pilot default profile'),
+    'honesty: the chip removal is documented where it used to render',
+    SCREEN.includes('NO TRUCK-PROFILE OVERLAY HERE') &&
+      SCREEN.includes('goes to the map, not to a replacement box'),
   );
-  const chip = renderToStaticMarkup(createElement(TruckChip));
-  check('chip: height reads like a bridge placard', chip.includes('13′6″'));
-  check('chip: weight is the planned gross weight', chip.includes('80,000') && chip.includes('lb'));
+  const panelSrc = readFileSync('src/components/navigator/TruckProfilePanel.tsx', 'utf8');
+  const controlsSrc = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
   check(
-    'chip: display-only — never a tap target',
-    chip.includes('pointer-events-none') && !/<button|<a\b/.test(chip),
+    'honesty: the parked panel still reads the real default profile',
+    controlsSrc.includes('<TruckProfilePanel truck={DEFAULT_TRUCK_PROFILE} />') &&
+      panelSrc.includes('truck.heightFt') &&
+      panelSrc.includes('truck.grossWeightLbs') &&
+      panelSrc.includes('Pilot defaults'),
   );
-  check('chip: text at or above the drive floor', !/text-(?:xs|sm)\b/.test(chip));
 }
 
 /* ==================== 6. the maneuver glyph is honest ==================== */
