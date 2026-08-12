@@ -21,7 +21,6 @@
  */
 import { readFileSync } from 'node:fs';
 import { buildHereRouteUrl } from '@/lib/trip-planner/here-routing';
-import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
 import {
   checkInitialReversal,
   REVERSAL_DEFAULTS,

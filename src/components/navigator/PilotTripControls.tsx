@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { NavigationLifecycle } from '@/lib/navigator/navigation-lifecycle';
 import type { PilotLog } from '@/lib/navigator/pilot-mode';
 import type { DestinationFacility } from '@/lib/navigator/truck-entrance';
 import type { PositionState } from '@/lib/navigator/types';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
-import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import type { RouteAvoidance } from '@/lib/trip-planner/providers';
+import { toTruckProfile, type EditableProfile } from '@/lib/navigator/truck-profile';
+import { sentRestrictionLines } from '@/lib/trip-planner/here-truck-params';
 import type { BuildId } from '@/lib/navigator/build-id';
 import {
   MAX_NOTE_CHARS,
@@ -26,7 +28,6 @@ import {
   PLANNING_ROUTE_TEXT,
   STARTING_NAVIGATION_TEXT,
 } from '@/lib/navigator/trip-start';
-import { TruckProfilePanel } from './TruckProfilePanel';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
 import { DriverNameEntry } from './DriverNameEntry';
@@ -99,6 +100,9 @@ export function PilotTripControls({
   picked,
   onPicked,
   onAttemptActive,
+  truckProfile,
+  truckGate,
+  truckEditor,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -154,6 +158,17 @@ export function PilotTripControls({
    * that never start a trip simply omit it.
    */
   onAttemptActive?: (active: boolean) => void;
+  /**
+   * The truck the driver confirmed, and whether it may be routed yet.
+   * OWNED BY THE DRIVING SCREEN (truck-route confidence milestone): the
+   * editor that changes it and the Start tap that sends it are different
+   * surfaces, and two copies could disagree about which truck was routed.
+   */
+  truckProfile: EditableProfile;
+  /** 'invalid' | 'unconfirmed' | 'ready' — from the pure profile gate. */
+  truckGate: 'invalid' | 'unconfirmed' | 'ready';
+  /** The parked profile editor, rendered by the owner. */
+  truckEditor: ReactNode;
   onChanged: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
@@ -231,6 +246,20 @@ export function PilotTripControls({
    */
   function startTrip() {
     if (!attemptRef.current.begin()) return; // duplicate tap: inert
+    /*
+     * The truck gate, BEFORE anything is spent. An unconfirmed or invalid
+     * profile produces zero provider requests and zero GPS watches — the
+     * driver is told what to do instead, and the attempt ends here.
+     */
+    if (truckGate !== 'ready') {
+      attemptRef.current.end();
+      setNote(
+        truckGate === 'invalid'
+          ? 'Fix the truck details above before planning a route.'
+          : 'Confirm your truck above before planning a route.',
+      );
+      return;
+    }
     const dest = resolveDestination();
     if (dest === null) {
       attemptRef.current.end();
@@ -318,7 +347,11 @@ export function PilotTripControls({
       {
         origin: { lat: originLat, lng: originLng },
         destination: dest.position,
-        truck: DEFAULT_TRUCK_PROFILE,
+        // The confirmed truck, not a default. `toTruckProfile` merges the
+        // driver's routing values onto the shipped profile so the fields
+        // the request does not carry (tank, mpg) keep their shape.
+        truck: toTruckProfile(truckProfile),
+        ...(truckProfile.avoid.length > 0 ? { avoid: truckProfile.avoid as RouteAvoidance[] } : {}),
         departAtMs: now,
       },
       // A searched place still carries no VERIFIED truck entrance — the
@@ -520,13 +553,12 @@ export function PilotTripControls({
               </label>
             </div>
           </details>
-          {/* The one-line summary this replaces named four numbers and
-              implied the rest were handled. The panel shows every value a
-              driver would check against a cab card, and says plainly which
-              restrictions the request does NOT ask the provider to route
-              around — vehicle type, per-axle weight, trailer count and
-              hazmat tunnel category. */}
-          <TruckProfilePanel truck={DEFAULT_TRUCK_PROFILE} />
+          {/* The truck itself: verified, adjustable, and confirmed once
+              before any route is requested. It replaces the read-only
+              panel — a driver who cannot change the numbers cannot
+              honestly confirm them. The panel's disclosure survives
+              inside the editor's "Not used for routing" section. */}
+          {truckEditor}
         </div>
       ) : null}
 
@@ -554,6 +586,7 @@ export function PilotTripControls({
       {state === 'route-ready' ? (
         <RouteBriefing
           destination={picked}
+          sentRestrictions={sentRestrictionLines(toTruckProfile(truckProfile), truckProfile.avoid)}
           totalMi={lifecycle.view().totalMi}
           etaText={formatEta(
             lifecycle.view().remainingMi,

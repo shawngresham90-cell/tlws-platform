@@ -454,6 +454,12 @@ async function main(): Promise<void> {
     lngInput.props.onChange({ target: { value: String(DESTINATION.lng) } });
   });
   await act(async () => {
+    // The truck must be confirmed before a route may be requested
+    // (truck-route confidence milestone): Start refuses to spend a
+    // provider transaction on a profile no human has verified.
+    findButton(renderer, (l) => l.trim() === 'This is my truck').props.onClick();
+  });
+  await act(async () => {
     findButton(renderer, (l) => l.trim() === 'Start').props.onClick();
   });
   check('behavior: the Start tap started the GPS watch', emitFix !== null);

@@ -57,6 +57,16 @@ import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
 import { DestinationSearch } from './DestinationSearch';
+import { TruckProfileEditor } from './TruckProfileEditor';
+import {
+  confirmProfile,
+  profileGate,
+  routingFingerprint,
+  DEFAULT_EDITABLE_PROFILE,
+  NO_CONFIRMATION,
+  type ConfirmationState,
+  type EditableProfile,
+} from '@/lib/navigator/truck-profile';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
 import { VoiceControls } from './VoiceControls';
@@ -74,6 +84,75 @@ import { VoiceControls } from './VoiceControls';
  * this screen renders exactly the N5 preview: no route source, honest
  * "route unavailable", no provider spend possible (the endpoint 404s).
  */
+
+/**
+ * Where the confirmed truck lives for the browser session. A SEPARATE key
+ * from the trip snapshot: a truck outlives a trip, and mixing them would
+ * make discarding a trip discard the driver's verified truck.
+ *
+ * What is stored is only what the route request needs. Nothing here can
+ * carry a position, a route, a name, or anything about how the truck was
+ * driven — the parser below refuses any payload that does not match this
+ * exact shape, so a hand-edited or stale value cannot reach the provider.
+ */
+const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v1';
+
+function parseStoredProfile(
+  raw: string,
+): { profile: EditableProfile; confirmation: ConfirmationState } | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (data === null || typeof data !== 'object') return null;
+  const d = data as { v?: unknown; profile?: unknown; confirmed?: unknown };
+  if (d.v !== 1 || d.profile === null || typeof d.profile !== 'object') return null;
+  const p = d.profile as Record<string, unknown>;
+  const num = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null;
+  const heightFt = num(p.heightFt);
+  const widthFt = num(p.widthFt);
+  const lengthFt = num(p.lengthFt);
+  const grossWeightLbs = num(p.grossWeightLbs);
+  const axles = num(p.axles);
+  if (
+    heightFt === null ||
+    widthFt === null ||
+    lengthFt === null ||
+    grossWeightLbs === null ||
+    axles === null
+  ) {
+    return null;
+  }
+  const hazmatClass =
+    p.hazmatClass === null || typeof p.hazmatClass === 'string'
+      ? (p.hazmatClass as string | null)
+      : null;
+  const avoid = Array.isArray(p.avoid)
+    ? p.avoid.filter((a): a is string => typeof a === 'string')
+    : [];
+  const profile: EditableProfile = {
+    heightFt,
+    widthFt,
+    lengthFt,
+    grossWeightLbs,
+    axles,
+    hazmatClass,
+    avoid,
+  };
+  // A stored confirmation is only honoured when it still matches the
+  // stored values — a tampered or partially written record re-asks.
+  const confirmed = typeof d.confirmed === 'string' ? d.confirmed : null;
+  return {
+    profile,
+    confirmation:
+      confirmed !== null && confirmed === routingFingerprint(profile)
+        ? { confirmedFingerprint: confirmed }
+        : NO_CONFIRMATION,
+  };
+}
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
@@ -954,6 +1033,47 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * would be the one the driver was not looking at.
    */
   const [picked, setPicked] = useState<DestinationCandidate | null>(null);
+
+  /*
+   * THE TRUCK THIS SCREEN PLANS FOR, and whether the driver has confirmed
+   * it (truck-route confidence milestone).
+   *
+   * Owned here because two surfaces need it: the parked editor that
+   * changes it, and the Start attempt that sends it. It is restored from
+   * sessionStorage so a driver who confirmed their truck does not
+   * re-confirm on every reload — but ONLY the routing values travel: no
+   * position, no route, no identity, nothing about how they drive.
+   *
+   * The confirmation is bound to a FINGERPRINT of the values that reach
+   * the provider, so changing a routing value invalidates it
+   * automatically and a display-only field cannot.
+   */
+  const [truckProfile, setTruckProfile] = useState<EditableProfile>(DEFAULT_EDITABLE_PROFILE);
+  const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(NO_CONFIRMATION);
+  const [truckTouched, setTruckTouched] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(TRUCK_PROFILE_KEY);
+      if (raw === null) return;
+      const parsed = parseStoredProfile(raw);
+      if (parsed === null) return;
+      setTruckProfile(parsed.profile);
+      setTruckConfirmation(parsed.confirmation);
+      setTruckTouched(true);
+    } catch {
+      /* storage unavailable: the defaults stand, unconfirmed */
+    }
+  }, []);
+  const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
+    try {
+      sessionStorage.setItem(
+        TRUCK_PROFILE_KEY,
+        JSON.stringify({ v: 1, profile, confirmed: confirmation.confirmedFingerprint }),
+      );
+    } catch {
+      /* a profile that cannot be stored is still usable this session */
+    }
+  };
   /*
    * Whether a Start attempt is running right now, reported upward by
    * PilotTripControls. The search must refuse edits while an attempt is
@@ -1691,6 +1811,37 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             picked={picked}
             onPicked={setPicked}
             onAttemptActive={setStartPending}
+            truckProfile={truckProfile}
+            truckGate={profileGate(truckProfile, truckConfirmation)}
+            truckEditor={
+              <TruckProfileEditor
+                profile={truckProfile}
+                confirmed={
+                  truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
+                }
+                isDefault={!truckTouched}
+                onChange={(next) => {
+                  // A routing value that changed invalidates the
+                  // confirmation by construction: the gate compares
+                  // fingerprints, so nothing here has to remember which
+                  // fields mattered. No provider request occurs.
+                  setTruckProfile(next);
+                  setTruckTouched(true);
+                  persistTruck(next, truckConfirmation);
+                  // A planned route belongs to the OLD truck. Discard it
+                  // rather than let Start reuse it for a different one.
+                  if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
+                  bump();
+                }}
+                onConfirm={() => {
+                  const next = confirmProfile(truckProfile);
+                  setTruckConfirmation(next);
+                  setTruckTouched(true);
+                  persistTruck(truckProfile, next);
+                  bump();
+                }}
+              />
+            }
             onChanged={bump}
           />
         ) : null

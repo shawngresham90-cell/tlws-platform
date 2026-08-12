@@ -431,9 +431,13 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     /restoredClocks=\{hosRestoredClocks\}/.test(SCREEN) && /appliedRestoreRef/.test(HOS_COMPONENT),
   );
   check(
-    'wiring: clocks ride the EXISTING trip key — no second storage surface',
-    (SCREEN.match(/sessionStorage\.setItem\(/g) ?? []).length === 1 &&
-      SCREEN.includes('TRIP_RESTORE_KEY'),
+    // The clocks still ride the TRIP key. The truck profile has its own
+    // versioned key (truck-route confidence milestone) because a
+    // confirmed truck outlives any one trip — but nothing else may write.
+    'wiring: clocks ride the EXISTING trip key — no third storage surface',
+    (SCREEN.match(/sessionStorage\.setItem\(\s*TRIP_RESTORE_KEY/g) ?? []).length === 1 &&
+      (SCREEN.match(/sessionStorage\.setItem\(/g) ?? []).length === 2 &&
+      SCREEN.includes('TRUCK_PROFILE_KEY'),
   );
 }
 
@@ -479,9 +483,15 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     panel.includes('Not routed around'),
   );
   const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+  const editor = readFileSync('src/components/navigator/TruckProfileEditor.tsx', 'utf8');
   check(
-    'truck: the detailed panel is still mounted on the parked trip surface',
-    controls.includes('<TruckProfilePanel'),
+    // The read-only panel became an EDITOR (truck-route confidence
+    // milestone): a driver who cannot change the numbers cannot honestly
+    // confirm them. Its disclosure survives inside the editor.
+    'truck: the parked trip surface still shows the full truck detail',
+    controls.includes('{truckEditor}') &&
+      editor.includes('Not used for routing') &&
+      editor.includes('NOT_ROUTED_NOTICE'),
   );
   check(
     'truck: the large panel never renders on the cockpit surface',

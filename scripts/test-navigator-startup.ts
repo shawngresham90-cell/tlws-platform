@@ -509,6 +509,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
 
     check(
       'cold start: destination entry present with NO location step first',
@@ -556,6 +559,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('prompt');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     check('prompt: watch requested by the tap', h.watchCalls() === 1);
@@ -580,6 +586,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('denied');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.settle();
@@ -598,6 +607,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitError('timeout');
@@ -624,6 +636,9 @@ async function main(): Promise<void> {
       return { status: 200, payload: wireRoute() };
     };
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitFix();
@@ -648,6 +663,9 @@ async function main(): Promise<void> {
       payload: wireRoute(['Route includes a segment the validator flagged.']),
     });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitFix();
@@ -666,6 +684,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
 
     const nameInput = h.renderer.root.findAll(
       (n) => n.type === 'input' && n.props.autoComplete === 'given-name',
@@ -712,6 +733,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await setDevDestination(h, DEST);
     await h.tap('Start');
     // Mid-attempt sabotage: change the coordinate box before the fix
@@ -732,6 +756,9 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     check('moving: setup present while cold', h.text().includes('Where are you going?'));
     // Start the watch through the app's own gesture (destination + Start
     // would plan, so use Start with no destination: the honest note path

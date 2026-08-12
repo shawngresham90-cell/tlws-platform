@@ -32,6 +32,7 @@ export function RouteBriefing({
   etaText,
   brief,
   plausibilitySlot = null,
+  sentRestrictions = [],
   onStart,
   onDiscard,
 }: {
@@ -45,10 +46,21 @@ export function RouteBriefing({
   brief: RouteBrief | null;
   /** The existing route-plausibility advisory, unchanged. */
   plausibilitySlot?: ReactNode;
+  /**
+   * The restrictions the request ACTUALLY carried, in driver units,
+   * built from the same mapping that serialized them. A field that was
+   * not sent cannot appear here, which is the whole point: this is the
+   * line a fleet manager reads to learn what the route was planned for.
+   */
+  sentRestrictions?: readonly string[];
   onStart: () => void;
   onDiscard: () => void;
 }) {
   const roads = brief === null ? [] : summarizeRouteRoads(brief.maneuvers, brief.distanceMiles);
+  // "Planned for" is not a claim of legality: it is a receipt for the
+  // request. The disclaimer beneath it says what the provider's answer
+  // does NOT guarantee, because a route that respected every parameter
+  // can still meet a sign, a work zone, or a closure it never knew about.
 
   return (
     <section aria-labelledby="route-briefing-heading" className="space-y-4">
@@ -66,6 +78,24 @@ export function RouteBriefing({
         {destination !== null && destination.address ? (
           <p className="mt-1 text-lg text-ink/70">{destination.address}</p>
         ) : null}
+      </div>
+
+      {/* ---- what this route was actually planned for ------------------ */}
+      {sentRestrictions.length > 0 ? (
+        <div className="rounded-cockpit border border-line p-3">
+          <h4 className="text-lg font-bold text-ink">Route planned for</h4>
+          <ul className="mt-1 space-y-0.5 text-lg text-ink">
+            {sentRestrictions.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <p className="mt-2 text-base text-ink/70">
+            The provider accepted these restrictions. It does not guarantee every bridge, sign, work
+            zone, or temporary closure on the way — those stay yours to watch for.
+          </p>
+        </div>
+      ) : null}
+      <div>
         {destination === null ? (
           <p className="mt-1 text-lg text-ink/70">Developer coordinate entry — no place record.</p>
         ) : destination.facility !== 'unknown' ? (

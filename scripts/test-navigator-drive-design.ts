@@ -408,12 +408,16 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   );
   const panelSrc = readFileSync('src/components/navigator/TruckProfilePanel.tsx', 'utf8');
   const controlsSrc = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+  const editorSrc = readFileSync('src/components/navigator/TruckProfileEditor.tsx', 'utf8');
   check(
-    'honesty: the parked panel still reads the real default profile',
-    controlsSrc.includes('<TruckProfilePanel truck={DEFAULT_TRUCK_PROFILE} />') &&
+    // The parked surface now EDITS the profile rather than displaying a
+    // fixed one, and says plainly that untouched values are defaults.
+    'honesty: the parked surface reads the real profile and labels defaults as defaults',
+    controlsSrc.includes('{truckEditor}') &&
+      editorSrc.includes('isDefault') &&
+      editorSrc.includes('not your truck until you check them') &&
       panelSrc.includes('truck.heightFt') &&
-      panelSrc.includes('truck.grossWeightLbs') &&
-      panelSrc.includes('Pilot defaults'),
+      panelSrc.includes('truck.grossWeightLbs'),
   );
 }
 

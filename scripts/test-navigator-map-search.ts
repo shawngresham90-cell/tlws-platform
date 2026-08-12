@@ -471,6 +471,9 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('prompt');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
 
     check('parked: the search renders at a cold start', h.searchInput() !== null);
     check(
@@ -576,6 +579,9 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');
@@ -600,6 +606,9 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('prompt');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');
@@ -628,6 +637,9 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 500, payload: { ok: false } });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('granted');
+    // The truck must be CONFIRMED before any route may be requested
+    // (truck-route confidence milestone). One tap, once per session.
+    await h.tap('This is my truck');
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');

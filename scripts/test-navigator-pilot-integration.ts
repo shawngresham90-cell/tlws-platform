@@ -18,6 +18,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { PilotTripControls } from '@/components/navigator/PilotTripControls';
+import { DEFAULT_EDITABLE_PROFILE } from '@/lib/navigator/truck-profile';
+import { TruckProfileEditor } from '@/components/navigator/TruckProfileEditor';
 import { TruckProfilePanel } from '@/components/navigator/TruckProfilePanel';
 import { vehicleMarkerSvg, vehicleMarkerRotationDeg } from '@/components/navigator/vehicle-marker';
 import {
@@ -181,6 +183,18 @@ function renderControls(
       // renders exercise the post-pick states, where no pick is needed.
       picked: null,
       onPicked: () => {},
+      // The confirmed truck arrives from the driving screen, and so does
+      // the editor element — mounted here exactly as that screen mounts
+      // it, so this harness keeps testing the real parked surface.
+      truckProfile: DEFAULT_EDITABLE_PROFILE,
+      truckGate: 'ready' as const,
+      truckEditor: createElement(TruckProfileEditor, {
+        profile: DEFAULT_EDITABLE_PROFILE,
+        onChange: () => {},
+        onConfirm: () => {},
+        confirmed: true,
+        isDefault: false,
+      }),
       onChanged: () => {},
     }),
   );
@@ -223,8 +237,11 @@ async function main() {
       html.slice(0, 200),
     );
     check(
-      '1: the truck profile panel is mounted beside it',
-      html.includes('Truck used for this route'),
+      // The read-only panel became the editable, confirmable profile
+      // (truck-route confidence milestone) — same place on the parked
+      // surface, same job: this is the truck the route is planned for.
+      '1: the truck profile is mounted beside it, editable and confirmable',
+      html.includes('Confirm this is your truck') && html.includes('Not used for routing'),
     );
     check('1: the old one-line truck summary is gone', !html.includes('Truck: pilot default'));
     check(
@@ -617,10 +634,14 @@ async function main() {
     check('11: and returns to idle', lc.state() === 'idle', lc.state());
     const html = renderControls(lc);
     check(
-      '11: the truck profile panel is still shown after a failure',
-      html.includes('Truck used for this route'),
+      '11: the truck profile is still shown after a failure',
+      html.includes('Confirm this is your truck'),
     );
-    check('11: with its disclosure intact', html.includes('Not routed around:'));
+    check(
+      '11: with its disclosure intact',
+      html.includes('Not used for routing') &&
+        html.includes('The route does not account for these'),
+    );
     check(
       '11: and no advisory is shown for a route that never existed',
       !html.includes('Worth a look before you start'),
