@@ -296,3 +296,19 @@ Run on a real phone, not a narrowed desktop window. Reference viewport 390 × 84
    deliberately left unrepaired, as instructed. It is not counted as proof.
 4. The HOS strip cannot be hidden on the **parked** screen. That surface is not
    competing with a map for room, and the setup flow needs the clock row visible.
+
+---
+
+## 7. Screenshots
+
+Captured by the bench against production builds. `declutter-evidence/`:
+
+| File | What it shows |
+| --- | --- |
+| `before-375x667-normal-expanded.png` | `main`: the 164 px card, 38 % map |
+| `after-375x667-normal-expanded.png` | the 97 px card, clocks still shown |
+| `after-375x667-normal-collapsed.png` | clocks hidden — 58 % map |
+| `after-390x844-long-name-expanded.png` | a long exit name clamping instead of growing the card |
+| `after-390x844-urgent-collapsed.png` | the urgent warning band with the clocks hidden |
+| `after-844x390-normal-expanded.png` | short landscape, clocks shown |
+| `after-844x390-normal-collapsed.png` | short landscape, clocks hidden — 49 % map |
