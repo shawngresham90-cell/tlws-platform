@@ -109,6 +109,41 @@ This portrait is distinct from the §1c studio headshot and is used only
 here; §1c continues to serve the homepage Journey strip and the Academy
 mission section.
 
+## 1f. Academy training-fleet photograph — RECEIVED 2026-08-13 ✅
+
+**Landed:** the owner's equipment photograph — the blue Freightliner sleeper
+with `TLWS` on the roof fairing beside the white International day cab, tree
+line behind, low sun. Fills a new "Our equipment / Meet the training fleet"
+section on `/academy`, between the founder story and the program journey.
+
+| Owner's original file                          | Production asset path                                | Frame         |
+| ---------------------------------------------- | ---------------------------------------------------- | ------------- |
+| `54c6e884-59f8-4be5-8afd-9101cc5bc6b5(2).png`  | `public/images/academy/academy-training-fleet.webp`  | 1280×960, 4:3 |
+
+Delivered to the session at 1448×1086 (already WebP by the time it arrived;
+the camera original stays with the owner). The production derivative is a
+plain proportional resize + WebP re-encode — full frame, no crop, no retouch,
+no generative edits. 195 KB, inside the ≤200 KB house budget and level with
+the §1 desktop hero's 188 KB at a comparable full-width role.
+
+Sized at 1280 rather than the 1080 used elsewhere because this frame renders
+full content width — a 1086px box — where 1080 would be a bare 1:1. At the
+same byte cost 1280 leaves headroom; the two encodes were compared on the
+`TLWS` lettering and are equally legible.
+
+Rendered at its natural **4:3** through plain `next/image` in a bordered,
+rounded, shadowed figure — deliberately **not** `CinematicStill`. That
+component's bottom-third scrim ramps to roughly 0.6 opacity exactly where the
+wheels and bumpers sit, and its `object-cover` would crop one tractor out of
+a frame whose whole point is that both are in it. Same reasoning already
+recorded in `EmptyClassroomVisual`: the frame is brand, the photograph is
+untouched. No caption and no overlay — nothing sits on top of the trucks.
+
+Note for the owner: **neither tractor carries an Academy door logo** in this
+frame — both doors are plain. The only branding visible is the `TLWS`
+lettering on the blue sleeper. Nothing is cropped, so everything that IS on
+the trucks stays in shot, but the section makes no claim about door decals.
+
 ### Also received 2026-08-11 — NOT published
 
 - `54c6e884-59f8-4be5-8afd-9101cc5bc6b5(1).png` — **RECEIVED — candidate

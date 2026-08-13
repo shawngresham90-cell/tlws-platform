@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Section, Button, Eyebrow, Placard } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
@@ -468,6 +469,39 @@ export default async function AcademyPage() {
             — {SITE.founder.name}, founder &amp; lead instructor
           </p>
         </div>
+      </Section>
+
+      {/* The training fleet — the owner's own equipment photograph.
+          Deliberately NOT CinematicStill: that component is the treatment for
+          documentary photography and applies a sodium grade, a bottom-third
+          scrim and object-cover cropping. Here the scrim would ramp to ~0.6
+          right where the wheels and bumpers sit, and object-cover would crop
+          one of the two tractors out of a frame whose whole point is that both
+          are in it. Same reasoning already written down in
+          EmptyClassroomVisual: the frame is brand, the photograph is untouched.
+
+          `h-auto w-full` lays the image out at its OWN 4:3 once decoded; the
+          width/height props only reserve the box beforehand, so they match the
+          real file exactly and nothing shifts on first paint. No caption and no
+          overlay — nothing is placed on top of the trucks. */}
+      <Section className="border-b border-line">
+        <div className="mx-auto max-w-3xl text-center">
+          <Eyebrow>Our equipment</Eyebrow>
+          <h2 className="display-section">Meet the training fleet</h2>
+          <p className="mt-4 text-lg text-muted">
+            Real trucks. Real-world training. Built by drivers for drivers.
+          </p>
+        </div>
+        <figure className="mt-10 overflow-hidden rounded-card border border-line shadow-lg shadow-black/40">
+          <Image
+            src="/images/academy/academy-training-fleet.webp"
+            alt="Blue and white Trucking Life Academy training trucks at sunset"
+            width={1280}
+            height={960}
+            sizes="(min-width: 1152px) 1088px, 100vw"
+            className="h-auto w-full"
+          />
+        </figure>
       </Section>
 
       {/* The program journey — real curriculum phases, prepare → career */}
