@@ -63,17 +63,55 @@ be your only source during the pilot.
 - [ ] **Your first name is optional.** It is only used to talk to you, it is
       never stored, a reload loses it, and leaving it blank changes nothing
       about navigation.
-- [ ] **Look at the truck panel.** Check the height, width, length, weight and
-      axle count it is using are yours. While you are driving, the same
-      numbers ride in the corner chip — height, weight, axles, hazmat — and
-      it says plainly that trailer count is not part of the profile.
+- [ ] **Look at the truck panel and confirm it.** Check the height, width,
+      length, weight and axle count it is using are yours, then tap **This is
+      my truck**. Nothing plans a route until you have. The panel says plainly
+      which fields are not part of the request. Once you are moving the panel
+      is gone — the map has that space, and you already checked the numbers.
 - [ ] **Glance at the clocks.** DRIVE, WINDOW, CYCLE and BREAK sit above the
       controls while you navigate, and the one about to bite is marked. They
       start from a **fresh driver every session** — Navigator is not an ELD
       and cannot see what you drove before you opened it. **Your logs are the
       record.** Tap the strip while parked to see the clocks in full.
+- [ ] **Pick your region if you are running Canada.** Two buttons at the top
+      of the parked screen: **United States** or **Canada**. Choosing Canada
+      does two things — the destination search looks in Canada, and every
+      number switches to kilometres, metres and kilograms. You can set the
+      units yourself either way. Navigator never guesses this from your GPS.
 - [ ] **Write down the build number** shown on screen. It is a short code like
       `b6a1260`. Every report needs it.
+
+---
+
+## If you run Canada
+
+**Read this before your first Canadian trip.**
+
+- **Navigator does not calculate Canadian hours of service.** Pick Canada and
+  the DRIVE/WINDOW/CYCLE/BREAK clocks disappear, replaced by one line:
+  *"Canadian HOS is not calculated in this pilot. Use your certified ELD as
+  the record."* That is the whole truth. The clocks it *does* have are US
+  federal rules, and showing them to you in Canada would be worse than
+  showing nothing.
+- **Everything else works.** Search, routing, the map, voice, the truck
+  profile, reroutes, problem reports — all of it, in metric.
+- **Enter your truck in metres and kilograms.** In Canada mode the boxes are
+  labelled `m` and `kg`. Type 4.11 and 36287 if that is what your cab card
+  says. The route request is identical either way — the same truck, described
+  in your units.
+- **Truck routing in Canada is the provider's coverage, not a promise.** The
+  request that goes out is a proper truck request. Whether a truck-legal
+  Canadian route comes back is up to the routing service, and the app says
+  "available where provider coverage exists" rather than pretending.
+- **Parking coverage in Canada is thin.** The truck-stop data is
+  US-built. Navigator will not invent Canadian results to fill the gap.
+- **Crossing the border?** Search the other country with the one labelled
+  button — *"Search the United States instead"* / *"Search Canada instead"*.
+  It changes only where the search looks; your region, units and truck stay
+  put. Before you start a cross-border route the screen tells you:
+  *"Cross-border route. Verify customs documents, permits, border status, and
+  operating hours separately."* Navigator knows nothing about your paperwork
+  or the wait at the crossing.
 
 ---
 
