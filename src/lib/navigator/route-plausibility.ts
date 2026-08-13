@@ -25,6 +25,21 @@
 
 import { haversineMiles } from '@/lib/map/geo';
 import type { LatLng } from '@/lib/map/bounds';
+import { KM_PER_MILE } from './format-units';
+
+/**
+ * A length inside an advisory SENTENCE — "doubles back about 12 miles".
+ * Not `formatDistance`: that renders a cockpit figure ("12.0 mi"), and a
+ * sentence wants the word. The imperial wording is byte-for-byte what it
+ * has always been; the metric wording is its own sentence, in kilometres.
+ */
+function sentenceLength(mi: number, metric: boolean, precise: boolean): string {
+  if (!metric) {
+    return precise ? `${mi.toFixed(1)} miles` : `${Math.round(mi)} miles`;
+  }
+  const km = mi * KM_PER_MILE;
+  return precise ? `${km.toFixed(1)} kilometres` : `${Math.round(km)} kilometres`;
+}
 
 export type PlausibilityCode =
   | 'extreme-detour'
@@ -148,12 +163,21 @@ export function assessRoutePlausibility(
     destination: LatLng;
     /** Provider-reported length, when available; geometry is used if not. */
     reportedMiles?: number | null;
+    /**
+     * Read the advisory in kilometres (Canada milestone). The MEASUREMENT
+     * is unchanged — `measured` stays in canonical miles so a threshold, a
+     * harness and a diagnostic report all keep comparing the same number.
+     * Only the sentence the driver reads changes.
+     */
+    metric?: boolean;
   },
   config: Partial<PlausibilityConfig> = {},
 ): readonly PlausibilityFinding[] {
   const cfg = { ...DEFAULT_PLAUSIBILITY, ...config };
   const pts = input.geometry;
   const findings: PlausibilityFinding[] = [];
+  // One place decides the words for a length in this module.
+  const metric = input.metric === true;
 
   if (pts.length < 2) {
     return [
@@ -202,7 +226,7 @@ export function assessRoutePlausibility(
     findings.push(
       Object.freeze({
         code: 'doubles-back' as const,
-        message: `This route doubles back about ${Math.round(backtrack)} miles after getting close.`,
+        message: `This route doubles back about ${sentenceLength(backtrack, metric, false)} after getting close.`,
         measured: Number(backtrack.toFixed(1)),
       }),
     );
@@ -213,7 +237,7 @@ export function assessRoutePlausibility(
     findings.push(
       Object.freeze({
         code: 'destination-mismatch' as const,
-        message: `This route ends about ${endGap.toFixed(1)} miles from the place you searched for.`,
+        message: `This route ends about ${sentenceLength(endGap, metric, true)} from the place you searched for.`,
         measured: Number(endGap.toFixed(2)),
       }),
     );

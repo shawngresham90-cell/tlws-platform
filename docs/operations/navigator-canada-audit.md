@@ -108,7 +108,9 @@ Legend for **Implemented?** — ✅ done in this milestone · ➖ already correc
 | **"Route planned for" summary** | Driver-unit values from the wire params | Metres and kilograms, describing the **same** request | `sentRestrictionLines(truck, avoid, metric)` | ✅ same line count, same parameters, different words |
 | **Briefing distance + corridor roads** | `mi` | `km` | `format-units.ts` | ✅ |
 | **Trip summary ("planned miles")** | `X.X planned miles` | metric | `format-units.ts` | ✅ now `formatDistance(...) planned` |
+| **Route-plausibility advisory** | *"…doubles back about 12 miles…"*, *"…ends about 2.3 miles from…"* | The same sentences in kilometres | `route-plausibility.ts`, its own sentence formatter | ✅ the **measurement** is unchanged — `measured` stays canonical miles so a threshold, a harness and a diagnostic report keep comparing the same number; only the sentence moves |
 | **Voice maneuver distance** | "In half a mile", "In 800 feet" | Metric landmarks a Canadian sign uses — **not** a converted mile | Product decision; see §4 | ✅ `distanceText(mi, metric)` |
+| **Road-test / problem report** | `planned miles`, `speed (mph)` | — | Diagnostic artifact | ➖ **deliberately canonical.** The report is copied to the owner, not read by the driver, and every line already names its unit explicitly. Mixing units across reports would make a Canadian driver's report incomparable with a US one |
 | **Voice announcement timing** | Speed-scaled tiers in miles | Unchanged — *when* to speak is a routing decision, not a display one | Architecture decision | ➖ unchanged |
 | **Imperial mode fidelity** | 13′6″, 80,000 lb, 25.7 mi, ±80 ft | Byte-identical after this change | — | ➖ pinned: `13.5 ft` must never render as "13.6 feet" |
 | **HOS engine** | US federal property-carrying limits | Not changed, not extended, not relabelled | FMCSA rules already implemented | ➖ untouched |

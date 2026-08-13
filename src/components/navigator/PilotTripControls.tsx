@@ -639,7 +639,7 @@ export function PilotTripControls({
           )}
           brief={lifecycle.routeBrief()}
           metric={metric}
-          plausibilitySlot={<RouteCheck lifecycle={lifecycle} />}
+          plausibilitySlot={<RouteCheck lifecycle={lifecycle} metric={metric} />}
           onStart={() => act(() => lifecycle.startNavigation(Date.now()))}
           onDiscard={() => act(() => lifecycle.discardRoute(Date.now()))}
         />
@@ -901,13 +901,16 @@ function routeNeedsBriefing(lifecycle: NavigationLifecycle): boolean {
  * around the low bridge. Blocking on length would systematically refuse
  * the correct routes.
  */
-function RouteCheck({ lifecycle }: { lifecycle: NavigationLifecycle }) {
+function RouteCheck({ lifecycle, metric }: { lifecycle: NavigationLifecycle; metric: boolean }) {
   const data = lifecycle.mapData();
   if (data.destination === null || data.geometry.length === 0) return null;
   const findings = assessRoutePlausibility({
     geometry: data.geometry,
     destination: data.destination,
     reportedMiles: lifecycle.view().totalMi ?? null,
+    // The advisory reads in the driver's units. The MEASUREMENT is
+    // unchanged — only the sentence is.
+    metric,
   });
   if (findings.length === 0) return null;
   return (

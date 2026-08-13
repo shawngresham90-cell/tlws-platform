@@ -65,6 +65,7 @@ import {
   DEFAULT_EDITABLE_PROFILE,
 } from '@/lib/navigator/truck-profile';
 import { sentRestrictionLines, truckWireParams } from '@/lib/trip-planner/here-truck-params';
+import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
 import {
   parseRegionPrefs,
   REGION_KEY,
@@ -393,6 +394,57 @@ const REGION_MODULE = readFileSync('src/lib/navigator/region.ts', 'utf8');
     metricLines.length === imperialLines.length,
   );
   check('4.11 m appears, from the 411 cm actually sent', metricLines.includes('4.11 m'));
+
+  /*
+   * The plausibility ADVISORY reads in the driver's units too — it is a
+   * sentence at the briefing, not a diagnostic. What must not move is the
+   * measurement: `measured` stays in canonical miles so a threshold, a
+   * harness and a report all keep comparing the same number.
+   */
+  {
+    const A = { lat: 35.0, lng: -85.0 };
+    const B = { lat: 35.0, lng: -84.0 };
+    const away = { lat: 36.5, lng: -84.0 };
+    const geom = [];
+    for (let i = 0; i <= 40; i++)
+      geom.push({
+        lat: A.lat + ((away.lat - A.lat) * i) / 40,
+        lng: A.lng + ((away.lng - A.lng) * i) / 40,
+      });
+    const imperial = assessRoutePlausibility({ geometry: geom, destination: B });
+    const metricAdvisory = assessRoutePlausibility({
+      geometry: geom,
+      destination: B,
+      metric: true,
+    });
+    const gapI = imperial.find((f) => f.code === 'destination-mismatch');
+    const gapM = metricAdvisory.find((f) => f.code === 'destination-mismatch');
+    check('the advisory fires in both unit systems', gapI !== undefined && gapM !== undefined);
+    check(
+      'imperial wording is untouched',
+      /\d+\.\d miles from the place you searched for\./.test(gapI?.message ?? ''),
+      gapI?.message,
+    );
+    check(
+      'metric wording is kilometres, not converted miles',
+      /\d+\.\d kilometres from the place you searched for\./.test(gapM?.message ?? ''),
+      gapM?.message,
+    );
+    check(
+      'no imperial word survives in the metric sentence',
+      !/mile/.test(gapM?.message ?? ''),
+      gapM?.message,
+    );
+    check(
+      'the MEASUREMENT is identical — only the sentence changed',
+      gapI?.measured === gapM?.measured,
+      [gapI?.measured, gapM?.measured],
+    );
+    check(
+      'the same finding codes come out either way',
+      imperial.map((f) => f.code).join(',') === metricAdvisory.map((f) => f.code).join(','),
+    );
+  }
 
   check(
     'the cross-border notice is exact',
