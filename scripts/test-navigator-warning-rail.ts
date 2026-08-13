@@ -28,6 +28,7 @@ import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { statusSeverity, severityGlyph } from '@/lib/navigator/status-severity';
 import { createVoiceGuidance, type SpeechPort } from '@/lib/navigator/voice-guidance';
+import { toEngineClockState } from '@/lib/navigator/hos-clocks';
 import type { DrivingView } from '@/lib/navigator/navigation-controller';
 
 let passed = 0;
@@ -97,6 +98,22 @@ const baseView = {
   lastKnown: false,
 };
 
+/*
+ * A driver mid-shift, so the HOS strip is in its ORDINARY running state.
+ *
+ * This used to be implicit: the strip seeded itself with a fresh eleven
+ * hours for everyone. The pre-trip setup milestone removed that
+ * assumption — with no clocks entered the strip shows "Clocks not set"
+ * and, correctly, no calm line to announce. The rail's contract is about
+ * what the RAIL adds to a running screen, so the running screen has to be
+ * handed real clocks now rather than inheriting a fiction. The unset
+ * state gets its own pin below.
+ */
+const MID_SHIFT_CLOCKS = toEngineClockState(
+  { drivingMin: 305, windowMin: 470, untilBreakMin: 185, cycleMin: 1_325, cycleRule: '70/8' },
+  1_754_000_000_000,
+);
+
 function render(over: Partial<DrivingView>, extra: Record<string, unknown> = {}): string {
   return renderToStaticMarkup(
     createElement(
@@ -115,6 +132,7 @@ function render(over: Partial<DrivingView>, extra: Record<string, unknown> = {})
           fullScreen: true,
           roadName: 'Old Mill Road',
           etaText: '3:45 PM',
+          hosEnteredClocks: MID_SHIFT_CLOCKS,
           ...extra,
         }),
       ),
@@ -207,6 +225,24 @@ const surfaceOf = (html: string) => {
     check(`rail: no modal in any state (${name})`, !/role="(?:alert)?dialog"/.test(html));
     check(`rail: no TLWS yellow treatment (${name})`, !/nav-brand|#FFEB00/i.test(html));
   }
+
+  // The clocks-unset screen spends the budget DOWN, never up: the calm
+  // line has nothing honest to say, so it says nothing, and the strip
+  // does not compensate with an announcement of its own. The rail's
+  // states behave identically underneath it.
+  const unset = surfaceOf(render({}, { hosEnteredClocks: null }));
+  check(
+    'rail: clocks-unset removes the HOS calm line rather than adding a region',
+    (unset.match(/aria-live="polite"/g) ?? []).length === 2,
+    unset.match(/aria-live="polite"/g)?.length,
+  );
+  check('rail: clocks-unset says so plainly', unset.includes('Clocks not set'));
+  check(
+    'rail: clocks-unset still wears the advisory edge when position degrades',
+    surfaceOf(render({ status: 'position-degraded' }, { hosEnteredClocks: null })).includes(
+      'border-l-nav-warn',
+    ),
+  );
 
   // Never a new cluster: sections and dls unchanged in the loudest state.
   const loud = surfaceOf(

@@ -31,6 +31,16 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -226,11 +236,53 @@ async function setUnits(page, units) {
   await page.waitForTimeout(200);
 }
 
+/**
+ * Make the truck EDITOR available, whatever state the screen is in.
+ *
+ * Since the pre-trip setup milestone a confirmed profile persists in
+ * localStorage and collapses to a compact summary with an 'Edit truck'
+ * button, so a scenario that inherits a saved storage state arrives with
+ * no input fields on screen at all. Every field-setting path goes through
+ * here first — the same tap a driver makes to change their truck.
+ */
+async function openTruckEditor(page) {
+  const edit = page.getByRole('button', { name: 'Edit truck' });
+  if ((await edit.count()) === 0) return;
+  await edit.scrollIntoViewIfNeeded();
+  await edit.click();
+  await page.waitForTimeout(250);
+}
+
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists and collapses to a
+   * compact summary with 'Edit truck', so a scenario inheriting a saved
+   * storage state arrives with nothing left to confirm.
+   */
+  if ((await page.getByRole('button', { name: 'Edit truck' }).count()) > 0) return;
   const confirmBtn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await confirmBtn.count()) === 0) return;
   await confirmBtn.scrollIntoViewIfNeeded();
   if (!(await confirmBtn.isDisabled())) await confirmBtn.click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
+}
+
+/**
+ * Whether the truck is currently CONFIRMED, asked of the UI rather than
+ * of a phrase.
+ *
+ * This used to be a text match on 'Truck confirmed'. The pre-trip setup
+ * milestone replaced that button with a collapsed summary — 'Your truck
+ * / Saved' and an 'Edit truck' button — so the phrase is gone while the
+ * state it described is unchanged. Reading the state directly says what
+ * the check always meant: the summary is showing, and no confirmation is
+ * being asked for.
+ */
+async function isTruckConfirmed(page) {
+  const summary = (await page.getByRole('button', { name: 'Edit truck' }).count()) > 0;
+  const asking = (await page.getByRole('button', { name: /This is my truck/ }).count()) > 0;
+  return summary && !asking;
 }
 
 /* ------------------------------------------------------------------ */
@@ -484,6 +536,7 @@ async function runScenario(browser, sc, viewport = { width: 390, height: 844 }) 
     if (sc.metricTruck) {
       // In metric mode the editor's inputs are labelled in metres and kg,
       // and the values convert ONCE on the way in.
+      await openTruckEditor(page);
       await page.getByLabel('Height in m').fill('4.11');
       await page.waitForTimeout(120);
       await page.getByLabel('Gross weight in kg').fill('36287');
@@ -492,10 +545,12 @@ async function runScenario(browser, sc, viewport = { width: 390, height: 844 }) 
     await confirmTruck(page);
     if (sc.switchUnitsAfterConfirm) {
       await setUnits(page, 'imperial');
-      const afterSwitch = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+      await page.waitForTimeout(250);
+      verdict('the truck is STILL confirmed after a unit switch', await isTruckConfirmed(page));
       verdict(
-        'the truck is STILL confirmed after a unit switch',
-        /Truck confirmed/.test(afterSwitch),
+        'and Start is not gated again by a display-unit change',
+        !(await page.getByRole('button', { name: /^Start(?: Route)?$/ }).count()) ||
+          (await page.getByText('Confirm your truck first').count()) === 0,
       );
     }
 
@@ -580,7 +635,7 @@ async function runScenario(browser, sc, viewport = { width: 390, height: 844 }) 
       );
     }
 
-    const start = page.getByRole('button', { name: /^Start$/ });
+    const start = page.getByRole('button', { name: START_BUTTON });
     await start.scrollIntoViewIfNeeded();
     await start.click();
     await page.waitForTimeout(2500);

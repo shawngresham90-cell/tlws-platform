@@ -269,6 +269,9 @@ function clocksWith(over: Partial<ClockState>): ClockState {
 {
   const compactHtml = renderToStaticMarkup(
     createElement(HosStrip, {
+      // Populated clocks must be stated now: an unset strip renders
+      // "Clocks not set" rather than a fresh driver's full clocks.
+      initialClocks: freshClockState(T0),
       drivingActive: true,
       sourceLabel: 'Pilot trip loaded',
       compact: true,
@@ -279,13 +282,17 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     compactHtml.includes('DRIVE') && compactHtml.includes('BREAK'),
   );
   const fullHtml = renderToStaticMarkup(
-    createElement(HosStrip, { drivingActive: false, sourceLabel: 'No trip loaded' }),
+    createElement(HosStrip, {
+      initialClocks: freshClockState(T0),
+      drivingActive: false,
+      sourceLabel: 'No trip loaded',
+    }),
   );
   check(
     'strip: parked mode still renders the detailed card, now with all four clocks',
     fullHtml.includes('Drive time left') &&
       fullHtml.includes('On-duty window left') &&
-      fullHtml.includes('Cycle time left') &&
+      fullHtml.includes('Cycle remaining') &&
       fullHtml.includes('Until 30-minute break'),
   );
   check('strip: the detailed card carries the disclaimer too', fullHtml.includes(HOS_PLANNING_AID));
@@ -431,18 +438,30 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     /restoredClocks=\{hosRestoredClocks\}/.test(SCREEN) && /appliedRestoreRef/.test(HOS_COMPONENT),
   );
   check(
-    // The clocks still ride the TRIP key. The truck profile has its own
-    // versioned key (truck-route confidence milestone) because a
-    // confirmed truck outlives any one trip — but the driving screen
-    // itself writes those two and nothing else. The region preference
-    // (Canada milestone) is a third versioned key, and it is deliberately
-    // NOT written from here: its key, envelope and parsing live in
-    // ./region-storage so the position preview reads the same rules.
-    'wiring: clocks ride the EXISTING trip key — the screen writes exactly two',
+    /*
+     * The clocks still ride the TRIP key, and the driving screen now
+     * writes THAT AND NOTHING ELSE.
+     *
+     * Every other record — the confirmed truck, the driver's name, the
+     * region preference — moved into its own `*-storage.ts` module during
+     * the pre-trip setup milestone. That is what makes "a corrupt clock
+     * record must not destroy a valid truck profile" structural rather
+     * than promised: separate keys, separate parsers, and no try/catch on
+     * this screen that can span them.
+     *
+     * The trip snapshot stays here, and stays in sessionStorage, because
+     * it is about ONE DRIVE and should not outlive the tab.
+     */
+    'wiring: clocks ride the EXISTING trip key — and the screen writes only that',
     (SCREEN.match(/sessionStorage\.setItem\(\s*TRIP_RESTORE_KEY/g) ?? []).length === 1 &&
-      (SCREEN.match(/sessionStorage\.setItem\(/g) ?? []).length === 2 &&
-      SCREEN.includes('TRUCK_PROFILE_KEY') &&
-      !SCREEN.includes("'tlws-navigator-region-v1'"),
+      (SCREEN.match(/sessionStorage\.setItem\(/g) ?? []).length === 1 &&
+      (SCREEN.match(/localStorage/g) ?? []).length === 0 &&
+      !SCREEN.includes("'tlws-navigator-region-v1'") &&
+      !SCREEN.includes("'tlws-navigator-truck-v1'"),
+  );
+  check(
+    'wiring: the truck record is reached by function call, through its own module',
+    /from '\.\/truck-storage'/.test(SCREEN) && /readTruck\(\)/.test(SCREEN),
   );
 }
 
@@ -494,7 +513,7 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     // milestone): a driver who cannot change the numbers cannot honestly
     // confirm them. Its disclosure survives inside the editor.
     'truck: the parked trip surface still shows the full truck detail',
-    controls.includes('{truckEditor}') &&
+    controls.includes('{truckSlot}') &&
       editor.includes('Not used for routing') &&
       editor.includes('NOT_ROUTED_NOTICE'),
   );

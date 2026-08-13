@@ -77,6 +77,16 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -264,10 +274,21 @@ let savedStorageState = null;
  * here first — the same tap a driver makes.
  */
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists in localStorage and
+   * collapses to a compact summary with 'Edit truck', so a scenario that
+   * inherits a saved storage state arrives with nothing left to confirm.
+   * Waiting for the old button in that case is waiting for something
+   * that is correctly absent.
+   */
+  const summary = page.getByRole('button', { name: 'Edit truck' });
+  if ((await summary.count()) > 0) return;
   const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await btn.count()) === 0) return;
   await btn.scrollIntoViewIfNeeded();
   if (!(await btn.isDisabled())) await btn.click();
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(200);
 }
 
 async function makeContext(browser, { mode = 'granted', width = 390, height = 844 } = {}) {
@@ -488,7 +509,7 @@ scenarios.s1 = async (browser) => {
 
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await page.waitForTimeout(400);
 
     c = await geo.counts(page);
@@ -538,7 +559,7 @@ scenarios.s2 = async (browser) => {
       const t0 = Date.now();
       await pickDestination(page);
       await confirmTruck(page);
-      await page.getByRole('button', { name: /^Start$/ }).click();
+      await page.getByRole('button', { name: START_BUTTON }).click();
       await feedParked(page, 2);
       await page.waitForTimeout(500);
       await feedMoving(page, 3, 12);
@@ -575,7 +596,7 @@ scenarios.s3 = async (browser) => {
     await login(page);
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await page.waitForTimeout(1500);
 
     const text = await bodyText(page);
@@ -583,7 +604,7 @@ scenarios.s3 = async (browser) => {
     verdict('s3: zero route requests', counters.route === 0, `saw ${counters.route}`);
     verdict(
       's3: still parked (Start still offered)',
-      await page.getByRole('button', { name: /^Start$/ }).isVisible(),
+      await page.getByRole('button', { name: START_BUTTON }).isVisible(),
     );
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/s3-denied.png` });
   } finally {
@@ -598,7 +619,7 @@ scenarios.s4 = async (browser) => {
     await login(page);
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await geo.grant(page);
     await page.waitForTimeout(300);
     // The platform answers with a timeout instead of a fix — the same
@@ -615,7 +636,7 @@ scenarios.s4 = async (browser) => {
 
     // Safe retry: tap Start again, fixes arrive this time.
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 3, 12);
@@ -637,7 +658,7 @@ scenarios.s5 = async (browser) => {
     await login(page);
     await pickDestination(page);
     await confirmTruck(page);
-    const start = page.getByRole('button', { name: /^Start$/ });
+    const start = page.getByRole('button', { name: START_BUTTON });
     await start.click();
     // Four more taps as fast as the harness can deliver them, while the
     // permission prompt is still undecided.
@@ -671,7 +692,7 @@ scenarios.s6 = async (browser) => {
     await page.getByRole('button', { name: /Enable voice/i }).click();
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 3, 12);
@@ -704,7 +725,7 @@ scenarios.s7 = async (browser) => {
     await page.waitForTimeout(1500); // greeting window: passive line lands after the confirmation
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 3);
     await page.waitForTimeout(800);
     await feedMoving(page, 3, 12);
@@ -736,7 +757,7 @@ scenarios.s8 = async (browser) => {
     await feedParked(page, 2);
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 4, 12);
@@ -787,7 +808,7 @@ scenarios.s10 = async (browser) => {
     await pickDestination(page);
     failRoute(1);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(800);
 
@@ -795,7 +816,7 @@ scenarios.s10 = async (browser) => {
     verdict('s10: honest refusal shown', /Route refused:/.test(text));
     verdict(
       's10: still parked (Start available again)',
-      await page.getByRole('button', { name: /^Start$/ }).isVisible(),
+      await page.getByRole('button', { name: START_BUTTON }).isVisible(),
     );
     verdict(
       's10: one request spent on the failed attempt',
@@ -804,7 +825,7 @@ scenarios.s10 = async (browser) => {
     );
 
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 3, 12);
@@ -853,7 +874,7 @@ scenarios.s12 = async (browser) => {
     await feedParked(page, 2);
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     let lat = await feedMoving(page, 8, 27);
@@ -882,7 +903,7 @@ scenarios.s13 = async (browser) => {
     await feedParked(page, 2);
     await pickDestination(page);
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
     await feedMoving(page, 6, 12);

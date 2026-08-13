@@ -141,8 +141,11 @@ function componentMotionChecksAbsent(): boolean {
     const storageSanctioned = f.endsWith('DrivingScreen.tsx') || /-storage\.ts$/.test(f);
     const scrubbed = storageSanctioned
       ? src
-          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'SANCTIONED_KEY_(')
-          .replace(/typeof sessionStorage/g, 'SANCTIONED_KEY_GUARD')
+          .replace(
+            /(session|local)Storage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g,
+            'SANCTIONED_KEY_(',
+          )
+          .replace(/typeof (session|local)Storage/g, 'SANCTIONED_KEY_GUARD')
       : src;
     check(
       `invariant 4: ${f.split('/').pop()} touches no storage/cookies/URL state`,

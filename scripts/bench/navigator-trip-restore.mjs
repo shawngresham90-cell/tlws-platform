@@ -37,6 +37,13 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone. Anchored, and accepting either name: 'Start
+ * navigation' and 'Start with full clocks' are different buttons.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -96,10 +103,21 @@ function syntheticRoute() {
  * here first — the same tap a driver makes.
  */
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists in localStorage and
+   * collapses to a compact summary with 'Edit truck', so a scenario that
+   * inherits a saved storage state arrives with nothing left to confirm.
+   * Waiting for the old button in that case is waiting for something
+   * that is correctly absent.
+   */
+  const summary = page.getByRole('button', { name: 'Edit truck' });
+  if ((await summary.count()) > 0) return;
   const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await btn.count()) === 0) return;
   await btn.scrollIntoViewIfNeeded();
   if (!(await btn.isDisabled())) await btn.click();
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(200);
 }
 
 async function readState(page, label) {
@@ -185,7 +203,7 @@ async function main() {
   await page.getByLabel('Destination latitude').fill(String(ORIGIN.lat + 6 / MI_PER_DEG_LAT));
   await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
   await confirmTruck(page);
-  await page.getByRole('button', { name: /^Start$/ }).click();
+  await page.getByRole('button', { name: START_BUTTON }).click();
   console.log('one Start tap: fix → one validated plan → navigation…');
   await feed(3, 0.3);
 

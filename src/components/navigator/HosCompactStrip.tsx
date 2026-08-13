@@ -2,6 +2,7 @@
 
 import type { HosCompactCell, HosCompactView } from '@/lib/navigator/hos-compact';
 import { cellStateWord } from '@/lib/navigator/hos-compact';
+import { ELD_AUTHORITATIVE } from '@/lib/navigator/hos-clocks';
 
 /**
  * The driving screen's compact HOS strip (pilot round 3).
@@ -96,9 +97,19 @@ export function HosCompactStrip({
         ))}
       </div>
       {/* The disclaimer is part of the display, not a footnote elsewhere:
-          wherever the clocks are shown, this sentence is shown with them. */}
+          wherever the clocks are shown, this sentence is shown with them.
+
+          BOTH sentences share ONE line, deliberately. The pre-trip setup
+          milestone requires 'ELD is authoritative.' beside the driving
+          clocks — the numbers here are the driver's own now, not the
+          app's — and it first shipped as a second paragraph stacked
+          under this box. That cost a line of height the cockpit does not
+          have: on an 844x390 landscape phone it pushed Overview, Voice
+          and Stop off the bottom of the screen, which the full-map bench
+          caught. Inside the box, on this line, it is just as beside the
+          clocks and costs nothing. */}
       <p className="mt-0.5 truncate text-[length:var(--size-label)] leading-none text-ink/60">
-        {HOS_PLANNING_AID}
+        {HOS_PLANNING_AID} {ELD_AUTHORITATIVE}
       </p>
     </>
   );

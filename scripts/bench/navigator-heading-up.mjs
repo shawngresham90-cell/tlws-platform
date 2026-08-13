@@ -40,6 +40,52 @@
  */
 import pkg from 'playwright';
 const { chromium } = pkg;
+
+/*
+ * A driver five hours into a shift, seeded straight into the store.
+ *
+ * This bench measures the CAMERA — heading-up rotation, follow, recenter
+ * — and reads the compact HOS strip only to confirm the cockpit chrome
+ * survives a rotating map. It used to get clocks for free, because the
+ * strip seeded itself with a fresh eleven hours for everybody. The
+ * pre-trip setup milestone removed that: with nothing entered the strip
+ * correctly shows 'Clocks not set' and has no numbers to lay out. So the
+ * clocks are supplied rather than assumed, the same way the full-map
+ * bench supplies them.
+ */
+const MID_SHIFT_CLOCKS = {
+  v: 1,
+  entered: {
+    drivingMin: 305,
+    windowMin: 470,
+    untilBreakMin: 185,
+    cycleMin: 1325,
+    cycleRule: '70/8',
+  },
+  enteredAtMs: 1754000000000,
+  fromFreshShift: false,
+};
+
+async function seedClocks(context) {
+  await context.addInitScript((record) => {
+    try {
+      window.localStorage.setItem('tlws-navigator-clocks-v1', JSON.stringify(record));
+    } catch {
+      /* a bench that cannot seed still runs; the HOS checks will say so */
+    }
+  }, MID_SHIFT_CLOCKS);
+}
+
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 import { deflateSync, inflateSync } from 'node:zlib';
 
 /**
@@ -477,6 +523,7 @@ async function runScenario(browser, scenario, opts = {}) {
     deviceScaleFactor: 1,
     storageState: savedStorageState ?? undefined,
   });
+  await seedClocks(context);
   let routeCalls = 0;
   await context.route('**/api/navigator/route', (r) => {
     routeCalls += 1;
@@ -525,7 +572,7 @@ async function runScenario(browser, scenario, opts = {}) {
       .first()
       .click({ timeout: 15_000 });
     await confirmTruck(page);
-    await page.getByRole('button', { name: /^Start$/ }).click();
+    await page.getByRole('button', { name: START_BUTTON }).click();
 
     // Drive the leg, then the tail, feeding real GPS courses.
     let travelled = 0;

@@ -32,7 +32,6 @@ import {
 } from '@/lib/navigator/trip-start';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
-import { DriverNameEntry } from './DriverNameEntry';
 import { RouteBriefing } from './RouteBriefing';
 
 /**
@@ -99,12 +98,18 @@ export function PilotTripControls({
   build = null,
   firstName = null,
   onFirstName,
+  onForgetFirstName,
   picked,
   onPicked,
   onAttemptActive,
+  onDestinationReady,
   truckProfile,
   truckGate,
-  truckEditor,
+  truckSlot,
+  driverSlot = null,
+  setupStatusSlot = null,
+  clocksPanel = null,
+  startBlockedReason = null,
   regionPanel = null,
   metric = false,
   crossBorder = false,
@@ -146,6 +151,8 @@ export function PilotTripControls({
    * does not mount.
    */
   onFirstName?: (firstName: string) => void;
+  /** Forget the saved name. Absent renders the field without a clear control. */
+  onForgetFirstName?: () => void;
   /**
    * The chosen destination, OWNED BY THE DRIVING SCREEN (final pilot
    * milestone). The search box moved onto the parked map, so the pick
@@ -165,6 +172,13 @@ export function PilotTripControls({
    */
   onAttemptActive?: (active: boolean) => void;
   /**
+   * Whether a destination is actually available to route to — from the
+   * lifted search OR the developer coordinate box, which is local state
+   * here. The setup gate must agree with the planner, and only this
+   * component can see both answers.
+   */
+  onDestinationReady?: (ready: boolean) => void;
+  /**
    * The truck the driver confirmed, and whether it may be routed yet.
    * OWNED BY THE DRIVING SCREEN (truck-route confidence milestone): the
    * editor that changes it and the Start tap that sends it are different
@@ -174,7 +188,20 @@ export function PilotTripControls({
   /** 'invalid' | 'unconfirmed' | 'ready' — from the pure profile gate. */
   truckGate: 'invalid' | 'unconfirmed' | 'ready';
   /** The parked profile editor, rendered by the owner. */
-  truckEditor: ReactNode;
+  /** The truck section: the editor, or the saved summary with Edit truck. */
+  truckSlot: ReactNode;
+  /** The driver-name field, now FIRST in the setup order. */
+  driverSlot?: ReactNode;
+  /** The four-line "before you start" checklist. */
+  setupStatusSlot?: ReactNode;
+  /** Current clocks. Wired in the clock milestone; null renders nothing. */
+  clocksPanel?: ReactNode;
+  /**
+   * The exact missing setup item, or null when Start is available. It
+   * both disables the button and prints beneath it — one value, so the
+   * control and its explanation cannot disagree.
+   */
+  startBlockedReason?: string | null;
   /** Region + units + Canadian pilot status, rendered by the owner. */
   regionPanel?: ReactNode;
   /** Show the driver's numbers in metric. */
@@ -226,6 +253,20 @@ export function PilotTripControls({
     facility: DestinationFacility;
   } | null {
     const usingSearch = picked !== null;
+    /*
+     * A BLANK BOX IS NOT A DESTINATION. `Number('')` is 0, and 0/0 is a
+     * finite, in-range coordinate — a point in the Gulf of Guinea — so
+     * an untouched coordinate form used to resolve to a real place. The
+     * planner would have routed to it; the only reason nobody had is
+     * that Start was never enabled with the form empty.
+     *
+     * Now it can be: the setup gate asks this function whether a
+     * destination exists, so "empty" has to answer no rather than
+     * answering "null island". Blank, whitespace and unparseable are one
+     * case, and the case is: nothing chosen.
+     */
+    const blank = destLat.trim() === '' || destLng.trim() === '';
+    if (!usingSearch && blank) return null;
     const dLat = usingSearch ? picked.position.lat : Number(destLat);
     const dLng = usingSearch ? picked.position.lng : Number(destLng);
     if (
@@ -452,6 +493,27 @@ export function PilotTripControls({
   }, [attemptActive, onAttemptActive]);
 
   /*
+   * Mirror DESTINATION READINESS upward, for the same reason and by the
+   * same mechanism.
+   *
+   * The setup checklist and the Start gate live in the driving screen,
+   * which owns the searched place — but a searched place is not the only
+   * way to have a destination. The developer coordinate box below is the
+   * other one, its state is local to this component, and `Start` has
+   * always planned to whichever of the two resolves.
+   *
+   * Gating Start on the SEARCH alone therefore locked the coordinate path
+   * out of its own button: the driver typed a destination, the app knew
+   * where it was, and the checklist still said one was required. The gate
+   * has to ask the same question the planner asks, so it asks it here,
+   * where both answers are in scope.
+   */
+  const destinationReady = resolveDestination() !== null;
+  useEffect(() => {
+    onDestinationReady?.(destinationReady);
+  }, [destinationReady, onDestinationReady]);
+
+  /*
    * A fresh pick retires any failure line. The pick now happens in a
    * different component, so the note cannot be cleared in the pick
    * handler the way it was when the search lived here — the prop edge
@@ -485,13 +547,28 @@ export function PilotTripControls({
 
       {state === 'idle' ? (
         <div className="space-y-3">
+          {/*
+           * SETUP ORDER, top to bottom: Driver → Region and units →
+           * Truck → Clocks → Destination → Start.
+           *
+           * It used to be Region → Destination → START → truck editor,
+           * which put the commitment above the safety check it depends
+           * on. A driver tapped Start, nothing visible happened, and the
+           * reason printed below the truck editor they had not reached
+           * yet. Start now comes last, after everything it requires.
+           *
+           * The destination SEARCH stays on the parked map (final pilot
+           * milestone) — the driver looks at the map, so that is where
+           * "where are you going?" belongs. What sits here at position 5
+           * is the confirmation of what they picked, immediately above
+           * the Start it commits to.
+           */}
+          {setupStatusSlot}
+          {driverSlot}
           {regionPanel}
+          {truckSlot}
+          {clocksPanel}
 
-          {/* The search box itself now lives at the TOP OF THE PARKED MAP
-              (final pilot milestone) — the driver looks at the map, so
-              that is where "where are you going?" belongs. This surface
-              keeps the CONFIRMATION line, because the destination a tap
-              is about to commit to must be readable right beside Start. */}
           {picked !== null ? (
             <p className="text-xl text-ink">
               Destination: <span className="font-semibold">{picked.title}</span>
@@ -519,19 +596,30 @@ export function PilotTripControls({
 
           {/* THE Start control — the whole simplified flow in one tap:
               just-in-time location permission, wait for a real fix, one
-              validated truck route, then navigation. Green like the
-              briefing's Start, because it is the same commitment; the
-              words carry the state while an attempt runs, and the button
-              refuses re-entry rather than queueing a second attempt. */}
+              validated truck route, then navigation.
+
+              IT IS NOW GENUINELY DISABLED when setup is incomplete, and
+              the reason sits directly beneath it in words. Previously the
+              button looked usable, refused on tap, and explained itself
+              two hundred pixels down the page. A disabled control the
+              driver cannot act on is worse than useless if it does not
+              say what to do instead — so `startBlockedReason` names the
+              one missing item, and it is TEXT, not a colour. */}
           <button
             type="button"
             onClick={startTrip}
-            disabled={attemptActive}
+            disabled={attemptActive || startBlockedReason !== null}
             aria-busy={attemptActive}
-            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-80"
+            aria-describedby={startBlockedReason === null ? undefined : 'start-blocked-reason'}
+            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-60"
           >
-            {progressText ?? 'Start'}
+            {progressText ?? 'Start Route'}
           </button>
+          {startBlockedReason !== null ? (
+            <p id="start-blocked-reason" className="text-lg font-semibold text-ink">
+              {startBlockedReason}
+            </p>
+          ) : null}
 
           {/* Developer-only coordinate entry. It is now gated on the
               EXISTING debug mechanism (Pilot Mode's `debugLogging`, which
@@ -596,7 +684,6 @@ export function PilotTripControls({
               panel — a driver who cannot change the numbers cannot
               honestly confirm them. The panel's disclosure survives
               inside the editor's "Not used for routing" section. */}
-          {truckEditor}
         </div>
       ) : null}
 
@@ -706,14 +793,15 @@ export function PilotTripControls({
           never blocks navigation: the name only feeds the spoken
           greeting (blank name = no personalized line, never a fabricated
           one), and the pilot briefing remains one tap away. */}
-      {onFirstName ? (
-        <div className="space-y-2">
-          <p className="text-base text-ink/60">
-            Optional — a first name is only ever spoken, never stored.
-          </p>
-          <DriverNameEntry firstName={firstName} onAccept={onFirstName} />
-        </div>
-      ) : null}
+      {/* THE DRIVER NAME IS NOT HERE ANY MORE. It used to render at the
+          bottom of the page, below everything, on the reasoning that it
+          was optional and should not compete with the flow. The pre-trip
+          setup milestone put it at POSITION 1 instead — a driver reads a
+          setup screen top to bottom, and "who is driving" is the first
+          question, not an afterthought below the debug log. It is still
+          optional and still never blocks a route; it is passed in as
+          `driverSlot`, and rendering it twice would give one value two
+          controls. */}
 
       {/* The build a driver is running, in one line they can read aloud on
           the phone or quote in a message. Every generated report carries

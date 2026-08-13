@@ -560,18 +560,34 @@ void (async () => {
     // trip must not discard the profile the driver verified — and both
     // are named constants, so no unversioned or ad-hoc key can appear.
     const keyedCalls =
-      screen.match(
-        /sessionStorage\.(getItem|setItem|removeItem)\(\s*(TRIP_RESTORE_KEY|TRUCK_PROFILE_KEY)/g,
-      ) ?? [];
+      screen.match(/sessionStorage\.(getItem|setItem|removeItem)\(\s*TRIP_RESTORE_KEY/g) ?? [];
     check(
-      '9. every storage call on the screen uses one of the two versioned keys',
+      '9. every storage call on the screen uses the ONE versioned trip key',
       storageCalls.length >= 3 && storageCalls.length === keyedCalls.length,
       { storageCalls: storageCalls.length, keyedCalls: keyedCalls.length },
     );
+    /*
+     * The confirmed TRUCK moved to its own module in the pre-trip setup
+     * milestone — same key, same envelope, now in localStorage so it
+     * survives to the next VISIT and not merely the next reload. The
+     * record is pinned where it now lives, and the safety property
+     * travels with it: a stored confirmation counts only while it still
+     * matches the stored values, so restoring a truck never restores
+     * permission to route for a truck nobody checked.
+     */
+    const truckStore = readFileSync('src/components/navigator/truck-storage.ts', 'utf8');
     check(
       '9. the truck key is versioned and carries no trip or position data',
-      /const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v\d+'/.test(screen) &&
-        /JSON\.stringify\(\{ v: 1, profile, confirmed: /.test(screen),
+      /const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v\d+'/.test(truckStore) &&
+        /confirmed: confirmation\.confirmedFingerprint/.test(truckStore) &&
+        !/lat|lng|position|route|firstName/.test(
+          truckStore.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''),
+        ),
+    );
+    check(
+      '9. a restored truck whose values no longer match its fingerprint comes back UNCONFIRMED',
+      /confirmed === routingFingerprint\(profile\)/.test(truckStore) &&
+        /NO_CONFIRMATION/.test(truckStore),
     );
   }
 

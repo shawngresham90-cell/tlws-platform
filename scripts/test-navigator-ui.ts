@@ -241,25 +241,35 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
     // carve-out below is, so the surface that can persist anything stays
     // small, named and reviewable:
     //
-    //   DrivingScreen.tsx  — the trip snapshot (pilot round 3, item 4)
-    //                        and the confirmed truck, each under its own
-    //                        versioned key;
-    //   *-storage.ts       — a preference module whose whole job is one
-    //                        versioned key, its envelope, and its
-    //                        parsing (region-storage.ts, Canada
-    //                        milestone), so two screens reading the same
-    //                        preference cannot disagree about it.
+    //   DrivingScreen.tsx     — the trip snapshot (pilot round 3, item 4)
+    //                           under its own versioned key;
+    //   *-storage.ts          — a record module whose whole job is one
+    //                           versioned key, its envelope and its
+    //                           parsing, so two screens reading the same
+    //                           record cannot disagree about it.
     //
-    // Everything stored is a route or a preference. Never a name, never a
-    // position trail. Their own harnesses (test-navigator-trip-restore,
-    // test-navigator-canada) pin which keys exist and what may go in
-    // them; here the sanctioned call shapes are scrubbed and every other
-    // storage token stays banned, in this file and every other.
+    // Since the pre-trip setup milestone the actual browser APIs live in
+    // exactly ONE of those modules — `versioned-storage.ts` — and the
+    // rest (driver, truck, clocks, region) call through it. That is what
+    // makes "corrupt clocks must not destroy a valid truck" structural
+    // rather than promised: three records, three parsers, one try/catch
+    // that cannot span them. The pin below enforces that concentration.
+    //
+    // Everything stored is a route, a preference, a verified truck, a
+    // first name the driver typed, or four integers of clock time. Never
+    // a position, never a position trail, never a searched address, never
+    // a credential. Their own harnesses (test-navigator-trip-restore,
+    // test-navigator-canada, test-navigator-pretrip) pin which keys exist
+    // and what may go in them; here the sanctioned call shapes are
+    // scrubbed and every other storage token stays banned.
     const storageSanctioned = f === 'DrivingScreen.tsx' || /-storage\.ts$/.test(f);
     const scrubbed = storageSanctioned
       ? src
-          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'SANCTIONED_KEY_(')
-          .replace(/typeof sessionStorage/g, 'SANCTIONED_KEY_GUARD')
+          .replace(
+            /(session|local)Storage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g,
+            'SANCTIONED_KEY_(',
+          )
+          .replace(/typeof (session|local)Storage/g, 'SANCTIONED_KEY_GUARD')
       : src;
     check(
       `privacy ${f}: no storage APIs`,

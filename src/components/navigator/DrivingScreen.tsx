@@ -70,6 +70,16 @@ import {
   type UnitSystem,
 } from '@/lib/navigator/region';
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
+import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
+import { readTruck, writeTruck } from './truck-storage';
+import { readClocks, writeClocks } from './clocks-storage';
+import { clocksProvenance } from '@/lib/navigator/hos-clocks';
+import { ClockSetup } from './ClockSetup';
+import { DriverNameEntry } from './DriverNameEntry';
+import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
+import { SetupStatus } from './SetupStatus';
+import { TruckSummary } from './TruckSummary';
+import { setupStatus } from '@/lib/navigator/setup-status';
 import {
   confirmProfile,
   profileGate,
@@ -97,85 +107,21 @@ import { VoiceControls } from './VoiceControls';
  * "route unavailable", no provider spend possible (the endpoint 404s).
  */
 
-/**
- * Where the confirmed truck lives for the browser session. A SEPARATE key
- * from the trip snapshot: a truck outlives a trip, and mixing them would
- * make discarding a trip discard the driver's verified truck.
- *
- * What is stored is only what the route request needs. Nothing here can
- * carry a position, a route, a name, or anything about how the truck was
- * driven — the parser below refuses any payload that does not match this
- * exact shape, so a hand-edited or stale value cannot reach the provider.
+/*
+ * The confirmed truck and the driver's name are versioned records owned
+ * by `truck-storage` and `driver-storage`. They moved off this screen in
+ * the pre-trip setup milestone so that a corrupt record of one kind
+ * cannot cost the driver another — three keys, three parsers, no shared
+ * try/catch. This screen still owns the TRIP snapshot, which is about
+ * one drive and deliberately does not outlive the tab.
  */
-const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v1';
 
 /*
- * The driver's region and display units live in a THIRD versioned key,
- * for the same reason the truck has its own: a preference outlives both a
- * trip and a truck. It holds two enum values and nothing else — no
- * position, no route, no identity. The key itself, and the parsing of it,
- * belong to ./region-storage so the position preview can read the same
- * preference without a second copy of the rules.
+ * The provenance line is computed from the entry state now — see
+ * `clocksProvenance`. The old constant claimed the screen was "showing a
+ * fresh driver's full clocks", which stopped being true when the
+ * fresh-driver default was removed.
  */
-
-function parseStoredProfile(
-  raw: string,
-): { profile: EditableProfile; confirmation: ConfirmationState } | null {
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (data === null || typeof data !== 'object') return null;
-  const d = data as { v?: unknown; profile?: unknown; confirmed?: unknown };
-  if (d.v !== 1 || d.profile === null || typeof d.profile !== 'object') return null;
-  const p = d.profile as Record<string, unknown>;
-  const num = (v: unknown): number | null =>
-    typeof v === 'number' && Number.isFinite(v) ? v : null;
-  const heightFt = num(p.heightFt);
-  const widthFt = num(p.widthFt);
-  const lengthFt = num(p.lengthFt);
-  const grossWeightLbs = num(p.grossWeightLbs);
-  const axles = num(p.axles);
-  if (
-    heightFt === null ||
-    widthFt === null ||
-    lengthFt === null ||
-    grossWeightLbs === null ||
-    axles === null
-  ) {
-    return null;
-  }
-  const hazmatClass =
-    p.hazmatClass === null || typeof p.hazmatClass === 'string'
-      ? (p.hazmatClass as string | null)
-      : null;
-  const avoid = Array.isArray(p.avoid)
-    ? p.avoid.filter((a): a is string => typeof a === 'string')
-    : [];
-  const profile: EditableProfile = {
-    heightFt,
-    widthFt,
-    lengthFt,
-    grossWeightLbs,
-    axles,
-    hazmatClass,
-    avoid,
-  };
-  // A stored confirmation is only honoured when it still matches the
-  // stored values — a tampered or partially written record re-asks.
-  const confirmed = typeof d.confirmed === 'string' ? d.confirmed : null;
-  return {
-    profile,
-    confirmation:
-      confirmed !== null && confirmed === routingFingerprint(profile)
-        ? { confirmedFingerprint: confirmed }
-        : NO_CONFIRMATION,
-  };
-}
-
-const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
 /*
  * The running build, resolved once at module scope: these three values are
@@ -220,7 +166,7 @@ export function DrivingScreenView({
   onStop,
   lifecycleLine = null,
   destinationSlot = null,
-  hosSourceLabel = DEFAULT_HOS_LABEL,
+  hosSourceLabel = 'No clocks entered — enter yours to get clock warnings.',
   mapSlot = null,
   focusNavigationKey = null,
   voice,
@@ -234,6 +180,7 @@ export function DrivingScreenView({
   onVoiceMutedChange,
   showIdleStartControl = true,
   hosRestoredClocks = null,
+  hosEnteredClocks = null,
   onHosClocks,
   onBottomInset,
   mapSearchSlot = null,
@@ -293,6 +240,12 @@ export function DrivingScreenView({
   showIdleStartControl?: boolean;
   /** Clocks recovered from a restored trip — see HosStrip.restoredClocks. */
   hosRestoredClocks?: ClockState | null;
+  /**
+   * The clocks the driver entered, as engine state — or null when they
+   * have entered none, which the strip renders as "Clocks not set"
+   * rather than as a fresh driver.
+   */
+  hosEnteredClocks?: ClockState | null;
   /** Reports the live clocks so the owner can persist them. */
   onHosClocks?: (clocks: ClockState) => void;
   /**
@@ -830,6 +783,7 @@ export function DrivingScreenView({
               sourceLabel={hosSourceLabel}
               voice={voice}
               compact={fullScreen}
+              enteredClocks={hosEnteredClocks}
               restoredClocks={hosRestoredClocks}
               onClocksChange={onHosClocks}
               detailSlot={
@@ -1063,17 +1017,38 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const prevLcStateRef = useRef<LifecycleState>('idle');
 
   /*
-   * The driver's first name. Ephemeral by owner decision: React state on
-   * the mounted screen, and nothing else — no localStorage, no
-   * sessionStorage, no cookie, no profile, no database row. A full reload
-   * loses it and the driver types it again.
+   * The driver's first name, restored from this device (pre-trip setup
+   * milestone). It used to be ephemeral by owner decision; a driver who
+   * opens Navigator every morning should not retype their own name every
+   * morning, so it is now remembered — through `driver-storage`, which
+   * owns the key and re-validates on the way out.
    *
-   * It exists to be SPOKEN. It is never put in a provider request, a
-   * routing URL, a diagnostic payload, the pilot log, or the road-test
-   * report — `buildReport` below is assembled without it, so there is no
-   * path from this state to anything that leaves the device.
+   * WHAT DID NOT CHANGE: it exists to be SPOKEN, and nothing else. It is
+   * never put in a provider request, a routing URL, a diagnostic payload,
+   * the pilot log, or the road-test report — `buildReport` below is
+   * assembled without it, so there is no path from this state to anything
+   * that leaves the device.
+   *
+   * It starts null so the server render and the first client paint agree;
+   * the effect below adopts the saved value. A driver with nothing saved
+   * stays null, and a null name produces NO greeting rather than an
+   * invented one.
    */
   const [firstName, setFirstName] = useState<string | null>(null);
+  useEffect(() => {
+    const saved = readDriverName();
+    if (saved !== null) setFirstName(saved);
+  }, []);
+  /** Accept a name the entry form has already sanitized, and remember it. */
+  const acceptFirstName = (next: string) => {
+    setFirstName(next);
+    writeDriverName(next);
+  };
+  /** Forget the name. Nothing else stored is touched. */
+  const forgetFirstName = () => {
+    setFirstName(null);
+    clearDriverName();
+  };
 
   /*
    * The chosen destination (final pilot milestone). The search box lives
@@ -1141,32 +1116,87 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     setSearchRegion(region);
   }, [region]);
 
+  /*
+   * The confirmed truck, restored across VISITS (pre-trip setup
+   * milestone) rather than just reloads. The record, its envelope and its
+   * migration from the old sessionStorage home belong to `truck-storage`;
+   * this screen only says when to read and when to write.
+   *
+   * The safety property is unchanged and lives in that module: a stored
+   * confirmation is honoured only when it still matches the stored
+   * values, so restoring a truck never restores permission to route for
+   * a truck nobody checked.
+   */
   const [truckProfile, setTruckProfile] = useState<EditableProfile>(DEFAULT_EDITABLE_PROFILE);
   const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(NO_CONFIRMATION);
   const [truckTouched, setTruckTouched] = useState(false);
+  /** Open the full editor even though a confirmed truck exists. */
+  const [editingTruck, setEditingTruck] = useState(false);
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(TRUCK_PROFILE_KEY);
-      if (raw === null) return;
-      const parsed = parseStoredProfile(raw);
-      if (parsed === null) return;
-      setTruckProfile(parsed.profile);
-      setTruckConfirmation(parsed.confirmation);
-      setTruckTouched(true);
-    } catch {
-      /* storage unavailable: the defaults stand, unconfirmed */
-    }
+    const saved = readTruck();
+    if (saved === null) return;
+    setTruckProfile(saved.profile);
+    setTruckConfirmation(saved.confirmation);
+    setTruckTouched(true);
   }, []);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
-    try {
-      sessionStorage.setItem(
-        TRUCK_PROFILE_KEY,
-        JSON.stringify({ v: 1, profile, confirmed: confirmation.confirmedFingerprint }),
-      );
-    } catch {
-      /* a profile that cannot be stored is still usable this session */
-    }
+    writeTruck(profile, confirmation);
   };
+  /*
+   * THE DRIVER'S CLOCKS. Restored from `clocks-storage`, which returns
+   * `unset` for a first-time driver AND for every failure mode — a
+   * damaged record costs the clocks and nothing else, and never yields a
+   * fresh eleven hours.
+   */
+  const [clockEntry, setClockEntry] = useState<ClockEntryState>(CLOCKS_UNSET);
+  useEffect(() => {
+    setClockEntry(readClocks());
+  }, []);
+  const saveClocks = (next: ClockEntryState) => {
+    setClockEntry(next);
+    writeClocks(next);
+    bump();
+  };
+  /*
+   * The ONE engine state everything downstream reads: the compact strip,
+   * the detailed card and the voice announcer are a single HosStrip
+   * instance fed from here. Memoised on the entry itself so navigating,
+   * rerouting or stopping cannot rebuild it — a new object identity would
+   * re-seed the strip and silently reset the driver's clocks.
+   */
+  const enteredEngineClocks = useMemo(() => engineStateFor(clockEntry, Date.now()), [clockEntry]);
+
+  /** The gate the whole setup turns on, computed from the existing authority. */
+  const truckGateState = profileGate(truckProfile, truckConfirmation);
+  const truckConfirmed = truckGateState === 'ready';
+  /**
+   * Whether the developer coordinate box holds a usable destination,
+   * reported upward by PilotTripControls. That box is a preview-build
+   * affordance whose state lives down there, and the Start gate has to
+   * count it — see the `destinationPicked` note below.
+   */
+  const [devDestinationReady, setDevDestinationReady] = useState(false);
+  /*
+   * ONE value decides three things — whether Start is disabled, the
+   * sentence beneath it, and the checklist at the top — so they cannot
+   * disagree with each other.
+   */
+  const setup = setupStatus({
+    driverName: firstName,
+    truckGate: truckGateState,
+    // Canada's clocks are not "unset" — the engine does not model that
+    // region's rules at all, and the checklist says so rather than
+    // implying the driver forgot something.
+    clocks: region === 'CA' ? 'unsupported' : clockEntry.kind === 'set' ? 'set' : 'unset',
+    /*
+     * A searched place OR a developer-entered coordinate. `picked` alone
+     * was the wrong question: the coordinate box lives inside
+     * PilotTripControls, `Start` has always planned to whichever
+     * resolves, and gating on the search alone locked that path out of
+     * its own button. The gate now asks what the planner asks.
+     */
+    destinationPicked: picked !== null || devDestinationReady,
+  });
   /*
    * Whether a Start attempt is running right now, reported upward by
    * PilotTripControls. The search must refuse edits while an attempt is
@@ -1867,6 +1897,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
        */
       showIdleStartControl={!pilot.active || fullScreen || !lock.setupWindow}
       hosRestoredClocks={restoredClocks}
+      hosEnteredClocks={enteredEngineClocks}
       onHosClocks={(c) => {
         hosClocksRef.current = c;
       }}
@@ -1932,12 +1963,14 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             buildReport={buildReport}
             build={buildId}
             firstName={firstName}
-            onFirstName={setFirstName}
+            onFirstName={acceptFirstName}
+            onForgetFirstName={forgetFirstName}
             picked={picked}
             onPicked={setPicked}
             onAttemptActive={setStartPending}
+            onDestinationReady={setDevDestinationReady}
             truckProfile={truckProfile}
-            truckGate={profileGate(truckProfile, truckConfirmation)}
+            truckGate={truckGateState}
             regionPanel={
               <RegionPanel
                 region={region}
@@ -1966,35 +1999,70 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
               destination: picked?.position ?? null,
             })}
             hosUnavailable={region === 'CA'}
-            truckEditor={
-              <TruckProfileEditor
-                profile={truckProfile}
-                confirmed={
-                  truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
-                }
-                isDefault={!truckTouched}
-                metric={metric}
-                onChange={(next) => {
-                  // A routing value that changed invalidates the
-                  // confirmation by construction: the gate compares
-                  // fingerprints, so nothing here has to remember which
-                  // fields mattered. No provider request occurs.
-                  setTruckProfile(next);
-                  setTruckTouched(true);
-                  persistTruck(next, truckConfirmation);
-                  // A planned route belongs to the OLD truck. Discard it
-                  // rather than let Start reuse it for a different one.
-                  if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
-                  bump();
-                }}
-                onConfirm={() => {
-                  const next = confirmProfile(truckProfile);
-                  setTruckConfirmation(next);
-                  setTruckTouched(true);
-                  persistTruck(truckProfile, next);
-                  bump();
-                }}
+            setupStatusSlot={<SetupStatus status={setup} />}
+            startBlockedReason={setup.blockedReason}
+            driverSlot={
+              <DriverNameEntry
+                firstName={firstName}
+                onAccept={acceptFirstName}
+                onClear={forgetFirstName}
               />
+            }
+            clocksPanel={
+              <ClockSetup
+                state={clockEntry}
+                onSave={saveClocks}
+                onClear={() => saveClocks(CLOCKS_UNSET)}
+                unsupported={region === 'CA' ? CANADA_HOS_NOTICE : null}
+                nowMs={Date.now()}
+              />
+            }
+            truckSlot={
+              /*
+               * A returning driver whose truck was restored sees FOUR
+               * NUMBERS and a way back in, not the whole form again. The
+               * editor is still the only place a truck can be changed —
+               * the summary is a read-only echo — so there remains
+               * exactly one edit path and exactly one confirmation
+               * after it.
+               */
+              truckConfirmed && !editingTruck ? (
+                <TruckSummary
+                  profile={truckProfile}
+                  metric={metric}
+                  onEdit={() => setEditingTruck(true)}
+                />
+              ) : (
+                <TruckProfileEditor
+                  profile={truckProfile}
+                  confirmed={
+                    truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
+                  }
+                  isDefault={!truckTouched}
+                  metric={metric}
+                  onChange={(next) => {
+                    // A routing value that changed invalidates the
+                    // confirmation by construction: the gate compares
+                    // fingerprints, so nothing here has to remember which
+                    // fields mattered. No provider request occurs.
+                    setTruckProfile(next);
+                    setTruckTouched(true);
+                    persistTruck(next, truckConfirmation);
+                    // A planned route belongs to the OLD truck. Discard it
+                    // rather than let Start reuse it for a different one.
+                    if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
+                    bump();
+                  }}
+                  onConfirm={() => {
+                    setEditingTruck(false);
+                    const next = confirmProfile(truckProfile);
+                    setTruckConfirmation(next);
+                    setTruckTouched(true);
+                    persistTruck(truckProfile, next);
+                    bump();
+                  }}
+                />
+              )
             }
             onChanged={bump}
           />
@@ -2002,11 +2070,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       }
       offlineText={offlineNotice({ online, navigating: fullScreen })}
       offRouteText={offRouteText}
-      hosSourceLabel={
-        tripLoaded
-          ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'
-          : DEFAULT_HOS_LABEL
-      }
+      hosSourceLabel={clocksProvenance(clockEntry, tripLoaded && restoredClocks !== null)}
       /*
        * THE CANADIAN HOS BOUNDARY. The shipped engine implements US
        * federal limits; Canada's rules differ in almost every dimension

@@ -1195,8 +1195,11 @@ async function main() {
       html,
     );
     check(
-      'ui: the driver is told the name is not saved',
-      /Not saved/i.test(html) && /reload/i.test(html),
+      // The promise flipped with the owner's decision, so the pin does
+      // too — but it still pins that the driver is TOLD, in the field,
+      // where their name goes and where it does not.
+      'ui: the driver is told the name is saved on this device only, and never sent',
+      /Saved on this device only/i.test(html) && /Never sent anywhere/i.test(html),
       html,
     );
 
@@ -1208,8 +1211,25 @@ async function main() {
     check('ui: and no second input left to tab through', !/<input/.test(settled), settled);
   }
 
-  // Requirement 26 + 27: no persistence, no leakage. Source rails, because
-  // a render cannot prove the absence of a code path.
+  /*
+   * Requirement 26 + 27, AS AMENDED BY THE PRE-TRIP SETUP MILESTONE.
+   *
+   * The original rail was absolute: the name persisted nowhere, and the
+   * field said "Not saved — re-enter it after a reload". The owner
+   * changed that decision — a driver who opens Navigator every morning
+   * should not retype their own name every morning — so the rail is
+   * INVERTED here rather than deleted, and it keeps every tooth that was
+   * about safety rather than about persistence:
+   *
+   *   - the name still reaches NO network path (pinned below, unchanged);
+   *   - it still touches no database;
+   *   - it is still re-validated before it can be spoken;
+   *   - and the persistence itself is confined to ONE module, so the
+   *     files that merely USE the name cannot grow their own copy of it.
+   *
+   * `driver-storage.ts` is that module. Everything else in this list must
+   * still be storage-free apart from calling it.
+   */
   {
     const files: Record<string, string> = {
       lib: 'src/lib/navigator/driver-greeting.ts',
@@ -1219,13 +1239,13 @@ async function main() {
     };
     for (const [label, path] of Object.entries(files)) {
       const src = strip(readFileSync(path, 'utf8'));
-      // The NAME persists nowhere — that rail is absolute. The driving
-      // screen does hold the one sanctioned storage path, trip restore
-      // (pilot round 3, item 4), which persists the planned ROUTE in
-      // sessionStorage; its harness (test-navigator-trip-restore) pins
-      // that the snapshot never contains the name. The sanctioned call
-      // shapes are scrubbed here; every other storage token stays
-      // banned in all four files.
+      // The driving screen holds the one sanctioned in-file storage path,
+      // trip restore (pilot round 3, item 4), which persists the planned
+      // ROUTE in sessionStorage; its harness (test-navigator-trip-restore)
+      // pins that the snapshot never contains the name. The sanctioned
+      // call shapes are scrubbed here; every other storage token stays
+      // banned in all four files, including the name's own — which lives
+      // in driver-storage.ts and is reached only by function call.
       const scrubbed =
         label === 'screen'
           ? src
@@ -1233,7 +1253,7 @@ async function main() {
               .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
           : src;
       check(
-        `persistence: ${label} introduces no storage, cookie or URL state`,
+        `persistence: ${label} opens no storage, cookie or URL state of its own`,
         !/localStorage|sessionStorage|indexedDB|document\.cookie|history\.(push|replace)State|URLSearchParams/i.test(
           scrubbed,
         ),
@@ -1241,6 +1261,51 @@ async function main() {
       );
       check(`persistence: ${label} writes the name to no database`, !/supabase/i.test(src), path);
     }
+
+    /*
+     * THE NEW HALF: the name IS saved, through exactly one module, and
+     * the screen restores it on mount.
+     */
+    const entrySrc = readFileSync(files.entry, 'utf8');
+    const screenSrc = readFileSync(files.screen, 'utf8');
+    const storage = readFileSync('src/components/navigator/driver-storage.ts', 'utf8');
+    check(
+      'persistence: the driving screen restores the saved name on mount',
+      /readDriverName\(\)/.test(screenSrc) && /from '\.\/driver-storage'/.test(screenSrc),
+    );
+    check(
+      'persistence: saving and clearing go through the same module',
+      /writeDriverName\(/.test(screenSrc) && /clearDriverName\(/.test(screenSrc),
+    );
+    check(
+      'persistence: the stored record is versioned and named for the driver',
+      /tlws-navigator-driver-v1/.test(storage),
+    );
+    check(
+      'persistence: the name is re-validated on the way OUT of storage (it gets spoken)',
+      /normalizeFirstName\(/.test(storage),
+    );
+    check(
+      'persistence: an unreadable record yields NO name rather than a fabricated one',
+      /return stored\.ok \? stored\.value : null/.test(storage),
+    );
+    check(
+      'persistence: the driver can clear it, and clearing touches nothing else',
+      /export function clearDriverName/.test(storage) &&
+        /clearVersioned\(DRIVER_KEY\)/.test(storage),
+    );
+    check(
+      'copy: the stale "Not saved" promise is gone from the field',
+      !/Not saved/.test(entrySrc.replace(/\/\*[\s\S]*?\*\//g, '')),
+    );
+    check(
+      'copy: and the field says where the name actually goes',
+      /Saved on this device only/.test(entrySrc) && /Never sent anywhere/.test(entrySrc),
+    );
+    check(
+      'copy: the controls no longer claim the name is never stored',
+      !/never stored/i.test(readFileSync(files.controls, 'utf8')),
+    );
 
     const screen = strip(readFileSync(files.screen, 'utf8'));
 

@@ -43,6 +43,16 @@
 import pkg from '/home/user/tlws-platform/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -224,11 +234,31 @@ async function main() {
   await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
   await page.waitForTimeout(500);
 
+  /*
+   * Confirm the truck. This bench measures a CONTAINER RESIZE — the
+   * parked page box becoming the viewport-filling cockpit — and to see it
+   * the trip has to actually start.
+   *
+   * The truck-route confidence milestone (#310) began gating Start on a
+   * driver having verified their profile, and this file was never taught
+   * the step, so its Start tap has been waiting on a disabled button ever
+   * since. Nothing about the resize under test changes; the bench simply
+   * has to complete the setup a driver completes. A profile restored from
+   * a previous visit arrives already confirmed and collapsed, so the
+   * button may be absent entirely.
+   */
+  const confirmTruck = page.getByRole('button', { name: /This is my truck/ });
+  if ((await confirmTruck.count()) > 0) {
+    await confirmTruck.scrollIntoViewIfNeeded();
+    if (!(await confirmTruck.isDisabled())) await confirmTruck.click();
+    await page.waitForTimeout(300);
+  }
+
   const parked = await measure(page, 'parked page, before Start');
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/half-map-1-parked.png` });
 
   // The transition under test: the container resizes, the window does not.
-  await page.getByRole('button', { name: /^Start$/ }).click();
+  await page.getByRole('button', { name: START_BUTTON }).click();
   console.log('driving (14 s to satisfy the moving dwell)…');
   await feed(14, 27);
   await page.waitForTimeout(1500);
