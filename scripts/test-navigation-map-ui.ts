@@ -343,9 +343,18 @@ const T0 = 1_754_000_000_000;
     '7. the maneuver card is capped so it cannot eat the map',
     screen.includes('max-h-[28dvh]') && screen.includes('overflow-hidden'),
   );
+  /*
+   * The pair moved down one step in the declutter milestone —
+   * text-2xl/sm:text-4xl became text-xl/sm:text-2xl when the arrow and
+   * distance moved into a left rail beside the instruction instead of
+   * above it. What is being checked is unchanged: the instruction is
+   * sized for a narrow phone and steps UP on a wide one, rather than
+   * being pinned to one size that has to serve both.
+   */
   check(
     '7. instruction text scales down on narrow phones (320 px) and up on wide',
-    screen.includes('text-2xl font-semibold leading-tight text-ink sm:text-4xl'),
+    /line-clamp-2 text-xl font-semibold[^"]*sm:text-2xl/.test(screen) ||
+      screen.includes('text-2xl font-semibold leading-tight text-ink sm:text-4xl'),
   );
   check(
     // With the map out of flow the overlays cannot shrink it at all;

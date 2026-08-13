@@ -12,6 +12,14 @@ import {
   CYCLE_LABEL,
   ELD_AUTHORITATIVE,
 } from '@/lib/navigator/hos-clocks';
+import {
+  clocksToggleLabel,
+  hosPresentation,
+  CLOCKS_HIDDEN_NOTE,
+  CLOCKS_URGENT_FALLBACK,
+  HOS_VISIBILITY_DEFAULT,
+  type HosVisibility,
+} from '@/lib/navigator/hos-visibility';
 import { HOS_PLANNING_AID, HosCompactStrip } from './HosCompactStrip';
 
 /**
@@ -45,6 +53,8 @@ export function HosStrip({
   compact = false,
   detailSlot,
   onClocksChange,
+  visibility = HOS_VISIBILITY_DEFAULT,
+  onToggleVisibility,
 }: {
   /** Injected clock state (tests only). */
   initialClocks?: ClockState;
@@ -90,6 +100,19 @@ export function HosStrip({
    * dangerous kind of wrong number on this screen.
    */
   onClocksChange?: (clocks: ClockState) => void;
+  /**
+   * Whether the DRIVING strip is on screen. Presentation only — the
+   * component stays mounted either way, which is what keeps the clock
+   * state, the sixty-second advance and the voice announcer running
+   * while a driver has the strip hidden. Ignored on the parked screen.
+   */
+  visibility?: HosVisibility;
+  /**
+   * Flip it. Omitted on surfaces that offer no control (the parked
+   * screen, and every static render in the harnesses), in which case no
+   * toggle is rendered at all.
+   */
+  onToggleVisibility?: () => void;
 }) {
   const [clocks, setClocks] = useState<ClockState | null>(
     // Seeded from the props so a STATIC render (and the server's first
@@ -266,10 +289,78 @@ export function HosStrip({
         </button>
       </div>
     ) : null;
+    const compactView = hosCompactViewFrom(view.remaining);
+    /*
+     * THE COLLAPSE IS A PRESENTATION CHANGE AND NOTHING ELSE.
+     *
+     * Every branch below returns from the SAME component instance, past
+     * the same state and the same effects. `clocks` is not cleared, the
+     * 60-second tick is not stopped, the restore is not re-run and the
+     * voice announcer above is not skipped — it sits before this point
+     * precisely so a hidden strip keeps speaking. A driver who hides the
+     * clocks has asked for less to look at, not for the app to stop
+     * counting the hours that decide whether they may legally drive.
+     */
+    const presentation = hosPresentation(visibility, compactView);
+    const toggle =
+      onToggleVisibility === undefined ? null : (
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          /* 64 px: the Navigator's glove floor, well past the 48 px this
+             milestone requires. Plain words, never a bare chevron — a
+             driver should not have to learn a glyph to find their hours. */
+          className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg font-semibold text-ink"
+          aria-expanded={visibility === 'shown'}
+          aria-label={clocksToggleLabel(visibility)}
+        >
+          {clocksToggleLabel(visibility)}
+        </button>
+      );
+
+    if (presentation.kind !== 'full') {
+      /*
+       * HIDDEN. The strip is gone; the clocks are not.
+       *
+       * When a clock is urgent or already over, a compact warning takes
+       * its place — the words, the severity edge and the ELD line, and
+       * nothing else. Deliberately not the strip: this is a moment, not
+       * a settings change, and the milestone is explicit that it must
+       * not become a second permanent panel. When every clock is calm,
+       * only the control remains.
+       */
+      return (
+        <div className="space-y-1">
+          {presentation.kind === 'warning' ? (
+            <div className="rounded-cockpit border border-line border-l-4 border-l-nav-danger bg-asphalt/95 px-3 py-1.5">
+              <p
+                aria-live="assertive"
+                role="alert"
+                className="text-lg font-bold leading-snug text-ink"
+              >
+                {view.warning.text ?? CLOCKS_URGENT_FALLBACK}
+              </p>
+              <p className="truncate text-[length:var(--size-label)] leading-none text-ink/60">
+                {ELD_AUTHORITATIVE}
+              </p>
+            </div>
+          ) : null}
+          {/* The warning line keeps its own live region in every state, so
+              a screen-reader user hears escalations whether or not the
+              strip is on screen. */}
+          <div className="sr-only">
+            <HosWarningLine warning={view.warning} />
+            <p>{CLOCKS_HIDDEN_NOTE}</p>
+          </div>
+          {toggle}
+        </div>
+      );
+    }
+
     return (
-      <div>
+      <div className="space-y-1">
         <HosCompactStrip
-          view={hosCompactViewFrom(view.remaining)}
+          view={compactView}
           onOpen={() => setExpanded(true)}
           interactive={detailSlot !== undefined}
         />
@@ -283,6 +374,7 @@ export function HosStrip({
         <div className="sr-only">
           <HosWarningLine warning={view.warning} />
         </div>
+        {toggle}
         {detailSlot ? detailSlot(expandedDetail) : expandedDetail}
       </div>
     );
