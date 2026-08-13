@@ -214,6 +214,32 @@ component holds a conversion factor; that is pinned.
 6. **The region is a preference, not a jurisdiction.** It changes search and display.
    It is not a compliance mode and nothing in the UI implies it is.
 
+### 6a. A pre-existing wart, found while auditing and deliberately NOT changed here
+
+The truck editor's height presets are `[13.5, 13.6, 14]` **decimal feet**, and in
+US mode the buttons render as bare decimals: `13.5`, `13.6`, `14`.
+
+`13.6` is not 13′6″. 13′6″ is `13.5` ft; `13.6` ft is 13′7¼″. A driver whose cab
+card says 13′6″ can reasonably tap the button that reads `13.6`.
+
+**Why it was left alone in this PR:**
+
+- It predates this milestone (it arrived with the editor in PR #310) and has
+  nothing to do with Canadian compatibility.
+- The failure direction is **conservative**: the truck is declared ~3 cm taller
+  than it is, so the route returned is more restrictive, never less. No truck is
+  sent under a bridge it does not fit.
+- The milestone instruction is explicit that imperial display must be preserved
+  exactly as it is today. Changing how US-mode feet render is a change to that
+  display, and it belongs in its own change with its own harness updates.
+
+**Recommended fix, for a separate change:** render feet fields through the
+existing `formatDimension(ft, false)` authority so the buttons read `13′6″`,
+`13′7″`, `14′0″` — unambiguous, no stored or wire value altered — and revisit
+whether `13.6` was meant to be a distinct preset at all. Note that the
+`Route planned for` summary **already** reads `13′6″` correctly, because it goes
+through that authority; it is only the editor that does not.
+
 ---
 
 ## 7. What was deliberately not done
