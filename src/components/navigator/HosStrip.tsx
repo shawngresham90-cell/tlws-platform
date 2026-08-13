@@ -13,7 +13,6 @@ import {
   ELD_AUTHORITATIVE,
 } from '@/lib/navigator/hos-clocks';
 import {
-  clocksToggleLabel,
   hosPresentation,
   CLOCKS_HIDDEN_NOTE,
   CLOCKS_URGENT_FALLBACK,
@@ -54,7 +53,6 @@ export function HosStrip({
   detailSlot,
   onClocksChange,
   visibility = HOS_VISIBILITY_DEFAULT,
-  onToggleVisibility,
 }: {
   /** Injected clock state (tests only). */
   initialClocks?: ClockState;
@@ -107,12 +105,6 @@ export function HosStrip({
    * while a driver has the strip hidden. Ignored on the parked screen.
    */
   visibility?: HosVisibility;
-  /**
-   * Flip it. Omitted on surfaces that offer no control (the parked
-   * screen, and every static render in the harnesses), in which case no
-   * toggle is rendered at all.
-   */
-  onToggleVisibility?: () => void;
 }) {
   const [clocks, setClocks] = useState<ClockState | null>(
     // Seeded from the props so a STATIC render (and the server's first
@@ -302,21 +294,18 @@ export function HosStrip({
      * counting the hours that decide whether they may legally drive.
      */
     const presentation = hosPresentation(visibility, compactView);
-    const toggle =
-      onToggleVisibility === undefined ? null : (
-        <button
-          type="button"
-          onClick={onToggleVisibility}
-          /* 64 px: the Navigator's glove floor, well past the 48 px this
-             milestone requires. Plain words, never a bare chevron — a
-             driver should not have to learn a glyph to find their hours. */
-          className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg font-semibold text-ink"
-          aria-expanded={visibility === 'shown'}
-          aria-label={clocksToggleLabel(visibility)}
-        >
-          {clocksToggleLabel(visibility)}
-        </button>
-      );
+    /*
+     * THE CONTROL IS NOT HERE. It lives in the driving screen's existing
+     * control row, beside Overview, Voice and Stop.
+     *
+     * The first draft put a full-width 64 px button under the strip, and
+     * the bench caught what that cost: the expanded HOS area went from
+     * 71 px to 139 px and the unobstructed map at 320x568 fell from 28.5%
+     * to 25%. A milestone about giving space back to the map had made the
+     * expanded state worse to make the collapsed state better. Moving the
+     * toggle into a row that already exists costs zero new vertical space
+     * in either state, and puts it where the driver's thumb already goes.
+     */
 
     if (presentation.kind !== 'full') {
       /*
@@ -330,7 +319,7 @@ export function HosStrip({
        * only the control remains.
        */
       return (
-        <div className="space-y-1">
+        <div className={presentation.kind === 'warning' ? 'space-y-1' : ''}>
           {presentation.kind === 'warning' ? (
             <div className="rounded-cockpit border border-line border-l-4 border-l-nav-danger bg-asphalt/95 px-3 py-1.5">
               <p
@@ -352,7 +341,6 @@ export function HosStrip({
             <HosWarningLine warning={view.warning} />
             <p>{CLOCKS_HIDDEN_NOTE}</p>
           </div>
-          {toggle}
         </div>
       );
     }
@@ -374,7 +362,6 @@ export function HosStrip({
         <div className="sr-only">
           <HosWarningLine warning={view.warning} />
         </div>
-        {toggle}
         {detailSlot ? detailSlot(expandedDetail) : expandedDetail}
       </div>
     );

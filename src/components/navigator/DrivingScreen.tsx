@@ -75,6 +75,7 @@ import { readTruck, writeTruck } from './truck-storage';
 import { readClocks, writeClocks } from './clocks-storage';
 import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
 import {
+  clocksToggleLabel,
   toggledVisibility,
   HOS_VISIBILITY_DEFAULT,
   type HosVisibility,
@@ -822,7 +823,6 @@ export function DrivingScreenView({
               /* Presentation only, and only in the cockpit: the parked
                  screen has room for the card and no reason to hide it. */
               visibility={hosVisibility}
-              onToggleVisibility={fullScreen ? onToggleHosVisibility : undefined}
               detailSlot={
                 fullScreen
                   ? (detail) =>
@@ -853,6 +853,34 @@ export function DrivingScreenView({
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
         <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
+          {/*
+            THE CLOCKS TOGGLE LIVES HERE, not under the strip.
+            
+            A full-width button beneath the HOS strip was the obvious
+            place and the wrong one: it took the expanded HOS area from
+            71 px to 139 px, and at 320x568 the unobstructed map fell
+            from 28.5% to 25%. A milestone about giving space back to the
+            map had made the expanded state worse in order to make the
+            collapsed state better. In this row — which already exists,
+            and is already where a driver's thumb goes — it costs nothing
+            in either state, and there is exactly ONE of it.
+
+            The visible word is short so four controls fit a 320 px
+            phone; the accessible name is the full plain-words sentence
+            the milestone asks for, and `aria-pressed` states which way
+            it is set.
+          */}
+          {fullScreen && hosUnavailableNotice === null && onToggleHosVisibility ? (
+            <button
+              type="button"
+              onClick={onToggleHosVisibility}
+              className="min-h-16 w-full min-w-0 truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
+              aria-label={clocksToggleLabel(hosVisibility)}
+              aria-pressed={hosVisibility === 'shown'}
+            >
+              Clocks
+            </button>
+          ) : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
               <VoiceControls

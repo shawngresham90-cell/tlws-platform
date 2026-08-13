@@ -308,18 +308,36 @@ const flat = (v: any): string =>
   /* Unmuted by default — `startMuted` is opt-in, so HOS lines speak. */
   const voice = createVoiceGuidance(speech);
 
-  /* A wrapper that owns the visibility exactly the way the screen does. */
+  /*
+   * A rig shaped like the real screen: the CONTAINER owns the visibility
+   * and renders the control, the STRIP only reads it. That split is the
+   * thing under test — the strip must stay mounted across a toggle, so
+   * the toggle cannot live inside it — and a rig that put the button
+   * inside the strip would be testing a layout the app does not have.
+   */
   function Rig({ clocks }: { clocks: typeof MID_SHIFT }) {
     const [visibility, setVisibility] = useState<'shown' | 'hidden'>('shown');
-    return createElement(HosStrip, {
-      initialClocks: clocks,
-      drivingActive: true,
-      sourceLabel: 'test',
-      voice,
-      compact: true,
-      visibility,
-      onToggleVisibility: () => setVisibility((v) => (v === 'shown' ? 'hidden' : 'shown')),
-    } as any);
+    return createElement(
+      'div',
+      null,
+      createElement(HosStrip, {
+        initialClocks: clocks,
+        drivingActive: true,
+        sourceLabel: 'test',
+        voice,
+        compact: true,
+        visibility,
+      } as any),
+      createElement(
+        'button',
+        {
+          type: 'button',
+          'aria-label': clocksToggleLabel(visibility),
+          onClick: () => setVisibility((v) => (v === 'shown' ? 'hidden' : 'shown')),
+        },
+        'Clocks',
+      ),
+    );
   }
 
   let renderer!: TestRenderer.ReactTestRenderer;
@@ -336,14 +354,19 @@ const flat = (v: any): string =>
     });
   };
 
+  const labelOfToggle = () =>
+    String(
+      renderer.root.findAll(
+        (n) => n.type === 'button' && /clocks/i.test(String(n.props['aria-label'] ?? '')),
+      )[0].props['aria-label'],
+    );
   check('2. the strip is on screen by default', text().includes('DRIVE'));
-  const shownText = text();
-  check('2. showing the clocks offers Hide clocks', shownText.includes(HIDE_CLOCKS_LABEL));
+  check('2. showing the clocks offers Hide clocks', labelOfToggle() === HIDE_CLOCKS_LABEL);
 
   tapClocks();
   const hidden = text();
   check('2. Hide clocks removes the visual strip', !hidden.includes('DRIVE'), hidden.slice(0, 160));
-  check('2. and offers Show clocks in its place', hidden.includes(SHOW_CLOCKS_LABEL));
+  check('2. and offers Show clocks in its place', labelOfToggle() === SHOW_CLOCKS_LABEL);
   check('2. the driver is told the clocks are still running', hidden.includes(CLOCKS_HIDDEN_NOTE));
 
   /*
@@ -391,7 +414,6 @@ const flat = (v: any): string =>
         voice: voice2,
         compact: true,
         visibility: 'hidden',
-        onToggleVisibility: () => {},
       } as any),
     );
   });
@@ -651,6 +673,30 @@ const flat = (v: any): string =>
   check(
     '4. the visibility reaches the strip as a PROP, not a mount decision',
     /visibility=\{hosVisibility\}/.test(SCREEN),
+  );
+  /*
+   * WHERE the control lives is load-bearing, not cosmetic. Under the
+   * strip it took the expanded HOS area from 71px to 139px and cost the
+   * map 3.5 points at 320x568 — the bench caught it. In the existing
+   * control row it costs nothing in either state.
+   */
+  check(
+    '4. the clocks control sits in the existing control row',
+    /overviewSlot : null\}[\s\S]{0,1400}aria-label=\{clocksToggleLabel\(hosVisibility\)\}/.test(
+      SCREEN,
+    ),
+  );
+  check(
+    '4. and the strip renders no toggle of its own — exactly one control',
+    !/clocksToggleLabel/.test(STRIP),
+  );
+  check(
+    '4. the control states which way it is set',
+    /aria-pressed=\{hosVisibility === 'shown'\}/.test(SCREEN),
+  );
+  check(
+    '4. and Canada, which has no clocks to hide, is offered no toggle',
+    /hosUnavailableNotice === null && onToggleHosVisibility/.test(SCREEN),
   );
   check(
     '5. the sixty-second tick is declared unconditionally',
