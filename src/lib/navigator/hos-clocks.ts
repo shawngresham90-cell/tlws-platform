@@ -84,6 +84,25 @@ export const CLOCKS_NOT_SET_DETAIL =
 export const DRIVER_ENTERED_NOTICE =
   'Driver-entered planning estimate — not an ELD record. Your certified ELD remains the record.';
 
+/**
+ * The short form, placed directly beside the clock editor and beside the
+ * driving clock display. Short on purpose: a driver glancing at a clock
+ * mid-shift should be able to read the whole disclaimer without stopping.
+ */
+export const ELD_AUTHORITATIVE = 'ELD is authoritative.';
+
+/**
+ * How the cycle is labelled EVERYWHERE it appears, because the caveat is
+ * part of what the number means.
+ *
+ * The balance is exact (see `cycleBalanceBuckets`); the recap is not
+ * derivable from it. A driver reading "22 h left" alongside a date would
+ * reasonably plan around that date, and the app has no basis for one — so
+ * the label carries the limit rather than a footnote elsewhere carrying
+ * it.
+ */
+export const CYCLE_LABEL = 'Cycle remaining — recap schedule not calculated.';
+
 /** Said before the app will hand anyone a full clock. */
 export const FRESH_SHIFT_CONFIRM =
   'Start with full clocks? Only do this if you are actually beginning a fresh shift after a full reset.';
@@ -146,8 +165,8 @@ export const CLOCK_FIELDS: readonly ClockField[] = Object.freeze([
   },
   {
     key: 'cycleMin',
-    label: 'Cycle left',
-    why: 'On-duty hours left in your 60- or 70-hour cycle.',
+    label: 'Cycle remaining',
+    why: 'On-duty hours left in your 60- or 70-hour cycle. Recap schedule not calculated.',
   },
 ]);
 
