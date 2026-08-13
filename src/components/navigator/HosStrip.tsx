@@ -1,12 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { freshClockState } from '@/lib/trip-planner/hos-engine';
 import type { ClockState } from '@/lib/trip-planner/types';
 import { formatHM, HOS_TICK_MS, hosStripView, tickClocks } from '@/lib/navigator/hos-strip';
 import { hosCompactViewFrom } from '@/lib/navigator/hos-compact';
 import { createHosAnnouncer, type VoiceGuidance } from '@/lib/navigator/voice-guidance';
 import { HosWarningLine } from './HosWarningLine';
+import {
+  CLOCKS_NOT_SET,
+  CLOCKS_UNSET_WARNING,
+  CYCLE_LABEL,
+  ELD_AUTHORITATIVE,
+} from '@/lib/navigator/hos-clocks';
 import { HOS_PLANNING_AID, HosCompactStrip } from './HosCompactStrip';
 
 /**
@@ -32,6 +37,7 @@ import { HOS_PLANNING_AID, HosCompactStrip } from './HosCompactStrip';
  */
 export function HosStrip({
   initialClocks,
+  enteredClocks,
   restoredClocks,
   drivingActive,
   sourceLabel,
@@ -40,8 +46,19 @@ export function HosStrip({
   detailSlot,
   onClocksChange,
 }: {
-  /** Injected clock state (tests); fresh when absent. */
+  /** Injected clock state (tests only). */
   initialClocks?: ClockState;
+  /**
+   * The clocks the DRIVER entered, converted to engine state — or null
+   * when they have entered none.
+   *
+   * NULL IS THE DEFAULT AND IT IS THE POINT. This component used to seed
+   * itself with `freshClockState(Date.now())`: eleven hours, a full
+   * window, seventy hours of cycle, for every driver, every session. A
+   * driver six hours into their day was shown a full clock. Now nothing
+   * is shown until someone says what is actually left.
+   */
+  enteredClocks?: ClockState | null;
   /**
    * Clocks recovered from a restored trip, applied ONCE when they
    * arrive. A prop rather than `initialClocks` because the snapshot is
@@ -74,9 +91,33 @@ export function HosStrip({
    */
   onClocksChange?: (clocks: ClockState) => void;
 }) {
-  const [clocks, setClocks] = useState<ClockState>(
-    () => initialClocks ?? freshClockState(Date.now()),
+  const [clocks, setClocks] = useState<ClockState | null>(
+    // Seeded from the props so a STATIC render (and the server's first
+    // paint) shows the same thing an effect would settle on. The driving
+    // screen passes null on the first render — storage is read in an
+    // effect, never during render — so server and client still agree.
+    () => initialClocks ?? enteredClocks ?? null,
   );
+
+  /*
+   * Two sources can seed the clocks, and the more recent one wins.
+   *
+   *   entered  — what the driver typed on the parked screen.
+   *   restored — what a trip snapshot carried back after a reload; this
+   *              is the entered state already burned down by driving, so
+   *              it supersedes the entry at mount.
+   *
+   * Both arrive in effects (storage is read after mount, never during
+   * render), and the restore effect is declared second so it wins the
+   * mount race. A later EDIT still wins, because the driver acting now
+   * outranks a snapshot from before.
+   */
+  const lastEnteredRef = useRef<ClockState | null | undefined>(enteredClocks);
+  useEffect(() => {
+    if (enteredClocks === undefined || enteredClocks === lastEnteredRef.current) return;
+    lastEnteredRef.current = enteredClocks;
+    setClocks(enteredClocks);
+  }, [enteredClocks]);
   const activeRef = useRef(drivingActive);
   activeRef.current = drivingActive;
   const announcerRef = useRef(createHosAnnouncer());
@@ -88,7 +129,11 @@ export function HosStrip({
   useEffect(() => {
     const tick = setInterval(() => {
       if (!activeRef.current) return;
-      setClocks((current) => tickClocks(current, HOS_TICK_MS / 60_000, 'driving'));
+      // Nothing entered means nothing to burn. Driving does not conjure a
+      // clock into existence.
+      setClocks((current) =>
+        current === null ? null : tickClocks(current, HOS_TICK_MS / 60_000, 'driving'),
+      );
     }, HOS_TICK_MS);
     return () => clearInterval(tick);
   }, []);
@@ -108,20 +153,52 @@ export function HosStrip({
   const reportRef = useRef(onClocksChange);
   reportRef.current = onClocksChange;
   useEffect(() => {
-    reportRef.current?.(clocks);
+    if (clocks !== null) reportRef.current?.(clocks);
   }, [clocks]);
 
-  const view = hosStripView(clocks);
+  const view = clocks === null ? null : hosStripView(clocks);
 
   // Threshold crossings speak (doc 05 §9). collect() re-offers the current
   // (clock, severity) every tick; the guidance module's announce-once ids
   // make anything but a genuine escalation a silent drop.
+  //
+  // UNCONDITIONAL HOOK, guarded inside: with no clocks entered there is
+  // nothing to warn about, and the effect must still be called in the
+  // same order on every render.
   useEffect(() => {
-    if (!voice) return;
+    if (!voice || view === null) return;
     for (const req of announcerRef.current.collect(view.warning, view.remaining)) {
       voice.request(req);
     }
   });
+
+  /*
+   * NOTHING ENTERED: say so, and say what it costs. A blank is honest;
+   * a fresh eleven hours is a specific false claim about a driver's
+   * legal standing, and it is the defect this whole milestone exists to
+   * remove. No warning is spoken either — there is nothing to warn about.
+   */
+  if (view === null) {
+    const unsetCard = (
+      <section
+        aria-label="Hours of service — not set"
+        className="rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-nav-surface p-4"
+      >
+        <p className="num-data text-xl font-bold text-ink">{CLOCKS_NOT_SET}</p>
+        <p className="mt-1 text-base text-muted">{CLOCKS_UNSET_WARNING}</p>
+        <p className="mt-1 text-base text-muted">{ELD_AUTHORITATIVE}</p>
+      </section>
+    );
+    if (!compact) return unsetCard;
+    return (
+      <div>
+        <div className="rounded-cockpit border border-line bg-nav-surface px-3 py-2">
+          <p className="num-data text-lg font-bold text-ink">{CLOCKS_NOT_SET}</p>
+          <p className="text-base text-muted">{ELD_AUTHORITATIVE}</p>
+        </div>
+      </div>
+    );
+  }
 
   /*
    * The bar wears the semantic state color the warning line already states
@@ -148,7 +225,7 @@ export function HosStrip({
         <dd className="num-data font-semibold text-ink">{view.driveText}</dd>
         <dt>On-duty window left</dt>
         <dd className="num-data font-semibold text-ink">{view.windowText}</dd>
-        <dt>Cycle time left</dt>
+        <dt>Cycle remaining</dt>
         <dd className="num-data font-semibold text-ink">{formatHM(view.remaining.cycleMin)}</dd>
         <dt>Until 30-minute break</dt>
         <dd className="num-data font-semibold text-ink">
@@ -164,8 +241,12 @@ export function HosStrip({
         />
       </div>
       <HosWarningLine warning={view.warning} />
-      <p className="mt-2 text-base text-muted">{sourceLabel}</p>
+      {/* The cycle's caveat travels with the number: the balance is what
+          the driver entered, and the recap is not derivable from it. */}
+      <p className="mt-2 text-base text-muted">{CYCLE_LABEL}</p>
+      <p className="mt-1 text-base text-muted">{sourceLabel}</p>
       <p className="mt-1 text-base text-muted">{HOS_PLANNING_AID}</p>
+      <p className="mt-1 text-base text-muted">{ELD_AUTHORITATIVE}</p>
     </section>
   );
 
@@ -192,6 +273,8 @@ export function HosStrip({
           onOpen={() => setExpanded(true)}
           interactive={detailSlot !== undefined}
         />
+        {/* Beside the DRIVING clocks, not only the parked ones. */}
+        <p className="mt-1 text-base text-muted">{ELD_AUTHORITATIVE}</p>
         {/* The warning line rides along in its own live region exactly as
             it always has — the compact cells are aria-hidden decoration
             of numbers this sentence already states. */}

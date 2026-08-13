@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { PilotTripControls } from '@/components/navigator/PilotTripControls';
 import { DEFAULT_EDITABLE_PROFILE } from '@/lib/navigator/truck-profile';
+import { DriverNameEntry } from '@/components/navigator/DriverNameEntry';
 import { TruckProfileEditor } from '@/components/navigator/TruckProfileEditor';
 import { TruckProfilePanel } from '@/components/navigator/TruckProfilePanel';
 import { vehicleMarkerSvg, vehicleMarkerRotationDeg } from '@/components/navigator/vehicle-marker';
@@ -188,6 +189,12 @@ function renderControls(
       // it, so this harness keeps testing the real parked surface.
       truckProfile: DEFAULT_EDITABLE_PROFILE,
       truckGate: 'ready' as const,
+      // The name field moved to POSITION 1 and is supplied as a slot;
+      // the controls no longer render it themselves.
+      driverSlot: createElement(DriverNameEntry, {
+        firstName,
+        onAccept: () => {},
+      }),
       truckSlot: createElement(TruckProfileEditor, {
         profile: DEFAULT_EDITABLE_PROFILE,
         onChange: () => {},

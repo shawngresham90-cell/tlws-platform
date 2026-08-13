@@ -32,7 +32,6 @@ import {
 } from '@/lib/navigator/trip-start';
 import { PostTripFeedback } from './PostTripFeedback';
 import { PilotOnboarding } from './PilotOnboarding';
-import { DriverNameEntry } from './DriverNameEntry';
 import { RouteBriefing } from './RouteBriefing';
 
 /**
@@ -751,16 +750,15 @@ export function PilotTripControls({
           never blocks navigation: the name only feeds the spoken
           greeting (blank name = no personalized line, never a fabricated
           one), and the pilot briefing remains one tap away. */}
-      {onFirstName ? (
-        <div className="space-y-2">
-          <p className="text-base text-ink/60">Optional — a first name is only ever spoken.</p>
-          <DriverNameEntry
-            firstName={firstName}
-            onAccept={onFirstName}
-            onClear={onForgetFirstName}
-          />
-        </div>
-      ) : null}
+      {/* THE DRIVER NAME IS NOT HERE ANY MORE. It used to render at the
+          bottom of the page, below everything, on the reasoning that it
+          was optional and should not compete with the flow. The pre-trip
+          setup milestone put it at POSITION 1 instead — a driver reads a
+          setup screen top to bottom, and "who is driving" is the first
+          question, not an afterthought below the debug log. It is still
+          optional and still never blocks a route; it is passed in as
+          `driverSlot`, and rendering it twice would give one value two
+          controls. */}
 
       {/* The build a driver is running, in one line they can read aloud on
           the phone or quote in a message. Every generated report carries

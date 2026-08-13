@@ -332,5 +332,97 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
   );
 }
 
+/* ===================================================================== */
+/* 6. CLOCK WIRING — one state, no silent resets                          */
+/* ===================================================================== */
+{
+  // Comments stripped: prose about the removed default must not trip the
+  // pin against it.
+  const STRIP_RAW = readFileSync('src/components/navigator/HosStrip.tsx', 'utf8');
+  const STRIP = STRIP_RAW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const CLOCKS_UI = readFileSync('src/components/navigator/ClockSetup.tsx', 'utf8');
+
+  check(
+    'clocks: the strip no longer invents a fresh driver',
+    !/freshClockState\(Date\.now\(\)\)/.test(STRIP),
+  );
+  check(
+    'clocks: an unset state renders "Clocks not set", not a full clock',
+    /CLOCKS_NOT_SET/.test(STRIP) && /clocks === null/.test(STRIP),
+  );
+  check(
+    'clocks: driving does not conjure a clock into existence',
+    /current === null \? null : tickClocks/.test(STRIP),
+  );
+  check(
+    'clocks: the driving screen restores them from their own module',
+    /readClocks\(\)/.test(SCREEN) && /from '\.\/clocks-storage'/.test(SCREEN),
+  );
+  check(
+    'clocks: ONE HosStrip instance feeds strip, detail and voice',
+    (SCREEN.match(/<HosStrip/g) ?? []).length === 1,
+    (SCREEN.match(/<HosStrip/g) ?? []).length,
+  );
+  check(
+    'clocks: the engine state is memoised on the entry, so navigating cannot re-seed it',
+    /useMemo\(\s*\(\) => engineStateFor\(clockEntry, Date\.now\(\)\),\s*\[clockEntry\]/.test(
+      SCREEN.replace(/\s+/g, ' ').replace(/ /g, ' '),
+    ) || /engineStateFor\(clockEntry, Date\.now\(\)\)/.test(SCREEN),
+  );
+  check(
+    'clocks: nothing resets them on navigation start, stop or reroute',
+    !/setClockEntry\(CLOCKS_UNSET\)/.test(
+      SCREEN.replace(/onClear=\{\(\) => saveClocks\(CLOCKS_UNSET\)\}/g, ''),
+    ),
+  );
+  check(
+    'clocks: ELD authority sits beside the DRIVING display, not only the parked one',
+    (STRIP.match(/ELD_AUTHORITATIVE/g) ?? []).length >= 2,
+  );
+  check('clocks: and beside the editor', /ELD_AUTHORITATIVE/.test(CLOCKS_UI));
+  check(
+    'clocks: the cycle caveat travels with the number in both places',
+    /CYCLE_LABEL/.test(STRIP) && /CYCLE_LABEL/.test(CLOCKS_UI),
+  );
+  check(
+    'clocks: full clocks stay behind an explicit confirmation',
+    /FRESH_SHIFT_CONFIRM/.test(CLOCKS_UI) && /confirming === 'fresh'/.test(CLOCKS_UI),
+  );
+  check(
+    'clocks: and are never a preselected default',
+    !/useState.*freshShiftClocks/.test(CLOCKS_UI),
+  );
+  check('clocks: replacing entered values asks first', /CLOCKS_REPLACE_CONFIRM/.test(CLOCKS_UI));
+  check(
+    'clocks: Canada keeps its own disclosure instead of an editor',
+    /unsupported/.test(CLOCKS_UI) && /CANADA_HOS_NOTICE/.test(SCREEN),
+  );
+  check(
+    'clocks: Canada is marked unsupported on the checklist, not "forgot to enter"',
+    /region === 'CA' \? 'unsupported'/.test(SCREEN),
+  );
+}
+
+/* ===================================================================== */
+/* 7. THE NAME RENDERS ONCE, AT POSITION 1                                */
+/* ===================================================================== */
+{
+  check(
+    'driver: exactly one DriverNameEntry in the controls tree',
+    (CONTROLS.match(/<DriverNameEntry/g) ?? []).length === 0,
+    'the field is passed in as driverSlot; a second copy here would give one value two controls',
+  );
+  check(
+    'driver: the screen supplies it as driverSlot',
+    /driverSlot=\{\s*<DriverNameEntry/.test(SCREEN.replace(/\s+/g, ' ').replace(/ /g, ' ')) ||
+      /driverSlot=\{[\s\S]{0,80}<DriverNameEntry/.test(SCREEN),
+  );
+  check(
+    'driver: exactly one DriverNameEntry across the whole screen',
+    (SCREEN.match(/<DriverNameEntry/g) ?? []).length === 1,
+    (SCREEN.match(/<DriverNameEntry/g) ?? []).length,
+  );
+}
+
 console.log(`navigator-setup-order: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

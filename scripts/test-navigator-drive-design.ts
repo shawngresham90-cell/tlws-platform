@@ -26,6 +26,7 @@ import { DrivingScreenView } from '@/components/navigator/DrivingScreen';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
+import { freshClockState } from '@/lib/trip-planner/hos-engine';
 import { formatTruckHeightFtIn } from '@/lib/navigator/format-units';
 import { createVoiceGuidance, type SpeechPort } from '@/lib/navigator/voice-guidance';
 
@@ -217,6 +218,11 @@ const html = renderToStaticMarkup(
       SafetyLockProvider,
       null,
       createElement(DrivingScreenView, {
+        // The strip renders "Clocks not set" unless clocks exist — the
+        // fresh-driver default was removed in the pre-trip setup
+        // milestone. A layout test of the compact strip must therefore
+        // say which clocks it is laying out.
+        hosEnteredClocks: freshClockState(1_754_000_000_000),
         view: view as never,
         watching: true,
         onStart: () => {},

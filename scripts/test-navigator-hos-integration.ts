@@ -150,6 +150,11 @@ const T0 = 1_754_000_000_000;
 {
   const html = renderToStaticMarkup(
     createElement(HosStrip, {
+      // The strip no longer invents a fresh driver when nothing is
+      // entered — that assumption was the defect the pre-trip setup
+      // milestone removed. A test that wants populated clocks must now
+      // SAY which clocks, which is the honest shape for a test anyway.
+      initialClocks: freshClockState(T0),
       drivingActive: false,
       sourceLabel: "No trip loaded — showing a fresh driver's full clocks.",
     }),

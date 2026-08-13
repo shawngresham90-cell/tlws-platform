@@ -72,6 +72,10 @@ import {
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
+import { readClocks, writeClocks } from './clocks-storage';
+import { ClockSetup } from './ClockSetup';
+import { DriverNameEntry } from './DriverNameEntry';
+import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
 import { SetupStatus } from './SetupStatus';
 import { TruckSummary } from './TruckSummary';
 import { setupStatus } from '@/lib/navigator/setup-status';
@@ -170,6 +174,7 @@ export function DrivingScreenView({
   onVoiceMutedChange,
   showIdleStartControl = true,
   hosRestoredClocks = null,
+  hosEnteredClocks = null,
   onHosClocks,
   onBottomInset,
   mapSearchSlot = null,
@@ -229,6 +234,12 @@ export function DrivingScreenView({
   showIdleStartControl?: boolean;
   /** Clocks recovered from a restored trip — see HosStrip.restoredClocks. */
   hosRestoredClocks?: ClockState | null;
+  /**
+   * The clocks the driver entered, as engine state — or null when they
+   * have entered none, which the strip renders as "Clocks not set"
+   * rather than as a fresh driver.
+   */
+  hosEnteredClocks?: ClockState | null;
   /** Reports the live clocks so the owner can persist them. */
   onHosClocks?: (clocks: ClockState) => void;
   /**
@@ -766,6 +777,7 @@ export function DrivingScreenView({
               sourceLabel={hosSourceLabel}
               voice={voice}
               compact={fullScreen}
+              enteredClocks={hosEnteredClocks}
               restoredClocks={hosRestoredClocks}
               onClocksChange={onHosClocks}
               detailSlot={
@@ -1124,6 +1136,30 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
   };
+  /*
+   * THE DRIVER'S CLOCKS. Restored from `clocks-storage`, which returns
+   * `unset` for a first-time driver AND for every failure mode — a
+   * damaged record costs the clocks and nothing else, and never yields a
+   * fresh eleven hours.
+   */
+  const [clockEntry, setClockEntry] = useState<ClockEntryState>(CLOCKS_UNSET);
+  useEffect(() => {
+    setClockEntry(readClocks());
+  }, []);
+  const saveClocks = (next: ClockEntryState) => {
+    setClockEntry(next);
+    writeClocks(next);
+    bump();
+  };
+  /*
+   * The ONE engine state everything downstream reads: the compact strip,
+   * the detailed card and the voice announcer are a single HosStrip
+   * instance fed from here. Memoised on the entry itself so navigating,
+   * rerouting or stopping cannot rebuild it — a new object identity would
+   * re-seed the strip and silently reset the driver's clocks.
+   */
+  const enteredEngineClocks = useMemo(() => engineStateFor(clockEntry, Date.now()), [clockEntry]);
+
   /** The gate the whole setup turns on, computed from the existing authority. */
   const truckGateState = profileGate(truckProfile, truckConfirmation);
   const truckConfirmed = truckGateState === 'ready';
@@ -1131,21 +1167,16 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * ONE value decides three things — whether Start is disabled, the
    * sentence beneath it, and the checklist at the top — so they cannot
    * disagree with each other.
-   *
-   * The CLOCKS row is filtered out until the clock editor is wired: a
-   * checklist saying "Clocks — Not set" above a strip still showing a
-   * fresh eleven hours would be a contradiction the driver has no way to
-   * resolve. It returns with the editor.
    */
-  const setup = {
-    ...setupStatus({
-      driverName: firstName,
-      truckGate: truckGateState,
-      clocks: 'unset',
-      destinationPicked: picked !== null,
-    }),
-  };
-  setup.items = setup.items.filter((i) => i.key !== 'clocks');
+  const setup = setupStatus({
+    driverName: firstName,
+    truckGate: truckGateState,
+    // Canada's clocks are not "unset" — the engine does not model that
+    // region's rules at all, and the checklist says so rather than
+    // implying the driver forgot something.
+    clocks: region === 'CA' ? 'unsupported' : clockEntry.kind === 'set' ? 'set' : 'unset',
+    destinationPicked: picked !== null,
+  });
   /*
    * Whether a Start attempt is running right now, reported upward by
    * PilotTripControls. The search must refuse edits while an attempt is
@@ -1846,6 +1877,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
        */
       showIdleStartControl={!pilot.active || fullScreen || !lock.setupWindow}
       hosRestoredClocks={restoredClocks}
+      hosEnteredClocks={enteredEngineClocks}
       onHosClocks={(c) => {
         hosClocksRef.current = c;
       }}
@@ -1948,7 +1980,22 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             hosUnavailable={region === 'CA'}
             setupStatusSlot={<SetupStatus status={setup} />}
             startBlockedReason={setup.blockedReason}
-            driverSlot={null}
+            driverSlot={
+              <DriverNameEntry
+                firstName={firstName}
+                onAccept={acceptFirstName}
+                onClear={forgetFirstName}
+              />
+            }
+            clocksPanel={
+              <ClockSetup
+                state={clockEntry}
+                onSave={saveClocks}
+                onClear={() => saveClocks(CLOCKS_UNSET)}
+                unsupported={region === 'CA' ? CANADA_HOS_NOTICE : null}
+                nowMs={Date.now()}
+              />
+            }
             truckSlot={
               /*
                * A returning driver whose truck was restored sees FOUR

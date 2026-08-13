@@ -269,6 +269,9 @@ function clocksWith(over: Partial<ClockState>): ClockState {
 {
   const compactHtml = renderToStaticMarkup(
     createElement(HosStrip, {
+      // Populated clocks must be stated now: an unset strip renders
+      // "Clocks not set" rather than a fresh driver's full clocks.
+      initialClocks: freshClockState(T0),
       drivingActive: true,
       sourceLabel: 'Pilot trip loaded',
       compact: true,
@@ -279,13 +282,17 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     compactHtml.includes('DRIVE') && compactHtml.includes('BREAK'),
   );
   const fullHtml = renderToStaticMarkup(
-    createElement(HosStrip, { drivingActive: false, sourceLabel: 'No trip loaded' }),
+    createElement(HosStrip, {
+      initialClocks: freshClockState(T0),
+      drivingActive: false,
+      sourceLabel: 'No trip loaded',
+    }),
   );
   check(
     'strip: parked mode still renders the detailed card, now with all four clocks',
     fullHtml.includes('Drive time left') &&
       fullHtml.includes('On-duty window left') &&
-      fullHtml.includes('Cycle time left') &&
+      fullHtml.includes('Cycle remaining') &&
       fullHtml.includes('Until 30-minute break'),
   );
   check('strip: the detailed card carries the disclaimer too', fullHtml.includes(HOS_PLANNING_AID));
