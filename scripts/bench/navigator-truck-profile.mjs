@@ -35,6 +35,13 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone. Anchored, accepting either name: 'Start navigation'
+ * and 'Start with full clocks' are different buttons.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -121,6 +128,23 @@ async function login(page) {
  * which is correct behaviour for a driver and wrong for a test that means
  * "exactly this height".
  */
+/**
+ * Make the truck EDITOR available, whatever state the screen is in.
+ *
+ * Since the pre-trip setup milestone a confirmed profile persists in
+ * localStorage and collapses to a compact summary with an 'Edit truck'
+ * button, so a scenario that inherits a saved storage state arrives with
+ * no input fields on screen at all. Every field-setting path goes through
+ * here first — the same tap a driver makes to change their truck.
+ */
+async function openTruckEditor(page) {
+  const edit = page.getByRole('button', { name: 'Edit truck' });
+  if ((await edit.count()) === 0) return;
+  await edit.scrollIntoViewIfNeeded();
+  await edit.click();
+  await page.waitForTimeout(250);
+}
+
 async function setField(page, label, unit, value) {
   if (unit === 'ft') {
     const feet = Math.floor(value);
@@ -293,6 +317,7 @@ async function runScenario(browser, sc) {
     await login(page);
 
     // --- the driver sets their truck ---------------------------------
+    await openTruckEditor(page);
     for (const [label, unit, value] of sc.edits ?? []) await setField(page, label, unit, value);
     if (sc.hazmat) {
       await page.getByLabel('Hazmat placard class').selectOption(sc.hazmat);
@@ -325,9 +350,29 @@ async function runScenario(browser, sc) {
       .filter({ hasText: 'Bench Receiving Gate' })
       .first()
       .click({ timeout: 15_000 });
-    const start = page.getByRole('button', { name: /^Start$/ });
+    const start = page.getByRole('button', { name: START_BUTTON });
     await start.scrollIntoViewIfNeeded();
-    if (sc.rapid) {
+    /*
+     * A truck that may not be routed now DISABLES Start rather than
+     * letting the tap be refused after the fact.
+     *
+     * That is the stronger guarantee and the one the gate was built for:
+     * the driver is told what to fix before they reach for the button,
+     * not after. So for the refuse-before-network scenarios the check is
+     * the disabled state and the sentence beside it — clicking a control
+     * the app has correctly made inert proves nothing and just waits out
+     * a timeout.
+     */
+    const startDisabled = await start.isDisabled();
+    if (sc.outcome === 'refused-before-network') {
+      verdict('a truck that may not be routed disables Start outright', startDisabled);
+      const why = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+      verdict(
+        'and the reason is a sentence the driver can act on',
+        /Confirm your truck first|Fix the truck details first/.test(why),
+        why.slice(0, 160),
+      );
+    } else if (sc.rapid) {
       for (let i = 0; i < 5; i++) {
         try {
           await start.click({ timeout: 1500 });
@@ -454,10 +499,18 @@ async function runScenario(browser, sc) {
       );
     } else if (sc.outcome === 'refused-before-network') {
       verdict('the driver stays parked', !/Pilot trip state: navigating/.test(bodyText));
+      /*
+       * 'above' -> 'first'. The pre-trip setup milestone made the setup a
+       * NAMED SEQUENCE — Driver, Region, Truck, Clocks, Destination,
+       * Start Route — so the blocking sentence names the step rather than
+       * a direction to scroll. The wording lives in one constant
+       * (`START_NEEDS_TRUCK` / `START_NEEDS_TRUCK_FIX`) that the button,
+       * the checklist and this line all read.
+       */
       verdict(
         'and is told what to do',
-        /Confirm your truck above|Fix the truck details above/.test(bodyText),
-        bodyText.slice(0, 0) || undefined,
+        /Confirm your truck first|Fix the truck details first/.test(bodyText),
+        bodyText.slice(0, 160),
       );
     }
     verdict('no credential is ever on screen', !/HERE_API_KEY|apiKey/.test(bodyText));
@@ -495,6 +548,7 @@ async function runScenario(browser, sc) {
         routeBodies.length === 1,
         `${routeBodies.length} requests`,
       );
+      await openTruckEditor(page);
       await setField(page, 'Height', 'ft', 14);
       await page.waitForTimeout(400);
       const text2 = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
@@ -509,7 +563,7 @@ async function runScenario(browser, sc) {
         routeBodies.length === 1,
         `${routeBodies.length} requests`,
       );
-      const startAgain = page.getByRole('button', { name: /^Start$/ });
+      const startAgain = page.getByRole('button', { name: START_BUTTON });
       await startAgain.scrollIntoViewIfNeeded().catch(() => {});
       await startAgain.click().catch(() => {});
       await page.waitForTimeout(1000);

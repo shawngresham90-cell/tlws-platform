@@ -236,6 +236,23 @@ async function setUnits(page, units) {
   await page.waitForTimeout(200);
 }
 
+/**
+ * Make the truck EDITOR available, whatever state the screen is in.
+ *
+ * Since the pre-trip setup milestone a confirmed profile persists in
+ * localStorage and collapses to a compact summary with an 'Edit truck'
+ * button, so a scenario that inherits a saved storage state arrives with
+ * no input fields on screen at all. Every field-setting path goes through
+ * here first — the same tap a driver makes to change their truck.
+ */
+async function openTruckEditor(page) {
+  const edit = page.getByRole('button', { name: 'Edit truck' });
+  if ((await edit.count()) === 0) return;
+  await edit.scrollIntoViewIfNeeded();
+  await edit.click();
+  await page.waitForTimeout(250);
+}
+
 async function confirmTruck(page) {
   /*
    * A CONFIRMED truck no longer shows a confirm button at all. Since the
@@ -519,6 +536,7 @@ async function runScenario(browser, sc, viewport = { width: 390, height: 844 }) 
     if (sc.metricTruck) {
       // In metric mode the editor's inputs are labelled in metres and kg,
       // and the values convert ONCE on the way in.
+      await openTruckEditor(page);
       await page.getByLabel('Height in m').fill('4.11');
       await page.waitForTimeout(120);
       await page.getByLabel('Gross weight in kg').fill('36287');

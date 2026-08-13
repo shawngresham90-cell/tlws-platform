@@ -195,6 +195,19 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
     'gate: readiness is the planner-s own predicate, not a second opinion',
     /const destinationReady = resolveDestination\(\) !== null/.test(CONTROLS),
   );
+  /*
+   * And a BLANK box is not a destination. `Number('')` is 0, and 0/0 is
+   * a finite in-range coordinate — a point in the Gulf of Guinea — so an
+   * untouched coordinate form resolved to a real place. Harmless while
+   * Start could never be enabled with the form empty; the moment the
+   * gate started asking this function, it enabled Start for a driver who
+   * had chosen nothing. The 390px bench caught it in one run.
+   */
+  check(
+    'gate: an empty coordinate box is not a destination at 0, 0',
+    /destLat\.trim\(\) === '' \|\| destLng\.trim\(\) === ''/.test(CONTROLS) &&
+      /if \(!usingSearch && blank\) return null/.test(CONTROLS),
+  );
 }
 
 // Checklist rows say their state in words.

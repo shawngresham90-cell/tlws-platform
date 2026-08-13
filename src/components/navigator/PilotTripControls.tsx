@@ -253,6 +253,20 @@ export function PilotTripControls({
     facility: DestinationFacility;
   } | null {
     const usingSearch = picked !== null;
+    /*
+     * A BLANK BOX IS NOT A DESTINATION. `Number('')` is 0, and 0/0 is a
+     * finite, in-range coordinate — a point in the Gulf of Guinea — so
+     * an untouched coordinate form used to resolve to a real place. The
+     * planner would have routed to it; the only reason nobody had is
+     * that Start was never enabled with the form empty.
+     *
+     * Now it can be: the setup gate asks this function whether a
+     * destination exists, so "empty" has to answer no rather than
+     * answering "null island". Blank, whitespace and unparseable are one
+     * case, and the case is: nothing chosen.
+     */
+    const blank = destLat.trim() === '' || destLng.trim() === '';
+    if (!usingSearch && blank) return null;
     const dLat = usingSearch ? picked.position.lat : Number(destLat);
     const dLng = usingSearch ? picked.position.lng : Number(destLng);
     if (
