@@ -737,15 +737,18 @@ const p = (over: Partial<EditableProfile> = {}): EditableProfile => ({
     'demo: the road-test report carries no coordinate and no key',
     !/apiKey|HERE_API_KEY/.test(report) && !/\blat\b\s*:/.test(report),
   );
-  const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+  /*
+   * The stored truck moved into its own module (pre-trip setup
+   * milestone), so the pin follows it. What it stores is unchanged: the
+   * profile and the fingerprint that confirms it, and nothing that could
+   * identify a driver or say where they have been.
+   */
+  const truckStore = readFileSync('src/components/navigator/truck-storage.ts', 'utf8');
   check(
     'demo: the stored truck profile carries no position, route or identity',
-    /JSON\.stringify\(\{ v: 1, profile, confirmed:/.test(screen) &&
-      !/position|geometry|firstName/.test(
-        screen.slice(
-          screen.indexOf('const persistTruck'),
-          screen.indexOf('const persistTruck') + 400,
-        ),
+    /confirmed: confirmation\.confirmedFingerprint/.test(truckStore) &&
+      !/position|geometry|firstName|lat\b|lng\b/.test(
+        truckStore.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''),
       ),
   );
 }

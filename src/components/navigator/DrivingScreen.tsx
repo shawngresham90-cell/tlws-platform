@@ -71,6 +71,10 @@ import {
 } from '@/lib/navigator/region';
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
+import { readTruck, writeTruck } from './truck-storage';
+import { SetupStatus } from './SetupStatus';
+import { TruckSummary } from './TruckSummary';
+import { setupStatus } from '@/lib/navigator/setup-status';
 import {
   confirmProfile,
   profileGate,
@@ -98,83 +102,14 @@ import { VoiceControls } from './VoiceControls';
  * "route unavailable", no provider spend possible (the endpoint 404s).
  */
 
-/**
- * Where the confirmed truck lives for the browser session. A SEPARATE key
- * from the trip snapshot: a truck outlives a trip, and mixing them would
- * make discarding a trip discard the driver's verified truck.
- *
- * What is stored is only what the route request needs. Nothing here can
- * carry a position, a route, a name, or anything about how the truck was
- * driven — the parser below refuses any payload that does not match this
- * exact shape, so a hand-edited or stale value cannot reach the provider.
- */
-const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v1';
-
 /*
- * The driver's region and display units live in a THIRD versioned key,
- * for the same reason the truck has its own: a preference outlives both a
- * trip and a truck. It holds two enum values and nothing else — no
- * position, no route, no identity. The key itself, and the parsing of it,
- * belong to ./region-storage so the position preview can read the same
- * preference without a second copy of the rules.
+ * The confirmed truck and the driver's name are versioned records owned
+ * by `truck-storage` and `driver-storage`. They moved off this screen in
+ * the pre-trip setup milestone so that a corrupt record of one kind
+ * cannot cost the driver another — three keys, three parsers, no shared
+ * try/catch. This screen still owns the TRIP snapshot, which is about
+ * one drive and deliberately does not outlive the tab.
  */
-
-function parseStoredProfile(
-  raw: string,
-): { profile: EditableProfile; confirmation: ConfirmationState } | null {
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (data === null || typeof data !== 'object') return null;
-  const d = data as { v?: unknown; profile?: unknown; confirmed?: unknown };
-  if (d.v !== 1 || d.profile === null || typeof d.profile !== 'object') return null;
-  const p = d.profile as Record<string, unknown>;
-  const num = (v: unknown): number | null =>
-    typeof v === 'number' && Number.isFinite(v) ? v : null;
-  const heightFt = num(p.heightFt);
-  const widthFt = num(p.widthFt);
-  const lengthFt = num(p.lengthFt);
-  const grossWeightLbs = num(p.grossWeightLbs);
-  const axles = num(p.axles);
-  if (
-    heightFt === null ||
-    widthFt === null ||
-    lengthFt === null ||
-    grossWeightLbs === null ||
-    axles === null
-  ) {
-    return null;
-  }
-  const hazmatClass =
-    p.hazmatClass === null || typeof p.hazmatClass === 'string'
-      ? (p.hazmatClass as string | null)
-      : null;
-  const avoid = Array.isArray(p.avoid)
-    ? p.avoid.filter((a): a is string => typeof a === 'string')
-    : [];
-  const profile: EditableProfile = {
-    heightFt,
-    widthFt,
-    lengthFt,
-    grossWeightLbs,
-    axles,
-    hazmatClass,
-    avoid,
-  };
-  // A stored confirmation is only honoured when it still matches the
-  // stored values — a tampered or partially written record re-asks.
-  const confirmed = typeof d.confirmed === 'string' ? d.confirmed : null;
-  return {
-    profile,
-    confirmation:
-      confirmed !== null && confirmed === routingFingerprint(profile)
-        ? { confirmedFingerprint: confirmed }
-        : NO_CONFIRMATION,
-  };
-}
 
 const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
 
@@ -1163,32 +1098,54 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     setSearchRegion(region);
   }, [region]);
 
+  /*
+   * The confirmed truck, restored across VISITS (pre-trip setup
+   * milestone) rather than just reloads. The record, its envelope and its
+   * migration from the old sessionStorage home belong to `truck-storage`;
+   * this screen only says when to read and when to write.
+   *
+   * The safety property is unchanged and lives in that module: a stored
+   * confirmation is honoured only when it still matches the stored
+   * values, so restoring a truck never restores permission to route for
+   * a truck nobody checked.
+   */
   const [truckProfile, setTruckProfile] = useState<EditableProfile>(DEFAULT_EDITABLE_PROFILE);
   const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(NO_CONFIRMATION);
   const [truckTouched, setTruckTouched] = useState(false);
+  /** Open the full editor even though a confirmed truck exists. */
+  const [editingTruck, setEditingTruck] = useState(false);
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(TRUCK_PROFILE_KEY);
-      if (raw === null) return;
-      const parsed = parseStoredProfile(raw);
-      if (parsed === null) return;
-      setTruckProfile(parsed.profile);
-      setTruckConfirmation(parsed.confirmation);
-      setTruckTouched(true);
-    } catch {
-      /* storage unavailable: the defaults stand, unconfirmed */
-    }
+    const saved = readTruck();
+    if (saved === null) return;
+    setTruckProfile(saved.profile);
+    setTruckConfirmation(saved.confirmation);
+    setTruckTouched(true);
   }, []);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
-    try {
-      sessionStorage.setItem(
-        TRUCK_PROFILE_KEY,
-        JSON.stringify({ v: 1, profile, confirmed: confirmation.confirmedFingerprint }),
-      );
-    } catch {
-      /* a profile that cannot be stored is still usable this session */
-    }
+    writeTruck(profile, confirmation);
   };
+  /** The gate the whole setup turns on, computed from the existing authority. */
+  const truckGateState = profileGate(truckProfile, truckConfirmation);
+  const truckConfirmed = truckGateState === 'ready';
+  /*
+   * ONE value decides three things — whether Start is disabled, the
+   * sentence beneath it, and the checklist at the top — so they cannot
+   * disagree with each other.
+   *
+   * The CLOCKS row is filtered out until the clock editor is wired: a
+   * checklist saying "Clocks — Not set" above a strip still showing a
+   * fresh eleven hours would be a contradiction the driver has no way to
+   * resolve. It returns with the editor.
+   */
+  const setup = {
+    ...setupStatus({
+      driverName: firstName,
+      truckGate: truckGateState,
+      clocks: 'unset',
+      destinationPicked: picked !== null,
+    }),
+  };
+  setup.items = setup.items.filter((i) => i.key !== 'clocks');
   /*
    * Whether a Start attempt is running right now, reported upward by
    * PilotTripControls. The search must refuse edits while an attempt is
@@ -1960,7 +1917,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             onPicked={setPicked}
             onAttemptActive={setStartPending}
             truckProfile={truckProfile}
-            truckGate={profileGate(truckProfile, truckConfirmation)}
+            truckGate={truckGateState}
             regionPanel={
               <RegionPanel
                 region={region}
@@ -1989,35 +1946,55 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
               destination: picked?.position ?? null,
             })}
             hosUnavailable={region === 'CA'}
-            truckEditor={
-              <TruckProfileEditor
-                profile={truckProfile}
-                confirmed={
-                  truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
-                }
-                isDefault={!truckTouched}
-                metric={metric}
-                onChange={(next) => {
-                  // A routing value that changed invalidates the
-                  // confirmation by construction: the gate compares
-                  // fingerprints, so nothing here has to remember which
-                  // fields mattered. No provider request occurs.
-                  setTruckProfile(next);
-                  setTruckTouched(true);
-                  persistTruck(next, truckConfirmation);
-                  // A planned route belongs to the OLD truck. Discard it
-                  // rather than let Start reuse it for a different one.
-                  if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
-                  bump();
-                }}
-                onConfirm={() => {
-                  const next = confirmProfile(truckProfile);
-                  setTruckConfirmation(next);
-                  setTruckTouched(true);
-                  persistTruck(truckProfile, next);
-                  bump();
-                }}
-              />
+            setupStatusSlot={<SetupStatus status={setup} />}
+            startBlockedReason={setup.blockedReason}
+            driverSlot={null}
+            truckSlot={
+              /*
+               * A returning driver whose truck was restored sees FOUR
+               * NUMBERS and a way back in, not the whole form again. The
+               * editor is still the only place a truck can be changed —
+               * the summary is a read-only echo — so there remains
+               * exactly one edit path and exactly one confirmation
+               * after it.
+               */
+              truckConfirmed && !editingTruck ? (
+                <TruckSummary
+                  profile={truckProfile}
+                  metric={metric}
+                  onEdit={() => setEditingTruck(true)}
+                />
+              ) : (
+                <TruckProfileEditor
+                  profile={truckProfile}
+                  confirmed={
+                    truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
+                  }
+                  isDefault={!truckTouched}
+                  metric={metric}
+                  onChange={(next) => {
+                    // A routing value that changed invalidates the
+                    // confirmation by construction: the gate compares
+                    // fingerprints, so nothing here has to remember which
+                    // fields mattered. No provider request occurs.
+                    setTruckProfile(next);
+                    setTruckTouched(true);
+                    persistTruck(next, truckConfirmation);
+                    // A planned route belongs to the OLD truck. Discard it
+                    // rather than let Start reuse it for a different one.
+                    if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
+                    bump();
+                  }}
+                  onConfirm={() => {
+                    setEditingTruck(false);
+                    const next = confirmProfile(truckProfile);
+                    setTruckConfirmation(next);
+                    setTruckTouched(true);
+                    persistTruck(truckProfile, next);
+                    bump();
+                  }}
+                />
+              )
             }
             onChanged={bump}
           />

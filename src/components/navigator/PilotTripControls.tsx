@@ -105,7 +105,11 @@ export function PilotTripControls({
   onAttemptActive,
   truckProfile,
   truckGate,
-  truckEditor,
+  truckSlot,
+  driverSlot = null,
+  setupStatusSlot = null,
+  clocksPanel = null,
+  startBlockedReason = null,
   regionPanel = null,
   metric = false,
   crossBorder = false,
@@ -177,7 +181,20 @@ export function PilotTripControls({
   /** 'invalid' | 'unconfirmed' | 'ready' — from the pure profile gate. */
   truckGate: 'invalid' | 'unconfirmed' | 'ready';
   /** The parked profile editor, rendered by the owner. */
-  truckEditor: ReactNode;
+  /** The truck section: the editor, or the saved summary with Edit truck. */
+  truckSlot: ReactNode;
+  /** The driver-name field, now FIRST in the setup order. */
+  driverSlot?: ReactNode;
+  /** The four-line "before you start" checklist. */
+  setupStatusSlot?: ReactNode;
+  /** Current clocks. Wired in the clock milestone; null renders nothing. */
+  clocksPanel?: ReactNode;
+  /**
+   * The exact missing setup item, or null when Start is available. It
+   * both disables the button and prints beneath it — one value, so the
+   * control and its explanation cannot disagree.
+   */
+  startBlockedReason?: string | null;
   /** Region + units + Canadian pilot status, rendered by the owner. */
   regionPanel?: ReactNode;
   /** Show the driver's numbers in metric. */
@@ -488,13 +505,28 @@ export function PilotTripControls({
 
       {state === 'idle' ? (
         <div className="space-y-3">
+          {/*
+           * SETUP ORDER, top to bottom: Driver → Region and units →
+           * Truck → Clocks → Destination → Start.
+           *
+           * It used to be Region → Destination → START → truck editor,
+           * which put the commitment above the safety check it depends
+           * on. A driver tapped Start, nothing visible happened, and the
+           * reason printed below the truck editor they had not reached
+           * yet. Start now comes last, after everything it requires.
+           *
+           * The destination SEARCH stays on the parked map (final pilot
+           * milestone) — the driver looks at the map, so that is where
+           * "where are you going?" belongs. What sits here at position 5
+           * is the confirmation of what they picked, immediately above
+           * the Start it commits to.
+           */}
+          {setupStatusSlot}
+          {driverSlot}
           {regionPanel}
+          {truckSlot}
+          {clocksPanel}
 
-          {/* The search box itself now lives at the TOP OF THE PARKED MAP
-              (final pilot milestone) — the driver looks at the map, so
-              that is where "where are you going?" belongs. This surface
-              keeps the CONFIRMATION line, because the destination a tap
-              is about to commit to must be readable right beside Start. */}
           {picked !== null ? (
             <p className="text-xl text-ink">
               Destination: <span className="font-semibold">{picked.title}</span>
@@ -522,19 +554,30 @@ export function PilotTripControls({
 
           {/* THE Start control — the whole simplified flow in one tap:
               just-in-time location permission, wait for a real fix, one
-              validated truck route, then navigation. Green like the
-              briefing's Start, because it is the same commitment; the
-              words carry the state while an attempt runs, and the button
-              refuses re-entry rather than queueing a second attempt. */}
+              validated truck route, then navigation.
+
+              IT IS NOW GENUINELY DISABLED when setup is incomplete, and
+              the reason sits directly beneath it in words. Previously the
+              button looked usable, refused on tap, and explained itself
+              two hundred pixels down the page. A disabled control the
+              driver cannot act on is worse than useless if it does not
+              say what to do instead — so `startBlockedReason` names the
+              one missing item, and it is TEXT, not a colour. */}
           <button
             type="button"
             onClick={startTrip}
-            disabled={attemptActive}
+            disabled={attemptActive || startBlockedReason !== null}
             aria-busy={attemptActive}
-            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-80"
+            aria-describedby={startBlockedReason === null ? undefined : 'start-blocked-reason'}
+            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-60"
           >
-            {progressText ?? 'Start'}
+            {progressText ?? 'Start Route'}
           </button>
+          {startBlockedReason !== null ? (
+            <p id="start-blocked-reason" className="text-lg font-semibold text-ink">
+              {startBlockedReason}
+            </p>
+          ) : null}
 
           {/* Developer-only coordinate entry. It is now gated on the
               EXISTING debug mechanism (Pilot Mode's `debugLogging`, which
@@ -599,7 +642,6 @@ export function PilotTripControls({
               panel — a driver who cannot change the numbers cannot
               honestly confirm them. The panel's disclosure survives
               inside the editor's "Not used for routing" section. */}
-          {truckEditor}
         </div>
       ) : null}
 

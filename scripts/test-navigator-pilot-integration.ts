@@ -188,7 +188,7 @@ function renderControls(
       // it, so this harness keeps testing the real parked surface.
       truckProfile: DEFAULT_EDITABLE_PROFILE,
       truckGate: 'ready' as const,
-      truckEditor: createElement(TruckProfileEditor, {
+      truckSlot: createElement(TruckProfileEditor, {
         profile: DEFAULT_EDITABLE_PROFILE,
         onChange: () => {},
         onConfirm: () => {},

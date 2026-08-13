@@ -413,7 +413,7 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
     // The parked surface now EDITS the profile rather than displaying a
     // fixed one, and says plainly that untouched values are defaults.
     'honesty: the parked surface reads the real profile and labels defaults as defaults',
-    controlsSrc.includes('{truckEditor}') &&
+    controlsSrc.includes('{truckSlot}') &&
       editorSrc.includes('isDefault') &&
       editorSrc.includes('not your truck until you check them') &&
       panelSrc.includes('truck.heightFt') &&
