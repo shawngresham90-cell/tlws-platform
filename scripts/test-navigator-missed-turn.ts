@@ -235,7 +235,7 @@ async function main() {
     );
     check(
       '2: and the announcer is silenced for it too',
-      /staleGuidance[\s\S]{0,200}maneuverAnnouncerRef/.test(screen),
+      /staleGuidance[\s\S]{0,400}maneuverAnnouncerRef/.test(screen),
       'the missed turn would still be spoken',
     );
     check(

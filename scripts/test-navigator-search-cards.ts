@@ -186,7 +186,7 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
     // driving screen); the pick it produces still feeds the controls.
     'path: the parked map mounts THIS search',
     SCREEN_SRC.includes('<DestinationSearch') &&
-      SCREEN_SRC.includes('onClear={() => setPicked(null)}'),
+      /onClear=\{\(\)\s*=>\s*\{[\s\S]{0,200}setPicked\(null\)/.test(SCREEN_SRC),
   );
   check(
     'path: the picked candidate plans through the same fields',

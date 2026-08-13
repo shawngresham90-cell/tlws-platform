@@ -516,6 +516,70 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
     );
   }
 
+  /*
+   * METRIC SPEECH (Canada milestone). The SAME maneuver, at the SAME
+   * threshold, spoken in the driver's units. What is pinned here is that
+   * the metric sentence is a metric SENTENCE — a landmark a Canadian road
+   * sign uses — and not a converted imperial one: "In 0.8 kilometres" is
+   * exactly the failure these buckets exist to prevent.
+   */
+  {
+    const km = (mi: number, speed: number) =>
+      createManeuverAnnouncer().collect(
+        { next: exit, following: null, distanceMi: mi },
+        speed,
+        true,
+      )[0]?.text ?? '';
+    check(
+      'metric: 1.9 mi reads as "In 3.1 kilometres"',
+      km(1.9, 60) === 'In 3.1 kilometres, Take exit 320',
+      km(1.9, 60),
+    );
+    check(
+      'metric: 0.5 mi reads as "In 800 metres"',
+      km(0.5, 60) === 'In 800 metres, Take exit 320',
+      km(0.5, 60),
+    );
+    check(
+      'metric: 0.3 mi reads as "In 500 metres"',
+      km(0.3, 60) === 'In 500 metres, Take exit 320',
+      km(0.3, 60),
+    );
+    check(
+      'metric: 0.62 mi reads as "In 1 kilometre", singular',
+      km(0.62, 60) === 'In 1 kilometre, Take exit 320',
+      km(0.62, 60),
+    );
+    check(
+      'metric: 0.15 mi reads as "In 250 metres" — 50 m steps close in',
+      km(0.15, 30) === 'In 250 metres, Take exit 320',
+      km(0.15, 30),
+    );
+    const conversions = [1.9, 0.62, 0.5, 0.3, 0.15].map((mi) => km(mi, 60));
+    check(
+      'metric: never a converted-decimal kilometre reading below 1.2 km',
+      !conversions.some((t) => /In 0\.\d+ kilometre/.test(t)),
+      conversions.join(' | '),
+    );
+    check(
+      'metric: never an imperial word in a metric sentence',
+      !conversions.some((t) => /\bmile|\bfeet\b/.test(t)),
+      conversions.join(' | '),
+    );
+    check(
+      'imperial is untouched: the same input still speaks miles',
+      createManeuverAnnouncer().collect({ next: exit, following: null, distanceMi: 1.9 }, 60)[0]
+        .text === 'In 1.9 miles, Take exit 320',
+    );
+    // The execute tier speaks no distance at all, in either system.
+    const exec = createManeuverAnnouncer().collect(
+      { next: exit, following: null, distanceMi: 0.02 },
+      30,
+      true,
+    );
+    check('metric: the execute line is still bare instruction', exec[0].text === 'Take exit 320');
+  }
+
   // chained maneuvers: combined instruction, second prepare suppressed
   const c = createManeuverAnnouncer();
   const turn = {
@@ -817,8 +881,13 @@ const req = (id: string, priority: VoiceRequest['priority'], text = id): VoiceRe
     /prevStateRef/.test(screen) && /prevLcStateRef/.test(screen),
   );
   check(
-    'US driver units survive: distance through formatDriverDistanceMi, speed in mph',
-    /formatDriverDistanceMi\(view\.remainingMi\)/.test(screen) && /\bmph\b/.test(screen),
+    'driver units survive: distance and speed both go through the one formatter',
+    /formatDistance\(view\.remainingMi, metric\)/.test(screen) &&
+      /formatSpeed\(view\.speedMph, metric\)/.test(screen),
+  );
+  check(
+    'the voice reads the driver’s units too, through a ref (no re-armed announcers)',
+    /collect\(\s*view\.maneuvers,\s*view\.speedMph,\s*metricRef\.current,?\s*\)/.test(screen),
   );
   check(
     'reroute path is untouched by voice (no speech gate before requestReroute)',

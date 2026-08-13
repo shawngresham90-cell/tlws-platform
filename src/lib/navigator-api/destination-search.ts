@@ -96,6 +96,29 @@ export function classifyFacility(
 export const UNBIASED_SEARCH_CENTER: LatLng = { lat: 39.8283, lng: -98.5795 };
 
 /**
+ * The same rail for Canada (Canada milestone). A Canadian search that
+ * fell back to the Kansas center would rank Windsor above Whitehorse for
+ * a driver in the Yukon, so each country gets its own documented centre:
+ * this is the approximate geographic centre of Canada, near Baker Lake,
+ * Nunavut. It is spatial CONTEXT for the provider, never a claim about
+ * the driver — the distances it produces are stripped exactly as the US
+ * centre's are.
+ */
+export const UNBIASED_SEARCH_CENTER_CA: LatLng = { lat: 62.4, lng: -96.5 };
+
+/** The unbiased centre for a country code. */
+export function unbiasedCenterFor(country: SearchCountry): LatLng {
+  return country === 'CAN' ? UNBIASED_SEARCH_CENTER_CA : UNBIASED_SEARCH_CENTER;
+}
+
+/**
+ * The country the search asks about. The PARAMETER (`in=countryCode:…`)
+ * is unchanged and already proven in production; only its value varies,
+ * in the same ISO 3166-1 alpha-3 shape.
+ */
+export type SearchCountry = 'USA' | 'CAN';
+
+/**
  * Build the discover URL. `at` biases results to the truck's position —
  * a driver searching "Pilot" means the one down the road, not in Ohio.
  * With no position yet (null), the unbiased center stands in and the
@@ -106,12 +129,17 @@ export function buildDiscoverUrl(
   at: LatLng | null,
   apiKey: string,
   limit = MAX_SEARCH_RESULTS,
+  country: SearchCountry = 'USA',
 ): string {
-  const center = at ?? UNBIASED_SEARCH_CENTER;
+  const center = at ?? unbiasedCenterFor(country);
   const p = new URLSearchParams();
   p.set('q', query);
   p.set('at', `${center.lat.toFixed(6)},${center.lng.toFixed(6)}`);
-  p.set('in', 'countryCode:USA');
+  // ONE country per search. Sending both would quietly turn every
+  // domestic search into a cross-border one, which is not what a driver
+  // typing "Petro" in Ontario is asking for; crossing the border is a
+  // deliberate act with its own control.
+  p.set('in', `countryCode:${country}`);
   p.set('limit', String(Math.min(Math.max(limit, 1), 20)));
   p.set('apiKey', apiKey);
   return `${DISCOVER_BASE}?${p.toString()}`;

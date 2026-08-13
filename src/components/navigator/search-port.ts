@@ -36,10 +36,14 @@ export async function searchDestinations(
   query: string,
   at: LatLng | null,
   fetchFn: SearchFetchLike = (input) => fetch(input),
+  country: 'USA' | 'CAN' = 'USA',
 ): Promise<SearchOutcome> {
   const url =
     `/api/navigator/destination-search?q=${encodeURIComponent(query)}` +
-    (at === null ? '' : `&lat=${at.lat}&lng=${at.lng}`);
+    (at === null ? '' : `&lat=${at.lat}&lng=${at.lng}`) +
+    // The country the driver is searching. One country per request:
+    // crossing the border is deliberate, never a side effect of typing.
+    `&country=${country}`;
   let payload: unknown;
   try {
     const res = await fetchFn(url);

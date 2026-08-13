@@ -1,8 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui';
-import { formatAccuracyFt } from '@/lib/navigator/format-units';
+import { formatAccuracy, formatSpeed } from '@/lib/navigator/format-units';
 import { useGps } from './GpsProvider';
+import { useRegionPrefs } from './region-storage';
 import type { PositionHealth, PositionState } from '@/lib/navigator/types';
 
 /**
@@ -38,6 +39,12 @@ export type NavigatorStatusViewProps = {
   acquiring: boolean;
   onStart: () => void;
   onStop: () => void;
+  /**
+   * Read from the driver's stored region preference. This preview reads
+   * the setting; it never owns it — region is chosen parked, on the
+   * driving screen, behind the shared safety lock.
+   */
+  metric?: boolean;
 };
 
 export function NavigatorStatusView({
@@ -47,6 +54,7 @@ export function NavigatorStatusView({
   acquiring,
   onStart,
   onStop,
+  metric = false,
 }: NavigatorStatusViewProps) {
   if (!supported) {
     return (
@@ -103,10 +111,10 @@ export function NavigatorStatusView({
             : 'Waiting for first fix…'}
         </dd>
         <dt className="font-semibold">Accuracy</dt>
-        <dd>{fix ? formatAccuracyFt(fix.accuracyM) : '—'}</dd>
+        <dd>{fix ? formatAccuracy(fix.accuracyM, metric) : '—'}</dd>
         <dt className="font-semibold">Speed</dt>
         <dd>
-          {position.speedMph !== null ? `${Math.round(position.speedMph)} mph` : 'Needs two fixes'}
+          {position.speedMph !== null ? formatSpeed(position.speedMph, metric) : 'Needs two fixes'}
         </dd>
         <dt className="font-semibold">Heading</dt>
         <dd>{position.headingDeg !== null ? `${Math.round(position.headingDeg)}°` : '—'}</dd>
@@ -120,6 +128,7 @@ export function NavigatorStatusView({
 
 export function NavigatorStatus() {
   const { position, watching, supported, acquiring, start, stop } = useGps();
+  const { units } = useRegionPrefs();
   return (
     <NavigatorStatusView
       position={position}
@@ -128,6 +137,7 @@ export function NavigatorStatus() {
       acquiring={acquiring}
       onStart={start}
       onStop={stop}
+      metric={units === 'metric'}
     />
   );
 }

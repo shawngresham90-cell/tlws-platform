@@ -126,17 +126,23 @@ function componentMotionChecksAbsent(): boolean {
   ];
   for (const f of files) {
     const src = strip(readFileSync(f, 'utf8'));
-    // The override stays unpersistable everywhere. Trip restore (pilot
-    // round 3, item 4) is the one sanctioned storage path, on the
-    // driving screen only, and it persists the planned ROUTE — never the
-    // override, never the name, never a position. Its harness
-    // (test-navigator-trip-restore) pins that discipline; here the
-    // sanctioned call shapes are scrubbed and everything else — every
-    // other storage token, every other file — stays banned.
-    const scrubbed = f.endsWith('DrivingScreen.tsx')
+    // The override stays unpersistable everywhere. Two module kinds may
+    // touch storage at all: the driving screen, which persists the
+    // planned ROUTE and the confirmed truck (pilot round 3 item 4, and
+    // the truck-route confidence milestone), and a `*-storage.ts`
+    // preference module, which persists one versioned key of enum values
+    // (region-storage.ts, Canada milestone). Neither persists the
+    // override, the name, or a position — that is what this invariant
+    // enforces, since the override token stays banned in the scrubbed
+    // source too. Their harnesses (test-navigator-trip-restore,
+    // test-navigator-canada) pin which keys exist; here the sanctioned
+    // CALL SHAPES are scrubbed and everything else — every other storage
+    // token, every other file — stays banned.
+    const storageSanctioned = f.endsWith('DrivingScreen.tsx') || /-storage\.ts$/.test(f);
+    const scrubbed = storageSanctioned
       ? src
-          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
-          .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
+          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'SANCTIONED_KEY_(')
+          .replace(/typeof sessionStorage/g, 'SANCTIONED_KEY_GUARD')
       : src;
     check(
       `invariant 4: ${f.split('/').pop()} touches no storage/cookies/URL state`,

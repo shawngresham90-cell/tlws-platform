@@ -16,7 +16,7 @@ import {
   type PilotLog,
   type PilotMode,
 } from '@/lib/navigator/pilot-mode';
-import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
+import { formatDistance, formatSpeed } from '@/lib/navigator/format-units';
 import { maneuverGlyph } from '@/lib/navigator/maneuver-glyph';
 import { statusSeverity, severityGlyph } from '@/lib/navigator/status-severity';
 import {
@@ -58,6 +58,18 @@ import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
 import { DestinationSearch } from './DestinationSearch';
 import { TruckProfileEditor } from './TruckProfileEditor';
+import { RegionPanel } from './RegionPanel';
+import {
+  canadaPilotStatus,
+  crossBorderSearchLabel,
+  defaultUnitsFor,
+  looksCrossBorder,
+  searchCountryFor,
+  CANADA_HOS_NOTICE,
+  type Region,
+  type UnitSystem,
+} from '@/lib/navigator/region';
+import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
 import {
   confirmProfile,
   profileGate,
@@ -96,6 +108,15 @@ import { VoiceControls } from './VoiceControls';
  * exact shape, so a hand-edited or stale value cannot reach the provider.
  */
 const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v1';
+
+/*
+ * The driver's region and display units live in a THIRD versioned key,
+ * for the same reason the truck has its own: a preference outlives both a
+ * trip and a truck. It holds two enum values and nothing else — no
+ * position, no route, no identity. The key itself, and the parsing of it,
+ * belong to ./region-storage so the position preview can read the same
+ * preference without a second copy of the rules.
+ */
 
 function parseStoredProfile(
   raw: string,
@@ -216,6 +237,10 @@ export function DrivingScreenView({
   onHosClocks,
   onBottomInset,
   mapSearchSlot = null,
+  regionPanel = null,
+  metric = false,
+  crossBorder = false,
+  hosUnavailableNotice = null,
 }: {
   view: DrivingView;
   watching: boolean;
@@ -283,6 +308,18 @@ export function DrivingScreenView({
    * that (the caller wraps this slot in the edit-destination LockGate).
    */
   mapSearchSlot?: ReactNode;
+  /** Region + units + the Canadian pilot status, parked-only. */
+  regionPanel?: ReactNode;
+  /** Show distances, speeds and dimensions in metric. */
+  metric?: boolean;
+  /** Origin and destination look like different countries. */
+  crossBorder?: boolean;
+  /**
+   * When set, the HOS clocks are REPLACED by this notice. Canada mode
+   * uses it: the engine's US limits must never be shown as though they
+   * were Canadian, and there is no Canadian calculation in this pilot.
+   */
+  hosUnavailableNotice?: string | null;
 }) {
   // Warning-rail severity, read from the existing status — presentation
   // only, computed nowhere else so the rail can never disagree with the
@@ -422,7 +459,7 @@ export function DrivingScreenView({
                phone still fits "In 127.5 mi" on one line; the ceiling is
                the --size-maneuver design size (60px). */}
             <p className="font-data num-data text-[length:clamp(40px,min(15vw,9dvh),var(--size-maneuver))] font-bold leading-none tracking-tight text-ink">
-              In {formatDriverDistanceMi(view.maneuvers?.distanceMi)}
+              In {formatDistance(view.maneuvers?.distanceMi, metric)}
             </p>
           </div>
           {/* The largest PROSE on the screen (the distance numeral above is
@@ -492,13 +529,13 @@ export function DrivingScreenView({
             rail and width is not the scarce dimension. The ceiling is the
             --size-speed design size, reached on wide viewports. */}
         <dd className="whitespace-nowrap font-data num-data text-[length:clamp(24px,min(7.5vw,6dvh),var(--size-speed))] font-bold leading-none">
-          {view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}
+          {formatSpeed(view.speedMph, metric)}
         </dd>
       </div>
       <div>
         <dt className="text-[length:var(--size-label)] leading-tight text-ink/70">Remaining</dt>
         <dd className="font-data num-data text-[length:var(--size-trip)] font-semibold leading-tight">
-          {formatDriverDistanceMi(view.remainingMi)}
+          {formatDistance(view.remainingMi, metric)}
         </dd>
       </div>
       <div>
@@ -754,9 +791,9 @@ export function DrivingScreenView({
                   : '—'}
               </dd>
               <dt>Distance remaining</dt>
-              <dd>{formatDriverDistanceMi(view.remainingMi)}</dd>
+              <dd>{formatDistance(view.remainingMi, metric)}</dd>
               <dt>Speed</dt>
-              <dd>{view.speedMph !== null ? `${Math.round(view.speedMph)} mph` : '—'}</dd>
+              <dd>{formatSpeed(view.speedMph, metric)}</dd>
             </dl>
           )}
         </div>
@@ -773,32 +810,46 @@ export function DrivingScreenView({
             clocks do not restart when guidance starts, when a reroute
             lands, or when the trip ends. */}
         <div className={fullScreen ? colBottom : ''}>
-          <HosStrip
-            drivingActive={
-              fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
-            }
-            sourceLabel={hosSourceLabel}
-            voice={voice}
-            compact={fullScreen}
-            restoredClocks={hosRestoredClocks}
-            onClocksChange={onHosClocks}
-            detailSlot={
-              fullScreen
-                ? (detail) =>
-                    detail === null ? null : (
-                      // The detailed clocks are a deep surface: the SAME
-                      // stationary-only rail every other one uses, through
-                      // the shared map. The compact strip above stays
-                      // readable while moving — only opening the panel is
-                      // gated, which is what doc 06 locks and why nothing
-                      // new was added to the permission map.
-                      <LockGate action="view-trip-summary" lockedLabel="Detailed clocks" compact>
-                        {detail}
-                      </LockGate>
-                    )
-                : undefined
-            }
-          />
+          {hosUnavailableNotice !== null ? (
+            /* No clocks at all — not greyed-out US clocks, which would
+               still read as numbers a driver could act on. */
+            <section
+              aria-label="Hours of service — not calculated"
+              role="status"
+              className="w-full rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-asphalt/90 px-3 py-2"
+            >
+              <p className="text-base font-semibold leading-snug text-ink">
+                {hosUnavailableNotice}
+              </p>
+            </section>
+          ) : (
+            <HosStrip
+              drivingActive={
+                fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
+              }
+              sourceLabel={hosSourceLabel}
+              voice={voice}
+              compact={fullScreen}
+              restoredClocks={hosRestoredClocks}
+              onClocksChange={onHosClocks}
+              detailSlot={
+                fullScreen
+                  ? (detail) =>
+                      detail === null ? null : (
+                        // The detailed clocks are a deep surface: the SAME
+                        // stationary-only rail every other one uses, through
+                        // the shared map. The compact strip above stays
+                        // readable while moving — only opening the panel is
+                        // gated, which is what doc 06 locks and why nothing
+                        // new was added to the permission map.
+                        <LockGate action="view-trip-summary" lockedLabel="Detailed clocks" compact>
+                          {detail}
+                        </LockGate>
+                      )
+                  : undefined
+              }
+            />
+          )}
         </div>
 
         {/* Stop is the always-visible exit control — allowed while moving.
@@ -1033,6 +1084,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * would be the one the driver was not looking at.
    */
   const [picked, setPicked] = useState<DestinationCandidate | null>(null);
+  /** The country the search that produced `picked` was filtered to. */
+  const [pickedCountry, setPickedCountry] = useState<'USA' | 'CAN' | null>(null);
 
   /*
    * THE TRUCK THIS SCREEN PLANS FOR, and whether the driver has confirmed
@@ -1048,6 +1101,46 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * the provider, so changing a routing value invalidates it
    * automatically and a display-only field cannot.
    */
+  /*
+   * REGION and DISPLAY UNITS (Canada milestone).
+   *
+   * Region decides two things and no others: which country the
+   * destination search asks about, and which units the driver reads. It
+   * is never inferred from GPS — a parked truck in Windsor is not
+   * evidence about whose paperwork the driver carries — and it does NOT
+   * select a Canadian HOS rule set, which this pilot does not implement.
+   * Existing sessions stay on United States/imperial by default.
+   */
+  const [region, setRegion] = useState<Region>(DEFAULT_REGION_PREFS.region);
+  const [units, setUnits] = useState<UnitSystem>(DEFAULT_REGION_PREFS.units);
+  const metric = units === 'metric';
+  useEffect(() => {
+    const stored = readRegionPrefs();
+    setRegion(stored.region);
+    setUnits(stored.units);
+  }, []);
+  const persistRegion = (r: Region, u: UnitSystem) => {
+    writeRegionPrefs({ region: r, units: u });
+  };
+  // The voice tick reads the preference through a ref: the guidance
+  // effect must not re-subscribe because a driver changed units while
+  // parked, and re-running it would re-arm announcers that exist to
+  // speak once.
+  const metricRef = useRef(metric);
+  metricRef.current = metric;
+
+  /*
+   * Which country the SEARCH BOX is currently asking about. It starts at
+   * the driver's region and can be flipped for one deliberate
+   * cross-border search without changing the region, the units, or the
+   * truck — a driver in Ontario planning a Detroit delivery is still a
+   * Canadian driver reading kilometres.
+   */
+  const [searchRegion, setSearchRegion] = useState<Region>(DEFAULT_REGION_PREFS.region);
+  useEffect(() => {
+    setSearchRegion(region);
+  }, [region]);
+
   const [truckProfile, setTruckProfile] = useState<EditableProfile>(DEFAULT_EDITABLE_PROFILE);
   const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(NO_CONFIRMATION);
   const [truckTouched, setTruckTouched] = useState(false);
@@ -1268,7 +1361,14 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     // route, the next maneuver belongs to a route the truck has left.
     const staleGuidance = snap.state === 'off-route' || snap.state === 'rerouting';
     if (active && !staleGuidance && view.maneuvers !== null) {
-      for (const req of maneuverAnnouncerRef.current.collect(view.maneuvers, view.speedMph)) {
+      // The voice reads the driver's units too: a Canadian driver hears
+      // "In 500 metres" from the SAME maneuver, at the same threshold,
+      // that an American driver hears "In a quarter mile" from.
+      for (const req of maneuverAnnouncerRef.current.collect(
+        view.maneuvers,
+        view.speedMph,
+        metricRef.current,
+      )) {
         voice.request(req);
       }
     }
@@ -1791,9 +1891,34 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
               <DestinationSearch
                 origin={searchOrigin}
                 disabled={startPending}
-                onPick={setPicked}
-                onClear={() => setPicked(null)}
+                onPick={(place) => {
+                  setPicked(place);
+                  // WHICH COUNTRY THIS RESULT CAME FROM, recorded at the
+                  // moment of the pick. The provider filtered the list to
+                  // one country, so this is attested rather than inferred
+                  // — and it is what makes the cross-border reminder
+                  // correct in the Windsor/Detroit corridor, where no
+                  // coordinate rule can be.
+                  setPickedCountry(searchCountryFor(searchRegion));
+                }}
+                onClear={() => {
+                  setPicked(null);
+                  setPickedCountry(null);
+                }}
+                country={searchCountryFor(searchRegion)}
+                metric={metric}
               />
+              {/* Crossing the border is DELIBERATE: one tap, clearly
+                  labelled, never a side effect of typing. It swaps only
+                  which country this search asks about — the region
+                  setting, the units and the truck are untouched. */}
+              <button
+                type="button"
+                onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
+                className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
+              >
+                {crossBorderSearchLabel(searchRegion)}
+              </button>
             </div>
           </LockGate>
         ) : null
@@ -1813,6 +1938,34 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             onAttemptActive={setStartPending}
             truckProfile={truckProfile}
             truckGate={profileGate(truckProfile, truckConfirmation)}
+            regionPanel={
+              <RegionPanel
+                region={region}
+                units={units}
+                onRegion={(r) => {
+                  setRegion(r);
+                  // The region's usual units follow, from the one
+                  // authority; the unit buttons still override.
+                  const u = defaultUnitsFor(r);
+                  setUnits(u);
+                  persistRegion(r, u);
+                  bump();
+                }}
+                onUnits={(u) => {
+                  setUnits(u);
+                  persistRegion(region, u);
+                  bump();
+                }}
+              />
+            }
+            metric={metric}
+            crossBorder={looksCrossBorder({
+              region,
+              destinationCountry: pickedCountry,
+              origin: position.fix,
+              destination: picked?.position ?? null,
+            })}
+            hosUnavailable={region === 'CA'}
             truckEditor={
               <TruckProfileEditor
                 profile={truckProfile}
@@ -1820,6 +1973,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
                   truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
                 }
                 isDefault={!truckTouched}
+                metric={metric}
                 onChange={(next) => {
                   // A routing value that changed invalidates the
                   // confirmation by construction: the gate compares
@@ -1853,6 +2007,18 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
           ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'
           : DEFAULT_HOS_LABEL
       }
+      /*
+       * THE CANADIAN HOS BOUNDARY. The shipped engine implements US
+       * federal limits; Canada's rules differ in almost every dimension
+       * and this milestone does not implement them. So in Canada mode
+       * the clocks are not shown at all — showing 11/14/70 to a Canadian
+       * driver would be the single most dangerous thing this app could
+       * do — and the notice stands in their place. Navigation is
+       * unaffected: guidance, the map and the route work exactly as they
+       * do in US mode.
+       */
+      hosUnavailableNotice={region === 'CA' ? CANADA_HOS_NOTICE : null}
+      metric={metric}
     />
   );
 }

@@ -22,6 +22,7 @@
 import type { RemainingClocks } from '@/lib/trip-planner/types';
 import type { HosWarning } from './hos-strip';
 import type { ManeuverView } from './maneuver-engine';
+import { KM_PER_MILE } from './format-units';
 import { normalizeInstruction } from './maneuver-text';
 import type { DrivingScreenStatus } from './navigation-controller';
 
@@ -308,7 +309,7 @@ export function tierThresholdMi(tier: ManeuverTier, speedMph: number | null): nu
  * is the chatter this policy exists to prevent, and a truck driver steers
  * by landmarks, not decimals.
  */
-function distanceText(mi: number): string {
+function distanceTextMi(mi: number): string {
   if (mi >= 0.94) {
     const rounded = Math.round(mi * 10) / 10;
     // "In 1 miles" is the kind of thing that makes a product feel fake.
@@ -321,6 +322,42 @@ function distanceText(mi: number): string {
   return `In ${Math.round((mi * 5280) / 100) * 100} feet`;
 }
 
+/**
+ * The same policy in metric, spoken the way Canadian signage reads.
+ *
+ * NOT a translation of the imperial sentence. "In half a mile" converted
+ * is "in 0.8 kilometres", which no road sign in Canada has ever said; the
+ * buckets are metric landmarks of their own — 1 kilometre, 500 metres,
+ * then 50-metre steps close in — so the voice sounds like the country the
+ * truck is driving through.
+ *
+ * The distance being spoken about is IDENTICAL. Only the words change:
+ * the announcement tiers, their thresholds and the announce-once flags are
+ * all still in miles, because when a maneuver is announced is a routing
+ * decision and not a display preference.
+ */
+function distanceTextKm(mi: number): string {
+  const km = mi * KM_PER_MILE;
+  if (km >= 1.2) {
+    const rounded = Math.round(km * 10) / 10;
+    return `In ${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} kilometres`;
+  }
+  if (km >= 0.9) return 'In 1 kilometre';
+  // 800 m is a real rung, not a rounding artefact: the approach tier at
+  // highway speed fires at half a mile, which IS 800 m, and rounding the
+  // most-heard line in the country up to a kilometre would be the one
+  // sentence a Canadian driver notices is wrong.
+  if (km >= 0.65) return 'In 800 metres';
+  if (km >= 0.4) return 'In 500 metres';
+  // Floored at 50 m so an execute-tier line is never "In 0 metres".
+  return `In ${Math.max(50, Math.round((km * 1000) / 50) * 50)} metres`;
+}
+
+/** Spoken distance in the driver's chosen units. */
+export function distanceText(mi: number, metric = false): string {
+  return metric ? distanceTextKm(mi) : distanceTextMi(mi);
+}
+
 export type ManeuverAnnouncer = {
   /**
    * Announcements newly due for the current view — each (maneuver, tier)
@@ -329,14 +366,14 @@ export type ManeuverAnnouncer = {
    * combined instruction and the second maneuver's prepare tier is
    * suppressed.
    */
-  collect(view: ManeuverView, speedMph: number | null): VoiceRequest[];
+  collect(view: ManeuverView, speedMph: number | null, metric?: boolean): VoiceRequest[];
 };
 
 export function createManeuverAnnouncer(): ManeuverAnnouncer {
   const fired = new Set<string>();
 
   return {
-    collect(view: ManeuverView, speedMph: number | null): VoiceRequest[] {
+    collect(view: ManeuverView, speedMph: number | null, metric = false): VoiceRequest[] {
       const next = view.next;
       if (next === null || view.distanceMi === null) return [];
       const out: VoiceRequest[] = [];
@@ -400,7 +437,7 @@ export function createManeuverAnnouncer(): ManeuverAnnouncer {
         // stage still waiting in the queue, and a critical line waits for
         // it rather than cutting the turn in half.
         group: MANEUVER_GROUP,
-        text: due === 'execute' ? body : `${distanceText(view.distanceMi)}, ${body}`,
+        text: due === 'execute' ? body : `${distanceText(view.distanceMi, metric)}, ${body}`,
       });
       return out;
     },

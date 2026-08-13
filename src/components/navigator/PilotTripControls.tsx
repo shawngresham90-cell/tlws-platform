@@ -9,6 +9,7 @@ import type { DestinationCandidate } from '@/lib/navigator-api/destination-searc
 import type { RouteAvoidance } from '@/lib/trip-planner/providers';
 import { toTruckProfile, type EditableProfile } from '@/lib/navigator/truck-profile';
 import { sentRestrictionLines } from '@/lib/trip-planner/here-truck-params';
+import { CROSS_BORDER_NOTICE } from '@/lib/navigator/region';
 import type { BuildId } from '@/lib/navigator/build-id';
 import {
   MAX_NOTE_CHARS,
@@ -18,6 +19,7 @@ import {
 } from '@/lib/navigator/problem-report';
 import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
 import { formatEta } from '@/lib/navigator/driving-hud';
+import { formatDistance } from '@/lib/navigator/format-units';
 import {
   assessStartFix,
   createStartAttempt,
@@ -103,6 +105,10 @@ export function PilotTripControls({
   truckProfile,
   truckGate,
   truckEditor,
+  regionPanel = null,
+  metric = false,
+  crossBorder = false,
+  hosUnavailable = false,
   onChanged,
 }: {
   lifecycle: NavigationLifecycle;
@@ -169,6 +175,14 @@ export function PilotTripControls({
   truckGate: 'invalid' | 'unconfirmed' | 'ready';
   /** The parked profile editor, rendered by the owner. */
   truckEditor: ReactNode;
+  /** Region + units + Canadian pilot status, rendered by the owner. */
+  regionPanel?: ReactNode;
+  /** Show the driver's numbers in metric. */
+  metric?: boolean;
+  /** Origin and destination look like different countries. */
+  crossBorder?: boolean;
+  /** Canada mode: the HOS calculation is not available in this pilot. */
+  hosUnavailable?: boolean;
   onChanged: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
@@ -471,6 +485,8 @@ export function PilotTripControls({
 
       {state === 'idle' ? (
         <div className="space-y-3">
+          {regionPanel}
+
           {/* The search box itself now lives at the TOP OF THE PARKED MAP
               (final pilot milestone) — the driver looks at the map, so
               that is where "where are you going?" belongs. This surface
@@ -486,6 +502,20 @@ export function PilotTripControls({
               Search for a destination on the map above, then tap Start.
             </p>
           )}
+
+          {/* A cross-border route is the driver's to prepare for. The app
+              returns road geometry; it knows nothing about customs
+              status, admissibility, permits or booth hours, and says so
+              here rather than implying coverage by silence. Parked, above
+              Start — never a permanent live-map box. */}
+          {crossBorder ? (
+            <p
+              role="status"
+              className="rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-lg text-ink"
+            >
+              {CROSS_BORDER_NOTICE}
+            </p>
+          ) : null}
 
           {/* THE Start control — the whole simplified flow in one tap:
               just-in-time location permission, wait for a real fix, one
@@ -594,7 +624,11 @@ export function PilotTripControls({
       {state === 'route-ready' ? (
         <RouteBriefing
           destination={picked}
-          sentRestrictions={sentRestrictionLines(toTruckProfile(truckProfile), truckProfile.avoid)}
+          sentRestrictions={sentRestrictionLines(
+            toTruckProfile(truckProfile),
+            truckProfile.avoid,
+            metric,
+          )}
           totalMi={lifecycle.view().totalMi}
           etaText={formatEta(
             lifecycle.view().remainingMi,
@@ -604,6 +638,7 @@ export function PilotTripControls({
             new Date().getTimezoneOffset(),
           )}
           brief={lifecycle.routeBrief()}
+          metric={metric}
           plausibilitySlot={<RouteCheck lifecycle={lifecycle} />}
           onStart={() => act(() => lifecycle.startNavigation(Date.now()))}
           onDiscard={() => act(() => lifecycle.discardRoute(Date.now()))}
@@ -630,7 +665,7 @@ export function PilotTripControls({
         <div className="space-y-3">
           <p className="text-xl text-ink">
             Trip ended: {summary?.endReason ?? 'arrived'} ({summary?.entranceKind ?? 'unknown'}),{' '}
-            {summary?.plannedMiles.toFixed(1) ?? '—'} planned miles.
+            {formatDistance(summary?.plannedMiles ?? null, metric)} planned.
           </p>
           <button
             type="button"

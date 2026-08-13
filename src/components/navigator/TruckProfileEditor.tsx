@@ -13,6 +13,12 @@ import {
   type EditableField,
   type EditableProfile,
 } from '@/lib/navigator/truck-profile';
+import {
+  feetToMeters,
+  kilogramsToPounds,
+  metersToFeet,
+  poundsToKilograms,
+} from '@/lib/navigator/format-units';
 
 /**
  * The truck the route is planned for — verified and adjusted, parked.
@@ -51,6 +57,30 @@ function fieldText(kind: string, value: number): string {
   return String(value);
 }
 
+/** The same physical value, shown in the driver's units. */
+function displayValue(kind: string, canonical: number, metric: boolean): string {
+  if (!metric) return fieldText(kind, canonical);
+  if (kind === 'pounds') return Math.round(poundsToKilograms(canonical)).toLocaleString('en-CA');
+  if (kind === 'count') return String(canonical);
+  return feetToMeters(canonical).toFixed(2);
+}
+
+/** The unit word beside the number, in the driver's units. */
+function unitFor(field: { kind: string; unit: string }, metric: boolean): string {
+  if (!metric) return field.unit;
+  if (field.kind === 'pounds') return 'kg';
+  if (field.kind === 'count') return field.unit;
+  return 'm';
+}
+
+/** Typed text in the driver's units → the canonical (ft / lb) number. */
+function toCanonical(kind: string, typed: number, metric: boolean): number {
+  if (!metric) return typed;
+  if (kind === 'pounds') return kilogramsToPounds(typed);
+  if (kind === 'count') return typed;
+  return metersToFeet(typed);
+}
+
 export function TruckProfileEditor({
   profile,
   onChange,
@@ -59,12 +89,18 @@ export function TruckProfileEditor({
   confirmed,
   /** Defaults have never been verified by a human — say so. */
   isDefault,
+  metric = false,
 }: {
   profile: EditableProfile;
   onChange: (next: EditableProfile) => void;
   onConfirm: () => void;
   confirmed: boolean;
   isDefault: boolean;
+  /** Metric entry (Canada milestone): the driver types metres and
+   *  kilograms, converted ONCE here into the canonical feet/pounds
+   *  profile — which is why an imperial truck and its metric twin
+   *  produce the identical provider request. */
+  metric?: boolean;
 }) {
   // Raw text per field: a half-typed "1" must not become a validation
   // error the instant the driver's finger lands on the keypad.
@@ -98,7 +134,7 @@ export function TruckProfileEditor({
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-lg font-semibold text-ink">{f.label}</span>
               <span className="num-data text-xl font-bold text-ink">
-                {fieldText(f.kind, current)} {f.unit}
+                {displayValue(f.kind, current, metric)} {unitFor(f, metric)}
               </span>
             </div>
             <p className="text-base text-ink/60">{f.why}</p>
@@ -114,26 +150,26 @@ export function TruckProfileEditor({
                       setField(f.key, p);
                     }}
                     aria-pressed={on}
-                    aria-label={`${f.label} ${fieldText(f.kind, p)} ${f.unit}`}
+                    aria-label={`${f.label} ${displayValue(f.kind, p, metric)} ${unitFor(f, metric)}`}
                     className={`${PRESET} ${
                       on
                         ? 'border-nav-good bg-nav-good text-asphalt'
                         : 'border-line bg-nav-surface text-ink'
                     }`}
                   >
-                    {fieldText(f.kind, p)}
+                    {displayValue(f.kind, p, metric)}
                   </button>
                 );
               })}
             </div>
             <label className="block text-base text-ink/70">
-              Or enter {f.label.toLowerCase()} ({f.unit})
+              Or enter {f.label.toLowerCase()} ({unitFor(f, metric)})
               <input
                 className={INPUT}
                 inputMode="decimal"
                 value={raw ?? ''}
-                placeholder={fieldText(f.kind, current)}
-                aria-label={`${f.label} in ${f.unit}`}
+                placeholder={displayValue(f.kind, current, metric)}
+                aria-label={`${f.label} in ${unitFor(f, metric)}`}
                 onChange={(e) => {
                   const text = e.target.value;
                   setDraft((d) => ({ ...d, [f.key]: text }));
@@ -141,7 +177,10 @@ export function TruckProfileEditor({
                   // An empty box is not a zero-height truck: it is a
                   // driver mid-edit, so the confirmed value stands until
                   // they type something that parses.
-                  if (text.trim() !== '' && Number.isFinite(n)) setField(f.key, n);
+                  // Converted ONCE, here, on the way in.
+                  if (text.trim() !== '' && Number.isFinite(n)) {
+                    setField(f.key, toCanonical(f.kind, n, metric));
+                  }
                 }}
               />
             </label>
