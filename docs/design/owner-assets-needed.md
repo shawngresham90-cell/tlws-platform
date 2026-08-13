@@ -77,6 +77,38 @@ legible at a glance. The filename's date-like value is deliberately not
 surfaced as public copy — no location, employer, route, or date claims are
 made from the image alone.
 
+## 1e. Instructors page founder portrait — RECEIVED 2026-08-13 ✅
+
+**Landed:** the owner's casual founder portrait — tan trucker cap with a
+US flag patch, black Trucker Life Academy / Dalton, GA tee with the chest
+logo clearly visible, seated indoors against a white panelled wall. Fills
+the `/academy/instructors` founder feature, replacing the dashed
+"Photo of Shawn coming soon" box.
+
+| Owner's original file            | Production asset path                                        | Frame          |
+| -------------------------------- | ------------------------------------------------------------ | -------------- |
+| casual portrait, sent in-session | `public/images/academy/shawn-gresham-founder-portrait.webp`   | 1080×1440, 3:4 |
+
+Delivered to the session at 1152×1536 (the upload pipeline re-encodes; the
+camera original stays with the owner). The production derivative is a plain
+proportional resize + WebP re-encode — full frame, no crop, no retouch, no
+generative edits.
+
+It renders at its own **3:4** aspect, not the 4:5 the brief preferred. The
+source frame is 3:4, so 4:5 would mean cutting 90px of height: off the top
+that removes the cap, off the bottom it cuts into the "DALTON, GA" line
+under the chest logo. Both are the things the photograph exists to show, so
+the frame keeps its shape rather than being cropped or squeezed.
+
+Note for the owner: the shirt wordmark reads **"Trucker Life Academy"**,
+while the site brand throughout is **"Trucking Life Academy"**. The alt text
+describes the person and role, not the garment, so nothing on the page
+claims otherwise — but the two wordmarks are worth reconciling.
+
+This portrait is distinct from the §1c studio headshot and is used only
+here; §1c continues to serve the homepage Journey strip and the Academy
+mission section.
+
 ### Also received 2026-08-11 — NOT published
 
 - `54c6e884-59f8-4be5-8afd-9101cc5bc6b5(1).png` — **RECEIVED — candidate

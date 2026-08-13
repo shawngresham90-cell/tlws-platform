@@ -222,5 +222,118 @@ check(
   !/<h[1-6][^>]*>\s*(Your instructor|Meet)/i.test(academyCode),
 );
 
+/* 6. the /academy/instructors founder portrait ------------------------- */
+
+// A SECOND, different photograph: the owner's casual founder portrait, which
+// replaced the dashed "Photo of Shawn coming soon" box. It must not be
+// confused with, or collapse into, the §1c studio headshot above.
+const INSTRUCTORS = 'src/app/(academy)/academy/instructors/page.tsx';
+const FOUNDER_SRC = '/images/academy/shawn-gresham-founder-portrait.webp';
+const FOUNDER_FILE = 'public/images/academy/shawn-gresham-founder-portrait.webp';
+const FOUNDER_ALT =
+  'Portrait of Shawn Gresham, founder and lead instructor at Trucking Life Academy.';
+
+const instructors = read(INSTRUCTORS);
+const instructorsCode = codeOnly(instructors);
+const founderStill = instructorsCode.match(/<CinematicStill[\s\S]*?\/>/)?.[0] ?? '';
+
+check(
+  'the coming-soon placeholder box is gone',
+  !instructors.includes('Photo of Shawn coming soon'),
+);
+check('the emoji stand-in is gone', !/🧑‍✈️/.test(instructors));
+check(
+  'the dashed placeholder border is gone from the founder feature',
+  !/border-dashed[\s\S]{0,200}Shawn/.test(instructorsCode),
+);
+check('instructors renders a CinematicStill', founderStill.length > 0);
+check(
+  'instructors imports CinematicStill from the shared media component',
+  /import\s*\{\s*CinematicStill\s*\}\s*from\s*'@\/components\/media\/CinematicStill'/.test(
+    instructorsCode,
+  ),
+);
+check('instructors points at the founder portrait', founderStill.includes(`src="${FOUNDER_SRC}"`));
+check('instructors carries the approved alt text', founderStill.includes(`alt="${FOUNDER_ALT}"`));
+check(
+  'the founder alt text invents no credential or claim',
+  !/17|zero violation|ELDT|certified|licensed|best|award/i.test(
+    founderStill.match(/alt="[^"]*"/)?.[0] ?? '',
+  ),
+);
+check('instructors declares width 1080', /width=\{1080\}/.test(founderStill));
+check('instructors declares height 1440', /height=\{1440\}/.test(founderStill));
+
+// Dimensions read from the file itself, same as the studio headshot above.
+const fbuf = fs.readFileSync(path.join(root, FOUNDER_FILE));
+const fform = fbuf.subarray(12, 16).toString();
+const [fw, fh] =
+  fform === 'VP8X'
+    ? [1 + fbuf.readUIntLE(24, 3), 1 + fbuf.readUIntLE(27, 3)]
+    : [fbuf.readUInt16LE(26) & 0x3fff, fbuf.readUInt16LE(28) & 0x3fff];
+check('the founder portrait is 1080×1440 per its own WebP header', fw === 1080 && fh === 1440, {
+  fw,
+  fh,
+});
+check('that is a true 3:4 portrait, the frame as shot', Math.abs(fw / fh - 3 / 4) < 0.001, fw / fh);
+check(
+  'the founder portrait stays inside the ≤200 KB house budget',
+  fbuf.length > 20_000 && fbuf.length <= 200_000,
+  fbuf.length,
+);
+// The whole point of keeping 3:4: a forced 4:5 would crop the cap or the
+// "DALTON, GA" line under the chest logo.
+check(
+  'the founder portrait is given no forced aspect',
+  !/aspect-\[|aspect-square/.test(founderStill),
+);
+check(
+  'the founder portrait is not distorted by a height class',
+  !/\bh-\d|\bh-\[/.test(founderStill),
+);
+check('the founder portrait declares responsive sizes', /sizes="[^"]+"/.test(founderStill));
+check('the founder portrait is width-capped', /max-w-xs/.test(founderStill));
+
+// Two DIFFERENT photographs, each used once. Neither may take the other's
+// path, and neither page may quietly start rendering the other's frame.
+check('instructors does not render the studio headshot', !instructorsCode.includes(PORTRAIT));
+check('the academy page does not render the founder portrait', !academyCode.includes(FOUNDER_SRC));
+check(
+  'instructors renders exactly one photograph',
+  (instructorsCode.match(/<CinematicStill/g) ?? []).length === 1,
+);
+check(
+  'exactly one founder-portrait file exists on disk',
+  fs.readdirSync(path.join(root, 'public/images/academy')).filter((f) => /founder-portrait/.test(f))
+    .length === 1,
+);
+
+// The rest of the founder feature is untouched.
+check(
+  'the founder credential chips survive',
+  /'17 years driving', 'Zero violations', 'CDL instructor', 'Driver trainer'/.test(instructorsCode),
+);
+check(
+  'the founder bio copy survives',
+  instructors.includes('17 years behind the wheel of a Class A truck'),
+);
+check('the founder name still comes from SITE', /\{SITE\.founder\.name\}/.test(instructorsCode));
+check(
+  'the teaching-philosophy section survives',
+  instructors.includes('Real accountability, no shortcuts'),
+);
+check(
+  'the growing-team placeholder is intentionally left alone',
+  instructors.includes('Additional instructor profiles coming soon'),
+);
+check(
+  'instructors keeps its metadata export',
+  /export const metadata = buildMetadata\(\{/.test(instructorsCode),
+);
+check(
+  'no new heading was introduced for the founder photo',
+  !/<h[1-6][^>]*>\s*(Portrait|Photo)/i.test(instructorsCode),
+);
+
 console.log(`academy-instructor-photo: ${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

@@ -1,5 +1,6 @@
 import { Section, Button, Eyebrow } from '@/components/ui';
 import { PageHero, AcademyFaq, CtaBand, Placeholder } from '@/components/academy';
+import { CinematicStill } from '@/components/media/CinematicStill';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
@@ -58,14 +59,21 @@ export default function InstructorsPage() {
       <Section className="border-b border-line">
         <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr]">
           <div className="flex flex-col items-start">
-            <div className="flex aspect-square w-full max-w-xs items-center justify-center rounded-card border border-dashed border-line bg-asphalt-800 text-center">
-              <p className="text-muted">
-                <span className="mb-2 block text-4xl" aria-hidden="true">
-                  🧑‍✈️
-                </span>
-                <Placeholder>Photo of Shawn coming soon</Placeholder>
-              </p>
-            </div>
+            {/* The founder's own portrait, replacing the dashed "coming soon"
+                box. Rendered at the frame's TRUE 3:4 — the source is 1080×1440,
+                and squeezing it into the 4:5 the design would otherwise prefer
+                means cutting 90px of height: either the top of the cap or into
+                the "DALTON, GA" line under the chest logo. Both are the things
+                the photograph is here to show, so the frame keeps its shape.
+                No caption — the credential chips sit directly beneath it. */}
+            <CinematicStill
+              src="/images/academy/shawn-gresham-founder-portrait.webp"
+              alt="Portrait of Shawn Gresham, founder and lead instructor at Trucking Life Academy."
+              width={1080}
+              height={1440}
+              sizes="(min-width: 1024px) 20rem, (min-width: 640px) 20rem, 100vw"
+              className="w-full max-w-xs"
+            />
             <div className="mt-4 flex flex-wrap gap-2">
               {['17 years driving', 'Zero violations', 'CDL instructor', 'Driver trainer'].map(
                 (b) => (
