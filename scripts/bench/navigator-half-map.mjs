@@ -43,6 +43,16 @@
 import pkg from '/home/user/tlws-platform/node_modules/playwright/index.js';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -228,7 +238,7 @@ async function main() {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/half-map-1-parked.png` });
 
   // The transition under test: the container resizes, the window does not.
-  await page.getByRole('button', { name: /^Start$/ }).click();
+  await page.getByRole('button', { name: START_BUTTON }).click();
   console.log('driving (14 s to satisfy the moving dwell)…');
   await feed(14, 27);
   await page.waitForTimeout(1500);

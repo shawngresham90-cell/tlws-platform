@@ -55,6 +55,16 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 
+/*
+ * The idle control was renamed 'Start' -> 'Start Route' in the pre-trip
+ * setup milestone (it is the last step of a named sequence now, not a
+ * bare verb). The pattern below accepts either name and stays ANCHORED:
+ * 'Start navigation' on the route briefing and 'Start with full clocks'
+ * in the clock editor are different buttons, and a bench that meant one
+ * must never silently tap another.
+ */
+const START_BUTTON = /^Start(?: Route)?$/;
+
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
@@ -424,7 +434,7 @@ async function driveToNavigating(context, page, { w, h }) {
   // this bench exercises.
   await parkedSearchProof(page, w, h);
   await confirmTruck(page);
-  await page.getByRole('button', { name: /^Start$/ }).click();
+  await page.getByRole('button', { name: START_BUTTON }).click();
   await feed(3, 0.3);
   await feed(6, 12);
   return { feed };
