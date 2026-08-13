@@ -217,9 +217,21 @@ check(
   'heading hierarchy unchanged — the mission still leads with an h2',
   /<h2 className="display-section">Drivers helping drivers<\/h2>/.test(academyCode),
 );
+// Scoped to the MISSION section, not the whole page. The point of this check
+// is that the portrait was slotted beside the existing copy rather than given
+// a heading of its own — it was never meant to stop later sections elsewhere
+// on the page from having their own headings, which is what a file-wide scan
+// ends up doing.
+const missionSection = (() => {
+  const start = academyCode.indexOf('<Eyebrow>The mission</Eyebrow>');
+  const end = academyCode.indexOf('<Eyebrow>The founder’s story</Eyebrow>');
+  return start > -1 && end > start ? academyCode.slice(start, end) : '';
+})();
+check('the mission section was located', missionSection.length > 200, missionSection.length);
 check(
-  'no new heading was introduced for the photo',
-  !/<h[1-6][^>]*>\s*(Your instructor|Meet)/i.test(academyCode),
+  'no new heading was introduced for the photo inside the mission section',
+  (missionSection.match(/<h[1-6]/g) ?? []).length === 1,
+  missionSection.match(/<h[1-6][^>]*>[^<]*/g),
 );
 
 /* 6. the /academy/instructors founder portrait ------------------------- */
