@@ -95,7 +95,7 @@ Legend for **Implemented?** — ✅ done in this milestone · ➖ already correc
 | **Cross-border disclosure** | None | *"Cross-border route. Verify customs documents, permits, border status, and operating hours separately."* before Start | Product requirement | ✅ `role="status"` above Start; **not** a live-map obstruction |
 | **Cross-border detection** | None | Must be right in the Windsor/Detroit corridor | Ranked evidence: the destination's provider-filtered country first, then geography, then the driver's declared region | ✅ see §3 |
 | **Truck profile internal units** | Canonical feet / pounds throughout | Unchanged — metric is a display and entry concern only | Architecture decision | ➖ unchanged |
-| **Truck profile entry** | Feet and pounds only | Metres and kilograms, converted **once** on the way in | `format-units.ts` | ✅ `metersToFeet` / `kilogramsToPounds` at the input edge; presets and placeholders render in the chosen units |
+| **Truck profile entry** | Feet and pounds only, one decimal box per field | Metres and kilograms, converted **once** on the way in | `format-units.ts` | ✅ `metersToFeet` / `kilogramsToPounds` at the input edge; presets and placeholders render in the chosen units. Imperial dimensions are now entered as **feet AND inches**, in two boxes — see §6a |
 | **Provider request equivalence** | — | An imperial truck and its metric twin must produce identical bytes | Round-trip identity of the conversions | ✅ pinned: the two request URLs compare equal, parameter for parameter |
 | **Confirmation fingerprint** | `routingFingerprint()` over the wire values | A unit-only switch must **not** invalidate a confirmed truck | PR #310's fingerprint design | ➖ unchanged and pinned — the fingerprint reads routing meaning, and units are not routing meaning |
 | **Unsupported truck fields** | Listed under **Not used for routing** | Same list, same heading | PR #310 honesty rail | ➖ unchanged. `weightPerAxle`, `trailerCount`, `tunnelCategory`, vehicle type remain absent — see §1 |
@@ -103,7 +103,7 @@ Legend for **Implemented?** — ✅ done in this milestone · ➖ already correc
 | **Maneuver countdown** | Same formatter | Same, metric | `format-units.ts` | ✅ same entry point |
 | **Speed display** | `${Math.round(mph)} mph` inline | km/h | `format-units.ts` | ✅ `formatSpeed(mph, metric)`; the hand-written mph string is gone |
 | **GPS accuracy** | `formatAccuracyFt` ("±80 ft") | metres ("±25 m") | `format-units.ts` | ✅ `formatAccuracy(m, metric)`, on the position preview too |
-| **Truck dimensions (display)** | `13′6″` | `4.11 m` | `format-units.ts` | ✅ `formatDimension(ft, metric)` |
+| **Truck dimensions (display)** | `13′6″` in the summary, but **bare decimal feet in the editor** | `4.11 m` | `format-units.ts` | ✅ `formatDimension(ft, metric)` everywhere, editor included — the bare decimals are gone (§6a) |
 | **Truck weight (display)** | `80,000 lb` | `36,287 kg` | `format-units.ts` | ✅ `formatWeight(lb, metric)` |
 | **"Route planned for" summary** | Driver-unit values from the wire params | Metres and kilograms, describing the **same** request | `sentRestrictionLines(truck, avoid, metric)` | ✅ same line count, same parameters, different words |
 | **Briefing distance + corridor roads** | `mi` | `km` | `format-units.ts` | ✅ |
@@ -216,6 +216,64 @@ component holds a conversion factor; that is pinned.
 6. **The region is a preference, not a jurisdiction.** It changes search and display.
    It is not a compliance mode and nothing in the UI implies it is.
 
+### 6a. The decimal-feet presets — ✅ **RESOLVED** (owner-directed, in this PR)
+
+**The defect.** The truck editor's height presets were `[13.5, 13.6, 14]` decimal
+feet, rendered to the driver as bare decimals: `13.5`, `13.6`, `14`.
+
+`13.6` is not 13′6″. 13′6″ is `13.5` ft; `13.6` ft is 13′7¼″. A driver whose cab
+card reads 13′6″ can reasonably tap the button that reads `13.6` — and then the
+provider is told about a truck an inch and a quarter taller than the one on the
+road, in the one number a low bridge cares about.
+
+It arrived with the editor in PR #310 and had nothing to do with Canadian
+compatibility, so the first pass of this audit recorded it rather than changing
+it. The owner directed the fix before merge; it is now done here.
+
+**What changed.**
+
+| | Before | After |
+| --- | --- | --- |
+| Height presets | `13.5`, `13.6`, `14` | `13′6″`, `13′7″`, `14′0″` |
+| Height preset VALUES | `13.5`, `13.6`, `14` | `ftIn(13,6)`, `ftIn(13,7)`, `ftIn(14,0)` |
+| Width presets | `8.5`, `8`, `9` | `8′6″`, `8′0″`, `9′0″` |
+| Length presets | `70`, `65`, `75` | `70′0″`, `65′0″`, `75′0″` |
+| Imperial dimension entry | one decimal box, "Height in ft" | two boxes, "Height in ft" + "Height in inches" |
+| Imperial readout | `13.5 ft` | `13′6″` |
+| Metric readout / entry | `4.11 m` (unchanged) | `4.11 m` (unchanged) |
+
+`ftIn(feet, inches)` is a new exported helper in `truck-profile.ts`, and every
+imperial dimension in that file is written through it instead of as a decimal
+literal — because the decimal literal is where the mistake lives.
+
+**The 13′7″ rung is deliberate, and it is deliberately the rung ABOVE.** It
+replaces the `13.6` literal, which was almost certainly a mistyped 13′6″. It is
+kept rather than dropped because every height preset must sit at or above 13′6″:
+a driver who mis-taps should end up **over**-declaring, which costs a slightly
+more restrictive route, not under-declaring, which costs a bridge. That invariant
+is now pinned, not just intended.
+
+**The physical value and the wire are unchanged where they were already right.**
+
+| Preset | Canonical ft | `truck[height]` sent | Metric readout |
+| --- | --- | --- | --- |
+| `13′6″` | exactly `13.5` | **`411`** cm | `4.11 m` |
+| `13′7″` | exactly `13 + 7/12` | `414` cm | `4.14 m` |
+| `14′0″` | exactly `14` | `427` cm | `4.27 m` |
+
+**Why notation alone was not the fix.** `formatTruckHeightFtIn(13.6)` renders
+`13′7″` — correct for the number it was given. So a display-only change would
+have made the screen *look* right while still storing 13.6 for a driver who meant
+13′6″. That is why the harness pins the **value** (`presets[1] === ftIn(13,7)`
+and `!== 13.6`) alongside the notation, and why reverting either one fails the
+build. Both were verified to fail on a deliberately reverted tree.
+
+**Pinned by** `scripts/test-navigator-truck-confidence.ts` (notation, absence of
+any bare decimal foot, two-box entry, exact preset values, 411/414 cm on the
+wire, the at-or-above-13′6″ invariant) and `scripts/test-navigator-canada.ts`
+(every shipped preset survives an imperial↔metric round trip with an identical
+request and an unchanged confirmation fingerprint).
+
 ### 6b. A stale bench, measured on both sides
 
 `scripts/bench/navigator-viewports.mjs` fails before its first assertion, waiting
@@ -231,32 +289,6 @@ simplification; it is not a regression from this milestone, and it is left for a
 change that owns that flow. Every other Navigator bench passes on this branch:
 startup 63/63, trip-restore PASS, full-map 224/224, heading-up 264/264,
 truck-profile 101/101, plus this milestone's own 286/286 and 32/32.
-
-### 6a. A pre-existing wart, found while auditing and deliberately NOT changed here
-
-The truck editor's height presets are `[13.5, 13.6, 14]` **decimal feet**, and in
-US mode the buttons render as bare decimals: `13.5`, `13.6`, `14`.
-
-`13.6` is not 13′6″. 13′6″ is `13.5` ft; `13.6` ft is 13′7¼″. A driver whose cab
-card says 13′6″ can reasonably tap the button that reads `13.6`.
-
-**Why it was left alone in this PR:**
-
-- It predates this milestone (it arrived with the editor in PR #310) and has
-  nothing to do with Canadian compatibility.
-- The failure direction is **conservative**: the truck is declared ~3 cm taller
-  than it is, so the route returned is more restrictive, never less. No truck is
-  sent under a bridge it does not fit.
-- The milestone instruction is explicit that imperial display must be preserved
-  exactly as it is today. Changing how US-mode feet render is a change to that
-  display, and it belongs in its own change with its own harness updates.
-
-**Recommended fix, for a separate change:** render feet fields through the
-existing `formatDimension(ft, false)` authority so the buttons read `13′6″`,
-`13′7″`, `14′0″` — unambiguous, no stored or wire value altered — and revisit
-whether `13.6` was meant to be a distinct preset at all. Note that the
-`Route planned for` summary **already** reads `13′6″` correctly, because it goes
-through that authority; it is only the editor that does not.
 
 ---
 

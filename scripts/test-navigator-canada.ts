@@ -60,9 +60,11 @@ import {
 } from '@/lib/navigator-api/destination-search';
 import { buildHereRouteUrl } from '@/lib/trip-planner/here-routing';
 import {
+  ftIn,
   routingFingerprint,
   toTruckProfile,
   DEFAULT_EDITABLE_PROFILE,
+  EDITABLE_FIELDS,
 } from '@/lib/navigator/truck-profile';
 import { sentRestrictionLines, truckWireParams } from '@/lib/trip-planner/here-truck-params';
 import { assessRoutePlausibility } from '@/lib/navigator/route-plausibility';
@@ -713,6 +715,54 @@ const REGION_MODULE = readFileSync('src/lib/navigator/region.ts', 'utf8');
   check(
     'the truck editor still separates what is sent from what is not',
     /Not used for routing/.test(TRUCK_EDITOR),
+  );
+
+  /*
+   * THE UNIT SWITCH IS A DISPLAY SWITCH. A driver flipping between
+   * Miles/lb and Kilometres/kg has not changed their truck, so the
+   * physical value, the provider request and the confirmation must all
+   * survive it untouched. These pin the whole round trip through the
+   * shipped presets rather than through a hand-picked number.
+   */
+  const HEIGHT = EDITABLE_FIELDS.find((f) => f.key === 'heightFt');
+  for (const preset of HEIGHT?.presets ?? []) {
+    const imperialWire = truckWireParams(
+      toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: preset }),
+    ).find((w) => w.param === 'truck[height]')?.value;
+    // The same truck as a Canadian driver would have typed it: metres in,
+    // converted once, back to canonical feet.
+    const metricTyped = metersToFeet(Number(formatMeters(preset).replace(' m', '')));
+    const metricWire = truckWireParams(
+      toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: metricTyped }),
+    ).find((w) => w.param === 'truck[height]')?.value;
+    check(
+      `unit switch: ${formatDimension(preset, false)} and ${formatDimension(preset, true)} are the SAME request`,
+      imperialWire === metricWire,
+      [imperialWire, metricWire],
+    );
+    check(
+      `unit switch: ${formatDimension(preset, false)} keeps its confirmation`,
+      routingFingerprint({ ...DEFAULT_EDITABLE_PROFILE, heightFt: preset }) ===
+        routingFingerprint({ ...DEFAULT_EDITABLE_PROFILE, heightFt: metricTyped }),
+    );
+  }
+  check(
+    'the owner example holds: 13′6″ is 13.5 ft is 411 cm is 4.11 m',
+    ftIn(13, 6) === 13.5 &&
+      formatDimension(ftIn(13, 6), false) === '13′6″' &&
+      formatDimension(ftIn(13, 6), true) === '4.11 m' &&
+      truckWireParams(toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: ftIn(13, 6) })).find(
+        (w) => w.param === 'truck[height]',
+      )?.value === '411',
+  );
+  check(
+    'metric mode still shows metres in the editor, and says so on the box',
+    /return 'm';/.test(TRUCK_EDITOR) &&
+      /\$\{f\.label\} in \$\{unitFor\(f, metric\)\}/.test(TRUCK_EDITOR),
+  );
+  check(
+    'and imperial dimension entry is feet AND inches, never one decimal box',
+    /Height in ft|\$\{f\.label\} in ft/.test(TRUCK_EDITOR) && /in inches/.test(TRUCK_EDITOR),
   );
   check(
     'and no unverified provider field was added for Canada',

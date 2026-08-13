@@ -38,6 +38,7 @@ import {
   NO_CONFIRMATION,
   confirmProfile,
   correctionsFor,
+  ftIn,
   profileGate,
   profileSummary,
   routingFingerprint,
@@ -524,6 +525,120 @@ const p = (over: Partial<EditableProfile> = {}): EditableProfile => ({
   check(
     'editor: every editable value carries its unit',
     EDITABLE_FIELDS.every((f) => html.includes(`${f.unit}`)),
+  );
+
+  /*
+   * NO BARE DECIMAL FEET, ANYWHERE A DRIVER LOOKS.
+   *
+   * The bug this pins out: the height presets read `13.5`, `13.6`, `14`.
+   * `13.6` is not 13′6″ — it is 13′7¼″ — and a driver reading a cab card
+   * that says 13′6″ can reasonably tap it. Feet-and-inches makes the
+   * mistake unspellable, so the notation is pinned rather than trusted.
+   */
+  check(
+    'editor: imperial dimensions read as feet and inches',
+    html.includes('13′6″') && html.includes('13′7″') && html.includes('14′0″'),
+  );
+  check(
+    'editor: the misreadable 13.6 preset is GONE',
+    !/>\s*13\.6\s*</.test(html) && !/13\.6\s*ft/.test(html),
+  );
+  check(
+    'editor: no bare decimal foot is shown to a driver',
+    !/>\s*\d+\.\d+\s*</.test(html.replace(/<option[\s\S]*?<\/option>/g, '')),
+    (/>\s*\d+\.\d+\s*</.exec(html) ?? [])[0],
+  );
+  check(
+    'editor: width and length read as feet and inches too',
+    html.includes('8′6″') && html.includes('70′0″'),
+  );
+  check(
+    'editor: dimensions are entered as feet AND inches, in two boxes',
+    /aria-label="Height in ft"/.test(html) && /aria-label="Height in inches"/.test(html),
+  );
+  check(
+    'editor: weight and axles keep their own single box',
+    /aria-label="Gross weight in lb"/.test(html) && /aria-label="Axles in axles"/.test(html),
+  );
+  /*
+   * EVERY BOX HOLDS THE UNIT ITS LABEL CLAIMS. A metres box seeded with
+   * decimal feet is the same defect as a preset labelled 13.6 that means
+   * 13′7¼″ — a number wearing the wrong unit — and it is the shape the
+   * refactor to feet-and-inches nearly reintroduced.
+   */
+  const metricHtml = renderToStaticMarkup(
+    createElement(TruckProfileEditor, {
+      profile: DEFAULT_EDITABLE_PROFILE,
+      onChange: () => {},
+      onConfirm: () => {},
+      confirmed: false,
+      isDefault: true,
+      metric: true,
+    }),
+  );
+  check(
+    'editor (metric): dimensions read and are entered in METRES',
+    /aria-label="Height in m"/.test(metricHtml) && metricHtml.includes('4.11 m'),
+  );
+  check(
+    'editor (metric): the metres box is seeded in metres, never decimal feet',
+    /aria-label="Height in m"[^>]*value="4\.11"/.test(metricHtml) ||
+      /value="4\.11"[^>]*aria-label="Height in m"/.test(metricHtml),
+    (/aria-label="Height in m"[^>]*/.exec(metricHtml) ?? [])[0],
+  );
+  check(
+    'editor (metric): no imperial box survives the switch',
+    !/aria-label="Height in ft"/.test(metricHtml) &&
+      !/aria-label="Height in inches"/.test(metricHtml),
+  );
+  check(
+    'editor (metric): weight reads kilograms',
+    /aria-label="Gross weight in kg"/.test(metricHtml) && metricHtml.includes('36,287 kg'),
+  );
+
+  /*
+   * AND THE PRESETS ARE THE PHYSICAL VALUES THEY CLAIM TO BE. Notation is
+   * only half the fix — the number behind 13′6″ must be exactly 13.5, and
+   * must serialize to exactly 411 cm.
+   */
+  const heightField = EDITABLE_FIELDS.find((f) => f.key === 'heightFt');
+  check(
+    'presets: 13′6″ is exactly 13.5 ft',
+    heightField?.presets[0] === 13.5,
+    heightField?.presets,
+  );
+  check(
+    'presets: 13′7″ is exactly 13 + 7/12 ft — never 13.6',
+    heightField?.presets[1] === ftIn(13, 7) && heightField?.presets[1] !== 13.6,
+    heightField?.presets[1],
+  );
+  check('presets: 14′0″ is exactly 14 ft', heightField?.presets[2] === 14);
+  check(
+    'presets: every height rung is at or above 13′6″ — a mis-tap over-declares, never under',
+    (heightField?.presets ?? []).every((v) => v >= 13.5),
+    heightField?.presets,
+  );
+  check(
+    'presets: 13′6″ reaches the provider as 411 cm',
+    truckWireParams(toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: ftIn(13, 6) })).find(
+      (w) => w.param === 'truck[height]',
+    )?.value === '411',
+  );
+  check(
+    'presets: 13′7″ reaches the provider as 414 cm — an inch taller, as declared',
+    truckWireParams(toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: ftIn(13, 7) })).find(
+      (w) => w.param === 'truck[height]',
+    )?.value === '414',
+  );
+  check(
+    'presets: and the driver-facing value on that request says 13′6″',
+    truckWireParams(toTruckProfile({ ...DEFAULT_EDITABLE_PROFILE, heightFt: ftIn(13, 6) })).find(
+      (w) => w.param === 'truck[height]',
+    )?.driverValue === '13′6″',
+  );
+  check(
+    'ftIn is exact: 13′6″ === 13.5 and 8′6″ === 8.5',
+    ftIn(13, 6) === 13.5 && ftIn(8, 6) === 8.5,
   );
   check(
     'editor: offers only the avoidances that reach the wire',

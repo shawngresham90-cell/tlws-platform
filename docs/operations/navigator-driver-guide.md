@@ -68,6 +68,8 @@ be your only source during the pilot.
       my truck**. Nothing plans a route until you have. The panel says plainly
       which fields are not part of the request. Once you are moving the panel
       is gone — the map has that space, and you already checked the numbers.
+      Heights read the way your cab card does — **13′6″**, not 13.5 — and if
+      you type one in, it is two boxes: feet, then inches.
 - [ ] **Glance at the clocks.** DRIVE, WINDOW, CYCLE and BREAK sit above the
       controls while you navigate, and the one about to bite is marked. They
       start from a **fresh driver every session** — Navigator is not an ELD
