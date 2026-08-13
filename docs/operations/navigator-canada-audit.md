@@ -216,6 +216,22 @@ component holds a conversion factor; that is pinned.
 6. **The region is a preference, not a jurisdiction.** It changes search and display.
    It is not a compliance mode and nothing in the UI implies it is.
 
+### 6b. A stale bench, measured on both sides
+
+`scripts/bench/navigator-viewports.mjs` fails before its first assertion, waiting
+for an **"Enable location"** button on `/drive` that the simplified startup no
+longer renders in pilot mode: `showIdleStartControl` is
+`!pilot.active || fullScreen || !lock.setupWindow`, so during the cold-start setup
+window there is no such control — location is requested by the Start tap instead.
+
+**This was verified against `main`, not assumed.** A worktree at `c84a599`, built
+and served identically, fails at the same locator on the same line
+(`navigator-viewports.mjs:162`). The bench is stale relative to the startup
+simplification; it is not a regression from this milestone, and it is left for a
+change that owns that flow. Every other Navigator bench passes on this branch:
+startup 63/63, trip-restore PASS, full-map 224/224, heading-up 264/264,
+truck-profile 101/101, plus this milestone's own 286/286 and 32/32.
+
 ### 6a. A pre-existing wart, found while auditing and deliberately NOT changed here
 
 The truck editor's height presets are `[13.5, 13.6, 14]` **decimal feet**, and in
