@@ -365,10 +365,21 @@ async function mount(mode: GeoMode): Promise<Harness> {
   };
 
   const find = (label: string) => {
+    /*
+     * EXACT match, with one alias. The idle control was renamed 'Start'
+     * → 'Start Route' in the pre-trip setup milestone, so the scenarios
+     * below that ask for 'Start' still mean that button.
+     *
+     * Deliberately NOT a prefix match: 'Start navigation' on the briefing
+     * and 'Start with full clocks' in the clock editor both begin with
+     * 'Start', and a scenario that meant one must never silently tap
+     * another.
+     */
+    const wanted = label === 'Start' ? ['Start', 'Start Route'] : [label];
     const hits = renderer.root.findAll(
       (n) =>
         n.type === 'button' &&
-        (String(n.props['aria-label'] ?? '').includes(label) || textOf(n).trim() === label),
+        (String(n.props['aria-label'] ?? '').includes(label) || wanted.includes(textOf(n).trim())),
     );
     if (hits.length === 0) throw new Error(`button not found: ${label}`);
     return hits[0];

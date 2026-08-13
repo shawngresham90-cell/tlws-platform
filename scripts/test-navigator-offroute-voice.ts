@@ -460,7 +460,10 @@ async function main(): Promise<void> {
     findButton(renderer, (l) => l.trim() === 'This is my truck').props.onClick();
   });
   await act(async () => {
-    findButton(renderer, (l) => l.trim() === 'Start').props.onClick();
+    // Renamed 'Start' → 'Start Route' in the pre-trip setup milestone.
+    // Matched by exact alternatives, never by prefix: 'Start navigation'
+    // and 'Start with full clocks' are different buttons.
+    findButton(renderer, (l) => l.trim() === 'Start' || l.trim() === 'Start Route').props.onClick();
   });
   check('behavior: the Start tap started the GPS watch', emitFix !== null);
   check(
