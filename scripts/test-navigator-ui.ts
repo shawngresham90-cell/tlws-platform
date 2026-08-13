@@ -237,19 +237,30 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
       `privacy ${f}: no console logging at all`,
       !/console\s*\.\s*(log|info|warn|error|debug)/.test(src),
     );
-    // Trip restore (pilot round 3, item 4) is the ONE sanctioned storage
-    // path, on the driving screen only: the planned ROUTE in
-    // sessionStorage under its versioned key — never the name, never a
-    // position trail. Its own harness (test-navigator-trip-restore) pins
-    // that discipline, including that TRIP_RESTORE_KEY is the only key;
-    // here the sanctioned call shapes are scrubbed and every other
+    // Storage is sanctioned by MODULE KIND, the same way the network
+    // carve-out below is, so the surface that can persist anything stays
+    // small, named and reviewable:
+    //
+    //   DrivingScreen.tsx  — the trip snapshot (pilot round 3, item 4)
+    //                        and the confirmed truck, each under its own
+    //                        versioned key;
+    //   *-storage.ts       — a preference module whose whole job is one
+    //                        versioned key, its envelope, and its
+    //                        parsing (region-storage.ts, Canada
+    //                        milestone), so two screens reading the same
+    //                        preference cannot disagree about it.
+    //
+    // Everything stored is a route or a preference. Never a name, never a
+    // position trail. Their own harnesses (test-navigator-trip-restore,
+    // test-navigator-canada) pin which keys exist and what may go in
+    // them; here the sanctioned call shapes are scrubbed and every other
     // storage token stays banned, in this file and every other.
-    const scrubbed =
-      f === 'DrivingScreen.tsx'
-        ? src
-            .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'TRIP_RESTORE_(')
-            .replace(/typeof sessionStorage/g, 'TRIP_RESTORE_GUARD')
-        : src;
+    const storageSanctioned = f === 'DrivingScreen.tsx' || /-storage\.ts$/.test(f);
+    const scrubbed = storageSanctioned
+      ? src
+          .replace(/sessionStorage\s*\.\s*(getItem|setItem|removeItem)\s*\(/g, 'SANCTIONED_KEY_(')
+          .replace(/typeof sessionStorage/g, 'SANCTIONED_KEY_GUARD')
+      : src;
     check(
       `privacy ${f}: no storage APIs`,
       !/localStorage|sessionStorage|indexedDB/i.test(scrubbed),

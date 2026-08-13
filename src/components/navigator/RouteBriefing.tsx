@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import type { RouteBrief } from '@/lib/navigator/navigation-lifecycle';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
-import { formatDriverDistanceMi } from '@/lib/navigator/format-units';
+import { formatDistance } from '@/lib/navigator/format-units';
 import { formatHM } from '@/lib/navigator/hos-strip';
 import { summarizeRouteRoads } from '@/lib/navigator/route-brief';
 import { TruckProfilePanel } from './TruckProfilePanel';
@@ -33,6 +33,7 @@ export function RouteBriefing({
   brief,
   plausibilitySlot = null,
   sentRestrictions = [],
+  metric = false,
   onStart,
   onDiscard,
 }: {
@@ -53,6 +54,9 @@ export function RouteBriefing({
    * line a fleet manager reads to learn what the route was planned for.
    */
   sentRestrictions?: readonly string[];
+  /** Read distances in kilometres (Canada milestone). Same route, same
+   *  request — only the units the driver reads change. */
+  metric?: boolean;
   onStart: () => void;
   onDiscard: () => void;
 }) {
@@ -118,7 +122,7 @@ export function RouteBriefing({
         <div>
           <dt className="text-base leading-tight text-ink/70">Distance</dt>
           <dd className="num-data whitespace-nowrap font-data text-[length:clamp(22px,6.5vw,30px)] font-bold leading-tight">
-            {formatDriverDistanceMi(totalMi)}
+            {formatDistance(totalMi, metric)}
           </dd>
         </div>
         <div>
@@ -146,7 +150,7 @@ export function RouteBriefing({
                 className="rounded-cockpit border border-line bg-nav-surface px-3 py-2 text-lg text-ink"
               >
                 <span className="font-semibold">{r.name}</span>{' '}
-                <span className="num-data text-ink/70">{r.miles.toFixed(1)} mi</span>
+                <span className="num-data text-ink/70">{formatDistance(r.miles, metric)}</span>
               </li>
             ))}
           </ul>

@@ -61,9 +61,28 @@ export type EditableField = {
 };
 
 /**
+ * Feet and inches as the canonical decimal feet: (13, 6) → 13.5.
+ *
+ * Every imperial dimension in this file is written through this function
+ * rather than as a decimal literal, because the decimal literal is where
+ * the mistake lives. `13.6` looks like thirteen feet six inches to
+ * anyone reading a cab card; it is 13′7¼″, an inch and a quarter of
+ * silent difference in the one number a low bridge cares about. Written
+ * as `ftIn(13, 6)` there is nothing to misread.
+ */
+export function ftIn(feet: number, inches: number): number {
+  return feet + inches / 12;
+}
+
+/**
  * Presets are the values a US tractor-trailer driver actually reads off a
  * cab card or a trailer placard — not a slider's arbitrary steps. Typing
  * stays available for everything else.
+ *
+ * EVERY PRESET IS AT OR ABOVE THE COMMON VALUE, never below it. A driver
+ * who taps the wrong button should end up over-declaring, which costs a
+ * slightly more restrictive route; under-declaring costs a bridge. That
+ * is why the height rungs climb from 13′6″ and none sits beneath it.
  */
 export const EDITABLE_FIELDS: readonly EditableField[] = Object.freeze([
   {
@@ -71,7 +90,11 @@ export const EDITABLE_FIELDS: readonly EditableField[] = Object.freeze([
     label: 'Height',
     kind: 'feet',
     unit: 'ft',
-    presets: [13.5, 13.6, 14],
+    // 13′6″ is the de facto trailer maximum; 13′7″ is the deliberate
+    // rung above it (it replaces a `13.6` literal that was almost
+    // certainly a mistyped 13′6″, and is kept only because rounding UP
+    // is the safe direction); 14′0″ covers taller equipment.
+    presets: [ftIn(13, 6), ftIn(13, 7), ftIn(14, 0)],
     min: 8,
     max: 15,
     why: 'Low bridges and overpasses.',
@@ -81,7 +104,7 @@ export const EDITABLE_FIELDS: readonly EditableField[] = Object.freeze([
     label: 'Width',
     kind: 'feet',
     unit: 'ft',
-    presets: [8.5, 8, 9],
+    presets: [ftIn(8, 6), ftIn(8, 0), ftIn(9, 0)],
     min: 7,
     max: 9,
     why: 'Narrow lanes and restricted roads.',
@@ -91,7 +114,7 @@ export const EDITABLE_FIELDS: readonly EditableField[] = Object.freeze([
     label: 'Length',
     kind: 'feet',
     unit: 'ft',
-    presets: [70, 65, 75],
+    presets: [ftIn(70, 0), ftIn(65, 0), ftIn(75, 0)],
     min: 20,
     max: 120,
     why: 'Turn radius and length-restricted routes.',

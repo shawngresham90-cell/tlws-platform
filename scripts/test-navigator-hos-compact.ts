@@ -433,11 +433,16 @@ function clocksWith(over: Partial<ClockState>): ClockState {
   check(
     // The clocks still ride the TRIP key. The truck profile has its own
     // versioned key (truck-route confidence milestone) because a
-    // confirmed truck outlives any one trip — but nothing else may write.
-    'wiring: clocks ride the EXISTING trip key — no third storage surface',
+    // confirmed truck outlives any one trip — but the driving screen
+    // itself writes those two and nothing else. The region preference
+    // (Canada milestone) is a third versioned key, and it is deliberately
+    // NOT written from here: its key, envelope and parsing live in
+    // ./region-storage so the position preview reads the same rules.
+    'wiring: clocks ride the EXISTING trip key — the screen writes exactly two',
     (SCREEN.match(/sessionStorage\.setItem\(\s*TRIP_RESTORE_KEY/g) ?? []).length === 1 &&
       (SCREEN.match(/sessionStorage\.setItem\(/g) ?? []).length === 2 &&
-      SCREEN.includes('TRUCK_PROFILE_KEY'),
+      SCREEN.includes('TRUCK_PROFILE_KEY') &&
+      !SCREEN.includes("'tlws-navigator-region-v1'"),
   );
 }
 

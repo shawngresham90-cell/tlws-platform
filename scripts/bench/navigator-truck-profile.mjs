@@ -112,8 +112,26 @@ async function login(page) {
   await page.waitForTimeout(700); // hydration
 }
 
-/** Set one editable field by typing into its labelled input. */
+/**
+ * Set one editable field by typing into its labelled input.
+ *
+ * An imperial DIMENSION is two boxes — feet and inches, the way a cab
+ * card reads — so a decimal like 13.5 is split and both are filled.
+ * Filling only the feet box would leave the inches the truck already had,
+ * which is correct behaviour for a driver and wrong for a test that means
+ * "exactly this height".
+ */
 async function setField(page, label, unit, value) {
+  if (unit === 'ft') {
+    const feet = Math.floor(value);
+    const inches = Math.round((value - feet) * 12);
+    const ftBox = page.getByLabel(`${label} in ft`);
+    await ftBox.scrollIntoViewIfNeeded();
+    await ftBox.fill(String(feet));
+    await page.getByLabel(`${label} in inches`).fill(String(inches));
+    await page.waitForTimeout(120);
+    return;
+  }
   const input = page.getByLabel(`${label} in ${unit}`);
   await input.scrollIntoViewIfNeeded();
   await input.fill(String(value));

@@ -141,7 +141,7 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '3. distance to the maneuver, in driver units',
-    screen.includes('formatDriverDistanceMi(view.maneuvers?.distanceMi)'),
+    screen.includes('formatDistance(view.maneuvers?.distanceMi, metric)'),
   );
   check('3. road name when the provider named one', screen.includes('{roadName}'));
   check(
@@ -255,7 +255,7 @@ const T0 = 1_754_000_000_000;
 // ============================== 4. compact secondary info =================
 {
   check('4. speed', screen.includes('mph') && screen.includes('Speed'));
-  check('4. distance remaining', screen.includes('formatDriverDistanceMi(view.remainingMi)'));
+  check('4. distance remaining', screen.includes('formatDistance(view.remainingMi, metric)'));
   check('4. arrival estimate', screen.includes('{etaText ?? ') && screen.includes('Arrive'));
   check(
     '4. HOS strip stays on the driving surface',
@@ -696,7 +696,7 @@ const T0 = 1_754_000_000_000;
   );
   check(
     '22. the per-second distance and speed are never live regions',
-    !/aria-live[^>]{0,40}>\s*\n?\s*(In \{formatDriverDistanceMi|\{view\.speedMph)/.test(screen),
+    !/aria-live[^>]{0,40}>\s*\n?\s*(In \{formatDistance|\{view\.speedMph)/.test(screen),
   );
   check(
     '23. reduced motion stays safe — no animation classes, no smooth camera',

@@ -85,22 +85,45 @@ check(
 
 // -------------------------------------------------------- screen wiring
 const driving = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+// The screen calls the UNIT-AWARE wrapper (`formatDistance(mi, metric)`),
+// which delegates to formatDriverDistanceMi in imperial and to the km
+// formatter in metric. The pin follows the call site rather than the
+// inner function, because the whole point of the wrapper is that no
+// screen chooses a unit system for itself.
 check(
   'DrivingScreen: maneuver distance and remaining distance use the formatter',
-  (driving.match(/formatDriverDistanceMi\(/g) ?? []).length >= 2,
+  (driving.match(/formatDistance\(/g) ?? []).length >= 2,
+);
+check(
+  'DrivingScreen: the formatter is unit-aware — every call passes the preference',
+  (driving.match(/formatDistance\([^)]*,\s*metric\)/g) ?? []).length ===
+    (driving.match(/formatDistance\(/g) ?? []).length,
 );
 check(
   'DrivingScreen: no raw toFixed-mi maneuver line remains',
   !driving.includes("distanceMi?.toFixed(1) ?? '—'} mi"),
 );
 const status = readFileSync('src/components/navigator/NavigatorStatus.tsx', 'utf8');
-check('NavigatorStatus: accuracy displays feet, not meters', status.includes('formatAccuracyFt('));
+check(
+  'NavigatorStatus: accuracy goes through the unit-aware formatter (feet in US mode)',
+  status.includes('formatAccuracy(fix.accuracyM, metric)'),
+);
 check('NavigatorStatus: the ±meters string is gone', !status.includes('} m`'));
+check(
+  'NavigatorStatus: speed goes through the formatter, not a hand-written mph string',
+  status.includes('formatSpeed(position.speedMph, metric)') &&
+    !status.includes('Math.round(position.speedMph)} mph'),
+);
 const gps = readFileSync('src/lib/navigator/gps-session.ts', 'utf8');
 check('speed pipeline is mph end to end (GPS m/s converted once)', gps.includes('MPS_TO_MPH'));
+// The unit WORD is never typed into a screen. Every unit a driver reads
+// comes out of format-units, which is what lets one preference switch
+// them all and what stops a screen from printing "mph" beside a value
+// the formatter rendered in km/h.
 check(
-  'DrivingScreen: speed rendered as mph, never km/h',
-  driving.includes('mph') && !/km\s*\/?\s*h/i.test(driving),
+  'DrivingScreen: no hand-written unit words — speed comes from the formatter',
+  !/[^a-z]mph[^a-z]/i.test(driving.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')) &&
+    !/km\s*\/?\s*h/i.test(driving),
 );
 
 console.log(`driver-units: ${passed} passed, ${failed} failed`);

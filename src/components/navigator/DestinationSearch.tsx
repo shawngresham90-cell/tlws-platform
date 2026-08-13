@@ -11,6 +11,7 @@ import {
   type SearchCoordinator,
 } from '@/lib/navigator-api/search-coordination';
 import { searchDestinations } from './search-port';
+import { KM_PER_MILE } from '@/lib/navigator/format-units';
 
 /**
  * Destination search (pilot round 1) — the driver types a place and picks
@@ -54,9 +55,12 @@ const FACILITY_LABEL: Record<string, string> = {
 export function SearchResultCard({
   place,
   onSelect,
+  metric = false,
 }: {
   place: DestinationCandidate;
   onSelect: (candidate: DestinationCandidate) => void;
+  /** Straight-line distance in kilometres rather than miles. */
+  metric?: boolean;
 }) {
   const facility = FACILITY_LABEL[place.facility] ?? '';
   return (
@@ -78,7 +82,13 @@ export function SearchResultCard({
           ) : null}
           {place.distanceMi !== null ? (
             <span className="mt-1 block text-base text-ink/60">
-              <span className="num-data">≈ {place.distanceMi} mi</span> away · straight line
+              <span className="num-data">
+                ≈{' '}
+                {metric
+                  ? `${(place.distanceMi * KM_PER_MILE).toFixed(1)} km`
+                  : `${place.distanceMi} mi`}
+              </span>{' '}
+              away · straight line
             </span>
           ) : null}
         </span>
@@ -96,6 +106,8 @@ export function DestinationSearch({
   onPick,
   onClear,
   disabled = false,
+  country = 'USA',
+  metric = false,
 }: {
   /** The truck's current position — search is biased around it. */
   origin: LatLng | null;
@@ -103,6 +115,15 @@ export function DestinationSearch({
   /** The driver edited the query after choosing — drop the old pick. */
   onClear: () => void;
   disabled?: boolean;
+  /**
+   * Which country this search asks about (Canada milestone). Changing it
+   * re-runs the search, because "Petro" means different places on either
+   * side of the border — and that is the whole point of the control that
+   * changes it.
+   */
+  country?: 'USA' | 'CAN';
+  /** Show straight-line distances in kilometres rather than miles. */
+  metric?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DestinationCandidate[]>([]);
@@ -162,7 +183,7 @@ export function DestinationSearch({
         setSearching(false);
         return;
       }
-      void searchDestinations(decision.query, at)
+      void searchDestinations(decision.query, at, undefined, country)
         .then((outcome) => {
           if (outcome.kind === 'failure') {
             if (coord.accept(decision.seq, [])) {
@@ -181,7 +202,7 @@ export function DestinationSearch({
         .finally(() => setSearching(false));
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, originKey, settled]);
+  }, [query, originKey, settled, country]);
 
   return (
     <div className="space-y-3">
@@ -228,6 +249,7 @@ export function DestinationSearch({
             <li key={place.id}>
               <SearchResultCard
                 place={place}
+                metric={metric}
                 onSelect={(chosen) => {
                   // Selecting ENDS the search: abandon any in-flight
                   // response, mark settled so the effect stops, and

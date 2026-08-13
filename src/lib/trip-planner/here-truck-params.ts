@@ -186,10 +186,21 @@ export function truckWireParams(
 export function sentRestrictionLines(
   truck: TruckProfile,
   avoid: readonly string[] | undefined = undefined,
+  metric = false,
 ): string[] {
-  const lines = truckWireParams(truck, avoid).map((p) =>
-    p.driverLabel === 'Avoiding' ? p.driverValue : `${p.driverValue}`,
-  );
+  const lines = truckWireParams(truck, avoid).map((p) => {
+    if (p.driverLabel === 'Avoiding') return p.driverValue;
+    // METRIC DISPLAY, same request. The wire value is unchanged — these
+    // are the identical parameters, read in the units the driver chose.
+    if (!metric) return p.driverValue;
+    if (p.driverLabel === 'Height' || p.driverLabel === 'Width' || p.driverLabel === 'Length') {
+      return `${(Number(p.value) / 100).toFixed(2)} m`;
+    }
+    if (p.driverLabel === 'Gross weight') {
+      return `${Number(p.value).toLocaleString('en-CA')} kg`;
+    }
+    return p.driverValue;
+  });
   if (hazmatToHereGoods(truck.hazmatClass) === null) lines.push('Hazmat: none');
   return lines;
 }

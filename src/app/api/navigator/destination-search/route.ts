@@ -5,6 +5,7 @@ import { RateLimiter } from '@/lib/trip-planner/rate-limit';
 import { requestHasPilotAccess } from '@/lib/navigator-api/pilot-access';
 import {
   buildDiscoverUrl,
+  type SearchCountry,
   parseDiscoverResponse,
   stripDistances,
   MIN_SEARCH_LENGTH,
@@ -98,8 +99,18 @@ export async function GET(req: NextRequest) {
     at = { lat, lng };
   }
 
+  /*
+   * The country to search (Canada milestone). Validated against the two
+   * codes this app supports rather than forwarded: `in=countryCode:…` is
+   * a provider parameter, and an arbitrary string from a query string
+   * must never reach it. Absent or unrecognized falls back to USA, which
+   * is exactly the behaviour every existing caller already gets.
+   */
+  const rawCountry = (params.get('country') ?? '').toUpperCase();
+  const country: SearchCountry = rawCountry === 'CAN' ? 'CAN' : 'USA';
+
   try {
-    const res = await fetch(buildDiscoverUrl(q, at, apiKey), {
+    const res = await fetch(buildDiscoverUrl(q, at, apiKey, undefined, country), {
       signal: AbortSignal.timeout(5000),
     });
     if (res.status !== 200) {

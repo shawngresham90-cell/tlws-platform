@@ -139,6 +139,23 @@ that surfaced it was a display change. Treated as an owner decision below.
 | **Reports are not sent anywhere automatically** | A report is generated and copied to your clipboard. Nothing transmits it. The driver sends it to the owner-selected destination: `shawngresham90@gmail.com` (decision 2, below). |
 | **Nothing about the trip is retained** | No trip history, no route archive, no telemetry. When the tab closes, the session is gone. |
 
+## 7a. Canada
+
+The pilot runs in Canada. It does not pretend to be a Canadian product.
+
+| Limitation | Detail |
+|---|---|
+| **Canadian HOS is not calculated** | The clocks implement US federal property-carrying limits. In Canada mode they are **replaced**, not relabelled, by: *"Canadian HOS is not calculated in this pilot. Use your certified ELD as the record."* Navigation stays fully usable — nothing about the region gates a route. |
+| **Canadian truck-routing quality is the provider's, and unverified by us** | The app sends the correct request (`transportMode=truck`, the same metric `truck[...]` parameters). Whether a truck-appropriate Canadian route comes back is HERE's coverage. The status panel says *"Available where provider coverage exists"* — that is a statement about what the app will attempt, not a promise. |
+| **Canadian parking coverage is limited** | The parking and truck-stop data is US-built. Nothing Canadian is fabricated to fill the gap, and the app says so: *"Canadian parking coverage is limited in this pilot."* |
+| **Cross-border is a reminder, not a border service** | When origin and destination look like different countries the app shows: *"Cross-border route. Verify customs documents, permits, border status, and operating hours separately."* It does not know wait times, permit requirements, or customs status. |
+| **Cross-border detection is deliberately imprecise, in the safe direction** | Windsor, Ontario is *south* of Detroit, Michigan, so no latitude rule can separate them. The app refuses to answer from geography in the Great Lakes corridor and falls back to the destination's provider-attested country and the driver's own declared region. It errs toward showing the notice. |
+| **The region is a preference, not a jurisdiction** | It changes where the search looks and which units are shown. It is not a compliance mode, it claims no legality, and it is **never** inferred from GPS. |
+| **No Canadian legal limit is encoded** | No provincial or federal dimension, weight, or hours limit appears anywhere in the app. The truck profile is the driver's own numbers. There is no "Canada legal" preset. |
+| **The region is session-only** | Like the trip and the truck, it lives in session storage under its own versioned key and is gone when the tab closes. It defaults to United States, so existing sessions are unaffected. |
+
+Full audit and compatibility matrix: `navigator-canada-audit.md`.
+
 ## 8. Provider limits and volume
 
 | Limit | Value | Where it lives |
@@ -171,6 +188,8 @@ so the record of who decided it, and when, survives.
 | 4 | **Whether to license satellite imagery.** | A paid provider decision. |
 | 5 | **Whether pilot reports should persist.** | Persistence needs a store, a retention policy, and a privacy position. See the observability memo. |
 | 6 | **How to get heading-up navigation: the `leaflet-rotate` plugin, or a MapLibre GL migration.** ✅ **Resolved** — the owner authorized the **MapLibre GL migration** (path B), and it shipped. | The blocker was measured, not assumed — Leaflet 1.9.4 has no bearing API, and the CSS-transform fake breaks coordinates and inverts panning (`navigator-heading-up-blocker.md`, probe still committed at `scripts/bench/navigator-rotation-probe.mjs`). MapLibre now renders the Navigator's map with a real camera bearing; the tile source, its attribution, and both providers are unchanged. Leaflet remains in the repository because the **directory and parking maps** still use it. |
+| 7 | **Whether to implement Canadian hours of service.** | Canada's rules differ from the US federal ones in almost every dimension, and this is a rules-engine change, not a screen change. Until it is made, Canada mode replaces the clocks with a sentence naming the gap rather than showing an American clock to a Canadian driver. |
+| 8 | **Whether to import Canadian parking and truck-stop data.** | A data-sourcing and licensing decision. The alternative — showing partial or inferred Canadian results — would be worse than the stated gap. No Truck Parking Club listings can be shown without confirmed authorization. |
 
 ---
 

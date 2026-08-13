@@ -276,8 +276,12 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   // screen re-renders every GPS tick (1 Hz) with a fresh literal, so the
   // debounce restarted and a request went out once per second.
   check(
+    // `country` joined the dependency list in the Canada milestone: a
+    // deliberate country switch MUST re-run the search. The rule this
+    // pin protects is unchanged — the origin enters as a coarse KEY, so
+    // a moving truck cannot restart the debounce once a second.
     'flash-fix: the search effect depends on a coarse origin KEY, never the object',
-    /}, \[query, originKey, settled\]\)/.test(search) && search.includes('originKey ='),
+    /}, \[query, originKey, settled, country\]\)/.test(search) && search.includes('originKey ='),
     search.match(/}, \[[^\]]*\]\);/g)?.slice(-1),
   );
   check(
@@ -321,8 +325,13 @@ const AT = { lat: 34.9157, lng: -85.1095 };
     search.includes('setSettled(false)') && search.includes('onClear()'),
   );
   check(
+    // The handler also forgets which COUNTRY the cleared pick came from
+    // (Canada milestone) — a stale attested country would outlive the
+    // destination it described. What is pinned is the clearing, not the
+    // one-liner it used to be.
     'settle-fix: the parent clears its pick when the driver edits',
-    screenSrc.includes('onClear={() => setPicked(null)}'),
+    /onClear=\{\(\)\s*=>\s*\{[\s\S]{0,200}setPicked\(null\)/.test(screenSrc) &&
+      /onClear=\{\(\)\s*=>\s*\{[\s\S]{0,200}setPickedCountry\(null\)/.test(screenSrc),
   );
   // The status line is what visibly flashed; it must be driven by state
   // that can now hold still.
