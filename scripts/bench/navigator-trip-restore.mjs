@@ -87,6 +87,21 @@ function syntheticRoute() {
   };
 }
 
+/**
+ * Confirm the truck, once, before a route may be requested.
+ *
+ * The truck-route confidence milestone gates Start on a driver having
+ * verified the profile: an unconfirmed truck spends nothing, which is
+ * the point. Every flow that reaches Start therefore passes through
+ * here first — the same tap a driver makes.
+ */
+async function confirmTruck(page) {
+  const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  await btn.scrollIntoViewIfNeeded();
+  if (!(await btn.isDisabled())) await btn.click();
+  await page.waitForTimeout(150);
+}
+
 async function readState(page, label) {
   const s = await page.evaluate(() => {
     const text = document.body.innerText;
@@ -169,6 +184,7 @@ async function main() {
   }
   await page.getByLabel('Destination latitude').fill(String(ORIGIN.lat + 6 / MI_PER_DEG_LAT));
   await page.getByLabel('Destination longitude').fill(String(ORIGIN.lng));
+  await confirmTruck(page);
   await page.getByRole('button', { name: /^Start$/ }).click();
   console.log('one Start tap: fix → one validated plan → navigation…');
   await feed(3, 0.3);

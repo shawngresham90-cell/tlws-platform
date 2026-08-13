@@ -554,12 +554,24 @@ void (async () => {
     // names the versioned trip key, so no other key can ride the
     // exemption.
     const storageCalls = screen.match(/sessionStorage\.(getItem|setItem|removeItem)\(/g) ?? [];
+    // TWO versioned keys now, and only two: the trip snapshot, and the
+    // confirmed TRUCK (truck-route confidence milestone). They are
+    // deliberately separate — a truck outlives a trip, so discarding a
+    // trip must not discard the profile the driver verified — and both
+    // are named constants, so no unversioned or ad-hoc key can appear.
     const keyedCalls =
-      screen.match(/sessionStorage\.(getItem|setItem|removeItem)\(\s*TRIP_RESTORE_KEY/g) ?? [];
+      screen.match(
+        /sessionStorage\.(getItem|setItem|removeItem)\(\s*(TRIP_RESTORE_KEY|TRUCK_PROFILE_KEY)/g,
+      ) ?? [];
     check(
-      '9. every storage call on the screen uses the versioned trip key',
+      '9. every storage call on the screen uses one of the two versioned keys',
       storageCalls.length >= 3 && storageCalls.length === keyedCalls.length,
       { storageCalls: storageCalls.length, keyedCalls: keyedCalls.length },
+    );
+    check(
+      '9. the truck key is versioned and carries no trip or position data',
+      /const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v\d+'/.test(screen) &&
+        /JSON\.stringify\(\{ v: 1, profile, confirmed: /.test(screen),
     );
   }
 

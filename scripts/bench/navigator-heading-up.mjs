@@ -309,6 +309,18 @@ function wireRoute(route, turnDirection) {
  */
 const FLAT_TILE = makePng(256, [58, 62, 68]);
 
+/**
+ * Confirm the truck before Start (truck-route confidence milestone):
+ * an unconfirmed profile spends nothing, so every flow that plans a
+ * route passes through the same tap a driver makes.
+ */
+async function confirmTruck(page) {
+  const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  await btn.scrollIntoViewIfNeeded();
+  if (!(await btn.isDisabled())) await btn.click();
+  await page.waitForTimeout(150);
+}
+
 let savedStorageState = null;
 async function login(page) {
   await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
@@ -512,6 +524,7 @@ async function runScenario(browser, scenario, opts = {}) {
       .filter({ hasText: 'Bench Receiving Gate' })
       .first()
       .click({ timeout: 15_000 });
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
 
     // Drive the leg, then the tail, feeding real GPS courses.
