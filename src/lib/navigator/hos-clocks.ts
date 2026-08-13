@@ -179,20 +179,90 @@ export function validateEnteredClocks(entered: DriverEnteredClocks): string[] {
       out.push(`${field.label}: cannot be more than ${formatHours(cap)}.`);
     }
   }
-  // A driver cannot have more driving left than window left: the window
-  // is wall-clock and does not pause. This is not a new rule — it is the
-  // 14-hour rule the engine already enforces, stated at entry time so the
-  // driver fixes a typo now rather than trusting a clock that cannot
-  // happen.
-  if (
-    out.length === 0 &&
-    Number.isFinite(entered.drivingMin) &&
-    Number.isFinite(entered.windowMin) &&
-    entered.drivingMin > entered.windowMin
-  ) {
-    out.push('Drive time left cannot be more than shift window left.');
+  if (out.length > 0) return out;
+
+  /*
+   * CROSS-FIELD CONSISTENCY. These are not new rules — they are the
+   * engine's own `validateClockState` constraints, checked at entry time
+   * so the driver fixes a typo now instead of the app building a state
+   * the engine would reject.
+   *
+   * The 14-hour window is wall-clock and does not pause, so a driver
+   * cannot have driven more hours than their window has been open. In
+   * USED terms: windowElapsed ≥ drivingUsed.
+   */
+  const used = usedMinutes(entered);
+  if (used.windowElapsedMin < used.drivingUsedMin) {
+    out.push(
+      'Shift window left is too high for the drive time left — the 14-hour window does not pause.',
+    );
+  }
+  // You cannot have driven more since your last break than you have
+  // driven in total.
+  if (used.drivingSinceBreakMin > used.drivingUsedMin) {
+    out.push('Time until break is too low for the drive time left.');
   }
   return out;
+}
+
+/** The four entered REMAINING values as the engine's USED counterparts. */
+function usedMinutes(entered: DriverEnteredClocks): {
+  drivingUsedMin: number;
+  windowElapsedMin: number;
+  drivingSinceBreakMin: number;
+  cycleUsedMin: number;
+} {
+  const caps = clockCeilings(entered.cycleRule);
+  const clamp = (value: number, cap: number) => Math.min(cap, Math.max(0, value));
+  return {
+    drivingUsedMin: caps.drivingMin - clamp(entered.drivingMin, caps.drivingMin),
+    windowElapsedMin: caps.windowMin - clamp(entered.windowMin, caps.windowMin),
+    drivingSinceBreakMin: caps.untilBreakMin - clamp(entered.untilBreakMin, caps.untilBreakMin),
+    cycleUsedMin: caps.cycleMin - clamp(entered.cycleMin, caps.cycleMin),
+  };
+}
+
+/**
+ * The cycle balance as day buckets the engine will accept — and NOT as a
+ * reconstructed duty history, because that is not something a single
+ * "hours remaining" number can support.
+ *
+ * WHAT A DRIVER TELLS US: "I have 22 hours left on my 70."
+ * WHAT THAT DOES NOT TELL US: which of the past seven days those 48 used
+ * hours fell on. The engine's cycle is a ROLLING window — `cycleUsedMin`
+ * sums the last 7 or 8 buckets, and hours recap as their bucket rolls off
+ * the back. Two drivers with an identical 22-hour balance can have
+ * completely different recap schedules, and nothing in the entered number
+ * distinguishes them.
+ *
+ * So this function does the only honest thing available: it reproduces
+ * the BALANCE exactly, and places the used time in the most recent
+ * buckets, which is the CONSERVATIVE arrangement — the hours recap as
+ * late as possible, so the app never credits a driver with cycle time
+ * they might not actually get back. It is capped at one day per bucket
+ * because the engine rejects anything else (`validateClockState`:
+ * "onDutyByDayMin entries must be within one day").
+ *
+ * THE LIMITATION THIS LEAVES, STATED PLAINLY: the bucket DISTRIBUTION is
+ * an artefact of this conversion, not a record of the driver's week. The
+ * current balance is exact and burns down correctly for a trip measured
+ * in hours, which is what this pilot plans. Any RECAP projection built on
+ * these buckets would be fiction — which is why no Navigator surface
+ * computes one, and a test enforces that.
+ */
+export function cycleBalanceBuckets(cycleUsedMin: number): number[] {
+  const used = Math.max(0, Math.round(cycleUsedMin));
+  if (used === 0) return [0];
+  const buckets: number[] = [];
+  let left = used;
+  while (left > 0) {
+    const take = Math.min(HOS.DAY_MIN, left);
+    // Unshift: the newest bucket is LAST, so filling from the front
+    // leaves the used time in the most recent positions.
+    buckets.unshift(take);
+    left -= take;
+  }
+  return buckets;
 }
 
 /** "11h 00m" — for a ceiling named inside an error sentence. */
@@ -209,29 +279,31 @@ function formatHours(totalMin: number): string {
  *
  * Every line is the inverse of what `remainingClocks` computes, using the
  * same constants, so a value entered here reads back identically on the
- * strip. The cycle is expressed as a single day bucket carrying all the
- * used time: the engine sums `onDutyByDayMin`, and this app has no
- * per-day history to distribute it across — one bucket is the honest
- * representation of "this much is gone, I don't know which day it was".
+ * strip — proven by a round-trip test over the whole valid range, not
+ * just asserted here.
+ *
+ * The cycle is the one field where the inverse is not complete. See
+ * `cycleBalanceBuckets`: the balance round-trips exactly, the day
+ * DISTRIBUTION is a conversion artefact, and no recap may be computed
+ * from it.
  */
 export function toEngineClockState(entered: DriverEnteredClocks, nowMs: number): ClockState {
-  const caps = clockCeilings(entered.cycleRule);
-  const clamp = (value: number, cap: number) => Math.min(cap, Math.max(0, value));
-  const drivingLeft = clamp(entered.drivingMin, caps.drivingMin);
-  const windowLeft = clamp(entered.windowMin, caps.windowMin);
-  const breakLeft = clamp(entered.untilBreakMin, caps.untilBreakMin);
-  const cycleLeft = clamp(entered.cycleMin, caps.cycleMin);
+  const used = usedMinutes(entered);
+  // The engine spells "no window open yet" as −1, which is only true when
+  // NOTHING has been used. A driver who has driven at all has had a window
+  // open at least that long, and claiming otherwise builds a state the
+  // engine's own validator rejects ("driving time used but no 14-hour
+  // window open").
+  const nothingUsed = used.windowElapsedMin === 0 && used.drivingUsedMin === 0;
   return {
     atMs: nowMs,
     cycleRule: entered.cycleRule,
-    drivingUsedMin: caps.drivingMin - drivingLeft,
-    // A full window means no window is open yet, which the engine spells
-    // −1 rather than 840 — the distinction between "not started" and
-    // "started and none of it spent".
-    windowElapsedMin: windowLeft >= caps.windowMin ? -1 : caps.windowMin - windowLeft,
-    drivingSinceBreakMin: caps.untilBreakMin - breakLeft,
+    drivingUsedMin: used.drivingUsedMin,
+    windowElapsedMin: nothingUsed ? -1 : used.windowElapsedMin,
+    drivingSinceBreakMin: used.drivingSinceBreakMin,
     restStreakMin: HOS.MIN_RESET_MIN,
-    onDutyByDayMin: [caps.cycleMin - cycleLeft],
+    // A balance, not a history — see `cycleBalanceBuckets`.
+    onDutyByDayMin: cycleBalanceBuckets(used.cycleUsedMin),
     dayBucketStartMs: nowMs,
   };
 }
