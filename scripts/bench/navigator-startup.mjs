@@ -255,6 +255,21 @@ function verdict(name, cond, detail = '') {
 // (that is its job), and this bench runs a dozen scenarios.
 let savedStorageState = null;
 
+/**
+ * Confirm the truck, once, before a route may be requested.
+ *
+ * The truck-route confidence milestone gates Start on a driver having
+ * verified the profile: an unconfirmed truck spends nothing, which is
+ * the point. Every flow that reaches Start therefore passes through
+ * here first — the same tap a driver makes.
+ */
+async function confirmTruck(page) {
+  const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  await btn.scrollIntoViewIfNeeded();
+  if (!(await btn.isDisabled())) await btn.click();
+  await page.waitForTimeout(150);
+}
+
 async function makeContext(browser, { mode = 'granted', width = 390, height = 844 } = {}) {
   const context = await browser.newContext({
     viewport: { width, height },
@@ -472,6 +487,7 @@ scenarios.s1 = async (browser) => {
     );
 
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await page.waitForTimeout(400);
 
@@ -521,6 +537,7 @@ scenarios.s2 = async (browser) => {
 
       const t0 = Date.now();
       await pickDestination(page);
+      await confirmTruck(page);
       await page.getByRole('button', { name: /^Start$/ }).click();
       await feedParked(page, 2);
       await page.waitForTimeout(500);
@@ -557,6 +574,7 @@ scenarios.s3 = async (browser) => {
   try {
     await login(page);
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await page.waitForTimeout(1500);
 
@@ -579,6 +597,7 @@ scenarios.s4 = async (browser) => {
   try {
     await login(page);
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await geo.grant(page);
     await page.waitForTimeout(300);
@@ -595,6 +614,7 @@ scenarios.s4 = async (browser) => {
     verdict('s4: zero route requests without a fix', counters.route === 0, `saw ${counters.route}`);
 
     // Safe retry: tap Start again, fixes arrive this time.
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
@@ -616,6 +636,7 @@ scenarios.s5 = async (browser) => {
   try {
     await login(page);
     await pickDestination(page);
+    await confirmTruck(page);
     const start = page.getByRole('button', { name: /^Start$/ });
     await start.click();
     // Four more taps as fast as the harness can deliver them, while the
@@ -649,6 +670,7 @@ scenarios.s6 = async (browser) => {
     // Voice ON so anything the app wanted to say would actually be spoken.
     await page.getByRole('button', { name: /Enable voice/i }).click();
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
@@ -681,6 +703,7 @@ scenarios.s7 = async (browser) => {
     await page.getByRole('button', { name: /Enable voice/i }).click();
     await page.waitForTimeout(1500); // greeting window: passive line lands after the confirmation
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 3);
     await page.waitForTimeout(800);
@@ -712,6 +735,7 @@ scenarios.s8 = async (browser) => {
     await login(page);
     await feedParked(page, 2);
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
@@ -762,6 +786,7 @@ scenarios.s10 = async (browser) => {
     await feedParked(page, 2);
     await pickDestination(page);
     failRoute(1);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(800);
@@ -778,6 +803,7 @@ scenarios.s10 = async (browser) => {
       `saw ${counters.route}`,
     );
 
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
@@ -826,6 +852,7 @@ scenarios.s12 = async (browser) => {
     await login(page);
     await feedParked(page, 2);
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);
@@ -854,6 +881,7 @@ scenarios.s13 = async (browser) => {
     await login(page);
     await feedParked(page, 2);
     await pickDestination(page);
+    await confirmTruck(page);
     await page.getByRole('button', { name: /^Start$/ }).click();
     await feedParked(page, 2);
     await page.waitForTimeout(500);

@@ -503,56 +503,64 @@ export function PilotTripControls({
             {progressText ?? 'Start'}
           </button>
 
-          {/* Developer-only coordinate entry: collapsed, never part of the
-              driver flow, kept for bench-testing an exact point. */}
-          <details className="text-base text-ink/60">
-            <summary className="min-h-16 cursor-pointer text-lg text-ink/70">
-              Developer: enter coordinates instead
-            </summary>
-            <div className="mt-2 space-y-3">
-              <label className="block text-lg text-ink/80">
-                Destination latitude
-                <input
-                  className={inputClass}
-                  inputMode="decimal"
-                  value={destLat}
-                  onChange={(e) => {
-                    setDestLat(e.target.value);
-                    onPicked(null);
-                  }}
-                  aria-label="Destination latitude"
-                />
-              </label>
-              <label className="block text-lg text-ink/80">
-                Destination longitude
-                <input
-                  className={inputClass}
-                  inputMode="decimal"
-                  value={destLng}
-                  onChange={(e) => {
-                    setDestLng(e.target.value);
-                    onPicked(null);
-                  }}
-                  aria-label="Destination longitude"
-                />
-              </label>
-              <label className="block text-lg text-ink/80">
-                Facility type
-                <select
-                  className={inputClass}
-                  value={facility}
-                  onChange={(e) => setFacility(e.target.value as DestinationFacility)}
-                  aria-label="Destination facility type"
-                >
-                  {FACILITIES.map((f) => (
-                    <option key={f} value={f}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </details>
+          {/* Developer-only coordinate entry. It is now gated on the
+              EXISTING debug mechanism (Pilot Mode's `debugLogging`, which
+              is off on the production host) rather than merely collapsed:
+              a fleet manager watching a demonstration should not be shown
+              a latitude box at all, and "collapsed" is still shown.
+              Bench-testing an exact point still works wherever debug is
+              on — which is every preview build. */}
+          {debugLog !== null ? (
+            <details className="text-base text-ink/60">
+              <summary className="min-h-16 cursor-pointer text-lg text-ink/70">
+                Developer: enter coordinates instead
+              </summary>
+              <div className="mt-2 space-y-3">
+                <label className="block text-lg text-ink/80">
+                  Destination latitude
+                  <input
+                    className={inputClass}
+                    inputMode="decimal"
+                    value={destLat}
+                    onChange={(e) => {
+                      setDestLat(e.target.value);
+                      onPicked(null);
+                    }}
+                    aria-label="Destination latitude"
+                  />
+                </label>
+                <label className="block text-lg text-ink/80">
+                  Destination longitude
+                  <input
+                    className={inputClass}
+                    inputMode="decimal"
+                    value={destLng}
+                    onChange={(e) => {
+                      setDestLng(e.target.value);
+                      onPicked(null);
+                    }}
+                    aria-label="Destination longitude"
+                  />
+                </label>
+                <label className="block text-lg text-ink/80">
+                  Facility type
+                  <select
+                    className={inputClass}
+                    value={facility}
+                    onChange={(e) => setFacility(e.target.value as DestinationFacility)}
+                    aria-label="Destination facility type"
+                  >
+                    {FACILITIES.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </details>
+          ) : null}
+
           {/* The truck itself: verified, adjustable, and confirmed once
               before any route is requested. It replaces the read-only
               panel — a driver who cannot change the numbers cannot

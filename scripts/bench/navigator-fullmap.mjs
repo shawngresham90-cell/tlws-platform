@@ -160,6 +160,21 @@ function syntheticPlaces() {
 // endpoint throttles repeated password submissions per IP.
 let savedStorageState = null;
 
+/**
+ * Confirm the truck, once, before a route may be requested.
+ *
+ * The truck-route confidence milestone gates Start on a driver having
+ * verified the profile: an unconfirmed truck spends nothing, which is
+ * the point. Every flow that reaches Start therefore passes through
+ * here first — the same tap a driver makes.
+ */
+async function confirmTruck(page) {
+  const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  await btn.scrollIntoViewIfNeeded();
+  if (!(await btn.isDisabled())) await btn.click();
+  await page.waitForTimeout(150);
+}
+
 async function login(page) {
   await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
   if (page.url().includes('/navigator/access')) {
@@ -408,6 +423,7 @@ async function driveToNavigating(context, page, { w, h }) {
   // one Start tap. The developer coordinate boxes are no longer the path
   // this bench exercises.
   await parkedSearchProof(page, w, h);
+  await confirmTruck(page);
   await page.getByRole('button', { name: /^Start$/ }).click();
   await feed(3, 0.3);
   await feed(6, 12);

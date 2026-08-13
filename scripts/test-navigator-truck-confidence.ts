@@ -569,5 +569,71 @@ const p = (over: Partial<EditableProfile> = {}): EditableProfile => ({
   );
 }
 
+/* ==================== 5. fleet-demo readiness =========================== */
+{
+  const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+  const editor = readFileSync('src/components/navigator/TruckProfileEditor.tsx', 'utf8');
+
+  // The coordinate box is a developer tool. A fleet manager watching a
+  // demonstration should not be shown a latitude field at all — and
+  // "collapsed" is still shown. It now rides the EXISTING debug
+  // mechanism rather than a new flag.
+  check(
+    'demo: the developer coordinate entry is gated on the existing debug mechanism',
+    /\{debugLog !== null \? \([\s\S]{0,400}Developer: enter coordinates instead/.test(controls),
+  );
+  check(
+    'demo: and no second debug flag was invented for it',
+    !/showDeveloper|devMode|isDeveloper|NEXT_PUBLIC_DEBUG/.test(controls),
+  );
+  check(
+    'demo: debug mode still exposes it (bench testing an exact point survives)',
+    controls.includes('Developer: enter coordinates instead') && controls.includes('debugLog'),
+  );
+
+  // A driver-facing surface must not read like an internal console.
+  const driverFacing = editor + controls.slice(controls.indexOf('return ('));
+  for (const jargon of [
+    'apiKey',
+    'HERE_API_KEY',
+    'shippedHazardousGoods',
+    'truck[height]',
+    'transportMode',
+    'router.hereapi.com',
+  ]) {
+    check(
+      `demo: no internal provider detail on the driver's screen — ${jargon}`,
+      !driverFacing.includes(jargon),
+    );
+  }
+
+  // The things a pilot demonstration still needs.
+  const access = readFileSync('src/lib/navigator-api/pilot-access.ts', 'utf8');
+  check(
+    'demo: the pilot gate still verifies a signed cookie',
+    /verifyPilot|PILOT_COOKIE_NAME/.test(access),
+  );
+  check('demo: the build id is still shown', controls.includes('Build:'));
+  check('demo: problem reporting is still available', controls.includes('buildProblemReport'));
+
+  // Nothing about the truck may leak position or credentials into a report.
+  const report = readFileSync('src/lib/navigator/road-test-report.ts', 'utf8');
+  check(
+    'demo: the road-test report carries no coordinate and no key',
+    !/apiKey|HERE_API_KEY/.test(report) && !/\blat\b\s*:/.test(report),
+  );
+  const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+  check(
+    'demo: the stored truck profile carries no position, route or identity',
+    /JSON\.stringify\(\{ v: 1, profile, confirmed:/.test(screen) &&
+      !/position|geometry|firstName/.test(
+        screen.slice(
+          screen.indexOf('const persistTruck'),
+          screen.indexOf('const persistTruck') + 400,
+        ),
+      ),
+  );
+}
+
 console.log(`navigator-truck-confidence: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
