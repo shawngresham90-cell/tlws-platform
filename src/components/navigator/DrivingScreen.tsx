@@ -1169,6 +1169,13 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   /** The gate the whole setup turns on, computed from the existing authority. */
   const truckGateState = profileGate(truckProfile, truckConfirmation);
   const truckConfirmed = truckGateState === 'ready';
+  /**
+   * Whether the developer coordinate box holds a usable destination,
+   * reported upward by PilotTripControls. That box is a preview-build
+   * affordance whose state lives down there, and the Start gate has to
+   * count it — see the `destinationPicked` note below.
+   */
+  const [devDestinationReady, setDevDestinationReady] = useState(false);
   /*
    * ONE value decides three things — whether Start is disabled, the
    * sentence beneath it, and the checklist at the top — so they cannot
@@ -1181,7 +1188,14 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     // region's rules at all, and the checklist says so rather than
     // implying the driver forgot something.
     clocks: region === 'CA' ? 'unsupported' : clockEntry.kind === 'set' ? 'set' : 'unset',
-    destinationPicked: picked !== null,
+    /*
+     * A searched place OR a developer-entered coordinate. `picked` alone
+     * was the wrong question: the coordinate box lives inside
+     * PilotTripControls, `Start` has always planned to whichever
+     * resolves, and gating on the search alone locked that path out of
+     * its own button. The gate now asks what the planner asks.
+     */
+    destinationPicked: picked !== null || devDestinationReady,
   });
   /*
    * Whether a Start attempt is running right now, reported upward by
@@ -1954,6 +1968,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             picked={picked}
             onPicked={setPicked}
             onAttemptActive={setStartPending}
+            onDestinationReady={setDevDestinationReady}
             truckProfile={truckProfile}
             truckGate={truckGateState}
             regionPanel={

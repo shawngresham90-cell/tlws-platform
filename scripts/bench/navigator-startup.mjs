@@ -274,10 +274,21 @@ let savedStorageState = null;
  * here first — the same tap a driver makes.
  */
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists in localStorage and
+   * collapses to a compact summary with 'Edit truck', so a scenario that
+   * inherits a saved storage state arrives with nothing left to confirm.
+   * Waiting for the old button in that case is waiting for something
+   * that is correctly absent.
+   */
+  const summary = page.getByRole('button', { name: 'Edit truck' });
+  if ((await summary.count()) > 0) return;
   const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await btn.count()) === 0) return;
   await btn.scrollIntoViewIfNeeded();
   if (!(await btn.isDisabled())) await btn.click();
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(200);
 }
 
 async function makeContext(browser, { mode = 'granted', width = 390, height = 844 } = {}) {

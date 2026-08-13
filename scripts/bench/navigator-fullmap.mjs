@@ -179,10 +179,57 @@ let savedStorageState = null;
  * here first — the same tap a driver makes.
  */
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists in localStorage and
+   * collapses to a compact summary with 'Edit truck', so a case that
+   * inherits a saved storage state arrives with nothing left to confirm.
+   */
+  if ((await page.getByRole('button', { name: 'Edit truck' }).count()) > 0) return;
   const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await btn.count()) === 0) return;
   await btn.scrollIntoViewIfNeeded();
   if (!(await btn.isDisabled())) await btn.click();
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(200);
+}
+
+/*
+ * A driver five hours into a shift, seeded straight into the store.
+ *
+ * This bench is about the DRIVING SCREEN'S LAYOUT — how much map the
+ * driver gets, whether the controls are glove-sized, where the compact
+ * HOS strip sits. It used to get clocks for free, because the strip
+ * seeded itself with a fresh eleven hours for everybody. The pre-trip
+ * setup milestone removed that: with nothing entered the strip correctly
+ * shows 'Clocks not set' and has no numbers to lay out.
+ *
+ * So the clocks are supplied rather than assumed. Seeding the record is
+ * deliberate over driving the editor UI — this file measures geometry,
+ * and it should not fail because a button in someone else's panel moved.
+ * The unset presentation has its own coverage in
+ * `test-navigator-warning-rail` and `scripts/bench/navigator-pretrip-setup.mjs`.
+ */
+const MID_SHIFT_CLOCKS = {
+  v: 1,
+  entered: {
+    drivingMin: 305,
+    windowMin: 470,
+    untilBreakMin: 185,
+    cycleMin: 1325,
+    cycleRule: '70/8',
+  },
+  enteredAtMs: 1754000000000,
+  fromFreshShift: false,
+};
+
+async function seedClocks(context) {
+  await context.addInitScript((record) => {
+    try {
+      window.localStorage.setItem('tlws-navigator-clocks-v1', JSON.stringify(record));
+    } catch {
+      /* a bench that cannot seed still runs; the HOS checks will say so */
+    }
+  }, MID_SHIFT_CLOCKS);
 }
 
 async function login(page) {
@@ -452,6 +499,7 @@ async function runCase(browser, { w, h }) {
     deviceScaleFactor: 2,
     storageState: savedStorageState ?? undefined,
   });
+  await seedClocks(context);
   await context.route('**/api/navigator/route', (r) =>
     r.fulfill({
       status: 200,

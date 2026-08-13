@@ -273,8 +273,10 @@ export function HosStrip({
           onOpen={() => setExpanded(true)}
           interactive={detailSlot !== undefined}
         />
-        {/* Beside the DRIVING clocks, not only the parked ones. */}
-        <p className="mt-1 text-base text-muted">{ELD_AUTHORITATIVE}</p>
+        {/* The ELD authority sits beside the DRIVING clocks too — inside
+            the strip's own disclaimer line, where it costs no height.
+            See the note in HosCompactStrip: as a stacked paragraph here
+            it pushed the bottom controls off a short landscape phone. */}
         {/* The warning line rides along in its own live region exactly as
             it always has — the compact cells are aria-hidden decoration
             of numbers this sentence already states. */}

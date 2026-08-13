@@ -237,10 +237,35 @@ async function setUnits(page, units) {
 }
 
 async function confirmTruck(page) {
+  /*
+   * A CONFIRMED truck no longer shows a confirm button at all. Since the
+   * pre-trip setup milestone the profile persists and collapses to a
+   * compact summary with 'Edit truck', so a scenario inheriting a saved
+   * storage state arrives with nothing left to confirm.
+   */
+  if ((await page.getByRole('button', { name: 'Edit truck' }).count()) > 0) return;
   const confirmBtn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
+  if ((await confirmBtn.count()) === 0) return;
   await confirmBtn.scrollIntoViewIfNeeded();
   if (!(await confirmBtn.isDisabled())) await confirmBtn.click();
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
+}
+
+/**
+ * Whether the truck is currently CONFIRMED, asked of the UI rather than
+ * of a phrase.
+ *
+ * This used to be a text match on 'Truck confirmed'. The pre-trip setup
+ * milestone replaced that button with a collapsed summary — 'Your truck
+ * / Saved' and an 'Edit truck' button — so the phrase is gone while the
+ * state it described is unchanged. Reading the state directly says what
+ * the check always meant: the summary is showing, and no confirmation is
+ * being asked for.
+ */
+async function isTruckConfirmed(page) {
+  const summary = (await page.getByRole('button', { name: 'Edit truck' }).count()) > 0;
+  const asking = (await page.getByRole('button', { name: /This is my truck/ }).count()) > 0;
+  return summary && !asking;
 }
 
 /* ------------------------------------------------------------------ */
@@ -502,10 +527,12 @@ async function runScenario(browser, sc, viewport = { width: 390, height: 844 }) 
     await confirmTruck(page);
     if (sc.switchUnitsAfterConfirm) {
       await setUnits(page, 'imperial');
-      const afterSwitch = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+      await page.waitForTimeout(250);
+      verdict('the truck is STILL confirmed after a unit switch', await isTruckConfirmed(page));
       verdict(
-        'the truck is STILL confirmed after a unit switch',
-        /Truck confirmed/.test(afterSwitch),
+        'and Start is not gated again by a display-unit change',
+        !(await page.getByRole('button', { name: /^Start(?: Route)?$/ }).count()) ||
+          (await page.getByText('Confirm your truck first').count()) === 0,
       );
     }
 

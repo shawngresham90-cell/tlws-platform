@@ -51,6 +51,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
 }
 
 const CONTROLS = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
+const COMPACT_STRIP = readFileSync('src/components/navigator/HosCompactStrip.tsx', 'utf8');
 const SCREEN = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
 const TRUCK_STORE = readFileSync('src/components/navigator/truck-storage.ts', 'utf8');
 const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8');
@@ -163,6 +164,36 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
     'gate: one value feeds the button and the checklist',
     /startBlockedReason=\{setup\.blockedReason\}/.test(SCREEN) &&
       /<SetupStatus status=\{setup\} \/>/.test(SCREEN),
+  );
+
+  /*
+   * THE GATE MUST ASK WHAT THE PLANNER ASKS.
+   *
+   * A destination can arrive two ways: the lifted search, whose result
+   * the driving screen owns as `picked`, and the developer coordinate
+   * box, whose state lives inside PilotTripControls. `resolveDestination`
+   * has always accepted either, and Start has always planned to whichever
+   * resolved.
+   *
+   * Gating on `picked` alone therefore locked the coordinate path out of
+   * its own button: a destination was entered, the app knew where it was,
+   * the planner would have routed to it, and the checklist still read
+   * "Destination — Required" with Start disabled. It was found by a
+   * browser bench, not by a renderer, because both halves have to be
+   * running for the disagreement to appear.
+   */
+  check(
+    'gate: the destination item counts the developer coordinate box too',
+    /destinationPicked: picked !== null \|\| devDestinationReady/.test(SCREEN),
+  );
+  check(
+    'gate: and that readiness is reported up rather than guessed at',
+    /onDestinationReady=\{setDevDestinationReady\}/.test(SCREEN) &&
+      /onDestinationReady\?\.\(destinationReady\)/.test(CONTROLS),
+  );
+  check(
+    'gate: readiness is the planner-s own predicate, not a second opinion',
+    /const destinationReady = resolveDestination\(\) !== null/.test(CONTROLS),
   );
 }
 
@@ -375,9 +406,26 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
       SCREEN.replace(/onClear=\{\(\) => saveClocks\(CLOCKS_UNSET\)\}/g, ''),
     ),
   );
+  /*
+   * The authority line has to be beside the DRIVING clocks, not only the
+   * parked ones — but WHERE it sits is load-bearing, so this asks the
+   * compact strip rather than counting occurrences in one file.
+   *
+   * It first shipped as a paragraph stacked under the compact strip.
+   * That read correctly and cost a line of height the cockpit does not
+   * have: on an 844x390 landscape phone it pushed Overview, Voice and
+   * Stop off the bottom. It now rides inside the strip's own disclaimer
+   * line, which is just as beside the clocks and free.
+   */
   check(
     'clocks: ELD authority sits beside the DRIVING display, not only the parked one',
-    (STRIP.match(/ELD_AUTHORITATIVE/g) ?? []).length >= 2,
+    /ELD_AUTHORITATIVE/.test(COMPACT_STRIP),
+  );
+  check(
+    'clocks: and it shares the existing disclaimer line rather than adding one',
+    /\{HOS_PLANNING_AID\} \{ELD_AUTHORITATIVE\}/.test(COMPACT_STRIP) &&
+      (COMPACT_STRIP.match(/<p /g) ?? []).length === 1,
+    (COMPACT_STRIP.match(/<p /g) ?? []).length,
   );
   check('clocks: and beside the editor', /ELD_AUTHORITATIVE/.test(CLOCKS_UI));
   check(

@@ -102,6 +102,7 @@ export function PilotTripControls({
   picked,
   onPicked,
   onAttemptActive,
+  onDestinationReady,
   truckProfile,
   truckGate,
   truckSlot,
@@ -170,6 +171,13 @@ export function PilotTripControls({
    * that never start a trip simply omit it.
    */
   onAttemptActive?: (active: boolean) => void;
+  /**
+   * Whether a destination is actually available to route to — from the
+   * lifted search OR the developer coordinate box, which is local state
+   * here. The setup gate must agree with the planner, and only this
+   * component can see both answers.
+   */
+  onDestinationReady?: (ready: boolean) => void;
   /**
    * The truck the driver confirmed, and whether it may be routed yet.
    * OWNED BY THE DRIVING SCREEN (truck-route confidence milestone): the
@@ -469,6 +477,27 @@ export function PilotTripControls({
   useEffect(() => {
     onAttemptActive?.(attemptActive);
   }, [attemptActive, onAttemptActive]);
+
+  /*
+   * Mirror DESTINATION READINESS upward, for the same reason and by the
+   * same mechanism.
+   *
+   * The setup checklist and the Start gate live in the driving screen,
+   * which owns the searched place — but a searched place is not the only
+   * way to have a destination. The developer coordinate box below is the
+   * other one, its state is local to this component, and `Start` has
+   * always planned to whichever of the two resolves.
+   *
+   * Gating Start on the SEARCH alone therefore locked the coordinate path
+   * out of its own button: the driver typed a destination, the app knew
+   * where it was, and the checklist still said one was required. The gate
+   * has to ask the same question the planner asks, so it asks it here,
+   * where both answers are in scope.
+   */
+  const destinationReady = resolveDestination() !== null;
+  useEffect(() => {
+    onDestinationReady?.(destinationReady);
+  }, [destinationReady, onDestinationReady]);
 
   /*
    * A fresh pick retires any failure line. The pick now happens in a
