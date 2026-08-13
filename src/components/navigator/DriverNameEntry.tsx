@@ -12,10 +12,24 @@ import { MAX_FIRST_NAME_CHARS, normalizeFirstName } from '@/lib/navigator/driver
  * motion lock exists to prevent, so this field inherits that rail rather
  * than inventing a second one. There is no other mount point.
  *
- * The value is EPHEMERAL by owner decision. It is lifted to React state on
- * the driving screen and dies with the mounted screen — no localStorage, no
- * sessionStorage, no cookie, no profile, no database. A driver who reloads
- * the app types it again, and that is the intended cost.
+ * THE VALUE IS NOW SAVED ON THIS DEVICE (pre-trip setup milestone). It
+ * used to die with the mounted screen, and the field said so — "Not saved
+ * — re-enter it after a reload". That was the right call while the name
+ * was a novelty and the wrong one for a driver who opens Navigator every
+ * morning and retypes their own name every morning.
+ *
+ * What did NOT change is the part the old decision was protecting. The
+ * name is for ONE thing: the spoken greeting. It is not an account, not
+ * an identity, not a login. It never reaches the network — not the route
+ * request, not the search, not the problem report, not a log, not
+ * analytics — and that is enforced by test across every module that
+ * could carry it. It is the driver's to clear, from here, without
+ * touching anything else.
+ *
+ * The write itself belongs to `driver-storage`, which re-validates on the
+ * way in AND on the way out: this value reaches a speech synthesiser, so
+ * a hand-edited record must not be able to put anything into a driver's
+ * ear.
  *
  * Accessibility, deliberately quiet:
  *   - a real `<label htmlFor>`, not a placeholder standing in for one;
@@ -29,6 +43,13 @@ import { MAX_FIRST_NAME_CHARS, normalizeFirstName } from '@/lib/navigator/driver
  *     talk over navigation speech, which doc 06 does not permit.
  */
 
+/**
+ * What the driver is told about where their name goes. One constant so
+ * the entry form and the settled view cannot describe it differently.
+ */
+export const DRIVER_NAME_STORAGE_NOTE =
+  'Saved on this device only, and used only for your Navigator greeting. Never sent anywhere.';
+
 const inputClass =
   'min-h-16 w-full rounded-card border border-line bg-transparent px-4 text-xl text-ink';
 const buttonClass =
@@ -37,11 +58,14 @@ const buttonClass =
 export function DriverNameEntry({
   firstName,
   onAccept,
+  onClear,
 }: {
   /** The accepted name, or null while none has been given. */
   firstName: string | null;
   /** Called with the SANITIZED name; never with raw input. */
   onAccept: (firstName: string) => void;
+  /** Forget the saved name. Optional so the component stays renderable alone. */
+  onClear?: () => void;
 }) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +82,7 @@ export function DriverNameEntry({
         <p className="text-xl text-ink">
           Driving as <span className="font-semibold">{firstName}</span>
         </p>
+        <p className="text-base text-ink/60">{DRIVER_NAME_STORAGE_NOTE}</p>
         <button
           type="button"
           className={buttonClass}
@@ -69,6 +94,20 @@ export function DriverNameEntry({
         >
           Change name
         </button>
+        {onClear === undefined ? null : (
+          <button
+            type="button"
+            className={buttonClass}
+            onClick={() => {
+              setDraft('');
+              setError(null);
+              setEditing(false);
+              onClear();
+            }}
+          >
+            Clear name
+          </button>
+        )}
       </div>
     );
   }
@@ -121,9 +160,7 @@ export function DriverNameEntry({
           {error}
         </p>
       ) : (
-        <p className="text-base text-ink/60">
-          Used only to greet you out loud. Not saved — re-enter it after a reload.
-        </p>
+        <p className="text-base text-ink/60">{DRIVER_NAME_STORAGE_NOTE}</p>
       )}
       <button type="submit" className={buttonClass}>
         Save name

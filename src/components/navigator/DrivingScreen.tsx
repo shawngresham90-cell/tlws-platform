@@ -70,6 +70,7 @@ import {
   type UnitSystem,
 } from '@/lib/navigator/region';
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
+import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import {
   confirmProfile,
   profileGate,
@@ -1063,17 +1064,38 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const prevLcStateRef = useRef<LifecycleState>('idle');
 
   /*
-   * The driver's first name. Ephemeral by owner decision: React state on
-   * the mounted screen, and nothing else — no localStorage, no
-   * sessionStorage, no cookie, no profile, no database row. A full reload
-   * loses it and the driver types it again.
+   * The driver's first name, restored from this device (pre-trip setup
+   * milestone). It used to be ephemeral by owner decision; a driver who
+   * opens Navigator every morning should not retype their own name every
+   * morning, so it is now remembered — through `driver-storage`, which
+   * owns the key and re-validates on the way out.
    *
-   * It exists to be SPOKEN. It is never put in a provider request, a
-   * routing URL, a diagnostic payload, the pilot log, or the road-test
-   * report — `buildReport` below is assembled without it, so there is no
-   * path from this state to anything that leaves the device.
+   * WHAT DID NOT CHANGE: it exists to be SPOKEN, and nothing else. It is
+   * never put in a provider request, a routing URL, a diagnostic payload,
+   * the pilot log, or the road-test report — `buildReport` below is
+   * assembled without it, so there is no path from this state to anything
+   * that leaves the device.
+   *
+   * It starts null so the server render and the first client paint agree;
+   * the effect below adopts the saved value. A driver with nothing saved
+   * stays null, and a null name produces NO greeting rather than an
+   * invented one.
    */
   const [firstName, setFirstName] = useState<string | null>(null);
+  useEffect(() => {
+    const saved = readDriverName();
+    if (saved !== null) setFirstName(saved);
+  }, []);
+  /** Accept a name the entry form has already sanitized, and remember it. */
+  const acceptFirstName = (next: string) => {
+    setFirstName(next);
+    writeDriverName(next);
+  };
+  /** Forget the name. Nothing else stored is touched. */
+  const forgetFirstName = () => {
+    setFirstName(null);
+    clearDriverName();
+  };
 
   /*
    * The chosen destination (final pilot milestone). The search box lives
@@ -1932,7 +1954,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             buildReport={buildReport}
             build={buildId}
             firstName={firstName}
-            onFirstName={setFirstName}
+            onFirstName={acceptFirstName}
+            onForgetFirstName={forgetFirstName}
             picked={picked}
             onPicked={setPicked}
             onAttemptActive={setStartPending}

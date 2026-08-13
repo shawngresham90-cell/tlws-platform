@@ -99,6 +99,7 @@ export function PilotTripControls({
   build = null,
   firstName = null,
   onFirstName,
+  onForgetFirstName,
   picked,
   onPicked,
   onAttemptActive,
@@ -146,6 +147,8 @@ export function PilotTripControls({
    * does not mount.
    */
   onFirstName?: (firstName: string) => void;
+  /** Forget the saved name. Absent renders the field without a clear control. */
+  onForgetFirstName?: () => void;
   /**
    * The chosen destination, OWNED BY THE DRIVING SCREEN (final pilot
    * milestone). The search box moved onto the parked map, so the pick
@@ -708,10 +711,12 @@ export function PilotTripControls({
           one), and the pilot briefing remains one tap away. */}
       {onFirstName ? (
         <div className="space-y-2">
-          <p className="text-base text-ink/60">
-            Optional — a first name is only ever spoken, never stored.
-          </p>
-          <DriverNameEntry firstName={firstName} onAccept={onFirstName} />
+          <p className="text-base text-ink/60">Optional — a first name is only ever spoken.</p>
+          <DriverNameEntry
+            firstName={firstName}
+            onAccept={onFirstName}
+            onClear={onForgetFirstName}
+          />
         </div>
       ) : null}
 
