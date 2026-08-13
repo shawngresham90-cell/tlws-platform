@@ -345,8 +345,13 @@ function renderBriefing(over: Record<string, unknown> = {}): string {
       /onDiscard=\{\(\) => act\(\(\) => lifecycle\.discardRoute/.test(CONTROLS_SRC),
   );
   check(
-    'wiring: the plausibility advisory rides along unchanged',
-    /plausibilitySlot=\{<RouteCheck lifecycle=\{lifecycle\} \/>\}/.test(CONTROLS_SRC),
+    // Still the SAME component, in the same slot; it now also reads the
+    // driver's units (Canada milestone), which changes the sentence and
+    // not the measurement.
+    'wiring: the plausibility advisory rides along, in the driver’s units',
+    /plausibilitySlot=\{<RouteCheck lifecycle=\{lifecycle\} metric=\{metric\} \/>\}/.test(
+      CONTROLS_SRC,
+    ),
   );
 
   const briefing = strip(BRIEFING_SRC);
