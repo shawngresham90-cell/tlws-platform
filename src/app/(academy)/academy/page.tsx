@@ -3,6 +3,7 @@ import { Section, Button, Eyebrow, Placard } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { getCampaignProgress } from '@/lib/community/founders';
 import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
+import { CinematicStill } from '@/components/media/CinematicStill';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { courseSchema } from '@/lib/seo/academy-schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -240,39 +241,69 @@ export default async function AcademyPage() {
         </div>
       </div>
 
-      {/* Mission */}
+      {/* Mission — the founder's story, now photo-supported. The portrait is
+          the visual answer to "who is teaching me?", so it belongs beside this
+          copy rather than in a marketing section of its own.
+
+          The asset is REUSED from the path it already ships on in the homepage
+          Journey strip (docs/design/owner-assets-needed.md §1c) — one file, one
+          encode, one cache entry. Copying it under an /academy name would give
+          the same photograph two URLs and two downloads for one visitor.
+
+          `lg:items-start` is load-bearing. Grid items stretch by default, which
+          would hand the figure the text column's height, and CinematicStill's
+          `h-full object-cover` would then crop the frame to fill it — losing
+          the face or the Academy chest logo, the two things this photograph
+          exists to show. Started, the figure keeps its own 4:5 shape at every
+          width.
+
+          No caption: the credential badges an inch away already carry the
+          verified facts, and CinematicStill's bottom-third scrim text would sit
+          right where the chest logo does. */}
       <Section className="border-b border-line">
-        <div className="max-w-3xl">
-          <Eyebrow>The mission</Eyebrow>
-          <h2 className="display-section">Drivers helping drivers</h2>
-          <p className="mt-4 text-lg text-muted">
-            The trucking industry is full of schools that treat students like a number and lenders
-            that treat them like a mark. Trucking Life Academy is the opposite of that. Founder
-            Shawn Gresham has spent 17 years in the seat with zero violations, and he built this
-            school to hand that experience down the way it should be — straight, practical, and on
-            the driver’s side. No fluff. No games. Just the training it takes to earn a CDL-A and
-            actually be ready for the road.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {['17 years driving', 'Zero violations', 'CDL instructor', 'Driver trainer'].map(
-              (b) => (
-                <span
-                  key={b}
-                  className="rounded-card border border-line bg-asphalt-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-signal"
-                >
-                  {b}
-                </span>
-              ),
-            )}
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-14">
+          <div className="max-w-3xl">
+            <Eyebrow>The mission</Eyebrow>
+            <h2 className="display-section">Drivers helping drivers</h2>
+            <p className="mt-4 text-lg text-muted">
+              The trucking industry is full of schools that treat students like a number and lenders
+              that treat them like a mark. Trucking Life Academy is the opposite of that. Founder
+              Shawn Gresham has spent 17 years in the seat with zero violations, and he built this
+              school to hand that experience down the way it should be — straight, practical, and on
+              the driver’s side. No fluff. No games. Just the training it takes to earn a CDL-A and
+              actually be ready for the road.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {['17 years driving', 'Zero violations', 'CDL instructor', 'Driver trainer'].map(
+                (b) => (
+                  <span
+                    key={b}
+                    className="rounded-card border border-line bg-asphalt-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-signal"
+                  >
+                    {b}
+                  </span>
+                ),
+              )}
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button variant="ghost" href="/academy/instructors">
+                Meet the founder
+              </Button>
+              <Button variant="ghost" href="/knowledge">
+                Free CDL resources
+              </Button>
+            </div>
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button variant="ghost" href="/academy/instructors">
-              Meet the founder
-            </Button>
-            <Button variant="ghost" href="/knowledge">
-              Free CDL resources
-            </Button>
-          </div>
+          {/* Capped and centred on phones so a 4:5 frame doesn't eat a whole
+              screen; full column width from lg. */}
+          <CinematicStill
+            src="/images/journey/academy-instructor-portrait.webp"
+            alt="Trucking Life Academy instructor wearing an Academy shirt."
+            width={1080}
+            height={1350}
+            sizes="(min-width: 1024px) 20rem, (min-width: 640px) 24rem, 100vw"
+            className="mx-auto w-full max-w-sm lg:mx-0 lg:max-w-none"
+          />
         </div>
       </Section>
 
