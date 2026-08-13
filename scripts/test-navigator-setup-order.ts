@@ -401,6 +401,28 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
     'clocks: Canada is marked unsupported on the checklist, not "forgot to enter"',
     /region === 'CA' \? 'unsupported'/.test(SCREEN),
   );
+
+  /*
+   * THE PROVENANCE LINE HAD TO MOVE TOO. It used to read "showing a
+   * fresh driver's full clocks" and "clocks still assume a fresh driver"
+   * — both descriptions of the assumption this milestone removed. A
+   * caption that still claims it is the same defect in smaller type.
+   */
+  check(
+    'clocks: no surface still claims a fresh driver',
+    !/fresh driver/i.test(SCREEN.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')),
+  );
+  check(
+    'clocks: provenance is computed from the entry, not hard-coded',
+    /clocksProvenance\(clockEntry/.test(SCREEN),
+  );
+  check(
+    'clocks: and it distinguishes entered, restored and confirmed-fresh',
+    /fromFreshShift/.test(readFileSync('src/lib/navigator/hos-clocks.ts', 'utf8')) &&
+      /Restored from your trip in progress/.test(
+        readFileSync('src/lib/navigator/hos-clocks.ts', 'utf8'),
+      ),
+  );
 }
 
 /* ===================================================================== */

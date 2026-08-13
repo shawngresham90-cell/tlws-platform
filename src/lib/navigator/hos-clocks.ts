@@ -111,6 +111,24 @@ export const FRESH_SHIFT_CONFIRM =
 export const CLOCKS_REPLACE_CONFIRM =
   'Replace the clock values you already entered? The previous values are not kept.';
 
+/**
+ * Where the clocks on screen came from, said plainly.
+ *
+ * The old provenance lines were "No trip loaded — showing a fresh
+ * driver's full clocks." and "clocks still assume a fresh driver (no ELD
+ * linked)". Both described the assumption this milestone removed, and
+ * leaving them would have been the same defect in a caption: a screen
+ * telling a driver its numbers are a guess when they are the driver's
+ * own, or that they are full when nothing has been entered at all.
+ */
+export function clocksProvenance(state: ClockEntryState, restored: boolean): string {
+  if (state.kind !== 'set') return 'No clocks entered — enter yours to get clock warnings.';
+  if (restored) return 'Restored from your trip in progress — not an ELD record.';
+  return state.fromFreshShift
+    ? 'Full clocks, as you confirmed at the start of this shift — not an ELD record.'
+    : 'The clocks you entered — not an ELD record.';
+}
+
 /** What the driver gives up by leaving the clocks blank. */
 export const CLOCKS_UNSET_WARNING =
   'HOS guidance is unavailable until you enter your clocks. Navigation still works.';

@@ -73,6 +73,7 @@ import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './regio
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
 import { readClocks, writeClocks } from './clocks-storage';
+import { clocksProvenance } from '@/lib/navigator/hos-clocks';
 import { ClockSetup } from './ClockSetup';
 import { DriverNameEntry } from './DriverNameEntry';
 import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
@@ -115,7 +116,12 @@ import { VoiceControls } from './VoiceControls';
  * one drive and deliberately does not outlive the tab.
  */
 
-const DEFAULT_HOS_LABEL = "No trip loaded — showing a fresh driver's full clocks.";
+/*
+ * The provenance line is computed from the entry state now — see
+ * `clocksProvenance`. The old constant claimed the screen was "showing a
+ * fresh driver's full clocks", which stopped being true when the
+ * fresh-driver default was removed.
+ */
 
 /*
  * The running build, resolved once at module scope: these three values are
@@ -160,7 +166,7 @@ export function DrivingScreenView({
   onStop,
   lifecycleLine = null,
   destinationSlot = null,
-  hosSourceLabel = DEFAULT_HOS_LABEL,
+  hosSourceLabel = 'No clocks entered — enter yours to get clock warnings.',
   mapSlot = null,
   focusNavigationKey = null,
   voice,
@@ -2049,11 +2055,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
       }
       offlineText={offlineNotice({ online, navigating: fullScreen })}
       offRouteText={offRouteText}
-      hosSourceLabel={
-        tripLoaded
-          ? 'Pilot trip loaded — clocks still assume a fresh driver (no ELD linked).'
-          : DEFAULT_HOS_LABEL
-      }
+      hosSourceLabel={clocksProvenance(clockEntry, tripLoaded && restoredClocks !== null)}
       /*
        * THE CANADIAN HOS BOUNDARY. The shipped engine implements US
        * federal limits; Canada's rules differ in almost every dimension
