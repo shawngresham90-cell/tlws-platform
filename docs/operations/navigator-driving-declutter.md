@@ -279,23 +279,31 @@ Run on a real phone, not a narrowed desktop window. Reference viewport 390 × 84
 
 ## 6. Honest remaining limitations
 
-1. **The truck marker is still covered by the trip strip on the three shortest
-   viewports** — 320 × 568, 844 × 390 and 932 × 430. This predates the milestone: on
-   `main` the marker was covered on four of eight viewports. Collapsing the clocks
-   **fixes 360 × 640 and 375 × 667 outright**, and the remaining cover is the
-   Speed / Remaining / Arrive strip, which this milestone was not asked to change
-   and did not touch. The bench measures and reports it as a known-open note; it is
-   never counted as a pass.
-2. **Tapping any control during guidance scrolls the drive shell.** The shell is a
-   `fixed inset-0 overflow-y-auto` element, so focusing a button scrolls the
-   guidance surface up to 382 px out of view while `window.scrollY` stays 0. This is
-   pre-existing — tapping **Voice** does it on `main` — and was traced while
-   diagnosing a bench artifact it caused. Not fixed here; a driver who scrolls back
-   to the top gets the guidance surface back. Worth its own small milestone.
-3. **`scripts/bench/navigator-viewports.mjs` remains stale** on `main` and is
-   deliberately left unrepaired, as instructed. It is not counted as proof.
+> **All three of the first items below were closed, or corrected, by the
+> driving-screen cleanup milestone. See `navigator-driving-cleanup.md`.**
+
+1. ~~**The truck marker is still covered by the trip strip on the three shortest
+   viewports**~~ — 320 × 568, 844 × 390 and 932 × 430. **Fixed.** The reserve the
+   camera uses was being computed and then lost three separate ways; the marker now
+   clears the cockpit band by 27–34 px on all eight viewports. Root causes and
+   measurements: `navigator-driving-cleanup.md` §1.
+2. ~~**Tapping any control during guidance scrolls the drive shell.**~~
+   **This was wrong, and the error was mine.** The 382 px figure came from
+   Playwright's `locator.click()`, which calls CDP `scrollIntoViewIfNeeded` before
+   dispatching the tap. Re-measured on `main` at 390 × 844: a real touch tap,
+   `element.click()`, `focus()` and `focus({preventScroll: true})` each move the
+   guidance screen **0 px**. Nothing in the product scrolls it.
+
+   What drivers were actually hitting was worse and had nothing to do with
+   scrolling: the site's mobile bottom bar sat **on top of** the entire driving
+   control row on every portrait phone, so a tap aimed at Stop opened the HOS page.
+   Diagnosis and fix: `navigator-driving-cleanup.md` §2.
+3. ~~**`scripts/bench/navigator-viewports.mjs` remains stale**~~ — **repaired.** Its
+   three failing locators were all stale accessible names, not product defects. See
+   `navigator-driving-cleanup.md` §4.
 4. The HOS strip cannot be hidden on the **parked** screen. That surface is not
    competing with a map for room, and the setup flow needs the clock row visible.
+   Still true.
 
 ---
 

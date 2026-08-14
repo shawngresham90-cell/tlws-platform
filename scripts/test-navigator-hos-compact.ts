@@ -323,9 +323,12 @@ function clocksWith(over: Partial<ClockState>): ClockState {
 
 /* ================= 7. the detail opens behind the shipped gate =========== */
 {
+  /* Attribute-order and line-wrapping independent: prettier re-wraps this
+     JSX whenever the surrounding indentation changes, and a formatting
+     change is not a safety change. */
   check(
     'gate: the cockpit detail is wrapped in a LockGate on an EXISTING action',
-    /<LockGate action="view-trip-summary" lockedLabel="Detailed clocks"/.test(SCREEN),
+    /<LockGate[^>]*action="view-trip-summary"[^>]*lockedLabel="Detailed clocks"/s.test(SCREEN),
   );
   const actions = readFileSync('src/lib/navigator/actions.ts', 'utf8');
   check(

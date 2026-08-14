@@ -338,18 +338,71 @@ export function DrivingScreenView({
       onBottomInset?.(0);
       return;
     }
+    let last = -1;
     const measure = () => {
-      // From the band's top edge to the bottom of the viewport: that is
-      // the strip of screen the map may draw in but must not park the
-      // truck in.
+      // From the band's top edge to the bottom of the VISIBLE viewport:
+      // that is the strip of screen the map may draw in but must not park
+      // the truck in.
+      //
+      // `visualViewport.height` rather than `innerHeight` where the
+      // browser offers it — with the URL bar showing, the two differ by
+      // exactly the chrome the driver cannot see through, and the camera
+      // should reserve against the screen a driver actually has.
+      /*
+       * MEASURED AGAINST THE SURFACE, NOT THE VIEWPORT.
+       *
+       * `innerHeight - rect.top` is only the band's share of the screen
+       * while the surface starts at the top of the viewport. The drive
+       * shell is a scrollable `fixed inset-0` element, so anything that
+       * scrolls it — a browser's own scroll-into-view, an assistive
+       * technology moving focus — slides the surface up and inflates that
+       * subtraction. Measured in Chromium: a 182 px band read as 426 px
+       * with the shell scrolled, and the camera lifted the truck to 17%
+       * of the screen with no road visible ahead of it.
+       *
+       * The band and the surface move together, so the distance between
+       * them does not care where the shell is scrolled to. The parent IS
+       * the surface — the band is a direct child of the 100dvh box.
+       */
       const rect = el.getBoundingClientRect();
-      const vh = typeof window === 'undefined' ? rect.bottom : window.innerHeight;
-      onBottomInset?.(Math.max(0, Math.round(vh - rect.top)));
+      const surface = el.parentElement;
+      const base =
+        surface !== null
+          ? surface.getBoundingClientRect().bottom
+          : typeof window === 'undefined'
+            ? rect.bottom
+            : (window.visualViewport?.height ?? window.innerHeight);
+      const next = Math.max(0, Math.round(base - rect.top));
+      // Only report CHANGES. The camera eases on every new inset, and a
+      // resize storm that re-reports the same number would ease the map
+      // repeatedly to the position it is already in.
+      if (next === last) return;
+      last = next;
+      onBottomInset?.(next);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
+    /*
+     * A ResizeObserver on the band covers the layout's own changes —
+     * the clocks collapsing, the urgent band appearing, the HOS record
+     * arriving from storage. It does NOT cover the viewport changing
+     * underneath a band whose size stayed the same, so the events that
+     * do that are listened for directly: a rotation, a window resize,
+     * and the mobile browser chrome sliding in and out.
+     */
+    const onViewportChange = () => measure();
+    window.addEventListener('resize', onViewportChange);
+    window.addEventListener('orientationchange', onViewportChange);
+    window.visualViewport?.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('scroll', onViewportChange);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', onViewportChange);
+      window.removeEventListener('orientationchange', onViewportChange);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', onViewportChange);
+    };
     // onBottomInset is a stable setter from the owner (same shape as
     // onHosClocks); the band's own size changes drive the observer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -548,6 +601,28 @@ export function DrivingScreenView({
   // A site banner about parking and weather may not cover a turn. Above
   // it, the driving surface owns the whole viewport and says its own,
   // navigation-specific thing about being offline.
+  //
+  // z-[60], not z-50: THE SAME BUG, ONE ROW LOWER AND MUCH WORSE. The
+  // site's mobile bar (`MobileToolBar`, `fixed inset-x-0 bottom-0 z-50
+  // sm:hidden`) is also mounted after {children}, so at equal z it won
+  // the tie and painted over the bottom 72 px of this surface — which is
+  // the driving control row. Measured in Chromium at 390x844:
+  // `elementFromPoint` at the centre of Stop returned the toolbar's HOS
+  // link, not Stop. Every portrait phone under the sm breakpoint was
+  // affected (320-430 px measured); the two landscape shapes were not,
+  // because `sm:hidden` removes the bar at 640 px and wider — which is
+  // exactly the split the bench recorded.
+  //
+  // What a driver got for tapping Stop was a page about hours of
+  // service. Coming back re-entered /drive and restored the trip, so the
+  // symptom read as "the guidance screen moved" — the reported defect —
+  // when nothing had scrolled at all.
+  //
+  // The fix is ownership, not suppression: the toolbar is untouched and
+  // still owns bottom-0 everywhere else on the site, including the
+  // PARKED /drive page, where the body's pb-16 reserves its band. While
+  // guidance is live this surface is a full-screen takeover and nothing
+  // may sit on it.
   // !mt-0: the parked /drive page stacks its blocks with space-y-6, and
   // Tailwind's space-y is a margin-top on every later sibling — WHICH
   // APPLIES TO FIXED ELEMENTS TOO. Left in place, the cockpit shell
@@ -557,7 +632,7 @@ export function DrivingScreenView({
   // never reached the edges. The important modifier is required: the
   // space-y selector outranks a plain utility.
   const shellCls = fullScreen
-    ? 'fixed inset-0 z-50 !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
+    ? 'fixed inset-0 z-[60] !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
     : '';
   /*
    * FULL-SCREEN MAP (pilot round 3, item "full-screen navigation map").
@@ -766,26 +841,56 @@ export function DrivingScreenView({
             from here down (trip strip, HOS, controls) rides the bottom
             edge of the full-screen surface; the flex gap above it is open
             map. On the ordinary page it is just the next block. */}
-        <div ref={bottomBandRef} className={fullScreen ? `${colBottom} mt-auto` : ''}>
-          {fullScreen ? (
-            compactStrip
-          ) : (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
-              <dt>Route progress</dt>
-              <dd>
-                {view.routeMile !== null && view.totalMi !== null
-                  ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
-                  : '—'}
-              </dd>
-              <dt>Distance remaining</dt>
-              <dd>{formatDistance(view.remainingMi, metric)}</dd>
-              <dt>Speed</dt>
-              <dd>{formatSpeed(view.speedMph, metric)}</dd>
-            </dl>
-          )}
-        </div>
+        {/*
+          THE BOTTOM OVERLAY GROUP, AS ONE MEASURED BOX.
+          
+          The camera has to know how much of the screen's bottom the
+          cockpit is taking, so it can park the truck above it. That
+          number used to come from a ResizeObserver on the trip strip
+          alone — and a ResizeObserver fires on SIZE, not position. When
+          the clocks collapsed, or the HOS strip appeared after its
+          record loaded from storage, the strip below simply MOVED; its
+          own size never changed, no callback ran, and the camera kept
+          using a reserve measured before the band was finished growing.
+          Measured on main: the truck sat at 71% of the viewport — the
+          unclamped fraction — with the clamp that should have stopped it
+          never engaging, and the marker ended up 27 to 114 px INSIDE the
+          band at 390x844, 844x390 and 932x430.
+          
+          One wrapper around all three, observed as a unit, so any child
+          changing height is a height change of the thing being watched.
+          `display: contents` off the driving screen, so the parked page's
+          own spacing is untouched.
+        */}
+        <div
+          ref={bottomBandRef}
+          data-bottom-band={fullScreen ? '' : undefined}
+          className={
+            fullScreen
+              ? 'relative z-10 mt-auto flex shrink-0 flex-col gap-2 [@media(max-height:480px)]:gap-1'
+              : 'contents'
+          }
+        >
+          <div className={fullScreen ? colBottom : ''}>
+            {fullScreen ? (
+              compactStrip
+            ) : (
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
+                <dt>Route progress</dt>
+                <dd>
+                  {view.routeMile !== null && view.totalMi !== null
+                    ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
+                    : '—'}
+                </dd>
+                <dt>Distance remaining</dt>
+                <dd>{formatDistance(view.remainingMi, metric)}</dd>
+                <dt>Speed</dt>
+                <dd>{formatSpeed(view.speedMph, metric)}</dd>
+              </dl>
+            )}
+          </div>
 
-        {/* Permanent HOS strip (milestone N6) — the driver's clocks against
+          {/* Permanent HOS strip (milestone N6) — the driver's clocks against
             the drive, in every screen state. ONE mounted instance owns the
             clock state, the 60-second advance and the HOS voice announcer;
             only the PRESENTATION changes. Parked it is the full card. In
@@ -796,64 +901,68 @@ export function DrivingScreenView({
             from the map. Because the instance is never remounted, the
             clocks do not restart when guidance starts, when a reroute
             lands, or when the trip ends. */}
-        <div className={fullScreen ? colBottom : ''} data-hos-region="">
-          {hosUnavailableNotice !== null ? (
-            /* No clocks at all — not greyed-out US clocks, which would
+          <div className={fullScreen ? colBottom : ''} data-hos-region="">
+            {hosUnavailableNotice !== null ? (
+              /* No clocks at all — not greyed-out US clocks, which would
                still read as numbers a driver could act on. */
-            <section
-              aria-label="Hours of service — not calculated"
-              role="status"
-              className="w-full rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-asphalt/90 px-3 py-2"
-            >
-              <p className="text-base font-semibold leading-snug text-ink">
-                {hosUnavailableNotice}
-              </p>
-            </section>
-          ) : (
-            <HosStrip
-              drivingActive={
-                fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
-              }
-              sourceLabel={hosSourceLabel}
-              voice={voice}
-              compact={fullScreen}
-              enteredClocks={hosEnteredClocks}
-              restoredClocks={hosRestoredClocks}
-              onClocksChange={onHosClocks}
-              /* Presentation only, and only in the cockpit: the parked
+              <section
+                aria-label="Hours of service — not calculated"
+                role="status"
+                className="w-full rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-asphalt/90 px-3 py-2"
+              >
+                <p className="text-base font-semibold leading-snug text-ink">
+                  {hosUnavailableNotice}
+                </p>
+              </section>
+            ) : (
+              <HosStrip
+                drivingActive={
+                  fullScreen || view.status === 'navigating' || view.status === 'position-degraded'
+                }
+                sourceLabel={hosSourceLabel}
+                voice={voice}
+                compact={fullScreen}
+                enteredClocks={hosEnteredClocks}
+                restoredClocks={hosRestoredClocks}
+                onClocksChange={onHosClocks}
+                /* Presentation only, and only in the cockpit: the parked
                  screen has room for the card and no reason to hide it. */
-              visibility={hosVisibility}
-              detailSlot={
-                fullScreen
-                  ? (detail) =>
-                      detail === null ? null : (
-                        // The detailed clocks are a deep surface: the SAME
-                        // stationary-only rail every other one uses, through
-                        // the shared map. The compact strip above stays
-                        // readable while moving — only opening the panel is
-                        // gated, which is what doc 06 locks and why nothing
-                        // new was added to the permission map.
-                        <LockGate action="view-trip-summary" lockedLabel="Detailed clocks" compact>
-                          {detail}
-                        </LockGate>
-                      )
-                  : undefined
-              }
-            />
-          )}
-        </div>
+                visibility={hosVisibility}
+                detailSlot={
+                  fullScreen
+                    ? (detail) =>
+                        detail === null ? null : (
+                          // The detailed clocks are a deep surface: the SAME
+                          // stationary-only rail every other one uses, through
+                          // the shared map. The compact strip above stays
+                          // readable while moving — only opening the panel is
+                          // gated, which is what doc 06 locks and why nothing
+                          // new was added to the permission map.
+                          <LockGate
+                            action="view-trip-summary"
+                            lockedLabel="Detailed clocks"
+                            compact
+                          >
+                            {detail}
+                          </LockGate>
+                        )
+                    : undefined
+                }
+              />
+            )}
+          </div>
 
-        {/* Stop is the always-visible exit control — allowed while moving.
+          {/* Stop is the always-visible exit control — allowed while moving.
             Voice mute rides the SAME row rather than taking one of its own:
             the driving surface is height-constrained, and a second row
             would eat the map's floor on a 320 px phone. Mute is allowed
             while moving by the shared permission map, like Stop, so it
             must live here on the driving surface and not below the fold. */}
-        {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
+          {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
-        <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
-          {fullScreen ? overviewSlot : null}
-          {/*
+          <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
+            {fullScreen ? overviewSlot : null}
+            {/*
             THE CLOCKS TOGGLE LIVES HERE, not under the strip.
             
             A full-width button beneath the HOS strip was the obvious
@@ -870,47 +979,48 @@ export function DrivingScreenView({
             the milestone asks for, and `aria-pressed` states which way
             it is set.
           */}
-          {fullScreen && hosUnavailableNotice === null && onToggleHosVisibility ? (
-            <button
-              type="button"
-              onClick={onToggleHosVisibility}
-              className="min-h-16 w-full min-w-0 truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
-              aria-label={clocksToggleLabel(hosVisibility)}
-              aria-pressed={hosVisibility === 'shown'}
-            >
-              Clocks
-            </button>
-          ) : null}
-          {voice ? (
-            <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
-              <VoiceControls
-                voice={voice}
-                compact={fullScreen}
-                onMutedChange={onVoiceMutedChange}
-              />
-            </LockGate>
-          ) : null}
-          <LockGate action="stop-navigation" lockedLabel="Stop navigation" compact={fullScreen}>
-            {watching ? (
+            {fullScreen && hosUnavailableNotice === null && onToggleHosVisibility ? (
               <button
                 type="button"
-                onClick={onStop}
-                className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
-                aria-label="Stop navigation and discard position"
+                onClick={onToggleHosVisibility}
+                className="min-h-16 w-full min-w-0 truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
+                aria-label={clocksToggleLabel(hosVisibility)}
+                aria-pressed={hosVisibility === 'shown'}
               >
-                {fullScreen ? 'Stop' : 'Stop navigation'}
-              </button>
-            ) : showIdleStartControl ? (
-              <button
-                type="button"
-                onClick={onStart}
-                className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
-                aria-label="Enable location and start the driving preview"
-              >
-                Enable location
+                Clocks
               </button>
             ) : null}
-          </LockGate>
+            {voice ? (
+              <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
+                <VoiceControls
+                  voice={voice}
+                  compact={fullScreen}
+                  onMutedChange={onVoiceMutedChange}
+                />
+              </LockGate>
+            ) : null}
+            <LockGate action="stop-navigation" lockedLabel="Stop navigation" compact={fullScreen}>
+              {watching ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
+                  aria-label="Stop navigation and discard position"
+                >
+                  {fullScreen ? 'Stop' : 'Stop navigation'}
+                </button>
+              ) : showIdleStartControl ? (
+                <button
+                  type="button"
+                  onClick={onStart}
+                  className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
+                  aria-label="Enable location and start the driving preview"
+                >
+                  Enable location
+                </button>
+              ) : null}
+            </LockGate>
+          </div>
         </div>
       </div>
 

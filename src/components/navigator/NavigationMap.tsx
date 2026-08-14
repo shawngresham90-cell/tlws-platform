@@ -255,6 +255,8 @@ export function NavigationMap({
    */
   const headingRef = useRef<HeadingState>(INITIAL_HEADING_STATE);
   /** What the camera is currently rotated to, so tiny deltas are skipped. */
+  /** The inset the camera last actually eased with — see the note below. */
+  const appliedInsetRef = useRef<number | null>(null);
   const appliedBearingRef = useRef(0);
 
   // Follow state lives in a ref AND state: the ref is read inside map
@@ -586,7 +588,31 @@ export function NavigationMap({
 
     const bearingMoved =
       Math.abs(shortestDelta(appliedBearingRef.current, bearing)) >= BEARING_DEADBAND_DEG;
-    if (!shouldRecenter(position, lastCenteredRef.current) && !bearingMoved) return;
+    /*
+     * A CHANGED BOTTOM INSET IS ALSO A REASON TO MOVE THE CAMERA.
+     *
+     * This effect re-runs when `bottomInsetPx` changes, and then used to
+     * return here — because the truck had not moved and the bearing had
+     * not turned — so the new padding was computed and thrown away. The
+     * camera kept whatever padding it applied on the LAST position
+     * change, which at startup is the ease that ran before the layout had
+     * measured itself: an inset of 0, and a truck parked at 71% of the
+     * viewport with the cockpit band starting at 70%.
+     *
+     * That is the other half of the marker obstruction. The band being
+     * measured correctly (DrivingScreen's one observed wrapper) is only
+     * useful if a change in that measurement reaches the camera, and the
+     * driver changes it constantly: hiding the clocks, an urgent band
+     * appearing, a rotation, the browser chrome sliding away.
+     *
+     * Compared against what was APPLIED, not against the previous prop,
+     * so this re-eases exactly once per real change and never on a
+     * re-render that carries the same number.
+     */
+    const insetChanged = appliedInsetRef.current !== bottomInsetPx;
+    if (!shouldRecenter(position, lastCenteredRef.current) && !bearingMoved && !insetChanged) {
+      return;
+    }
 
     const height = containerRef.current?.clientHeight ?? 0;
     selfMoveRef.current = true;
@@ -602,6 +628,7 @@ export function NavigationMap({
     });
     selfMoveRef.current = false;
     appliedBearingRef.current = bearing;
+    appliedInsetRef.current = bottomInsetPx;
     lastCenteredRef.current = { ...position };
   }, [ready, position, headingDeg, speedMph, navigating, geometry, bottomInsetPx, dispatch]);
 
@@ -696,8 +723,28 @@ export function NavigationMap({
           full-screen driving surface the bottom band belongs to the trip
           strip and the Stop/voice row. They are SCREEN furniture, not map
           content: the world rotates underneath them and they stay
-          upright, where the driver's thumb left them. */}
-      <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 flex-col gap-2">
+          upright, where the driver's thumb left them.
+
+          CENTRED IN THE MAP THE DRIVER CAN SEE, not in the viewport.
+          `top-1/2` measured the whole surface, and the cockpit band is
+          the bottom fifth of it — so on a short screen the lower half of
+          this column was UNDER the band. Measured in Chromium during
+          guidance: the zoom-out button's centre hit the band, not the
+          button, at 320x568 (column 216-352 against a band starting at
+          316), 844x390 (127-263 against 181) and 932x430 (147-283
+          against 221). A driver could not zoom out at all on either
+          landscape shape or the smallest phone.
+
+          `bottomInsetPx` is the same measured number the camera reserves
+          — the distance from the band's top edge to the bottom of the
+          surface — so this column and the followed truck are placed from
+          one measurement of the real overlay, not from two guesses. At
+          zero reserve (the parked map, which has no band) the container
+          is the whole map and this is exactly the old centring. */}
+      <div
+        className="pointer-events-none absolute right-3 flex flex-col justify-center gap-2"
+        style={{ top: '0.5rem', bottom: `calc(${bottomInsetPx}px + 0.5rem)` }}
+      >
         {recenterVisible(follow) ? (
           <button
             type="button"

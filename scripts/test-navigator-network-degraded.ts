@@ -72,14 +72,49 @@ function check(name: string, cond: boolean, detail?: unknown) {
   check('layering: the site banner is still fixed at top-16 z-40', bannerZ40);
   check('layering: it is still mounted after {children}', bannerAfterChildren);
   check(
-    // (!mt-0 rides between z-50 and overflow: the parked page's space-y
+    // (!mt-0 rides between the z and overflow: the parked page's space-y
     // margin must not offset the fixed cockpit — full-screen map item.)
     'layering: so the driving surface must sit ABOVE it',
-    /fixed inset-0 z-50 (?:!mt-0 )?overflow-y-auto/.test(screen),
+    /fixed inset-0 z-\[60\] (?:!mt-0 )?overflow-y-auto/.test(screen),
   );
   check(
     'layering: and the old equal-z shell class is gone',
     !/fixed inset-0 z-40 overflow-y-auto/.test(screen),
+  );
+
+  /*
+   * THE SAME DEFECT AT THE OTHER END OF THE SCREEN, and the reason the
+   * shell is z-[60] rather than z-50.
+   *
+   * `MobileToolBar` is `fixed inset-x-0 bottom-0 z-50 sm:hidden` and is
+   * also mounted after {children}. At equal z it won the tie and painted
+   * over the bottom 72 px of the driving surface — the row that holds
+   * Route overview, Clocks, Voice and Stop. Measured in Chromium at
+   * 390x844, `elementFromPoint` at the centre of Stop returned the
+   * toolbar's HOS link. Every portrait phone below the sm breakpoint was
+   * affected; the landscape shapes were not, because sm:hidden removes
+   * the bar at 640 px and wider.
+   *
+   * These three pins hold the whole argument: the bar's own class, its
+   * position in the layout, and the shell being above it. Change any one
+   * and this says so.
+   */
+  const toolbar = readFileSync('src/components/layout/MobileToolBar.tsx', 'utf8');
+  check(
+    'layering: the mobile tool bar is still fixed at bottom-0 z-50',
+    /fixed inset-x-0 bottom-0 z-50/.test(toolbar),
+  );
+  check(
+    'layering: it is still mounted after {children}',
+    layout.indexOf('<MobileToolBar') > layout.indexOf('{children}'),
+  );
+  check(
+    'layering: so the driving surface must sit above the tool bar too',
+    /fixed inset-0 z-\[60\]/.test(screen),
+  );
+  check(
+    'layering: and the bar is untouched — it still owns bottom-0 elsewhere',
+    /sm:hidden/.test(toolbar) && /aria-label="Driver tools"/.test(toolbar),
   );
 
   // Having taken the whole viewport, the surface owes the driver its own
