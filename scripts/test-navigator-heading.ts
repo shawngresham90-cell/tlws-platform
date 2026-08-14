@@ -32,6 +32,7 @@ import {
   shortestDelta,
   truckScreenFraction,
   FOLLOW_BOTTOM_RESERVED_PX,
+  FOLLOW_MARKER_HALF_PX,
   FOLLOW_TOP_PADDING_FRACTION,
   INITIAL_HEADING_STATE,
   MOVING_MIN_MPH,
@@ -513,11 +514,44 @@ function step(state: HeadingState, over: Partial<HeadingSample>, tMs = T0): Head
     landscapePad.top === 0 && truckScreenFraction(430, landscapePad.top) === 0.5,
     landscapePad,
   );
+  /*
+   * THE CLAMP BINDS WHEN, AND ONLY WHEN, THE BAND NEEDS IT.
+   *
+   * This used to assert that a tall phone was "unaffected by the clamp
+   * (still ~71%)", which was true of the DEFAULT 220 px reserve and not
+   * true of the screen drivers actually hold: the measured band at
+   * 390x844 is 254 px, so the clamp binds there and always did — the
+   * cleanup milestone simply made the measurement reach the camera.
+   *
+   * What is worth pinning is the shape of the rule, so it is pinned
+   * directly: give the band room and the 0.42 fraction governs; take the
+   * room away and the truck is lifted exactly enough to clear.
+   */
   check(
-    'padding: a tall phone is unaffected by the clamp (still ~71%)',
-    Math.abs(truckScreenFraction(844, followPadding(844, true).top) - 0.71) < 0.01,
-    truckScreenFraction(844, followPadding(844, true).top),
+    'padding: with a SMALL band a tall phone keeps the unclamped fraction',
+    Math.abs(truckScreenFraction(844, followPadding(844, true, 120).top) - 0.71) < 0.01,
+    truckScreenFraction(844, followPadding(844, true, 120).top),
   );
+  {
+    // The real 390x844 cockpit: 254 px of band, measured in Chromium.
+    const real = followPadding(844, true, 254);
+    const centre = truckScreenFraction(844, real.top) * 844;
+    check(
+      'padding: with the REAL band the clamp lifts the truck clear of it',
+      centre <= 844 - 254 - FOLLOW_MARKER_HALF_PX,
+      { centre, bandTop: 844 - 254 },
+    );
+    check(
+      'padding: and the marker itself clears, not merely its centre',
+      centre + FOLLOW_MARKER_HALF_PX < 844 - 254,
+      { markerBottom: centre + FOLLOW_MARKER_HALF_PX, bandTop: 844 - 254 },
+    );
+    check(
+      'padding: while staying in the lower half — road ahead still favoured',
+      truckScreenFraction(844, real.top) > 0.5,
+      truckScreenFraction(844, real.top),
+    );
+  }
   check(
     'padding: the reserved band is a documented constant, not a magic number',
     FOLLOW_BOTTOM_RESERVED_PX >= 180 && FOLLOW_BOTTOM_RESERVED_PX <= 260,

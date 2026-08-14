@@ -255,6 +255,8 @@ export function NavigationMap({
    */
   const headingRef = useRef<HeadingState>(INITIAL_HEADING_STATE);
   /** What the camera is currently rotated to, so tiny deltas are skipped. */
+  /** The inset the camera last actually eased with — see the note below. */
+  const appliedInsetRef = useRef<number | null>(null);
   const appliedBearingRef = useRef(0);
 
   // Follow state lives in a ref AND state: the ref is read inside map
@@ -586,7 +588,31 @@ export function NavigationMap({
 
     const bearingMoved =
       Math.abs(shortestDelta(appliedBearingRef.current, bearing)) >= BEARING_DEADBAND_DEG;
-    if (!shouldRecenter(position, lastCenteredRef.current) && !bearingMoved) return;
+    /*
+     * A CHANGED BOTTOM INSET IS ALSO A REASON TO MOVE THE CAMERA.
+     *
+     * This effect re-runs when `bottomInsetPx` changes, and then used to
+     * return here — because the truck had not moved and the bearing had
+     * not turned — so the new padding was computed and thrown away. The
+     * camera kept whatever padding it applied on the LAST position
+     * change, which at startup is the ease that ran before the layout had
+     * measured itself: an inset of 0, and a truck parked at 71% of the
+     * viewport with the cockpit band starting at 70%.
+     *
+     * That is the other half of the marker obstruction. The band being
+     * measured correctly (DrivingScreen's one observed wrapper) is only
+     * useful if a change in that measurement reaches the camera, and the
+     * driver changes it constantly: hiding the clocks, an urgent band
+     * appearing, a rotation, the browser chrome sliding away.
+     *
+     * Compared against what was APPLIED, not against the previous prop,
+     * so this re-eases exactly once per real change and never on a
+     * re-render that carries the same number.
+     */
+    const insetChanged = appliedInsetRef.current !== bottomInsetPx;
+    if (!shouldRecenter(position, lastCenteredRef.current) && !bearingMoved && !insetChanged) {
+      return;
+    }
 
     const height = containerRef.current?.clientHeight ?? 0;
     selfMoveRef.current = true;
@@ -602,6 +628,7 @@ export function NavigationMap({
     });
     selfMoveRef.current = false;
     appliedBearingRef.current = bearing;
+    appliedInsetRef.current = bottomInsetPx;
     lastCenteredRef.current = { ...position };
   }, [ready, position, headingDeg, speedMph, navigating, geometry, bottomInsetPx, dispatch]);
 

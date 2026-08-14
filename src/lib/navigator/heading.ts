@@ -321,8 +321,22 @@ export const FOLLOW_TOP_PADDING_FRACTION = 0.42;
  */
 export const FOLLOW_BOTTOM_RESERVED_PX = 220;
 
-/** Gap between the truck and the band above which it must stay. */
-export const FOLLOW_CLEARANCE_PX = 24;
+/**
+ * How far the truck's CENTER must stay above the band's top edge.
+ *
+ * It was 24 px, which reads as a comfortable gap and is not one: the
+ * camera positions the marker's CENTRE, and the marker is drawn 36 px
+ * tall (the design's own floor for a followed vehicle). Twenty-four
+ * pixels of centre clearance therefore leaves the marker's lower half
+ * six pixels clear of the band — measurable, but close enough that a
+ * degree of rounding or a slightly taller band puts the wheels under the
+ * clocks.
+ *
+ * Split into what it actually is: half the marker, plus a real gap.
+ */
+export const FOLLOW_MARKER_HALF_PX = 18;
+export const FOLLOW_MARKER_GAP_PX = 26;
+export const FOLLOW_CLEARANCE_PX = FOLLOW_MARKER_HALF_PX + FOLLOW_MARKER_GAP_PX;
 
 /**
  * Where the truck sits in the viewport, expressed as MapLibre padding.

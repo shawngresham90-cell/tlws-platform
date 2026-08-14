@@ -325,6 +325,18 @@ async function measure(page) {
       }
     }
 
+    /*
+     * THE BOTTOM BAND, as one measured box.
+     *
+     * Since the cleanup milestone the trip strip, the HOS region and the
+     * control row live inside one wrapper, so "how much of the bottom is
+     * cockpit" is a single rect rather than a guess assembled from three.
+     * The same wrapper is what the camera measures, so the bench and the
+     * product are reading the same number.
+     */
+    const band = document.querySelector('[data-bottom-band]');
+    const bandRect = band ? band.getBoundingClientRect() : null;
+
     const maneuver = document.querySelector('[aria-label="Next maneuver"]');
     const hosCompact = document.querySelector('[aria-label^="Hours of service — compact"]');
     const hosUnset = document.querySelector('[aria-label^="Hours of service — not"]');
@@ -375,6 +387,15 @@ async function measure(page) {
           clearAbove = Math.round(cy - y);
         }
         truck.clearAbovePx = clearAbove;
+        /*
+         * CLEARANCE: the gap between the marker's LOWER EDGE and the
+         * band's top. Negative means the marker is inside the cockpit
+         * band — which is the defect this milestone exists to close, and
+         * which measured -27 px to -114 px on main.
+         */
+        truck.bottom = Math.round(mr.bottom);
+        truck.clearancePx = bandRect === null ? null : Math.round(bandRect.top - mr.bottom);
+        truck.fraction = Number((cy / vh).toFixed(3));
       }
     }
 
@@ -442,6 +463,12 @@ async function measure(page) {
       overlays,
       truck,
       targets,
+      band: bandRect
+        ? {
+            top: Math.round(bandRect.top),
+            h: Math.round(bandRect.height),
+          }
+        : null,
       hscroll: body.scrollWidth > vw + 1,
       vscroll: body.scrollHeight > vh + 1,
       urgentVisible: /URGENT|OVER|Break required|limit reached|window ended/.test(
@@ -574,21 +601,31 @@ async function runViewport(browser, vp, { clocks, longNames, key }) {
       `${expanded.surfaceOverflow}px`,
     );
     /*
-     * TRUCK CLEARANCE. On main, the marker was already covered on four of
-     * the eight viewports — by the HOS strip in landscape and by the TRIP
-     * STRIP (Speed / Remaining / Arrive) on the short portraits. This
-     * milestone removes the HOS half of that: collapsing the clocks
-     * clears 360x640 and 375x667 outright.
+     * TRUCK CLEARANCE — a hard assertion since the cleanup milestone.
      *
-     * What remains is the trip strip on the three shortest screens, which
-     * this milestone neither introduced nor was asked to change — the
-     * strip is not on its priority list in either direction. Recorded as
-     * a note so the number stays visible and honest.
+     * It was a note while the camera could not see the band: the reserve
+     * came from a ResizeObserver on the trip strip alone, which fires on
+     * SIZE and not on position, so a band that grew UNDERNEATH the strip
+     * never re-reported. Measured on main the marker sat 27 to 114 px
+     * inside the cockpit band. The band is one observed box now, so the
+     * number is knowable and the check can be a check.
      */
-    note(
+    verdict(
       `${name}: the truck marker is not covered by an overlay`,
       expanded.truck === null || expanded.truck.clear,
       expanded.truck?.coveredBy ?? '',
+    );
+    verdict(
+      `${name}: and clears the cockpit band by a measurable margin`,
+      expanded.truck === null ||
+        expanded.truck.clearancePx === null ||
+        expanded.truck.clearancePx > 0,
+      `${expanded.truck?.clearancePx}px (band top ${expanded.band?.top}, marker bottom ${expanded.truck?.bottom})`,
+    );
+    verdict(
+      `${name}: while staying in the lower half, so the road ahead keeps the screen`,
+      expanded.truck === null || expanded.truck.fraction > 0.5,
+      String(expanded.truck?.fraction),
     );
     for (const [ctl, min] of [
       ['stop', 48],
@@ -642,10 +679,17 @@ async function runViewport(browser, vp, { clocks, longNames, key }) {
           (collapsed.surfaceOverflow === null || collapsed.surfaceOverflow <= 1),
         `h=${collapsed.hscroll} surface=${collapsed.surfaceOverflow}px`,
       );
-      note(
+      verdict(
         `${name}: the truck marker is clear once the clocks are hidden`,
         collapsed.truck === null || collapsed.truck.clear,
         collapsed.truck?.coveredBy ?? '',
+      );
+      verdict(
+        `${name}: with clearance recomputed for the shorter band`,
+        collapsed.truck === null ||
+          collapsed.truck.clearancePx === null ||
+          collapsed.truck.clearancePx > 0,
+        `${collapsed.truck?.clearancePx}px`,
       );
       /* What this milestone DOES promise: hiding never makes it worse. */
       verdict(
