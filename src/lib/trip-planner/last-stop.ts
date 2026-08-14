@@ -1,4 +1,5 @@
 import type { Route, StopCandidate, RemainingClocks } from './types';
+import type { RouteTiming } from './route-time-axis';
 import { HOS } from './types';
 import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './directory-layer';
 
@@ -43,7 +44,20 @@ export type LastStopResult = {
   slots: LastStopSlot[];
   /** True when zero reservable candidates exist along the corridor at all. */
   noReservableOnCorridor: boolean;
+  /**
+   * False when the provider gave no usable timing for this route. Slots is
+   * then empty BY REFUSAL, not because nothing was found — a distinction a
+   * driver must be able to see, because "no parking within your clock" and
+   * "we could not work out when you get there" call for different actions.
+   */
+  timingAvailable: boolean;
+  /** Why timing was unavailable, when it was. */
+  timingProblem?: string;
 };
+
+/** The sentence shown when eligibility could not be determined. */
+export const TIMING_UNAVAILABLE_NOTICE =
+  'Cannot determine parking safely — the route provider did not return usable travel times.';
 
 /** Minutes to drive from origin to `toMile` using per-leg average speeds. */
 export function driveMinutesToMile(route: Route, toMile: number): number {
@@ -70,11 +84,22 @@ type Reach = {
  * buffer. Returns null when the stop is NOT safely reachable.
  */
 export function reachWithinClocks(
-  route: Route,
+  timing: RouteTiming,
   clocks: RemainingClocks,
   routeMile: number,
   bufferMin: number,
 ): Reach | null {
+  /*
+   * NO TIMING, NO ELIGIBILITY.
+   *
+   * The engine's promise is "you can legally park here". That sentence
+   * needs the provider's travel times; an assumed average speed puts the
+   * stop CLOSER in time than the truck will actually reach it, and does
+   * so worst exactly when traffic is bad — handing a driver a stop they
+   * cannot make on the day they most needed the warning. So a caller
+   * without provider timing gets nothing, not an estimate.
+   */
+  if (timing.kind !== 'provider') return null;
   // Fail CLOSED on any non-finite input: NaN comparisons are all false, so
   // without this guard a corrupted clock would pass the filter as
   // "reachable" — the exact inversion this safety layer exists to prevent.
@@ -87,19 +112,47 @@ export function reachWithinClocks(
   ) {
     return null;
   }
-  const driveMinutes = driveMinutesToMile(route, routeMile);
-  if (!Number.isFinite(driveMinutes)) return null;
-  // A required 30-minute break extends wall-clock time (and burns the
-  // 14-hour window) when the drive crosses the break clock.
-  const breakMinutes = driveMinutes > clocks.untilBreakMin ? HOS.MIN_BREAK_MIN : 0;
-  const wallClockMinutes = driveMinutes + breakMinutes;
-  const drivingLeft = clocks.drivingMin - driveMinutes;
-  const windowLeft = clocks.windowMin - wallClockMinutes;
-  if (!(drivingLeft >= bufferMin && windowLeft >= bufferMin)) return null;
+  const window = timing.minutesToMile(routeMile);
+  if (window === null) return null;
+  const { earliestMin, latestMin } = window;
+  if (!Number.isFinite(earliestMin) || !Number.isFinite(latestMin)) return null;
+  void earliestMin;
+
+  /*
+   * DECIDE ON THE WORST CASE. `latestMin` is the late end of the provider
+   * window; a stop only counts as reachable if it is reachable even then.
+   * `earliestMin` is used solely to detect the straddle below.
+   */
+  const passes = (driveMinutes: number) => {
+    // A required 30-minute break extends wall-clock time (and burns the
+    // 14-hour window) when the drive crosses the break clock.
+    const breakMinutes = driveMinutes > clocks.untilBreakMin ? HOS.MIN_BREAK_MIN : 0;
+    const wallClockMinutes = driveMinutes + breakMinutes;
+    const drivingLeft = clocks.drivingMin - driveMinutes;
+    const windowLeft = clocks.windowMin - wallClockMinutes;
+    return {
+      ok: drivingLeft >= bufferMin && windowLeft >= bufferMin,
+      wallClockMinutes,
+      hosRemainingMinAtArrival: Math.min(drivingLeft, windowLeft),
+    };
+  };
+
+  /*
+   * A coarse window that STRADDLES the deadline — reachable at the early
+   * end, not at the late one — is excluded here by construction, because
+   * failing on `latestMin` returns null. That is the conservative half of
+   * the choice between excluding such a stop and offering it as a marked
+   * maybe: a slot says "you can legally park here", and a maybe cannot
+   * carry that sentence. Deciding on the worst case is the whole rule,
+   * and it needs no second flag to enforce it.
+   */
+  const worst = passes(latestMin);
+  if (!worst.ok) return null;
+
   return {
-    driveMinutes,
-    wallClockMinutes,
-    hosRemainingMinAtArrival: Math.min(drivingLeft, windowLeft),
+    driveMinutes: Math.round(latestMin),
+    wallClockMinutes: worst.wallClockMinutes,
+    hosRemainingMinAtArrival: worst.hosRemainingMinAtArrival,
   };
 }
 
@@ -146,15 +199,21 @@ function toSlot(
  * backup-reservable, last-free).
  */
 export function selectLastStops(args: {
-  route: Route;
+  /**
+   * REQUIRED, and the reason this signature changed. Eligibility used to
+   * come from `route`'s per-leg average speeds; it now comes from the
+   * provider's own timings, or not at all. Passing
+   * `timingUnavailable(reason)` yields an empty, clearly-labelled result
+   * rather than a plausible one — which is what a straight-line estimate
+   * must produce.
+   */
+  timing: RouteTiming;
   candidates: StopCandidate[];
   clocks: RemainingClocks;
   departAtMs: number;
   bufferMin?: number;
 }): LastStopResult {
   const bufferMin = args.bufferMin ?? DEFAULT_SAFETY_BUFFER_MIN;
-  const rawUsable = Math.min(args.clocks.drivingMin, args.clocks.windowMin) - bufferMin;
-  const usableDriveMin = Number.isFinite(rawUsable) ? Math.max(0, rawUsable) : 0;
 
   // Zero-space safety rule: every Last Stop slot tells a driver "you can
   // legally park here", so a listing without a confirmed positive space
@@ -165,16 +224,43 @@ export function selectLastStops(args: {
   );
   const reservableAll = parkingCandidates.filter((c) => c.reservationUrl);
 
+  /*
+   * EXISTENCE IS KNOWABLE WITHOUT TIMING; REACHABILITY IS NOT.
+   *
+   * Whether any reservable parking sits on this corridor is a property of
+   * the directory, so it is computed above the timing guard and reported
+   * either way. Only "can this driver get there in time" needs provider
+   * travel times, and that is what goes silent below.
+   */
+  if (args.timing.kind !== 'provider') {
+    return {
+      usableDriveMin: 0,
+      bufferMin,
+      slots: [],
+      noReservableOnCorridor: reservableAll.length === 0,
+      timingAvailable: false,
+      timingProblem: args.timing.reason,
+    };
+  }
+  const timing = args.timing;
+  const rawUsable = Math.min(args.clocks.drivingMin, args.clocks.windowMin) - bufferMin;
+  const usableDriveMin = Number.isFinite(rawUsable) ? Math.max(0, rawUsable) : 0;
+
   type Scored = { candidate: StopCandidate; reach: Reach; score: number };
   const reachable = (list: StopCandidate[]): Scored[] =>
     list
       .map((candidate) => ({
         candidate,
-        reach: reachWithinClocks(args.route, args.clocks, candidate.routeMile, bufferMin),
+        reach: reachWithinClocks(timing, args.clocks, candidate.routeMile, bufferMin),
         score: scoreCandidate(candidate, 'overnight').total,
       }))
       .filter((r): r is Scored => r.reach !== null);
 
+  /*
+   * SAFETY ELIGIBILITY FIRST, PREFERENCES SECOND. `reachable` applies the
+   * hard filter — worst-case arrival inside the buffered deadline — and
+   * only what survives it is ever scored or ordered below.
+   */
   const reservable = reachable(reservableAll);
   // Free = the directory explicitly says free. Unknown is never assumed free.
   const free = reachable(parkingCandidates.filter((c) => c.freeParking === true));
@@ -226,5 +312,6 @@ export function selectLastStops(args: {
     bufferMin,
     slots,
     noReservableOnCorridor: reservableAll.length === 0,
+    timingAvailable: true,
   };
 }

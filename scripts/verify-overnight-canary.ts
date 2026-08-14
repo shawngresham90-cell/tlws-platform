@@ -24,8 +24,28 @@ import {
   type DirectoryListing,
   type RoutePoint,
 } from '@/lib/trip-planner/directory-layer';
-import { selectLastStops } from '@/lib/trip-planner/last-stop';
+import { selectLastStops, driveMinutesToMile } from '@/lib/trip-planner/last-stop';
+import type { RouteTiming } from '@/lib/trip-planner/route-time-axis';
 import { buildRoute, type RemainingClocks } from '@/lib/trip-planner/types';
+
+/*
+ * TEST-ONLY time source. These harnesses exercise the ELIGIBILITY FILTER,
+ * not the time source, so they inject timing derived from the synthetic
+ * route's own leg speeds. It lives here and not in `src/` on purpose:
+ * production must never be able to reach an average-speed eligibility
+ * path, which is the whole point of `RouteTiming` being required.
+ */
+function timingOf(route: Parameters<typeof driveMinutesToMile>[0]): RouteTiming {
+  return {
+    kind: 'provider',
+    minutesToMile(mile: number) {
+      const m = driveMinutesToMile(route, mile);
+      return Number.isFinite(m)
+        ? { earliestMin: m, latestMin: m, precision: 'tight' as const }
+        : null;
+    },
+  };
+}
 
 let passed = 0;
 let failed = 0;
@@ -191,7 +211,7 @@ const freeProbe = toStopCandidates(
   routePoints,
 );
 const last = selectLastStops({
-  route,
+  timing: timingOf(route),
   candidates: freeProbe,
   clocks,
   departAtMs: 1753660800000,

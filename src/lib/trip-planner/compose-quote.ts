@@ -3,7 +3,13 @@ import { freshClockState, remainingClocks, validateClockState } from './hos-engi
 import { planTrip } from './optimizer';
 import { estimateRoute } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
-import { selectLastStops, type LastStopResult } from './last-stop';
+import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
+import {
+  buildTimeAxis,
+  routeTimingFromAxis,
+  timingUnavailable,
+  type RouteTiming,
+} from './route-time-axis';
 import { estimateTripCost } from './cost-engine';
 import {
   DEFAULT_PLANNER_OPTIONS,
@@ -17,7 +23,7 @@ import {
 import type { RoutingPort, WeatherAlert, WeatherBand, WeatherPort } from './providers';
 import type { FuelPriceResult } from './eia-fuel';
 import { latLngSchema } from './api-contracts';
-import { TRUCK_LIMITS } from './here-routing';
+import { TRUCK_LIMITS, type HereManeuver } from './here-routing';
 
 /**
  * Composite trip quote (Phase 4) — the one call the mobile UI makes. Pure
@@ -265,6 +271,8 @@ export async function composeQuote(
     isEstimate: boolean;
     method: string;
     instructions?: string[];
+    /** Provider action timings — the only sound basis for eligibility. */
+    maneuvers?: HereManeuver[];
   } = {
     route: estimated.route,
     routePoints: estimated.routePoints,
@@ -290,6 +298,7 @@ export async function composeQuote(
         isEstimate: false,
         method: routingOutcome.value.provider,
         instructions: routingOutcome.value.instructions,
+        maneuvers: routingOutcome.value.maneuvers,
       };
     } else {
       warnings.push('live truck routing unavailable — distances and times are estimates');
@@ -354,12 +363,43 @@ export async function composeQuote(
   // Last Stop slots — pure selection layered over the organic itinerary.
   // Reachability (arrival inside clocks minus buffer) is a hard filter here;
   // the organic ranking above is never touched by these slots.
+  /*
+   * PARKING ELIGIBILITY RUNS ON PROVIDER TIME OR NOT AT ALL.
+   *
+   * A Last Stop slot tells a driver "you can legally park here", and that
+   * claim is only as good as the arrival time behind it. The straight-line
+   * estimate above is a labelled distance guess at an assumed speed — fine
+   * for showing approximate miles, never sound enough to decide where a
+   * driver's clock runs out. So an estimated route yields NO slots and
+   * says why, rather than plausible ones.
+   *
+   * A live route builds the axis from HERE's own action durations. The
+   * planner's port does not retain full geometry, which is why the axis is
+   * built without positions here: timing by distance is all eligibility
+   * needs, and the map pin is a separate, geometry-bearing concern.
+   */
+  const timing: RouteTiming = routeData.isEstimate
+    ? timingUnavailable(
+        'route is a straight-line estimate; provider travel times were unavailable.',
+      )
+    : (() => {
+        const axis = buildTimeAxis({
+          maneuvers: routeData.maneuvers ?? [],
+          totalSeconds: routeData.route.driveMinutes * 60,
+          totalMeters: routeData.route.totalMiles * 1609.344,
+        });
+        return axis.ok
+          ? routeTimingFromAxis(axis)
+          : timingUnavailable(`provider timing unusable: ${axis.detail}`);
+      })();
+
   const lastStop = selectLastStops({
-    route: routeData.route,
+    timing,
     candidates,
     clocks: remainingAtDeparture,
     departAtMs: input.departAtMs,
   });
+  if (!lastStop.timingAvailable) warnings.push(TIMING_UNAVAILABLE_NOTICE);
 
   return {
     ok: true,

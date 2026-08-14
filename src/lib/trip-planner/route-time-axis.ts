@@ -80,6 +80,8 @@ export type TimeAxis = {
   /** Total seconds the axis covers (the sum of its steps). */
   totalS: number;
   totalMeters: number;
+  /** False when built from timings alone; `projectAtSeconds` then refuses. */
+  hasGeometry: boolean;
 };
 
 export type TimeProjection = {
@@ -116,19 +118,25 @@ export type TimeProjection = {
  */
 export function buildTimeAxis(input: {
   maneuvers: readonly HereManeuver[];
-  positions: readonly LatLng[];
+  /**
+   * Optional. WITH geometry the axis can answer "where is the truck at
+   * time T" (`projectAtSeconds`). WITHOUT it the axis still answers "when
+   * does the truck reach distance D" (`arrivalAtMeters`), because that
+   * question needs only the provider's action lengths and durations.
+   *
+   * The split matters in practice: the planner's routing port does not
+   * retain full geometry, and refusing it timing on that basis would push
+   * parking eligibility back onto assumed speed — the exact failure this
+   * work exists to remove. So the map pin degrades and the safety filter
+   * does not.
+   */
+  positions?: readonly LatLng[];
   totalSeconds: number;
   totalMeters: number;
 }): TimeAxis | TimeAxisRefusal {
-  const { maneuvers, positions, totalSeconds, totalMeters } = input;
-
-  if (positions.length < 2) {
-    return {
-      ok: false,
-      reason: 'no-geometry',
-      detail: `route polyline has ${positions.length} point(s); at least 2 are required.`,
-    };
-  }
+  const { maneuvers, totalSeconds, totalMeters } = input;
+  const positions = input.positions ?? [];
+  const hasGeometry = positions.length >= 2;
 
   // Only actions that carry BOTH a duration and a usable offset can
   // contribute. A partial list is not patched with estimates — it is
@@ -139,9 +147,8 @@ export function buildTimeAxis(input: {
         typeof m.durationS === 'number' &&
         Number.isFinite(m.durationS) &&
         m.durationS >= 0 &&
-        Number.isInteger(m.offset) &&
-        m.offset >= 0 &&
-        m.offset < positions.length,
+        (!hasGeometry ||
+          (Number.isInteger(m.offset) && m.offset >= 0 && m.offset < positions.length)),
     )
     .sort((a, b) => a.offset - b.offset);
 
@@ -161,10 +168,22 @@ export function buildTimeAxis(input: {
     const durationS = m.durationS as number;
     // The action runs from its own offset to the NEXT action's offset;
     // the final action runs to the end of the geometry.
-    const endIndex = i + 1 < timed.length ? timed[i + 1].offset : positions.length - 1;
-    if (endIndex <= m.offset) continue; // zero-length action: no span to place time on
+    const endIndex = hasGeometry
+      ? i + 1 < timed.length
+        ? timed[i + 1].offset
+        : positions.length - 1
+      : -1;
+    // With geometry, an action covering no polyline span cannot carry a
+    // position. Without geometry there is no span to require.
+    if (hasGeometry && endIndex <= m.offset) continue;
     const lengthM = typeof m.lengthM === 'number' && m.lengthM >= 0 ? m.lengthM : 0;
-    steps.push({ startS, durationS, startIndex: m.offset, endIndex, lengthM });
+    steps.push({
+      startS,
+      durationS,
+      startIndex: hasGeometry ? m.offset : -1,
+      endIndex,
+      lengthM,
+    });
     startS += durationS;
     meters += lengthM;
   }
@@ -201,6 +220,7 @@ export function buildTimeAxis(input: {
     steps,
     totalS: axisTotal,
     totalMeters: meters > 0 ? meters : totalMeters,
+    hasGeometry,
   };
 }
 
@@ -227,6 +247,14 @@ export function projectAtSeconds(
       ok: false,
       reason: 'no-provider-timing',
       detail: `target of ${targetSeconds}s is not a usable duration.`,
+    };
+  }
+  if (!axis.hasGeometry || positions.length < 2) {
+    return {
+      ok: false,
+      reason: 'no-geometry',
+      detail:
+        'this axis was built from provider timings without route geometry; it can time a point but not place one.',
     };
   }
   if (targetSeconds > axis.totalS) {
@@ -281,4 +309,115 @@ export function projectAtSeconds(
     reason: 'beyond-route-end',
     detail: `target of ${Math.round(targetSeconds)}s fell past every step of the axis.`,
   };
+}
+
+/* ------------------------------------------------- arrival at a place */
+
+const METERS_PER_MILE = 1609.344;
+
+export type Arrival = {
+  ok: true;
+  /** Best estimate of seconds from departure to this point. */
+  seconds: number;
+  /**
+   * The WORST CASE the provider data supports — the end of the containing
+   * action. Eligibility is decided against this, never against `seconds`:
+   * a stop is only "reachable before the deadline" if it is reachable
+   * even at the late end of what the provider actually told us.
+   */
+  latestSeconds: number;
+  /** The early end of the same window. */
+  earliestSeconds: number;
+  precision: 'tight' | 'coarse';
+};
+
+/**
+ * When does the truck reach a point `meters` along the route?
+ *
+ * The inverse of `projectAtSeconds`, and the function parking eligibility
+ * runs on. It returns a WINDOW rather than a number because that is what
+ * the provider data supports: inside one action there is no information
+ * about where the truck slows, so the honest answer to "when do I get to
+ * mile 340" is "between these two times".
+ *
+ * Refuses rather than extrapolating past the end of the route.
+ */
+export function arrivalAtMeters(axis: TimeAxis, meters: number): Arrival | TimeAxisRefusal {
+  if (!Number.isFinite(meters) || meters < 0) {
+    return {
+      ok: false,
+      reason: 'no-provider-timing',
+      detail: `distance of ${meters}m is not a usable position on the route.`,
+    };
+  }
+
+  let accMeters = 0;
+  for (const step of axis.steps) {
+    const stepEndMeters = accMeters + step.lengthM;
+    if (meters > stepEndMeters) {
+      accMeters = stepEndMeters;
+      continue;
+    }
+    const within = step.lengthM > 0 ? (meters - accMeters) / step.lengthM : 0;
+    const clamped = Math.min(1, Math.max(0, within));
+    const endS = step.startS + step.durationS;
+    return {
+      ok: true,
+      seconds: step.startS + step.durationS * clamped,
+      earliestSeconds: step.startS,
+      latestSeconds: endS,
+      precision: step.durationS > COARSE_WINDOW_S ? 'coarse' : 'tight',
+    };
+  }
+
+  return {
+    ok: false,
+    reason: 'beyond-route-end',
+    detail: `${Math.round(meters)}m is past the route's ${Math.round(accMeters)}m of timed geometry.`,
+  };
+}
+
+/**
+ * The time source the stop engine consumes.
+ *
+ * Deliberately a small interface rather than the axis itself: it is the
+ * seam that makes "we do not know" a first-class answer. A caller holding
+ * a straight-line estimate constructs `timingUnavailable` and the engine
+ * returns nothing, instead of quietly computing eligibility from an
+ * assumed speed.
+ */
+export type RouteTiming =
+  | {
+      kind: 'provider';
+      /**
+       * Minutes from departure to a route mile, as a window. Null when the
+       * mile is off the timed portion of the route.
+       */
+      minutesToMile(mile: number): {
+        earliestMin: number;
+        latestMin: number;
+        precision: 'tight' | 'coarse';
+      } | null;
+    }
+  | { kind: 'unavailable'; reason: string };
+
+/** Build the provider time source from a validated axis. */
+export function routeTimingFromAxis(axis: TimeAxis): RouteTiming {
+  return {
+    kind: 'provider',
+    minutesToMile(mile: number) {
+      const a = arrivalAtMeters(axis, mile * METERS_PER_MILE);
+      if (!a.ok) return null;
+      return {
+        earliestMin: a.earliestSeconds / 60,
+        latestMin: a.latestSeconds / 60,
+        precision: a.precision,
+      };
+    },
+  };
+}
+
+/** The honest "we cannot time this route" source. */
+export function timingUnavailable(reason: string): RouteTiming {
+  return { kind: 'unavailable', reason };
 }

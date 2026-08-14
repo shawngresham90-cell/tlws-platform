@@ -31,6 +31,7 @@ import {
   TRAFFIC_NO_DELAY,
 } from '@/lib/trip-planner/traffic';
 import {
+  arrivalAtMeters,
   buildTimeAxis,
   projectAtSeconds,
   COARSE_WINDOW_S,
@@ -331,6 +332,40 @@ function corridor(actions: { offset: number; duration: number; length: number }[
     TIMING_TOLERANCE > 0 && TIMING_TOLERANCE < 0.1,
   );
 
+  /*
+   * GEOMETRY IS OPTIONAL, AND THE DEGRADATION IS ASYMMETRIC ON PURPOSE.
+   *
+   * The planner's routing port does not retain full polylines. Refusing
+   * it timing on that basis would push parking eligibility back onto
+   * assumed speed — the failure this work exists to remove. So an axis
+   * built without geometry still answers "when do I reach mile N", and
+   * only the map PIN degrades.
+   */
+  const timingOnly = buildTimeAxis({
+    maneuvers: drifted.maneuvers,
+    totalSeconds: 2000,
+    totalMeters: 80000,
+  });
+  check(
+    'axis: builds from timings alone when the provider kept no geometry',
+    timingOnly.ok === true && timingOnly.hasGeometry === false,
+    timingOnly,
+  );
+  if (timingOnly.ok) {
+    const when = arrivalAtMeters(timingOnly, 40000);
+    check(
+      'axis: ...and can still time a point on the route, which is what safety needs',
+      when.ok === true,
+      when,
+    );
+    const pin = projectAtSeconds(timingOnly, [], 500);
+    check(
+      'axis: ...while refusing to PLACE one, which needs geometry it does not have',
+      pin.ok === false && pin.reason === 'no-geometry',
+      pin,
+    );
+  }
+
   const noGeometry = buildTimeAxis({
     maneuvers: drifted.maneuvers,
     positions: [{ lat: 1, lng: 1 }],
@@ -338,8 +373,8 @@ function corridor(actions: { offset: number; duration: number; length: number }[
     totalMeters: 80000,
   });
   check(
-    'axis: refuses a route with no geometry to place anything on',
-    noGeometry.ok === false && noGeometry.reason === 'no-geometry',
+    'axis: a single-point polyline is treated as no geometry, not as a route',
+    noGeometry.ok === true && noGeometry.hasGeometry === false,
     noGeometry,
   );
 }
