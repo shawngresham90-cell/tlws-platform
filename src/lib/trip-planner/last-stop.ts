@@ -53,6 +53,26 @@ export type LastStopResult = {
   timingAvailable: boolean;
   /** Why timing was unavailable, when it was. */
   timingProblem?: string;
+  /**
+   * EVERY candidate that cleared the safety filter, best-scored first.
+   *
+   * `slots` answers a different question — the four NAMED slots (last
+   * reservable, best reservable, backup, last free) that the original
+   * Last Stop product is built around. Plan My Day promises a ranked top
+   * three instead, and deriving that from the named slots silently caps
+   * a free-parking corridor at one option. Both views come from the same
+   * filtered set, so they can never disagree about what is reachable.
+   */
+  eligible: EligibleStop[];
+};
+
+export type EligibleStop = {
+  candidate: StopCandidate;
+  driveMinutes: number;
+  arriveAtMs: number;
+  hosRemainingMinAtArrival: number;
+  detourMinutesEstimate: number;
+  score: number;
 };
 
 /** The sentence shown when eligibility could not be determined. */
@@ -240,6 +260,7 @@ export function selectLastStops(args: {
       noReservableOnCorridor: reservableAll.length === 0,
       timingAvailable: false,
       timingProblem: args.timing.reason,
+      eligible: [],
     };
   }
   const timing = args.timing;
@@ -313,5 +334,21 @@ export function selectLastStops(args: {
     slots,
     noReservableOnCorridor: reservableAll.length === 0,
     timingAvailable: true,
+    /*
+     * Safety first, preference second — again. This list is the SAME
+     * filtered set the slots came from, merely ordered by score, so a
+     * caller taking the top three can never receive a stop the filter
+     * rejected.
+     */
+    eligible: reachable(parkingCandidates)
+      .sort(byScore)
+      .map((r) => ({
+        candidate: r.candidate,
+        driveMinutes: r.reach.driveMinutes,
+        arriveAtMs: args.departAtMs + r.reach.wallClockMinutes * 60_000,
+        hosRemainingMinAtArrival: r.reach.hosRemainingMinAtArrival,
+        detourMinutesEstimate: Math.max(1, Math.round(r.candidate.offRouteMiles * 2)),
+        score: r.score,
+      })),
   };
 }

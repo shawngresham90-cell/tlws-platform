@@ -11,6 +11,7 @@ import {
   type RouteTiming,
 } from './route-time-axis';
 import { estimateTripCost } from './cost-engine';
+import { planMyDay, type PlanMyDay } from './plan-my-day';
 import {
   DEFAULT_PLANNER_OPTIONS,
   DEFAULT_TRUCK_PROFILE,
@@ -199,6 +200,12 @@ export type QuoteResult = {
   remainingAtDeparture: RemainingClocks;
   /** Named Last Stop slots (reservable/free) — see lib/trip-planner/last-stop. */
   lastStop: LastStopResult;
+  /**
+   * Plan My Day (Phase 1): every results-screen number, assembled from ONE
+   * route-time axis so the clock marker, the break, the parking choices and
+   * the weather section cannot disagree about when the truck arrives.
+   */
+  plan: PlanMyDay;
   itinerary: Itinerary;
   cost: TripCostEstimate;
   fuelPrice: FuelPriceResult | null;
@@ -273,6 +280,10 @@ export async function composeQuote(
     instructions?: string[];
     /** Provider action timings — the only sound basis for eligibility. */
     maneuvers?: HereManeuver[];
+    /** Full decoded polyline, when the port retained it (map markers). */
+    geometry?: { lat: number; lng: number }[];
+    /** Free-flow baseline: evidence traffic was applied, or null. */
+    baseSeconds?: number | null;
   } = {
     route: estimated.route,
     routePoints: estimated.routePoints,
@@ -299,6 +310,8 @@ export async function composeQuote(
         method: routingOutcome.value.provider,
         instructions: routingOutcome.value.instructions,
         maneuvers: routingOutcome.value.maneuvers,
+        geometry: routingOutcome.value.geometry,
+        baseSeconds: routingOutcome.value.summary?.baseSeconds ?? null,
       };
     } else {
       warnings.push('live truck routing unavailable — distances and times are estimates');
@@ -412,6 +425,25 @@ export async function composeQuote(
     },
     remainingAtDeparture,
     lastStop,
+    plan: planMyDay({
+      maneuvers: routeData.maneuvers ?? [],
+      positions: routeData.geometry ?? [],
+      totalSeconds: routeData.route.driveMinutes * 60,
+      baseSeconds: routeData.baseSeconds ?? null,
+      totalMeters: routeData.route.totalMiles * 1609.344,
+      // The wire value, not an assumption about what the builder sends.
+      departureTimeParam: routeData.isEstimate ? null : new Date(input.departAtMs).toISOString(),
+      isEstimate: routeData.isEstimate,
+      clocks: remainingAtDeparture,
+      bufferMin: lastStop.bufferMin,
+      departAtMs: input.departAtMs,
+      candidates,
+      alerts: weather.alerts,
+      // Phase 1 plans US HOS only; the region gate lives in the weather
+      // module and a Canadian route receives the honest refusal there.
+      country: 'US',
+      alertSource: 'nws-us',
+    }),
     itinerary,
     cost,
     fuelPrice,

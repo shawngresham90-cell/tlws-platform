@@ -13,7 +13,13 @@
  * render a confident plan by accident, because whatever could not be
  * computed is ABSENT rather than defaulted.
  */
-import { planMyDay, PARKING_CHOICES, NOT_AN_ELD } from '@/lib/trip-planner/plan-my-day';
+import {
+  planMyDay,
+  parkingHeadline,
+  PARKING_CHOICES,
+  PARKING_SHORTFALL_NOTE,
+  NOT_AN_ELD,
+} from '@/lib/trip-planner/plan-my-day';
 import { PLANNING_AID_ONLY } from '@/lib/trip-planner/drive-window';
 import { CANNOT_MAP } from '@/lib/trip-planner/clock-limit-marker';
 import type { HereManeuver } from '@/lib/trip-planner/here-routing';
@@ -191,13 +197,52 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
   const p = base({ candidates: [stop('only', 60)] });
   check('a single reachable stop is offered alone', p.parking.length === 1, p.parking.length);
   check(
+    '...under a heading that matches what actually qualified',
+    p.parkingHeadline === '1 safe parking option found',
+    p.parkingHeadline,
+  );
+  check(
     '...and the shortfall is stated rather than padded',
-    /Only 1 parking option/i.test(p.parkingProblem ?? ''),
+    p.parkingProblem === PARKING_SHORTFALL_NOTE,
     p.parkingProblem,
   );
 
   const none = base({ candidates: [stop('far', 590)] });
   check('no reachable stop yields no choices', none.parking.length === 0);
+  check(
+    '...under the no-option heading, never a promise of three',
+    none.parkingHeadline === 'No parking option meets your safe stopping window',
+    none.parkingHeadline,
+  );
+
+  /*
+   * THE HEADING MOVES, THE LIST NEVER GROWS. Padding back to three is the
+   * failure the safety filter exists to prevent, so the wording is pinned
+   * exactly at each count.
+   */
+  const headings: [number, string][] = [
+    [3, 'Your 3 safest parking options'],
+    [2, '2 safe parking options found'],
+    [1, '1 safe parking option found'],
+    [0, 'No parking option meets your safe stopping window'],
+  ];
+  for (const [count, expected] of headings) {
+    check(
+      `heading for ${count} option(s) is exact`,
+      parkingHeadline(count) === expected,
+      parkingHeadline(count),
+    );
+  }
+  check(
+    'three qualifying stops earn the full heading',
+    base().parkingHeadline === 'Your 3 safest parking options',
+    base().parkingHeadline,
+  );
+  check(
+    'and three qualifying stops carry no shortfall note',
+    base().parkingProblem === null,
+    base().parkingProblem,
+  );
   check(
     '...and says nothing is reachable inside the clock',
     /reachable inside your clock/i.test(none.parkingProblem ?? ''),

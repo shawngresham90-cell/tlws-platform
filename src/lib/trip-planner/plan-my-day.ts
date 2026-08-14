@@ -12,7 +12,7 @@ import {
 import { clockLimitMarker, type ClockLimitMarker } from './clock-limit-marker';
 import { driveWindow, PLANNING_AID_ONLY, type DriveWindow } from './drive-window';
 import { planBreak, type BreakPlan } from './break-plan';
-import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopSlot } from './last-stop';
+import { selectLastStops, TIMING_UNAVAILABLE_NOTICE } from './last-stop';
 import {
   relevantWeather,
   type RouteCountry,
@@ -44,7 +44,7 @@ export const NOT_AN_ELD =
   'Trip Planner is not an ELD. Your ELD remains the authoritative record of your hours.';
 
 export type ParkingChoice = {
-  slot: LastStopSlot;
+  candidate: StopCandidate;
   /** Provider-timed arrival, epoch ms. */
   arriveAtMs: number;
   /** Minutes of clock left on arrival, above the driver's buffer. */
@@ -69,14 +69,42 @@ export type PlanMyDay = {
   breakMarker: ClockLimitMarker | null;
   breakPlan: BreakPlan | null;
   parking: ParkingChoice[];
+  /** The heading the list is shown under — chosen by how many qualified. */
+  parkingHeadline: string;
   parkingProblem: string | null;
   weather: WeatherRelevance;
   /** Always shown. */
   disclaimers: string[];
 };
 
-/** How many parking choices the screen promises. */
+/** How many parking choices the screen offers at most. */
 export const PARKING_CHOICES = 3;
+
+/**
+ * The heading over the parking list, chosen by how many options actually
+ * cleared the safety filter.
+ *
+ * A fixed "Your 3 safest parking options" over a list of one is a promise
+ * the data did not keep, and the tempting repair — padding the list back
+ * to three — is exactly the failure the filter exists to prevent. So the
+ * HEADING moves instead of the list.
+ */
+export function parkingHeadline(count: number): string {
+  switch (count) {
+    case 3:
+      return 'Your 3 safest parking options';
+    case 2:
+      return '2 safe parking options found';
+    case 1:
+      return '1 safe parking option found';
+    default:
+      return 'No parking option meets your safe stopping window';
+  }
+}
+
+/** Shown whenever fewer than three qualified, so the gap is never a mystery. */
+export const PARKING_SHORTFALL_NOTE =
+  'Only locations that fit within your buffered driving window are shown.';
 
 export function planMyDay(input: {
   maneuvers: readonly HereManeuver[];
@@ -185,24 +213,23 @@ export function planMyDay(input: {
     } else if (stops.slots.length === 0) {
       parkingProblem = 'No parking on this corridor is reachable inside your clock and buffer.';
     }
-    parking = stops.slots.slice(0, PARKING_CHOICES).map((slot) => ({
-      slot,
-      arriveAtMs: slot.arriveAtMs,
-      clockLeftMin: slot.hosRemainingMinAtArrival,
-      detourMiles: slot.candidate.offRouteMiles,
-      detourMinutes: slot.detourMinutesEstimate,
-      amenities: slot.candidate.amenities ?? [],
-      reservable: Boolean(slot.candidate.reservationUrl),
-      source: slot.candidate.coordVerificationStatus ?? 'unverified',
+    parking = stops.eligible.slice(0, PARKING_CHOICES).map((e) => ({
+      candidate: e.candidate,
+      arriveAtMs: e.arriveAtMs,
+      clockLeftMin: e.hosRemainingMinAtArrival,
+      detourMiles: e.candidate.offRouteMiles,
+      detourMinutes: e.detourMinutesEstimate,
+      amenities: e.candidate.amenities ?? [],
+      reservable: Boolean(e.candidate.reservationUrl),
+      source: e.candidate.coordVerificationStatus ?? 'unverified',
     }));
     /*
-     * FEWER THAN THREE IS A REAL ANSWER. The screen promises three
-     * CHOICES, not three rows — padding the list with stops that failed
-     * the safety filter is exactly the failure the filter exists to
-     * prevent, so a short list stays short and says so.
+     * FEWER THAN THREE IS A REAL ANSWER. Padding the list with stops that
+     * failed the safety filter is exactly the failure the filter exists
+     * to prevent, so the list stays short and the HEADING moves instead.
      */
     if (parkingProblem === null && parking.length < PARKING_CHOICES) {
-      parkingProblem = `Only ${parking.length} parking option${parking.length === 1 ? '' : 's'} on this corridor is reachable inside your clock and buffer.`;
+      parkingProblem = PARKING_SHORTFALL_NOTE;
     }
   }
 
@@ -223,6 +250,7 @@ export function planMyDay(input: {
     breakMarker,
     breakPlan,
     parking,
+    parkingHeadline: parkingHeadline(parking.length),
     parkingProblem,
     weather,
     disclaimers,

@@ -613,7 +613,15 @@ export function createHereRoutingPort(
         // N8a additions — optional on the type; composeQuote ignores them.
         maneuvers: parsed.maneuvers,
         notices: parsed.notices,
-        summary: { meters: parsed.meters, seconds: parsed.seconds },
+        summary: {
+          meters: parsed.meters,
+          seconds: parsed.seconds,
+          // The free-flow baseline travels with the route so a caller can
+          // PROVE traffic was applied rather than infer it from having
+          // asked. Null when the provider did not return one on every
+          // section (see ParsedHereRoute.baseSeconds).
+          baseSeconds: parsed.baseSeconds,
+        },
         geometryPointCount: parsed.positions.length,
         // N8b: full geometry only on explicit opt-in (see the option doc).
         ...(opts.retainGeometry ? { geometry: parsed.positions } : {}),
