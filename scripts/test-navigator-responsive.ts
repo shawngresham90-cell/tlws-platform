@@ -67,9 +67,19 @@ const baseView: DrivingView = {
 // Principal states render as text.
 {
   const html = render(baseView);
+  /*
+   * The instruction is still the largest PROSE on the card; it is no
+   * longer text-4xl. The declutter milestone put the arrow and distance
+   * in a left rail beside it, so the card's height is the max of two
+   * columns instead of the sum of four rows — 164-168 px became roughly
+   * half that. text-xl/sm:text-2xl (20/24 px) is comfortably above the
+   * 16 px drive-mode floor and remains the biggest thing on the card
+   * after the distance numeral.
+   */
   check(
     'navigating: maneuver instruction shown large',
-    html.includes('Take exit 369 toward Watt Rd') && html.includes('text-4xl'),
+    html.includes('Take exit 369 toward Watt Rd') &&
+      (html.includes('text-2xl') || html.includes('text-4xl')),
   );
   check('navigating: distance to maneuver', html.includes('In 0.8'));
   check('navigating: then-preview', html.includes('then Arrive'));
@@ -106,8 +116,8 @@ const baseView: DrivingView = {
   const src = strip(screenSrc);
   check('64px targets on the driving screen', (screenSrc.match(/min-h-16/g) ?? []).length >= 2);
   check(
-    'maneuver text ≥32px (text-4xl) and body ≥20px (text-xl)',
-    /text-4xl/.test(screenSrc) && /text-xl/.test(screenSrc),
+    'maneuver prose ≥20px and body ≥20px (text-xl or larger)',
+    /text-2xl|text-4xl/.test(screenSrc) && /text-xl/.test(screenSrc),
   );
   check(
     'no text input exists on the driving screen',

@@ -73,6 +73,13 @@ import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './regio
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
 import { readClocks, writeClocks } from './clocks-storage';
+import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
+import {
+  clocksToggleLabel,
+  toggledVisibility,
+  HOS_VISIBILITY_DEFAULT,
+  type HosVisibility,
+} from '@/lib/navigator/hos-visibility';
 import { clocksProvenance } from '@/lib/navigator/hos-clocks';
 import { ClockSetup } from './ClockSetup';
 import { DriverNameEntry } from './DriverNameEntry';
@@ -181,6 +188,8 @@ export function DrivingScreenView({
   showIdleStartControl = true,
   hosRestoredClocks = null,
   hosEnteredClocks = null,
+  hosVisibility = HOS_VISIBILITY_DEFAULT,
+  onToggleHosVisibility,
   onHosClocks,
   onBottomInset,
   mapSearchSlot = null,
@@ -246,6 +255,14 @@ export function DrivingScreenView({
    * rather than as a fresh driver.
    */
   hosEnteredClocks?: ClockState | null;
+  /**
+   * Whether the driving clocks are on screen. Owned by the container so
+   * the choice can be persisted; the strip itself stays mounted either
+   * way (declutter milestone).
+   */
+  hosVisibility?: HosVisibility;
+  /** Flip and remember it. */
+  onToggleHosVisibility?: () => void;
   /** Reports the live clocks so the owner can persist them. */
   onHosClocks?: (clocks: ClockState) => void;
   /**
@@ -391,73 +408,90 @@ export function DrivingScreenView({
       // the distance and two lines of instruction always fit. The 600 px
       // threshold is measured, not guessed: a 568 px-tall phone in
       // portrait still overflowed at 480.
-      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-3 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] [@media(max-height:480px)]:max-h-[32dvh] [@media(max-height:480px)]:p-2 sm:p-6${imminent ? ' nav-imminent' : ''}`}
+      className={`max-h-[28dvh] shrink-0 overflow-hidden scroll-mt-4 rounded-cockpit border border-line bg-asphalt/95 p-2 shadow-lg [@media(max-height:600px)]:max-h-[40dvh] [@media(max-height:480px)]:max-h-[32dvh] sm:p-3${imminent ? ' nav-imminent' : ''}`}
     >
       {m ? (
-        <>
-          <div className="flex items-center gap-3">
+        /*
+         * TWO COLUMNS, not four stacked rows (declutter milestone).
+         *
+         * The card used to stack glyph+distance, then instruction, then
+         * road name, then the following turn — so its height was the SUM
+         * of four things and measured 164-168 px on every portrait phone,
+         * against a viewport where the unobstructed map was already down
+         * to 38% at 375x667. Drivers said the card was too big and they
+         * wanted more map; the sum was the reason.
+         *
+         * Side by side, the height is the MAX of two columns instead. The
+         * arrow and the distance keep the left rail — they are what a
+         * driver checks at a glance and they stay the largest things on
+         * the card — while the instruction and the road name take the
+         * remaining width. Nothing was dropped to achieve it: all four
+         * pieces the road test asked to keep are still here.
+         */
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
+          <div className="flex flex-col items-center">
             {glyph ? (
               /* Reinforcement only, never the meaning: the instruction text
-                 below is the primary signal, so the arrow is aria-hidden
+                 beside it is the primary signal, so the arrow is aria-hidden
                  and simply absent when the provider's action is one the
                  whitelist does not know. */
               <div
                 aria-hidden="true"
-                className="font-data text-[length:clamp(40px,min(12vw,8dvh),var(--size-maneuver))] leading-none text-ink"
+                className="font-data text-[length:clamp(28px,min(9vw,6dvh),var(--size-maneuver-compact))] leading-none text-ink"
               >
                 {glyph}
               </div>
             ) : null}
-            {/* The blueprint's huge numeral. Clamped by viewport so a 320px
-               phone still fits "In 127.5 mi" on one line; the ceiling is
-               the --size-maneuver design size (60px). */}
-            <p className="font-data num-data text-[length:clamp(40px,min(15vw,9dvh),var(--size-maneuver))] font-bold leading-none tracking-tight text-ink">
+            {/* Still the biggest NUMERAL on the screen (blueprint §5), now
+                clamped to a rail a 320 px phone can spare. "In" stays
+                visible: it is two characters and it is what makes the
+                number a distance rather than a time. */}
+            <p className="whitespace-nowrap font-data num-data text-[length:clamp(20px,min(6vw,4dvh),var(--size-maneuver-compact))] font-bold leading-tight tracking-tight text-ink">
               In {formatDistance(view.maneuvers?.distanceMi, metric)}
             </p>
           </div>
-          {/* The largest PROSE on the screen (the distance numeral above is
-              the only thing bigger — blueprint §5), sized so the map still
-              owns a 320 px phone. Clamped rather than clipped — two lines
-              and an ellipsis says "there is more"; a hard cut mid-word says
-              nothing at all. */}
-          {/*
-            A live region, and the ONLY one on the card. A driver using a
-            screen reader with voice guidance muted — and voice starts
-            muted by design — was never told a turn was coming at all;
-            they had to keep asking. The instruction text changes exactly
-            once per maneuver, so announcing it is the accessible analogue
-            of the announce-once policy voice already follows.
+          <div className="min-w-0">
+            {/*
+              A live region, and the ONLY one on the card. A driver using a
+              screen reader with voice guidance muted — and voice starts
+              muted by design — was never told a turn was coming at all;
+              they had to keep asking. The instruction text changes exactly
+              once per maneuver, so announcing it is the accessible analogue
+              of the announce-once policy voice already follows.
 
-            The distance line above is deliberately NOT part of it: it
-            changes every second, and a live region that fires every
-            second is one a driver turns off.
-          */}
-          <p
-            aria-live="polite"
-            className="line-clamp-2 text-2xl font-semibold leading-tight text-ink sm:text-4xl"
-          >
-            {normalizeInstruction(m.instruction) ?? m.instruction}
-          </p>
-          {/* The two supporting lines are the ones that go when there is
-              no room. Dropped deliberately on a short screen rather than
-              left to be sliced by the cap — and the road name costs least
-              of all, since the provider's instruction already names the
-              road ("Turn right onto Old Mill Road" / "on Old Mill Road"). */}
-          {roadName ? (
-            <p className="text-base text-ink/80 [@media(max-height:600px)]:hidden sm:text-xl">
-              on {roadName}
+              The distance beside it is deliberately NOT part of it: it
+              changes every second, and a live region that fires every
+              second is one a driver turns off.
+
+              Clamped rather than clipped — two lines and an ellipsis says
+              "there is more"; a hard cut mid-word says nothing at all. A
+              long exit name therefore ends in an ellipsis instead of
+              growing the card back to the height this milestone removed.
+            */}
+            <p
+              aria-live="polite"
+              className="line-clamp-2 text-xl font-semibold leading-snug text-ink sm:text-2xl"
+            >
+              {normalizeInstruction(m.instruction) ?? m.instruction}
             </p>
-          ) : null}
-          {view.maneuvers?.following ? (
-            <p className="mt-1 truncate text-base text-ink/70 [@media(max-height:600px)]:hidden sm:text-xl">
-              then{' '}
-              {normalizeInstruction(view.maneuvers.following.instruction) ??
-                view.maneuvers.following.instruction}
-            </p>
-          ) : null}
-        </>
+            {/* The road name earns its place now that it costs no height of
+                its own — it sits in space the left rail already occupies.
+                Truncated, because a road name that wraps would start
+                growing the card again. */}
+            {roadName ? <p className="truncate text-base text-ink/80">on {roadName}</p> : null}
+            {/* The following turn is the first thing to go when there is no
+                room: it is the only piece here the road test did not name. */}
+            {view.maneuvers?.following ? (
+              <p className="truncate text-base text-ink/70 [@media(max-height:700px)]:hidden">
+                then{' '}
+                {normalizeInstruction(view.maneuvers.following.instruction) ??
+                  view.maneuvers.following.instruction}
+              </p>
+            ) : null}
+          </div>
+        </div>
       ) : (
-        <p className="text-3xl font-semibold text-ink">
+        <p className="text-2xl font-semibold text-ink sm:text-3xl">
           {view.status === 'arrived' ? 'You have arrived' : 'No maneuver to show'}
         </p>
       )}
@@ -599,7 +633,7 @@ export function DrivingScreenView({
 
   return (
     <div ref={shellRef} className={shellCls}>
-      <div className={surfaceCls}>
+      <div className={surfaceCls} data-driving-surface={fullScreen ? '' : undefined}>
         <div className={colOne}>{maneuverCard}</div>
 
         {/* Off route. Sits directly under the maneuver card because it is
@@ -762,7 +796,7 @@ export function DrivingScreenView({
             from the map. Because the instance is never remounted, the
             clocks do not restart when guidance starts, when a reroute
             lands, or when the trip ends. */}
-        <div className={fullScreen ? colBottom : ''}>
+        <div className={fullScreen ? colBottom : ''} data-hos-region="">
           {hosUnavailableNotice !== null ? (
             /* No clocks at all — not greyed-out US clocks, which would
                still read as numbers a driver could act on. */
@@ -786,6 +820,9 @@ export function DrivingScreenView({
               enteredClocks={hosEnteredClocks}
               restoredClocks={hosRestoredClocks}
               onClocksChange={onHosClocks}
+              /* Presentation only, and only in the cockpit: the parked
+                 screen has room for the card and no reason to hide it. */
+              visibility={hosVisibility}
               detailSlot={
                 fullScreen
                   ? (detail) =>
@@ -816,6 +853,34 @@ export function DrivingScreenView({
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
         <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
           {fullScreen ? overviewSlot : null}
+          {/*
+            THE CLOCKS TOGGLE LIVES HERE, not under the strip.
+            
+            A full-width button beneath the HOS strip was the obvious
+            place and the wrong one: it took the expanded HOS area from
+            71 px to 139 px, and at 320x568 the unobstructed map fell
+            from 28.5% to 25%. A milestone about giving space back to the
+            map had made the expanded state worse in order to make the
+            collapsed state better. In this row — which already exists,
+            and is already where a driver's thumb goes — it costs nothing
+            in either state, and there is exactly ONE of it.
+
+            The visible word is short so four controls fit a 320 px
+            phone; the accessible name is the full plain-words sentence
+            the milestone asks for, and `aria-pressed` states which way
+            it is set.
+          */}
+          {fullScreen && hosUnavailableNotice === null && onToggleHosVisibility ? (
+            <button
+              type="button"
+              onClick={onToggleHosVisibility}
+              className="min-h-16 w-full min-w-0 truncate rounded-cockpit border border-line bg-nav-surface-2 px-3 text-xl font-semibold text-ink"
+              aria-label={clocksToggleLabel(hosVisibility)}
+              aria-pressed={hosVisibility === 'shown'}
+            >
+              Clocks
+            </button>
+          ) : null}
           {voice ? (
             <LockGate action="mute-voice" lockedLabel="Voice mute" compact={fullScreen}>
               <VoiceControls
@@ -1156,6 +1221,31 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     setClockEntry(next);
     writeClocks(next);
     bump();
+  };
+  /*
+   * WHETHER THE DRIVING CLOCKS ARE ON SCREEN (declutter milestone).
+   *
+   * A display choice, and only a display choice. It lives here rather
+   * than inside HosStrip because it has to be REMEMBERED, and the strip
+   * is deliberately a presentation component that touches no storage.
+   * The strip stays mounted in both states, so flipping this cannot
+   * reset, recreate or pause a clock — it changes what is drawn and
+   * nothing else.
+   *
+   * Read in an effect, like every other stored record: storage is never
+   * touched during render, so the server's first paint and the client's
+   * first paint agree on the documented default.
+   */
+  const [hosVisibility, setHosVisibility] = useState<HosVisibility>(HOS_VISIBILITY_DEFAULT);
+  useEffect(() => {
+    setHosVisibility(readHosVisibility());
+  }, []);
+  const toggleHosVisibility = () => {
+    setHosVisibility((current) => {
+      const next = toggledVisibility(current);
+      writeHosVisibility(next);
+      return next;
+    });
   };
   /*
    * The ONE engine state everything downstream reads: the compact strip,
@@ -1897,6 +1987,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
        */
       showIdleStartControl={!pilot.active || fullScreen || !lock.setupWindow}
       hosRestoredClocks={restoredClocks}
+      hosVisibility={hosVisibility}
+      onToggleHosVisibility={toggleHosVisibility}
       hosEnteredClocks={enteredEngineClocks}
       onHosClocks={(c) => {
         hosClocksRef.current = c;

@@ -248,9 +248,13 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   check('surface: the fold marker was found', foldAt > 0);
 
   // Numerals-first hierarchy, wired through the size variables.
+  /* --size-maneuver-compact on the driving card since the declutter
+     milestone; the token family is what the law is about, not 60px. */
   check(
     'hierarchy: the distance numeral reads the maneuver size in the data face',
-    /class="[^"]*font-data[^"]*num-data[^"]*var\(--size-maneuver\)[^"]*">\s*In\s/.test(surface),
+    /class="[^"]*font-data[^"]*num-data[^"]*var\(--size-maneuver(?:-compact)?\)[^"]*">\s*In\s/.test(
+      surface,
+    ),
   );
   check(
     'hierarchy: the speed cell reads the speed size, tabular',

@@ -54,6 +54,21 @@
   --font-data: var(--font-inter), system-ui, sans-serif; /* Barlow Semi Condensed pending owner decision */
   --font-ui: var(--font-inter), system-ui, sans-serif;
   --size-maneuver: 60px;
+  /*
+   * The maneuver ceiling for the DECLUTTERED driving card.
+   *
+   * Blueprint law 5 — numerals are the biggest thing on screen — is
+   * about HIERARCHY, not about 60px. The road test asked for more map,
+   * and the 60px numeral was the single tallest reason the card measured
+   * 164-168 px on every portrait phone. Halving the ceiling halves the
+   * card while keeping the ordering intact: the distance is still the
+   * largest element on the card, the instruction is still the largest
+   * prose under it, and nothing on the surface reaches either.
+   *
+   * The parked and briefing surfaces keep --size-maneuver: they are not
+   * competing with a map for room.
+   */
+  --size-maneuver-compact: 30px;
   --size-speed: 48px;
   --size-street: 26px;
   --size-trip: 24px;

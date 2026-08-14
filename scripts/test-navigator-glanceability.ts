@@ -191,10 +191,26 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
    * distance <p> reads that variable, in the data face, with tabular
    * figures — and that no other element reaches even the instruction.
    */
+  /*
+   * The DECLUTTER milestone halved the ceiling, not the law.
+   *
+   * Blueprint law 5 is about hierarchy — the numeral is the biggest
+   * thing on screen — and it said so through --size-maneuver (60px).
+   * That 60px numeral was the single tallest reason the driving card
+   * measured 164-168 px on every portrait phone, against an unobstructed
+   * map already down to 38% at 375x667. The driving card now reads
+   * --size-maneuver-compact (30px) instead; the parked and briefing
+   * surfaces keep the full token.
+   *
+   * The check is unchanged in kind: the distance must read a MANEUVER
+   * token, in the data face, with tabular figures. What it no longer
+   * does is insist on one particular pixel count for a card the road
+   * test asked to shrink.
+   */
   check(
     'hierarchy: the distance numeral is the largest thing on the screen',
     distMatch !== null &&
-      distMatch[1].includes('var(--size-maneuver)') &&
+      /var\(--size-maneuver(?:-compact)?\)/.test(distMatch[1]) &&
       distMatch[1].includes('font-data') &&
       distMatch[1].includes('num-data'),
     distMatch?.[1],
@@ -215,7 +231,7 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
   // the distance line and its decorative arrow (which shares the visual
   // row and is aria-hidden) may read it. Anything else claiming that size
   // is a new largest element smuggled past the token scan.
-  const maneuverSized = (surface.match(/var\(--size-maneuver\)/g) ?? []).length;
+  const maneuverSized = (surface.match(/var\(--size-maneuver(?:-compact)?\)/g) ?? []).length;
   check(
     'hierarchy: only the distance row reads the maneuver size',
     maneuverSized >= 1 && maneuverSized <= 2,
