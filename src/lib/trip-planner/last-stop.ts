@@ -178,6 +178,27 @@ export function reachWithinClocks(
 
 const PARKING_CATEGORIES = new Set(NEED_CATEGORIES.overnight);
 
+/**
+ * One row per physical place. See the call site for why: a driver offered
+ * the same lot three times has been offered one option, not three.
+ */
+function dedupeByPlace<T extends { candidate: StopCandidate }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    const c = row.candidate;
+    const byId = `id:${c.id}`;
+    // ~100 m: close enough that two records are the same lot, far enough
+    // that neighbouring stops on the same exit stay distinct.
+    const byPlace = `at:${c.name.trim().toLowerCase()}@${c.position.lat.toFixed(3)},${c.position.lng.toFixed(3)}`;
+    if (seen.has(byId) || seen.has(byPlace)) continue;
+    seen.add(byId);
+    seen.add(byPlace);
+    out.push(row);
+  }
+  return out;
+}
+
 const fmtHm = (min: number) => {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -339,16 +360,23 @@ export function selectLastStops(args: {
      * filtered set the slots came from, merely ordered by score, so a
      * caller taking the top three can never receive a stop the filter
      * rejected.
+     *
+     * DEDUPLICATED BY PLACE, NOT BY ROW. The directory can hold the same
+     * physical truck stop twice — a re-submission, a chain rename, two
+     * scrapes of one lot — and showing a driver "three options" that are
+     * one lot listed three times is the same broken promise as padding
+     * the list. Identity is the record id first, then name plus rounded
+     * position (~100 m), which catches the duplicate rows that carry
+     * different ids. The FIRST occurrence survives, and because this runs
+     * after the sort that is always the best-scored of the duplicates.
      */
-    eligible: reachable(parkingCandidates)
-      .sort(byScore)
-      .map((r) => ({
-        candidate: r.candidate,
-        driveMinutes: r.reach.driveMinutes,
-        arriveAtMs: args.departAtMs + r.reach.wallClockMinutes * 60_000,
-        hosRemainingMinAtArrival: r.reach.hosRemainingMinAtArrival,
-        detourMinutesEstimate: Math.max(1, Math.round(r.candidate.offRouteMiles * 2)),
-        score: r.score,
-      })),
+    eligible: dedupeByPlace(reachable(parkingCandidates).sort(byScore)).map((r) => ({
+      candidate: r.candidate,
+      driveMinutes: r.reach.driveMinutes,
+      arriveAtMs: args.departAtMs + r.reach.wallClockMinutes * 60_000,
+      hosRemainingMinAtArrival: r.reach.hosRemainingMinAtArrival,
+      detourMinutesEstimate: Math.max(1, Math.round(r.candidate.offRouteMiles * 2)),
+      score: r.score,
+    })),
   };
 }

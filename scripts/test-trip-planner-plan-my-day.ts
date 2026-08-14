@@ -277,5 +277,90 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
   );
 }
 
+/* ============ four internal slots never become four rows =========== */
+{
+  /*
+   * THE ENGINE'S FOUR NAMED SLOTS ARE INTERNAL. Last reservable, best
+   * reservable, backup reservable and last free are how the original
+   * product framed a corridor, and they stay — but the driver was
+   * promised THREE options, so four eligible stops must display three.
+   * Nothing is forced in from a slot: the three are the top-scored
+   * survivors of the safety filter, and a fourth simply does not appear.
+   */
+  const four = base({
+    candidates: [
+      stop('res-far', 300, { reservationUrl: 'https://example.test/a' }),
+      stop('res-mid', 200, { reservationUrl: 'https://example.test/b' }),
+      stop('res-near', 100, { reservationUrl: 'https://example.test/c' }),
+      stop('free-far', 250),
+    ],
+  });
+  check(
+    'four eligible stops display exactly three',
+    four.parking.length === 3,
+    four.parking.length,
+  );
+  check(
+    '...under the full heading, because three did qualify',
+    four.parkingHeadline === 'Your 3 safest parking options',
+    four.parkingHeadline,
+  );
+  check('...with no shortfall note', four.parkingProblem === null, four.parkingProblem);
+  check(
+    '...and every displayed stop is distinct',
+    new Set(four.parking.map((c) => c.candidate.id)).size === four.parking.length,
+    four.parking.map((c) => c.candidate.id),
+  );
+
+  /* ---- duplicates are one place, not three options ------------------ */
+  const dupes = base({
+    candidates: [
+      stop('lot-a', 120, { name: 'Ringgold Travel Center' }),
+      // The SAME lot, re-submitted under different ids: what a duplicate
+      // directory record actually looks like — same name, same spot.
+      stop('lot-a-dup', 120, { name: 'Ringgold Travel Center' }),
+      stop('lot-a-dup2', 120, { name: 'ringgold travel center' }),
+      stop('elsewhere', 200, { name: 'Elsewhere Plaza', position: { lat: 36, lng: -86 } }),
+    ],
+  });
+  check(
+    'three records of one lot collapse to a single option',
+    dupes.parking.length === 2,
+    dupes.parking.map((c) => c.candidate.id),
+  );
+  check(
+    '...and the heading reflects what really qualified',
+    dupes.parkingHeadline === '2 safe parking options found',
+    dupes.parkingHeadline,
+  );
+  check(
+    '...with the shortfall note, because fewer than three survived',
+    dupes.parkingProblem === PARKING_SHORTFALL_NOTE,
+    dupes.parkingProblem,
+  );
+
+  /* ---- an unsafe stop can never buy its way in ---------------------- */
+  const mixed = base({
+    candidates: [
+      // Maximally attractive and NOT reachable: 590 miles out.
+      stop('tempting', 590, {
+        reservationUrl: 'https://example.test/x',
+        parkingSpaces: 500,
+        offRouteMiles: 0,
+      }),
+      stop('safe-1', 80),
+      stop('safe-2', 140, { name: 'Second Stop', position: { lat: 36, lng: -86 } }),
+    ],
+  });
+  const ids = mixed.parking.map((c) => c.candidate.id);
+  check('an unreachable stop never enters the displayed three', !ids.includes('tempting'), ids);
+  check('...even though it outscores everything shown', mixed.parking.length === 2, ids);
+  check(
+    '...and every displayed stop still clears the buffer',
+    mixed.parking.every((c) => c.clockLeftMin >= 45),
+    mixed.parking.map((c) => c.clockLeftMin),
+  );
+}
+
 console.log(`trip-planner-plan-my-day: ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);
