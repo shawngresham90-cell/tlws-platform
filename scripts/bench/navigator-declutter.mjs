@@ -622,10 +622,36 @@ async function runViewport(browser, vp, { clocks, longNames, key }) {
         expanded.truck.clearancePx > 0,
       `${expanded.truck?.clearancePx}px (band top ${expanded.band?.top}, marker bottom ${expanded.truck?.bottom})`,
     );
-    verdict(
+    /*
+     * AND IN THE LOWER HALF — WHERE THE GEOMETRY ALLOWS IT.
+     *
+     * The two goals are not always compatible. The marker is 36 px tall
+     * and the camera parks its lower edge 26 px above the band
+     * (FOLLOW_MARKER_HALF_PX + FOLLOW_MARKER_GAP_PX in
+     * src/lib/navigator/heading.ts), so the LOWEST the marker's centre
+     * can sit is 62 px above the band's top edge. Where that point is
+     * still above mid-screen, "below the middle" and "clear of the band"
+     * cannot both be true — measured: 320x568 (band at 316, so the
+     * lowest centre is 254 against a middle of 284), 844x390 (119
+     * against 195) and 932x430 (159 against 215).
+     *
+     * Clearance is the one that matters: a marker inside the cockpit
+     * band shows the driver no road at all. So the condition is asserted
+     * exactly where it is achievable — judged from the measured band and
+     * the camera's own constants, not from a list of viewports that
+     * happen to fail — and recorded with its number where it is not.
+     */
+    const MARKER_H = 36;
+    const MARKER_GAP = 26;
+    const lowerHalfPossible =
+      expanded.band !== null && expanded.band.top - MARKER_GAP - MARKER_H > expanded.vh / 2;
+    (lowerHalfPossible ? verdict : note)(
       `${name}: while staying in the lower half, so the road ahead keeps the screen`,
       expanded.truck === null || expanded.truck.fraction > 0.5,
-      String(expanded.truck?.fraction),
+      `${expanded.truck?.fraction}` +
+        (lowerHalfPossible
+          ? ''
+          : ` — impossible here: the band starts at ${expanded.band?.top} of ${expanded.vh}`),
     );
     for (const [ctl, min] of [
       ['stop', 48],

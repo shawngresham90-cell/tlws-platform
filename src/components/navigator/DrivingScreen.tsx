@@ -601,6 +601,28 @@ export function DrivingScreenView({
   // A site banner about parking and weather may not cover a turn. Above
   // it, the driving surface owns the whole viewport and says its own,
   // navigation-specific thing about being offline.
+  //
+  // z-[60], not z-50: THE SAME BUG, ONE ROW LOWER AND MUCH WORSE. The
+  // site's mobile bar (`MobileToolBar`, `fixed inset-x-0 bottom-0 z-50
+  // sm:hidden`) is also mounted after {children}, so at equal z it won
+  // the tie and painted over the bottom 72 px of this surface — which is
+  // the driving control row. Measured in Chromium at 390x844:
+  // `elementFromPoint` at the centre of Stop returned the toolbar's HOS
+  // link, not Stop. Every portrait phone under the sm breakpoint was
+  // affected (320-430 px measured); the two landscape shapes were not,
+  // because `sm:hidden` removes the bar at 640 px and wider — which is
+  // exactly the split the bench recorded.
+  //
+  // What a driver got for tapping Stop was a page about hours of
+  // service. Coming back re-entered /drive and restored the trip, so the
+  // symptom read as "the guidance screen moved" — the reported defect —
+  // when nothing had scrolled at all.
+  //
+  // The fix is ownership, not suppression: the toolbar is untouched and
+  // still owns bottom-0 everywhere else on the site, including the
+  // PARKED /drive page, where the body's pb-16 reserves its band. While
+  // guidance is live this surface is a full-screen takeover and nothing
+  // may sit on it.
   // !mt-0: the parked /drive page stacks its blocks with space-y-6, and
   // Tailwind's space-y is a margin-top on every later sibling — WHICH
   // APPLIES TO FIXED ELEMENTS TOO. Left in place, the cockpit shell
@@ -610,7 +632,7 @@ export function DrivingScreenView({
   // never reached the edges. The important modifier is required: the
   // space-y selector outranks a plain utility.
   const shellCls = fullScreen
-    ? 'fixed inset-0 z-50 !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
+    ? 'fixed inset-0 z-[60] !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
     : '';
   /*
    * FULL-SCREEN MAP (pilot round 3, item "full-screen navigation map").

@@ -368,8 +368,26 @@ const CSS = readFileSync('src/app/(navigator)/navigator-design.css', 'utf8');
   );
   check(
     'controls: the zoom/recenter stack is SCREEN furniture, outside the rotating canvas',
-    /<div className="pointer-events-none absolute right-3 top-1\/2/.test(MAP) &&
-      MAP.indexOf('ref={containerRef}') < MAP.indexOf('aria-label="Zoom in"'),
+    /className="pointer-events-none absolute right-3 flex flex-col justify-center gap-2"/.test(
+      MAP,
+    ) && MAP.indexOf('ref={containerRef}') < MAP.indexOf('aria-label="Zoom in"'),
+  );
+  /*
+   * AND IT IS CENTRED IN THE MAP THE DRIVER CAN SEE, not in the viewport.
+   *
+   * `top-1/2` centred the column on the whole surface, so the lower half
+   * of it sat under the cockpit band. Measured in Chromium during
+   * guidance, the zoom-out button's centre hit the band and not the
+   * button at 320x568, 844x390 and 932x430 — a driver could not zoom out
+   * on either landscape shape or the smallest phone. The container is
+   * bounded by the SAME measured reserve the camera uses, so the control
+   * column and the followed truck are placed from one number.
+   */
+  check(
+    'controls: bounded by the measured bottom reserve, not by the viewport',
+    MAP.includes("top: '0.5rem'") &&
+      MAP.includes('bottom: `calc(${bottomInsetPx}px + 0.5rem)`') &&
+      !/absolute right-3 top-1\/2/.test(MAP),
   );
   check(
     'controls: still glove-sized and labelled',
