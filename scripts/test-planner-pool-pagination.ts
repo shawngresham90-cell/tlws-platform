@@ -45,7 +45,7 @@ import {
   isConfirmedOvernight,
   isProhibitedOvernight,
 } from '@/lib/directory/overnight';
-import { DEFAULT_SAFETY_BUFFER_MIN } from '@/lib/trip-planner/drive-window';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from '@/lib/trip-planner/drive-window';
 
 /*
  * TEST-ONLY time source. These harnesses exercise the ELIGIBILITY FILTER,
@@ -559,19 +559,15 @@ check(
 );
 check('last-stop still returns slots for eligible rows', slots.slots.length > 0);
 /*
- * The buffer default is no longer declared here or in last-stop.ts. Two
- * constants named DEFAULT_SAFETY_BUFFER_MIN used to exist with different
- * values (30 here, 45 in drive-window.ts), and each file's tests passing
- * against its own copy is exactly how they got to disagree — which the
- * driver then saw as a plan computed at 30 minutes under a caption
- * saying whatever preset they had tapped.
- *
- * This asserts the pass-through, not a number: an unspecified buffer
- * resolves to the ONE authority, wherever that authority sets it.
+ * An omitted buffer means the CLASSIC planner is asking — it is the only
+ * caller that never sends one — so this must stay 30. Two constants
+ * named DEFAULT_SAFETY_BUFFER_MIN used to exist with different values
+ * (30 here, 45 in drive-window.ts), which is how they drifted; the
+ * defaults are now named for their screens and share one validator.
  */
 check(
-  'an unspecified buffer resolves to the single system-wide default',
-  slots.bufferMin === DEFAULT_SAFETY_BUFFER_MIN,
+  'an omitted buffer keeps the classic planner at 30 minutes',
+  slots.bufferMin === CLASSIC_PLANNER_DEFAULT_BUFFER_MIN && slots.bufferMin === 30,
   slots.bufferMin,
 );
 

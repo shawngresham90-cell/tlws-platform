@@ -5,7 +5,7 @@ import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 import type { PlanMyDay } from '@/lib/trip-planner/plan-my-day';
 import { PlanResults } from './PlanResults';
 import {
-  DEFAULT_SAFETY_BUFFER_MIN,
+  PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
   SAFETY_BUFFER_PRESETS,
   SAFETY_BUFFER_EXPLANATION,
   isSafetyBufferPreset,
@@ -41,20 +41,20 @@ const FIELD =
 const CARD = 'rounded-cockpit border border-line bg-nav-surface p-4';
 
 function readBuffer(): SafetyBufferMin {
-  if (typeof window === 'undefined') return DEFAULT_SAFETY_BUFFER_MIN;
+  if (typeof window === 'undefined') return PLAN_MY_DAY_DEFAULT_BUFFER_MIN;
   try {
     const raw = window.localStorage.getItem(BUFFER_KEY);
     const n = raw === null ? Number.NaN : Number(raw);
     // A corrupt buffer must fail on its own: it can never take the truck
     // or the clocks down with it, so the recommended default stands in.
-    return isSafetyBufferPreset(n) ? n : DEFAULT_SAFETY_BUFFER_MIN;
+    return isSafetyBufferPreset(n) ? n : PLAN_MY_DAY_DEFAULT_BUFFER_MIN;
   } catch {
-    return DEFAULT_SAFETY_BUFFER_MIN;
+    return PLAN_MY_DAY_DEFAULT_BUFFER_MIN;
   }
 }
 
 export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
-  const [bufferMin, setBufferMin] = useState<SafetyBufferMin>(DEFAULT_SAFETY_BUFFER_MIN);
+  const [bufferMin, setBufferMin] = useState<SafetyBufferMin>(PLAN_MY_DAY_DEFAULT_BUFFER_MIN);
   const [originId, setOriginId] = useState('');
   const [destId, setDestId] = useState('');
   const [plan, setPlan] = useState<PlanMyDay | null>(null);
@@ -303,7 +303,7 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
                   : 'border-line text-ink'
               }`}
             >
-              {preset} min{preset === DEFAULT_SAFETY_BUFFER_MIN ? ' ★' : ''}
+              {preset} min{preset === PLAN_MY_DAY_DEFAULT_BUFFER_MIN ? ' ★' : ''}
             </button>
           ))}
         </div>

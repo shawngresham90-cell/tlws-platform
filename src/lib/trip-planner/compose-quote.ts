@@ -4,7 +4,7 @@ import { planTrip } from './optimizer';
 import { estimateRoute } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
-import { DEFAULT_SAFETY_BUFFER_MIN } from './drive-window';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
 import {
   buildTimeAxis,
   routeTimingFromAxis,
@@ -131,11 +131,15 @@ export const quoteRequestSchema = z.object({
    *
    * Plan My Day sends the preset the driver tapped, and that number is
    * what the drive window, the break placement, parking reachability and
-   * the caption on the results card are all computed from. A caller that
-   * omits it gets `DEFAULT_SAFETY_BUFFER_MIN` — the system's single
-   * authority, not a second default declared here.
+   * the caption on the results card are all computed from.
+   *
+   * Omitting it means the CLASSIC cost planner is calling — the only
+   * caller that never sends one — so the default here is the classic
+   * planner's own 30, preserving the behaviour it has always had. That
+   * constant lives in `drive-window.ts` beside Plan My Day's 45 and
+   * shares its validation; neither is a second declaration.
    */
-  bufferMin: z.number().int().min(0).max(180).default(DEFAULT_SAFETY_BUFFER_MIN),
+  bufferMin: z.number().int().min(0).max(180).default(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 

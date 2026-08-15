@@ -19,7 +19,7 @@ import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './dir
  */
 
 /*
- * ONE SAFETY BUFFER IN THE WHOLE SYSTEM.
+ * ONE VALIDATION SYSTEM, DEFAULTS NAMED FOR THEIR SCREEN.
  *
  * This module used to declare its own 30-minute default while
  * `drive-window.ts` declared a 45-minute one under the SAME NAME. Nothing
@@ -28,13 +28,14 @@ import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './dir
  * plan was computed against 30 minutes and captioned with whichever
  * preset the driver had tapped.
  *
- * A buffer is the margin a driver decides not to gamble. It cannot have
- * two values, so it is declared once, in the module that owns the drive
- * window, and re-exported here for the callers that already import it
- * from this path.
+ * The ambiguity was the NAME, not the number. Both defaults now live in
+ * `drive-window.ts` under names that say which screen they belong to,
+ * and share its preset list, type guard and clamping. This module keeps
+ * the classic planner's 30 because the classic planner is the caller
+ * that omits the argument.
  */
-import { DEFAULT_SAFETY_BUFFER_MIN } from './drive-window';
-export { DEFAULT_SAFETY_BUFFER_MIN };
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
+export { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN };
 
 export type SlotLabel = 'best-reservable' | 'last-reservable' | 'backup-reservable' | 'last-free';
 
@@ -270,7 +271,12 @@ export function selectLastStops(args: {
   departAtMs: number;
   bufferMin?: number;
 }): LastStopResult {
-  const bufferMin = args.bufferMin ?? DEFAULT_SAFETY_BUFFER_MIN;
+  /*
+   * An omitted buffer means the CLASSIC planner is asking — it is the
+   * caller that has never sent one. Plan My Day always sends the preset
+   * the driver tapped, so it never lands here.
+   */
+  const bufferMin = args.bufferMin ?? CLASSIC_PLANNER_DEFAULT_BUFFER_MIN;
 
   // Zero-space safety rule: every Last Stop slot tells a driver "you can
   // legally park here", so a listing without a confirmed positive space

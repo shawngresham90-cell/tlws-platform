@@ -286,17 +286,31 @@ values** — `last-stop.ts` = 30, `drive-window.ts` = 45 — and each file's tes
 passed against its own copy. That is how they got to disagree: nothing ever
 compared them. They met for the first time on the results screen.
 
-**Fixed by deleting the second one.** `drive-window.ts` owns the buffer;
-`last-stop.ts` imports and re-exports it. The wire carries `bufferMin` with
-that single constant as its default, so an omitted buffer resolves to the one
-authority rather than to a local opinion. Three test files that pinned a
-literal `30` or `45` now assert the pass-through instead of a number.
+**The ambiguity was the NAME, not the number.** The first repair collapsed both
+to a single 45-minute constant — which fixed the ambiguity and silently moved
+the classic cost planner from 30 to 45. That is a behaviour change to a screen
+this milestone was explicitly told to preserve, and drivers have been reading
+its stop recommendations against 30 minutes since it shipped.
 
-**Consequence, stated plainly:** the classic cost planner's default buffer
-moves from 30 to 45 minutes. That is the more conservative direction (a wider
-margin before the clock runs out), and it is the price of having one answer.
+So the **validation is shared** and the **defaults are named for their screens**:
 
-Verified over real HTTP at 15, 30, 45 and 60 minutes — see §8b.
+| Constant | Value | Owner |
+| --- | --- | --- |
+| `PLAN_MY_DAY_DEFAULT_BUFFER_MIN` | 45 | Plan My Day's recommendation |
+| `CLASSIC_PLANNER_DEFAULT_BUFFER_MIN` | 30 | the classic cost planner, unchanged |
+
+Both live in `drive-window.ts`, both pass the same `isSafetyBufferPreset`
+guard, both go through the same clamping inside `driveWindow`, and **neither is
+called "the" default** — naming the surface is now mandatory to get a number at
+all, so no future caller can pick one up by accident.
+
+An omitted `bufferMin` on the wire resolves to the **classic** 30, because the
+classic planner is the only caller that never sends one. Plan My Day always
+sends the preset the driver tapped.
+
+Verified over real HTTP at 15, 30, 45 and 60 minutes, plus an omitted-buffer
+case proving the classic path still plans against 30 and that the two callers
+genuinely get different windows — see §8b.
 
 ### The Canadian refusal was unreachable
 
@@ -476,7 +490,13 @@ clean.
    PR; all are reported as a bench note rather than silently excluded.
 10. **Canadian HOS is still not calculated**, and no US calculation is carried
     across the border — only the weather refusal distinguishes the crossing.
-11. **The Netlify preview was not fetched from this environment.** CI reported
+11. **A Canadian destination cannot be picked from the anchor list.** The
+    directory schema stores `state` with no country or province column, so
+    every anchor is a US listing. The region logic is proven at the endpoint
+    (CA→CA, US→CA, CA→US, and the unplaceable corridor) and in the UI against
+    engine-produced plans, but the cross-border path is **not reachable
+    through the picker** until Phase 2 adds free search or Canadian listings.
+12. **The Netlify preview was not fetched from this environment.** CI reported
     `verify` green and Netlify reported the deploy ready with its redirect and
     header checks passing, but the preview host is outside this environment's
     egress allowlist (§7), so nothing here claims how it renders. Shawn's own

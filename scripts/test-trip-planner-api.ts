@@ -29,7 +29,10 @@ import {
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
 import { createHereRoutingPort } from '@/lib/trip-planner/here-routing';
 import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
-import { DEFAULT_SAFETY_BUFFER_MIN } from '@/lib/trip-planner/drive-window';
+import {
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+} from '@/lib/trip-planner/drive-window';
 import {
   clockStateFromSimple,
   composeQuote,
@@ -804,14 +807,25 @@ async function main() {
           bufferMin: 90,
         }).success,
       );
+      /*
+       * OMITTING THE BUFFER IS THE CLASSIC PLANNER SPEAKING. It is the
+       * only caller that never sends one, so the wire default must stay
+       * its 30 — collapsing everything to Plan My Day's 45 would silently
+       * re-rank the stop recommendations on a screen this milestone was
+       * told to preserve.
+       */
       check(
-        'buffer: an omitted buffer resolves to the ONE authority, not a local default',
+        'buffer: an omitted buffer preserves the classic planner’s 30 minutes',
         quoteRequestSchema.parse({
           origin: { label: 'Atlanta', position: ATL },
           destination: { label: 'Knoxville', position: KNX },
           departAtMs: T0,
           clocks: {},
-        }).bufferMin === DEFAULT_SAFETY_BUFFER_MIN,
+        }).bufferMin === CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+      );
+      check(
+        'buffer: ...which is 30, not Plan My Day’s 45',
+        CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30 && PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 45,
       );
       for (const bad of [-1, 181, 2.5]) {
         check(
@@ -850,8 +864,8 @@ async function main() {
       );
 
       check(
-        'buffer: a caller that sends none gets the single default, not a second one',
-        noBuffer.ok === true && noBuffer.lastStop.bufferMin === DEFAULT_SAFETY_BUFFER_MIN,
+        'buffer: a quote with no buffer plans the classic planner’s 30 minutes',
+        noBuffer.ok === true && noBuffer.lastStop.bufferMin === 30,
         noBuffer.ok && noBuffer.lastStop.bufferMin,
       );
       /*

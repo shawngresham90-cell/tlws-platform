@@ -14,10 +14,10 @@ import {
   selectLastStops,
   reachWithinClocks,
   driveMinutesToMile,
-  DEFAULT_SAFETY_BUFFER_MIN,
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
 } from '@/lib/trip-planner/last-stop';
 import type { RouteTiming } from '@/lib/trip-planner/route-time-axis';
-import { DEFAULT_SAFETY_BUFFER_MIN as DRIVE_WINDOW_BUFFER } from '@/lib/trip-planner/drive-window';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN as SHARED_CLASSIC_BUFFER } from '@/lib/trip-planner/drive-window';
 import { buildRoute, type RemainingClocks, type StopCandidate } from '@/lib/trip-planner/types';
 
 /*
@@ -366,15 +366,23 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
 }
 
 /*
- * ONE buffer authority. This file used to pin 30 while drive-window.ts
- * pinned 45 under the same name — each test passing against its own
- * constant is exactly how the two got to disagree. The name now resolves
- * to a single declaration, and this asserts that rather than a number.
+ * THE CLASSIC PLANNER'S 30 MINUTES, PRESERVED.
+ *
+ * This file used to pin 30 while drive-window.ts pinned 45 under the
+ * SAME NAME — each test passing against its own constant is exactly how
+ * they got to disagree. Both defaults now live in drive-window.ts under
+ * names that say which screen owns them, so this asserts two things at
+ * once: the number is still 30, and it is the SHARED declaration rather
+ * than a local copy that could drift again.
  */
 check(
-  'the buffer default is the one the drive window owns',
-  DEFAULT_SAFETY_BUFFER_MIN === DRIVE_WINDOW_BUFFER,
-  DEFAULT_SAFETY_BUFFER_MIN,
+  'the classic planner still defaults to 30 minutes',
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30,
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+);
+check(
+  '...and it is the shared declaration, not a second copy',
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === SHARED_CLASSIC_BUFFER,
 );
 
 console.log(`\n${passed} passed, ${failed} failed`);

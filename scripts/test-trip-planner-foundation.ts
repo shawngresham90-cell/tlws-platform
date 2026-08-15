@@ -41,7 +41,8 @@ import {
 import {
   driveWindow,
   roundDownMinutes,
-  DEFAULT_SAFETY_BUFFER_MIN,
+  PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
   SAFETY_BUFFER_PRESETS,
   isSafetyBufferPreset,
 } from '@/lib/trip-planner/drive-window';
@@ -522,9 +523,40 @@ function clocks(over: Partial<RemainingClocks> = {}): RemainingClocks {
 
   check(
     'buffer: the recommended default is one of the presets',
-    isSafetyBufferPreset(DEFAULT_SAFETY_BUFFER_MIN),
+    isSafetyBufferPreset(PLAN_MY_DAY_DEFAULT_BUFFER_MIN),
   );
-  check('buffer: 45 minutes is the recommended default', DEFAULT_SAFETY_BUFFER_MIN === 45);
+  check(
+    'buffer: 45 minutes is Plan My Day’s recommendation',
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 45,
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+  );
+  /*
+   * THE TWO DEFAULTS ARE DELIBERATELY DIFFERENT, AND THAT IS THE POINT.
+   *
+   * The original bug was two constants sharing the name
+   * `DEFAULT_SAFETY_BUFFER_MIN` with different values, so each file read
+   * "the default" and got whichever it imported. Collapsing them to one
+   * number fixed the ambiguity and silently moved the classic cost
+   * planner from 30 to 45 — a behaviour change to a screen that was
+   * supposed to be preserved.
+   *
+   * These pin the resolution: two explicitly NAMED defaults, both
+   * validated by the same system, neither called "the" default.
+   */
+  check(
+    'buffer: the classic planner keeps its original 30 minutes',
+    CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30,
+    CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  );
+  check(
+    'buffer: the two screens have genuinely different defaults',
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN !== CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  );
+  check(
+    'buffer: BOTH defaults pass the one shared validator',
+    isSafetyBufferPreset(PLAN_MY_DAY_DEFAULT_BUFFER_MIN) &&
+      isSafetyBufferPreset(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),
+  );
   check('buffer: a non-preset value is rejected', !isSafetyBufferPreset(37));
 
   // Rounding is conservative in ONE direction, fixed here.

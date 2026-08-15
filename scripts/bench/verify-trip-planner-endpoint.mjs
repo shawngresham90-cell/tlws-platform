@@ -88,6 +88,46 @@ for (const bufferMin of [15, 30, 45, 60]) {
   );
 }
 
+console.log('\n== the classic planner keeps its own 30-minute default ==');
+{
+  /*
+   * The classic cost planner posts to this same endpoint and has never
+   * sent a buffer. Omitting it must therefore still plan against 30
+   * minutes — collapsing every caller onto Plan My Day's 45 would
+   * silently re-rank the stop recommendations on a screen that was
+   * supposed to be left alone.
+   */
+  const body = base();
+  delete body.bufferMin;
+  const { json } = await quote(body);
+  check('omitted buffer: request accepted', json.ok === true, json.error);
+  if (json.ok) {
+    check(
+      'omitted buffer: the parking filter plans against 30 minutes',
+      json.lastStop.bufferMin === 30,
+      json.lastStop.bufferMin,
+    );
+    check(
+      'omitted buffer: and so does the displayed window',
+      json.plan.window !== null && json.plan.window.bufferMin === 30,
+      json.plan.window,
+    );
+  }
+
+  // Plan My Day always sends its own, so the two callers genuinely differ.
+  const planMyDay = (await quote(base({ bufferMin: 45 }))).json;
+  check(
+    'the two callers really do get different plans',
+    json.ok &&
+      planMyDay.ok &&
+      json.plan.window.stopTargetMin !== planMyDay.plan.window.stopTargetMin,
+    {
+      classic: json.ok && json.plan.window.stopTargetMin,
+      planMyDay: planMyDay.ok && planMyDay.plan.window.stopTargetMin,
+    },
+  );
+}
+
 console.log('\n== a wider buffer really does shorten the usable day ==');
 {
   const a = (await quote(base({ bufferMin: 15 }))).json;

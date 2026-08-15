@@ -30,8 +30,37 @@ import { HOS, type RemainingClocks } from './types';
 export const SAFETY_BUFFER_PRESETS = [15, 30, 45, 60, 90] as const;
 export type SafetyBufferMin = (typeof SAFETY_BUFFER_PRESETS)[number];
 
-/** The recommended default — enough to find a second option if the first is full. */
-export const DEFAULT_SAFETY_BUFFER_MIN: SafetyBufferMin = 45;
+/*
+ * TWO DEFAULTS, EACH NAMED FOR THE SCREEN THAT OWNS IT.
+ *
+ * The bug this replaced was NOT "two different numbers" — it was two
+ * constants sharing the name `DEFAULT_SAFETY_BUFFER_MIN` while holding
+ * different values, so every file read "the default" and got whichever
+ * one it happened to import. The ambiguity was the name.
+ *
+ * Collapsing them to a single number fixed the ambiguity and broke
+ * something else: the classic cost planner had always planned against 30
+ * minutes, and silently moving it to 45 is a behaviour change to a screen
+ * that was supposed to be preserved untouched.
+ *
+ * So the VALIDATION is shared — one preset list, one type guard, one
+ * clamping rule inside `driveWindow`, one explanation string — and the
+ * DEFAULTS are two explicitly named constants. Neither is called "the"
+ * default, so no future caller can pick one up by accident: naming the
+ * surface is now mandatory to get a number at all.
+ */
+
+/** Plan My Day's recommendation — room to find a second option if the first is full. */
+export const PLAN_MY_DAY_DEFAULT_BUFFER_MIN: SafetyBufferMin = 45;
+
+/**
+ * The classic cost planner's long-standing default.
+ *
+ * Preserved deliberately, not inherited. Drivers have been reading its
+ * stop recommendations against 30 minutes since it shipped, and this
+ * milestone's job was to leave that screen alone.
+ */
+export const CLASSIC_PLANNER_DEFAULT_BUFFER_MIN: SafetyBufferMin = 30;
 
 /** What the buffer is for, in the driver's words. Never "extra legal time". */
 export const SAFETY_BUFFER_EXPLANATION =
