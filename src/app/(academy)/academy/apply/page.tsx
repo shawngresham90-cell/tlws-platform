@@ -15,8 +15,7 @@ import {
 
 export const metadata = buildMetadata({
   title: 'Apply to the Academy — CDL-A Enrollment | Trucking Life Academy',
-  description:
-    'Apply for CDL-A training at Trucking Life Academy, 1821 Wendell Street, Dalton, GA. Tuition $3,995. Weekend classes begin October 2026. A quick two-step form — no payment collected.',
+  description: `Apply for CDL-A training at Trucking Life Academy, ${ACADEMY_ADDRESS.oneLine}. Tuition ${TUITION}. Weekend classes begin October 2026. A quick two-step form — no payment collected.`,
   path: '/academy/apply',
 });
 

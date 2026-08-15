@@ -33,6 +33,7 @@ import {
   PLACEMENT,
 } from '@/lib/academy/program';
 import { courseSchema, localSchoolSchema } from '@/lib/seo/academy-schema';
+import { SITE } from '@/lib/seo/site';
 
 let passed = 0;
 let failed = 0;
@@ -47,6 +48,22 @@ function check(name: string, cond: boolean, detail?: unknown) {
 const root = process.cwd();
 const read = (p: string) => fs.readFileSync(path.join(root, p), 'utf8');
 const flatten = (s: string) => s.replace(/\s+/g, ' ');
+
+/**
+ * SHIPPED text only — comments stripped.
+ *
+ * Every rule below bans a string, and the honest way to document a banned
+ * string is to quote it. This module's own header quotes "160-hour" and
+ * "guaranteed job"; the Academy band carries a JSX note naming the line it
+ * replaced; lib/preschool/content.ts explains why it has no refund policy.
+ * Scanning raw source flags all of those — the scanner reading its own
+ * documentation as a violation. Comments cannot reach a visitor, so they are
+ * removed before any rule runs. The `(?<!:)` guard keeps `https://` intact.
+ */
+const shipped = (f: string) =>
+  read(f)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(?<!:)\/\/[^\n]*/g, ' ');
 
 const ACADEMY = 'src/app/(academy)/academy/page.tsx';
 const APPLY = 'src/app/(academy)/academy/apply/page.tsx';
@@ -180,6 +197,65 @@ check(
 );
 check('facility: equipment states manual 10-speed', /manual 10-speed/i.test(read(FACILITY)));
 
+/* ── 2b. the facility page shows WHERE the school is ─────────────────── */
+
+// PR #319 published the address everywhere a prospective student looks —
+// except the one page whose entire job is "where is it?". The stale-scan rule
+// below was too narrow to catch the wording this page happened to use, so it
+// shipped reading "Street address to be announced" while /academy said 1821
+// Wendell Street. These checks close both halves of that gap.
+const facility = flatten(read(FACILITY));
+check(
+  'facility: reads the address from the shared source',
+  facility.includes('{ACADEMY_ADDRESS.oneLine}'),
+);
+check(
+  'facility: does NOT hardcode a second copy of the street',
+  !shipped(FACILITY).includes('1821 Wendell'),
+  'the street literal must come from lib/academy/program',
+);
+check(
+  'facility: renders the address in a semantic <address> element',
+  /<address[^>]*>\s*\{ACADEMY_ADDRESS\.oneLine\}/.test(facility),
+);
+check(
+  'facility: the address sits above the fold, before the campus section',
+  facility.indexOf('{ACADEMY_ADDRESS.oneLine}') < facility.indexOf('What’s on campus'),
+);
+check('facility: offers a directions link', /Get directions|Open in Google Maps/.test(facility));
+check(
+  'facility: the directions link uses the derived maps URL',
+  facility.includes('ACADEMY_ADDRESS.mapsUrl'),
+);
+check(
+  'facility: no hand-written maps URL',
+  !/google\.com\/maps/.test(shipped(FACILITY)),
+  'the maps URL must be derived in lib/academy/program',
+);
+check(
+  'facility: external directions links open safely',
+  /external/.test(facility) || /rel="noopener noreferrer"/.test(facility),
+);
+check('facility: the address is not image-only', !/<Image[^>]*address/i.test(facility));
+
+// The derived maps URL itself.
+check(
+  'maps URL points at Google Maps search',
+  ACADEMY_ADDRESS.mapsUrl.startsWith('https://www.google.com/maps/search/?api=1&query='),
+);
+check(
+  'maps URL encodes the real address',
+  decodeURIComponent(ACADEMY_ADDRESS.mapsUrl.split('query=')[1]) === ACADEMY_ADDRESS.oneLine,
+);
+check('maps URL invents no ZIP', !/\b\d{5}\b/.test(ACADEMY_ADDRESS.mapsUrl));
+
+// Hours are genuinely unknown and must NOT have been invented alongside the
+// address — the opposite failure, and just as damaging.
+check(
+  'facility: training hours are still honestly unstated',
+  /Training hours to be announced/.test(facility),
+);
+
 /* ── 3. structured data matches the visible copy ─────────────────────── */
 
 const course = courseSchema() as Record<string, unknown>;
@@ -232,8 +308,6 @@ check(
   }),
 );
 
-/* ── 4. repository-wide scan: stale facts and forbidden claims ───────── */
-
 /** Every shipped .ts/.tsx under src/, plus content/ if present. */
 function sourceFiles(): string[] {
   const out: string[] = [];
@@ -253,21 +327,111 @@ function sourceFiles(): string[] {
 const FILES = sourceFiles();
 check('the scan found a substantial source tree', FILES.length > 200, FILES.length);
 
+/* ── 3b. STRUCTURAL: the address exists in exactly one place ─────────── */
+
 /**
- * SHIPPED text only — comments stripped.
+ * The street literal may appear in `lib/academy/program.ts` and nowhere else
+ * in shipped source. Everything else — visible copy, page metadata, JSON-LD,
+ * the maps URL — must derive from it.
  *
- * Every rule below bans a string, and the honest way to document a banned
- * string is to quote it. This module's own header quotes "160-hour" and
- * "guaranteed job"; the Academy band carries a JSX note naming the line it
- * replaced; lib/preschool/content.ts explains why it has no refund policy.
- * Scanning raw source flags all of those — the scanner reading its own
- * documentation as a violation. Comments cannot reach a visitor, so they are
- * removed before any rule runs. The `(?<!:)` guard keeps `https://` intact.
+ * This is the rule that would have caught the two metadata descriptions on
+ * /academy and /academy/apply, which pasted "1821 Wendell Street, Dalton, GA"
+ * into a string literal. They were correct on the day they were written, which
+ * is precisely why nobody would have noticed them going stale.
  */
-const shipped = (f: string) =>
-  read(f)
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(?<!:)\/\/[^\n]*/g, ' ');
+const STREET_LITERAL = ACADEMY_ADDRESS.street;
+const ADDRESS_AUTHORITY = 'src/lib/academy/program.ts';
+
+const streetCopies = FILES.filter(
+  (f) => f !== ADDRESS_AUTHORITY && shipped(f).includes(STREET_LITERAL),
+);
+check(
+  'the street address is hardcoded nowhere outside its source-of-truth module',
+  streetCopies.length === 0,
+  streetCopies,
+);
+check(
+  'the source-of-truth module does declare the street',
+  read(ADDRESS_AUTHORITY).includes(STREET_LITERAL),
+);
+
+// An assembled "…, Dalton, GA" string is the same duplication wearing a
+// different shape, so the full one-line form is banned outside the module too.
+const oneLineCopies = FILES.filter(
+  (f) => f !== ADDRESS_AUTHORITY && shipped(f).includes(ACADEMY_ADDRESS.oneLine),
+);
+check(
+  'no assembled one-line address outside the module',
+  oneLineCopies.length === 0,
+  oneLineCopies,
+);
+
+/**
+ * City and region have ONE authority too. `SITE` owns them; ACADEMY_ADDRESS
+ * reads them. A second `city: 'Dalton'` declaration anywhere means a corrected
+ * city can go live in one half of the site and not the other — which is
+ * exactly the state this module shipped in before this check existed.
+ */
+check('ACADEMY_ADDRESS takes its city from SITE', ACADEMY_ADDRESS.city === SITE.city);
+check('ACADEMY_ADDRESS takes its region from SITE', ACADEMY_ADDRESS.region === SITE.region);
+const authority = shipped(ADDRESS_AUTHORITY);
+check(
+  'the module does not re-declare the city literal',
+  !/city:\s*'Dalton'/.test(authority),
+  authority.match(/city:.*/)?.[0],
+);
+check(
+  'the module does not re-declare the region literal',
+  !/region:\s*'GA'/.test(authority),
+  authority.match(/region:.*/)?.[0],
+);
+
+// Everything downstream must agree with the authority, by construction.
+check(
+  'JSON-LD course address derives from the authority',
+  instances.every((i) => {
+    const addr = (i.location as Record<string, unknown>).address as Record<string, unknown>;
+    return (
+      addr.streetAddress === ACADEMY_ADDRESS.street && addr.addressLocality === ACADEMY_ADDRESS.city
+    );
+  }),
+);
+check(
+  'JSON-LD local-school address derives from the authority',
+  localAddr.streetAddress === ACADEMY_ADDRESS.street,
+);
+check(
+  'the maps URL derives from the authority',
+  ACADEMY_ADDRESS.mapsUrl.includes(encodeURIComponent(ACADEMY_ADDRESS.oneLine)),
+);
+// Scoped to Academy surfaces. The directory and map explorer legitimately
+// build their own `maps/dir/?api=1&destination=` links from each truck stop's
+// coordinates — those are a different destination entirely, and banning the
+// pattern repo-wide would flag working, unrelated code.
+const academyMapsCopies = FILES.filter(
+  (f) => f !== ADDRESS_AUTHORITY && /\(academy\)/.test(f) && /google\.com\/maps/.test(shipped(f)),
+);
+check(
+  'no Academy surface hand-writes a Google Maps URL',
+  academyMapsCopies.length === 0,
+  academyMapsCopies,
+);
+
+// Page metadata is the surface that quietly rots: it is never seen in the UI.
+for (const [label, file] of [
+  ['academy landing', ACADEMY],
+  ['apply page', APPLY],
+  ['facility page', FACILITY],
+] as Array<[string, string]>) {
+  const meta = shipped(file).match(/description:[\s\S]{0,400}?,\n/)?.[0] ?? '';
+  check(
+    `${label}: metadata description derives the address`,
+    !meta.includes(STREET_LITERAL),
+    meta.slice(0, 120),
+  );
+}
+
+/* ── 4. repository-wide scan: stale facts and forbidden claims ───────── */
 
 /** Stale Academy claims that must never reappear anywhere in shipped source. */
 const STALE: Array<[string, RegExp]> = [
@@ -276,7 +440,15 @@ const STALE: Array<[string, RegExp]> = [
   ['exact tuition being finalized', /exact tuition is being finalized/i],
   ['pricing to be announced', /pricing to be announced/i],
   ['tuition announced soon', /tuition (details )?announced soon/i],
-  ['the address being published soon', /exact address will be published/i],
+  // Deliberately broad. The narrow /exact address will be published/ form of
+  // this rule is what let the facility page ship "the exact street address and
+  // directions will be published here soon" straight past #319.
+  [
+    'the address being published soon',
+    /address[^.]{0,60}(will be published|to be announced|coming soon|announced soon)/i,
+  ],
+  ['a map promised once the address is public', /map[^.]{0,40}once the address is public/i],
+  ['directions coming soon', /directions[^.]{0,30}coming soon/i],
   ['the application opening soon', /online application opens soon/i],
   ['schedule and start dates being finalized', /start dates[^.]{0,40}being finalized/i],
   ['a malformed price without the comma', /\$3995\b/],

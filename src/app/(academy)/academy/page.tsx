@@ -27,8 +27,7 @@ import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
   title: 'CDL Training in Dalton, GA — $3,995 Tuition | Trucking Life Academy',
-  description:
-    'CDL-A training at 1821 Wendell Street, Dalton, GA. Tuition $3,995. Weekend classes begin October 2026 — Saturdays and Sundays for eight weekends. Weekday program begins January 2027. Manual 10-speed training and job-placement assistance.',
+  description: `CDL-A training at ${ACADEMY_ADDRESS.oneLine}. Tuition ${TUITION}. Weekend classes begin October 2026 — Saturdays and Sundays for eight weekends. Weekday program begins January 2027. Manual 10-speed training and job-placement assistance.`,
   path: '/academy',
 });
 

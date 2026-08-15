@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Section, Button, Eyebrow } from '@/components/ui';
 import {
   PageHero,
@@ -9,12 +10,12 @@ import {
 } from '@/components/academy';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { ACADEMY_ADDRESS } from '@/lib/academy/program';
 import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
   title: 'Facility & Training Yard — CDL School in Dalton, GA | Trucking Life Academy',
-  description:
-    'Tour Trucking Life Academy: a training range and real Class A equipment in Dalton, GA, right off the I-75 corridor. See where you’ll learn to drive.',
+  description: `Trucking Life Academy is at ${ACADEMY_ADDRESS.oneLine} — a training range and real Class A equipment right off the I-75 corridor. See where you’ll learn to drive, and get directions.`,
   path: '/academy/facility',
 });
 
@@ -61,7 +62,7 @@ const FEATURES: Card[] = [
 const FAQS: KcFaq[] = [
   {
     q: 'Where is Trucking Life Academy located?',
-    a: 'In Dalton, Georgia, right off the I-75 corridor in North Georgia. The exact street address and directions will be published here soon.',
+    a: `Trucking Life Academy is at ${ACADEMY_ADDRESS.oneLine}, right off the I-75 corridor in North Georgia. Use the Get directions link on this page to open it in Google Maps.`,
   },
   {
     q: 'What equipment will I train on?',
@@ -101,6 +102,30 @@ export default function FacilityPage() {
         </Button>
       </PageHero>
 
+      {/* Address band — directly under the hero, because "where is it?" is the
+          question this page exists to answer and it was previously buried in a
+          list two sections down, reading "Street address to be announced".
+
+          Real selectable text in a semantic <address>, not an image or a map
+          embed: a visitor has to be able to copy it, and a screen reader has to
+          be able to read it. The directions link derives its URL from the same
+          shared constant. */}
+      <div className="border-b border-line bg-asphalt-800">
+        <div className="mx-auto flex max-w-content flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Trucking Life Academy
+            </p>
+            <address className="mt-1 font-display text-2xl uppercase not-italic text-ink sm:text-3xl">
+              {ACADEMY_ADDRESS.oneLine}
+            </address>
+          </div>
+          <Button variant="secondary" href={ACADEMY_ADDRESS.mapsUrl} external className="shrink-0">
+            Get directions
+          </Button>
+        </div>
+      </div>
+
       <Section className="border-b border-line">
         <Eyebrow>On the ground</Eyebrow>
         <h2 className="display-section mb-8">What’s on campus</h2>
@@ -120,25 +145,38 @@ export default function FacilityPage() {
             <ul className="mt-6 space-y-3 text-muted">
               <li>
                 <span className="font-semibold text-ink">Address:</span>{' '}
-                <Placeholder>Street address to be announced</Placeholder>
+                <address className="inline not-italic">{ACADEMY_ADDRESS.oneLine}</address>
               </li>
+              {/* Hours keeps its placeholder on purpose — training hours are
+                  genuinely not set, and inventing them here would be the exact
+                  failure the address placeholder just caused in reverse. */}
               <li>
                 <span className="font-semibold text-ink">Hours:</span>{' '}
                 <Placeholder>Training hours to be announced</Placeholder>
               </li>
               <li>
                 <span className="font-semibold text-ink">Directions:</span>{' '}
-                <Placeholder>Map & directions coming soon</Placeholder>
+                <Link
+                  href={ACADEMY_ADDRESS.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-inline font-semibold text-signal"
+                >
+                  Open in Google Maps →
+                </Link>
               </li>
             </ul>
           </div>
-          <div className="flex min-h-[220px] items-center justify-center rounded-card border border-dashed border-line bg-asphalt p-8 text-center">
-            <p className="text-muted">
-              <span className="mb-2 block text-3xl" aria-hidden="true">
-                🗺️
-              </span>
-              <Placeholder>Map embed to be added once the address is public</Placeholder>
-            </p>
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-4 rounded-card border border-line bg-asphalt p-8 text-center">
+            <span className="text-3xl" aria-hidden="true">
+              🗺️
+            </span>
+            <address className="font-display text-xl uppercase not-italic text-ink">
+              {ACADEMY_ADDRESS.oneLine}
+            </address>
+            <Button variant="ghost" href={ACADEMY_ADDRESS.mapsUrl} external>
+              Get directions
+            </Button>
           </div>
         </div>
       </Section>

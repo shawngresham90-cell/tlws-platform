@@ -27,15 +27,36 @@
  *     claimed to remove any CDL restriction — the site has no verified
  *     language supporting that, so the claim is not made.
  */
+import { SITE } from '@/lib/seo/site';
 
-/** Street address, visible as real text on the page — not metadata-only. */
+/**
+ * Street address, visible as real text on the page — not metadata-only.
+ *
+ * `city` and `region` are READ FROM `SITE`, not re-declared. Both files
+ * previously carried their own 'Dalton' / 'GA' literals, which is two
+ * authorities for one fact: correcting the school's city in one place would
+ * have left the other quietly serving the old value to metadata and schema.
+ * The street lives here because it is the school's, not the site's.
+ */
 export const ACADEMY_ADDRESS = {
   street: '1821 Wendell Street',
-  city: 'Dalton',
-  region: 'GA',
+  city: SITE.city,
+  region: SITE.region,
   /** "1821 Wendell Street, Dalton, GA" — the one-line form used in copy. */
   get oneLine() {
     return `${this.street}, ${this.city}, ${this.region}`;
+  },
+  /**
+   * Google Maps search link, DERIVED from the fields above rather than pasted
+   * as a second copy of the address — a hand-written map URL is the classic
+   * way a corrected address stays wrong in exactly one place. Uses the
+   * documented `search/?api=1&query=` form, which needs no API key and hands
+   * off cleanly to the native maps app on both mobile platforms. No ZIP is
+   * appended: the postcode is not confirmed, and a wrong one here would drop a
+   * pin on the wrong street.
+   */
+  get mapsUrl() {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.oneLine)}`;
   },
 } as const;
 
