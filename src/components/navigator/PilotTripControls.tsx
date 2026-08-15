@@ -109,6 +109,12 @@ export function PilotTripControls({
   driverSlot = null,
   setupStatusSlot = null,
   clocksPanel = null,
+  prefsPanel = null,
+  setupConfigured = false,
+  setupSummarySlot = null,
+  setupOpen = false,
+  onSetupOpen,
+  routeAvoid = [],
   startBlockedReason = null,
   regionPanel = null,
   metric = false,
@@ -196,6 +202,37 @@ export function PilotTripControls({
   setupStatusSlot?: ReactNode;
   /** Current clocks. Wired in the clock milestone; null renders nothing. */
   clocksPanel?: ReactNode;
+  /** The saved route-preferences summary/editor. */
+  prefsPanel?: ReactNode;
+  /**
+   * True when nothing is left to configure but the destination — from
+   * the pure `setupStatus`, so the collapse and the Start gate cannot
+   * disagree about whether setup is finished.
+   */
+  setupConfigured?: boolean;
+  /**
+   * The compact "Your setup" block shown below Start once it is. Rendered
+   * by the owner, which holds the truck, the preferences and the name.
+   */
+  setupSummarySlot?: ReactNode;
+  /**
+   * The driver's own request to see the long setup again, owned by the
+   * driving screen — the "Change setup" button that sets it lives in the
+   * summary card, and "Done with setup" below clears it.
+   *
+   * DELIBERATELY NOT PERSISTED by its owner. A driver who opened the
+   * setup yesterday to change a trailer height still gets the short
+   * screen this morning: the collapse is the normal state, not a
+   * preference. The fast path has to be the one you get without asking.
+   */
+  setupOpen?: boolean;
+  onSetupOpen?: (open: boolean) => void;
+  /**
+   * The avoidances the driver's SAVED PREFERENCES produce, already
+   * whitelisted. Kept separate from the truck profile so a preference is
+   * never a truck edit — see `route-preferences.ts`.
+   */
+  routeAvoid?: readonly string[];
   /**
    * The exact missing setup item, or null when Start is available. It
    * both disables the button and prints beneath it — one value, so the
@@ -220,6 +257,22 @@ export function PilotTripControls({
   const [destLng, setDestLng] = useState('');
   const [facility, setFacility] = useState<DestinationFacility>('warehouse');
   const [note, setNote] = useState<string | null>(null);
+
+  /*
+   * Whether the long setup renders.
+   *
+   * `setupConfigured` is the AUTHORITY, and it is computed by the same
+   * pure `setupStatus` call that decides whether Start is available. So
+   * nothing here can hide an unconfirmed truck: with setup incomplete the
+   * long order renders regardless of what the driver last tapped, and a
+   * compact summary of a truck nobody confirmed is unreachable.
+   *
+   * `setupOpen` — the driver's own "Change setup" — is owned by the
+   * driving screen, because the button that sets it lives in the summary
+   * card the driving screen renders. One state, two buttons, no way for
+   * them to disagree.
+   */
+  const setupExpanded = !setupConfigured || setupOpen;
 
   /*
    * The one-tap Start attempt. `phase` is what the driver sees (the
@@ -406,7 +459,18 @@ export function PilotTripControls({
         // driver's routing values onto the shipped profile so the fields
         // the request does not carry (tank, mpg) keep their shape.
         truck: toTruckProfile(truckProfile),
-        ...(truckProfile.avoid.length > 0 ? { avoid: truckProfile.avoid as RouteAvoidance[] } : {}),
+        /*
+         * THE DRIVER'S SAVED PREFERENCES REACH THE WIRE HERE, merged with
+         * anything the truck profile still carries. `sanitizeAvoidances`
+         * downstream drops everything outside the provider whitelist, so
+         * an unsupported value cannot survive this line — and the screen
+         * only ever offers preferences that are in that whitelist, so
+         * what it shows and what is sent cannot disagree.
+         */
+        ...(() => {
+          const merged = [...new Set([...truckProfile.avoid, ...routeAvoid])];
+          return merged.length > 0 ? { avoid: merged as RouteAvoidance[] } : {};
+        })(),
         departAtMs: now,
       },
       // A searched place still carries no VERIFIED truck entrance — the
@@ -548,26 +612,43 @@ export function PilotTripControls({
       {state === 'idle' ? (
         <div className="space-y-3">
           {/*
-           * SETUP ORDER, top to bottom: Driver → Region and units →
-           * Truck → Clocks → Destination → Start.
+           * TWO ORDERS, chosen by whether there is any setup left to do.
            *
-           * It used to be Region → Destination → START → truck editor,
-           * which put the commitment above the safety check it depends
-           * on. A driver tapped Start, nothing visible happened, and the
-           * reason printed below the truck editor they had not reached
-           * yet. Start now comes last, after everything it requires.
+           * SETUP STILL OPEN (first run, or the driver tapped "Change
+           * setup"): Driver → Region → Truck → Preferences → Clocks →
+           * Destination → Start. Start comes LAST, after everything it
+           * requires, because it used to sit above the truck editor it
+           * depended on: a driver tapped it, nothing visible happened,
+           * and the reason printed two hundred pixels further down.
            *
-           * The destination SEARCH stays on the parked map (final pilot
-           * milestone) — the driver looks at the map, so that is where
-           * "where are you going?" belongs. What sits here at position 5
-           * is the confirmation of what they picked, immediately above
-           * the Start it commits to.
+           * SETUP SETTLED (the returning driver — the pilot's own case):
+           * Destination → Start → the compact summary. The audit measured
+           * 8,826 px of parked screen with Start 5,758 px down for a
+           * driver who had already entered all of it. Nothing there was
+           * wrong; it was simply all still open. Collapsing it is the
+           * whole answer to "it takes too long to get moving".
+           *
+           * The ORDER INVERTS rather than the panels merely hiding,
+           * because a driver who has finished setting up is answering a
+           * different question. Their question is "where am I going?",
+           * and it should be the first thing on the screen.
+           *
+           * The destination SEARCH itself stays on the parked map (final
+           * pilot milestone) — the driver looks at the map, so that is
+           * where "where are you going?" belongs. What sits here is the
+           * confirmation of what they picked, immediately above the Start
+           * it commits to, in BOTH orders.
            */}
-          {setupStatusSlot}
-          {driverSlot}
-          {regionPanel}
-          {truckSlot}
-          {clocksPanel}
+          {setupExpanded ? (
+            <>
+              {setupStatusSlot}
+              {driverSlot}
+              {regionPanel}
+              {truckSlot}
+              {prefsPanel}
+              {clocksPanel}
+            </>
+          ) : null}
 
           {picked !== null ? (
             <p className="text-xl text-ink">
@@ -619,6 +700,27 @@ export function PilotTripControls({
             <p id="start-blocked-reason" className="text-lg font-semibold text-ink">
               {startBlockedReason}
             </p>
+          ) : null}
+
+          {/* The settled setup, BELOW the Start it no longer blocks —
+              four numbers, a preference line, and two ways back in. It
+              is still on the screen, and still says what the clocks
+              being blank costs; it simply is not standing between the
+              driver and the road. */}
+          {!setupExpanded ? setupSummarySlot : null}
+
+          {/* The way back to the long form, when the driver expanded it
+              themselves. Not shown on a first run, where there is no
+              collapsed state to return to. */}
+          {setupExpanded && setupConfigured ? (
+            <button
+              type="button"
+              onClick={() => onSetupOpen?.(false)}
+              data-close-setup=""
+              className="min-h-16 w-full rounded-cockpit border border-line px-4 text-lg font-semibold text-ink"
+            >
+              Done with setup
+            </button>
           ) : null}
 
           {/* Developer-only coordinate entry. It is now gated on the

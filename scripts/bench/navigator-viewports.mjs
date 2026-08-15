@@ -166,10 +166,18 @@ const CLOCKS_UNSET_WARNING =
  *     stand-in occupies the same row slot, so it is measured too — a
  *     control a driver cannot reach is a defect whether it is the real
  *     one or the lock.
+ *
+ *     There are now TWO stand-ins, because the Fast Start milestone split
+ *     the lock by reason. Confirmed motion still offers passenger access;
+ *     an unknown location says the app cannot see the vehicle and asks
+ *     nothing about who is driving. Both are measured, because the row
+ *     slot has to hold a reachable control either way — which is the
+ *     invariant this file cares about, not which sentence is in it.
  */
 const CONTROLS = {
   overview: 'Show the whole route, then return to your truck',
   overviewLocked: 'Route overview is locked while moving — passenger access',
+  overviewPaused: "Route overview is paused — this vehicle's location can't be confirmed right now",
   clocksHide: 'Hide clocks',
   clocksShow: 'Show clocks',
   voiceMute: 'Mute voice guidance',
@@ -959,11 +967,17 @@ function assertGuidance(name, m, { state, shortScreen = false }) {
 function normalizeTargets(m) {
   m.targets.voice = m.targets.voiceMute ?? m.targets.voiceOn;
   m.targets.clocks = m.targets.clocksHide ?? m.targets.clocksShow;
-  m.targets.overviewAny = m.targets.overview ?? m.targets.overviewLocked;
+  m.targets.overviewAny =
+    m.targets.overview ?? m.targets.overviewLocked ?? m.targets.overviewPaused;
   m.state = {
     voice: m.targets.voiceMute !== null ? 'unmuted' : 'muted',
     clocks: m.targets.clocksHide !== null ? 'shown' : 'hidden',
-    overview: m.targets.overview !== null ? 'available' : 'locked',
+    overview:
+      m.targets.overview !== null
+        ? 'available'
+        : m.targets.overviewLocked !== null
+          ? 'locked-moving'
+          : 'paused-location-unknown',
   };
   return m;
 }

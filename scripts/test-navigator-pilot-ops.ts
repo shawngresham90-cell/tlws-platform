@@ -287,11 +287,21 @@ check(
 );
 
 /*
- * The briefing persists NOTHING. Two standing gates forbid storage under
- * `src/components/navigator/` so a safety-lock passenger override can
- * never survive a reload; the first draft of this component used
- * localStorage and both gates caught it. Pinned here too, at the
- * component that would be tempted to reintroduce it.
+ * The briefing COMPONENT still touches no storage API directly.
+ *
+ * What changed in the Fast Start milestone is that it now remembers
+ * whether it has been read — through `onboarding-storage.ts`, the same
+ * versioned-storage authority the truck, clocks, driver name and route
+ * preferences use. The gates below are unchanged and still bite: no
+ * `localStorage`, `sessionStorage`, cookie or IndexedDB call may appear
+ * in this component, so a safety-lock passenger override still cannot
+ * find a way to survive a reload through it.
+ *
+ * Why remembering is safe here and an override is not: "this driver has
+ * read the briefing" is a fact about a person that costs a scroll if
+ * wrong. "This person is a passenger" is a claim about who is driving
+ * that costs a text field at speed if wrong. Only one of those may
+ * outlive the session.
  */
 {
   const src = codeOnly(readFileSync('src/components/navigator/PilotOnboarding.tsx', 'utf8'));
@@ -301,7 +311,11 @@ check(
   check('onboarding: no indexedDB', !/indexedDB/i.test(src));
   check(
     'onboarding: the briefing stays reachable after dismissal',
-    src.includes('Pilot briefing') && src.includes('<details'),
+    src.includes('View instructions') && src.includes('<details'),
+  );
+  check(
+    'onboarding: dismissal is remembered through the shared storage authority',
+    src.includes('writeOnboardingSeen') && src.includes('readOnboardingSeen'),
   );
   const model = codeOnly(readFileSync('src/lib/navigator/pilot-onboarding.ts', 'utf8'));
   check('onboarding: the content model defines no storage key', !/STORAGE_KEY/.test(model));

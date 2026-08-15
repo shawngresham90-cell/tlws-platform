@@ -72,6 +72,14 @@ import {
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
+import { readRoutePrefs, writeRoutePrefs } from './route-prefs-storage';
+import {
+  DEFAULT_ROUTE_PREFERENCES,
+  preferencesChanged,
+  preferencesToAvoid,
+  type RoutePreferences,
+} from '@/lib/navigator/route-preferences';
+import { RoutePreferencesPanel } from './RoutePreferencesPanel';
 import { readClocks, writeClocks } from './clocks-storage';
 import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
 import {
@@ -85,6 +93,7 @@ import { ClockSetup } from './ClockSetup';
 import { DriverNameEntry } from './DriverNameEntry';
 import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
 import { SetupStatus } from './SetupStatus';
+import { SetupSummary } from './SetupSummary';
 import { TruckSummary } from './TruckSummary';
 import { setupStatus } from '@/lib/navigator/setup-status';
 import {
@@ -1307,15 +1316,70 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const [truckTouched, setTruckTouched] = useState(false);
   /** Open the full editor even though a confirmed truck exists. */
   const [editingTruck, setEditingTruck] = useState(false);
+  /*
+   * The driver's own answer about the long setup — `null` until they say
+   * something, so the DEFAULT below can differ by who they are.
+   */
+  const [setupOpen, setSetupOpen] = useState<boolean | null>(null);
+  /*
+   * Did this visit BEGIN with a confirmed truck?
+   *
+   * This is the returning-driver test, and it is latched at restore
+   * rather than recomputed, because "is setup complete right now?" is the
+   * wrong question for choosing the default.
+   *
+   * A first-time driver works down the page: name, region, truck,
+   * preferences, clocks. If the screen collapsed the instant they tapped
+   * "This is my truck", the form would vanish under their thumb halfway
+   * through — they would lose their place, and the clocks and preferences
+   * they had not reached yet would disappear without ever being seen.
+   * So the short screen is what a driver ARRIVES to, not something that
+   * happens to them mid-setup. They leave it by tapping "Done with
+   * setup", which is a decision rather than a side effect.
+   */
+  const [arrivedConfigured, setArrivedConfigured] = useState(false);
   useEffect(() => {
     const saved = readTruck();
     if (saved === null) return;
     setTruckProfile(saved.profile);
     setTruckConfirmation(saved.confirmation);
     setTruckTouched(true);
+    // The same fingerprint rule the gate uses: a restored confirmation
+    // counts only while it still matches the restored values.
+    setArrivedConfigured(
+      saved.confirmation.confirmedFingerprint === routingFingerprint(saved.profile),
+    );
   }, []);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
+  };
+
+  /*
+   * THE DRIVER'S SAVED ROUTE PREFERENCES (Fast Start milestone).
+   *
+   * Their own record, restored on mount like the truck and the clocks —
+   * and deliberately NOT part of the truck, so avoiding a toll is never a
+   * truck edit that costs the driver a re-confirmation.
+   *
+   * An unreadable record returns "avoid nothing", which is exactly what
+   * the provider does with no `avoid[features]` at all, and the summary
+   * then says "Tolls allowed" in as many words rather than staying quiet.
+   */
+  const [routePrefs, setRoutePrefs] = useState<RoutePreferences>(DEFAULT_ROUTE_PREFERENCES);
+  useEffect(() => {
+    setRoutePrefs(readRoutePrefs());
+  }, []);
+  const changeRoutePrefs = (next: RoutePreferences) => {
+    const changed = preferencesChanged(routePrefs, next);
+    setRoutePrefs(next);
+    writeRoutePrefs(next);
+    /*
+     * A PREFERENCE CHANGE IS A ROUTE CHANGE. The provider drew the
+     * existing line around a different set of restrictions, so it is
+     * discarded rather than reused — the same rule a truck edit follows.
+     */
+    if (changed && lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
+    bump();
   };
   /*
    * THE DRIVER'S CLOCKS. Restored from `clocks-storage`, which returns
@@ -2203,6 +2267,33 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             hosUnavailable={region === 'CA'}
             setupStatusSlot={<SetupStatus status={setup} />}
             startBlockedReason={setup.blockedReason}
+            /*
+             * THE COLLAPSE, from the one pure gate. `configured` and
+             * `blockedReason` come out of the same `setupStatus` call, so
+             * the short screen and the Start button cannot disagree about
+             * whether setup is finished — the failure that would matter
+             * here is a compact summary shown over an unconfirmed truck,
+             * and it is unreachable by construction.
+             *
+             * An open truck editor forces the long order: the driver is
+             * mid-edit, and collapsing the panel they are typing in would
+             * be its own defect.
+             */
+            setupConfigured={setup.configured && !editingTruck}
+            setupOpen={setupOpen ?? !arrivedConfigured}
+            onSetupOpen={setSetupOpen}
+            setupSummarySlot={
+              <SetupSummary
+                status={setup}
+                profile={truckProfile}
+                prefs={routePrefs}
+                clocks={clockEntry}
+                driverName={firstName}
+                metric={metric}
+                onEditTruck={() => setEditingTruck(true)}
+                onOpenSetup={() => setSetupOpen(true)}
+              />
+            }
             driverSlot={
               <DriverNameEntry
                 firstName={firstName}
@@ -2210,6 +2301,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
                 onClear={forgetFirstName}
               />
             }
+            routeAvoid={preferencesToAvoid(routePrefs)}
+            prefsPanel={<RoutePreferencesPanel prefs={routePrefs} onChange={changeRoutePrefs} />}
             clocksPanel={
               <ClockSetup
                 state={clockEntry}

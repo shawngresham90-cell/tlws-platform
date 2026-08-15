@@ -78,14 +78,98 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     'locked action: children NOT rendered under default-deny',
     !html.includes('SHOULD-NOT-RENDER'),
   );
+  /*
+   * THE COPY CHANGED WITH THE POLICY (Fast Start milestone), and these
+   * assertions changed with it rather than being deleted.
+   *
+   * This render has never had a fix, so motion is UNKNOWN and the lock
+   * reason is `location-unknown`. The old screen said "locked while the
+   * vehicle is moving … or motion is unknown" and offered a PASSENGER
+   * ACCESS button. That is the exact thing the pilot reported: a parked
+   * driver asked to declare they are not driving, because the app could
+   * not see them.
+   *
+   * The new rule is narrower and more honest: a passenger override is
+   * offered ONLY for confirmed motion. An unknown location says the app
+   * cannot see the vehicle, and says nothing about who is driving.
+   */
   check(
-    'locked action: explains the lock as text',
-    html.includes('locked while the vehicle is moving'),
+    'locked action: an unknown location is named as exactly that',
+    html.includes("can't confirm this vehicle's location") ||
+      html.includes('can&#x27;t confirm this vehicle&#x27;s location'),
+    html.slice(0, 400),
   );
-  check('locked action: UNKNOWN motion named honestly', html.includes('or motion is unknown'));
   check(
-    'locked action: passenger path offered on attempt only (button present, dialog not)',
-    html.includes('Passenger access') && !html.includes('I am not the driver'),
+    'locked action: it does NOT claim the vehicle is moving',
+    !html.includes('locked while the vehicle is moving'),
+  );
+  check(
+    'locked action: and NEVER offers a passenger declaration to a driver who has not moved',
+    !html.includes('Passenger access') && !html.includes('I am not the driver'),
+  );
+  check(
+    'locked action: the reason is machine-readable for the bench',
+    html.includes('data-lock-reason="location-unknown"'),
+  );
+}
+/*
+ * THE COCKPIT ROW KEEPS ITS SHAPE — a regression this milestone actually
+ * caused and then fixed.
+ *
+ * The `location-unknown` branch above was first written to return the
+ * block card unconditionally, ignoring `compact`. On a full-screen map
+ * that turned three row-sized controls into three stacked cards: the
+ * buttons stretched to 51x486, the route-overview control disappeared,
+ * the guidance surface overflowed itself by up to 252 px, and the map's
+ * unobstructed share fell from 39% to 14% at 320x568.
+ * `navigator-viewports` went from 0 failures to 97.
+ *
+ * A browser bench caught it, and a browser bench is expensive to run. So
+ * the invariant is pinned here too, where it costs milliseconds: the
+ * compact variant must stay ONE row-sized element and must not carry the
+ * block card's paragraphs.
+ */
+{
+  const compactHtml = inProviders(
+    createElement(LockGate, {
+      // A control the driving screen genuinely renders compact AND that
+      // is genuinely locked while moving — `stop-navigation` is allowed
+      // while moving, so it would render its children and prove nothing.
+      action: 'route-overview',
+      lockedLabel: 'Route overview',
+      compact: true,
+    }),
+  );
+  check(
+    'compact lock: an unknown location still says so',
+    compactHtml.includes('data-lock-reason="location-unknown"'),
+  );
+  check(
+    'compact lock: it is ONE element, not a stacked card',
+    (compactHtml.match(/<p[ >]/g) ?? []).length === 0,
+    compactHtml.slice(0, 300),
+  );
+  check(
+    'compact lock: it keeps the cockpit row height class',
+    compactHtml.includes('min-h-16') && compactHtml.includes('rounded-cockpit'),
+    compactHtml.slice(0, 300),
+  );
+  check(
+    'compact lock: and still never offers a passenger declaration',
+    !compactHtml.includes('Passenger access'),
+  );
+  // The same reason, both variants — the policy is one rule with two
+  // layouts, not two rules.
+  const blockHtml = inProviders(
+    createElement(LockGate, { action: 'route-overview', lockedLabel: 'Route overview' }),
+  );
+  check(
+    'compact lock: the block variant reports the identical reason',
+    blockHtml.includes('data-lock-reason="location-unknown"'),
+  );
+  check(
+    'compact lock: ...and the block variant is NOT row-shaped',
+    blockHtml.includes('rounded-card') && !blockHtml.includes('rounded-cockpit'),
   );
 }
 // The setup-window map itself stays exactly one action wide: widening it

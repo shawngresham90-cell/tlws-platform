@@ -35,10 +35,75 @@ export function LockGate({
    */
   compact?: boolean;
 }) {
-  const { permits, grantOverride } = useSafetyLock();
+  const { permits, grantOverride, lock } = useSafetyLock();
   const [offering, setOffering] = useState(false);
 
   if (permits(action)) return <>{children}</>;
+
+  /*
+   * A PASSENGER OVERRIDE IS ONLY OFFERED FOR CONFIRMED MOTION.
+   *
+   * The override asks a person to declare they are not driving. That is a
+   * reasonable question of someone in a moving truck and a false one for
+   * a driver parked at a truck stop whose phone lost GPS under a canopy —
+   * which is precisely what the pilot reported being asked. When the lock
+   * reason is an unknown location, the screen says the app cannot see the
+   * vehicle, and says nothing about who is driving.
+   */
+  if (lock.lockReason === 'location-unknown') {
+    /*
+     * IT STILL OBEYS `compact`. The cockpit row is a fixed-height band of
+     * row-sized controls over a full-screen map; a block card in that
+     * slot is not a wordier version of the same thing, it is a different
+     * layout. An earlier draft of this branch returned the block
+     * unconditionally and the driving screen paid for it — the row's
+     * buttons stretched to 51x486, the route-overview control vanished,
+     * the guidance surface overflowed itself by up to 252 px, and the
+     * map's unobstructed share fell from 39% to 14%. Measured, not
+     * guessed: `scripts/bench/navigator-viewports.mjs` went from 0 to 97
+     * failures and back to 0.
+     *
+     * Both variants say the same thing, which is the part that matters:
+     * the app cannot see the vehicle, and nothing is asked about who is
+     * driving.
+     */
+    if (compact) {
+      /*
+       * STILL A BUTTON, and deliberately. The cockpit row is a row of
+       * controls; a bare <div> in one slot leaves a driver looking at a
+       * gap where the control they want used to be, and leaves a screen
+       * reader with nothing to land on. So the slot keeps a real control
+       * that announces why it is unavailable and does nothing when
+       * pressed — `aria-disabled` rather than `disabled`, so it stays
+       * focusable and can still say what it is.
+       */
+      return (
+        <button
+          type="button"
+          aria-disabled="true"
+          data-lock-reason="location-unknown"
+          className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink/80"
+          aria-label={`${lockedLabel} is paused — this vehicle's location can't be confirmed right now`}
+        >
+          <span aria-hidden="true">📡 </span>
+          {lockedLabel} paused
+        </button>
+      );
+    }
+    return (
+      <div
+        role="status"
+        data-lock-reason="location-unknown"
+        className="rounded-card border border-line p-4 text-ink/80"
+      >
+        <p className="text-lg font-semibold text-ink">{lockedLabel} is paused</p>
+        <p className="mt-1 text-base">
+          We can&apos;t confirm this vehicle&apos;s location right now, so setup is on hold. It
+          returns on its own once the signal comes back.
+        </p>
+      </div>
+    );
+  }
 
   if (compact && !offering) {
     return (
