@@ -51,6 +51,45 @@ export function LockGate({
    * vehicle, and says nothing about who is driving.
    */
   if (lock.lockReason === 'location-unknown') {
+    /*
+     * IT STILL OBEYS `compact`. The cockpit row is a fixed-height band of
+     * row-sized controls over a full-screen map; a block card in that
+     * slot is not a wordier version of the same thing, it is a different
+     * layout. An earlier draft of this branch returned the block
+     * unconditionally and the driving screen paid for it — the row's
+     * buttons stretched to 51x486, the route-overview control vanished,
+     * the guidance surface overflowed itself by up to 252 px, and the
+     * map's unobstructed share fell from 39% to 14%. Measured, not
+     * guessed: `scripts/bench/navigator-viewports.mjs` went from 0 to 97
+     * failures and back to 0.
+     *
+     * Both variants say the same thing, which is the part that matters:
+     * the app cannot see the vehicle, and nothing is asked about who is
+     * driving.
+     */
+    if (compact) {
+      /*
+       * STILL A BUTTON, and deliberately. The cockpit row is a row of
+       * controls; a bare <div> in one slot leaves a driver looking at a
+       * gap where the control they want used to be, and leaves a screen
+       * reader with nothing to land on. So the slot keeps a real control
+       * that announces why it is unavailable and does nothing when
+       * pressed — `aria-disabled` rather than `disabled`, so it stays
+       * focusable and can still say what it is.
+       */
+      return (
+        <button
+          type="button"
+          aria-disabled="true"
+          data-lock-reason="location-unknown"
+          className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink/80"
+          aria-label={`${lockedLabel} is paused — this vehicle's location can't be confirmed right now`}
+        >
+          <span aria-hidden="true">📡 </span>
+          {lockedLabel} paused
+        </button>
+      );
+    }
     return (
       <div
         role="status"

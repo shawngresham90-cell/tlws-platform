@@ -2287,6 +2287,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
                 status={setup}
                 profile={truckProfile}
                 prefs={routePrefs}
+                clocks={clockEntry}
                 driverName={firstName}
                 metric={metric}
                 onEditTruck={() => setEditingTruck(true)}

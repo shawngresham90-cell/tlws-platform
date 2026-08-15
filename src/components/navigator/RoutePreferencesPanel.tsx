@@ -37,7 +37,11 @@ export function RoutePreferencesPanel({
 
   if (!editing) {
     return (
-      <section aria-labelledby="route-prefs-heading" className="space-y-2" data-route-prefs="summary">
+      <section
+        aria-labelledby="route-prefs-heading"
+        className="space-y-2"
+        data-route-prefs="summary"
+      >
         <div className="flex items-baseline justify-between gap-2">
           <h3 id="route-prefs-heading" className="text-xl font-bold text-ink">
             Route preferences

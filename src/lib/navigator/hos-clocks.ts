@@ -418,3 +418,28 @@ export function formatEnteredClock(totalMin: number): string {
   const { hours, minutes } = splitHoursMinutes(totalMin);
   return `${hours}h ${String(minutes).padStart(2, '0')}m`;
 }
+
+/**
+ * The one line a collapsed setup shows for the clocks.
+ *
+ * WHY IT CARRIES NUMBERS AND NOT "Set". The Fast Start milestone
+ * collapses the parked setup once the truck is confirmed, and the first
+ * draft of that card said "Clocks: Set" — which is a claim that the
+ * driver entered SOMETHING, not a statement of how much driving they
+ * have left. A driver with 45 minutes of drive time remaining and a
+ * driver with nine hours would read the identical word.
+ *
+ * So the collapsed line names the two numbers that bound the next leg:
+ * drive time left and shift window left. Whichever runs out first ends
+ * the day, and both are visible without opening anything.
+ *
+ * `unsupported` is not a formatting concern — Canada's "not calculated"
+ * comes from the setup status, which is where the region lives.
+ */
+export function summarizeEnteredClocks(state: ClockEntryState): string {
+  if (state.kind === 'unset') return CLOCKS_NOT_SET;
+  return (
+    `${formatEnteredClock(state.entered.drivingMin)} driving · ` +
+    `${formatEnteredClock(state.entered.windowMin)} window`
+  );
+}

@@ -392,15 +392,32 @@ async function scenarioReturning(browser, saved) {
     await page.waitForTimeout(900);
     await shot(page, 'pretrip-05-returning');
 
-    verdict('returning: the name came back', (await page.getByText('Driving as').count()) > 0);
+    /*
+     * THE FACT, NOT THE WIDGET. This used to pin the phrase "Driving as",
+     * which was the driver-name panel's own wording. The Fast Start
+     * milestone collapses that panel for a returning driver — the name
+     * is now a row on the compact "Your setup" card — so pinning the
+     * phrase would report a regression where none exists, and pinning
+     * the new phrase would just move the same brittleness.
+     *
+     * What was ever promised is that the name comes back. That is what
+     * is asserted: the saved name is legible somewhere on the returning
+     * screen, wherever the layout puts it.
+     */
+    const returningText = await page.evaluate(() => document.body.innerText);
+    verdict('returning: the name came back', returningText.includes('Shawn'));
     verdict(
       'returning: the truck came back CONFIRMED, as a summary',
       (await page.getByRole('button', { name: 'Edit truck' }).count()) === 1,
     );
-    verdict(
-      'returning: the clocks came back EXACTLY as entered',
-      (await page.getByText('5h 05m').count()) > 0,
-    );
+    /*
+     * Likewise the clocks: what matters is that the exact entered value
+     * is READABLE on the returning screen, not which panel renders it.
+     * The collapsed card carries the driver's remaining hours precisely
+     * so this stays true — "Set" would have failed here, and should
+     * have.
+     */
+    verdict('returning: the clocks came back EXACTLY as entered', returningText.includes('5h 05m'));
     verdict(
       'returning: and were not quietly refilled',
       (await page.getByText('11h 00m').count()) === 0,

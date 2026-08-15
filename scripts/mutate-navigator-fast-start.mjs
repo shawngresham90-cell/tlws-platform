@@ -90,21 +90,21 @@ const MUTATIONS = [
   {
     name: 'the OFF state of a preference goes unnamed',
     file: PREFS,
-    from: '  return ROUTE_PREFERENCE_SPECS.map((s) => (prefs[s.key] ? s.onLabel : s.offLabel)).join(\' · \');',
+    from: "  return ROUTE_PREFERENCE_SPECS.map((s) => (prefs[s.key] ? s.onLabel : s.offLabel)).join(' · ');",
     to: "  return ROUTE_PREFERENCE_SPECS.filter((s) => prefs[s.key]).map((s) => s.onLabel).join(' · ');",
     mustFail: 'navigator-fast-start',
   },
   {
     name: 'the screen collapses over an unconfirmed truck',
     file: SETUP,
-    from: '  const configured = REQUIRED_ITEMS.filter((k) => k !== \'destination\').every(\n    (k) => items.find((i) => i.key === k)?.state === \'done\',\n  );',
+    from: "  const configured = REQUIRED_ITEMS.filter((k) => k !== 'destination').every(\n    (k) => items.find((i) => i.key === k)?.state === 'done',\n  );",
     to: '  const configured = true;',
     mustFail: 'navigator-fast-start',
   },
   {
     name: 'the blank-clocks warning hides until a destination is chosen',
     file: SETUP,
-    from: '      configured && input.clocks === \'unset\' ? CLOCKS_UNAVAILABLE_WARNING : null,',
+    from: "      configured && input.clocks === 'unset' ? CLOCKS_UNAVAILABLE_WARNING : null,",
     to: "      blockedReason === null && input.clocks === 'unset' ? CLOCKS_UNAVAILABLE_WARNING : null,",
     mustFail: 'navigator-fast-start',
   },
@@ -169,7 +169,9 @@ for (const m of MUTATIONS) {
   const green = run(m.mustFail);
   fs.writeFileSync(m.file, original);
   if (green) {
-    console.log(`✗ SURVIVED     ${m.name}\n              (${m.mustFail} stayed green — coverage hole)`);
+    console.log(
+      `✗ SURVIVED     ${m.name}\n              (${m.mustFail} stayed green — coverage hole)`,
+    );
     survived++;
   } else {
     console.log(`✓ caught       ${m.name}`);

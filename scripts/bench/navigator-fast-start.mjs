@@ -96,7 +96,8 @@ function note(text) {
 
 function syntheticRoute() {
   const geometry = [];
-  for (let i = 0; i <= 200; i++) geometry.push([ORIGIN.lat + (i * 0.03) / MI_PER_DEG_LAT, ORIGIN.lng]);
+  for (let i = 0; i <= 200; i++)
+    geometry.push([ORIGIN.lat + (i * 0.03) / MI_PER_DEG_LAT, ORIGIN.lng]);
   return {
     ok: true,
     state: 'valid',
@@ -134,10 +135,15 @@ async function login(page) {
  * condition, and the pilot's actual one: a parked driver who has not
  * shared their location yet.
  */
-async function newContext(browser, { viewport, keepStorage = null, geo = ORIGIN, dest = DEST_US } = {}) {
+async function newContext(
+  browser,
+  { viewport, keepStorage = null, geo = ORIGIN, dest = DEST_US } = {},
+) {
   const context = await browser.newContext({
     permissions: geo === null ? [] : ['geolocation'],
-    ...(geo === null ? {} : { geolocation: { latitude: geo.lat, longitude: geo.lng, accuracy: 8 } }),
+    ...(geo === null
+      ? {}
+      : { geolocation: { latitude: geo.lat, longitude: geo.lng, accuracy: 8 } }),
     viewport: { width: viewport.width, height: viewport.height },
     isMobile: viewport.mobile,
     hasTouch: viewport.mobile,
@@ -196,7 +202,10 @@ const pageHeight = (page) =>
 
 /** Absolute document Y of an element's top edge, or null if absent. */
 async function documentTop(locator) {
-  const handle = await locator.first().elementHandle().catch(() => null);
+  const handle = await locator
+    .first()
+    .elementHandle()
+    .catch(() => null);
   if (handle === null) return null;
   return handle.evaluate((el) => {
     const r = el.getBoundingClientRect();
@@ -209,8 +218,7 @@ async function documentTop(locator) {
  * placeholder: the placeholder is prose that changes with the region,
  * and a bench that misses the box would silently measure nothing.
  */
-const searchBox = (page) =>
-  page.getByLabel(/Search for a destination/i).first();
+const searchBox = (page) => page.getByLabel(/Search for a destination/i).first();
 
 const countText = async (page, text) => {
   const body = await page.evaluate(() => document.body.innerText);
@@ -231,9 +239,10 @@ async function shot(page, name) {
  * product one.
  */
 async function openSetup(page, target) {
-  const locator = typeof target === 'object' && 'count' in target
-    ? target
-    : page.getByRole('button', { name: target });
+  const locator =
+    typeof target === 'object' && 'count' in target
+      ? target
+      : page.getByRole('button', { name: target });
   if ((await locator.count()) > 0) return;
   const open = page.locator('[data-open-setup]');
   if ((await open.count()) > 0) {
@@ -325,9 +334,7 @@ async function scenarioLength(browser) {
 
   /* --- the report the milestone was asked for ---------------------- */
   console.log('\n  --- parked-screen measurements ---');
-  console.log(
-    '  viewport          first-run h   first Start   returning h   returning Start',
-  );
+  console.log('  viewport          first-run h   first Start   returning h   returning Start');
   for (const r of rows) {
     console.log(
       `  ${r.viewport.padEnd(17)} ${String(r.firstHeight).padStart(9)}px ${String(
@@ -377,7 +384,10 @@ async function scenarioPreferences(browser) {
     verdict('prefs: a toll toggle is offered', (await toll.count()) === 1);
     await toll.first().click();
     await page.waitForTimeout(150);
-    verdict('prefs: the toggle reports itself pressed', (await toll.first().getAttribute('aria-pressed')) === 'true');
+    verdict(
+      'prefs: the toggle reports itself pressed',
+      (await toll.first().getAttribute('aria-pressed')) === 'true',
+    );
 
     // Survive a reload — the whole point of "saved settings".
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -390,8 +400,16 @@ async function scenarioPreferences(browser) {
      * would have no way to see what their route is being planned around
      * without expanding the very thing this milestone collapsed.
      */
-    const collapsed = await page.locator('[data-setup-summary]').first().innerText().catch(() => '');
-    verdict('prefs: the choice survived a reload', collapsed.includes('Avoid tolls'), collapsed.replace(/\n/g, ' | '));
+    const collapsed = await page
+      .locator('[data-setup-summary]')
+      .first()
+      .innerText()
+      .catch(() => '');
+    verdict(
+      'prefs: the choice survived a reload',
+      collapsed.includes('Avoid tolls'),
+      collapsed.replace(/\n/g, ' | '),
+    );
     verdict(
       'prefs: the OTHER state is named too, never left blank',
       collapsed.includes('Ferries allowed'),
@@ -410,7 +428,11 @@ async function scenarioPreferences(browser) {
     for (let i = 0; i < 5; i++) await start.click({ force: true }).catch(() => {});
     await page.waitForTimeout(2500);
 
-    verdict('prefs: five rapid Start taps spent ONE route request', counts.route === 1, `${counts.route} requests`);
+    verdict(
+      'prefs: five rapid Start taps spent ONE route request',
+      counts.route === 1,
+      `${counts.route} requests`,
+    );
     const avoid = sentAvoid[0];
     verdict(
       'prefs: the request actually carried avoid[features]=tollRoad',
@@ -441,13 +463,23 @@ async function scenarioUnits(browser) {
     await completeSetup(page);
     await page.waitForTimeout(300);
     const imperial = await page.evaluate(() => document.body.innerText);
-    verdict("units: imperial reads 13′6″, never 13.6", imperial.includes('13′6″') && !imperial.includes('13.6'));
+    verdict(
+      'units: imperial reads 13′6″, never 13.6',
+      imperial.includes('13′6″') && !imperial.includes('13.6'),
+    );
 
     await openSetup(page, /^Kilometres \/ kg$/);
-    await page.getByRole('button', { name: /^Kilometres \/ kg$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Kilometres \/ kg$/ })
+      .first()
+      .click();
     await page.waitForTimeout(300);
     const metric = await page.evaluate(() => document.body.innerText);
-    verdict('units: metric reads the same truck as 4.11 m', metric.includes('4.11'), 'expected 4.11 m');
+    verdict(
+      'units: metric reads the same truck as 4.11 m',
+      metric.includes('4.11'),
+      'expected 4.11 m',
+    );
     verdict('units: and no longer shows the imperial reading', !metric.includes('13′6″'));
     await shot(page, 'fast-start-metric');
   } finally {
@@ -467,7 +499,10 @@ async function scenarioRegions(browser) {
     await login(page);
     await completeSetup(page);
     await openSetup(page, /^Canada$/);
-    await page.getByRole('button', { name: /^Canada$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^Canada$/ })
+      .first()
+      .click();
     await page.waitForTimeout(400);
     const text = await page.evaluate(() => document.body.innerText);
     verdict(
@@ -500,7 +535,10 @@ async function scenarioMotion(browser) {
     // passenger, and nothing may claim the truck is moving.
     const parked = await page.evaluate(() => document.body.innerText);
     verdict('parked: the word "passenger" is absent', !/passenger/i.test(parked));
-    verdict('parked: the screen never claims the vehicle is moving', !/while the vehicle is moving/i.test(parked));
+    verdict(
+      'parked: the screen never claims the vehicle is moving',
+      !/while the vehicle is moving/i.test(parked),
+    );
     await shot(page, 'fast-start-parked');
 
     // Now take the signal away entirely, the way a canopy does.
@@ -513,7 +551,8 @@ async function scenarioMotion(browser) {
     // declaration — the driver has not moved.
     verdict('signal lost: still no passenger declaration', !/passenger/i.test(lost));
     const paused = await page.locator('[data-lock-reason="location-unknown"]').count();
-    if (paused > 0) note('signal lost: setup paused with reason "location-unknown" (grace expired)');
+    if (paused > 0)
+      note('signal lost: setup paused with reason "location-unknown" (grace expired)');
     else note('signal lost: setup still available (inside the 60s parked grace)');
     await shot(page, 'fast-start-signal-lost');
   } finally {
@@ -583,10 +622,14 @@ async function scenarioTouch(browser) {
       );
       if (!btn) return null;
       const lum = (c) => {
-        const [r, g, b] = c.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).map((v) => {
-          const s = v / 255;
-          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-        });
+        const [r, g, b] = c
+          .match(/\d+(\.\d+)?/g)
+          .slice(0, 3)
+          .map(Number)
+          .map((v) => {
+            const s = v / 255;
+            return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
       };
       const cs = getComputedStyle(btn);
@@ -627,7 +670,9 @@ async function main() {
   } finally {
     await browser.close();
   }
-  console.log(`\n${checks - failures}/${checks} checks passed${failures ? `, ${failures} FAILED` : ''}`);
+  console.log(
+    `\n${checks - failures}/${checks} checks passed${failures ? `, ${failures} FAILED` : ''}`,
+  );
   if (notes.length > 0) console.log(`${notes.length} note(s) recorded above.`);
   process.exit(failures > 0 ? 1 : 0);
 }

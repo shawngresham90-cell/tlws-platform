@@ -4,6 +4,7 @@ import { formatDimension, formatWeight } from '@/lib/navigator/format-units';
 import { summarizePreferences, type RoutePreferences } from '@/lib/navigator/route-preferences';
 import type { EditableProfile } from '@/lib/navigator/truck-profile';
 import type { SetupStatus } from '@/lib/navigator/setup-status';
+import { summarizeEnteredClocks, type ClockEntryState } from '@/lib/navigator/hos-clocks';
 
 /**
  * Everything the driver already settled, in one block, below Start.
@@ -26,6 +27,10 @@ import type { SetupStatus } from '@/lib/navigator/setup-status';
  *     A driver who hooked a different trailer this morning has to be
  *     able to catch it without opening anything, and "Confirmed" would
  *     read as confirmation of whatever they are pulling today.
+ *   - The clocks show the DRIVER'S REMAINING HOURS, not the word "Set".
+ *     A driver with 45 minutes of drive time left and one with nine
+ *     hours would read the identical word, and the whole reason the
+ *     clocks exist is that the app must never imply hours nobody has.
  *   - `clocksWarning` prints in full whenever the clocks are blank. HOS
  *     guidance being unavailable is a fact about the trip, and it must
  *     not be one of the things that got collapsed away.
@@ -42,6 +47,7 @@ export function SetupSummary({
   status,
   profile,
   prefs,
+  clocks,
   driverName,
   metric,
   onEditTruck,
@@ -50,12 +56,21 @@ export function SetupSummary({
   status: SetupStatus;
   profile: EditableProfile;
   prefs: RoutePreferences;
+  /** The driver's entered clocks, for the remaining-hours line. */
+  clocks: ClockEntryState;
   driverName: string | null;
   metric: boolean;
   onEditTruck: () => void;
   onOpenSetup: () => void;
 }) {
-  const clocks = status.items.find((i) => i.key === 'clocks');
+  /*
+   * Canada's "not calculated in this region" comes from the setup status,
+   * because that is where the region lives; everywhere else the line is
+   * the driver's own hours. Never both, and never a bare "Set".
+   */
+  const clocksItem = status.items.find((i) => i.key === 'clocks');
+  const clocksLine =
+    clocksItem?.state === 'unsupported' ? clocksItem.value : summarizeEnteredClocks(clocks);
 
   return (
     <section aria-labelledby="setup-summary-heading" className="space-y-2" data-setup="collapsed">
@@ -77,7 +92,7 @@ export function SetupSummary({
           )} · ${profile.axles} axles`}
         />
         <Row label="Route" value={summarizePreferences(prefs)} />
-        <Row label="Clocks" value={clocks?.value ?? 'Not set'} />
+        <Row label="Clocks" value={clocksLine} />
       </dl>
 
       {/* Never collapsed away: the consequence of blank clocks. */}

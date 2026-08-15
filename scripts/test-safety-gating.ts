@@ -112,6 +112,66 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     html.includes('data-lock-reason="location-unknown"'),
   );
 }
+/*
+ * THE COCKPIT ROW KEEPS ITS SHAPE — a regression this milestone actually
+ * caused and then fixed.
+ *
+ * The `location-unknown` branch above was first written to return the
+ * block card unconditionally, ignoring `compact`. On a full-screen map
+ * that turned three row-sized controls into three stacked cards: the
+ * buttons stretched to 51x486, the route-overview control disappeared,
+ * the guidance surface overflowed itself by up to 252 px, and the map's
+ * unobstructed share fell from 39% to 14% at 320x568.
+ * `navigator-viewports` went from 0 failures to 97.
+ *
+ * A browser bench caught it, and a browser bench is expensive to run. So
+ * the invariant is pinned here too, where it costs milliseconds: the
+ * compact variant must stay ONE row-sized element and must not carry the
+ * block card's paragraphs.
+ */
+{
+  const compactHtml = inProviders(
+    createElement(LockGate, {
+      // A control the driving screen genuinely renders compact AND that
+      // is genuinely locked while moving — `stop-navigation` is allowed
+      // while moving, so it would render its children and prove nothing.
+      action: 'route-overview',
+      lockedLabel: 'Route overview',
+      compact: true,
+    }),
+  );
+  check(
+    'compact lock: an unknown location still says so',
+    compactHtml.includes('data-lock-reason="location-unknown"'),
+  );
+  check(
+    'compact lock: it is ONE element, not a stacked card',
+    (compactHtml.match(/<p[ >]/g) ?? []).length === 0,
+    compactHtml.slice(0, 300),
+  );
+  check(
+    'compact lock: it keeps the cockpit row height class',
+    compactHtml.includes('min-h-16') && compactHtml.includes('rounded-cockpit'),
+    compactHtml.slice(0, 300),
+  );
+  check(
+    'compact lock: and still never offers a passenger declaration',
+    !compactHtml.includes('Passenger access'),
+  );
+  // The same reason, both variants — the policy is one rule with two
+  // layouts, not two rules.
+  const blockHtml = inProviders(
+    createElement(LockGate, { action: 'route-overview', lockedLabel: 'Route overview' }),
+  );
+  check(
+    'compact lock: the block variant reports the identical reason',
+    blockHtml.includes('data-lock-reason="location-unknown"'),
+  );
+  check(
+    'compact lock: ...and the block variant is NOT row-shaped',
+    blockHtml.includes('rounded-card') && !blockHtml.includes('rounded-cockpit'),
+  );
+}
 // The setup-window map itself stays exactly one action wide: widening it
 // is an owner decision this harness makes loud.
 {

@@ -51,6 +51,7 @@ import {
   type EditableProfile,
 } from '@/lib/navigator/truck-profile';
 import { formatDimension } from '@/lib/navigator/format-units';
+import { CLOCKS_NOT_SET, summarizeEnteredClocks } from '@/lib/navigator/hos-clocks';
 import {
   CLOCKS_UNAVAILABLE_WARNING,
   START_NEEDS_DESTINATION,
@@ -110,7 +111,12 @@ const NO_FIX: PositionState = {
 };
 
 /** Hold a speed long enough to earn a determination. */
-function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: number, forMs: number) {
+function settle(
+  lock: ReturnType<typeof createSafetyLock>,
+  mph: number,
+  fromMs: number,
+  forMs: number,
+) {
   let t = fromMs;
   const end = fromMs + forMs;
   while (t <= end) {
@@ -240,13 +246,22 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
     unsupportedPreferenceFeatures(),
   );
   for (const spec of ROUTE_PREFERENCE_SPECS) {
-    check(`preferences: ${spec.feature} is in the provider whitelist`, HERE_AVOID_FEATURES.has(spec.feature));
+    check(
+      `preferences: ${spec.feature} is in the provider whitelist`,
+      HERE_AVOID_FEATURES.has(spec.feature),
+    );
   }
 
   // 7/8 — the model round-trips, and both states are named out loud.
   const tolls = { ...DEFAULT_ROUTE_PREFERENCES, avoidTolls: true };
-  check('preferences: avoid tolls produces the tollRoad feature', preferencesToAvoid(tolls).includes('tollRoad'));
-  check('preferences: default avoids nothing', preferencesToAvoid(DEFAULT_ROUTE_PREFERENCES).length === 0);
+  check(
+    'preferences: avoid tolls produces the tollRoad feature',
+    preferencesToAvoid(tolls).includes('tollRoad'),
+  );
+  check(
+    'preferences: default avoids nothing',
+    preferencesToAvoid(DEFAULT_ROUTE_PREFERENCES).length === 0,
+  );
   check(
     'preferences: the OFF state is stated, not implied by silence',
     summarizePreferences(DEFAULT_ROUTE_PREFERENCES).includes('Tolls allowed'),
@@ -265,14 +280,19 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   // 9 — it survives the provider's own sanitizer untouched.
   check(
     'preferences: the produced features survive sanitizeAvoidances unchanged',
-    sanitizeAvoidances(preferencesToAvoid({ avoidTolls: true, avoidFerries: true })).sort().join(',') ===
-      preferencesToAvoid({ avoidTolls: true, avoidFerries: true }).sort().join(','),
+    sanitizeAvoidances(preferencesToAvoid({ avoidTolls: true, avoidFerries: true }))
+      .sort()
+      .join(',') === preferencesToAvoid({ avoidTolls: true, avoidFerries: true }).sort().join(','),
   );
 
   // 9 — and they reach the WIRE as avoid[features].
   const wire = truckWireParams(toTruckProfile(DEFAULT_EDITABLE_PROFILE), preferencesToAvoid(tolls));
   const avoidParam = wire.find((w) => w.param === 'avoid[features]');
-  check('preferences: avoid tolls reaches the wire as avoid[features]', avoidParam !== undefined, wire.map((w) => w.param));
+  check(
+    'preferences: avoid tolls reaches the wire as avoid[features]',
+    avoidParam !== undefined,
+    wire.map((w) => w.param),
+  );
   check(
     'preferences: ...carrying exactly tollRoad',
     avoidParam?.value === 'tollRoad',
@@ -299,8 +319,14 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   );
 
   // 11 — a change invalidates the route.
-  check('preferences: turning tolls on is a route change', preferencesChanged(DEFAULT_ROUTE_PREFERENCES, tolls));
-  check('preferences: an identical set is NOT a route change', !preferencesChanged(tolls, { ...tolls }));
+  check(
+    'preferences: turning tolls on is a route change',
+    preferencesChanged(DEFAULT_ROUTE_PREFERENCES, tolls),
+  );
+  check(
+    'preferences: an identical set is NOT a route change',
+    !preferencesChanged(tolls, { ...tolls }),
+  );
 }
 
 /* ============ 1-6. the truck, restored rather than re-asked ========= */
@@ -308,7 +334,10 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   // 5/6 — the confirmation gate decides, and it decides on values.
   const base: EditableProfile = { ...DEFAULT_EDITABLE_PROFILE };
   const confirmed = confirmProfile(base);
-  check('truck: a confirmed, unchanged profile is READY — no reconfirmation', profileGate(base, confirmed) === 'ready');
+  check(
+    'truck: a confirmed, unchanged profile is READY — no reconfirmation',
+    profileGate(base, confirmed) === 'ready',
+  );
   const taller: EditableProfile = { ...base, heightFt: 14 };
   check(
     'truck: changing a routing value drops it back to unconfirmed',
@@ -391,11 +420,15 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
 /* ============ 25. 13'6" stays exact and sends 411 cm ================ */
 {
   const thirteenSix: EditableProfile = { ...DEFAULT_EDITABLE_PROFILE, heightFt: 13.5 };
-  check("13'6\": reads as 13′6″ in imperial", formatDimension(13.5, false).includes('13′6″'), formatDimension(13.5, false));
-  check("13'6\": is NEVER shown as 13.6", !formatDimension(13.5, false).includes('13.6'));
+  check(
+    '13\'6": reads as 13′6″ in imperial',
+    formatDimension(13.5, false).includes('13′6″'),
+    formatDimension(13.5, false),
+  );
+  check('13\'6": is NEVER shown as 13.6', !formatDimension(13.5, false).includes('13.6'));
   const wire = truckWireParams(toTruckProfile(thirteenSix), []);
   const height = wire.find((w) => w.param === 'truck[height]');
-  check("13'6\": sends exactly 411 cm", height?.value === '411', height?.value);
+  check('13\'6": sends exactly 411 cm', height?.value === '411', height?.value);
 }
 
 /* ============ 12/13. one damaged record never costs another ========= */
@@ -451,7 +484,10 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
    * that makes those counts possible from being edited away.
    */
   const search = read('src/components/navigator/DestinationSearch.tsx');
-  check('typing: the search component never plans a route', !/lifecycle\.plan|planRoute/.test(search));
+  check(
+    'typing: the search component never plans a route',
+    !/lifecycle\.plan|planRoute/.test(search),
+  );
   check(
     'typing: the search component asks for no location',
     !/getCurrentPosition|watchPosition/.test(search),
@@ -465,9 +501,7 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   );
   check(
     'start: a preference change discards a route built for the old one',
-    read('src/components/navigator/DrivingScreen.tsx').includes(
-      'if (changed && lifecycle.state()',
-    ),
+    read('src/components/navigator/DrivingScreen.tsx').includes('if (changed && lifecycle.state()'),
   );
 }
 
@@ -490,7 +524,10 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
     'clocks: ...and the cost is stated in words, not implied by silence',
     blank.clocksWarning === CLOCKS_UNAVAILABLE_WARNING,
   );
-  check('clocks: they are listed as optional, never required', itemState(blank, 'clocks') === 'optional');
+  check(
+    'clocks: they are listed as optional, never required',
+    itemState(blank, 'clocks') === 'optional',
+  );
 
   const set = setupStatus({ ...ready, clocks: 'set' });
   check('clocks: entered clocks retire the warning', set.clocksWarning === null);
@@ -506,7 +543,9 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   // No clock state anywhere makes the trip refuse.
   check(
     'clocks: no clock state can block Start on its own',
-    (['set', 'unset', 'unsupported'] as const).every((c) => setupStatus({ ...ready, clocks: c }).canStart),
+    (['set', 'unset', 'unsupported'] as const).every(
+      (c) => setupStatus({ ...ready, clocks: c }).canStart,
+    ),
   );
 }
 
@@ -526,10 +565,7 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
     'collapse: an UNCONFIRMED truck never does — the long screen stays',
     !withTruck('unconfirmed').configured,
   );
-  check(
-    'collapse: an INVALID truck never does either',
-    !withTruck('invalid').configured,
-  );
+  check('collapse: an INVALID truck never does either', !withTruck('invalid').configured);
 
   // The optional items are genuinely optional: declining them must not
   // sentence a driver to the long screen forever.
@@ -564,6 +600,32 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
   check(
     'collapse: an unconfirmed truck is named first, above the destination',
     withTruck('unconfirmed').blockedReason === START_NEEDS_TRUCK,
+  );
+
+  /*
+   * The collapsed card must carry the driver's ACTUAL HOURS. "Set" would
+   * read identically for a driver with 45 minutes of drive time and one
+   * with nine, and hours are the one subject where implying more than
+   * someone has is a violation rather than a rough edge.
+   */
+  const entered = summarizeEnteredClocks({
+    kind: 'set',
+    entered: {
+      drivingMin: 305,
+      windowMin: 400,
+      untilBreakMin: 120,
+      cycleMin: 2400,
+      cycleRule: '70/8',
+    },
+    enteredAtMs: T0,
+    fromFreshShift: false,
+  });
+  check('collapse: the clocks line prints the entered hours', entered.includes('5h 05m'), entered);
+  check('collapse: ...and the shift window beside them', entered.includes('6h 40m'), entered);
+  check('collapse: ...and never the bare word "Set"', !/\bSet\b/.test(entered), entered);
+  check(
+    'collapse: blank clocks say so in words',
+    summarizeEnteredClocks({ kind: 'unset' }) === CLOCKS_NOT_SET,
   );
 }
 
