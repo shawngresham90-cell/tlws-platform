@@ -237,3 +237,32 @@ export const GENERIC_OTP_SENT_MESSAGE =
 
 export const GENERIC_OTP_FAILED_MESSAGE =
   'That code did not work. Codes expire quickly — request a new one and try again.';
+
+/**
+ * What a server action hands back to the account form.
+ *
+ * Lives here rather than beside the actions because the client component
+ * imports it, and a `'use server'` module is not a place to source a type
+ * from — everything exported from one must be an async function.
+ *
+ * The collected fields are echoed back on purpose. The profile is written at
+ * VERIFICATION, not before, because `navigator_profiles.user_id` is a foreign
+ * key to `auth.users` and no user exists until a code is verified. So the
+ * answers have to survive the round trip, and the honest options are a server
+ * session, a cookie, or the form itself. The form is the one that stores
+ * nothing anywhere and disappears when the tab closes.
+ */
+export type AccountActionState = {
+  stage: 'collect' | 'code';
+  message?: string;
+  problems?: SignupProblem[] | string[];
+  email?: string;
+  next?: string;
+  /** Echoed so the code stage can complete the profile it could not write yet. */
+  collected?: {
+    firstName: string;
+    phone: string;
+    emailMarketing: boolean;
+    smsMarketing: boolean;
+  };
+};
