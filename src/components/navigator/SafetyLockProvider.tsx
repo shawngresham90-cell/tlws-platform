@@ -85,12 +85,24 @@ export function SafetyLockProvider({ children }: { children: ReactNode }) {
   // (STATIONARY or an active override), the action is explicitly
   // permitted while moving, or the cold-start SETUP WINDOW is open and
   // the action is one the setup map explicitly names (doc 06 §1a).
+  /*
+   * FOUR ways an action can be usable, all decided by shared maps and
+   * shared lock state — never per-component: the lock is open (STATIONARY
+   * or an active override), the action is explicitly permitted while
+   * moving, the cold-start SETUP WINDOW is open, or the PARKED GRACE is
+   * running — a verified-stationary truck whose signal went quiet.
+   *
+   * The grace deliberately permits exactly the setup-window set and
+   * nothing more: "keep only the parked setup actions that were already
+   * available". It never widens the surface, it only stops withdrawing
+   * one from a driver who has not moved.
+   */
   const permits = useCallback(
     (action: string) =>
       !lock.locked ||
       allowedWhileMoving(action) ||
-      (lock.setupWindow && allowedDuringSetupWindow(action)),
-    [lock.locked, lock.setupWindow],
+      ((lock.setupWindow || lock.parkedGrace) && allowedDuringSetupWindow(action)),
+    [lock.locked, lock.setupWindow, lock.parkedGrace],
   );
 
   const value = useMemo(() => ({ lock, grantOverride, permits }), [lock, grantOverride, permits]);

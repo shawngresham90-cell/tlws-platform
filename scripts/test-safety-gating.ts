@@ -78,14 +78,38 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     'locked action: children NOT rendered under default-deny',
     !html.includes('SHOULD-NOT-RENDER'),
   );
+  /*
+   * THE COPY CHANGED WITH THE POLICY (Fast Start milestone), and these
+   * assertions changed with it rather than being deleted.
+   *
+   * This render has never had a fix, so motion is UNKNOWN and the lock
+   * reason is `location-unknown`. The old screen said "locked while the
+   * vehicle is moving … or motion is unknown" and offered a PASSENGER
+   * ACCESS button. That is the exact thing the pilot reported: a parked
+   * driver asked to declare they are not driving, because the app could
+   * not see them.
+   *
+   * The new rule is narrower and more honest: a passenger override is
+   * offered ONLY for confirmed motion. An unknown location says the app
+   * cannot see the vehicle, and says nothing about who is driving.
+   */
   check(
-    'locked action: explains the lock as text',
-    html.includes('locked while the vehicle is moving'),
+    'locked action: an unknown location is named as exactly that',
+    html.includes("can't confirm this vehicle's location") ||
+      html.includes('can&#x27;t confirm this vehicle&#x27;s location'),
+    html.slice(0, 400),
   );
-  check('locked action: UNKNOWN motion named honestly', html.includes('or motion is unknown'));
   check(
-    'locked action: passenger path offered on attempt only (button present, dialog not)',
-    html.includes('Passenger access') && !html.includes('I am not the driver'),
+    'locked action: it does NOT claim the vehicle is moving',
+    !html.includes('locked while the vehicle is moving'),
+  );
+  check(
+    'locked action: and NEVER offers a passenger declaration to a driver who has not moved',
+    !html.includes('Passenger access') && !html.includes('I am not the driver'),
+  );
+  check(
+    'locked action: the reason is machine-readable for the bench',
+    html.includes('data-lock-reason="location-unknown"'),
   );
 }
 // The setup-window map itself stays exactly one action wide: widening it

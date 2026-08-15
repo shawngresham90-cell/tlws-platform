@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { readOnboardingSeen, writeOnboardingSeen } from './onboarding-storage';
 import { PILOT_ONBOARDING } from '@/lib/navigator/pilot-onboarding';
 
 /**
@@ -25,13 +26,41 @@ import { PILOT_ONBOARDING } from '@/lib/navigator/pilot-onboarding';
  * available as a toggle, which is how a driver looks it up later.
  */
 export function PilotOnboarding() {
-  const [open, setOpen] = useState(true);
+  /*
+   * REMEMBERED ACROSS VISITS (Fast Start milestone).
+   *
+   * This opened expanded on every load, so a returning driver scrolled
+   * the whole first-trip briefing every time — a large share of the
+   * 8,826 px the audit measured. It is now shown expanded once and
+   * collapsed thereafter, with "View instructions" always available.
+   *
+   * Starts CLOSED and opens after the read, rather than the reverse: on
+   * the server and on the first client paint there is no storage to
+   * consult, and a briefing that flashes open and snaps shut is worse
+   * than one the driver opens deliberately. First-time drivers get it
+   * expanded the moment the effect runs.
+   */
+  const [open, setOpen] = useState(false);
+  const [seen, setSeen] = useState(true);
+  useEffect(() => {
+    const alreadySeen = readOnboardingSeen();
+    setSeen(alreadySeen);
+    setOpen(!alreadySeen);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    if (!seen) {
+      writeOnboardingSeen();
+      setSeen(true);
+    }
+  };
 
   if (!open) {
     return (
-      <details className="rounded-card border border-line p-4">
+      <details className="rounded-card border border-line p-4" data-onboarding="collapsed">
         <summary className="min-h-16 cursor-pointer text-lg font-semibold text-ink">
-          Pilot briefing
+          View instructions
         </summary>
         <BriefingCards />
       </details>
@@ -49,7 +78,7 @@ export function PilotOnboarding() {
       <BriefingCards />
       <button
         type="button"
-        onClick={() => setOpen(false)}
+        onClick={dismiss}
         className="mt-4 min-h-16 w-full rounded-card border border-line px-4 text-xl font-semibold text-ink"
       >
         Got it

@@ -35,10 +35,36 @@ export function LockGate({
    */
   compact?: boolean;
 }) {
-  const { permits, grantOverride } = useSafetyLock();
+  const { permits, grantOverride, lock } = useSafetyLock();
   const [offering, setOffering] = useState(false);
 
   if (permits(action)) return <>{children}</>;
+
+  /*
+   * A PASSENGER OVERRIDE IS ONLY OFFERED FOR CONFIRMED MOTION.
+   *
+   * The override asks a person to declare they are not driving. That is a
+   * reasonable question of someone in a moving truck and a false one for
+   * a driver parked at a truck stop whose phone lost GPS under a canopy —
+   * which is precisely what the pilot reported being asked. When the lock
+   * reason is an unknown location, the screen says the app cannot see the
+   * vehicle, and says nothing about who is driving.
+   */
+  if (lock.lockReason === 'location-unknown') {
+    return (
+      <div
+        role="status"
+        data-lock-reason="location-unknown"
+        className="rounded-card border border-line p-4 text-ink/80"
+      >
+        <p className="text-lg font-semibold text-ink">{lockedLabel} is paused</p>
+        <p className="mt-1 text-base">
+          We can&apos;t confirm this vehicle&apos;s location right now, so setup is on hold. It
+          returns on its own once the signal comes back.
+        </p>
+      </div>
+    );
+  }
 
   if (compact && !offering) {
     return (
