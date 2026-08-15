@@ -34,6 +34,23 @@ import type { WeatherAlert } from '@/lib/trip-planner/providers';
 import type { RemainingClocks } from '@/lib/trip-planner/types';
 import { readFileSync } from 'node:fs';
 
+/** Both ends in the United States — the only shape NWS may answer for. */
+const US_ROUTE = {
+  origin: 'US',
+  destination: 'US',
+  crossBorder: false,
+  fullyUS: true,
+  touchesCanada: false,
+} as const;
+/** Both ends in Canada. */
+const CA_ROUTE = {
+  origin: 'CA',
+  destination: 'CA',
+  crossBorder: false,
+  fullyUS: false,
+  touchesCanada: true,
+} as const;
+
 let passed = 0;
 let failed = 0;
 function check(name: string, cond: boolean, detail?: unknown) {
@@ -176,7 +193,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert()],
     timing,
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -203,7 +220,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert({ expiresMs: T0 + 140 * MIN })],
     timing,
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -217,7 +234,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert({ expiresMs: T0 + 140 * MIN })],
     timing: timingFor(120, 5, 1), // 5 miles per minute
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -230,7 +247,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert({ fromMile: 5000 })],
     timing,
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -242,7 +259,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert({ headline: 'Beach Hazards Statement' })],
     timing,
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -257,7 +274,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert()],
     timing: timingUnavailable('estimate'),
     departAtMs: T0,
-    country: 'US',
+    region: US_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -274,7 +291,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert()],
     timing,
     departAtMs: T0,
-    country: 'CA',
+    region: CA_ROUTE,
     source: 'nws-us',
   });
   check(
@@ -299,7 +316,7 @@ function alert(over: Partial<WeatherAlert> = {}): WeatherAlert {
     alerts: [alert()],
     timing: timingUnavailable('estimate'),
     departAtMs: T0,
-    country: 'CA',
+    region: CA_ROUTE,
     source: 'nws-us',
   });
   check(

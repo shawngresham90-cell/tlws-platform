@@ -1,10 +1,13 @@
 # Trip Planner Phase 1 — Plan My Day
 
-**Date:** 2026-08-14
-**Status:** foundation and safety engines complete; UI not yet built.
+**Date:** 2026-08-15
+**Status:** engines, UI, results map and browser proof complete. Draft PR #318.
 **Scope:** the calculation spine — provider traffic contract, route timing,
 available drive time, safety buffer, parking eligibility, break placement and
-weather relevance. Navigator is unchanged except for shared pure authorities.
+weather relevance — plus the Plan My Day input flow at `/trip-planner`, the
+results screen, the MapLibre results map, and the eight-viewport browser bench.
+The original cost planner is preserved at `/trip-planner/classic`. Navigator is
+unchanged except for shared pure authorities.
 
 ---
 
@@ -246,6 +249,153 @@ it never hands the stop engine a `Route` again.
 
 ---
 
+## 8a. What end-to-end verification of the endpoint found
+
+Driving `POST /api/trip-planner/quote` against a running production server —
+rather than reading the code — surfaced two defects that every unit test had
+missed, because both live in the wiring between layers that unit tests stub.
+
+### Two constants named `DEFAULT_SAFETY_BUFFER_MIN`, and the buffer went nowhere
+
+The screen offered 15/30/45/60/90-minute presets, persisted the choice, and
+displayed the selected value. `quoteRequestSchema` had no `bufferMin` field, so
+the number never left the browser. Every plan was computed against
+`selectLastStops`'s own default — **30 minutes** — while the results card
+printed whichever preset the driver had tapped. A driver who chose 90 minutes
+got a 30-minute plan under a "90 min" label.
+
+Two constants named `DEFAULT_SAFETY_BUFFER_MIN` existed with **different
+values** — `last-stop.ts` = 30, `drive-window.ts` = 45 — and each file's tests
+passed against its own copy. That is how they got to disagree: nothing ever
+compared them. They met for the first time on the results screen.
+
+**Fixed by deleting the second one.** `drive-window.ts` owns the buffer;
+`last-stop.ts` imports and re-exports it. The wire carries `bufferMin` with
+that single constant as its default, so an omitted buffer resolves to the one
+authority rather than to a local opinion. Three test files that pinned a
+literal `30` or `45` now assert the pass-through instead of a number.
+
+**Consequence, stated plainly:** the classic cost planner's default buffer
+moves from 30 to 45 minutes. That is the more conservative direction (a wider
+margin before the clock runs out), and it is the price of having one answer.
+
+Verified over real HTTP at 15, 30, 45 and 60 minutes — see §8b.
+
+### The Canadian refusal was unreachable
+
+`relevantWeather` has a region gate, tested and mutation-verified (§7). The
+endpoint passed a hardcoded `country: 'US'`, so it could never fire: a route
+into Canada silently received US-coverage treatment, and "no alerts" was
+indistinguishable from "clear skies".
+
+**A route has two countries, and the first fix did not.** Deriving one label
+for the trip ("Canadian if either end is") is false at one end of every
+crossing, and it hides the US half of the weather that genuinely exists on a
+US-to-Canada haul. So `route-region.ts` resolves each end **separately**:
+
+| Field | Meaning |
+| --- | --- |
+| `origin`, `destination` | `'US' \| 'CA' \| 'unknown'`, resolved per end |
+| `crossBorder` | both ends known **and** different |
+| `fullyUS` | both ends provably US — the only state NWS may answer for |
+| `touchesCanada` | either end provably Canadian |
+
+The weather gate reads `fullyUS`, never "is it Canadian", and each refusal
+names the actual situation:
+
+| Shape | Notice |
+| --- | --- |
+| both US | answered (no region refusal) |
+| both CA | `CANADA_WEATHER_UNAVAILABLE` |
+| US ↔ CA either direction | `CROSS_BORDER_WEATHER_PARTIAL` — half-covered, not Canadian |
+| either end unplaceable | `ROUTE_COUNTRY_UNDETERMINED` |
+
+**The caller's claim outranks geography.** A directory anchor carries a state
+or province code — an attested fact about the record, not an inference — and
+Plan My Day passes it as `origin.country` / `destination.country`. This is what
+makes Windsor–Detroit answerable at all: `countrySideOf` returns `'unknown'`
+for both (no half-plane puts Windsor in Canada without taking Detroit with it),
+and with the codes attached it becomes a crossing rather than a guess. An
+unrecognised code claims nothing and falls through to geography.
+
+### One submission, one route request
+
+Proven in two halves, because no single tool can see both:
+
+| Half | Where | Assertion |
+| --- | --- | --- |
+| Browser → endpoint | `trip-planner-viewports.mjs` | one tap sends exactly one POST; five rapid taps still send one |
+| Endpoint → provider | `test-trip-planner-api.ts` | one composed quote calls the routing port once; one port call makes one provider request |
+
+The provider call is made server-side, so Playwright cannot observe it — which
+is why the second half is a unit assertion rather than a claim about the
+browser run. The adapter's documented retry policy is pinned too: a 4xx is
+never retried (it will not fix itself and retrying spends quota), a 5xx is
+retried exactly once.
+
+---
+
+## 8b. Measured verification
+
+### Endpoint, over HTTP against a production build
+
+`scripts/verify-trip-planner-endpoint.mjs` — **31 checks, 0 failures.**
+
+- the buffer at 15/30/45/60 min reaches the parking filter, the drive window
+  and the displayed caption **unchanged**, and `clockLimitMin − stopTargetMin`
+  equals the chosen buffer exactly;
+- a wider buffer measurably shortens the usable day;
+- US→US, CA→CA, US→CA, CA→US, Detroit→Windsor attested, and Detroit→Windsor
+  with no claims each get their own answer;
+- the fallback estimate claims **nothing**: no live traffic, no clock
+  geography, no break geography, no parking eligibility, no timed weather, no
+  drawn road.
+
+### Browser, 12 scenarios × 8 viewports
+
+`scripts/bench/trip-planner-viewports.mjs` — **1,838 checks, 0 failures, 2
+known-open notes.**
+
+Viewports: 320×568, 360×640, 375×667, 390×844, 412×915, 430×932, 844×390,
+932×430. Scenarios are generated by `trip-planner-fixtures.ts` calling the real
+`planMyDay`, so a scenario that stops producing the state it is named for fails
+rather than silently rendering something else.
+
+Proven from the browser with no fixture involved: one tap sends exactly one
+POST to `/api/trip-planner/quote`; five taps inside one in-flight window still
+send one; the live endpoint answers and its refusal path renders;
+`/trip-planner/classic` still serves its three-step flow, its origin,
+destination and departure inputs and its truck-profile fields.
+
+### Two defects the bench itself found
+
+1. **The map drew nothing while the legend said it had.** `PlanMap` added its
+   layers on MapLibre's `load` event, which fires only after the first
+   visually complete render — so when the tile server was unreachable, the
+   canvas mounted, the legend read "Clock limit — marked", and **zero markers
+   existed**. Bad signal and needing the plan are the same moment in a truck,
+   so this was the wrong failure to have. Now drawn on `style.load` (parsed
+   style, no tile involved) with `load` and `idle` as fallbacks; `draw` is
+   idempotent. The bench now counts the markers the plan earned against the
+   markers actually in the DOM — the assertion whose absence hid this.
+
+2. **The rapid-tap probe was measuring the fixture, not the guard.** The stub
+   answered in under a millisecond, so a later tap started a second, entirely
+   legitimate request — a driver re-planning after results appeared. The stub
+   now answers in 1,500 ms and the probe asserts the taps landed **inside**
+   that window before asserting one request.
+
+### Bench infrastructure
+
+`mock-postgrest.mjs` gained `like`/`ilike`. Without it every
+`/directory/<hwy>/exit-<n>` page threw during prerender (the corridor query
+narrows with `.ilike('interstate', '%75%')`), which made the site unbuildable
+against the mock and any bench needing a populated directory unrunnable. With
+it the build completes with **zero** directory read failures and the planner
+sees 3,882 anchors.
+
+---
+
 ## 9. Test totals
 
 | Harness | Checks |
@@ -253,7 +403,10 @@ it never hands the stop engine a `Route` again.
 | `trip-planner-foundation` | 69 |
 | `trip-planner-parking-timing` | 24 |
 | `trip-planner-break-weather` | 30 |
-| Full offline suite | **181 harnesses, all passing** |
+| `trip-planner-clock-marker` | 22 |
+| `trip-planner-plan-my-day` | 76 |
+| `trip-planner-api` | 114 |
+| Full offline suite | **183 harnesses, all passing** |
 
 Every invariant above was **mutation-verified** — the rule was inverted in the
 source and the tests were confirmed to fail:
@@ -283,12 +436,29 @@ clean.
 3. **Canadian weather unavailable** — §7, with the exact blocker.
 4. **Canadian HOS is not calculated**, and no US calculation is carried across
    the border.
-5. **The map pin needs geometry the planner port does not retain.** Eligibility
-   is unaffected; a pin on the results map will need the port to retain
-   polylines or a separate geometry-bearing call.
-6. **The break lead is a flat 20 minutes**, not scaled to how coarse the timing
+5. **The break lead is a flat 20 minutes**, not scaled to how coarse the timing
    at that point is.
-7. **No UI yet** — this milestone is the calculation spine.
+6. **The live HERE round trip is unproven in this environment.** No
+   `HERE_API_KEY` is set, so every local quote takes the estimate path. The
+   browser bench records this as a note rather than a pass. What *is* proven:
+   one composed quote calls the routing port exactly once, one port call makes
+   exactly one provider request, a 4xx is never retried and a 5xx is retried
+   exactly once (`test-trip-planner-api.ts`). The provider call is server-side
+   and Playwright cannot observe it.
+7. **Map tiles do not load in the sandbox** (no egress to
+   `tile.openstreetmap.org`). Route line, pins and zones all render over a
+   blank basemap — which is now a deliberately supported state, see §8b — but
+   no run asserts that a tile arrived.
+8. **The twelve browser scenarios are provider-shaped, not provider-sourced.**
+   The maneuvers carry the offsets, lengths and durations HERE returns, but no
+   HERE request produced them.
+9. **The 44px floor is measured on the planner's own controls.** The shared
+   site header and footer contain 22 smaller links (including a 1px `sr-only`
+   skip link, correct by design) and MapLibre's required OpenStreetMap
+   attribution link at 14px. None are driver controls; none changed in this
+   PR; all are reported as a bench note rather than silently excluded.
+10. **Canadian HOS is still not calculated**, and no US calculation is carried
+    across the border — only the weather refusal distinguishes the crossing.
 
 ---
 

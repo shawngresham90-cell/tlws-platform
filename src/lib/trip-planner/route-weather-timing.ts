@@ -1,5 +1,6 @@
 import type { WeatherAlert } from './providers';
 import type { RouteTiming } from './route-time-axis';
+import type { RouteRegion } from './route-region';
 
 /**
  * Does this alert reach the truck — at the mile it covers, and at the TIME
@@ -31,11 +32,24 @@ import type { RouteTiming } from './route-time-axis';
 /** Which authority a set of alerts came from. */
 export type AlertSource = 'nws-us' | 'eccc-ca';
 
-/** Which country a stretch of route runs through. */
-export type RouteCountry = 'US' | 'CA';
-
 export const CANADA_WEATHER_UNAVAILABLE =
   'Canadian route weather alerts are not available in this pilot. Check Environment Canada before you drive.';
+
+/**
+ * A crossing is NOT a Canadian route, and saying so would hide the half
+ * of the weather that does exist. It is its own answer.
+ */
+export const CROSS_BORDER_WEATHER_PARTIAL =
+  'This route crosses the border. Alerts are only available for the United States portion, so the Canadian stretch is not covered here — check Environment Canada before you drive.';
+
+/**
+ * Neither end could be placed in a country. Along the Great Lakes no
+ * latitude rule separates Windsor from Detroit, and a feed that covers
+ * one but not the other cannot be trusted to speak for a route we cannot
+ * locate.
+ */
+export const ROUTE_COUNTRY_UNDETERMINED =
+  'Route weather is not shown because this route could not be placed in a single country with confidence.';
 
 /** Hazards that change how a truck is driven, not how a picnic goes. */
 export const TRUCKING_HAZARDS = [
@@ -64,8 +78,12 @@ export type WeatherMatch = {
 };
 
 export type WeatherRelevance =
-  | { ok: true; matches: WeatherMatch[]; country: RouteCountry }
-  | { ok: false; reason: 'timing-unavailable' | 'region-unsupported'; notice: string };
+  | { ok: true; matches: WeatherMatch[]; region: RouteRegion }
+  | {
+      ok: false;
+      reason: 'timing-unavailable' | 'region-unsupported' | 'cross-border' | 'country-unknown';
+      notice: string;
+    };
 
 /** Is this headline about something that changes truck operation? */
 export function isTruckingHazard(headline: string): boolean {
@@ -83,18 +101,40 @@ export function relevantWeather(input: {
   alerts: readonly WeatherAlert[];
   timing: RouteTiming;
   departAtMs: number;
-  country: RouteCountry;
+  region: RouteRegion;
   source: AlertSource;
 }): WeatherRelevance {
-  const { alerts, timing, departAtMs, country, source } = input;
+  const { alerts, timing, departAtMs, region, source } = input;
 
   /*
    * REGION FIRST, and before anything else is computed. A US feed has
    * nothing to say about a Canadian road, and saying "no alerts" would be
    * indistinguishable from "clear skies" to the driver reading it.
+   *
+   * The gate is `fullyUS`, not "is it Canadian". Those differ on exactly
+   * the routes that matter: a Detroit-to-Windsor run is not a Canadian
+   * route and not a US one, and each of the three refusals below names
+   * the situation the driver is actually in rather than flattening all
+   * of them into "Canada".
    */
-  if (country === 'CA' && source !== 'eccc-ca') {
+  if (source !== 'nws-us') {
+    // A non-NWS feed is not wired in yet; when one is, this gate is where
+    // its own coverage question gets asked.
     return { ok: false, reason: 'region-unsupported', notice: CANADA_WEATHER_UNAVAILABLE };
+  }
+  if (!region.fullyUS) {
+    if (region.crossBorder) {
+      return { ok: false, reason: 'cross-border', notice: CROSS_BORDER_WEATHER_PARTIAL };
+    }
+    if (region.origin === 'CA' && region.destination === 'CA') {
+      return { ok: false, reason: 'region-unsupported', notice: CANADA_WEATHER_UNAVAILABLE };
+    }
+    if (region.touchesCanada) {
+      // One end provably Canadian, the other unplaceable: still not a
+      // route NWS can be said to cover.
+      return { ok: false, reason: 'region-unsupported', notice: CANADA_WEATHER_UNAVAILABLE };
+    }
+    return { ok: false, reason: 'country-unknown', notice: ROUTE_COUNTRY_UNDETERMINED };
   }
 
   if (timing.kind !== 'provider') {
@@ -133,5 +173,5 @@ export function relevantWeather(input: {
   }
 
   matches.sort((a, b) => a.reachesAtMs - b.reachesAtMs);
-  return { ok: true, matches, country };
+  return { ok: true, matches, region };
 }

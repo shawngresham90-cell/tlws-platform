@@ -4,6 +4,7 @@ import { planTrip } from './optimizer';
 import { estimateRoute } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
+import { DEFAULT_SAFETY_BUFFER_MIN } from './drive-window';
 import {
   buildTimeAxis,
   routeTimingFromAxis,
@@ -25,6 +26,7 @@ import type { RoutingPort, WeatherAlert, WeatherBand, WeatherPort } from './prov
 import type { FuelPriceResult } from './eia-fuel';
 import { latLngSchema } from './api-contracts';
 import { TRUCK_LIMITS, type HereManeuver } from './here-routing';
+import { resolveRouteRegion } from './route-region';
 
 /**
  * Composite trip quote (Phase 4) — the one call the mobile UI makes. Pure
@@ -95,9 +97,24 @@ export const truckParamsSchema = z.object({
     .default(null),
 });
 
+/*
+ * WHICH COUNTRY THIS END IS IN, WHEN THE CALLER KNOWS.
+ *
+ * A directory anchor carries a state or province code, which is an
+ * attested fact about the record — far stronger than any latitude rule,
+ * and the only thing that can place an endpoint in the Great Lakes band
+ * where geography honestly cannot. Omitted means "not stated", which
+ * falls through to geography; it does not mean "United States".
+ */
+const endpointSchema = z.object({
+  label: z.string().min(1).max(120),
+  position: latLngSchema,
+  country: z.enum(['US', 'CA']).nullish(),
+});
+
 export const quoteRequestSchema = z.object({
-  origin: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
-  destination: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
+  origin: endpointSchema,
+  destination: endpointSchema,
   departAtMs: z.number().int().positive(),
   clocks: simpleClocksSchema,
   fuelLevelFraction: z.number().min(0).max(1).default(1),
@@ -109,6 +126,16 @@ export const quoteRequestSchema = z.object({
     .array(z.enum(['tollRoad', 'ferry', 'tunnel', 'dirtRoad', 'uTurns']))
     .max(5)
     .default([]),
+  /*
+   * THE DRIVER'S SAFETY BUFFER — ONE VALUE, ALL THE WAY THROUGH.
+   *
+   * Plan My Day sends the preset the driver tapped, and that number is
+   * what the drive window, the break placement, parking reachability and
+   * the caption on the results card are all computed from. A caller that
+   * omits it gets `DEFAULT_SAFETY_BUFFER_MIN` — the system's single
+   * authority, not a second default declared here.
+   */
+  bufferMin: z.number().int().min(0).max(180).default(DEFAULT_SAFETY_BUFFER_MIN),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
@@ -406,11 +433,25 @@ export async function composeQuote(
           : timingUnavailable(`provider timing unusable: ${axis.detail}`);
       })();
 
+  /*
+   * BOTH ENDS, SEPARATELY. A route has two countries and sometimes they
+   * differ; collapsing them into one label is how a Detroit-to-Windsor
+   * run ends up described as purely Canadian, hiding the US half of the
+   * weather that does exist.
+   */
+  const region = resolveRouteRegion({
+    origin: input.origin.position,
+    originCountry: input.origin.country ?? null,
+    destination: input.destination.position,
+    destinationCountry: input.destination.country ?? null,
+  });
+
   const lastStop = selectLastStops({
     timing,
     candidates,
     clocks: remainingAtDeparture,
     departAtMs: input.departAtMs,
+    bufferMin: input.bufferMin,
   });
   if (!lastStop.timingAvailable) warnings.push(TIMING_UNAVAILABLE_NOTICE);
 
@@ -439,9 +480,7 @@ export async function composeQuote(
       departAtMs: input.departAtMs,
       candidates,
       alerts: weather.alerts,
-      // Phase 1 plans US HOS only; the region gate lives in the weather
-      // module and a Canadian route receives the honest refusal there.
-      country: 'US',
+      region,
       alertSource: 'nws-us',
     }),
     itinerary,

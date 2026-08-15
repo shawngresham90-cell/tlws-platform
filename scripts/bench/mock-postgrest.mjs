@@ -212,6 +212,31 @@ function predicateFor(column, raw) {
     case 'lte':
       base = (r) => cmp(r[column], parseScalar(val)) <= 0;
       break;
+    /*
+     * `ilike` — case-insensitive pattern match.
+     *
+     * Needed because the exit and corridor pages narrow by corridor
+     * number with `.ilike('interstate', '%75%')` before canonicalizing in
+     * application code. Without it every /directory/<hwy>/exit-<n> page
+     * threw during prerender, which made the whole site unbuildable
+     * against this mock — and any bench that needs a built site with a
+     * populated directory unrunnable with it.
+     *
+     * PostgREST wildcards are `*` on the wire; supabase-js sends `%`.
+     * Both are accepted here, and everything else in the pattern is
+     * escaped so a listing name containing `.` or `(` cannot turn into a
+     * regex of its own.
+     */
+    case 'like':
+    case 'ilike': {
+      const rx = new RegExp(
+        `^${val.replace(/[.*+?^${}()|[\]\\%]/g, (c) => (c === '%' || c === '*' ? '.*' : `\\${c}`))}$`,
+        op === 'ilike' ? 'i' : '',
+      );
+      base = (r) =>
+        r[column] === null || r[column] === undefined ? false : rx.test(String(r[column]));
+      break;
+    }
     default:
       throw new Error(`mock-postgrest: unsupported operator "${op}" on ${column}=${raw}`);
   }

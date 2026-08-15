@@ -4,7 +4,11 @@ import type { PlanMyDay } from '@/lib/trip-planner/plan-my-day';
 import { PARKING_SHORTFALL_NOTE } from '@/lib/trip-planner/plan-my-day';
 import { mayClaimLiveTraffic } from '@/lib/trip-planner/traffic';
 import { ZONE_EXPLANATION } from '@/lib/trip-planner/clock-limit-marker';
-import { CANADA_WEATHER_UNAVAILABLE } from '@/lib/trip-planner/route-weather-timing';
+import {
+  CANADA_WEATHER_UNAVAILABLE,
+  CROSS_BORDER_WEATHER_PARTIAL,
+} from '@/lib/trip-planner/route-weather-timing';
+import { PlanMap } from './PlanMap';
 
 /**
  * The Plan My Day results, rendered from a plan that has already decided
@@ -103,6 +107,9 @@ export function PlanResults({ plan }: { plan: PlanMyDay }) {
         </div>
       </section>
 
+      {/* ---- the map, drawn only from what survived the filters ------- */}
+      <PlanMap plan={plan} />
+
       {/* ---- the break ----------------------------------------------- */}
       <section className={CARD} aria-labelledby="break-heading">
         <h2 id="break-heading" className="text-xl font-bold text-ink">
@@ -192,7 +199,8 @@ export function PlanResults({ plan }: { plan: PlanMyDay }) {
         {plan.weather.ok === false ? (
           <div data-weather={plan.weather.reason}>
             <p className={`mt-1 ${BODY}`}>{plan.weather.notice}</p>
-            {plan.weather.notice === CANADA_WEATHER_UNAVAILABLE ? (
+            {plan.weather.notice === CANADA_WEATHER_UNAVAILABLE ||
+            plan.weather.notice === CROSS_BORDER_WEATHER_PARTIAL ? (
               <a
                 className="mt-2 inline-block min-h-12 text-lg underline decoration-line underline-offset-4"
                 href="https://weather.gc.ca/warnings/index_e.html"

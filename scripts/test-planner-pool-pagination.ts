@@ -45,6 +45,7 @@ import {
   isConfirmedOvernight,
   isProhibitedOvernight,
 } from '@/lib/directory/overnight';
+import { DEFAULT_SAFETY_BUFFER_MIN } from '@/lib/trip-planner/drive-window';
 
 /*
  * TEST-ONLY time source. These harnesses exercise the ELIGIBILITY FILTER,
@@ -557,7 +558,22 @@ check(
   slots.slots.every((s) => s.candidate.id !== 'b'),
 );
 check('last-stop still returns slots for eligible rows', slots.slots.length > 0);
-check('the 30-minute safety buffer is unchanged', slots.bufferMin === 30);
+/*
+ * The buffer default is no longer declared here or in last-stop.ts. Two
+ * constants named DEFAULT_SAFETY_BUFFER_MIN used to exist with different
+ * values (30 here, 45 in drive-window.ts), and each file's tests passing
+ * against its own copy is exactly how they got to disagree — which the
+ * driver then saw as a plan computed at 30 minutes under a caption
+ * saying whatever preset they had tapped.
+ *
+ * This asserts the pass-through, not a number: an unspecified buffer
+ * resolves to the ONE authority, wherever that authority sets it.
+ */
+check(
+  'an unspecified buffer resolves to the single system-wide default',
+  slots.bufferMin === DEFAULT_SAFETY_BUFFER_MIN,
+  slots.bufferMin,
+);
 
 pagingTests().then(() => {
   console.log(`planner-pool-pagination: ${passed} passed, ${failed} failed`);

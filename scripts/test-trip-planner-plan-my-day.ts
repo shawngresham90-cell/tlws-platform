@@ -22,8 +22,31 @@ import {
 } from '@/lib/trip-planner/plan-my-day';
 import { PLANNING_AID_ONLY } from '@/lib/trip-planner/drive-window';
 import { CANNOT_MAP } from '@/lib/trip-planner/clock-limit-marker';
+import {
+  thinRoute,
+  planMapPoints,
+  MAX_ROUTE_POINTS,
+  NO_ROUTE_LINE,
+} from '@/lib/trip-planner/plan-map';
 import type { HereManeuver } from '@/lib/trip-planner/here-routing';
 import type { RemainingClocks, StopCandidate } from '@/lib/trip-planner/types';
+
+/** Both ends in the United States — the only shape NWS may answer for. */
+const US_ROUTE = {
+  origin: 'US',
+  destination: 'US',
+  crossBorder: false,
+  fullyUS: true,
+  touchesCanada: false,
+} as const;
+/** Both ends in Canada. */
+const CA_ROUTE = {
+  origin: 'CA',
+  destination: 'CA',
+  crossBorder: false,
+  fullyUS: false,
+  touchesCanada: true,
+} as const;
 
 let passed = 0;
 let failed = 0;
@@ -99,7 +122,7 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
     departAtMs: T0,
     candidates: [stop('a', 60), stop('b', 120), stop('c', 180), stop('d', 240)],
     alerts: [],
-    country: 'US',
+    region: US_ROUTE,
     alertSource: 'nws-us',
     ...over,
   });
@@ -180,6 +203,35 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
     p.parkingProblem,
   );
   check('estimate: weather refuses rather than guessing', p.weather.ok === false, p.weather);
+
+  /*
+   * THE WHOLE PROHIBITION, IN ONE ASSERTION.
+   *
+   * The six claims below are the ones a straight-line estimate could
+   * plausibly be talked into making, and each is individually checked
+   * above. They are checked TOGETHER here as well, deliberately: the
+   * individual checks can each keep passing while a seventh surface —
+   * a new field, a new panel — starts claiming something. This one is
+   * written to be extended whenever the plan grows a new answer, and to
+   * fail loudly the moment any of them comes back.
+   *
+   * `base()` deliberately feeds a real baseline, a real departure time
+   * and four reachable candidates, so nothing here passes because the
+   * fixture was starved.
+   */
+  const estimateClaims = {
+    liveTraffic: p.traffic.confidence === 'live',
+    clockGeography: p.clockLimit.kind !== 'none' || p.stopTarget.kind !== 'none',
+    breakGeography: p.breakMarker !== null || p.breakPlan?.required === true,
+    parkingEligibility: p.parking.length > 0 || p.map.parking.length > 0,
+    timedWeather: p.weather.ok === true,
+    drawnRoute: p.map.route.length > 0,
+  };
+  check(
+    'estimate: claims NOTHING — no live traffic, clock, break, parking, weather or road',
+    Object.values(estimateClaims).every((claimed) => claimed === false),
+    estimateClaims,
+  );
 }
 
 /* ============ traffic unproven is never labelled live =============== */
@@ -252,7 +304,7 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
 
 /* ============ Canada is disclosed, never answered with NWS ========== */
 {
-  const p = base({ country: 'CA' });
+  const p = base({ region: CA_ROUTE });
   check('canada: weather refuses', p.weather.ok === false, p.weather);
   check(
     'canada: with the region reason, not a timing one',
@@ -359,6 +411,110 @@ function base(over: Partial<Parameters<typeof planMyDay>[0]> = {}) {
     '...and every displayed stop still clears the buffer',
     mixed.parking.every((c) => c.clockLeftMin >= 45),
     mixed.parking.map((c) => c.clockLeftMin),
+  );
+}
+
+/* ============ what the results map is allowed to draw =============== */
+{
+  /*
+   * The map is the one surface where a refused answer could sneak back
+   * in as a pixel: a line, a pin or a zone drawn from data that failed a
+   * filter looks exactly as authoritative as one that passed. These
+   * prove the layers are built from the FILTERED lists, not the raw ones.
+   */
+  const p = base();
+  check('the map carries the provider road geometry', p.map.route.length >= 2, p.map.route.length);
+  check('and says nothing is wrong with it', p.map.routeProblem === null, p.map.routeProblem);
+  check(
+    'the drawn line is thinned to a phone-sized payload',
+    p.map.route.length <= MAX_ROUTE_POINTS,
+    p.map.route.length,
+  );
+  check(
+    'the map plots exactly the parking the screen offered — no more',
+    p.map.parking.length === p.parking.length,
+    { map: p.map.parking.length, shown: p.parking.length },
+  );
+  check(
+    '...and exactly the same stops, by id',
+    p.map.parking.map((m) => m.id).join(',') === p.parking.map((c) => c.candidate.id).join(','),
+    p.map.parking.map((m) => m.id),
+  );
+
+  /* ---- an unsafe stop is not a pin either ---------------------------- */
+  const mixed = base({
+    candidates: [
+      stop('tempting', 590, { parkingSpaces: 500, offRouteMiles: 0 }),
+      stop('safe-1', 80),
+      stop('safe-2', 140, { name: 'Second Stop', position: { lat: 36, lng: -86 } }),
+    ],
+  });
+  check(
+    'a stop too far to reach is never drawn on the map',
+    !mixed.map.parking.some((m) => m.id === 'tempting'),
+    mixed.map.parking.map((m) => m.id),
+  );
+
+  /* ---- an estimate draws no road ------------------------------------- */
+  const est = base({ isEstimate: true });
+  check(
+    'an estimate cannot claim live traffic even when handed a baseline',
+    // `base()` passes a real baseSeconds and a real departure time. On an
+    // estimate both are meaningless, and the screen prints "Live traffic
+    // included" off exactly this verdict — so it must not survive.
+    est.traffic.confidence !== 'live',
+    est.traffic,
+  );
+  check('an estimated route draws no line at all', est.map.route.length === 0, est.map.route);
+  check('and says why, in the driver’s words', est.map.routeProblem === NO_ROUTE_LINE);
+  check(
+    'an estimate maps no parking either — nothing was reachable to prove',
+    est.map.parking.length === 0,
+  );
+
+  /* ---- thinning keeps the shape it claims to ------------------------- */
+  const long = Array.from({ length: 5000 }, (_, i) => ({ lat: 30 + i * 0.001, lng: -90 }));
+  const thin = thinRoute(long, 400);
+  check('thinning respects its cap', thin.length === 400, thin.length);
+  check(
+    'thinning keeps both ends, so the line still starts and finishes on the route',
+    thin[0].lat === long[0].lat && thin[thin.length - 1].lat === long[long.length - 1].lat,
+  );
+  const short = [
+    { lat: 1, lng: 1 },
+    { lat: 2, lng: 2 },
+  ];
+  check(
+    'a route already short enough is passed through untouched',
+    thinRoute(short, 400).length === 2,
+  );
+
+  /* ---- the camera sees the zones, not just the pins ------------------ */
+  const zoned = base({ ...route(20, 30, 20) });
+  const pts = planMapPoints(zoned.map, [zoned.clockLimit, zoned.stopTarget]);
+  check(
+    'coarse timing produces a zone rather than a pin',
+    zoned.clockLimit.kind === 'zone',
+    zoned.clockLimit.kind,
+  );
+  const zone = zoned.clockLimit;
+  check(
+    'and both ends of that zone are inside the camera fit',
+    zone.kind === 'zone' &&
+      pts.some((q) => q.lat === zone.from.lat) &&
+      pts.some((q) => q.lat === zone.to.lat),
+  );
+
+  /* ---- no window, nothing placed ------------------------------------- */
+  const noClocks = base({ clocks: null });
+  check(
+    'with no clocks entered the map places no HOS marker',
+    noClocks.clockLimit.kind === 'none' && noClocks.stopTarget.kind === 'none',
+  );
+  check(
+    'and offers no parking pins to tap instead',
+    noClocks.map.parking.length === 0,
+    noClocks.map.parking,
   );
 }
 

@@ -18,7 +18,23 @@ import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './dir
  * window on the way (the trap new drivers miss).
  */
 
-export const DEFAULT_SAFETY_BUFFER_MIN = 30;
+/*
+ * ONE SAFETY BUFFER IN THE WHOLE SYSTEM.
+ *
+ * This module used to declare its own 30-minute default while
+ * `drive-window.ts` declared a 45-minute one under the SAME NAME. Nothing
+ * caught it, because each file's tests only ever saw its own constant —
+ * and the two met for the first time on the results screen, where the
+ * plan was computed against 30 minutes and captioned with whichever
+ * preset the driver had tapped.
+ *
+ * A buffer is the margin a driver decides not to gamble. It cannot have
+ * two values, so it is declared once, in the module that owns the drive
+ * window, and re-exported here for the callers that already import it
+ * from this path.
+ */
+import { DEFAULT_SAFETY_BUFFER_MIN } from './drive-window';
+export { DEFAULT_SAFETY_BUFFER_MIN };
 
 export type SlotLabel = 'best-reservable' | 'last-reservable' | 'backup-reservable' | 'last-free';
 

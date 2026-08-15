@@ -15,6 +15,7 @@ import { readRegionPrefs, writeRegionPrefs } from '@/components/navigator/region
 import { readTruck } from '@/components/navigator/truck-storage';
 import { readClocks } from '@/components/navigator/clocks-storage';
 import { remainingToSimpleClocks } from '@/lib/trip-planner/clock-input';
+import { countryFromStateCode } from '@/lib/trip-planner/route-region';
 
 /**
  * Plan My Day — the Phase 1 input flow.
@@ -113,12 +114,31 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          origin: { label: origin.label, position: { lat: origin.lat, lng: origin.lng } },
+          /*
+           * THE ANCHOR'S OWN STATE CODE, PASSED ON AS A CLAIM. It comes
+           * off a directory record, so it is attested rather than
+           * inferred — which matters most exactly where a latitude rule
+           * fails, in the Great Lakes corridor where Windsor sits south
+           * of Detroit. An unrecognised code claims nothing and the
+           * server falls back to geography.
+           */
+          origin: {
+            label: origin.label,
+            position: { lat: origin.lat, lng: origin.lng },
+            country: countryFromStateCode(origin.state),
+          },
           destination: {
             label: destination.label,
             position: { lat: destination.lat, lng: destination.lng },
+            country: countryFromStateCode(destination.state),
           },
           departAtMs: Date.now(),
+          /*
+           * THE BUFFER THE DRIVER TAPPED, NOT A SERVER DEFAULT. Without
+           * this the chips would move a number nothing read, and the
+           * results screen would print a buffer the driver never chose.
+           */
+          bufferMin,
           /*
            * THE CONVERSION IS THE AUTHORITY'S, NOT THIS SCREEN'S. The
            * Navigator stores REMAINING minutes (what an ELD shows); the

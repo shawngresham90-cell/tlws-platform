@@ -10,15 +10,12 @@ import {
   type RouteTiming,
 } from './route-time-axis';
 import { clockLimitMarker, type ClockLimitMarker } from './clock-limit-marker';
+import { planMapLayers, type PlanMapLayers } from './plan-map';
 import { driveWindow, PLANNING_AID_ONLY, type DriveWindow } from './drive-window';
 import { planBreak, type BreakPlan } from './break-plan';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE } from './last-stop';
-import {
-  relevantWeather,
-  type RouteCountry,
-  type AlertSource,
-  type WeatherRelevance,
-} from './route-weather-timing';
+import { relevantWeather, type AlertSource, type WeatherRelevance } from './route-weather-timing';
+import type { RouteRegion } from './route-region';
 
 /**
  * Plan My Day — everything the results screen renders, assembled once.
@@ -73,6 +70,8 @@ export type PlanMyDay = {
   parkingHeadline: string;
   parkingProblem: string | null;
   weather: WeatherRelevance;
+  /** Exactly what the results map may draw — nothing that failed a filter. */
+  map: PlanMapLayers;
   /** Always shown. */
   disclaimers: string[];
 };
@@ -119,15 +118,24 @@ export function planMyDay(input: {
   departAtMs: number;
   candidates: StopCandidate[];
   alerts: readonly WeatherAlert[];
-  country: RouteCountry;
+  region: RouteRegion;
   alertSource: AlertSource;
 }): PlanMyDay {
   const disclaimers = [NOT_AN_ELD, PLANNING_AID_ONLY];
 
+  /*
+   * AN ESTIMATE CANNOT HAVE BEEN TRAFFIC-ADJUSTED, whatever the caller
+   * passes. A straight-line distance divided by an assumed speed has no
+   * free-flow baseline to compare against and no departure time was ever
+   * sent, so the two facts `trafficVerdict` reads to justify "Live
+   * traffic included" are meaningless here. `composeQuote` already
+   * nulls both for an estimate; this makes it impossible for a future
+   * caller to reintroduce the claim by forgetting to.
+   */
   const traffic = trafficVerdict({
     seconds: input.totalSeconds,
-    baseSeconds: input.baseSeconds,
-    departureTimeParam: input.departureTimeParam,
+    baseSeconds: input.isEstimate ? null : input.baseSeconds,
+    departureTimeParam: input.isEstimate ? null : input.departureTimeParam,
   });
 
   /*
@@ -237,7 +245,7 @@ export function planMyDay(input: {
     alerts: input.alerts,
     timing,
     departAtMs: input.departAtMs,
-    country: input.country,
+    region: input.region,
     source: input.alertSource,
   });
 
@@ -253,6 +261,16 @@ export function planMyDay(input: {
     parkingHeadline: parkingHeadline(parking.length),
     parkingProblem,
     weather,
+    /*
+     * The map is built from `parking` — the list that already survived
+     * the filter — so a stop the screen refused to offer can never
+     * appear as a pin the driver taps anyway.
+     */
+    map: planMapLayers({
+      positions: input.positions,
+      isEstimate: input.isEstimate,
+      parking,
+    }),
     disclaimers,
   };
 }

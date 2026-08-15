@@ -17,6 +17,7 @@ import {
   DEFAULT_SAFETY_BUFFER_MIN,
 } from '@/lib/trip-planner/last-stop';
 import type { RouteTiming } from '@/lib/trip-planner/route-time-axis';
+import { DEFAULT_SAFETY_BUFFER_MIN as DRIVE_WINDOW_BUFFER } from '@/lib/trip-planner/drive-window';
 import { buildRoute, type RemainingClocks, type StopCandidate } from '@/lib/trip-planner/types';
 
 /*
@@ -364,7 +365,17 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
   );
 }
 
-check('default buffer is 30', DEFAULT_SAFETY_BUFFER_MIN === 30);
+/*
+ * ONE buffer authority. This file used to pin 30 while drive-window.ts
+ * pinned 45 under the same name — each test passing against its own
+ * constant is exactly how the two got to disagree. The name now resolves
+ * to a single declaration, and this asserts that rather than a number.
+ */
+check(
+  'the buffer default is the one the drive window owns',
+  DEFAULT_SAFETY_BUFFER_MIN === DRIVE_WINDOW_BUFFER,
+  DEFAULT_SAFETY_BUFFER_MIN,
+);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
