@@ -9,10 +9,32 @@ import { guardedParse } from '@/lib/trip-planner/api-util';
 
 // Module-level so the route cache and free-tier call counter survive across
 // requests within a warm serverless instance.
-const hereRouting = createHereRoutingPort(async (url: string) => {
-  const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-  return { status: res.status, json: () => res.json() };
-}, process.env.HERE_API_KEY);
+const hereRouting = createHereRoutingPort(
+  async (url: string) => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    return { status: res.status, json: () => res.json() };
+  },
+  process.env.HERE_API_KEY,
+  {
+    /*
+     * THE CLOCK-LIMIT PIN NEEDS THE ROAD IT SITS ON.
+     *
+     * "Here is where your clock runs out" is one of the Trip Planner's
+     * central promises, and placing that marker needs the decoded
+     * polyline — action timings alone can say WHEN the truck reaches a
+     * point but not WHERE it is. Without geometry the results map can
+     * only say the location cannot be mapped safely, which is honest but
+     * is not the product.
+     *
+     * The cache is bounded to match: full geometry is far larger than the
+     * sampled route points, so this instance keeps fewer routes than the
+     * default rather than holding hundreds of polylines in a warm
+     * function. Same discipline as the Navigator's own instance.
+     */
+    retainGeometry: true,
+    cacheMax: 24,
+  },
+);
 
 /**
  * POST /api/trip-planner/quote — the mobile UI's composite endpoint:

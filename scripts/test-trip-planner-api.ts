@@ -27,6 +27,12 @@ import {
   __resetEiaPriceCache,
 } from '@/lib/trip-planner/eia-fuel';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
+import { createHereRoutingPort } from '@/lib/trip-planner/here-routing';
+import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import {
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+} from '@/lib/trip-planner/drive-window';
 import {
   clockStateFromSimple,
   composeQuote,
@@ -34,6 +40,12 @@ import {
   simpleClocksSchema,
   HOS_DISCLAIMER,
 } from '@/lib/trip-planner/compose-quote';
+import {
+  CANADA_WEATHER_UNAVAILABLE,
+  CROSS_BORDER_WEATHER_PARTIAL,
+  ROUTE_COUNTRY_UNDETERMINED,
+} from '@/lib/trip-planner/route-weather-timing';
+import { resolveRouteRegion, countryFromStateCode } from '@/lib/trip-planner/route-region';
 import { validateClockState, remainingClocks } from '@/lib/trip-planner/hos-engine';
 import { nullWeatherPort } from '@/lib/trip-planner/providers';
 import { haversineMiles } from '@/lib/map/geo';
@@ -694,6 +706,327 @@ async function main() {
       check(
         'quote: directory scan runs concurrently with routing, not after it',
         concurrent.ok === true && listingsStartedBeforeRoutingResolved,
+      );
+    }
+
+    /* ------------------------- one quote buys exactly one truck route */
+    {
+      /*
+       * THE HALF OF THE CHAIN THE BROWSER CANNOT SEE. The routing call is
+       * made server-side, so Playwright can prove one submission sends
+       * one POST to /api/trip-planner/quote but not what that handler
+       * does upstream. This closes it: one composed quote makes exactly
+       * one call to the routing port, and one routing-port call makes
+       * exactly one HTTP request to the provider.
+       *
+       * Both halves matter for the same reason — a duplicated request is
+       * billed twice and, on a metered free tier, exhausts the allowance
+       * at double speed without changing anything the driver sees.
+       */
+      let portCalls = 0;
+      const countingDeps = {
+        ...goodDeps,
+        routing: {
+          name: 'counting',
+          route: async () => {
+            portCalls += 1;
+            return null;
+          },
+        },
+      };
+      await composeQuote(req, countingDeps);
+      check(
+        'routing: one composed quote calls the routing port exactly once',
+        portCalls === 1,
+        portCalls,
+      );
+
+      /*
+       * The provider request count, against the adapter's DOCUMENTED
+       * retry policy rather than against a wish: one retry on 5xx and
+       * network failure only, never on 4xx, because a rejected request
+       * will not fix itself and retrying it just spends quota.
+       *
+       * The answered case is the one that governs the bill, and it is
+       * pinned at exactly one.
+       */
+      const countRequests = async (status: number, body: unknown = {}) => {
+        let httpCalls = 0;
+        const port = createHereRoutingPort(
+          async () => {
+            httpCalls += 1;
+            return { status, json: async () => body };
+          },
+          'test-key-not-a-real-credential',
+          // No cache between cases: a warm entry would answer the second
+          // call from memory and report zero requests for the wrong reason.
+          { cacheMax: 0 },
+        );
+        await port.route({
+          origin: ATL,
+          destination: KNX,
+          waypoints: [],
+          departAtMs: T0,
+          truck: DEFAULT_TRUCK_PROFILE,
+        });
+        return httpCalls;
+      };
+
+      check(
+        'routing: an answered route makes exactly one provider request',
+        (await countRequests(200, { routes: [] })) === 1,
+      );
+      check(
+        'routing: a rejected route is not retried — a 4xx will not fix itself',
+        (await countRequests(403)) === 1,
+      );
+      check(
+        'routing: a 5xx is retried exactly once, never in a loop',
+        (await countRequests(500)) === 2,
+      );
+    }
+
+    /* ------------------------------------- the driver's safety buffer */
+    {
+      /*
+       * The buffer chips on Plan My Day moved a number nothing read: the
+       * wire carried no buffer, so every plan was computed against
+       * `selectLastStops`'s own 30-minute default while the results
+       * screen printed whichever preset the driver had tapped. These
+       * pin the plumbing that closed that gap — including the half that
+       * must NOT change, since the classic cost planner posts to the
+       * same endpoint and sends no buffer at all.
+       */
+      check(
+        'buffer: the wire accepts a driver-chosen buffer',
+        quoteRequestSchema.safeParse({
+          origin: { label: 'Atlanta', position: ATL },
+          destination: { label: 'Knoxville', position: KNX },
+          departAtMs: T0,
+          clocks: {},
+          bufferMin: 90,
+        }).success,
+      );
+      /*
+       * OMITTING THE BUFFER IS THE CLASSIC PLANNER SPEAKING. It is the
+       * only caller that never sends one, so the wire default must stay
+       * its 30 — collapsing everything to Plan My Day's 45 would silently
+       * re-rank the stop recommendations on a screen this milestone was
+       * told to preserve.
+       */
+      check(
+        'buffer: an omitted buffer preserves the classic planner’s 30 minutes',
+        quoteRequestSchema.parse({
+          origin: { label: 'Atlanta', position: ATL },
+          destination: { label: 'Knoxville', position: KNX },
+          departAtMs: T0,
+          clocks: {},
+        }).bufferMin === CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+      );
+      check(
+        'buffer: ...which is 30, not Plan My Day’s 45',
+        CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30 && PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 45,
+      );
+      for (const bad of [-1, 181, 2.5]) {
+        check(
+          `buffer: ${bad} minutes is rejected, not clamped`,
+          !quoteRequestSchema.safeParse({
+            origin: { label: 'Atlanta', position: ATL },
+            destination: { label: 'Knoxville', position: KNX },
+            departAtMs: T0,
+            clocks: {},
+            bufferMin: bad,
+          }).success,
+        );
+      }
+
+      const noBuffer = await composeQuote(req, goodDeps);
+      const withBuffer = await composeQuote({ ...req, bufferMin: 90 }, goodDeps);
+      check(
+        'buffer: the chosen buffer reaches the parking filter',
+        withBuffer.ok === true && withBuffer.lastStop.bufferMin === 90,
+      );
+      check(
+        'buffer: the plan is computed against the same number it displays',
+        // Non-null asserted, not tolerated: a null window would make this
+        // assertion pass while proving nothing about the buffer at all.
+        withBuffer.ok === true &&
+          withBuffer.plan.window !== null &&
+          withBuffer.plan.window.bufferMin === 90,
+      );
+      check(
+        'buffer: a wider buffer really does shorten the usable window',
+        withBuffer.ok === true &&
+          noBuffer.ok === true &&
+          withBuffer.plan.window !== null &&
+          noBuffer.plan.window !== null &&
+          withBuffer.plan.window.stopTargetMin < noBuffer.plan.window.stopTargetMin,
+      );
+
+      check(
+        'buffer: a quote with no buffer plans the classic planner’s 30 minutes',
+        noBuffer.ok === true && noBuffer.lastStop.bufferMin === 30,
+        noBuffer.ok && noBuffer.lastStop.bufferMin,
+      );
+      /*
+       * THE VALUE TRAVELS UNCHANGED. Every surface a driver could read it
+       * from must show the same number: the reachability filter, the
+       * drive window, and the caption on the results card.
+       */
+      for (const chosen of [15, 30, 45, 60]) {
+        const q = await composeQuote({ ...req, bufferMin: chosen }, goodDeps);
+        check(
+          `buffer: ${chosen} minutes survives UI → request → endpoint → plan intact`,
+          q.ok === true &&
+            q.lastStop.bufferMin === chosen &&
+            q.plan.window !== null &&
+            q.plan.window.bufferMin === chosen,
+          q.ok && { filter: q.lastStop.bufferMin, window: q.plan.window?.bufferMin },
+        );
+      }
+    }
+
+    /* --------------------------------- which alert service can speak */
+    {
+      /*
+       * A ROUTE HAS TWO COUNTRIES. The first version of this asked "is
+       * this route Canadian?" and answered with one label, which is
+       * false at one end of every crossing — and worse, the collapsing
+       * rule turned a US-to-Canada haul into a purely Canadian one and
+       * hid the US half of the weather that WAS available.
+       *
+       * Both ends are resolved separately now, the crossing is its own
+       * state, and the Great Lakes band — where no latitude rule can
+       * separate Windsor from Detroit — is answered by the caller's
+       * attested state code rather than by geography guessing.
+       */
+      const CALGARY = { lat: 51.0447, lng: -114.0719 };
+      const DETROIT = { lat: 42.3314, lng: -83.0458 };
+      const WINDSOR = { lat: 42.3149, lng: -83.0364 };
+
+      type Pt = { lat: number; lng: number };
+      type Claim = 'US' | 'CA' | null;
+      const region = (o: Pt, oc: Claim, d: Pt, dc: Claim) =>
+        resolveRouteRegion({
+          origin: o,
+          originCountry: oc,
+          destination: d,
+          destinationCountry: dc,
+        });
+
+      const usus = region(ATL, null, KNX, null);
+      check('region: two US endpoints are fully US', usus.fullyUS && !usus.crossBorder);
+
+      const caca = region(CALGARY, null, CALGARY, null);
+      check(
+        'region: two Canadian endpoints are not a crossing and not US',
+        caca.touchesCanada && !caca.fullyUS && !caca.crossBorder,
+      );
+
+      const northbound = region(ATL, null, CALGARY, null);
+      check(
+        'region: US → Canada is a crossing, not a Canadian route',
+        northbound.crossBorder &&
+          northbound.origin === 'US' &&
+          northbound.destination === 'CA' &&
+          !northbound.fullyUS,
+      );
+      const southbound = region(CALGARY, null, ATL, null);
+      check(
+        'region: Canada → US is a crossing in the other direction',
+        southbound.crossBorder && southbound.origin === 'CA' && southbound.destination === 'US',
+      );
+
+      /*
+       * The case that motivated all of this. Windsor sits three km from
+       * Detroit and SOUTH of it; no half-plane separates them.
+       */
+      const guessed = region(DETROIT, null, WINDSOR, null);
+      check(
+        'region: without claims the Windsor–Detroit corridor is honestly unplaceable',
+        guessed.origin === 'unknown' && guessed.destination === 'unknown' && !guessed.fullyUS,
+        guessed,
+      );
+      const claimed = region(DETROIT, 'US', WINDSOR, 'CA');
+      check(
+        'region: with attested countries it is a crossing, not one country',
+        claimed.crossBorder && claimed.origin === 'US' && claimed.destination === 'CA',
+      );
+      check(
+        'region: and Detroit is never called Canadian',
+        region(DETROIT, 'US', DETROIT, 'US').fullyUS,
+      );
+
+      check(
+        'region: a state code attests to the United States',
+        countryFromStateCode('mi') === 'US',
+      );
+      check('region: a province code attests to Canada', countryFromStateCode('ON') === 'CA');
+      check(
+        'region: an unrecognised code claims nothing rather than guessing',
+        countryFromStateCode('') === null && countryFromStateCode('Michigan') === null,
+      );
+
+      /* ---- and what each of those does to the weather section -------- */
+      const quoteFor = async (o: Pt, oc: Claim, d: Pt, dc: Claim) =>
+        composeQuote(
+          {
+            ...req,
+            origin: { label: 'origin', position: o, country: oc },
+            destination: { label: 'destination', position: d, country: dc },
+          },
+          goodDeps,
+        );
+
+      const canadian = await quoteFor(CALGARY, 'CA', { lat: 53.5461, lng: -113.4938 }, 'CA');
+      check(
+        'weather: a Canadian route refuses instead of implying NWS coverage',
+        canadian.ok === true &&
+          canadian.plan.weather.ok === false &&
+          canadian.plan.weather.notice === CANADA_WEATHER_UNAVAILABLE,
+        canadian.ok && canadian.plan.weather,
+      );
+
+      const crossings: [string, Pt, Claim, Pt, Claim][] = [
+        ['US → Canada', ATL, 'US', CALGARY, 'CA'],
+        ['Canada → US', CALGARY, 'CA', ATL, 'US'],
+      ];
+      for (const [name, o, oc, d, dc] of crossings) {
+        const crossing = await quoteFor(o, oc, d, dc);
+        check(
+          `weather: ${name} says the crossing is only half covered`,
+          crossing.ok === true &&
+            crossing.plan.weather.ok === false &&
+            crossing.plan.weather.reason === 'cross-border' &&
+            crossing.plan.weather.notice === CROSS_BORDER_WEATHER_PARTIAL,
+          crossing.ok && crossing.plan.weather,
+        );
+      }
+
+      const unplaceable = await quoteFor(DETROIT, null, WINDSOR, null);
+      check(
+        'weather: an unplaceable route says so rather than claiming a country',
+        unplaceable.ok === true &&
+          unplaceable.plan.weather.ok === false &&
+          unplaceable.plan.weather.reason === 'country-unknown' &&
+          unplaceable.plan.weather.notice === ROUTE_COUNTRY_UNDETERMINED,
+        unplaceable.ok && unplaceable.plan.weather,
+      );
+
+      /*
+       * A fully US route must never be refused ON REGION GROUNDS. It can
+       * still refuse for timing — these deps route by estimate — and
+       * asserting `ok === true` here would be asserting the wrong thing.
+       */
+      const domestic = await quoteFor(ATL, 'US', KNX, 'US');
+      check(
+        'weather: a fully US route is never refused on region grounds',
+        domestic.ok === true &&
+          (domestic.plan.weather.ok === true ||
+            !['region-unsupported', 'cross-border', 'country-unknown'].includes(
+              domestic.plan.weather.reason,
+            )),
+        domestic.ok && domestic.plan.weather,
       );
     }
   }

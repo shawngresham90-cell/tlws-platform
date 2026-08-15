@@ -3,8 +3,16 @@ import { freshClockState, remainingClocks, validateClockState } from './hos-engi
 import { planTrip } from './optimizer';
 import { estimateRoute } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
-import { selectLastStops, type LastStopResult } from './last-stop';
+import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
+import {
+  buildTimeAxis,
+  routeTimingFromAxis,
+  timingUnavailable,
+  type RouteTiming,
+} from './route-time-axis';
 import { estimateTripCost } from './cost-engine';
+import { planMyDay, type PlanMyDay } from './plan-my-day';
 import {
   DEFAULT_PLANNER_OPTIONS,
   DEFAULT_TRUCK_PROFILE,
@@ -17,7 +25,8 @@ import {
 import type { RoutingPort, WeatherAlert, WeatherBand, WeatherPort } from './providers';
 import type { FuelPriceResult } from './eia-fuel';
 import { latLngSchema } from './api-contracts';
-import { TRUCK_LIMITS } from './here-routing';
+import { TRUCK_LIMITS, type HereManeuver } from './here-routing';
+import { resolveRouteRegion } from './route-region';
 
 /**
  * Composite trip quote (Phase 4) — the one call the mobile UI makes. Pure
@@ -88,9 +97,24 @@ export const truckParamsSchema = z.object({
     .default(null),
 });
 
+/*
+ * WHICH COUNTRY THIS END IS IN, WHEN THE CALLER KNOWS.
+ *
+ * A directory anchor carries a state or province code, which is an
+ * attested fact about the record — far stronger than any latitude rule,
+ * and the only thing that can place an endpoint in the Great Lakes band
+ * where geography honestly cannot. Omitted means "not stated", which
+ * falls through to geography; it does not mean "United States".
+ */
+const endpointSchema = z.object({
+  label: z.string().min(1).max(120),
+  position: latLngSchema,
+  country: z.enum(['US', 'CA']).nullish(),
+});
+
 export const quoteRequestSchema = z.object({
-  origin: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
-  destination: z.object({ label: z.string().min(1).max(120), position: latLngSchema }),
+  origin: endpointSchema,
+  destination: endpointSchema,
   departAtMs: z.number().int().positive(),
   clocks: simpleClocksSchema,
   fuelLevelFraction: z.number().min(0).max(1).default(1),
@@ -102,6 +126,20 @@ export const quoteRequestSchema = z.object({
     .array(z.enum(['tollRoad', 'ferry', 'tunnel', 'dirtRoad', 'uTurns']))
     .max(5)
     .default([]),
+  /*
+   * THE DRIVER'S SAFETY BUFFER — ONE VALUE, ALL THE WAY THROUGH.
+   *
+   * Plan My Day sends the preset the driver tapped, and that number is
+   * what the drive window, the break placement, parking reachability and
+   * the caption on the results card are all computed from.
+   *
+   * Omitting it means the CLASSIC cost planner is calling — the only
+   * caller that never sends one — so the default here is the classic
+   * planner's own 30, preserving the behaviour it has always had. That
+   * constant lives in `drive-window.ts` beside Plan My Day's 45 and
+   * shares its validation; neither is a second declaration.
+   */
+  bufferMin: z.number().int().min(0).max(180).default(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
@@ -193,6 +231,12 @@ export type QuoteResult = {
   remainingAtDeparture: RemainingClocks;
   /** Named Last Stop slots (reservable/free) — see lib/trip-planner/last-stop. */
   lastStop: LastStopResult;
+  /**
+   * Plan My Day (Phase 1): every results-screen number, assembled from ONE
+   * route-time axis so the clock marker, the break, the parking choices and
+   * the weather section cannot disagree about when the truck arrives.
+   */
+  plan: PlanMyDay;
   itinerary: Itinerary;
   cost: TripCostEstimate;
   fuelPrice: FuelPriceResult | null;
@@ -265,6 +309,12 @@ export async function composeQuote(
     isEstimate: boolean;
     method: string;
     instructions?: string[];
+    /** Provider action timings — the only sound basis for eligibility. */
+    maneuvers?: HereManeuver[];
+    /** Full decoded polyline, when the port retained it (map markers). */
+    geometry?: { lat: number; lng: number }[];
+    /** Free-flow baseline: evidence traffic was applied, or null. */
+    baseSeconds?: number | null;
   } = {
     route: estimated.route,
     routePoints: estimated.routePoints,
@@ -290,6 +340,9 @@ export async function composeQuote(
         isEstimate: false,
         method: routingOutcome.value.provider,
         instructions: routingOutcome.value.instructions,
+        maneuvers: routingOutcome.value.maneuvers,
+        geometry: routingOutcome.value.geometry,
+        baseSeconds: routingOutcome.value.summary?.baseSeconds ?? null,
       };
     } else {
       warnings.push('live truck routing unavailable — distances and times are estimates');
@@ -354,12 +407,57 @@ export async function composeQuote(
   // Last Stop slots — pure selection layered over the organic itinerary.
   // Reachability (arrival inside clocks minus buffer) is a hard filter here;
   // the organic ranking above is never touched by these slots.
+  /*
+   * PARKING ELIGIBILITY RUNS ON PROVIDER TIME OR NOT AT ALL.
+   *
+   * A Last Stop slot tells a driver "you can legally park here", and that
+   * claim is only as good as the arrival time behind it. The straight-line
+   * estimate above is a labelled distance guess at an assumed speed — fine
+   * for showing approximate miles, never sound enough to decide where a
+   * driver's clock runs out. So an estimated route yields NO slots and
+   * says why, rather than plausible ones.
+   *
+   * A live route builds the axis from HERE's own action durations. The
+   * planner's port does not retain full geometry, which is why the axis is
+   * built without positions here: timing by distance is all eligibility
+   * needs, and the map pin is a separate, geometry-bearing concern.
+   */
+  const timing: RouteTiming = routeData.isEstimate
+    ? timingUnavailable(
+        'route is a straight-line estimate; provider travel times were unavailable.',
+      )
+    : (() => {
+        const axis = buildTimeAxis({
+          maneuvers: routeData.maneuvers ?? [],
+          totalSeconds: routeData.route.driveMinutes * 60,
+          totalMeters: routeData.route.totalMiles * 1609.344,
+        });
+        return axis.ok
+          ? routeTimingFromAxis(axis)
+          : timingUnavailable(`provider timing unusable: ${axis.detail}`);
+      })();
+
+  /*
+   * BOTH ENDS, SEPARATELY. A route has two countries and sometimes they
+   * differ; collapsing them into one label is how a Detroit-to-Windsor
+   * run ends up described as purely Canadian, hiding the US half of the
+   * weather that does exist.
+   */
+  const region = resolveRouteRegion({
+    origin: input.origin.position,
+    originCountry: input.origin.country ?? null,
+    destination: input.destination.position,
+    destinationCountry: input.destination.country ?? null,
+  });
+
   const lastStop = selectLastStops({
-    route: routeData.route,
+    timing,
     candidates,
     clocks: remainingAtDeparture,
     departAtMs: input.departAtMs,
+    bufferMin: input.bufferMin,
   });
+  if (!lastStop.timingAvailable) warnings.push(TIMING_UNAVAILABLE_NOTICE);
 
   return {
     ok: true,
@@ -372,6 +470,23 @@ export async function composeQuote(
     },
     remainingAtDeparture,
     lastStop,
+    plan: planMyDay({
+      maneuvers: routeData.maneuvers ?? [],
+      positions: routeData.geometry ?? [],
+      totalSeconds: routeData.route.driveMinutes * 60,
+      baseSeconds: routeData.baseSeconds ?? null,
+      totalMeters: routeData.route.totalMiles * 1609.344,
+      // The wire value, not an assumption about what the builder sends.
+      departureTimeParam: routeData.isEstimate ? null : new Date(input.departAtMs).toISOString(),
+      isEstimate: routeData.isEstimate,
+      clocks: remainingAtDeparture,
+      bufferMin: lastStop.bufferMin,
+      departAtMs: input.departAtMs,
+      candidates,
+      alerts: weather.alerts,
+      region,
+      alertSource: 'nws-us',
+    }),
     itinerary,
     cost,
     fuelPrice,

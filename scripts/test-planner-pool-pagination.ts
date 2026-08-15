@@ -37,13 +37,34 @@ import {
   toStopCandidates,
   type DirectoryListing,
 } from '@/lib/trip-planner/directory-layer';
-import { selectLastStops } from '@/lib/trip-planner/last-stop';
+import { selectLastStops, driveMinutesToMile } from '@/lib/trip-planner/last-stop';
+import type { RouteTiming } from '@/lib/trip-planner/route-time-axis';
 import { buildRoute } from '@/lib/trip-planner/types';
 import {
   normalizeOvernightStatus,
   isConfirmedOvernight,
   isProhibitedOvernight,
 } from '@/lib/directory/overnight';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from '@/lib/trip-planner/drive-window';
+
+/*
+ * TEST-ONLY time source. These harnesses exercise the ELIGIBILITY FILTER,
+ * not the time source, so they inject timing derived from the synthetic
+ * route's own leg speeds. It lives here and not in `src/` on purpose:
+ * production must never be able to reach an average-speed eligibility
+ * path, which is the whole point of `RouteTiming` being required.
+ */
+function timingOf(route: Parameters<typeof driveMinutesToMile>[0]): RouteTiming {
+  return {
+    kind: 'provider',
+    minutesToMile(mile: number) {
+      const m = driveMinutesToMile(route, mile);
+      return Number.isFinite(m)
+        ? { earliestMin: m, latestMin: m, precision: 'tight' as const }
+        : null;
+    },
+  };
+}
 
 let passed = 0;
 let failed = 0;
@@ -520,7 +541,7 @@ const route = buildRoute([
   },
 ]);
 const slots = selectLastStops({
-  route,
+  timing: timingOf(route),
   candidates,
   clocks: {
     drivingMin: 400,
@@ -537,7 +558,18 @@ check(
   slots.slots.every((s) => s.candidate.id !== 'b'),
 );
 check('last-stop still returns slots for eligible rows', slots.slots.length > 0);
-check('the 30-minute safety buffer is unchanged', slots.bufferMin === 30);
+/*
+ * An omitted buffer means the CLASSIC planner is asking — it is the only
+ * caller that never sends one — so this must stay 30. Two constants
+ * named DEFAULT_SAFETY_BUFFER_MIN used to exist with different values
+ * (30 here, 45 in drive-window.ts), which is how they drifted; the
+ * defaults are now named for their screens and share one validator.
+ */
+check(
+  'an omitted buffer keeps the classic planner at 30 minutes',
+  slots.bufferMin === CLASSIC_PLANNER_DEFAULT_BUFFER_MIN && slots.bufferMin === 30,
+  slots.bufferMin,
+);
 
 pagingTests().then(() => {
   console.log(`planner-pool-pagination: ${passed} passed, ${failed} failed`);

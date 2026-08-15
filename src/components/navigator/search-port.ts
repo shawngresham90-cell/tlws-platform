@@ -32,14 +32,32 @@ export type SearchOutcome =
  * reason string, never a throw, so the driving screen can never be broken
  * by a search.
  */
+/**
+ * The Navigator's own search door. Pilot-gated, because it fronts a pilot
+ * surface and spends provider budget.
+ */
+export const NAVIGATOR_SEARCH_ENDPOINT = '/api/navigator/destination-search';
+
+/**
+ * Plan My Day's door onto the SAME search.
+ *
+ * The endpoint is a parameter rather than a fork because the search
+ * itself is identical — same provider call, same region handling, same
+ * candidate model, same parser. Only the access rule differs: Plan My Day
+ * is a free public screen and its visitors hold no pilot cookie, so they
+ * cannot be sent to the Navigator's door.
+ */
+export const TRIP_PLANNER_SEARCH_ENDPOINT = '/api/trip-planner/destination-search';
+
 export async function searchDestinations(
   query: string,
   at: LatLng | null,
   fetchFn: SearchFetchLike = (input) => fetch(input),
   country: 'USA' | 'CAN' = 'USA',
+  endpoint: string = NAVIGATOR_SEARCH_ENDPOINT,
 ): Promise<SearchOutcome> {
   const url =
-    `/api/navigator/destination-search?q=${encodeURIComponent(query)}` +
+    `${endpoint}?q=${encodeURIComponent(query)}` +
     (at === null ? '' : `&lat=${at.lat}&lng=${at.lng}`) +
     // The country the driver is searching. One country per request:
     // crossing the border is deliberate, never a side effect of typing.

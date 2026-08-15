@@ -137,7 +137,16 @@ type HereNotice = {
   severity?: string;
 };
 type HereSection = {
-  summary?: { length?: number; duration?: number };
+  /**
+   * `duration` is TRAFFIC-AWARE whenever the request carried a real
+   * `departureTime` — which `buildHereRouteUrl` always sends. `baseDuration`
+   * is the same road at free-flow speed, and HERE only returns it when it
+   * actually applied traffic. The pair is therefore the provider's own
+   * evidence that the number a driver is about to plan against includes
+   * congestion, which is why both are read rather than just the one the
+   * planner needs arithmetically.
+   */
+  summary?: { length?: number; duration?: number; baseDuration?: number };
   polyline?: string;
   actions?: HereAction[];
   notices?: HereNotice[];
@@ -193,6 +202,16 @@ const MAX_MANEUVERS = 1000;
 export type ParsedHereRoute = {
   meters: number;
   seconds: number;
+  /**
+   * Free-flow seconds for the same road, summed from `summary.baseDuration`
+   * — null when the provider did not return it on EVERY section.
+   *
+   * All-or-nothing on purpose. A partial sum would understate free-flow
+   * time on the sections that reported it and silently omit the rest,
+   * which would render as a smaller delay than the truck will actually
+   * meet. A missing number is honest; a half-built one is not.
+   */
+  baseSeconds: number | null;
   positions: LatLng[];
   instructions: string[];
   maneuvers: HereManeuver[];
@@ -206,6 +225,7 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   if (!Array.isArray(sections) || sections.length === 0) return null;
   let meters = 0;
   let seconds = 0;
+  let baseSeconds: number | null = 0;
   const positions: LatLng[] = [];
   const instructions: string[] = [];
   const maneuvers: HereManeuver[] = [];
@@ -230,6 +250,15 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
     if (typeof len !== 'number' || typeof dur !== 'number' || len < 0 || dur < 0) return null;
     meters += len;
     seconds += dur;
+    // Free-flow, all-or-nothing (see ParsedHereRoute.baseSeconds). One
+    // section without it discards the whole sum rather than reporting a
+    // delay computed from an incomplete baseline.
+    const base = s.summary?.baseDuration;
+    if (typeof base === 'number' && base >= 0 && baseSeconds !== null) {
+      baseSeconds += base;
+    } else {
+      baseSeconds = null;
+    }
     // Captured before this section's polyline is appended: HERE action
     // offsets index into the SECTION polyline, and the maneuver list must
     // index into the concatenated route geometry.
@@ -280,6 +309,10 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   return {
     meters,
     seconds,
+    // A baseline LONGER than the traffic-aware duration is not a negative
+    // delay, it is a payload that cannot be describing congestion. Refuse
+    // the number rather than render "8 minutes early because of traffic".
+    baseSeconds: baseSeconds !== null && baseSeconds <= seconds ? baseSeconds : null,
     positions,
     instructions: instructions.slice(0, MAX_INSTRUCTIONS),
     maneuvers,
@@ -580,7 +613,15 @@ export function createHereRoutingPort(
         // N8a additions — optional on the type; composeQuote ignores them.
         maneuvers: parsed.maneuvers,
         notices: parsed.notices,
-        summary: { meters: parsed.meters, seconds: parsed.seconds },
+        summary: {
+          meters: parsed.meters,
+          seconds: parsed.seconds,
+          // The free-flow baseline travels with the route so a caller can
+          // PROVE traffic was applied rather than infer it from having
+          // asked. Null when the provider did not return one on every
+          // section (see ParsedHereRoute.baseSeconds).
+          baseSeconds: parsed.baseSeconds,
+        },
         geometryPointCount: parsed.positions.length,
         // N8b: full geometry only on explicit opt-in (see the option doc).
         ...(opts.retainGeometry ? { geometry: parsed.positions } : {}),

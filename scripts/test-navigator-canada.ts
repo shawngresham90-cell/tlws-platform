@@ -159,8 +159,11 @@ const REGION_MODULE = readFileSync('src/lib/navigator/region.ts', 'utf8');
   );
   check('the port forwards the country', /country=\$\{country\}/.test(SEARCH_PORT));
   check(
+    // The PROPERTY, not the literal array: `country` must be a dependency
+    // so switching it re-runs the search. Pinning the exact list broke
+    // the moment Plan My Day added `endpoint`, without the rule changing.
     'a deliberate country switch RE-RUNS the search (it is in the effect deps)',
-    /\[query, originKey, settled, country\]/.test(SEARCH_UI),
+    (SEARCH_UI.match(/}, \[([^\]]*)\]\);/g) ?? []).some((d) => /\bcountry\b/.test(d)),
   );
   check(
     'the debounce survives the new dependency',

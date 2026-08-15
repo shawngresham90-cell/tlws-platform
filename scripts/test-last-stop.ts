@@ -14,9 +14,30 @@ import {
   selectLastStops,
   reachWithinClocks,
   driveMinutesToMile,
-  DEFAULT_SAFETY_BUFFER_MIN,
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
 } from '@/lib/trip-planner/last-stop';
+import type { RouteTiming } from '@/lib/trip-planner/route-time-axis';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN as SHARED_CLASSIC_BUFFER } from '@/lib/trip-planner/drive-window';
 import { buildRoute, type RemainingClocks, type StopCandidate } from '@/lib/trip-planner/types';
+
+/*
+ * TEST-ONLY time source. These harnesses exercise the ELIGIBILITY FILTER,
+ * not the time source, so they inject timing derived from the synthetic
+ * route's own leg speeds. It lives here and not in `src/` on purpose:
+ * production must never be able to reach an average-speed eligibility
+ * path, which is the whole point of `RouteTiming` being required.
+ */
+function timingOf(route: Parameters<typeof driveMinutesToMile>[0]): RouteTiming {
+  return {
+    kind: 'provider',
+    minutesToMile(mile: number) {
+      const m = driveMinutesToMile(route, mile);
+      return Number.isFinite(m)
+        ? { earliestMin: m, latestMin: m, precision: 'tight' as const }
+        : null;
+    },
+  };
+}
 
 let passed = 0;
 let failed = 0;
@@ -80,21 +101,21 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
 {
   // 4h15 driving left, buffer 30 → stops beyond 225 min drive are out.
   const rc = clocks({ drivingMin: 255, windowMin: 300, untilBreakMin: 480 });
-  check('reachable inside clocks', reachWithinClocks(route, rc, 200, 30) !== null);
-  check('unreachable past driving clock', reachWithinClocks(route, rc, 226, 30) === null);
+  check('reachable inside clocks', reachWithinClocks(timingOf(route), rc, 200, 30) !== null);
+  check('unreachable past driving clock', reachWithinClocks(timingOf(route), rc, 226, 30) === null);
   // Window is the binding clock when tighter than driving.
   const rcWin = clocks({ drivingMin: 600, windowMin: 200, untilBreakMin: 480 });
-  check('window binds when tighter', reachWithinClocks(route, rcWin, 171, 30) === null);
-  check('window allows inside', reachWithinClocks(route, rcWin, 170, 30) !== null);
+  check('window binds when tighter', reachWithinClocks(timingOf(route), rcWin, 171, 30) === null);
+  check('window allows inside', reachWithinClocks(timingOf(route), rcWin, 170, 30) !== null);
 }
 {
   // Break-burns-window trap: drive 300 min with break due at 240 → wall
   // clock 330; window 350 leaves only 20 < buffer → unreachable.
   const rc = clocks({ drivingMin: 400, windowMin: 350, untilBreakMin: 240 });
-  check('30-min break burns the window', reachWithinClocks(route, rc, 300, 30) === null);
+  check('30-min break burns the window', reachWithinClocks(timingOf(route), rc, 300, 30) === null);
   // Same stop with window 400 → reachable, arrival includes the break.
   const ok = reachWithinClocks(
-    route,
+    timingOf(route),
     clocks({ drivingMin: 400, windowMin: 400, untilBreakMin: 240 }),
     300,
     30,
@@ -116,10 +137,10 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
       categorySlug: 'parking',
     }),
   );
-  const res = selectLastStops({ route, candidates, clocks: rc, departAtMs: T0 });
+  const res = selectLastStops({ timing: timingOf(route), candidates, clocks: rc, departAtMs: T0 });
   check('slots found under tight clocks', res.slots.length > 0);
   for (const slot of res.slots) {
-    const reach = reachWithinClocks(route, rc, slot.candidate.routeMile, res.bufferMin);
+    const reach = reachWithinClocks(timingOf(route), rc, slot.candidate.routeMile, res.bufferMin);
     check(`SAFETY ${slot.label} within clocks−buffer`, reach !== null, slot);
     check(
       `SAFETY ${slot.label} hos-at-arrival ≥ buffer`,
@@ -157,7 +178,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
     mkCandidate({ id: 'free1', routeMile: 400, freeParking: true, categorySlug: 'rest-areas' }),
     mkCandidate({ id: 'unknown', routeMile: 450, categorySlug: 'parking' }), // unknown ≠ free
   ];
-  const res = selectLastStops({ route, candidates, clocks: rc, departAtMs: T0 });
+  const res = selectLastStops({ timing: timingOf(route), candidates, clocks: rc, departAtMs: T0 });
   const byLabel = Object.fromEntries(res.slots.map((s) => [s.label, s]));
   check('last-reservable = furthest reachable', byLabel['last-reservable']?.candidate.id === 'far');
   check('best-reservable is scored pick', byLabel['best-reservable']?.candidate.id === 'near');
@@ -179,7 +200,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
 {
   // Zero reservable candidates → honest flag, no fabricated slots.
   const res = selectLastStops({
-    route,
+    timing: timingOf(route),
     candidates: [mkCandidate({ id: 'plain', routeMile: 200 })],
     clocks: clocks(),
     departAtMs: T0,
@@ -193,7 +214,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
 {
   // Zero-hours input → zero slots, never a stop "behind" the driver.
   const res = selectLastStops({
-    route,
+    timing: timingOf(route),
     candidates: [
       mkCandidate({
         id: 'a',
@@ -244,7 +265,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
       categorySlug: 'parking',
     }),
   ];
-  const res = selectLastStops({ route, candidates, clocks: rc, departAtMs: T0 });
+  const res = selectLastStops({ timing: timingOf(route), candidates, clocks: rc, departAtMs: T0 });
   const backup = res.slots.find((s) => s.label === 'backup-reservable');
   check('backup lands in 15–45 min band', backup?.candidate.id === 'backup', res.slots);
 }
@@ -252,9 +273,9 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
 {
   // Fail-closed on corrupted clocks: NaN must never read as "reachable".
   const bad = clocks({ drivingMin: NaN as unknown as number });
-  check('NaN clocks fail closed', reachWithinClocks(route, bad, 100, 30) === null);
+  check('NaN clocks fail closed', reachWithinClocks(timingOf(route), bad, 100, 30) === null);
   const res = selectLastStops({
-    route,
+    timing: timingOf(route),
     candidates: [
       mkCandidate({
         id: 'x',
@@ -278,7 +299,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
   // without a stated positive space count may never fill one.
   const rc = clocks();
   const none = selectLastStops({
-    route,
+    timing: timingOf(route),
     candidates: [
       mkCandidate({
         id: 'zero-res',
@@ -309,7 +330,7 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
   );
 
   const ok = selectLastStops({
-    route,
+    timing: timingOf(route),
     candidates: [
       // Furthest stop is zero-space AND reservable — the tempting wrong pick.
       mkCandidate({
@@ -344,7 +365,25 @@ check('driveMinutesToMile: beyond route end caps at total', driveMinutesToMile(r
   );
 }
 
-check('default buffer is 30', DEFAULT_SAFETY_BUFFER_MIN === 30);
+/*
+ * THE CLASSIC PLANNER'S 30 MINUTES, PRESERVED.
+ *
+ * This file used to pin 30 while drive-window.ts pinned 45 under the
+ * SAME NAME — each test passing against its own constant is exactly how
+ * they got to disagree. Both defaults now live in drive-window.ts under
+ * names that say which screen owns them, so this asserts two things at
+ * once: the number is still 30, and it is the SHARED declaration rather
+ * than a local copy that could drift again.
+ */
+check(
+  'the classic planner still defaults to 30 minutes',
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30,
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+);
+check(
+  '...and it is the shared declaration, not a second copy',
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === SHARED_CLASSIC_BUFFER,
+);
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

@@ -73,7 +73,13 @@ export type RoutingResult = {
   maneuvers?: RouteManeuver[];
   notices?: RouteNotice[];
   /** Provider summary exactly as parsed (pre-rounding). */
-  summary?: { meters: number; seconds: number };
+  /**
+   * `seconds` is traffic-aware whenever the request carried a real
+   * departure time. `baseSeconds` is the provider's free-flow baseline —
+   * present only when it actually applied traffic, which is what makes it
+   * evidence rather than an assumption.
+   */
+  summary?: { meters: number; seconds: number; baseSeconds?: number | null };
   /** Total decoded geometry points behind `routePoints` (which are sampled). */
   geometryPointCount?: number;
   /**

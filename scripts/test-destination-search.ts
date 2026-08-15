@@ -275,14 +275,31 @@ const AT = { lat: 34.9157, lng: -85.1095 };
   // CAUSE 1 — the effect depended on the `origin` OBJECT, and the driving
   // screen re-renders every GPS tick (1 Hz) with a fresh literal, so the
   // debounce restarted and a request went out once per second.
+  /*
+   * ASSERT THE PROPERTY, NOT THE LITERAL ARRAY.
+   *
+   * This pinned the dependency list verbatim, so it failed the first time
+   * a legitimate dependency was added — `country` in the Canada
+   * milestone, `endpoint` when Plan My Day reused this same search — even
+   * though the rule it guards never changed. That rule is: the origin
+   * enters as a coarse KEY, never as the object, because the driving
+   * screen re-renders every GPS tick with a fresh literal and depending
+   * on the object restarted the debounce once a second.
+   */
+  const searchDeps = (search.match(/}, \[([^\]]*)\]\);/g) ?? []).join(' ');
   check(
-    // `country` joined the dependency list in the Canada milestone: a
-    // deliberate country switch MUST re-run the search. The rule this
-    // pin protects is unchanged — the origin enters as a coarse KEY, so
-    // a moving truck cannot restart the debounce once a second.
     'flash-fix: the search effect depends on a coarse origin KEY, never the object',
-    /}, \[query, originKey, settled, country\]\)/.test(search) && search.includes('originKey ='),
-    search.match(/}, \[[^\]]*\]\);/g)?.slice(-1),
+    searchDeps.includes('originKey') &&
+      !/[[,]\s*origin\s*[,\]]/.test(searchDeps) &&
+      search.includes('originKey ='),
+    searchDeps,
+  );
+  check(
+    'flash-fix: query, settled and country all still re-run the search',
+    /\bquery\b/.test(searchDeps) &&
+      /\bsettled\b/.test(searchDeps) &&
+      /\bcountry\b/.test(searchDeps),
+    searchDeps,
   );
   check(
     'flash-fix: the live origin is read from a ref at fire time (not a stale closure)',
