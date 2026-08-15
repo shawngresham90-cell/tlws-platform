@@ -7,6 +7,7 @@ import {
   sanitizeNextPath,
 } from '@/lib/navigator-api/pilot-access';
 import { isPilotAuthorized } from '@/lib/navigator-api/pilot-session';
+import { navigatorAccessMode } from '@/lib/navigator-api/access-policy';
 import { UNLOCK_THROTTLED } from '@/lib/navigator-api/pilot-unlock-throttle';
 import { unlockNavigatorAction } from './actions';
 
@@ -48,10 +49,51 @@ export default async function NavigatorAccessPage({
     typeof searchParams?.next === 'string' ? searchParams.next : undefined,
   );
   const runtimeEnabled = navigatorFlagEnabled();
+  const mode = navigatorAccessMode();
+
+  /*
+   * PUBLIC MODE NEVER SHOWS THIS SCREEN.
+   *
+   * Two things bring a visitor here in public mode, and both are handled by
+   * forwarding rather than by rendering a form nobody needs to fill in:
+   *
+   *   1. A stale bookmark, or the homepage tile, pointing straight at the
+   *      access path.
+   *   2. The Edge middleware. It runs where a server-only variable may not
+   *      be readable, so it can resolve the default (`pilot`) and challenge
+   *      a visitor who needed no challenge. This page runs in Node, always
+   *      reads the setting correctly, and is therefore the thing that makes
+   *      that misfire invisible — a redirect the visitor never notices
+   *      instead of a password prompt they cannot answer.
+   *
+   * Ordered above the cookie check on purpose: in public mode the cookie is
+   * irrelevant, and a visitor without one must be forwarded just the same.
+   */
+  if (mode === 'public' && runtimeEnabled) redirect(next);
+
   const authorized = await isPilotAuthorized();
 
   // Unlocked and the Navigator is live here — straight through, no second ask.
-  if (authorized && runtimeEnabled) redirect(next);
+  if (authorized && runtimeEnabled && mode !== 'closed') redirect(next);
+
+  // Closed: no passcode will open it, so do not offer a form that cannot
+  // succeed. This page still answers 200 rather than 404 — it is the landing
+  // point of an always-visible homepage tile, and that has not changed.
+  if (mode === 'closed') {
+    return (
+      <Container className="py-20">
+        <div className="mx-auto max-w-sm rounded-card border border-line bg-asphalt-800 p-8">
+          <h1 className="display-section mb-1 text-2xl">
+            Navigator<span className="text-signal">.</span>
+          </h1>
+          <p className="text-sm text-muted">
+            The Navigator isn’t available right now. Nothing to do here — it will open again when
+            it’s switched back on.
+          </p>
+        </div>
+      </Container>
+    );
+  }
 
   // Unlocked, but the runtime flag is off on this deploy. Say so, rather than
   // forwarding to a route that answers 404.

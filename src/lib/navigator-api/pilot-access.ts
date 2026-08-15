@@ -205,37 +205,13 @@ export async function requestHasPilotAccess(request: CookieBearingRequest): Prom
   return verifyPilotToken(request.cookies.get(PILOT_COOKIE_NAME)?.value, Date.now());
 }
 
-export type GateDecision = 'ignore' | 'allow' | 'challenge';
-
-/**
- * The whole gate, as one pure decision — which is what makes it testable
- * exhaustively without a server.
+/*
+ * THE GATE DECISION USED TO LIVE HERE.
  *
- * 'ignore'    — not a Navigator path, or the flag is off, or this layer
- *               cannot see the password. The flag being off means the route
- *               404s on its own; the gate must not convert that into a
- *               password prompt, which would advertise that a hidden
- *               Navigator exists.
- * 'allow'     — authorized.
- * 'challenge' — Navigator is live but this visitor is not authorized.
- *
- * On `configured`: this decision runs in TWO runtimes. The middleware is Edge,
- * where a server-only variable is not guaranteed to be visible even when the
- * Node server components can read it. A layer that cannot see the password
- * cannot verify a legitimate cookie either — so challenging from there would
- * bounce an already-unlocked driver back to the password screen, unlock them
- * again, and bounce them again, forever. Deferring is safe because it is never
- * the only enforcement: /drive, /navigator and both API routes each re-check in
- * Node, where the variable is definitely readable, and those checks fail closed.
+ * It answered one question — "did you type the password?" — and public beta
+ * needs three answers, so it moved to ./access-policy.ts as
+ * `navigatorAccessDecision`, which subsumes it: pass `mode: 'pilot'` and the
+ * behaviour is identical, including the deferral when a layer cannot see the
+ * password. It is not re-exported from here, deliberately. Two names for one
+ * gate is how a surface ends up open in the layer that reads one of them.
  */
-export function navigatorGateDecision(input: {
-  pathname: string;
-  flagEnabled: boolean;
-  configured: boolean;
-  tokenValid: boolean;
-}): GateDecision {
-  if (!isProtectedNavigatorPath(input.pathname)) return 'ignore';
-  if (!input.flagEnabled) return 'ignore';
-  if (!input.configured) return 'ignore';
-  return input.tokenValid ? 'allow' : 'challenge';
-}

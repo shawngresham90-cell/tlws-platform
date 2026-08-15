@@ -3,8 +3,10 @@ import { Container, Eyebrow, Section } from '@/components/ui';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { DrivingScreen } from '@/components/navigator/DrivingScreen';
+import { PublicBetaBadge, PublicBetaNotice } from '@/components/navigator/PublicBeta';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { isPilotAuthorized, requirePilotAccess } from '@/lib/navigator-api/pilot-session';
+import { navigatorAccessGranted, requireNavigatorAccess } from '@/lib/navigator-api/pilot-session';
+import { navigatorAccessMode } from '@/lib/navigator-api/access-policy';
 
 /**
  * Navigator Phase 2A surface: the basic driving screen (N5, visual only)
@@ -15,7 +17,8 @@ import { isPilotAuthorized, requirePilotAccess } from '@/lib/navigator-api/pilot
  * "route unavailable", and no HERE transaction can occur from here.
  *
  * TWO gates, in order: the flag decides whether the route exists at all,
- * then the pilot password decides who may see it. The middleware enforces
+ * then the access policy decides who may see it — everyone in `public`,
+ * passcode holders in `pilot`, nobody in `closed`. The middleware enforces
  * the same thing a step earlier; this is the copy that cannot be undone by
  * a matcher edit. Reading the cookie makes the route dynamic.
  */
@@ -34,22 +37,31 @@ export const metadata = buildMetadata({
 
 export default async function DrivePreviewPage() {
   if (!ENABLED) notFound();
-  await requirePilotAccess('/drive');
+  await requireNavigatorAccess('/drive');
   /*
-   * requirePilotAccess has already redirected anyone unauthorized, so this
-   * is `true` by the time the page renders. It is read and passed anyway
-   * rather than assumed: the driving screen's pilot rail should depend on
-   * the server's actual verdict, not on the inference that reaching this
-   * line implies one. If the gate above is ever loosened, the screen
-   * closes with it instead of quietly staying open.
+   * requireNavigatorAccess has already turned away anyone who may not be
+   * here, so this is `true` by the time the page renders. It is read and
+   * passed anyway rather than assumed: the driving screen's unlock rail
+   * should depend on the server's actual verdict, not on the inference that
+   * reaching this line implies one. If the gate above is ever loosened, the
+   * screen closes with it instead of quietly staying open.
+   *
+   * In `public` this is true with no cookie — which is the whole point of
+   * the mode. The screen's working Navigator (destination search, route
+   * planning, trip restore) hangs off this one boolean, so a public visitor
+   * gets the same Navigator a passcode holder gets, not a viewer's copy.
    */
-  const authorized = await isPilotAuthorized();
+  const mode = navigatorAccessMode();
+  const authorized = await navigatorAccessGranted(mode);
   return (
     <Section>
       <Container>
         <div className="max-w-2xl space-y-6">
           <div>
-            <Eyebrow>Navigator preview</Eyebrow>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Eyebrow>Navigator preview</Eyebrow>
+              {mode === 'public' && <PublicBetaBadge />}
+            </div>
             <h1 className="font-display text-3xl uppercase text-ink">Driving screen</h1>
           </div>
           <p className="text-ink/80">
@@ -57,6 +69,7 @@ export default async function DrivePreviewPage() {
             does not give directions, and like the rest of this site it never provides offline truck
             routing.
           </p>
+          {mode === 'public' && <PublicBetaNotice />}
           <GpsProvider>
             <SafetyLockProvider>
               <DrivingScreen authorized={authorized} />
