@@ -37,6 +37,18 @@ export const ACADEMY_ADDRESS = {
   get oneLine() {
     return `${this.street}, ${this.city}, ${this.region}`;
   },
+  /**
+   * Google Maps search link, DERIVED from the fields above rather than pasted
+   * as a second copy of the address — a hand-written map URL is the classic
+   * way a corrected address stays wrong in exactly one place. Uses the
+   * documented `search/?api=1&query=` form, which needs no API key and hands
+   * off cleanly to the native maps app on both mobile platforms. No ZIP is
+   * appended: the postcode is not confirmed, and a wrong one here would drop a
+   * pin on the wrong street.
+   */
+  get mapsUrl() {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.oneLine)}`;
+  },
 } as const;
 
 /**
