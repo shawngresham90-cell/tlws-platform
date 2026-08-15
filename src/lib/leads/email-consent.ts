@@ -60,7 +60,12 @@ export const EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL = '';
 export const EMAIL_CONSENT_VERSION = 'v0-unapproved';
 
 /** Forms permitted to collect email consent. Server-side allowlist, never client-supplied. */
-export const EMAIL_CONSENT_SOURCE_FORMS = ['newsletter', 'founder', 'practice-test'] as const;
+export const EMAIL_CONSENT_SOURCE_FORMS = [
+  'newsletter',
+  'founder',
+  'practice-test',
+  'navigator-account',
+] as const;
 export type EmailConsentSourceForm = (typeof EMAIL_CONSENT_SOURCE_FORMS)[number];
 
 /**
@@ -123,15 +128,33 @@ export function buildEmailConsentRecord(input: {
   consent: boolean;
   submissionId?: string | null;
   now: Date;
+  /*
+   * Per-form wording, for a form whose disclosure the owner HAS approved.
+   *
+   * The newsletter's wording is still pending (EMAIL-CONSENT-01) and stays
+   * the default, so nothing about that path changes. The Navigator account
+   * screen is different: its sentence was specified by the owner as part of
+   * the accounts milestone, so it arrives here as an argument rather than
+   * waiting on a constant that describes a different form.
+   *
+   * Passing text WITHOUT a version, or the reverse, is a caller error — the
+   * pair is what makes a row evidence, so they move together or not at all.
+   */
+  disclosureText?: string;
+  disclosureVersion?: string;
 }): EmailConsentRecord {
+  const overriding = input.disclosureText !== undefined || input.disclosureVersion !== undefined;
+  if (overriding && (input.disclosureText === undefined || input.disclosureVersion === undefined)) {
+    throw new Error('disclosureText and disclosureVersion must be supplied together');
+  }
   return {
     source_form: input.sourceForm,
     source_url: input.sourceUrl,
     email: input.email.trim().toLowerCase(),
     email_consent: input.consent,
     email_consent_at: input.consent ? input.now.toISOString() : null,
-    email_consent_version: EMAIL_CONSENT_VERSION,
-    disclosure_text: EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL,
+    email_consent_version: input.disclosureVersion ?? EMAIL_CONSENT_VERSION,
+    disclosure_text: input.disclosureText ?? EMAIL_CONSENT_DISCLOSURE_PENDING_OWNER_APPROVAL,
     submission_id: input.submissionId ?? null,
   };
 }

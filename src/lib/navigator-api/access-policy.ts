@@ -43,12 +43,21 @@ import {
   PILOT_DEFAULT_DESTINATION,
 } from './pilot-access';
 
-export type NavigatorAccessMode = 'closed' | 'pilot' | 'public';
+export type NavigatorAccessMode = 'closed' | 'pilot' | 'public' | 'account';
 
-/** Every accepted value, in the order they widen access. */
-export const NAVIGATOR_ACCESS_MODES = ['closed', 'pilot', 'public'] as const;
+/**
+ * Every accepted value.
+ *
+ * NOT in order of openness, because they do not form a line. `account` is
+ * open to anyone willing to verify an email address, which is wider than
+ * `pilot` in who may enter and narrower in what an anonymous script can
+ * reach — a caller with no session gets nothing, where `public` hands them
+ * a routing endpoint. Ordering them would imply a ranking that the cost
+ * model does not support.
+ */
+export const NAVIGATOR_ACCESS_MODES = ['closed', 'pilot', 'public', 'account'] as const;
 
-/** What an unset, empty or unrecognized setting means. Never `public`. */
+/** What an unset, empty or unrecognized setting means. Never anything wider. */
 export const DEFAULT_ACCESS_MODE: NavigatorAccessMode = 'pilot';
 
 /** The server-only variable that selects the mode. */
@@ -60,7 +69,8 @@ export const ACCESS_MODE_ENV_VAR = 'NAVIGATOR_ACCESS_MODE';
  * Whitespace and letter case are forgiven — a value pasted out of a
  * dashboard with a trailing newline meant what it said. Anything else at
  * all resolves to `pilot`: not the nearest match, not a guess. There is no
- * spelling of `public` other than `public`.
+ * spelling of `public` other than `public`, and none of `account` other
+ * than `account`.
  */
 export function parseAccessMode(raw: string | undefined | null): NavigatorAccessMode {
   const value = (raw ?? '').trim().toLowerCase();
@@ -88,9 +98,17 @@ export function isPublicAccess(mode: NavigatorAccessMode): boolean {
  *   'allow'       — let it through.
  *   'challenge'   — pilot mode, no valid token: show the password screen
  *                   (or answer 401 for an API path).
+ *   'sign-in'     — account mode, no verified session: show the account
+ *                   screen (or answer 401 for an API path).
  *   'unavailable' — closed mode: answer as though the route does not exist.
+ *
+ * 'challenge' and 'sign-in' are separate verdicts for a reason a merged one
+ * would lose: they send a visitor to different screens, and the wrong screen
+ * is a dead end. A driver with an account bounced to the passcode form has
+ * no passcode; a pilot driver bounced to the account form is being asked to
+ * create an account the deploy is not running.
  */
-export type AccessDecision = 'ignore' | 'allow' | 'challenge' | 'unavailable';
+export type AccessDecision = 'ignore' | 'allow' | 'challenge' | 'sign-in' | 'unavailable';
 
 /**
  * The whole policy as one pure function, so every combination can be tested
@@ -121,6 +139,8 @@ export function navigatorAccessDecision(input: {
   mode: NavigatorAccessMode;
   pilotConfigured: boolean;
   tokenValid: boolean;
+  /** Account mode: does this request carry a verified Supabase session? */
+  signedIn?: boolean;
   /** True in the Edge middleware: never answer 'unavailable' from there. */
   edgeDeferral?: boolean;
 }): AccessDecision {
@@ -135,6 +155,13 @@ export function navigatorAccessDecision(input: {
 
   if (input.mode === 'closed') return input.edgeDeferral === true ? 'ignore' : 'unavailable';
 
+  if (input.mode === 'account') {
+    // The pilot cookie is deliberately NOT consulted here. Account mode is a
+    // rollback target for the passcode, not a second door beside it: a stale
+    // pilot cookie from last week must not walk past a sign-in.
+    return input.signedIn === true ? 'allow' : 'sign-in';
+  }
+
   // pilot. A layer that cannot see the password cannot verify a legitimate
   // cookie either, so challenging from there would bounce an already-unlocked
   // driver back to the password screen forever.
@@ -148,6 +175,14 @@ export function navigatorAccessDecision(input: {
  * way to guarantee it is for the screen itself to forward.
  */
 export const PUBLIC_ENTRY_PATH = PILOT_DEFAULT_DESTINATION;
+
+/**
+ * The account screen. Like the passcode screen it sits OUTSIDE the gate, or
+ * signing in would redirect to itself forever — `isProtectedNavigatorPath`
+ * excludes it for exactly that reason. Defined in pilot-access.ts beside the
+ * other path constants, because that is the function that has to know.
+ */
+export { NAVIGATOR_ACCOUNT_PATH } from './pilot-access';
 
 /**
  * The same policy for an API route, which answers with a status code rather
@@ -167,10 +202,16 @@ export function navigatorApiAccessVerdict(input: {
   flagEnabled: boolean;
   mode: NavigatorAccessMode;
   tokenValid: boolean;
+  /** Account mode: does this request carry a verified Supabase session? */
+  signedIn?: boolean;
 }): ApiAccessVerdict {
   if (!input.flagEnabled) return 'not-found';
   if (input.mode === 'closed') return 'not-found';
   if (input.mode === 'public') return 'ok';
+  // Account mode ignores the pilot cookie for the same reason the page gate
+  // does: a stale passcode cookie must not reach a metered endpoint once the
+  // deploy has moved to accounts.
+  if (input.mode === 'account') return input.signedIn === true ? 'ok' : 'unauthorized';
   return input.tokenValid ? 'ok' : 'unauthorized';
 }
 
