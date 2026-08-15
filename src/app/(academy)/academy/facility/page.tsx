@@ -34,8 +34,9 @@ const FEATURES: Card[] = [
     title: 'Real Class A Equipment',
     description: (
       <>
-        Train on a real tractor and 53-foot trailer — the rig you’ll actually drive.{' '}
-        <Placeholder>Exact truck/trailer specs TBD</Placeholder>
+        Train on a real tractor and 53-foot trailer — the rig you’ll actually drive. Students train
+        in manual 10-speed trucks, giving them practical experience with equipment used throughout
+        the trucking industry.
       </>
     ),
   },

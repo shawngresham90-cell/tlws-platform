@@ -1,5 +1,22 @@
 import { SITE } from './site';
+import { ACADEMY_ADDRESS, TUITION_USD, PROGRAMS } from '@/lib/academy/program';
 import type { KcFaq } from '@/lib/kc/types';
+
+/**
+ * The school's postal address, shared by every Academy JSON-LD node. Street
+ * comes from lib/academy/program so the structured data and the visible copy
+ * can never disagree. No postalCode: the ZIP is not confirmed, and inventing
+ * one in schema is exactly the kind of quiet fabrication local search punishes.
+ */
+function academyPostalAddress() {
+  return {
+    '@type': 'PostalAddress',
+    streetAddress: ACADEMY_ADDRESS.street,
+    addressLocality: ACADEMY_ADDRESS.city,
+    addressRegion: ACADEMY_ADDRESS.region,
+    addressCountry: 'US',
+  };
+}
 
 /**
  * Academy-specific JSON-LD builders (Milestone 7). Additive on purpose — the
@@ -39,20 +56,30 @@ export function courseSchema() {
       'Eligibility to test for a Class A Commercial Driver’s License (CDL-A)',
     occupationalCredentialAwarded: 'Class A Commercial Driver’s License (CDL-A)',
     inLanguage: 'en-US',
-    hasCourseInstance: {
+    // One CourseInstance per real program, each with its own start date and
+    // schedule. Both carry the same price because they genuinely cost the same.
+    hasCourseInstance: PROGRAMS.map((p) => ({
       '@type': 'CourseInstance',
+      name: p.name,
       courseMode: 'onsite',
+      startDate: p.startIso,
+      courseSchedule: {
+        '@type': 'Schedule',
+        ...(p.meets ? { byDay: ['https://schema.org/Saturday', 'https://schema.org/Sunday'] } : {}),
+        repeatFrequency: p.key === 'weekend' ? 'P1W' : 'P1D',
+      },
+      offers: {
+        '@type': 'Offer',
+        price: TUITION_USD,
+        priceCurrency: 'USD',
+        category: 'Tuition',
+      },
       location: {
         '@type': 'Place',
         name: SITE.name,
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: SITE.city,
-          addressRegion: SITE.region,
-          addressCountry: 'US',
-        },
+        address: academyPostalAddress(),
       },
-    },
+    })),
   };
 }
 
@@ -72,12 +99,7 @@ export function localSchoolSchema() {
     description:
       'Class A CDL school in Dalton, Georgia, off I-75 — ELDT-compliant training on real ' +
       'equipment, serving North Georgia and the surrounding I-75 corridor.',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: SITE.city,
-      addressRegion: SITE.region,
-      addressCountry: 'US',
-    },
+    address: academyPostalAddress(),
     areaServed: [
       'Dalton, GA',
       'Whitfield County, GA',

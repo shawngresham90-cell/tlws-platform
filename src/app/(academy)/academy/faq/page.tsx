@@ -5,12 +5,13 @@ import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { faqPageSchema } from '@/lib/seo/academy-schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
+import { ACADEMY_ADDRESS, TUITION } from '@/lib/academy/program';
 import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
   title: 'CDL Training FAQ | Trucking Life Academy — Dalton, GA',
   description:
-    'Answers about CDL-A training at Trucking Life Academy: admissions, ELDT curriculum, cost and funding, and logistics in Dalton, GA. Straight answers from a 17-year driver.',
+    'Answers about CDL-A training at Trucking Life Academy: $3,995 tuition, weekend classes from October 2026, weekday classes from January 2027, manual 10-speed training, and job-placement assistance in Dalton, GA.',
   path: '/academy/faq',
 });
 
@@ -41,11 +42,19 @@ const GROUPS: { heading: string; faqs: KcFaq[] }[] = [
       },
       {
         q: 'What will I train on?',
-        a: 'Real Class A equipment — a tractor and a 53-foot trailer — on a training range and the I-75 corridor. You learn on the kind of rig and roads you’ll actually drive.',
+        a: 'Real Class A equipment — a tractor and a 53-foot trailer — on a training range and the I-75 corridor. Students train in manual 10-speed trucks, giving them practical experience with equipment used throughout the trucking industry.',
       },
       {
         q: 'How long is the program?',
-        a: 'Program length and schedule options are being finalized. ELDT sets required theory and behind-the-wheel proficiency rather than a single national hour count, so training runs until you’re genuinely road-ready.',
+        a: 'The weekend program meets Saturdays and Sundays for eight weekends, beginning October 2026. The weekday program, beginning January 2027, runs approximately three to four weeks. ELDT sets required theory and behind-the-wheel proficiency rather than a single national hour count, so training runs until you’re genuinely road-ready.',
+      },
+      {
+        q: 'When do classes start?',
+        a: 'The first weekend class begins October 2026. A weekday program begins January 2027 — it is not open for enrollment yet.',
+      },
+      {
+        q: 'Do you help graduates find work?',
+        a: 'Job-placement assistance is available to graduates. We help students connect with trucking companies and employment opportunities, but employment is not guaranteed.',
       },
       {
         q: 'Which endorsements can I prepare for?',
@@ -58,7 +67,7 @@ const GROUPS: { heading: string; faqs: KcFaq[] }[] = [
     faqs: [
       {
         q: 'How much is tuition?',
-        a: 'Exact tuition is being finalized and will be published soon. We won’t post a number until it’s final and honest.',
+        a: `Tuition is ${TUITION} for either program — the weekend program and the weekday program cost the same.`,
       },
       {
         q: 'How can I pay for training?',
@@ -66,7 +75,7 @@ const GROUPS: { heading: string; faqs: KcFaq[] }[] = [
       },
       {
         q: 'Do you offer payment plans?',
-        a: 'Payment options are being finalized alongside tuition. Details will be posted on the Financing page as soon as they’re set.',
+        a: 'Payment options are still being finalized. Tuition itself is set — see the Financing page, and details will be posted there as soon as they’re confirmed.',
       },
     ],
   },
@@ -75,7 +84,7 @@ const GROUPS: { heading: string; faqs: KcFaq[] }[] = [
     faqs: [
       {
         q: 'Where is the school?',
-        a: 'In Dalton, Georgia, right off the I-75 corridor in North Georgia — convenient to Whitfield County, Calhoun, Chatsworth, Ringgold, and the Chattanooga, TN area. The exact address will be published soon.',
+        a: `Trucking Life Academy is located at ${ACADEMY_ADDRESS.oneLine}, right off the I-75 corridor in North Georgia — convenient to Whitfield County, Calhoun, Chatsworth, Ringgold, and the Chattanooga, TN area.`,
       },
       {
         q: 'Can I tour before I enroll?',
@@ -83,7 +92,7 @@ const GROUPS: { heading: string; faqs: KcFaq[] }[] = [
       },
       {
         q: 'How do I apply?',
-        a: 'The online application opens soon. In the meantime, use the Contact page to start the conversation and we’ll walk you through next steps.',
+        a: 'Use the online application at /academy/apply — two short steps, no payment collected. Weekend classes begin October 2026, so applying now reserves your place.',
       },
     ],
   },

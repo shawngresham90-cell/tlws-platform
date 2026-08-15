@@ -109,7 +109,7 @@ const FAQS: KcFaq[] = [
   },
   {
     q: 'How long does the program take?',
-    a: 'The total program length is being finalized and depends on schedule and endorsements. ELDT sets required theory topics and behind-the-wheel proficiency rather than a fixed national hour count, so training runs until you’re genuinely road-ready. Exact hours and schedule options will be published soon.',
+    a: 'The weekend program meets Saturdays and Sundays for eight weekends, beginning October 2026. The weekday program, beginning January 2027, runs approximately three to four weeks. ELDT sets required theory topics and behind-the-wheel proficiency rather than a fixed national hour count, so training runs until you’re genuinely road-ready.',
   },
   {
     q: 'Do you help with the CDL permit (CLP)?',

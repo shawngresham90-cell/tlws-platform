@@ -3,7 +3,21 @@ import Link from 'next/link';
 import { Section, Button, Eyebrow, Placard } from '@/components/ui';
 import { CampaignThermometer } from '@/components/community/CampaignThermometer';
 import { getCampaignProgress } from '@/lib/community/founders';
-import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components/academy';
+import {
+  PageHero,
+  CardGrid,
+  AcademyFaq,
+  CtaBand,
+  ProgramComparison,
+  type Card,
+} from '@/components/academy';
+import {
+  ACADEMY_ADDRESS,
+  TUITION,
+  EQUIPMENT,
+  PLACEMENT,
+  ENROLL_CTA_LINE,
+} from '@/lib/academy/program';
 import { CinematicStill } from '@/components/media/CinematicStill';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { courseSchema } from '@/lib/seo/academy-schema';
@@ -12,9 +26,9 @@ import { SITE } from '@/lib/seo/site';
 import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
-  title: 'Trucking Life Academy — CDL-A Training in Dalton, GA',
+  title: 'CDL Training in Dalton, GA — $3,995 Tuition | Trucking Life Academy',
   description:
-    'ELDT-compliant CDL-A training built by a 17-year driver with zero violations. Real equipment, driver-first instruction, in Dalton, GA off I-75. Drivers helping drivers.',
+    'CDL-A training at 1821 Wendell Street, Dalton, GA. Tuition $3,995. Weekend classes begin October 2026 — Saturdays and Sundays for eight weekends. Weekday program begins January 2027. Manual 10-speed training and job-placement assistance.',
   path: '/academy',
 });
 
@@ -98,7 +112,15 @@ const FAQS: KcFaq[] = [
   },
   {
     q: 'How much does it cost?',
-    a: 'Exact tuition is being finalized and will be published soon. In the meantime, the Financing page explains the funding routes drivers can use — workforce grants, VA benefits, employer sponsorship, and community-funded seats.',
+    a: `Tuition is ${TUITION} for either program — the weekend program and the weekday program cost the same. The Financing page explains the funding routes drivers can use: workforce grants, VA benefits, employer sponsorship, and community-funded seats.`,
+  },
+  {
+    q: 'When do classes start?',
+    a: 'Our first weekend class begins in October 2026. The weekend program meets Saturdays and Sundays for eight weekends. Beginning in January 2027 we will also offer a weekday program lasting approximately three to four weeks.',
+  },
+  {
+    q: 'What kind of trucks will I train in?',
+    a: 'Students train in manual 10-speed trucks, giving them practical experience with equipment used throughout the trucking industry.',
   },
   {
     q: 'How old do I have to be?',
@@ -118,11 +140,11 @@ const FAQS: KcFaq[] = [
   },
   {
     q: 'Will you help me find a job after?',
-    a: 'We won’t promise placement numbers we haven’t earned yet. What you get is honest career preparation — the Knowledge Center’s career-path guides and straight talk about what the first year really looks like.',
+    a: 'Job-placement assistance is available to graduates. We help students connect with trucking companies and employment opportunities, but employment is not guaranteed — and we won’t promise placement numbers we haven’t earned. You also get honest career preparation through the Knowledge Center’s career-path guides.',
   },
   {
     q: 'Where is the school located?',
-    a: 'In Dalton, Georgia, right off the I-75 corridor — convenient to North Georgia and the Chattanooga, TN area.',
+    a: `Trucking Life Academy is located at ${ACADEMY_ADDRESS.oneLine}, right off the I-75 corridor — convenient to North Georgia and the Chattanooga, TN area.`,
   },
 ];
 
@@ -188,7 +210,13 @@ const STORY_MILESTONES: Array<{ big: string; small: string }> = [
   { big: '84K+', small: 'Followers' },
 ];
 
-/** Enrollment transparency — every unpublished detail stated honestly. */
+/**
+ * Enrollment transparency. Tuition and start dates are now SET and read from
+ * lib/academy/program; the two rows that used to say "Being finalized" said so
+ * for months after the numbers existed. State licensing genuinely is still
+ * open, so that row keeps its honest placeholder rather than being quietly
+ * upgraded alongside the others.
+ */
 const ENROLLMENT_STATUS: Array<{ label: string; value: string; note: string }> = [
   {
     label: 'Program standard',
@@ -197,13 +225,18 @@ const ENROLLMENT_STATUS: Array<{ label: string; value: string; note: string }> =
   },
   {
     label: 'Tuition',
-    value: 'Being finalized',
-    note: 'Published here the moment it’s locked. Financing routes are already documented.',
+    value: TUITION,
+    note: 'The same for the weekend and weekday programs. No payment is collected on this site.',
   },
   {
-    label: 'Schedule & start dates',
-    value: 'Being finalized',
-    note: 'Join the interest list below — applicants hear updates before anyone else.',
+    label: 'Weekend program',
+    value: 'Begins October 2026',
+    note: 'Saturdays and Sundays for eight weekends.',
+  },
+  {
+    label: 'Weekday program',
+    value: 'Begins January 2027',
+    note: 'Approximately three to four weeks. Not open for enrollment yet.',
   },
   {
     label: 'State licensing',
@@ -259,6 +292,74 @@ export default async function AcademyPage() {
           ))}
         </div>
       </div>
+
+      {/* Programs, tuition, location — the facts a prospective student comes
+          for, placed above the founder story rather than below it. Every value
+          reads from lib/academy/program, so this block cannot disagree with the
+          FAQ, the financing page or the JSON-LD.
+
+          The address is rendered as real text, not just schema: a school that
+          publishes its price and its street is the whole anti-mill argument the
+          rest of the page makes in prose. */}
+      <Section id="programs" className="border-b border-line">
+        <div className="max-w-3xl">
+          <Eyebrow>Programs &amp; tuition</Eyebrow>
+          <h2 className="display-section">CDL training in Dalton, Georgia</h2>
+          <p className="mt-4 text-lg text-muted">
+            Trucking Life Academy is located at{' '}
+            <strong className="text-ink">{ACADEMY_ADDRESS.oneLine}</strong>.
+          </p>
+          <p className="mt-4 text-lg text-muted">
+            <strong className="text-ink">Tuition: {TUITION}</strong>
+          </p>
+          <p className="mt-4 text-lg text-muted">
+            Our first weekend class begins in October 2026. The weekend CDL program meets Saturdays
+            and Sundays for eight weekends.
+          </p>
+          <p className="mt-4 text-lg text-muted">
+            Beginning in January 2027, we will also offer a weekday program lasting approximately
+            three to four weeks. Tuition for either program is {TUITION}.
+          </p>
+        </div>
+
+        {/* The two programs side by side, weekday clearly marked as not yet open */}
+        <div className="mt-10">
+          <ProgramComparison />
+        </div>
+
+        {/* Equipment — practical experience only. No claim is made that manual
+            training removes any CDL restriction; the site carries no verified
+            language supporting that. */}
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+          <Placard>
+            <h3 className="font-display text-xl uppercase text-ink">
+              {EQUIPMENT.transmission} training
+            </h3>
+            <p className="mt-2 text-muted">{EQUIPMENT.summary}</p>
+          </Placard>
+
+          {/* Job placement — the disclaimer travels with the offer, always. */}
+          <Placard>
+            <h3 className="font-display text-xl uppercase text-ink">Job-placement assistance</h3>
+            <p className="mt-2 text-muted">
+              {PLACEMENT.headline} {PLACEMENT.detail}
+            </p>
+          </Placard>
+        </div>
+
+        <Placard
+          money
+          className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="max-w-xl text-sm text-muted">
+            <strong className="text-ink">{ENROLL_CTA_LINE}</strong> Applying costs nothing and
+            collects no payment.
+          </p>
+          <Button href="/academy/apply" className="shrink-0">
+            Apply to the Academy
+          </Button>
+        </Placard>
+      </Section>
 
       {/* Mission — the founder's story, now photo-supported. The portrait is
           the visual answer to "who is teaching me?", so it belongs beside this
@@ -562,14 +663,11 @@ export default async function AcademyPage() {
           className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <p className="max-w-xl text-sm text-muted">
-            <strong className="text-ink">
-              Final enrollment details are being confirmed. Join the interest list for updates
-            </strong>{' '}
-            — applying costs nothing, collects no payment, and puts you on the list before
-            enrollment opens.
+            <strong className="text-ink">{ENROLL_CTA_LINE}</strong> Applying costs nothing and
+            collects no payment.
           </p>
           <Button href="/academy/apply" className="shrink-0">
-            Apply — join the list
+            Apply — reserve your place
           </Button>
         </Placard>
       </Section>
