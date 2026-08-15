@@ -10,7 +10,7 @@ import {
   createSearchCoordinator,
   type SearchCoordinator,
 } from '@/lib/navigator-api/search-coordination';
-import { searchDestinations } from './search-port';
+import { searchDestinations, NAVIGATOR_SEARCH_ENDPOINT } from './search-port';
 import { KM_PER_MILE } from '@/lib/navigator/format-units';
 
 /**
@@ -108,6 +108,12 @@ export function DestinationSearch({
   disabled = false,
   country = 'USA',
   metric = false,
+  endpoint = NAVIGATOR_SEARCH_ENDPOINT,
+  label = 'Where are you going?',
+  placeholder = 'Address, business, truck stop, or city',
+  ariaLabel = 'Search for a destination by address, business, truck stop, or city',
+  unbiasedNote = "Location hasn't started yet — include the city or state. Results aren't sorted by distance until it does.",
+  testId,
 }: {
   /** The truck's current position — search is biased around it. */
   origin: LatLng | null;
@@ -124,6 +130,26 @@ export function DestinationSearch({
   country?: 'USA' | 'CAN';
   /** Show straight-line distances in kilometres rather than miles. */
   metric?: boolean;
+  /**
+   * Which door to knock on. The SEARCH is the same either way; the
+   * Navigator's endpoint requires a pilot cookie and Plan My Day's
+   * visitors do not have one, so the door is a parameter rather than a
+   * second implementation.
+   */
+  endpoint?: string;
+  /** Field label — Plan My Day asks this twice, for origin and destination. */
+  label?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  /**
+   * What to say when there is no origin to bias around. The Navigator is
+   * waiting for a GPS fix; Plan My Day never has one, so the same state
+   * needs a different sentence rather than a borrowed one that would
+   * describe a permission this screen never asks for.
+   */
+  unbiasedNote?: string;
+  /** Hook for the browser bench to tell two search boxes apart. */
+  testId?: string;
 }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DestinationCandidate[]>([]);
@@ -183,7 +209,7 @@ export function DestinationSearch({
         setSearching(false);
         return;
       }
-      void searchDestinations(decision.query, at, undefined, country)
+      void searchDestinations(decision.query, at, undefined, country, endpoint)
         .then((outcome) => {
           if (outcome.kind === 'failure') {
             if (coord.accept(decision.seq, [])) {
@@ -202,19 +228,19 @@ export function DestinationSearch({
         .finally(() => setSearching(false));
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, originKey, settled, country]);
+  }, [query, originKey, settled, country, endpoint]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-destination-search={testId ?? ''}>
       <label className="block text-lg text-ink/80">
-        Where are you going?
+        {label}
         <input
           className={inputClass}
           type="search"
           autoComplete="off"
           value={query}
           disabled={disabled}
-          placeholder="Address, business, truck stop, or city"
+          placeholder={placeholder}
           onChange={(e) => {
             setQuery(e.target.value);
             // Editing the text means the driver is choosing again: reopen
@@ -225,19 +251,14 @@ export function DestinationSearch({
               onClear();
             }
           }}
-          aria-label="Search for a destination by address, business, truck stop, or city"
+          aria-label={ariaLabel}
         />
       </label>
 
       {/* Honest bias note: with no position yet, results are real places
           but are NOT sorted by distance from the truck, and no "mi away"
           line renders (the server strips distances in unbiased mode). */}
-      {origin === null ? (
-        <p className="text-lg text-ink/70">
-          Location hasn&apos;t started yet — include the city or state. Results aren&apos;t sorted
-          by distance until it does.
-        </p>
-      ) : null}
+      {origin === null ? <p className="text-lg text-ink/70">{unbiasedNote}</p> : null}
 
       <p aria-live="polite" role="status" className="text-lg text-ink/70">
         {searching ? 'Searching…' : (status ?? '')}

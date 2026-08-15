@@ -427,6 +427,143 @@ sees 3,882 anchors.
 
 ---
 
+## 8c. The destination input, and the gap it closed
+
+The first version restricted both ends to the TLWS directory dropdown. The
+directory stores `state` with no country or province column, so every anchor
+is a US listing — which meant the Canadian and cross-border paths, tested and
+correct in the engine, **could not be reached through the actual screen**. A
+promise of US and Canadian planning that a driver cannot exercise is a product
+gap, not a documentation footnote.
+
+### One search system, two doors
+
+Plan My Day now uses the Navigator's `DestinationSearch` component directly —
+its 350 ms debounce, its request coordinator (sequencing, same-query caching,
+stale-response rejection), its `DestinationCandidate` model, and the
+`in=countryCode:USA|CAN` filter that carries accents, provinces and postal
+codes. Nothing about searching was reimplemented; a harness asserts the new
+route builds no provider URL and parses no provider fields of its own.
+
+What differs is the **door**, and only the door:
+
+| | Navigator | Plan My Day |
+| --- | --- | --- |
+| Route | `/api/navigator/destination-search` | `/api/trip-planner/destination-search` |
+| Access | signed pilot cookie | free, public |
+| Flag gate | `NEXT_PUBLIC_NAVIGATOR_ENABLED` | none |
+| Rate limit | 30/min/IP | 30/min/IP, **separate bucket** |
+| Search behaviour | `@/lib/navigator-api/destination-search` | the same module |
+
+A second door was necessary because Plan My Day is free and its visitors hold
+no pilot cookie — every keystroke would have 401'd. The alternative was
+widening the pilot gate, which would expose a pilot-budgeted endpoint to the
+open internet as a side effect of a planner feature. The buckets are separate
+so public typing can never drain the pilot's allowance, or the reverse.
+
+### The directory is a shortcut, not a fence
+
+Directory locations remain available behind a disclosure control on each end.
+They are what TLWS actually knows about — verified stops with parking counts —
+and a driver who wants one should not have to type its name. They are simply
+no longer the only way in.
+
+### Each end carries an attested country
+
+A searched place claims the country its search was **filtered to**; a directory
+pick claims its listing's own state code. Both are facts about the record
+rather than inferences, which is what makes Windsor–Detroit answerable at all
+— no latitude rule separates them, so coordinates alone leave both ends
+unplaceable.
+
+### Typing never buys a route
+
+Search and routing are different endpoints and different budgets. The browser
+bench asserts that typing and picking across four region shapes produce
+**zero** POSTs to the quote endpoint, and that exactly one is sent after the
+button is tapped. The button stays disabled until both ends are chosen.
+
+### Verified through the screen, not only the endpoint
+
+US→US, CA→CA, US→CA and CA→US are each driven through the real UI — type,
+pick, tap — and the weather sentence is read off the rendered page. This is
+possible without a routing key because the **region gate runs before the
+timing gate** by design: a Canadian route still gets its honest refusal, and a
+crossing still gets "only available for the United States portion", even when
+every timing answer refuses.
+
+---
+
+## 8d. A screen that worked and could not be read
+
+`navigator-design.css` defines `--nav-bg`, `--nav-surface`, `--nav-good` and
+the rest on `:root`, and it was imported by the `(navigator)` layout **only**.
+Plan My Day lives in the `(directory)` group, so on `/trip-planner` every one
+of those variables resolved to nothing — and Tailwind classes like
+`bg-nav-good` compile to `background-color: var(--nav-good)`, which with no
+value is transparent.
+
+Measured, not guessed:
+
+| Element | Before | After |
+| --- | --- | --- |
+| "Plan My Day" button | `rgb(20,20,20)` text, transparent fill, on an `rgb(20,20,20)` page — **black on black** | 4.5:1+ against its painted fill |
+| Selected chips (buffer, units, country) | identical to unselected | visibly distinct |
+
+The screen was fully functional and almost unreadable — the worst combination
+for a bench to miss. Nothing threw; every assertion about text, size and tap
+target passed. **2,072 checks certified a screen whose primary action was
+invisible**, because the bench measured geometry and words and never once
+measured contrast.
+
+Fixed by importing the same stylesheet from a `/trip-planner` layout rather
+than copying its token block: a second copy would drift, and the night palette
+is a safety decision (colour = meaning, never decoration) that must not fork.
+The bench now computes WCAG contrast for the primary action and asserts a
+selected chip differs from an unselected one.
+
+---
+
+## 8e. Is the HERE key available to these endpoints?
+
+**Same variable, same runtime.** Every consumer reads `process.env.HERE_API_KEY`:
+
+| Route | Purpose |
+| --- | --- |
+| `/api/navigator/route` | Navigator truck routing |
+| `/api/navigator/destination-search` | Navigator search |
+| `/api/trip-planner/quote` | Plan My Day routing |
+| `/api/trip-planner/destination-search` | Plan My Day search |
+| `/api/trip-planner/places` | geocoding |
+
+All are Next route handlers in the same Netlify Functions runtime, so any
+context where the Navigator's search works supplies the same value here. The
+known failure mode is **scope**, already documented at
+`api/navigator/route/route.ts`: a Netlify variable scoped to Production only,
+or to builds but not functions, is invisible to a Deploy Preview.
+
+**No secret was added, rotated, exposed or changed**, and none can be read from
+this environment. What exists instead is a safe way to *check*, using only a
+status code:
+
+```
+GET /api/trip-planner/destination-search?q=windsor&country=CAN
+```
+
+| Response | Meaning |
+| --- | --- |
+| `503 provider-not-configured` | the key is not visible in this deploy context — check context AND functions scope |
+| `200` with places | configured; the quote endpoint reads the same variable |
+
+Verified locally: with no key the route returns exactly that 503, and the body
+carries no key material, no upstream URL and no provider detail.
+
+**Consequence for the phone review:** if that probe returns 503, the map will
+show "Clock-limit location cannot be mapped safely" rather than a pin. That is
+the refusal working correctly on an estimated route, not a broken map.
+
+---
+
 ## 9. Test totals
 
 | Harness | Checks |
@@ -490,13 +627,7 @@ clean.
    PR; all are reported as a bench note rather than silently excluded.
 10. **Canadian HOS is still not calculated**, and no US calculation is carried
     across the border — only the weather refusal distinguishes the crossing.
-11. **A Canadian destination cannot be picked from the anchor list.** The
-    directory schema stores `state` with no country or province column, so
-    every anchor is a US listing. The region logic is proven at the endpoint
-    (CA→CA, US→CA, CA→US, and the unplaceable corridor) and in the UI against
-    engine-produced plans, but the cross-border path is **not reachable
-    through the picker** until Phase 2 adds free search or Canadian listings.
-12. **The Netlify preview was not fetched from this environment.** CI reported
+11. **The Netlify preview was not fetched from this environment.** CI reported
     `verify` green and Netlify reported the deploy ready with its redirect and
     header checks passing, but the preview host is outside this environment's
     egress allowlist (§7), so nothing here claims how it renders. Shawn's own

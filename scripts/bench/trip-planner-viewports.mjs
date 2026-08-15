@@ -79,6 +79,58 @@ const VIEWPORTS = [
 const REFERENCE = { w: 390, h: 844 };
 
 const QUOTE_PATH = '/api/trip-planner/quote';
+const SEARCH_PATH = '/api/trip-planner/destination-search';
+
+/**
+ * Provider-shaped search results, so the screen has something to pick.
+ *
+ * TWO PER COUNTRY, and far enough apart to be a real trip. One place per
+ * country made the same-country cases pick the same point for both ends,
+ * and the endpoint correctly refused a zero-length trip — the product
+ * working, and the fixture wrong.
+ *
+ * Windsor and Detroit are here on purpose: three kilometres apart, two
+ * countries, and Windsor SOUTH of Detroit, which is the pair no latitude
+ * rule can separate.
+ */
+const SEARCH_FIXTURES = {
+  USA: [
+    {
+      id: 'us-1',
+      title: 'Detroit Truck Plaza',
+      address: '1200 W Fort St, Detroit, MI 48226',
+      position: { lat: 42.3314, lng: -83.0458 },
+      facility: 'truck-stop',
+      distanceMi: null,
+    },
+    {
+      id: 'us-2',
+      title: 'Toledo Travel Center',
+      address: '5000 Telegraph Rd, Toledo, OH 43612',
+      position: { lat: 41.6528, lng: -83.5379 },
+      facility: 'truck-stop',
+      distanceMi: null,
+    },
+  ],
+  CAN: [
+    {
+      id: 'ca-1',
+      title: 'Windsor Truck Stop',
+      address: '2500 Huron Church Rd, Windsor, ON N9C 2L6',
+      position: { lat: 42.3149, lng: -83.0364 },
+      facility: 'truck-stop',
+      distanceMi: null,
+    },
+    {
+      id: 'ca-2',
+      title: 'London Ontario Truck Plaza',
+      address: '1200 Wellington Rd, London, ON N6E 1M3',
+      position: { lat: 42.9849, lng: -81.2453 },
+      facility: 'truck-stop',
+      distanceMi: null,
+    },
+  ],
+};
 
 /** How long the stubbed endpoint takes to answer, in the rapid-tap probe. */
 const RESPONSE_MS = 1500;
@@ -211,6 +263,70 @@ function loadScenarios() {
 
 /* ----------------------------------------------------------- probes */
 
+/**
+ * Is the primary action VISIBLE — not merely present?
+ *
+ * This check exists because its absence hid a screen-breaking defect for
+ * an entire milestone. `navigator-design.css` was imported by the
+ * Navigator's layout only, so on /trip-planner every `--nav-*` variable
+ * resolved to nothing and `bg-nav-good` compiled to a transparent
+ * background. The "Plan My Day" button rendered black text on a black
+ * page. Nothing threw. Every assertion about its text, its size and its
+ * tap target passed. A bench that measures only geometry and words will
+ * certify an unreadable screen.
+ *
+ * Contrast is computed the WCAG way rather than eyeballed, and the floor
+ * is 4.5:1 — the same one the rest of the platform is held to.
+ */
+async function contrast(page) {
+  return page.evaluate(() => {
+    const parse = (c) => (c.match(/[\d.]+/g) ?? []).map(Number);
+    // The nearest ancestor that actually paints, since a transparent
+    // element shows whatever is behind it — which is the whole bug.
+    const painted = (el) => {
+      for (let n = el; n !== null; n = n.parentElement) {
+        const c = parse(getComputedStyle(n).backgroundColor);
+        if (c.length >= 3 && (c[3] === undefined || c[3] > 0)) return c;
+      }
+      return [255, 255, 255];
+    };
+    const lum = ([r, g, b]) => {
+      const f = (v) => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const ratio = (a, b) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const measure = (sel) => {
+      const el = document.querySelector(sel);
+      if (el === null) return null;
+      const cs = getComputedStyle(el);
+      return {
+        ratio: Number(ratio(parse(cs.color), painted(el)).toFixed(2)),
+        color: cs.color,
+        bg: cs.backgroundColor,
+      };
+    };
+    const chips = Array.from(document.querySelectorAll('[data-search-country]'));
+    const selected = chips.find((c) => c.getAttribute('aria-pressed') === 'true');
+    const unselected = chips.find((c) => c.getAttribute('aria-pressed') === 'false');
+    return {
+      planButton: measure('[data-plan-button]'),
+      // A selected chip must be TOLD APART from an unselected one, which
+      // is a different question from either being readable on its own.
+      selectedDiffers:
+        selected !== undefined &&
+        unselected !== undefined &&
+        getComputedStyle(selected).backgroundColor !== getComputedStyle(unselected).backgroundColor,
+      selectedBg: selected === undefined ? null : getComputedStyle(selected).backgroundColor,
+    };
+  });
+}
+
 /** Does the document scroll sideways? A cab screen has no room for it. */
 async function overflowX(page) {
   return page.evaluate(
@@ -257,6 +373,7 @@ async function readScreen(page) {
     return {
       hasResults: document.querySelector('[data-plan-results]') !== null,
       status: text('[data-plan-status]'),
+      weatherText: text('[aria-labelledby="weather-heading"] p'),
       trafficHeading: text('[aria-labelledby="traffic-heading"] h2'),
       trafficLabel: text('[data-traffic-label]'),
       clockLimit: text('[data-clock-limit]'),
@@ -355,7 +472,11 @@ async function ergonomics(page) {
 
 /* ------------------------------------------------------ page driver */
 
-async function newPage(browser, vp, { intercept = null, delayMs = 0 } = {}) {
+async function newPage(
+  browser,
+  vp,
+  { intercept = null, delayMs = 0, interceptSearch = false } = {},
+) {
   const context = await browser.newContext({
     viewport: { width: vp.w, height: vp.h },
     isMobile: true,
@@ -366,11 +487,23 @@ async function newPage(browser, vp, { intercept = null, delayMs = 0 } = {}) {
 
   const posts = [];
   const urls = [];
+  const searches = [];
   page.on('request', (req) => {
     urls.push(redact(req.url()));
     if (req.method() === 'POST' && req.url().includes(QUOTE_PATH)) posts.push(redact(req.url()));
+    if (req.url().includes(SEARCH_PATH)) searches.push(redact(req.url()));
   });
 
+  if (interceptSearch) {
+    await page.route(`**${SEARCH_PATH}**`, async (route) => {
+      const country = new URL(route.request().url()).searchParams.get('country') ?? 'USA';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, places: SEARCH_FIXTURES[country] ?? [] }),
+      });
+    });
+  }
   if (intercept !== null) {
     await page.route(`**${QUOTE_PATH}`, async (route) => {
       if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
@@ -381,20 +514,70 @@ async function newPage(browser, vp, { intercept = null, delayMs = 0 } = {}) {
       });
     });
   }
-  return { context, page, posts, urls };
+  return { context, page, posts, urls, searches };
 }
 
-/** Choose an origin and a destination from the real anchor list. */
+/**
+ * Choose both ends from the REAL directory list.
+ *
+ * The directory is now a shortcut beside the search rather than the only
+ * way in, so it lives behind a disclosure toggle. This path uses no
+ * interception at all — the anchors come from the running server — which
+ * is what makes it the default for the scenario runs.
+ */
 async function chooseRoute(page) {
-  const origin = page.locator('select[aria-label="Starting location"]');
-  const dest = page.locator('select[aria-label="Destination"]');
-  const options = await origin
-    .locator('option')
-    .evaluateAll((els) => els.map((e) => e.value).filter((v) => v !== ''));
-  if (options.length < 2) return { ok: false, why: `only ${options.length} anchors available` };
-  await origin.selectOption(options[0]);
-  await dest.selectOption(options[1]);
-  return { ok: true, count: options.length };
+  const options = [];
+  for (const end of ['origin', 'destination']) {
+    const toggle = page.locator(`[data-directory-toggle="${end}"]`);
+    await toggle.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    await page.waitForTimeout(80);
+    await toggle.click();
+    const select = page.locator(`[data-directory-select="${end}"]`);
+    const values = await select
+      .locator('option')
+      .evaluateAll((els) => els.map((e) => e.value).filter((v) => v !== ''));
+    if (values.length < 2) return { ok: false, why: `only ${values.length} anchors available` };
+    // Different ends, so the trip is never zero-length.
+    await select.selectOption(end === 'origin' ? values[0] : values[1]);
+    options.push(values.length);
+  }
+  return { ok: true, count: options[0] };
+}
+
+/**
+ * Choose an end by SEARCHING, the way a driver reaches anywhere that is
+ * not a TLWS listing — which is the only way to reach Canada at all.
+ *
+ * The provider response is intercepted because this environment has no
+ * HERE key; what is being measured is the screen's wiring, not HERE's
+ * geocoder. The search REQUEST is still made by the real component, with
+ * its real debounce and coordinator, and the bench asserts what was asked
+ * for — including the country filter.
+ */
+async function searchFor(page, end, { query, country, place }) {
+  if (country === 'CAN') {
+    const btn = page.locator(`[data-search-country="${end}:CAN"]`);
+    await btn.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    await page.waitForTimeout(80);
+    await btn.click();
+  }
+  const box = page.locator(`[data-destination-search="${end}"] input`);
+  await box.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await page.waitForTimeout(80);
+  await box.fill(query);
+  // Longer than the component's 350 ms debounce, plus the round trip.
+  // Pick the NAMED card, not merely the first — the same-country cases
+  // need two different places out of one result list.
+  const card = page
+    .locator(`[data-destination-search="${end}"] ul li button`)
+    .filter({ hasText: place })
+    .first();
+  await card.waitFor({ state: 'visible', timeout: 10_000 });
+  await card.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await page.waitForTimeout(80);
+  await card.click();
+  const chosen = await page.locator(`[data-chosen="${end}"]`).textContent();
+  return { ok: (chosen ?? '').includes(place), chosen };
 }
 
 /* ------------------------------------------- one scenario, one size */
@@ -578,6 +761,18 @@ async function runScenario(browser, vp, scenario, { shot = false } = {}) {
         `${erg.minTap}px — ${erg.smallest} (of ${erg.controls} controls)`,
       );
     }
+
+    const vis = await contrast(page);
+    verdict(
+      `${label}: the primary action is readable, not just present`,
+      vis.planButton !== null && vis.planButton.ratio >= 4.5,
+      JSON.stringify(vis.planButton),
+    );
+    verdict(
+      `${label}: a selected country chip looks different from an unselected one`,
+      vis.selectedDiffers,
+      `selected bg ${vis.selectedBg}`,
+    );
 
     verdict(
       `${label}: the ELD disclaimer is never dropped`,
@@ -875,6 +1070,217 @@ async function probeSiteChrome(browser, vp) {
   }
 }
 
+/**
+ * Reaching Canada, and both crossing directions, THROUGH THE SCREEN.
+ *
+ * This is the gap that made the region work unreachable: the directory
+ * holds US listings only, so before the search landed there was no way to
+ * pick a Canadian endpoint at all, and the honest cross-border message
+ * could only ever be proven at the endpoint. These runs type, pick, and
+ * read the answer off the page.
+ */
+async function probeRegions(browser, vp) {
+  const CASES = [
+    {
+      key: 'US → US',
+      origin: { query: 'detroit truck', country: 'USA', place: 'Detroit Truck Plaza' },
+      destination: { query: 'toledo travel', country: 'USA', place: 'Toledo Travel Center' },
+      expectCountries: ['US', 'US'],
+      // A fully US route is never refused ON REGION GROUNDS. Without a
+      // routing key it still refuses for TIMING, which is a different
+      // sentence and a different reason.
+      expectWeather: (w) => w !== 'region-unsupported' && w !== 'cross-border',
+      expectText: null,
+    },
+    {
+      key: 'CA → CA',
+      origin: { query: 'windsor truck', country: 'CAN', place: 'Windsor Truck Stop' },
+      destination: { query: 'london ontario', country: 'CAN', place: 'London Ontario Truck Plaza' },
+      expectCountries: ['CA', 'CA'],
+      expectWeather: (w) => w === 'region-unsupported',
+      expectText: /not available in this pilot/,
+    },
+    {
+      key: 'US → CA (northbound)',
+      origin: { query: 'detroit truck', country: 'USA', place: 'Detroit Truck Plaza' },
+      destination: { query: 'windsor truck', country: 'CAN', place: 'Windsor Truck Stop' },
+      expectCountries: ['US', 'CA'],
+      expectWeather: (w) => w === 'cross-border',
+      expectText: /crosses the border/,
+    },
+    {
+      key: 'CA → US (southbound)',
+      origin: { query: 'windsor truck', country: 'CAN', place: 'Windsor Truck Stop' },
+      destination: { query: 'detroit truck', country: 'USA', place: 'Detroit Truck Plaza' },
+      expectCountries: ['CA', 'US'],
+      expectWeather: (w) => w === 'cross-border',
+      expectText: /crosses the border/,
+    },
+  ];
+
+  for (const c of CASES) {
+    const label = `${vp.w}x${vp.h} region ${c.key}`;
+    /*
+     * THE QUOTE IS NOT INTERCEPTED HERE, deliberately.
+     *
+     * Asserting the request body proves what the screen SENT; it does not
+     * prove what a driver READS. The region gate runs BEFORE the timing
+     * gate by design, so even with no routing key in this environment the
+     * real endpoint still returns the right regional answer — which makes
+     * the honest Canadian and cross-border sentences verifiable through
+     * the actual screen rather than only at the endpoint.
+     */
+    const { context, page, posts, searches } = await newPage(browser, vp, {
+      interceptSearch: true,
+    });
+    try {
+      await page.goto(`${BASE}/trip-planner`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('[data-plan-my-day]', { timeout: 15_000 });
+
+      const o = await searchFor(page, 'origin', c.origin);
+      verdict(`${label}: the origin can be reached by searching`, o.ok, o.chosen);
+      const d = await searchFor(page, 'destination', c.destination);
+      verdict(`${label}: the destination can be reached by searching`, d.ok, d.chosen);
+
+      /*
+       * THE RULE THAT PAYS THE BILL. Typing is a search; a route is a
+       * paid truck-routing transaction. Every keystroke above went to
+       * the search endpoint and NONE of it may have bought a route.
+       */
+      verdict(
+        `${label}: typing and picking bought no route at all`,
+        posts.length === 0,
+        `${posts.length} quote request(s) before the button was tapped`,
+      );
+      verdict(
+        `${label}: the search really was asked, and per country`,
+        searches.length > 0 &&
+          c.expectCountries.every((want) =>
+            searches.some((u) => u.includes(`country=${want === 'CA' ? 'CAN' : 'USA'}`)),
+          ),
+        searches.slice(-4),
+      );
+
+      const tapped = await scrollThenTap(page, page.locator('[data-plan-button]'));
+      verdict(`${label}: Plan My Day is tappable once both ends are chosen`, tapped.ok, tapped.why);
+      if (!tapped.ok) continue;
+      // The REAL endpoint answers here, so allow a real round trip — and
+      // accept a status line as an answer too, since a refusal is a
+      // legitimate outcome that must still be read rather than timed out.
+      await page.waitForSelector('[data-plan-results], [data-plan-status]', { timeout: 30_000 });
+      await page.waitForTimeout(1200);
+      verdict(
+        `${label}: and THEN exactly one route is requested`,
+        posts.length === 1,
+        `sent ${posts.length}`,
+      );
+
+      const seen = await readScreen(page);
+      verdict(`${label}: the real endpoint answered`, seen.hasResults, String(seen.status));
+      if (seen.hasResults) {
+        /*
+         * THE SENTENCE A DRIVER READS, off the real screen.
+         *
+         * The region gate runs BEFORE the timing gate by design, so this
+         * is answerable even with no routing key in this environment —
+         * which is exactly what makes the Canadian and cross-border
+         * messages provable here rather than only at the endpoint.
+         */
+        verdict(
+          `${label}: the weather section names THIS route's situation`,
+          c.expectWeather(seen.weather),
+          `screen=${seen.weather}`,
+        );
+        if (c.expectText !== null) {
+          verdict(
+            `${label}: and says it in the driver's words`,
+            c.expectText.test(seen.weatherText ?? ''),
+            seen.weatherText,
+          );
+          verdict(
+            `${label}: with the Environment Canada way out`,
+            seen.eccc,
+            'no weather.gc.ca link',
+          );
+        }
+      }
+
+      mkdirSync(SHOTS, { recursive: true });
+      await page.screenshot({
+        path: join(
+          SHOTS,
+          `region-${c.key.replace(/[^a-z]+/gi, '-').toLowerCase()}-${vp.w}x${vp.h}.png`,
+        ),
+        fullPage: true,
+      });
+    } finally {
+      await context.close();
+    }
+  }
+}
+
+/**
+ * The country claim each end actually put on the wire.
+ *
+ * Read from the intercepted request body rather than inferred from the
+ * screen: this is the input the region engine decides from, and it is
+ * the thing that makes Windsor–Detroit answerable when no latitude rule
+ * can separate them.
+ */
+async function probeRegionClaims(browser, vp, scenario) {
+  const label = `${vp.w}x${vp.h} region-claims`;
+  const bodies = [];
+  const { context, page } = await newPage(browser, vp, {
+    intercept: scenario.plan,
+    interceptSearch: true,
+  });
+  page.on('request', (req) => {
+    if (req.method() === 'POST' && req.url().includes(QUOTE_PATH)) {
+      try {
+        bodies.push(JSON.parse(req.postData() ?? '{}'));
+      } catch {
+        /* a malformed body fails the assertion below on its own */
+      }
+    }
+  });
+  try {
+    await page.goto(`${BASE}/trip-planner`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-plan-my-day]', { timeout: 15_000 });
+    await searchFor(page, 'origin', {
+      query: 'detroit truck',
+      country: 'USA',
+      place: 'Detroit Truck Plaza',
+    });
+    await searchFor(page, 'destination', {
+      query: 'windsor truck',
+      country: 'CAN',
+      place: 'Windsor Truck Stop',
+    });
+    const tapped = await scrollThenTap(page, page.locator('[data-plan-button]'));
+    if (!tapped.ok) {
+      verdict(`${label}: Plan My Day is tappable`, false, tapped.why);
+      return;
+    }
+    await page.waitForSelector('[data-plan-results]', { timeout: 15_000 });
+    const body = bodies[0];
+    verdict(`${label}: exactly one quote body was sent`, bodies.length === 1, bodies.length);
+    verdict(`${label}: the US end is attested as US`, body?.origin?.country === 'US', body?.origin);
+    verdict(
+      `${label}: the Canadian end is attested as CA`,
+      body?.destination?.country === 'CA',
+      body?.destination,
+    );
+    verdict(
+      `${label}: neither end is a directory id — the search reached beyond the directory`,
+      typeof body?.origin?.position?.lat === 'number' &&
+        typeof body?.destination?.position?.lat === 'number',
+      { o: body?.origin?.position, d: body?.destination?.position },
+    );
+  } finally {
+    await context.close();
+  }
+}
+
 /* -------------------------------------------------------------- main */
 
 async function main() {
@@ -913,6 +1319,12 @@ async function main() {
     );
     await probeSiteChrome(browser, REFERENCE).catch((err) =>
       verdict('site-chrome completed', false, String(err).slice(0, 300)),
+    );
+    await probeRegions(browser, REFERENCE).catch((err) =>
+      verdict('regions completed', false, String(err).slice(0, 300)),
+    );
+    await probeRegionClaims(browser, REFERENCE, scenarios[0]).catch((err) =>
+      verdict('region-claims completed', false, String(err).slice(0, 300)),
     );
   } finally {
     await browser.close();
