@@ -93,6 +93,7 @@ import { ClockSetup } from './ClockSetup';
 import { DriverNameEntry } from './DriverNameEntry';
 import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
 import { SetupStatus } from './SetupStatus';
+import { SetupSummary } from './SetupSummary';
 import { TruckSummary } from './TruckSummary';
 import { setupStatus } from '@/lib/navigator/setup-status';
 import {
@@ -1315,12 +1316,39 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const [truckTouched, setTruckTouched] = useState(false);
   /** Open the full editor even though a confirmed truck exists. */
   const [editingTruck, setEditingTruck] = useState(false);
+  /*
+   * The driver's own answer about the long setup — `null` until they say
+   * something, so the DEFAULT below can differ by who they are.
+   */
+  const [setupOpen, setSetupOpen] = useState<boolean | null>(null);
+  /*
+   * Did this visit BEGIN with a confirmed truck?
+   *
+   * This is the returning-driver test, and it is latched at restore
+   * rather than recomputed, because "is setup complete right now?" is the
+   * wrong question for choosing the default.
+   *
+   * A first-time driver works down the page: name, region, truck,
+   * preferences, clocks. If the screen collapsed the instant they tapped
+   * "This is my truck", the form would vanish under their thumb halfway
+   * through — they would lose their place, and the clocks and preferences
+   * they had not reached yet would disappear without ever being seen.
+   * So the short screen is what a driver ARRIVES to, not something that
+   * happens to them mid-setup. They leave it by tapping "Done with
+   * setup", which is a decision rather than a side effect.
+   */
+  const [arrivedConfigured, setArrivedConfigured] = useState(false);
   useEffect(() => {
     const saved = readTruck();
     if (saved === null) return;
     setTruckProfile(saved.profile);
     setTruckConfirmation(saved.confirmation);
     setTruckTouched(true);
+    // The same fingerprint rule the gate uses: a restored confirmation
+    // counts only while it still matches the restored values.
+    setArrivedConfigured(
+      saved.confirmation.confirmedFingerprint === routingFingerprint(saved.profile),
+    );
   }, []);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
@@ -2239,6 +2267,32 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
             hosUnavailable={region === 'CA'}
             setupStatusSlot={<SetupStatus status={setup} />}
             startBlockedReason={setup.blockedReason}
+            /*
+             * THE COLLAPSE, from the one pure gate. `configured` and
+             * `blockedReason` come out of the same `setupStatus` call, so
+             * the short screen and the Start button cannot disagree about
+             * whether setup is finished — the failure that would matter
+             * here is a compact summary shown over an unconfirmed truck,
+             * and it is unreachable by construction.
+             *
+             * An open truck editor forces the long order: the driver is
+             * mid-edit, and collapsing the panel they are typing in would
+             * be its own defect.
+             */
+            setupConfigured={setup.configured && !editingTruck}
+            setupOpen={setupOpen ?? !arrivedConfigured}
+            onSetupOpen={setSetupOpen}
+            setupSummarySlot={
+              <SetupSummary
+                status={setup}
+                profile={truckProfile}
+                prefs={routePrefs}
+                driverName={firstName}
+                metric={metric}
+                onEditTruck={() => setEditingTruck(true)}
+                onOpenSetup={() => setSetupOpen(true)}
+              />
+            }
             driverSlot={
               <DriverNameEntry
                 firstName={firstName}

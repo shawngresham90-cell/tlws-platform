@@ -19,6 +19,7 @@ import * as fs from 'node:fs';
 const LOCK = 'src/lib/navigator/safety-lock.ts';
 const PREFS = 'src/lib/navigator/route-preferences.ts';
 const GATE = 'src/lib/navigator/actions.ts';
+const SETUP = 'src/lib/navigator/setup-status.ts';
 
 /**
  * Each mutation names the DEFECT it simulates — a real way this could
@@ -91,6 +92,20 @@ const MUTATIONS = [
     file: PREFS,
     from: '  return ROUTE_PREFERENCE_SPECS.map((s) => (prefs[s.key] ? s.onLabel : s.offLabel)).join(\' · \');',
     to: "  return ROUTE_PREFERENCE_SPECS.filter((s) => prefs[s.key]).map((s) => s.onLabel).join(' · ');",
+    mustFail: 'navigator-fast-start',
+  },
+  {
+    name: 'the screen collapses over an unconfirmed truck',
+    file: SETUP,
+    from: '  const configured = REQUIRED_ITEMS.filter((k) => k !== \'destination\').every(\n    (k) => items.find((i) => i.key === k)?.state === \'done\',\n  );',
+    to: '  const configured = true;',
+    mustFail: 'navigator-fast-start',
+  },
+  {
+    name: 'the blank-clocks warning hides until a destination is chosen',
+    file: SETUP,
+    from: '      configured && input.clocks === \'unset\' ? CLOCKS_UNAVAILABLE_WARNING : null,',
+    to: "      blockedReason === null && input.clocks === 'unset' ? CLOCKS_UNAVAILABLE_WARNING : null,",
     mustFail: 'navigator-fast-start',
   },
   {

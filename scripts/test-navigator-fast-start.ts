@@ -51,6 +51,13 @@ import {
   type EditableProfile,
 } from '@/lib/navigator/truck-profile';
 import { formatDimension } from '@/lib/navigator/format-units';
+import {
+  CLOCKS_UNAVAILABLE_WARNING,
+  START_NEEDS_DESTINATION,
+  START_NEEDS_TRUCK,
+  setupStatus,
+  type SetupStatus,
+} from '@/lib/navigator/setup-status';
 import type { PositionState } from '@/lib/navigator/types';
 
 let passed = 0;
@@ -63,6 +70,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
   }
 }
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
+const itemState = (s: SetupStatus, key: string) => s.items.find((i) => i.key === key)?.state;
 
 /* ============ a position, as the gated GPS reports one ============== */
 
@@ -465,15 +473,97 @@ function settle(lock: ReturnType<typeof createSafetyLock>, mph: number, fromMs: 
 
 /* ============ 17. clocks stay optional ============================== */
 {
-  const controls = read('src/components/navigator/PilotTripControls.tsx');
+  /*
+   * Run through the REAL gate rather than grepping the components for
+   * the word "startBlockedReason": the claim is that blank clocks cost a
+   * driver HOS guidance and nothing else, and only the gate can say so.
+   */
+  const ready = {
+    driverName: null,
+    truckGate: 'ready',
+    destinationPicked: true,
+  } as const;
+
+  const blank = setupStatus({ ...ready, clocks: 'unset' });
+  check('clocks: blank clocks do NOT block Start', blank.canStart && blank.blockedReason === null);
   check(
-    'clocks: Start is blocked by a named reason, not by the clocks',
-    controls.includes('startBlockedReason'),
+    'clocks: ...and the cost is stated in words, not implied by silence',
+    blank.clocksWarning === CLOCKS_UNAVAILABLE_WARNING,
   );
-  const screen = read('src/components/navigator/DrivingScreen.tsx');
+  check('clocks: they are listed as optional, never required', itemState(blank, 'clocks') === 'optional');
+
+  const set = setupStatus({ ...ready, clocks: 'set' });
+  check('clocks: entered clocks retire the warning', set.clocksWarning === null);
+
+  const canada = setupStatus({ ...ready, clocks: 'unsupported' });
+  check('clocks: Canada still starts trips', canada.canStart);
   check(
-    'clocks: the HOS warning is shown rather than the trip being refused',
-    screen.includes('hosUnavailable'),
+    'clocks: ...and says the calculation is unavailable rather than guessing one',
+    itemState(canada, 'clocks') === 'unsupported' &&
+      (canada.items.find((i) => i.key === 'clocks')?.value ?? '').includes('Not calculated'),
+  );
+
+  // No clock state anywhere makes the trip refuse.
+  check(
+    'clocks: no clock state can block Start on its own',
+    (['set', 'unset', 'unsupported'] as const).every((c) => setupStatus({ ...ready, clocks: c }).canStart),
+  );
+}
+
+/* ====== 22/23/24. the parked screen collapses for a returning driver = */
+{
+  /*
+   * The pilot's actual complaint, as a gate: "there is too much setup
+   * before starting". `configured` is what lets the screen put the
+   * destination and Start Route above everything else, so what it will
+   * and will not collapse over is the safety-relevant part.
+   */
+  const withTruck = (truckGate: 'invalid' | 'unconfirmed' | 'ready') =>
+    setupStatus({ driverName: null, truckGate, clocks: 'unset', destinationPicked: false });
+
+  check('collapse: a confirmed truck settles the setup', withTruck('ready').configured);
+  check(
+    'collapse: an UNCONFIRMED truck never does — the long screen stays',
+    !withTruck('unconfirmed').configured,
+  );
+  check(
+    'collapse: an INVALID truck never does either',
+    !withTruck('invalid').configured,
+  );
+
+  // The optional items are genuinely optional: declining them must not
+  // sentence a driver to the long screen forever.
+  const noName = setupStatus({
+    driverName: null,
+    truckGate: 'ready',
+    clocks: 'unset',
+    destinationPicked: false,
+  });
+  check('collapse: no driver name does not hold the screen open', noName.configured);
+  check('collapse: no clocks does not hold the screen open', noName.configured);
+
+  // ...but the consequence is NOT collapsed away with them. This is the
+  // fact that makes the short screen honest: the moment it is allowed,
+  // the warning is already showing.
+  check(
+    'collapse: the HOS warning is live the moment the screen may collapse',
+    noName.clocksWarning === CLOCKS_UNAVAILABLE_WARNING,
+  );
+  check(
+    'collapse: ...including BEFORE a destination is chosen',
+    noName.configured && !noName.canStart && noName.clocksWarning !== null,
+  );
+
+  // Collapsing is independent of the destination — that is the whole
+  // point. A driver who has not picked one yet still gets the short
+  // screen, and is told the one thing left to do.
+  check(
+    'collapse: settled setup + no destination still collapses',
+    withTruck('ready').configured && withTruck('ready').blockedReason === START_NEEDS_DESTINATION,
+  );
+  check(
+    'collapse: an unconfirmed truck is named first, above the destination',
+    withTruck('unconfirmed').blockedReason === START_NEEDS_TRUCK,
   );
 }
 

@@ -62,6 +62,25 @@ export type SetupStatus = {
   blockedReason: string | null;
   /** Shown when Start IS available but the clocks are blank. */
   clocksWarning: string | null;
+  /**
+   * Everything the driver can settle IN ADVANCE is settled, so the only
+   * thing left is where they are going.
+   *
+   * WHY IT IS SEPARATE FROM `canStart`. `canStart` also requires a
+   * destination, which changes every single trip; this asks the
+   * different question "is there any setup left to do?" — and the answer
+   * is what lets the parked screen collapse the setup stack and put the
+   * destination and Start Route at the top.
+   *
+   * IT IS NOT "everything is filled in". The driver's name and the
+   * clocks are genuinely optional and never hold this back — otherwise a
+   * driver who declines to enter clocks would be punished with the long
+   * screen forever, which is the complaint this milestone exists to fix.
+   * What the collapse must never do is HIDE the consequence: when the
+   * clocks are unset, `clocksWarning` still says HOS guidance is
+   * unavailable, and the compact summary is required to show it.
+   */
+  configured: boolean;
 };
 
 export const CLOCKS_UNAVAILABLE_WARNING = 'HOS guidance unavailable — clocks not set.';
@@ -125,11 +144,29 @@ export function setupStatus(input: SetupInput): SetupStatus {
           ? START_NEEDS_DESTINATION
           : null;
 
+  /*
+   * Configured means every REQUIRED item except the destination is done.
+   * Derived from the same REQUIRED_ITEMS list the gate uses, so adding a
+   * future required item cannot let the screen collapse over it.
+   */
+  const configured = REQUIRED_ITEMS.filter((k) => k !== 'destination').every(
+    (k) => items.find((i) => i.key === k)?.state === 'done',
+  );
+
   return {
     items,
     canStart: blockedReason === null,
     blockedReason,
     clocksWarning:
-      blockedReason === null && input.clocks === 'unset' ? CLOCKS_UNAVAILABLE_WARNING : null,
+      /*
+       * Tied to the CONFIGURED state, not to `canStart`. The warning used
+       * to appear only once a destination was also chosen, which meant a
+       * driver collapsing their setup could see the compact summary
+       * before ever being told their clocks were blank. The consequence
+       * has to be visible wherever the setup is, so it is computed from
+       * the same fact that allows the collapse.
+       */
+      configured && input.clocks === 'unset' ? CLOCKS_UNAVAILABLE_WARNING : null,
+    configured,
   };
 }
