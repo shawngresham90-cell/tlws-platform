@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
-import { Container, Section, Eyebrow } from '@/components/ui';
-import { Breadcrumbs } from '@/components/kc/Breadcrumbs';
+import { Section } from '@/components/ui';
 import { CategoryNav } from '@/components/kc/CategoryNav';
+import { CategoryHero } from '@/components/kc/CategoryHero';
 import { ArticleCard } from '@/components/kc/ArticleCard';
 import { Pagination } from '@/components/kc/Pagination';
-import { SearchBox } from '@/components/kc/SearchBox';
 import { KcNextSteps } from '@/components/kc/KcNextSteps';
 import { getCategories, getCategoryBySlug, getCategoryArticles } from '@/lib/kc/queries';
 import { PAGE_SIZE } from '@/lib/kc/types';
@@ -67,25 +66,7 @@ export default async function CategoryPage({
           { name: cat.name, path: `/knowledge/${cat.slug}` },
         ])}
       />
-      <div className="border-b border-line bg-asphalt py-14 sm:py-16">
-        <Container>
-          <Breadcrumbs
-            crumbs={[
-              { name: 'Home', href: '/' },
-              { name: 'Knowledge Center', href: '/knowledge' },
-              { name: cat.name },
-            ]}
-          />
-          <Eyebrow>Knowledge Center</Eyebrow>
-          <h1 className="display-hero max-w-3xl text-4xl sm:text-5xl">{cat.name}</h1>
-          {cat.description && (
-            <p className="mt-4 max-w-2xl text-lg text-muted">{cat.description}</p>
-          )}
-          <div className="mt-8">
-            <SearchBox />
-          </div>
-        </Container>
-      </div>
+      <CategoryHero slug={cat.slug} name={cat.name} description={cat.description} />
 
       <Section>
         <CategoryNav categories={categories} activeSlug={cat.slug} />
