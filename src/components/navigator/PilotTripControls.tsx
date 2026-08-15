@@ -109,6 +109,8 @@ export function PilotTripControls({
   driverSlot = null,
   setupStatusSlot = null,
   clocksPanel = null,
+  prefsPanel = null,
+  routeAvoid = [],
   startBlockedReason = null,
   regionPanel = null,
   metric = false,
@@ -196,6 +198,14 @@ export function PilotTripControls({
   setupStatusSlot?: ReactNode;
   /** Current clocks. Wired in the clock milestone; null renders nothing. */
   clocksPanel?: ReactNode;
+  /** The saved route-preferences summary/editor. */
+  prefsPanel?: ReactNode;
+  /**
+   * The avoidances the driver's SAVED PREFERENCES produce, already
+   * whitelisted. Kept separate from the truck profile so a preference is
+   * never a truck edit — see `route-preferences.ts`.
+   */
+  routeAvoid?: readonly string[];
   /**
    * The exact missing setup item, or null when Start is available. It
    * both disables the button and prints beneath it — one value, so the
@@ -406,7 +416,18 @@ export function PilotTripControls({
         // driver's routing values onto the shipped profile so the fields
         // the request does not carry (tank, mpg) keep their shape.
         truck: toTruckProfile(truckProfile),
-        ...(truckProfile.avoid.length > 0 ? { avoid: truckProfile.avoid as RouteAvoidance[] } : {}),
+        /*
+         * THE DRIVER'S SAVED PREFERENCES REACH THE WIRE HERE, merged with
+         * anything the truck profile still carries. `sanitizeAvoidances`
+         * downstream drops everything outside the provider whitelist, so
+         * an unsupported value cannot survive this line — and the screen
+         * only ever offers preferences that are in that whitelist, so
+         * what it shows and what is sent cannot disagree.
+         */
+        ...(() => {
+          const merged = [...new Set([...truckProfile.avoid, ...routeAvoid])];
+          return merged.length > 0 ? { avoid: merged as RouteAvoidance[] } : {};
+        })(),
         departAtMs: now,
       },
       // A searched place still carries no VERIFIED truck entrance — the
@@ -567,6 +588,7 @@ export function PilotTripControls({
           {driverSlot}
           {regionPanel}
           {truckSlot}
+          {prefsPanel}
           {clocksPanel}
 
           {picked !== null ? (

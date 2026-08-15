@@ -72,6 +72,14 @@ import {
 import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
+import { readRoutePrefs, writeRoutePrefs } from './route-prefs-storage';
+import {
+  DEFAULT_ROUTE_PREFERENCES,
+  preferencesChanged,
+  preferencesToAvoid,
+  type RoutePreferences,
+} from '@/lib/navigator/route-preferences';
+import { RoutePreferencesPanel } from './RoutePreferencesPanel';
 import { readClocks, writeClocks } from './clocks-storage';
 import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
 import {
@@ -1317,6 +1325,34 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
   };
+
+  /*
+   * THE DRIVER'S SAVED ROUTE PREFERENCES (Fast Start milestone).
+   *
+   * Their own record, restored on mount like the truck and the clocks —
+   * and deliberately NOT part of the truck, so avoiding a toll is never a
+   * truck edit that costs the driver a re-confirmation.
+   *
+   * An unreadable record returns "avoid nothing", which is exactly what
+   * the provider does with no `avoid[features]` at all, and the summary
+   * then says "Tolls allowed" in as many words rather than staying quiet.
+   */
+  const [routePrefs, setRoutePrefs] = useState<RoutePreferences>(DEFAULT_ROUTE_PREFERENCES);
+  useEffect(() => {
+    setRoutePrefs(readRoutePrefs());
+  }, []);
+  const changeRoutePrefs = (next: RoutePreferences) => {
+    const changed = preferencesChanged(routePrefs, next);
+    setRoutePrefs(next);
+    writeRoutePrefs(next);
+    /*
+     * A PREFERENCE CHANGE IS A ROUTE CHANGE. The provider drew the
+     * existing line around a different set of restrictions, so it is
+     * discarded rather than reused — the same rule a truck edit follows.
+     */
+    if (changed && lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
+    bump();
+  };
   /*
    * THE DRIVER'S CLOCKS. Restored from `clocks-storage`, which returns
    * `unset` for a first-time driver AND for every failure mode — a
@@ -2210,6 +2246,8 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
                 onClear={forgetFirstName}
               />
             }
+            routeAvoid={preferencesToAvoid(routePrefs)}
+            prefsPanel={<RoutePreferencesPanel prefs={routePrefs} onChange={changeRoutePrefs} />}
             clocksPanel={
               <ClockSetup
                 state={clockEntry}
