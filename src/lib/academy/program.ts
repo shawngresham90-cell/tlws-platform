@@ -27,12 +27,21 @@
  *     claimed to remove any CDL restriction — the site has no verified
  *     language supporting that, so the claim is not made.
  */
+import { SITE } from '@/lib/seo/site';
 
-/** Street address, visible as real text on the page — not metadata-only. */
+/**
+ * Street address, visible as real text on the page — not metadata-only.
+ *
+ * `city` and `region` are READ FROM `SITE`, not re-declared. Both files
+ * previously carried their own 'Dalton' / 'GA' literals, which is two
+ * authorities for one fact: correcting the school's city in one place would
+ * have left the other quietly serving the old value to metadata and schema.
+ * The street lives here because it is the school's, not the site's.
+ */
 export const ACADEMY_ADDRESS = {
   street: '1821 Wendell Street',
-  city: 'Dalton',
-  region: 'GA',
+  city: SITE.city,
+  region: SITE.region,
   /** "1821 Wendell Street, Dalton, GA" — the one-line form used in copy. */
   get oneLine() {
     return `${this.street}, ${this.city}, ${this.region}`;
