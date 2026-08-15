@@ -148,7 +148,7 @@ export default function RequirementsPage() {
         eyebrow="Requirements · CDL-A"
         title="What it takes to"
         highlight="start."
-        intro="No surprises. Here’s exactly what you need to begin CDL-A training — and the order to do it in. School-specific enrollment details are marked where they’re still being finalized."
+        intro="No surprises. Here’s exactly what you need to begin CDL-A training — and the order to do it in. Tuition is $3,995 and weekend classes begin October 2026; anything still being finalized is marked."
       >
         <Button href="/academy/apply">Apply to the Academy</Button>
         <Button variant="ghost" href="/academy/curriculum">

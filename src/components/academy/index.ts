@@ -5,3 +5,4 @@ export { AcademyFaq } from './AcademyFaq';
 export { StepList, type Step } from './StepList';
 export { CardGrid, type Card } from './CardGrid';
 export { Placeholder } from './Placeholder';
+export { ProgramComparison } from './ProgramComparison';

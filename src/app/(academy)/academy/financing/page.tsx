@@ -9,12 +9,13 @@ import {
 } from '@/components/academy';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { TUITION } from '@/lib/academy/program';
 import type { KcFaq } from '@/lib/kc/types';
 
 export const metadata = buildMetadata({
   title: 'Tuition & Financing — Ways to Pay for CDL Training | Trucking Life Academy',
   description:
-    'How to fund CDL-A training at Trucking Life Academy in Dalton, GA: workforce grants, VA benefits, employer sponsorship, and community-funded seats. Tuition details announced soon.',
+    'How to fund $3,995 CDL-A training at Trucking Life Academy in Dalton, GA: workforce grants, VA benefits, employer sponsorship, and community-funded seats.',
   path: '/academy/financing',
 });
 
@@ -82,7 +83,7 @@ const ROUTES: Card[] = [
 const FAQS: KcFaq[] = [
   {
     q: 'How much does CDL training cost?',
-    a: 'Exact tuition is being finalized and will be published here soon. We won’t post a number until it’s final and honest.',
+    a: `Tuition is ${TUITION} for either program — the weekend program and the weekday program cost the same.`,
   },
   {
     q: 'Can I get help paying for it?',
@@ -90,7 +91,7 @@ const FAQS: KcFaq[] = [
   },
   {
     q: 'Do you offer financing or payment plans?',
-    a: 'Payment options are being finalized alongside tuition, with the goal of keeping training affordable without predatory lending. Details will be posted here as soon as they’re set.',
+    a: 'Payment options are still being finalized, with the goal of keeping training affordable without predatory lending. Tuition itself is set; details on payment will be posted here as soon as they’re confirmed.',
   },
   {
     q: 'What is “Fund the School”?',
@@ -118,7 +119,7 @@ export default function FinancingPage() {
         eyebrow="Tuition & financing"
         title="Pay for training without the"
         highlight="trap."
-        intro="The industry is full of schools that funnel students into predatory loans. We’re building the opposite. Here are the honest routes to fund your CDL — with exact tuition announced soon."
+        intro="The industry is full of schools that funnel students into predatory loans. We’re building the opposite. Tuition is $3,995 for either program — here are the honest routes to fund it."
       >
         <Button variant="secondary" href="/founders">
           Fund the School
@@ -132,9 +133,8 @@ export default function FinancingPage() {
       <div className="border-b border-line bg-asphalt-800">
         <div className="mx-auto max-w-content px-5 py-6 sm:px-8">
           <p className="text-muted">
-            <span className="font-semibold text-ink">Tuition:</span>{' '}
-            <Placeholder>Pricing to be announced — no numbers are published yet</Placeholder>. We
-            won’t list a figure until it’s final. No payment is processed on this site.
+            <span className="font-semibold text-ink">Tuition: {TUITION}</span> — the same for the
+            weekend and weekday programs. No payment is processed on this site.
           </p>
         </div>
       </div>
