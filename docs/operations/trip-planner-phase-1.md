@@ -224,6 +224,23 @@ correct conclusion is narrow — **the ECCC feed's access method, redistribution
 terms and technical format could not be verified in this block**, not that it is
 unusable.
 
+Re-characterised 2026-08-15: the policy is an **allowlist**, not a general
+block, which is why several unrelated verifications land in the same place.
+
+| Host | Result |
+| --- | --- |
+| `api.github.com` | `200` |
+| `example.com` | CONNECT `403` |
+| `tile.openstreetmap.org` | CONNECT `403` |
+| `deploy-preview-318--…netlify.app` | CONNECT `403` |
+
+One policy therefore explains three separate limitations recorded in §10: the
+unverified ECCC feed, the blank basemap under the map markers, and the fact
+that **the Netlify preview could not be fetched from this environment**. CI
+reported `verify` green and Netlify reported the deploy ready with its redirect
+and header checks passing — but no claim is made here about how the preview
+*renders*, because it was never loaded from here.
+
 Until verification happens, the product says:
 
 > Canadian route weather alerts are not available in this pilot. Check
@@ -459,6 +476,11 @@ clean.
    PR; all are reported as a bench note rather than silently excluded.
 10. **Canadian HOS is still not calculated**, and no US calculation is carried
     across the border — only the weather refusal distinguishes the crossing.
+11. **The Netlify preview was not fetched from this environment.** CI reported
+    `verify` green and Netlify reported the deploy ready with its redirect and
+    header checks passing, but the preview host is outside this environment's
+    egress allowlist (§7), so nothing here claims how it renders. Shawn's own
+    check of the preview remains the gate on merging.
 
 ---
 
