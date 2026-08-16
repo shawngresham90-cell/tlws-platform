@@ -34,6 +34,19 @@ export const PILOT_MAX_AGE_SECONDS = 12 * 60 * 60;
 /** Where an unauthorized visitor is sent. Must stay outside the gate. */
 export const PILOT_ACCESS_PATH = '/navigator/access';
 
+/**
+ * The account sign-in screen. Lives here beside the passcode path rather
+ * than in access-policy.ts because `isProtectedNavigatorPath` below has to
+ * exclude it, and access-policy imports from this file — putting it there
+ * would make the dependency circular.
+ *
+ * It sits under `/navigator`, which is a protected prefix, so without the
+ * explicit exclusion signing in would redirect to itself forever. That is
+ * the same trap the passcode screen already avoids, and it is worth two
+ * lines of duplication to keep both exclusions visible in one function.
+ */
+export const NAVIGATOR_ACCOUNT_PATH = '/navigator/account';
+
 /** The Navigator entry surface a successful unlock lands on. */
 export const PILOT_DEFAULT_DESTINATION = '/drive';
 
@@ -156,8 +169,10 @@ export async function verifyPilotToken(
 
 /** Does this pathname sit behind the pilot gate? */
 export function isProtectedNavigatorPath(pathname: string): boolean {
-  if (pathname === PILOT_ACCESS_PATH) return false;
-  if (pathname.startsWith(`${PILOT_ACCESS_PATH}/`)) return false;
+  for (const entry of [PILOT_ACCESS_PATH, NAVIGATOR_ACCOUNT_PATH]) {
+    if (pathname === entry) return false;
+    if (pathname.startsWith(`${entry}/`)) return false;
+  }
   const all = [...PROTECTED_NAVIGATOR_PREFIXES, ...PROTECTED_NAVIGATOR_API_PREFIXES];
   return all.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
@@ -187,7 +202,11 @@ export function sanitizeNextPath(candidate: string | undefined | null): string {
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
   if (!allowed) return PILOT_DEFAULT_DESTINATION;
+  // Neither entry screen is a valid destination to be sent BACK to after
+  // getting through it — that is a loop with extra steps.
   if (pathname === PILOT_ACCESS_PATH) return PILOT_DEFAULT_DESTINATION;
+  if (pathname === NAVIGATOR_ACCOUNT_PATH) return PILOT_DEFAULT_DESTINATION;
+  if (pathname.startsWith(`${NAVIGATOR_ACCOUNT_PATH}/`)) return PILOT_DEFAULT_DESTINATION;
   return candidate;
 }
 

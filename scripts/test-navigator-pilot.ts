@@ -885,7 +885,7 @@ async function main() {
   check(
     'fix: and hands the verified verdict to the screen',
     drivePage.includes('navigatorAccessGranted(mode)') &&
-      drivePage.includes('<DrivingScreen authorized={authorized} />'),
+      /<DrivingScreen[^>]*\bauthorized=\{authorized\}/.test(drivePage),
   );
   check(
     'security: the screen never reads the pilot password',

@@ -89,6 +89,65 @@ export function clearVersioned(key: string): void {
 }
 
 /**
+ * Read a record's ENVELOPE, unparsed, for account sync.
+ *
+ * WHY RAW, WHEN EVERY OTHER READ IS SHAPE-CHECKED. Sync moves records
+ * between a device and an account; it does not interpret them. Handing it
+ * a parsed value would mean re-serializing on the way out, and the four
+ * records' shapes would then be defined twice — once in the typed reader
+ * and once in whatever sync reassembled. They would drift, and the drift
+ * would show up as a field silently missing from the copy on a driver's
+ * second phone.
+ *
+ * So sync carries the envelope through untouched, and PARSING STAYS WHERE
+ * IT WAS: a downloaded record is written back with `writeRawVersioned`
+ * and then read by the same typed reader as always, which re-applies
+ * every rule — the truck's confirmation fingerprint, the clocks'
+ * range re-validation, the strict booleans. A hostile or corrupt cloud
+ * payload therefore gets exactly the same scrutiny as a hostile or
+ * corrupt local one, because it goes through the same door.
+ *
+ * Returns null for a missing key, unreadable storage, bad JSON, a
+ * non-object, or a version mismatch — the same "treated as absent"
+ * discipline as `readVersioned`.
+ */
+export function readRawVersioned(
+  key: string,
+  version: number,
+): { v: number; body: Record<string, unknown> } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const payload = parsed as Record<string, unknown>;
+    if (payload.v !== version) return null;
+    const { v: _v, ...body } = payload;
+    return { v: version, body };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Write a record's envelope back, for a sync download.
+ *
+ * The version is written from the ARGUMENT, not from the body, so a cloud
+ * payload cannot smuggle a version number into a record and make a later
+ * read accept something this build does not understand. The sync policy
+ * refuses a payload newer than this build supports before it ever reaches
+ * here; this is the second wall behind that one.
+ */
+export function writeRawVersioned(
+  key: string,
+  version: number,
+  body: Record<string, unknown>,
+): void {
+  writeVersioned(key, version, body);
+}
+
+/**
  * Read a record that an earlier build wrote to sessionStorage, so a
  * driver mid-pilot does not lose what they already verified when this
  * change ships. Read-only and one-way: the caller re-writes it through

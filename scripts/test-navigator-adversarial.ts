@@ -514,7 +514,22 @@ const HOSTILE: readonly [string, string][] = Object.freeze([
     check(`${name} API: has a handler to inspect`, handlerAt >= 0);
     const code = whole.slice(handlerAt < 0 ? 0 : handlerAt);
     const flagAt = code.indexOf("process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED !== 'true'");
-    const authAt = code.indexOf('await requestHasPilotAccess(req)');
+    /*
+     * THE AUTHORIZATION POINT MOVED, THE ORDERING CLAIM DID NOT.
+     *
+     * Both handlers used to inline their own gate, and both inlined the same
+     * omission — neither passed `signedIn`, so account mode refused every
+     * driver. A rail duplicated in two files is a rail that can be half-fixed,
+     * so the gate now lives once in `metered-gate.ts` and the handlers await
+     * it. The anchor is therefore the gate call rather than the pilot-token
+     * check it now contains.
+     *
+     * This is not a weaker claim. The handler-level ordering below is
+     * unchanged, and the gate's INTERNAL ordering — authenticate, refuse,
+     * then reserve — is pinned separately underneath, which the previous
+     * assertion could not see at all.
+     */
+    const authAt = code.indexOf('await meteredGate(');
     const keyAt = code.indexOf('process.env.HERE_API_KEY');
     // The two endpoints reach the limiter differently — one calls it
     // directly, the other through the shared guarded-parse helper. Both
@@ -540,7 +555,64 @@ const HOSTILE: readonly [string, string][] = Object.freeze([
     );
     check(`${name} API: no error path returns a URL`, !/message:.*https?:\/\//.test(src));
     check(`${name} API: the key is never echoed`, !/apiKey.*(?:message|json\()/i.test(src));
+    check(
+      `${name} API: the gate is awaited and its refusal returned unchanged`,
+      /const gate = await meteredGate\(\{[\s\S]{0,120}?\}\);\s*\n\s*if \(!gate\.ok\) return gate\.response;/.test(
+        code,
+      ),
+    );
   }
+
+  /*
+   * THE GATE'S OWN ORDERING. Everything after the authorization step either
+   * costs something or reveals something, so each of them must come after it:
+   * a limiter token spent by an anonymous caller is one a real driver no
+   * longer has, a reserved unit is money, and the route endpoint's distinct
+   * "provider key is not configured for this deploy context" 503 is a true
+   * statement about the infrastructure that a stranger may not have.
+   */
+  const GATE = readFileSync('src/lib/navigator-api/metered-gate.ts', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  const gateBody = GATE.slice(GATE.search(/export async function meteredGate\(/));
+  const verifyAt = gateBody.indexOf('await accountUserId()');
+  const refuseAt = gateBody.indexOf("verdict === 'unauthorized'");
+  const publicBudgetAt = gateBody.indexOf('publicBudget.spend(');
+  const reserveAt = gateBody.indexOf('await reserveProviderUnits(');
+  check('gate: the session is verified server-side before any verdict', verifyAt >= 0);
+  {
+    /*
+     * Comments stripped: this file EXPLAINS at length why getSession() is not
+     * used, and a check that trips over its own rationale would push the next
+     * author to delete the explanation rather than keep the rule.
+     */
+    const session = readFileSync('src/lib/navigator-api/account-session.ts', 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^\s*\/\/.*$/gm, ' ');
+    check(
+      'gate: the session is verified with getUser(), never getSession()',
+      /getUser\(\)/.test(session) && !/getSession\(/.test(session),
+    );
+  }
+  check(
+    'gate: an unauthorized caller is refused before the all-callers ceiling',
+    refuseAt >= 0 && publicBudgetAt > refuseAt,
+    `${refuseAt}/${publicBudgetAt}`,
+  );
+  check(
+    'gate: an unauthorized caller is refused before a budget unit is reserved',
+    refuseAt >= 0 && reserveAt > refuseAt,
+    `${refuseAt}/${reserveAt}`,
+  );
+  check(
+    'gate: the verified session is what feeds signedIn — never a caller value',
+    /signedIn: userId !== null/.test(gateBody) &&
+      !/signedIn:\s*(?:true|req|body|input\.)/.test(gateBody),
+  );
+  check(
+    'gate: the reservation is attributed to the verified id, not a parameter',
+    /userId,/.test(gateBody) && !/userId:\s*(?:req|body|params|searchParams)/.test(gateBody),
+  );
 }
 
 console.log(`navigator-adversarial: ${passed} passed, ${failed} failed`);

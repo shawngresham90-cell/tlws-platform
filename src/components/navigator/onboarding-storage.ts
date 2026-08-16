@@ -23,7 +23,7 @@ import { clearVersioned, readVersioned, writeVersioned } from './versioned-stora
  */
 
 export const ONBOARDING_KEY = 'tlws-navigator-onboarding-v1';
-const ONBOARDING_VERSION = 1;
+export const ONBOARDING_VERSION = 1;
 
 function shapeSeen(payload: Record<string, unknown>): { seen: true } | null {
   // Strictly `true`. Anything else — a string, a 1, a missing field — is

@@ -2,9 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createHereRoutingPort, type HereRouteOutcome } from '@/lib/trip-planner/here-routing';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
-import { requestHasPilotAccess } from '@/lib/navigator-api/pilot-access';
-import { navigatorAccessMode, navigatorApiAccessVerdict } from '@/lib/navigator-api/access-policy';
-import { PUBLIC_BUDGET_MESSAGE, publicBudget } from '@/lib/navigator-api/public-budget';
+import { meteredGate } from '@/lib/navigator-api/metered-gate';
 import { errorJson, guardedParseWithLimiter } from '@/lib/trip-planner/api-util';
 import {
   navigatorRouteRequestSchema,
@@ -95,32 +93,21 @@ export async function POST(req: NextRequest) {
     return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
   }
 
-  // Rail 1a — access gate. Ordered AFTER the flag so a disabled deploy keeps
-  // answering 404 (the route does not exist) rather than 401 (it exists,
-  // guess the password), and BEFORE the limiter and provider budget so an
-  // unauthorized caller can neither spend a token nor probe configuration.
-  const mode = navigatorAccessMode();
-  const accessVerdict = navigatorApiAccessVerdict({
-    flagEnabled: true, // already established above
-    mode,
-    // Skipped entirely in public mode: there is no cookie to verify, and
-    // the HMAC is not free.
-    tokenValid: mode === 'pilot' ? await requestHasPilotAccess(req) : false,
-  });
-  if (accessVerdict === 'not-found') {
-    return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
-  }
-  if (accessVerdict === 'unauthorized') {
-    return errorJson(401, 'pilot-access-required', 'Navigator pilot access is required.');
-  }
-
-  // Rail 1a′ — the ceiling that does not care how many IPs the traffic came
-  // from. Only consulted in public mode, where the passcode is no longer
-  // standing between the open internet and a metered provider. The per-IP
-  // limiter below still runs; this one bounds the total.
-  if (mode === 'public' && !publicBudget.spend('route')) {
-    return errorJson(429, 'public-beta-limit', PUBLIC_BUDGET_MESSAGE);
-  }
+  // Rail 1a — the shared metered gate: authenticate, refuse, then reserve.
+  //
+  // Ordered AFTER the flag so a disabled deploy keeps answering 404 (the route
+  // does not exist) rather than 401 (it exists, guess the password), and
+  // BEFORE the configuration probe, the limiter and the provider call so an
+  // unauthorized caller can neither spend a token, nor reserve a budget unit,
+  // nor learn whether this deploy has a provider key.
+  //
+  // In account mode the gate verifies the Supabase session SERVER-SIDE with
+  // getUser() — a page gate is not evidence, and the page is not what spends
+  // money. The whole order lives in metered-gate.ts so it cannot be half-fixed
+  // in one endpoint and left in the other, which is exactly how the missing
+  // `signedIn` flag came to be duplicated in both.
+  const gate = await meteredGate({ req, endpoint: 'navigator.route' });
+  if (!gate.ok) return gate.response;
 
   // Rail 1b — configuration honesty: a deploy context without the HERE
   // key (e.g. an env var scoped to Production only, or to builds but not

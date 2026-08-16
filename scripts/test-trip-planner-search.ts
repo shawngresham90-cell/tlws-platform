@@ -89,9 +89,18 @@ const PLANNER_UI = read('src/components/trip-planner/PlanMyDayApp.tsx');
 
 /* ============ what differs is ONLY the access rule ================== */
 {
+  /*
+   * The Navigator's door still requires a credential; the check moved into the
+   * shared metered gate, so this reads both halves. The planner's door must
+   * reach neither — that separation is the entire reason the two exist.
+   */
   check(
-    'the Navigator’s door still requires pilot access',
-    /requestHasPilotAccess/.test(NAV_ROUTE),
+    'the Navigator’s door still goes through the metered gate',
+    /await meteredGate\(/.test(NAV_ROUTE),
+  );
+  check(
+    'that gate still requires pilot access in pilot mode',
+    /requestHasPilotAccess/.test(read('src/lib/navigator-api/metered-gate.ts')),
   );
   /*
    * The planner's door must NOT require it — that is the entire reason it

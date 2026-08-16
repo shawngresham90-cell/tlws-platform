@@ -33,7 +33,7 @@ import { clearVersioned, readVersioned, writeVersioned } from './versioned-stora
  */
 
 export const CLOCKS_KEY = 'tlws-navigator-clocks-v1';
-const CLOCKS_VERSION = 1;
+export const CLOCKS_VERSION = 1;
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
