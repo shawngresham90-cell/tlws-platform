@@ -66,6 +66,40 @@ declare they are a passenger.
 
 ## 2. Every metered endpoint must check the session server-side
 
+> ### 🐞 A DEFECT FOUND WHILE VERIFYING THIS, 2026-08-16
+>
+> **Neither metered endpoint passes `signedIn` to `navigatorApiAccessVerdict`.**
+> Both call it with `flagEnabled`, `mode` and `tokenValid` only:
+>
+> ```ts
+> const accessVerdict = navigatorApiAccessVerdict({
+>   flagEnabled: true,
+>   mode,
+>   tokenValid: mode === 'pilot' ? await requestHasPilotAccess(req) : false,
+> });
+> ```
+>
+> In account mode the verdict function reads `input.signedIn === true`, which
+> is `undefined`, so it returns `'unauthorized'` **unconditionally** — for a
+> legitimately signed-in driver as much as for an anonymous script.
+>
+> **This fails CLOSED, so it is not a security hole.** An anonymous caller is
+> refused, which is the required behaviour. But it means account mode is
+> functionally broken above the page layer: a signed-in driver reaches
+> `/drive` and then cannot search a destination or plan a route, because both
+> endpoints 401.
+>
+> It is also the exact reason the brief's instruction matters — the page gate
+> passed while the API gate did not, and only reading the endpoints revealed
+> it. A page-level test would have shown account mode working.
+>
+> **The fix is not just passing the flag.** These are Node route handlers, so
+> they must verify the session server-side against Supabase (`getUser()`, not
+> `getSession()` — the latter trusts what it decodes), and that verification
+> has to happen before any limiter token, provider budget or configuration
+> probe, exactly as the existing rails are ordered.
+
+
 Audit and then prove, endpoint by endpoint:
 
 | Endpoint | Must verify |
