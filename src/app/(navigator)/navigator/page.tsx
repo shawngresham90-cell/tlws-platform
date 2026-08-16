@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation';
 import { Container, Eyebrow, Section } from '@/components/ui';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { NavigatorStatus } from '@/components/navigator/NavigatorStatus';
+import { PublicBetaBadge, PublicBetaNotice } from '@/components/navigator/PublicBeta';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { requirePilotAccess } from '@/lib/navigator-api/pilot-session';
+import { requireNavigatorAccess } from '@/lib/navigator-api/pilot-session';
+import { navigatorAccessMode } from '@/lib/navigator-api/access-policy';
 
 /**
  * Navigator Phase 1 surface: position display only — no guidance, no map,
@@ -30,7 +32,8 @@ export const metadata = buildMetadata({
 
 export default async function NavigatorPreviewPage() {
   if (!ENABLED) notFound();
-  await requirePilotAccess('/navigator');
+  await requireNavigatorAccess('/navigator');
+  const mode = navigatorAccessMode();
   return (
     <Section>
       {/* Width is narrowed by an inner element: Container hardcodes
@@ -39,13 +42,17 @@ export default async function NavigatorPreviewPage() {
       <Container>
         <div className="max-w-2xl space-y-6">
           <div>
-            <Eyebrow>Navigator preview</Eyebrow>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Eyebrow>Navigator preview</Eyebrow>
+              {mode === 'public' && <PublicBetaBadge />}
+            </div>
             <h1 className="font-display text-3xl uppercase text-ink">Position</h1>
           </div>
           <p className="text-ink/80">
             This is the Navigator foundation, not turn-by-turn navigation: it does not give
             directions, and like the rest of this site it never provides offline truck routing.
           </p>
+          {mode === 'public' && <PublicBetaNotice />}
           <GpsProvider>
             <NavigatorStatus />
           </GpsProvider>

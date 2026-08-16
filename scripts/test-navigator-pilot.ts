@@ -880,11 +880,11 @@ async function main() {
   );
   check(
     'fix: the /drive page still enforces the gate server-side',
-    drivePage.includes("requirePilotAccess('/drive')"),
+    drivePage.includes("requireNavigatorAccess('/drive')"),
   );
   check(
     'fix: and hands the verified verdict to the screen',
-    drivePage.includes('isPilotAuthorized()') &&
+    drivePage.includes('navigatorAccessGranted(mode)') &&
       drivePage.includes('<DrivingScreen authorized={authorized} />'),
   );
   check(

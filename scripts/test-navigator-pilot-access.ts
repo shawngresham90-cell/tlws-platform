@@ -41,13 +41,38 @@ import {
   isNavigatorApiPath,
   isProtectedNavigatorPath,
   issuePilotToken,
-  navigatorGateDecision,
   pilotConfigured,
   requestHasPilotAccess,
   sanitizeNextPath,
   verifyPilotPassword,
   verifyPilotToken,
 } from '@/lib/navigator-api/pilot-access';
+import { navigatorAccessDecision } from '@/lib/navigator-api/access-policy';
+
+/**
+ * The pilot gate, expressed through the policy that replaced it.
+ *
+ * Every assertion below was written against `navigatorGateDecision`, which
+ * asked only "did you type the password?". That function is gone; public
+ * beta needs three answers, not one. Its behaviour is not gone — it is
+ * `navigatorAccessDecision` with `mode: 'pilot'`, and running the original
+ * cases through this adapter is what proves the replacement subsumes the
+ * original rather than merely resembling it.
+ */
+const pilotGate = (i: {
+  pathname: string;
+  flagEnabled: boolean;
+  configured: boolean;
+  tokenValid: boolean;
+}) =>
+  navigatorAccessDecision({
+    pathname: i.pathname,
+    flagEnabled: i.flagEnabled,
+    mode: 'pilot',
+    pilotConfigured: i.configured,
+    tokenValid: i.tokenValid,
+    edgeDeferral: true,
+  });
 import { NextRequest } from 'next/server';
 import { middleware } from '@/middleware';
 import { Hero } from '@/components/sections/Hero';
@@ -246,7 +271,7 @@ async function main() {
     check(`8: ${path} is behind the gate`, isProtectedNavigatorPath(path));
     check(
       `9: ${path} challenges an unauthorized visitor`,
-      navigatorGateDecision({
+      pilotGate({
         pathname: path,
         flagEnabled: true,
         configured: true,
@@ -255,7 +280,7 @@ async function main() {
     );
     check(
       `10: ${path} admits an authorized visitor`,
-      navigatorGateDecision({
+      pilotGate({
         pathname: path,
         flagEnabled: true,
         configured: true,
@@ -271,7 +296,7 @@ async function main() {
     '8y: unrelated pages are untouched',
     ['/', '/directory/parking', '/tools/hos-calculator', '/admin'].every(
       (p) =>
-        navigatorGateDecision({
+        pilotGate({
           pathname: p,
           flagEnabled: true,
           configured: true,
@@ -283,7 +308,7 @@ async function main() {
     '8z: with the flag OFF the gate stays silent (route 404s; no password prompt advertising it)',
     PROTECTED.every(
       (p) =>
-        navigatorGateDecision({
+        pilotGate({
           pathname: p,
           flagEnabled: false,
           configured: true,
@@ -295,7 +320,7 @@ async function main() {
     '8z2: a layer that cannot see the password DEFERS rather than looping — the Node-side guards still enforce',
     PROTECTED.every(
       (p) =>
-        navigatorGateDecision({
+        pilotGate({
           pathname: p,
           flagEnabled: true,
           configured: false,
@@ -305,7 +330,7 @@ async function main() {
   );
   check(
     '8z3: …and it defers even for a visitor who DOES hold a valid cookie (no bounce loop)',
-    navigatorGateDecision({
+    pilotGate({
       pathname: '/drive',
       flagEnabled: true,
       configured: false,
@@ -620,7 +645,7 @@ async function main() {
   const driveBody = drivePageSrc.slice(drivePageSrc.indexOf('export default async function'));
   check(
     '19e: the flag is checked BEFORE the pilot gate on /drive',
-    driveBody.indexOf('notFound()') < driveBody.indexOf('requirePilotAccess'),
+    driveBody.indexOf('notFound()') < driveBody.indexOf('requireNavigatorAccess'),
   );
   check(
     '19f: the flag is checked BEFORE the pilot gate in the route API',
@@ -644,13 +669,15 @@ async function main() {
   );
   check(
     '19k: pages carry their own guard, not just the middleware',
-    /await requirePilotAccess\('\/drive'\)/.test(drivePageSrc) &&
-      /await requirePilotAccess\('\/navigator'\)/.test(navPageSrc),
+    /await requireNavigatorAccess\('\/drive'\)/.test(drivePageSrc) &&
+      /await requireNavigatorAccess\('\/navigator'\)/.test(navPageSrc),
   );
   check(
     '19l: API routes carry their own guard',
-    /if \(!\(await requestHasPilotAccess\(req\)\)\)/.test(routeApiSrc) &&
-      /if \(!\(await requestHasPilotAccess\(req\)\)\)/.test(searchApiSrc),
+    /navigatorApiAccessVerdict\(\{/.test(routeApiSrc) &&
+      /navigatorApiAccessVerdict\(\{/.test(searchApiSrc) &&
+      /requestHasPilotAccess\(req\)/.test(routeApiSrc) &&
+      /requestHasPilotAccess\(req\)/.test(searchApiSrc),
   );
 
   /* ---------------------------------------------------------------- *
@@ -703,12 +730,23 @@ async function main() {
     !accessPageSrc.includes('notFound'),
   );
   check(
-    '19v: an authorized visitor is only forwarded when the runtime is ON',
-    /if \(authorized && runtimeEnabled\) redirect\(next\)/.test(accessPageSrc),
+    '19v: an authorized visitor is only forwarded when the runtime is ON — and not when closed',
+    /if \(authorized && runtimeEnabled && mode !== 'closed'\) redirect\(next\)/.test(accessPageSrc),
+  );
+  /* Public mode must never render the form. The forward is ordered ABOVE the
+     cookie check because in public mode there is no cookie to have. */
+  check(
+    '19v2: public mode forwards off the password screen entirely',
+    /if \(mode === 'public' && runtimeEnabled\) redirect\(next\)/.test(accessPageSrc),
+  );
+  check(
+    '19v3: …and it forwards before the cookie is ever consulted',
+    accessPageSrc.indexOf("if (mode === 'public' && runtimeEnabled) redirect(next)") <
+      accessPageSrc.indexOf('await isPilotAuthorized()'),
   );
   check(
     '19w: with the runtime OFF an authorized visitor is told, not redirected into a 404',
-    accessPageSrc.indexOf('if (authorized && runtimeEnabled) redirect(next)') <
+    accessPageSrc.indexOf("if (authorized && runtimeEnabled && mode !== 'closed') redirect(next)") <
       accessPageSrc.indexOf('if (authorized) {') &&
       accessPageSrc.includes('isn’t running on this deploy'),
   );

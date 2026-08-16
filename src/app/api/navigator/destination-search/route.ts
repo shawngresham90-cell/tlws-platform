@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 import { clientKey, errorJson } from '@/lib/trip-planner/api-util';
 import { RateLimiter } from '@/lib/trip-planner/rate-limit';
 import { requestHasPilotAccess } from '@/lib/navigator-api/pilot-access';
+import { navigatorAccessMode, navigatorApiAccessVerdict } from '@/lib/navigator-api/access-policy';
+import { PUBLIC_BUDGET_MESSAGE, publicBudget } from '@/lib/navigator-api/public-budget';
 import {
   buildDiscoverUrl,
   type SearchCountry,
@@ -44,12 +46,28 @@ export async function GET(req: NextRequest) {
   if (process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED !== 'true') {
     return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
   }
-  // Rail 1c — pilot gate. Ordered AFTER the flag so a disabled deploy keeps
+  // Rail 1c — access gate. Ordered AFTER the flag so a disabled deploy keeps
   // answering 404 (the route does not exist) rather than 401 (it exists,
   // guess the password). Before the limiter and the key check so an
   // unauthorized caller can neither spend a token nor probe configuration.
-  if (!(await requestHasPilotAccess(req))) {
+  const mode = navigatorAccessMode();
+  const verdict = navigatorApiAccessVerdict({
+    flagEnabled: true, // already established above
+    mode,
+    tokenValid: mode === 'pilot' ? await requestHasPilotAccess(req) : false,
+  });
+  if (verdict === 'not-found') {
+    return errorJson(404, 'not-enabled', 'Navigator is not enabled.');
+  }
+  if (verdict === 'unauthorized') {
     return errorJson(401, 'pilot-access-required', 'Navigator pilot access is required.');
+  }
+
+  // Rail 1c′ — the all-callers ceiling. Search is the chattier of the two
+  // endpoints and, unlike routing, has no adapter-level spend cap behind it,
+  // so in public mode this is the only thing bounding its total volume.
+  if (mode === 'public' && !publicBudget.spend('search')) {
+    return errorJson(429, 'public-beta-limit', PUBLIC_BUDGET_MESSAGE);
   }
   const apiKey = process.env.HERE_API_KEY;
   if (!apiKey) {
