@@ -2,7 +2,7 @@
  * The live-database half of the Navigator account work.
  *
  * `npm test` stays hermetic — no network, no database, CI-safe. Everything it
- * can prove about migrations 049–051 it proves by reading them. Three things
+ * can prove about migrations 049–052 it proves by reading them. Three things
  * it cannot prove that way, and they are the three that matter most about a
  * spend guard:
  *

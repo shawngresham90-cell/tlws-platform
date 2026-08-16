@@ -199,7 +199,10 @@ All six, not a majority:
 
 1. Sync wiring complete and tested.
 2. Custom SMTP and authenticated sender domain confirmed.
-3. Migrations `049` and `050` reviewed and applied.
+3. Migrations `049`, `050`, `051` and `052` reviewed and applied, **in that
+   order and never stopping at `051`** — 049–051 alone leave TRUNCATE granted
+   to `authenticated` on both account tables, which RLS does not filter. See
+   `navigator-account-launch-readiness.md` §0.
 4. Terms and Privacy updates reviewed.
 5. Real-phone tests pass.
 6. Centralized usage guard and provider alerts active.
