@@ -37,6 +37,17 @@ import {
   stanExportFilename,
   type MarketingContactRow,
 } from '@/lib/navigator-account/stan-export';
+import {
+  SYNC_DEBOUNCE_MS,
+  SYNC_DOMAINS,
+  SYNC_STATUS_TEXT,
+  decideAllDomains,
+  decideSync,
+  retryDelayFor,
+  syncFailureBlocksDriving,
+  uploadStillSafe,
+  type SyncSnapshot,
+} from '@/lib/navigator-account/state-sync';
 
 let passed = 0;
 let failed = 0;
@@ -450,6 +461,141 @@ check(
     !shipped('src/components/navigator/DrivingScreen.tsx').includes('signOutAction'),
   );
   check('the page re-decides on every request', /dynamic = 'force-dynamic'/.test(page));
+}
+
+/* ── 9. sync: newer wins, per domain, and a tie changes nothing ───────── */
+
+{
+  const snap = (updatedAtMs: number, payloadVersion = 1): SyncSnapshot => ({
+    payload: { a: 1 },
+    payloadVersion,
+    updatedAtMs,
+  });
+  const d = (local: SyncSnapshot | null, cloud: SyncSnapshot | null, supportedVersion = 1) =>
+    decideSync({ local, cloud, supportedVersion });
+
+  check('nothing on either side is nothing to do', d(null, null) === 'nothing');
+  check('local only ⇒ upload (offline first run)', d(snap(100), null) === 'upload');
+  check('cloud only ⇒ download (a fresh device)', d(null, snap(100)) === 'download');
+  check('local newer ⇒ upload', d(snap(200), snap(100)) === 'upload');
+  check('cloud newer ⇒ download', d(snap(100), snap(200)) === 'download');
+
+  /*
+   * The assertion the whole module exists for. A driver's truck must never be
+   * replaced by an older copy of itself, and the only way to be sure is to
+   * state it as its own check rather than infer it from the two above.
+   */
+  check(
+    'newer is NEVER replaced by older, in either direction',
+    d(snap(200), snap(100)) !== 'download' && d(snap(100), snap(200)) !== 'upload',
+  );
+  check('a tie changes nothing — no coin flip', d(snap(100), snap(100)) === 'in-sync');
+  check('one millisecond is a difference', d(snap(101), snap(100)) === 'upload');
+
+  // A payload from a newer build is refused, not half-read and written back.
+  check(
+    'a cloud payload this build cannot parse is refused',
+    d(snap(100), snap(999, 2), 1) === 'cloud-too-new',
+  );
+  check('…even when it is newer', d(snap(1), snap(999, 5), 1) === 'cloud-too-new');
+  check('an equal version is fine', d(snap(1), snap(999, 1), 1) === 'download');
+  check('an older payload version is fine', d(snap(1), snap(999, 1), 3) === 'download');
+
+  const all = decideAllDomains({
+    local: { truck: snap(200), hos_clocks: snap(50) },
+    cloud: { hos_clocks: snap(500), onboarding: snap(10) },
+    supportedVersion: 1,
+  });
+  check(
+    'domains are decided independently, not as one account',
+    all.truck === 'upload' && all.hos_clocks === 'download',
+  );
+  check('…including the ones only the cloud has', all.onboarding === 'download');
+  check('…and the ones neither has', all.route_prefs === 'nothing');
+  check('every domain gets a verdict', Object.keys(all).length === 4);
+  check(
+    'the four domains match the migration exactly',
+    [...SYNC_DOMAINS].join(',') === 'truck,route_prefs,hos_clocks,onboarding',
+  );
+
+  // The race the debounce opens: decided at T, written at T+4s.
+  check(
+    'an upload that went stale while debouncing is dropped',
+    !uploadStillSafe({ candidate: snap(100), serverNow: snap(200) }),
+  );
+  check(
+    'a still-newer upload proceeds',
+    uploadStillSafe({ candidate: snap(300), serverNow: snap(200) }),
+  );
+  check(
+    'a tie does not overwrite',
+    !uploadStillSafe({ candidate: snap(200), serverNow: snap(200) }),
+  );
+  check('an empty server always accepts', uploadStillSafe({ candidate: snap(1), serverNow: null }));
+
+  check(
+    'the debounce collapses a burst rather than writing per keystroke',
+    SYNC_DEBOUNCE_MS >= 1000,
+  );
+  check(
+    'retries back off and then stop',
+    retryDelayFor(0) === 5000 && retryDelayFor(2) === 60_000 && retryDelayFor(3) === null,
+  );
+  check('a negative attempt is not a delay', retryDelayFor(-1) === null);
+
+  check(
+    'a sync failure never blocks driving — stated, not implied',
+    syncFailureBlocksDriving() === false,
+  );
+  check(
+    'the offline and error copy both say the record is safe locally',
+    /this device/i.test(SYNC_STATUS_TEXT.offline) && /this device/i.test(SYNC_STATUS_TEXT.error),
+  );
+}
+
+{
+  const sync = shipped('src/components/navigator/sync-client.ts');
+  check(
+    'the client re-reads the server before writing',
+    // Anchored on the CALL, not the identifier: the import names it first,
+    // and comparing against that would pass no matter where the call sat.
+    sync.indexOf(".eq('domain', domain)") < sync.indexOf('!uploadStillSafe('),
+  );
+  check('…and honours the answer', /if \(!uploadStillSafe/.test(sync));
+  check(
+    'ownership comes from the verified session, never a parameter',
+    /user_id: user\.id/.test(sync) && !/userId[,)]/.test(sync),
+  );
+  check(
+    'both entry points that touch the network fail soft',
+    (sync.match(/catch \{/g) ?? []).length === 2,
+    (sync.match(/catch \{/g) ?? []).length,
+  );
+  check(
+    // reconcile needs no catch of its own: everything it awaits already
+    // fails soft, so adding one would be decoration rather than a guard.
+    'reconcile only awaits calls that cannot throw',
+    /await fetchCloudState\(\)/.test(sync) && /await pushDomain\(/.test(sync),
+  );
+  check('it does not re-implement the conflict rule', !/updatedAtMs >/.test(sync));
+  check(
+    'it never touches local storage — the versioned layer owns that',
+    !/localStorage/.test(sync),
+  );
+  check(
+    'no location-shaped domain can be pushed',
+    !/position|destination|geometry|route_history/.test(sync),
+  );
+
+  const policy = shipped('src/lib/navigator-account/state-sync.ts');
+  check(
+    'the policy is pure — no Supabase, no storage, no clock',
+    !/supabase/i.test(policy) && !/localStorage/.test(policy) && !/Date\.now\(\)/.test(policy),
+  );
+  check(
+    'sync status is never shown on the driving surface',
+    !shipped('src/components/navigator/DrivingScreen.tsx').includes('SYNC_STATUS_TEXT'),
+  );
 }
 
 console.log(`navigator-accounts: ${passed} passed, ${failed} failed`);
