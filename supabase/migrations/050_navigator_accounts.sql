@@ -259,8 +259,34 @@ create policy navigator_state_delete_own on public.navigator_state
 
 -- Least privilege on top of RLS. `authenticated` gets exactly the verbs the
 -- policies above describe; `anon` gets nothing at all on either table.
-revoke all on public.navigator_profiles from anon;
-revoke all on public.navigator_state    from anon;
+--
+-- THE REVOKE MUST NAME `authenticated`, AND FOR A WHILE IT DID NOT.
+--
+-- A `grant` is additive, and on Supabase these tables do not start empty of
+-- privileges. The project bootstrap runs
+--
+--   grant all on all tables in schema public to anon, authenticated, service_role;
+--   alter default privileges in schema public grant all on tables to …;
+--
+-- so every new table in `public` arrives with ALL privileges already held by
+-- `authenticated` — including DELETE, and including TRUNCATE. Granting the
+-- three verbs we wanted therefore added nothing and removed nothing, and the
+-- comment above described an intent the statements did not carry out.
+--
+-- TRUNCATE is the one that matters, because ROW LEVEL SECURITY DOES NOT APPLY
+-- TO IT. Policies filter SELECT, INSERT, UPDATE and DELETE; `truncate` is a
+-- table-level operation checked against the table privilege alone. A signed-in
+-- driver holding TRUNCATE could therefore destroy EVERY driver's profile and
+-- every driver's synced truck, route preferences and clocks in one statement —
+-- while the same driver, going through the policies, cannot read or delete so
+-- much as one other row. Verified on a real PostgreSQL, not reasoned about:
+-- §8k–§8n of `scripts/test-live-postgres.mjs`.
+--
+-- Migration 051 already had this right (`revoke all … from anon, authenticated`).
+-- 050 is brought into line here, and 052 repairs any project where the older
+-- form was already applied.
+revoke all on public.navigator_profiles from anon, authenticated;
+revoke all on public.navigator_state    from anon, authenticated;
 grant select, insert, update on public.navigator_profiles to authenticated;
 grant select, insert, update, delete on public.navigator_state to authenticated;
 

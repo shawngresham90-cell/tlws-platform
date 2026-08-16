@@ -180,10 +180,69 @@ check(
   check('…and the version that pins it', granted[0].version === CONSENT_COPY_VERSION);
 }
 
-check(
-  'the acceptance copy claims only what exists — Privacy, not Terms',
-  /Privacy Policy/.test(CONSENT_COPY.acceptance) && !/Terms/i.test(CONSENT_COPY.acceptance),
-);
+/*
+ * THE RULE HERE HAS NOT BEEN RELAXED — IT HAS BEEN GENERALIZED.
+ *
+ * The previous form asserted `!/Terms/i.test(acceptance)`: the acceptance
+ * sentence must not name a Terms of Service, because there was no such page
+ * and recording agreement to a document that was never shown is not consent.
+ *
+ * That check enforced the conclusion rather than the reason, so it could only
+ * ever be satisfied by never having Terms. The reason is "do not name a
+ * document a driver cannot open", and now that `/terms` exists the honest way
+ * to keep enforcing it is to RESOLVE EVERY DOCUMENT THE SENTENCE NAMES against
+ * the app router, and fail if any of them is missing.
+ *
+ * This is strictly stronger than what it replaces. The old assertion could not
+ * have caught a sentence naming a Privacy Policy that had been deleted; this
+ * one does. It also fails the moment somebody adds "Cookie Policy" or
+ * "Acceptable Use Policy" to the copy without building the page.
+ */
+{
+  const NAMED_DOCUMENTS: ReadonlyArray<readonly [RegExp, string]> = [
+    [/Terms of Service/i, 'src/app/(marketing)/terms/page.tsx'],
+    [/Privacy Policy/i, 'src/app/(marketing)/privacy/page.tsx'],
+    [/SMS Terms/i, 'src/app/(marketing)/sms-terms/page.tsx'],
+    [/Cookie Policy/i, 'src/app/(marketing)/cookies/page.tsx'],
+    [/Acceptable Use/i, 'src/app/(marketing)/acceptable-use/page.tsx'],
+  ];
+
+  const named = NAMED_DOCUMENTS.filter(([re]) => re.test(CONSENT_COPY.acceptance));
+  check('the acceptance copy names at least one document', named.length > 0);
+  for (const [re, page] of named) {
+    check(
+      `…and ${String(re).replace(/[/i]/g, '')} resolves to a real page (${page})`,
+      fs.existsSync(path.join(root, page)),
+    );
+  }
+  check(
+    'the acceptance copy still names the Privacy Policy',
+    /Privacy Policy/.test(CONSENT_COPY.acceptance),
+  );
+
+  /* The form a driver reads and the sentence the evidence row stores must name
+   * the same documents. The label is rendered as links rather than as the
+   * constant, which is what makes drift possible at all — so it is checked. */
+  const form = read('src/components/navigator/AccountForm.tsx');
+  for (const [re] of named) {
+    check(`the signup form shows ${String(re).replace(/[/i]/g, '')} too`, re.test(form));
+  }
+
+  /* Wording and version move together. v1's sentence named Privacy alone; if
+   * this constant ever reads v1 again while naming Terms, an old evidence row
+   * and a new one would claim the same version for different sentences.
+   *
+   * Widened to `string` on purpose. `CONSENT_COPY_VERSION` is a const literal,
+   * so TypeScript can settle the comparison at compile time and rejects it as
+   * having no overlap — which is the compiler proving today's value is right,
+   * not the rule being unnecessary. The check has to survive somebody editing
+   * the constant back, and that edit is exactly when it must fail. */
+  const version: string = CONSENT_COPY_VERSION;
+  check(
+    'naming Terms requires a version past v1',
+    !/Terms of Service/i.test(CONSENT_COPY.acceptance) || version !== 'navigator-account-v1',
+  );
+}
 check(
   'the transactional note separates sign-in mail from marketing',
   /sign-in code/i.test(CONSENT_COPY.transactionalNote) &&
@@ -384,9 +443,20 @@ check(
     'consent booleans are NOT on the profile — consent is evidence',
     !/email_marketing_opt_in/.test(sql) && !/sms_marketing_opt_in/.test(sql),
   );
+  /*
+   * Still nullable, and the reason has changed rather than gone away. It was
+   * nullable because there was no Terms page to accept. It stays nullable
+   * because a profile can exist without one having been recorded — a driver
+   * who signed up under v1, or a row created by an import — and a NOT NULL
+   * here would make those rows unwritable. What changed is that the signup
+   * path now WRITES it, which is asserted separately below.
+   */
+  check('terms acceptance is nullable', /terms_accepted_at timestamptz,/.test(sql));
   check(
-    'terms acceptance is nullable, because there is no Terms page',
-    /terms_accepted_at timestamptz,/.test(sql),
+    '…and the signup path now records it, alongside privacy',
+    /terms_accepted_at: now\.toISOString\(\)/.test(
+      read('src/app/(navigator)/navigator/account/actions.ts'),
+    ),
   );
   check('privacy acceptance is required', /privacy_accepted_at timestamptz not null/.test(sql));
   check(

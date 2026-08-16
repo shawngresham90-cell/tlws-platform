@@ -138,6 +138,15 @@ export function Footer() {
           links. Sponsorship never changes directory rankings. Keep the shiny side up. 🚛
         </p>
         <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+          {/*
+            Terms sits beside the other two because a Terms page nobody can
+            find is a Terms page that does not do its job — and the signup
+            checkbox now names it, so it has to be reachable from outside the
+            Navigator as well as from inside it.
+          */}
+          <Link href="/terms" className="link-inline text-muted hover:text-signal">
+            Terms of Service
+          </Link>
           <Link href="/privacy" className="link-inline text-muted hover:text-signal">
             Privacy Policy
           </Link>

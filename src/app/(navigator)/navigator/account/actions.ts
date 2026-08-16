@@ -228,6 +228,16 @@ export async function verifyCodeAction(
         phone: phone === null ? null : phoneRaw.trim(),
         phone_e164: phone,
         privacy_accepted_at: now.toISOString(),
+        /*
+         * Written now that `/terms` exists and the acceptance sentence names
+         * it. 050 left this column nullable precisely so that adding Terms
+         * later would be a copy change rather than a migration, and this is
+         * that change arriving. One checkbox covers both documents, so the two
+         * timestamps are the same instant by construction — recording them
+         * separately would imply a second act of agreement that never
+         * happened.
+         */
+        terms_accepted_at: now.toISOString(),
         consent_copy_version: CONSENT_COPY_VERSION,
         signup_source: 'navigator',
       },

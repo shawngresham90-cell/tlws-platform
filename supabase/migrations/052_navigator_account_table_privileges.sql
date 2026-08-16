@@ -1,0 +1,112 @@
+-- =========================================================================
+-- 052 — REVOKE THE TABLE PRIVILEGES MIGRATION 050 MEANT TO WITHHOLD
+-- =========================================================================
+--
+-- WHAT WAS WRONG
+--
+-- Migration 050 created `navigator_profiles` and `navigator_state`, enabled
+-- row level security on both, wrote per-driver policies keyed to `auth.uid()`,
+-- and then said:
+--
+--   revoke all on public.navigator_profiles from anon;
+--   revoke all on public.navigator_state    from anon;
+--   grant select, insert, update on public.navigator_profiles to authenticated;
+--   grant select, insert, update, delete on public.navigator_state to authenticated;
+--
+-- The revoke named `anon` only. That is the whole defect, and it is invisible
+-- unless you know what a table in Supabase's `public` schema starts life
+-- holding. The project bootstrap runs:
+--
+--   grant all on all tables in schema public to anon, authenticated, service_role;
+--   alter default privileges in schema public grant all on tables to …;
+--
+-- so a new table arrives with ALL privileges already granted to
+-- `authenticated`. A `grant` is additive: granting the three verbs we wanted
+-- neither added nor removed anything, and `authenticated` kept DELETE,
+-- TRUNCATE, REFERENCES and TRIGGER on both tables.
+--
+-- WHY IT MATTERS — RLS DOES NOT FILTER TRUNCATE
+--
+-- Row level security applies to SELECT, INSERT, UPDATE and DELETE. `truncate`
+-- is a table-level operation authorised by the table privilege alone, and no
+-- policy is consulted. So a signed-in driver — any signed-in driver, holding
+-- nothing but their own verified email — could run
+--
+--   truncate public.navigator_profiles;
+--   truncate public.navigator_state;
+--
+-- and destroy every driver's account profile and every driver's synced truck,
+-- route preferences, HOS clocks and onboarding state. In one statement. While
+-- the same driver, going through the policies, cannot read or delete a single
+-- other person's row.
+--
+-- This was proved on a real PostgreSQL rather than argued from the manual:
+-- `scripts/test-live-postgres.mjs` §8k–§8n insert two drivers, sign in as one,
+-- confirm the read is filtered to their own row and the cross-driver delete
+-- affects nothing, and then confirm the truncate is REFUSED. Before this
+-- migration the truncate succeeded and both tables came back empty.
+--
+-- Migration 051 already did this correctly for the usage tables
+-- (`revoke all … from anon, authenticated`), which is why the same defect does
+-- not exist there, and 049 does the same for the consent tables.
+--
+-- WHY A SEPARATE MIGRATION RATHER THAN ONLY EDITING 050
+--
+-- 050 is fixed too, so a project built from scratch is correct at the moment
+-- the table appears rather than correct one migration later. But an editing
+-- fix reaches only projects that have not run 050 yet. This file is what
+-- repairs a project where the older form was already applied, and it is
+-- idempotent and safe to run in either case: on a corrected project it revokes
+-- privileges that are already absent and re-grants ones already present.
+--
+-- ADDITIVE AND REVERSIBLE. No table, column, policy or function is created,
+-- dropped or altered. Nothing but grants changes, and no row is touched.
+
+-- =========================================================================
+-- 1. THE REPAIR
+-- =========================================================================
+-- Order matters: revoke everything first, then grant back exactly the verbs
+-- the policies in 050 describe. Revoking after granting would undo the grant.
+
+revoke all on public.navigator_profiles from anon, authenticated;
+revoke all on public.navigator_state    from anon, authenticated;
+
+-- `navigator_profiles`: no DELETE. A driver deleting their account goes through
+-- the server-side deletion path, which removes the `auth.users` row and lets
+-- the foreign key cascade; a driver deleting their profile row directly would
+-- strand an account with no profile and break nothing loudly.
+grant select, insert, update on public.navigator_profiles to authenticated;
+
+-- `navigator_state`: DELETE is intended and policy-scoped — a driver clearing
+-- one synced domain from their own account is an ordinary thing to do, and
+-- `navigator_state_delete_own` confines it to their own rows.
+grant select, insert, update, delete on public.navigator_state to authenticated;
+
+-- =========================================================================
+-- 2. THE DEFAULT THAT CAUSED THIS
+-- =========================================================================
+-- The `alter default privileges` line in the Supabase bootstrap is NOT altered
+-- here, deliberately. It is project-wide: changing it would silently change the
+-- privileges of every future table in `public` created by any other feature,
+-- and a Navigator migration is the wrong place for a decision that broad.
+--
+-- The consequence is that the NEXT table added to `public` will arrive with the
+-- same excess privileges unless its own migration revokes them. Every migration
+-- that creates a table in `public` must therefore revoke from BOTH `anon` and
+-- `authenticated` before granting, and that requirement is now asserted
+-- generically — §13p of `scripts/test-live-postgres.mjs` fails if any
+-- Navigator table grants TRUNCATE to either role, whatever the table is called.
+
+-- =========================================================================
+-- ROLLBACK
+-- =========================================================================
+-- Restoring the previous state means restoring a privilege escalation, so this
+-- is written out only for completeness and should not be run:
+--
+--   grant all on public.navigator_profiles to authenticated;
+--   grant all on public.navigator_state    to authenticated;
+--
+-- If this migration ever needs to be undone because it broke something, the
+-- thing that broke is a caller using a verb it was never supposed to have, and
+-- the fix is in that caller. Nothing in this repository reads or writes these
+-- tables as `authenticated` outside the four verbs granted above.
