@@ -166,6 +166,79 @@ contracted allowance.
 
 ---
 
+## 4a. The live-database test
+
+`npm test` is hermetic — no network, no database, CI-safe — and three things
+about migrations 049–051 cannot be proved that way: that the SQL executes at
+all, that two callers racing the last unit cannot both have it, and that RLS
+actually refuses a cross-user read rather than merely being written as though
+it would.
+
+```
+NAVIGATOR_TEST_DATABASE_URL='postgresql://…' npm run test:db
+```
+
+**It skips cleanly** — prints why, exits 0 — when the URL is unset, `psql` is
+absent, or the server does not answer. A skip reports as SKIPPED, never as a
+pass: absent evidence is recorded as absent.
+
+**It refuses to touch anything live.** The connection URL is checked against
+the known project refs *before any connection is opened*, and the target is
+then rejected if `sms_consents`, `leads` or `navigator_profiles` holds rows.
+The script drops and recreates tables; both rails must pass first.
+
+### Results — 2026-08-16, PostgreSQL 16.13, **75 passed, 0 failed**
+
+| What | Result |
+|---|---|
+| 049, 050, 051 execute in order | ✅ all three |
+| Re-applied a second time (idempotency) | ✅ all three no-op cleanly |
+| **Global threshold under real concurrency** | 24 parallel backends, **600 attempts → exactly 100 accepted**, month row 100 |
+| **Per-user limit under real concurrency** | 16 parallel backends, **160 attempts → exactly 15 accepted** |
+| Refused-global undo | per-user units and request count left untouched |
+| Endpoint weights | a weight of 7 consumes 7 units and 1 request; a weight that would cross the ceiling is refused whole |
+| Month rollover | August exhausted, September allows from zero; `2026-13` rejected by the check constraint |
+| Limit-reached / invalid input | zero units, unknown endpoint and a zero threshold all refuse and write nothing |
+| RLS and cross-user isolation | each driver sees only their own row; insert-for-another and re-owning on update both refused |
+| Anonymous access | `anon` cannot read `navigator_state` or `navigator_profiles` at all, and cannot execute the reservation function |
+| Ledger access | neither `anon` nor `authenticated` can read the usage tables or the admin view directly |
+| No PII in usage records | read off the live catalog: no email, phone, name, position, destination, search, route, movement, IP or user-agent column; `user_id` appears only on the per-user table |
+| Location-shaped sync domain | refused by the `navigator_state.domain` check constraint |
+| Cleanup | all fixtures removed; ledger and state tables empty |
+
+### The negative control
+
+A test that cannot fail proves nothing, so the atomic reservation was replaced
+with the naive read-then-write it exists to avoid and the same race re-run:
+
+| Implementation | Attempts | Accepted | Month row | Threshold |
+|---|---|---|---|---|
+| Read-then-write (mutant) | 600 | **120** | **120** | 100 — **overshoot** |
+| Shipped `UPDATE … WHERE units + n <= threshold` | 600 | **100** | **100** | 100 — exact |
+
+The mutant overshoots by 20% under the same load the shipped function holds
+exactly. The race is real, the test detects it, and the shipped SQL is on the
+right side of it.
+
+### What this run does NOT establish
+
+It ran against **PostgreSQL 16.13 in a throwaway local cluster**, not a
+Supabase test project. Stock PostgreSQL has no `auth` schema and none of the
+Supabase roles, so `scripts/sql/supabase-shim.sql` creates a minimal stand-in
+first — the roles, `auth.users`, Supabase's own `auth.uid()` definition,
+`tlws_set_updated_at()`, and Supabase's default table grants. The shim is
+applied **only** when `auth.users` is absent, which on any real Supabase
+project it never is.
+
+So the SQL, the concurrency, the grants and the policy behaviour are proved on
+a real server. What remains unproved is that the real project's managed `auth`
+schema behaves identically, and anything at the PostgREST layer. Supabase runs
+PostgreSQL 17; this was 16. Row-locking semantics under READ COMMITTED are the
+same across both, but the run is not a substitute for gate 5 below — **applying
+049–051 to a disposable Supabase test project is still outstanding.**
+
+---
+
 ## 5. HERE: alerts are not a spending cap
 
 **Do not describe HERE dashboard notifications as a hard cutoff.** An alert
