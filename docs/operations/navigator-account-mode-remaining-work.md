@@ -4,6 +4,26 @@
 surface, so the next one starts from the brief rather than from someone's
 memory of it.**
 
+> ## STATUS: tasks 1, 2 and 3 are done. Tasks 4 and 5 are owner actions.
+>
+> The session that received this handoff completed the three code tasks below.
+> The spec is left standing rather than rewritten, because it is the record of
+> what was asked for and a reader should be able to check the work against it.
+>
+> | Task | State | Where it landed |
+> |---|---|---|
+> | 1. Wire sync into the real save/restore flows | **done** | `account-sync.ts`, `sync-domain-storage.ts`, narrow edits in `DrivingScreen.tsx` / `PilotOnboarding.tsx`; proved in `test-navigator-account-sync` against the mounted screen |
+> | 2. Every metered endpoint checks the session server-side | **done** — the defect below is fixed | `metered-gate.ts`, `account-session.ts`; proved in `test-navigator-metered-endpoints` by calling the real handlers |
+> | 3. The usage guard | **done** | migration `051`, `usage-guard.ts`, `usage-reservation.ts`, `/admin/navigator/usage`; proved in `test-navigator-usage-guard` |
+> | 4. What must not be claimed about HERE | **documented, owner actions open** | `navigator-account-mode-rollout.md` §5 |
+> | 5. Gates before production leaves `pilot` | **3 of 9 done** | checklist in `navigator-account-mode-rollout.md` §3 |
+>
+> **Production remains on `pilot`. `account` is enabled nowhere.**
+>
+> Rollout, rollback, budget configuration and the honest limits of the usage
+> counter are in **`navigator-account-mode-rollout.md`**, which supersedes this
+> file for operational questions.
+
 Production stays on `NAVIGATOR_ACCESS_MODE=pilot` throughout. `public` mode
 is merged code and must not be enabled or tested in production — see
 `navigator-public-beta-cost-audit.md` for why.
@@ -66,7 +86,19 @@ declare they are a passenger.
 
 ## 2. Every metered endpoint must check the session server-side
 
-> ### 🐞 A DEFECT FOUND WHILE VERIFYING THIS, 2026-08-16
+> ### 🐞 A DEFECT FOUND WHILE VERIFYING THIS, 2026-08-16 — **FIXED**
+>
+> **Fixed by moving the gate into `src/lib/navigator-api/metered-gate.ts`,
+> which both handlers now await before anything metered.** The session is
+> verified server-side with `getUser()` — never `getSession()`, which only
+> decodes what the caller's cookie claims — and `signedIn` is fed from that
+> verified result. The gate exists once rather than twice precisely because
+> the defect below was DUPLICATED: a rail copied into two files is a rail
+> that can be half-fixed. Regression-pinned in `test-navigator-metered-endpoints`
+> §2d, which asserts that an omitted `signedIn` is refused rather than read
+> as true.
+>
+> The original report follows, unedited.
 >
 > **Neither metered endpoint passes `signedIn` to `navigatorApiAccessVerdict`.**
 > Both call it with `flagEnabled`, `mode` and `tokenValid` only:

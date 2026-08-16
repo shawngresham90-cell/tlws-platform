@@ -25,7 +25,18 @@ import { PILOT_ONBOARDING } from '@/lib/navigator/pilot-onboarding';
  * re-reading anyway. It never disappears entirely: collapsed, it stays
  * available as a toggle, which is how a driver looks it up later.
  */
-export function PilotOnboarding() {
+export function PilotOnboarding({
+  /*
+   * Told, not discovered. The briefing is the fourth synced domain — a driver
+   * who has read it on one device should not be shown it again on the next —
+   * and the driving screen owns the sync schedule, so it hands down the one
+   * callback rather than this component acquiring a second one.
+   *
+   * Optional and defaulted to a no-op, so every existing caller and every
+   * existing test renders this component unchanged.
+   */
+  onSeenSaved,
+}: { onSeenSaved?: () => void } = {}) {
   /*
    * REMEMBERED ACROSS VISITS (Fast Start milestone).
    *
@@ -51,8 +62,12 @@ export function PilotOnboarding() {
   const dismiss = () => {
     setOpen(false);
     if (!seen) {
+      // Local first, then the nudge — and only when something was actually
+      // written. A driver tapping "Got it" a second time must not queue a
+      // second identical cloud write.
       writeOnboardingSeen();
       setSeen(true);
+      onSeenSaved?.();
     }
   };
 

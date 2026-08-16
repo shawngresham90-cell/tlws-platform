@@ -101,6 +101,8 @@ const drivePageSrc = read('src/app/(navigator)/drive/page.tsx');
 const navPageSrc = read('src/app/(navigator)/navigator/page.tsx');
 const routeApiSrc = read('src/app/api/navigator/route/route.ts');
 const searchApiSrc = read('src/app/api/navigator/destination-search/route.ts');
+/** The shared gate both metered endpoints delegate to. */
+const meteredGateSrc = read('src/lib/navigator-api/metered-gate.ts');
 const parkingMarqueeSrc = read('src/components/sections/TruckParkingMarquee.tsx');
 const parkingSectionSrc = read('src/components/sections/TruckParking.tsx');
 
@@ -647,17 +649,26 @@ async function main() {
     '19e: the flag is checked BEFORE the pilot gate on /drive',
     driveBody.indexOf('notFound()') < driveBody.indexOf('requireNavigatorAccess'),
   );
+  /*
+   * The gate moved into `metered-gate.ts` (both endpoints inlined the same
+   * copy, and the same defect with it), so the ordering anchor is the gate
+   * call rather than the refusal string it now emits. The refusal string
+   * itself is still pinned — in the gate, below at 19l.
+   */
   check(
     '19f: the flag is checked BEFORE the pilot gate in the route API',
-    routeApiSrc.indexOf('not-enabled') < routeApiSrc.indexOf('pilot-access-required'),
+    routeApiSrc.indexOf('not-enabled') >= 0 &&
+      routeApiSrc.indexOf('not-enabled') < routeApiSrc.indexOf('await meteredGate('),
   );
   check(
     '19g: the flag is checked BEFORE the pilot gate in the search API',
-    searchApiSrc.indexOf('not-enabled') < searchApiSrc.indexOf('pilot-access-required'),
+    searchApiSrc.indexOf('not-enabled') >= 0 &&
+      searchApiSrc.indexOf('not-enabled') < searchApiSrc.indexOf('await meteredGate('),
   );
   check(
     '19h: the pilot gate runs BEFORE the rate limiter in the search API',
-    searchApiSrc.indexOf('pilot-access-required') < searchApiSrc.indexOf('searchLimiter.allow'),
+    searchApiSrc.indexOf('await meteredGate(') >= 0 &&
+      searchApiSrc.indexOf('await meteredGate(') < searchApiSrc.indexOf('searchLimiter.allow'),
   );
   check(
     '19i: the tile is NOT flag-gated — visibility is decoupled from the runtime',
@@ -673,11 +684,14 @@ async function main() {
       /await requireNavigatorAccess\('\/navigator'\)/.test(navPageSrc),
   );
   check(
-    '19l: API routes carry their own guard',
-    /navigatorApiAccessVerdict\(\{/.test(routeApiSrc) &&
-      /navigatorApiAccessVerdict\(\{/.test(searchApiSrc) &&
-      /requestHasPilotAccess\(req\)/.test(routeApiSrc) &&
-      /requestHasPilotAccess\(req\)/.test(searchApiSrc),
+    '19l: API routes carry their own guard, through the shared metered gate',
+    /await meteredGate\(\{/.test(routeApiSrc) &&
+      /await meteredGate\(\{/.test(searchApiSrc) &&
+      /if \(!gate\.ok\) return gate\.response;/.test(routeApiSrc) &&
+      /if \(!gate\.ok\) return gate\.response;/.test(searchApiSrc) &&
+      /navigatorApiAccessVerdict\(\{/.test(meteredGateSrc) &&
+      /requestHasPilotAccess\(req\)/.test(meteredGateSrc) &&
+      /'pilot-access-required'/.test(meteredGateSrc),
   );
 
   /* ---------------------------------------------------------------- *

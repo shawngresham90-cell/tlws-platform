@@ -35,7 +35,7 @@ import { clearVersioned, readVersioned, writeVersioned } from './versioned-stora
  */
 
 export const ROUTE_PREFS_KEY = 'tlws-navigator-route-prefs-v1';
-const ROUTE_PREFS_VERSION = 1;
+export const ROUTE_PREFS_VERSION = 1;
 
 /**
  * Strict boolean read. A missing or non-boolean field falls back to the

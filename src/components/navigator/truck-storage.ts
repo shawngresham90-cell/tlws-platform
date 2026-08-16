@@ -48,7 +48,7 @@ import {
  */
 
 export const TRUCK_PROFILE_KEY = 'tlws-navigator-truck-v1';
-const TRUCK_VERSION = 1;
+export const TRUCK_VERSION = 1;
 
 export type StoredTruck = { profile: EditableProfile; confirmation: ConfirmationState };
 

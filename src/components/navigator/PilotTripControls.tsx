@@ -121,6 +121,7 @@ export function PilotTripControls({
   crossBorder = false,
   hosUnavailable = false,
   onChanged,
+  onOnboardingSeen,
 }: {
   lifecycle: NavigationLifecycle;
   /**
@@ -248,6 +249,13 @@ export function PilotTripControls({
   /** Canada mode: the HOS calculation is not available in this pilot. */
   hosUnavailable?: boolean;
   onChanged: () => void;
+  /**
+   * Called after the briefing's "read it" flag has been written locally, so
+   * the driving screen can mirror that fourth domain to the account. Purely a
+   * notification — the local write has already happened, and omitting this
+   * prop leaves the briefing working exactly as it did.
+   */
+  onOnboardingSeen?: () => void;
 }) {
   const [reportNote, setReportNote] = useState('');
   const [reportCategory, setReportCategory] = useState<string>('');
@@ -914,7 +922,7 @@ export function PilotTripControls({
         </p>
       ) : null}
 
-      <PilotOnboarding />
+      <PilotOnboarding onSeenSaved={onOnboardingSeen} />
 
       {/*
         Road-test report. It lives inside this component, which the

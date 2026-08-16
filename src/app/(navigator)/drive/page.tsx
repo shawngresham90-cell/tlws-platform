@@ -72,7 +72,20 @@ export default async function DrivePreviewPage() {
           {mode === 'public' && <PublicBetaNotice />}
           <GpsProvider>
             <SafetyLockProvider>
-              <DrivingScreen authorized={authorized} />
+              {/*
+               * `accountMode` is the SERVER's reading of the access mode,
+               * handed down exactly as `authorized` is. The mode variable is
+               * server-only and carries no NEXT_PUBLIC_ prefix, so the
+               * client cannot read it — and must not guess, because a guess
+               * would be a second copy of the gate that is free to disagree
+               * with this one.
+               *
+               * False in pilot, public and closed, which is inert: no
+               * session is read and no account row is fetched. Production
+               * runs `pilot`, so this change adds nothing to the live
+               * driving path.
+               */}
+              <DrivingScreen authorized={authorized} accountMode={mode === 'account'} />
             </SafetyLockProvider>
           </GpsProvider>
         </div>

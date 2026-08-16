@@ -81,6 +81,7 @@ import {
 } from '@/lib/navigator/route-preferences';
 import { RoutePreferencesPanel } from './RoutePreferencesPanel';
 import { readClocks, writeClocks } from './clocks-storage';
+import { useAccountSync, type SyncTransport } from './account-sync';
 import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
 import {
   clocksToggleLabel,
@@ -1056,7 +1057,33 @@ export function DrivingScreenView({
   );
 }
 
-export function DrivingScreen({ authorized = false }: { authorized?: boolean } = {}) {
+export function DrivingScreen({
+  authorized = false,
+  /*
+   * True only when the deploy runs `account` mode. The SERVER decides it and
+   * passes it down, exactly as `authorized` is: the access mode is a
+   * server-only variable, and a client that inferred it would be a second
+   * copy of the gate, free to disagree with the first.
+   *
+   * False in pilot, public and closed — and false is inert. No session is
+   * read, no account row is fetched, and the screen behaves byte-for-byte as
+   * it did before sync existed, which is what keeps production on `pilot`
+   * unaffected by this change.
+   */
+  accountMode = false,
+  /*
+   * The network edge of account sync, injectable so a harness can render THIS
+   * screen — the real one, with its real effects and its real storage — and
+   * observe what it actually synchronises. Omitted everywhere in production,
+   * where the hook uses the real client. Same discipline as the routing
+   * adapter's injected fetcher and the voice adapter's speech sink.
+   */
+  syncTransport,
+}: {
+  authorized?: boolean;
+  accountMode?: boolean;
+  syncTransport?: SyncTransport;
+} = {}) {
   const { position, watching, acquiring, start, stop } = useGps();
   // Motion policy comes from the ONE shared map (doc 06 §1); the map
   // component never decides for itself whether browsing is permitted.
@@ -1338,6 +1365,36 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
    * setup", which is a decision rather than a side effect.
    */
   const [arrivedConfigured, setArrivedConfigured] = useState(false);
+
+  /*
+   * ACCOUNT SYNC (account mode only).
+   *
+   * Four records — the truck, the route preferences, the driver-entered
+   * clocks, the briefing state — are mirrored to the driver's account so a
+   * second device starts configured instead of empty. Nothing else is:
+   * no position, no destination, no search, no route, no movement history.
+   * That list is the whole list, and the database enforces it with a check
+   * constraint rather than trusting this file to be careful.
+   *
+   * THE ORDER IS LOCAL FIRST, ALWAYS. Every `notifySaved` below is called
+   * AFTER the local write has already completed, and it returns immediately —
+   * the cloud write is debounced and happens later, off this path. So a
+   * cloud failure, a dead network, or a signed-out session cannot delay a
+   * save, cannot surface an error here, and cannot stand between a driver
+   * and Start. There is no sync UI on this screen for the same reason:
+   * status and retry live on the Account screen, where a driver can act.
+   *
+   * `restoreNonce` changes at most once per mount, when a download from the
+   * account has been written to device storage. The three restore effects
+   * below list it so they re-read their own records — which is why sync
+   * never reaches into this screen's state, and why a download cannot
+   * half-apply.
+   */
+  const { restoreNonce, notifySaved } = useAccountSync({
+    enabled: accountMode,
+    transport: syncTransport,
+  });
+
   useEffect(() => {
     const saved = readTruck();
     if (saved === null) return;
@@ -1345,13 +1402,16 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
     setTruckConfirmation(saved.confirmation);
     setTruckTouched(true);
     // The same fingerprint rule the gate uses: a restored confirmation
-    // counts only while it still matches the restored values.
+    // counts only while it still matches the restored values. A truck that
+    // arrived from the account is held to it too — restoring a truck must
+    // never restore permission to route for a truck nobody checked.
     setArrivedConfigured(
       saved.confirmation.confirmedFingerprint === routingFingerprint(saved.profile),
     );
-  }, []);
+  }, [restoreNonce]);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
+    notifySaved('truck');
   };
 
   /*
@@ -1368,11 +1428,12 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const [routePrefs, setRoutePrefs] = useState<RoutePreferences>(DEFAULT_ROUTE_PREFERENCES);
   useEffect(() => {
     setRoutePrefs(readRoutePrefs());
-  }, []);
+  }, [restoreNonce]);
   const changeRoutePrefs = (next: RoutePreferences) => {
     const changed = preferencesChanged(routePrefs, next);
     setRoutePrefs(next);
     writeRoutePrefs(next);
+    notifySaved('route_prefs');
     /*
      * A PREFERENCE CHANGE IS A ROUTE CHANGE. The provider drew the
      * existing line around a different set of restrictions, so it is
@@ -1390,10 +1451,11 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
   const [clockEntry, setClockEntry] = useState<ClockEntryState>(CLOCKS_UNSET);
   useEffect(() => {
     setClockEntry(readClocks());
-  }, []);
+  }, [restoreNonce]);
   const saveClocks = (next: ClockEntryState) => {
     setClockEntry(next);
     writeClocks(next);
+    notifySaved('hos_clocks');
     bump();
   };
   /*
@@ -2224,6 +2286,7 @@ export function DrivingScreen({ authorized = false }: { authorized?: boolean } =
         pilot.active ? (
           <PilotTripControls
             lifecycle={lifecycle}
+            onOnboardingSeen={() => notifySaved('onboarding')}
             gps={{ position, watching, acquiring, start, stop }}
             debugLog={pilot.debugLogging ? logRef.current : null}
             buildReport={buildReport}
