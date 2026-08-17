@@ -8,6 +8,13 @@ import {
 } from '@/lib/navigator-account/usage-report';
 
 export const dynamic = 'force-dynamic';
+// Explicit noindex, like every other admin page — and a null canonical so the
+// root layout's homepage canonical cannot inherit onto an admin URL.
+export const metadata = {
+  title: 'Admin — Navigator Usage',
+  robots: { index: false, follow: false },
+  alternates: { canonical: null },
+};
 
 /**
  * Navigator provider usage — the month, by endpoint, against the threshold.
