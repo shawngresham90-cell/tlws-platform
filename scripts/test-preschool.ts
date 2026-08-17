@@ -360,7 +360,7 @@ const headerSrc = src('src/components/layout/Header.tsx');
 check('header links pre-school', headerSrc.includes("href: '/cdl-pre-school'"));
 const footerSrc = src('src/components/layout/Footer.tsx');
 check('footer links pre-school', footerSrc.includes("href: '/cdl-pre-school'"));
-const sitemapSrc = src('src/app/sitemap.ts');
+const sitemapSrc = src('src/lib/seo/sitemap-entries.ts');
 for (const p of [PRESCHOOL_PATH, FOUNDING_WALL_PATH, FOUNDING_CLAIM_PATH]) {
   check(`sitemap includes ${p}`, sitemapSrc.includes(p));
 }

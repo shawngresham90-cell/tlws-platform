@@ -424,7 +424,7 @@ const footer = read('src/components/layout/Footer.tsx');
 check('footer links to /store', /href:\s*'\/store'/.test(footer));
 check('footer links to guides', /\/store\/guides/.test(footer));
 check('footer links to shawns-picks', /\/store\/shawns-picks/.test(footer));
-const sitemap = read('src/app/sitemap.ts');
+const sitemap = read('src/lib/seo/sitemap-entries.ts');
 check('sitemap imports STORE_PRODUCTS', /STORE_PRODUCTS/.test(sitemap));
 check('sitemap imports STORE_GUIDES', /STORE_GUIDES/.test(sitemap));
 check('sitemap includes /store/guides', /\/store\/guides/.test(sitemap));

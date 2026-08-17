@@ -148,7 +148,7 @@ const baseView: DrivingView = {
   check('drive page: 404 when the flag is off', page.includes('if (!ENABLED) notFound()'));
   check('drive page: noindex', page.includes('noindex: true'));
   check('drive page: says it is not turn-by-turn', page.includes('not turn-by-turn navigation'));
-  const sitemap = readFileSync('src/app/sitemap.ts', 'utf8');
+  const sitemap = readFileSync('src/lib/seo/sitemap-entries.ts', 'utf8');
   check('sitemap has no /drive entry', !/\/drive/.test(sitemap));
   const { readdirSync } = require('node:fs') as typeof import('node:fs');
   for (const f of readdirSync('src/components/layout').filter((x: string) => x.endsWith('.tsx'))) {

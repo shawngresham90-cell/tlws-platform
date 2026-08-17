@@ -32,7 +32,7 @@
  *     --outfile=/tmp/test-seo-gate-transition.cjs && node /tmp/test-seo-gate-transition.cjs
  */
 import { readFileSync } from 'node:fs';
-import sitemap from '@/app/sitemap';
+import { allSitemapEntries as sitemap } from '@/lib/seo/sitemap-entries';
 import { generateMetadata as knowledgeSearchMetadata } from '@/app/(marketing)/knowledge/search/page';
 import { getAllPublishedEntries } from '@/lib/directory/data';
 import { isDetailIndexable } from '@/lib/directory/detail';

@@ -59,7 +59,7 @@ const countdown = read('src/components/classroom/ClassroomCountdown.tsx');
 const homeBand = read('src/components/sections/SupplyClassroom.tsx');
 const emptyVisual = read('src/components/classroom/EmptyClassroomVisual.tsx');
 const home = read('src/app/page.tsx');
-const sitemap = read('src/app/sitemap.ts');
+const sitemap = read('src/lib/seo/sitemap-entries.ts');
 /**
  * Claim and copy checks must run against what a VISITOR sees, not against the
  * source. Doc comments in these files deliberately discuss the removed

@@ -11,7 +11,7 @@
  *
  * Fidelity is limited to what the user-facing read paths actually use
  * (verified against src/lib/directory, src/lib/map, src/app/(directory),
- * src/app/sitemap.ts):
+ * src/lib/seo/sitemap-entries.ts):
  *
  *   filters   eq, is.null/true/false, not.is.null, in.(...), gt, gte, lt, lte
  *   shaping   select (column projection), order (multi-key asc/desc),

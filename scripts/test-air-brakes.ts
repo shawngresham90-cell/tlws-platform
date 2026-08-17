@@ -262,7 +262,7 @@ check(
 );
 check(
   'sitemap derives test URLs from publishedTests() (Air Brakes lands automatically)',
-  /for \(const test of publishedTests\(\)\)/.test(read('src/app/sitemap.ts')),
+  /for \(const test of publishedTests\(\)\)/.test(read('src/lib/seo/sitemap-entries.ts')),
 );
 
 // ── Done ────────────────────────────────────────────────────────────────────

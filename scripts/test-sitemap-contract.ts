@@ -23,7 +23,14 @@
  *     --alias:server-only=./scripts/shims/server-only.ts \
  *     --outfile=/tmp/test-sitemap-contract.cjs && node /tmp/test-sitemap-contract.cjs
  */
-import sitemap from '@/app/sitemap';
+import {
+  allSitemapEntries as sitemap,
+  SITEMAP_FAMILIES,
+  entriesForFamily,
+  familySitemapPath,
+  sitemapIndexXml,
+  urlsetXml,
+} from '@/lib/seo/sitemap-entries';
 import robots from '@/app/robots';
 import { SITE } from '@/lib/seo/site';
 import { getEntryByDetailSlug } from '@/lib/directory/data';
@@ -638,6 +645,99 @@ async function main() {
   const runB = JSON.stringify(await sitemap());
   restoreT2();
   check('sitemap output is identical across different clock times', runA === runB);
+
+  /* ------------------- PR-D: family partition + index ------------------- */
+  // The five children must partition the whole: pairwise disjoint, union
+  // equal to the combined sitemap, each URL in the family that owns it.
+  const families = await Promise.all(SITEMAP_FAMILIES.map((f) => entriesForFamily(f)));
+  const byFamily = Object.fromEntries(SITEMAP_FAMILIES.map((f, i) => [f, families[i]])) as Record<
+    (typeof SITEMAP_FAMILIES)[number],
+    Awaited<ReturnType<typeof entriesForFamily>>
+  >;
+  {
+    const owner = new Map<string, string>();
+    const overlaps: string[] = [];
+    SITEMAP_FAMILIES.forEach((f, i) => {
+      for (const e of families[i]) {
+        if (owner.has(e.url)) overlaps.push(`${e.url}: ${owner.get(e.url)} + ${f}`);
+        else owner.set(e.url, f);
+      }
+    });
+    check('families are pairwise disjoint', overlaps.length === 0, overlaps.slice(0, 5));
+    check(
+      'union of the families equals the combined sitemap',
+      owner.size === urls.length && urls.every((u) => owner.has(u)),
+      { families: owner.size, combined: urls.length },
+    );
+  }
+  check(
+    'core owns /terms',
+    byFamily['core'].some((e) => e.url === `${SITE.url}/terms`),
+  );
+  check(
+    'hubs own the state page',
+    byFamily['directory-hubs'].some((e) => e.url === `${SITE.url}/directory/georgia`),
+  );
+  check(
+    'hubs own the flow corridor step',
+    byFamily['directory-hubs'].some((e) => e.url === `${SITE.url}/directory/parking/ga/i-75`),
+  );
+  check(
+    'exits family owns the exit page',
+    byFamily['directory-exits'].some((e) => e.url === `${SITE.url}/directory/i75/exit-333`),
+  );
+  check(
+    'directions family owns the direction page',
+    byFamily['directory-directions'].some(
+      (e) => e.url === `${SITE.url}/directory/parking/ga/i-75/northbound`,
+    ),
+  );
+  check(
+    'details family owns the gated detail page',
+    byFamily['directory-details'].some(
+      (e) => e.url === detailOf('love-s-travel-stop-333-dalton-ga'),
+    ),
+  );
+  check(
+    'details family contains ONLY detail pages',
+    byFamily['directory-details'].every((e) => e.url.startsWith(`${SITE.url}/directory/location/`)),
+  );
+  check(
+    'no other family carries a detail URL',
+    SITEMAP_FAMILIES.filter((f) => f !== 'directory-details').every((f) =>
+      byFamily[f].every((e) => !e.url.includes('/directory/location/')),
+    ),
+  );
+
+  // The index document at the STABLE /sitemap.xml entry point.
+  const indexXml = sitemapIndexXml();
+  check(
+    'index lists exactly the five children',
+    SITEMAP_FAMILIES.every((f) =>
+      indexXml.includes(`<loc>${SITE.url}${familySitemapPath(f)}</loc>`),
+    ) && (indexXml.match(/<sitemap>/g) ?? []).length === SITEMAP_FAMILIES.length,
+  );
+  check(
+    'index is a sitemapindex, not a urlset',
+    indexXml.includes('<sitemapindex') && !indexXml.includes('<urlset'),
+  );
+
+  // Child urlset serialization keeps the honest-lastmod contract.
+  const coreXml = urlsetXml(byFamily['core']);
+  check(
+    'child urlset serializes every URL exactly once',
+    (coreXml.match(/<loc>/g) ?? []).length === byFamily['core'].length,
+  );
+  check(
+    'undated entries serialize without <lastmod>',
+    !urlsetXml([{ url: `${SITE.url}/terms` }]).includes('<lastmod>'),
+  );
+  check(
+    'dated entries serialize their source date',
+    urlsetXml([{ url: `${SITE.url}/x`, lastModified: new Date('2026-06-15T12:00:00Z') }]).includes(
+      '<lastmod>2026-06-15T12:00:00.000Z</lastmod>',
+    ),
+  );
 
   /* --------------------------------------------------- robots contract */
   const r = robots();

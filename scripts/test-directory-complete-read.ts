@@ -728,7 +728,7 @@ async function main() {
 
   /* ------------------ sitemap policy must NOT have changed --------------- */
 
-  const sitemapSrc = read('src/app/sitemap.ts');
+  const sitemapSrc = read('src/lib/seo/sitemap-entries.ts');
   check(
     'sitemap still gates detail URLs on indexability',
     /isDetailIndexable\(entry\)/.test(sitemapSrc),

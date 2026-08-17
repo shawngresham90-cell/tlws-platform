@@ -319,7 +319,7 @@ check('hub emits breadcrumb JSON-LD', /breadcrumbSchema/.test(hub));
 check('landing uses buildMetadata', /buildMetadata\(/.test(landing));
 check('landing emits testSchema JSON-LD', /testSchema\(/.test(landing));
 check('landing emits breadcrumb JSON-LD', /breadcrumbSchema/.test(landing));
-const sitemap = read('src/app/sitemap.ts');
+const sitemap = read('src/lib/seo/sitemap-entries.ts');
 check('sitemap imports publishedTests', /publishedTests/.test(sitemap));
 check('sitemap includes /practice-tests', /\/practice-tests/.test(sitemap));
 

@@ -126,7 +126,7 @@ check(
 
 /* 3. The sitemap does not advertise hidden or emptied pages ------------- */
 
-const sitemap = read('src/app/sitemap.ts');
+const sitemap = read('src/lib/seo/sitemap-entries.ts');
 check(
   'sitemap product loop reads the PUBLIC catalog',
   /for \(const product of STORE_PRODUCTS\)/.test(sitemap),

@@ -1178,7 +1178,10 @@ check(
   'AuthorBlock shows the last-reviewed date',
   /Last reviewed against the eCFR/.test(read('src/components/kc/AuthorBlock.tsx')),
 );
-check('sitemap derives KC articles from the DB', /kc_articles/.test(read('src/app/sitemap.ts')));
+check(
+  'sitemap derives KC articles from the DB',
+  /kc_articles/.test(read('src/lib/seo/sitemap-entries.ts')),
+);
 
 // ── 10. Untouched surfaces ──────────────────────────────────────────────────
 for (const f of [
