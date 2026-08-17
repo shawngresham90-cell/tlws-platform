@@ -210,8 +210,20 @@ export function AccountForm({ next }: { next: string }) {
               required
               className="mt-0.5 h-5 w-5 shrink-0 accent-signal"
             />
+            {/*
+              Rendered as links rather than as {CONSENT_COPY.acceptance} so a
+              driver can open each document before agreeing to it. The words
+              are the same words — the harness asserts that every document this
+              label names appears in the stored copy and resolves to a real
+              page, so the sentence a driver reads and the sentence the
+              evidence row stores cannot drift apart.
+            */}
             <span>
               I agree to the{' '}
+              <Link href="/terms" className="text-signal underline" target="_blank">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
               <Link href="/privacy" className="text-signal underline" target="_blank">
                 Privacy Policy
               </Link>

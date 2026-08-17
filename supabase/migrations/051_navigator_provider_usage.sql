@@ -324,3 +324,43 @@ comment on view public.navigator_provider_usage_report is
 
 revoke all on public.navigator_provider_usage_report from anon, authenticated;
 grant select on public.navigator_provider_usage_report to service_role;
+
+-- =========================================================================
+-- ROLLBACK
+-- =========================================================================
+-- Everything below is derived operational data, not evidence: the ledger
+-- records how many provider units were reserved, and losing it costs a
+-- reporting history, not a record of anything anyone agreed to. That makes
+-- this rollback materially safer than 049's or 050's — neither of which can
+-- be run without exporting first.
+--
+-- IT IS STILL NOT FREE, AND THE COST IS SPECIFIC. Dropping these tables resets
+-- the month's reserved total to zero. In `account` or `public` mode the guard
+-- reads that total to decide whether the monthly safety threshold has been
+-- reached, so a drop mid-month hands back the entire remaining allowance and
+-- the month can be spent a second time. Export the current month before
+-- running this, and prefer to run it only while the deploy is in `pilot` or
+-- `closed`, where the guard is inert and there is nothing to lose:
+--
+--   -- keep the evidence of what was already spent
+--   \copy (select * from public.navigator_provider_month) to 'provider_month.csv' csv header
+--   \copy (select * from public.navigator_provider_usage) to 'provider_usage.csv' csv header
+--
+--   drop view     if exists public.navigator_provider_usage_report;
+--   drop function if exists public.navigator_reserve_provider_units(uuid, text, integer, text, integer, integer);
+--   drop index    if exists public.navigator_provider_user_usage_month_idx;
+--   drop table    if exists public.navigator_provider_user_usage;
+--   drop table    if exists public.navigator_provider_usage;
+--   drop table    if exists public.navigator_provider_month;
+--
+-- ORDER MATTERS: the view depends on two of the tables and the per-user table
+-- carries the `auth.users` foreign key, so dropping the tables first would
+-- either fail or force a `cascade` that takes the view with it silently.
+--
+-- Dropping the function while the deploy is in `account` or `public` mode does
+-- NOT open the endpoints. `reserveProviderUnits` treats a missing function the
+-- same as an unreachable database — `guard-unavailable`, which the metered gate
+-- answers 503. Metered requests are refused until the migration is restored.
+-- That is the intended direction of failure and it is asserted against a real
+-- server, with the function genuinely renamed away, in §11 of
+-- `scripts/test-live-postgres.mjs`.

@@ -84,8 +84,14 @@ NAVIGATOR_TEST_DATABASE_URL='postgresql://…:5432/postgres' npm run test:db
 
 Expected on a fresh project: the script reports
 `target : Supabase-shaped (auth.users present) — shim NOT applied`, applies
-049, 050 and 051 in order, and runs the full battery. It cleans up its own
-fixtures at the end.
+**049, 050, 051 and 052 in order**, and runs the full battery. It cleans up its
+own fixtures at the end.
+
+> **The sequence must never stop at 051.** 049–051 alone leave
+> `navigator_profiles` and `navigator_state` with TRUNCATE granted to
+> `authenticated`, and RLS does not filter TRUNCATE — any signed-in driver
+> could empty both tables for everyone. 052 closes it and is harmless to apply
+> twice. See `navigator-account-launch-readiness.md` §0.
 
 `npm test` is unaffected and stays hermetic — the live test is a separate
 command and is not picked up by the harness runner.
@@ -101,7 +107,7 @@ command and is not picked up by the harness runner.
 
 ## Afterwards
 
-The project can be deleted once 049–051 are confirmed, or kept for the next
+The project can be deleted once 049–052 are confirmed, or kept for the next
 migration. If kept, **delete it before it accumulates anything real** — the
 value of a disposable database is entirely in its being disposable.
 
@@ -110,8 +116,8 @@ value of a disposable database is entirely in its being disposable.
 ## What running this closes
 
 Gate 5 of the readiness checklist in `navigator-account-mode-rollout.md`:
-*migrations 049, 050 and 051 reviewed and applied, in that order.* It is the
-last technical gate; the remainder (SMTP, Terms, Privacy, HERE, real-phone
+*migrations 049, 050, 051 and 052 reviewed and applied, in that order.* It is
+the last technical gate; the remainder (SMTP, Terms, Privacy, HERE, real-phone
 tests) are owner actions that no test can perform.
 
 The same battery has already run green against **PostgreSQL 16.13 in a

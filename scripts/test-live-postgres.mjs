@@ -2,7 +2,7 @@
  * The live-database half of the Navigator account work.
  *
  * `npm test` stays hermetic — no network, no database, CI-safe. Everything it
- * can prove about migrations 049–051 it proves by reading them. Three things
+ * can prove about migrations 049–052 it proves by reading them. Three things
  * it cannot prove that way, and they are the three that matter most about a
  * spend guard:
  *
@@ -71,6 +71,11 @@ const MIGRATIONS = [
   'supabase/migrations/049_email_consents.sql',
   'supabase/migrations/050_navigator_accounts.sql',
   'supabase/migrations/051_navigator_provider_usage.sql',
+  // 052 repairs the table privileges 050 meant to withhold. It is applied here
+  // as well as edited into 050 for the same reason it exists in the tree: the
+  // fix has to work on a project that already ran the older 050, and applying
+  // both in order is the only run that proves it does.
+  'supabase/migrations/052_navigator_account_table_privileges.sql',
 ];
 
 let passed = 0;
@@ -690,6 +695,65 @@ async function section4to11() {
         `select user_id from public.navigator_state where domain='truck' and user_id='${UID_A}';`,
       ) === UID_A,
     );
+
+    /* ------------------------------------------------------------------ *
+     * THE HOLE RLS CANNOT COVER
+     * ------------------------------------------------------------------ *
+     * Everything above tests the policies, and the policies were fine. They
+     * were also not the whole answer, and this is the section that found it.
+     *
+     * Row level security filters SELECT, INSERT, UPDATE and DELETE. `truncate`
+     * is authorised by the TABLE PRIVILEGE ALONE and no policy is consulted.
+     * So a table can pass every check from 8a to 8h — a driver sees only their
+     * own row, cannot delete anyone else's, cannot re-own one — and still be
+     * emptiable in full by any one of those drivers.
+     *
+     * On Supabase that is the DEFAULT position rather than an unlucky one.
+     * The project bootstrap grants ALL on every table in `public` to
+     * `authenticated`, so a migration that revokes from `anon` and then grants
+     * three verbs to `authenticated` has changed nothing: the grant is
+     * additive and TRUNCATE was already held. Migration 050 shipped in exactly
+     * that shape. 052 is the repair; these four checks are what makes it
+     * impossible to lose again.
+     *
+     * Asserted with rows present, because a truncate of an empty table
+     * succeeds and proves nothing about what was destroyed.
+     */
+    sql(`reset role;
+         insert into public.navigator_state (user_id, domain, payload, payload_version)
+           values ('${UID_B}', 'route_prefs', '{"avoidTolls": true}'::jsonb, 1)
+           on conflict do nothing;`);
+
+    const profilesBefore = Number(scalar('select count(*) from public.navigator_profiles;'));
+    const stateBefore = Number(scalar('select count(*) from public.navigator_state;'));
+    check(
+      '8k: both drivers have rows to destroy, so the next checks mean something',
+      profilesBefore >= 2 && stateBefore >= 2,
+      `profiles=${profilesBefore} state=${stateBefore}`,
+    );
+
+    let truncProfiles = false;
+    try {
+      sql('truncate public.navigator_profiles;', asA);
+    } catch {
+      truncProfiles = true;
+    }
+    check('8l: a signed-in driver cannot TRUNCATE navigator_profiles', truncProfiles);
+
+    let truncState = false;
+    try {
+      sql('truncate public.navigator_state;', asA);
+    } catch {
+      truncState = true;
+    }
+    check('8m: nor navigator_state', truncState);
+
+    sql('reset role;');
+    check(
+      '8n: every driver still has their rows',
+      Number(scalar('select count(*) from public.navigator_profiles;')) === profilesBefore &&
+        Number(scalar('select count(*) from public.navigator_state;')) === stateBefore,
+    );
   }
 
   /* ===================================================================== *
@@ -825,7 +889,537 @@ async function section4to11() {
   }
 
   /* ===================================================================== *
-   * 11. CLEAN UP
+   * 11. THE GUARD'S DEPENDENCY, ACTUALLY TAKEN AWAY
+   * ===================================================================== *
+   * The hermetic suite proves the MAPPING — an RPC that errors becomes
+   * `guard-unavailable`, and the gate turns that into a refusal. What it
+   * cannot prove is the premise, because it has no database to remove.
+   *
+   * So remove it. The reservation function is renamed out from under a caller
+   * that still asks for it by name, which is what a half-applied migration, a
+   * rolled-back schema or a dropped function looks like from the
+   * application's side. The call must ERROR.
+   *
+   * An error is the ONLY acceptable outcome and the reason is one-directional:
+   * a call that answered "allowed" with no store behind it would be spend
+   * authorised by nothing at all. There is no safe way to fail open here.
+   */
+  {
+    resetLedger();
+    const M = '2026-05';
+
+    const before = reserve(UID_A, 'navigator.route', 1, M, 100, 50);
+    check('11a: the guard answers normally while its store is present', before.allowed);
+
+    // --- the dependency, gone -------------------------------------------
+    sql(`alter function ${RESERVE}(uuid, text, integer, text, integer, integer)
+           rename to navtest_reserve_parked;`);
+
+    let missingErr = '';
+    try {
+      reserve(UID_A, 'navigator.route', 1, M, 100, 50);
+    } catch (e) {
+      missingErr = e.message;
+    }
+    check(
+      '11b: with the function gone the call ERRORS — it does not answer "allowed"',
+      /does not exist/i.test(missingErr),
+      missingErr.split('\n')[0],
+    );
+
+    sql(`alter function public.navtest_reserve_parked(uuid, text, integer, text, integer, integer)
+           rename to navigator_reserve_provider_units;`);
+    const after = reserve(UID_A, 'navigator.route', 1, M, 100, 50);
+    check('11c: and the guard recovers once the store is back', after.allowed);
+    check(
+      '11d: the outage neither lost nor invented units',
+      after.userUnits === 2 && after.globalUnits === 2,
+      `global=${after.globalUnits} user=${after.userUnits}`,
+    );
+
+    // --- reachable, but not permitted, is the same answer ----------------
+    sql(`revoke execute on function ${RESERVE}(uuid, text, integer, text, integer, integer)
+           from authenticated;`);
+    let deniedErr = '';
+    try {
+      sql(
+        `select * from ${RESERVE}('${UID_A}'::uuid, 'navigator.route', 1, ${quote(M)}, 100, 50);`,
+        { role: 'authenticated', claims: JSON.stringify({ sub: UID_A, role: 'authenticated' }) },
+      );
+    } catch (e) {
+      deniedErr = e.message;
+    }
+    check(
+      '11e: a reachable-but-forbidden guard errors too, not opens',
+      /permission denied/i.test(deniedErr),
+      deniedErr.split('\n')[0],
+    );
+    sql(`reset role;
+         grant execute on function ${RESERVE}(uuid, text, integer, text, integer, integer)
+           to authenticated;`);
+
+    /* The application half of the same claim. The database erroring is only
+     * useful if the code above it turns that into a refusal rather than a
+     * shrug, so the two files that decide are read here rather than assumed. */
+    const reservationSrc = readFileSync('src/lib/navigator-api/usage-reservation.ts', 'utf8');
+    const gateSrc = readFileSync('src/lib/navigator-api/metered-gate.ts', 'utf8');
+    check(
+      '11f: an RPC error maps to guard-unavailable',
+      /if \(error\) return \{ allowed: false, reason: 'guard-unavailable' \}/.test(reservationSrc),
+    );
+    check(
+      '11g: a thrown error maps to guard-unavailable',
+      /\} catch \{\s*return \{ allowed: false, reason: 'guard-unavailable' \};\s*\}/.test(
+        reservationSrc,
+      ),
+    );
+    check(
+      '11h: an unrecognized response shape maps to guard-unavailable',
+      /typeof row\.allowed !== 'boolean'/.test(reservationSrc),
+    );
+    check(
+      '11i: no failure branch in the reservation returns allowed: true',
+      reservationSrc.split('allowed: true').length - 1 === 1,
+    );
+    check(
+      '11j: the gate refuses on any not-allowed reservation, whatever the reason',
+      /if \(!reservation\.allowed\)/.test(gateSrc),
+    );
+    check(
+      '11k: guard-unavailable is answered 503, not allowed through',
+      /reservation\.reason === 'global-threshold' \|\| reservation\.reason === 'user-limit'\s*\?\s*429\s*:\s*503/.test(
+        gateSrc,
+      ),
+    );
+  }
+
+  /* ===================================================================== *
+   * 12. AN ACCEPTED RESERVATION IS NEVER GIVEN BACK
+   * ===================================================================== *
+   * The no-refund rule exists because a provider call that fails partway
+   * leaves us unable to say whether the provider counted it. Refunding would
+   * therefore under-count precisely during an incident.
+   *
+   * The distinction this section has to keep straight — and it is the one a
+   * careless test would blur — is between two subtractions that look alike:
+   *
+   *   THE UNDO, which is legitimate. When the global check refuses, the
+   *   per-user increment made moments earlier inside the SAME call is rolled
+   *   back. Nothing was ever reserved; §4 already pins this.
+   *
+   *   A REFUND, which must not exist. Units that were ACCEPTED, returned
+   *   later because the provider call went wrong.
+   *
+   * So: prove no path exists to reduce an accepted total, and prove that
+   * everything which happens after an acceptance — a later refusal, an error,
+   * an outage — leaves it exactly where it was.
+   */
+  {
+    resetLedger();
+    const M = '2026-06';
+
+    const ok = reserve(UID_A, 'navigator.route', 4, M, 10, 10);
+    check(
+      '12a: units are reserved before the provider is called',
+      ok.allowed && ok.userUnits === 4,
+    );
+
+    /* Provider billing is uncertain in exactly these shapes: the call times
+     * out, the call errors, the guard's own store goes away mid-flight. None
+     * of them may return a unit. The application performs no compensating
+     * write in any of these cases — so the observable claim is that the totals
+     * are untouched by everything that follows the acceptance. */
+    sql(`alter function ${RESERVE}(uuid, text, integer, text, integer, integer)
+           rename to navtest_reserve_parked;`);
+    try {
+      reserve(UID_A, 'navigator.route', 1, M, 10, 10);
+    } catch {
+      /* expected — the store is gone, mirroring a failure after reservation */
+    }
+    sql(`alter function public.navtest_reserve_parked(uuid, text, integer, text, integer, integer)
+           rename to navigator_reserve_provider_units;`);
+
+    const survivedUser = scalar(
+      `select units from public.navigator_provider_user_usage
+        where month = ${quote(M)} and user_id = '${UID_A}';`,
+    );
+    const survivedMonth = scalar(
+      `select units from public.navigator_provider_month where month = ${quote(M)};`,
+    );
+    check(
+      '12b: an outage after the reservation refunds nothing',
+      survivedUser === '4' && survivedMonth === '4',
+      `user=${survivedUser} month=${survivedMonth}`,
+    );
+
+    // A later refusal must not claw back what was already accepted.
+    const refused = reserve(UID_A, 'navigator.route', 9, M, 10, 10);
+    check('12c: an over-limit request is refused', !refused.allowed);
+    check(
+      '12d: …and the refusal leaves the accepted units alone',
+      scalar(
+        `select units from public.navigator_provider_user_usage
+          where month = ${quote(M)} and user_id = '${UID_A}';`,
+      ) === '4',
+    );
+
+    /* Nothing in the schema can hand a unit back. If a refund ever ships it
+     * will arrive as a function, so the catalog is the right place to look —
+     * and the check reads the live catalog, not the migration text. */
+    const publicFns = sql(`
+      select p.proname
+        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public'
+       order by 1;
+    `)
+      .split('\n')
+      .filter(Boolean);
+    const refundish = publicFns.filter((f) =>
+      /refund|release|credit|decrement|give_?back|unreserve|return_units/i.test(f),
+    );
+    check('12e: the schema exposes no refund-shaped function', refundish.length === 0, refundish);
+
+    const writers = publicFns.filter((f) => /navigator_provider|reserve_provider/i.test(f));
+    check(
+      '12f: exactly one function owns the usage tables',
+      writers.length === 1 && writers[0] === 'navigator_reserve_provider_units',
+      writers,
+    );
+
+    /* The one subtraction in the shipped body is the undo, and it must stay
+     * the only one. A second would be a refund however it were named. */
+    const body = sql(
+      `select prosrc from pg_proc where proname = 'navigator_reserve_provider_units';`,
+    );
+    const subtractions = (body.match(/units\s*-\s*p_units/g) ?? []).length;
+    check(
+      '12g: the function body subtracts units exactly once — the refused-global undo',
+      subtractions === 1,
+      subtractions,
+    );
+    check(
+      '12h: …and that undo sits inside the refusal branch, not on the accepted path',
+      /if v_global_units is null then[\s\S]{0,400}units\s*-\s*p_units/.test(body),
+    );
+
+    const guardSrc = readFileSync('src/lib/navigator-api/usage-guard.ts', 'utf8');
+    check(
+      '12i: refundIsPermitted() returns false, by name, so a change has to argue with it',
+      /export function refundIsPermitted\(\): false \{\s*return false;\s*\}/.test(guardSrc),
+    );
+  }
+
+  /* ===================================================================== *
+   * 13. THE SCHEMA THE MIGRATIONS PROMISED
+   * ===================================================================== *
+   * Read entirely off the live catalog. The migration text saying `create
+   * index` is not evidence that an index exists; `pg_indexes` is. Sections 8
+   * and 9 prove the RLS BEHAVIOUR, which is the stronger claim — this section
+   * proves the objects are all present, so a partially-applied migration
+   * cannot pass by being silently smaller than it should be.
+   */
+  {
+    function catalog(q) {
+      return sql(q).split('\n').filter(Boolean);
+    }
+
+    const tables = catalog(`
+      select table_name from information_schema.tables
+       where table_schema='public' and table_type='BASE TABLE' order by 1;`);
+    for (const t of [
+      'email_consents',
+      'email_unsubscribes',
+      'navigator_profiles',
+      'navigator_state',
+      'navigator_provider_month',
+      'navigator_provider_usage',
+      'navigator_provider_user_usage',
+    ]) {
+      check(`13a: table ${t} exists`, tables.includes(t));
+    }
+
+    const views = catalog(`
+      select table_name from information_schema.views
+       where table_schema='public' order by 1;`);
+    for (const v of [
+      'email_subscription_status',
+      'navigator_marketing_contacts',
+      'navigator_provider_usage_report',
+    ]) {
+      check(`13b: view ${v} exists`, views.includes(v));
+    }
+
+    const indexes = catalog(`
+      select indexname from pg_indexes where schemaname='public' order by 1;`);
+    for (const i of [
+      'navigator_profiles_email_idx',
+      'navigator_profiles_created_idx',
+      'navigator_state_user_idx',
+      'navigator_provider_user_usage_month_idx',
+    ]) {
+      check(`13c: index ${i} exists`, indexes.includes(i));
+    }
+
+    const triggers = catalog(`
+      select c.relname || '.' || t.tgname
+        from pg_trigger t
+        join pg_class c on c.oid = t.tgrelid
+        join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname='public' and not t.tgisinternal order by 1;`);
+    for (const tg of ['navigator_profiles.set_updated_at', 'navigator_state.set_updated_at']) {
+      check(`13d: trigger ${tg} exists`, triggers.includes(tg));
+    }
+
+    const constraints = catalog(`
+      select conname from pg_constraint c
+        join pg_class r on r.oid = c.conrelid
+        join pg_namespace n on n.oid = r.relnamespace
+       where n.nspname='public' and c.contype='c' order by 1;`);
+    for (const c of [
+      'navigator_profiles_email_normalized',
+      'navigator_profiles_phone_e164_shape',
+      'navigator_profiles_phone_pairing',
+      'navigator_profiles_signup_source_known',
+      'navigator_state_domain_known',
+      'navigator_state_payload_is_object',
+      'navigator_state_payload_bounded',
+      'navigator_provider_month_shape',
+      'navigator_provider_usage_endpoint_known',
+      'navigator_provider_user_usage_month_shape',
+    ]) {
+      check(`13e: check constraint ${c} exists`, constraints.includes(c));
+    }
+
+    // The reservation function, and the two properties that make it safe to
+    // grant to a driver at all.
+    const fn = sql(`
+      select p.prosecdef::text || '|' || coalesce(array_to_string(p.proconfig, ','), '')
+        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname='public' and p.proname='navigator_reserve_provider_units';`);
+    check('13f: the reservation function is SECURITY DEFINER', fn.startsWith('true|'), fn);
+    check('13g: …with a pinned search_path', /search_path=public,\s*pg_temp/.test(fn), fn);
+
+    // RLS enabled on all five account-owned tables.
+    for (const t of [
+      'navigator_profiles',
+      'navigator_state',
+      'navigator_provider_month',
+      'navigator_provider_usage',
+      'navigator_provider_user_usage',
+    ]) {
+      check(
+        `13h: RLS is enabled on ${t}`,
+        scalar(`select relrowsecurity::text from pg_class
+                 where oid = 'public.${t}'::regclass;`) === 'true',
+      );
+    }
+
+    const policies = catalog(`
+      select tablename || '.' || policyname from pg_policies
+       where schemaname='public' and tablename like 'navigator_%' order by 1;`);
+    for (const p of [
+      'navigator_profiles.navigator_profiles_select_own',
+      'navigator_profiles.navigator_profiles_insert_own',
+      'navigator_profiles.navigator_profiles_update_own',
+      'navigator_state.navigator_state_select_own',
+      'navigator_state.navigator_state_insert_own',
+      'navigator_state.navigator_state_update_own',
+      'navigator_state.navigator_state_delete_own',
+    ]) {
+      check(`13i: policy ${p} exists`, policies.includes(p));
+    }
+    /* The usage tables are deliberately policy-free: no policy match means no
+     * rows, and the SECURITY DEFINER function is the whole access path. A
+     * policy appearing here would be a widening nobody reviewed. */
+    const usagePolicies = policies.filter((p) => p.startsWith('navigator_provider_'));
+    check(
+      '13j: the usage tables carry no policy at all — the function is the only path',
+      usagePolicies.length === 0,
+      usagePolicies,
+    );
+
+    /* Grants. `anon` is the one that matters: it is the role a browser holds
+     * with the publishable key, so anything granted to it is granted to the
+     * internet. */
+    const anonGrants = catalog(`
+      select table_name || ':' || privilege_type from information_schema.role_table_grants
+       where grantee='anon' and table_schema='public'
+         and table_name in ('navigator_profiles','navigator_state','navigator_provider_month',
+                            'navigator_provider_usage','navigator_provider_user_usage',
+                            'navigator_marketing_contacts','navigator_provider_usage_report')
+       order by 1;`);
+    check(
+      '13k: anon holds no privilege on any account or usage object',
+      anonGrants.length === 0,
+      anonGrants,
+    );
+
+    const authGrants = catalog(`
+      select table_name || ':' || privilege_type from information_schema.role_table_grants
+       where grantee='authenticated' and table_schema='public'
+         and table_name like 'navigator_%' order by 1;`);
+    const expectedAuth = [
+      'navigator_profiles:INSERT',
+      'navigator_profiles:SELECT',
+      'navigator_profiles:UPDATE',
+      'navigator_state:DELETE',
+      'navigator_state:INSERT',
+      'navigator_state:SELECT',
+      'navigator_state:UPDATE',
+    ].sort();
+    check(
+      '13l: authenticated holds exactly the account-table grants and nothing on usage',
+      [...authGrants].sort().join(',') === expectedAuth.join(','),
+      authGrants,
+    );
+
+    const svcViews = catalog(`
+      select table_name from information_schema.role_table_grants
+       where grantee='service_role' and table_schema='public' and privilege_type='SELECT'
+         and table_name in ('navigator_marketing_contacts','navigator_provider_usage_report')
+       order by 1;`);
+    check(
+      '13m: both admin views are readable by service_role alone',
+      svcViews.includes('navigator_marketing_contacts') &&
+        svcViews.includes('navigator_provider_usage_report'),
+      svcViews,
+    );
+
+    const fnGrants = catalog(`
+      select r.rolname
+        from pg_proc p, aclexplode(p.proacl) a
+        join pg_roles r on r.oid = a.grantee
+       where p.proname='navigator_reserve_provider_units' and a.privilege_type='EXECUTE'
+       order by 1;`);
+    check(
+      '13n: execute on the reservation function is granted to authenticated, never anon',
+      fnGrants.includes('authenticated') && !fnGrants.includes('anon'),
+      fnGrants,
+    );
+
+    /* The generic form of the 050 defect, so it cannot come back under a
+     * different table name. TRUNCATE is the dangerous verb because no policy
+     * filters it; this asks the catalog rather than any particular migration,
+     * so a table added next year is covered by a test written today. */
+    const dangerous = catalog(`
+      select grantee || ' holds ' || privilege_type || ' on ' || table_name
+        from information_schema.role_table_grants
+       where table_schema='public'
+         and grantee in ('anon','authenticated')
+         and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER')
+         and table_name like 'navigator_%'
+       order by 1;`);
+    check(
+      '13p: no Navigator table grants TRUNCATE, REFERENCES or TRIGGER to anon or authenticated',
+      dangerous.length === 0,
+      dangerous,
+    );
+
+    const anonAnywhere = catalog(`
+      select table_name || ':' || privilege_type from information_schema.role_table_grants
+       where table_schema='public' and grantee='anon' and table_name like 'navigator_%' order by 1;`);
+    check(
+      '13q: anon holds nothing on any Navigator object at all',
+      anonAnywhere.length === 0,
+      anonAnywhere,
+    );
+
+    /* Rollback instructions are part of the deliverable, not a nicety: a
+     * migration nobody can undo is one nobody should apply. Asserted on the
+     * files so a future migration cannot ship without them. */
+    for (const m of MIGRATIONS) {
+      const text = readFileSync(m, 'utf8');
+      const heading = /^-- ROLLBACK$/m.test(text);
+      /* The reversal has to be spelled out as SQL somebody can run, not
+       * described in prose. Which verb reverses it depends on what the
+       * migration did: one that creates objects reverses with `drop`, while
+       * 052 changes nothing but privileges and reverses with `grant`. Both
+       * count; neither an empty heading nor a paragraph of intent does. */
+      const after = text.split(/^-- ROLLBACK$/m)[1] ?? '';
+      const reversal = /\b(drop (table|view|index|function)|grant |revoke )/i.test(after);
+      check(
+        `13o: ${m.split('/').pop()} documents its rollback as runnable SQL`,
+        heading && reversal,
+        heading ? 'heading present, no reversal statement' : 'no ROLLBACK heading',
+      );
+    }
+  }
+
+  /* ===================================================================== *
+   * 13B. ACCOUNT DELETION REALLY CASCADES
+   * ===================================================================== *
+   * `deleteAccountAction` makes ONE call — `auth.admin.deleteUser` — and
+   * relies entirely on the foreign keys to remove everything the driver owns.
+   * That is the right design, and it is only correct if the cascade is real.
+   * An `on delete cascade` that was written but not applied would leave the
+   * application deleting an account and silently orphaning the driver's
+   * profile, their synced truck and their clocks — data the product has just
+   * promised, on screen, to have removed.
+   *
+   * Read as behaviour rather than as catalog metadata: delete the auth row,
+   * then count what survived.
+   */
+  {
+    const UID_D = '44444444-4444-4444-8444-444444444444';
+    sql(`
+      reset role;
+      insert into auth.users (id, email) values ('${UID_D}', 'live-test-d@example.invalid')
+        on conflict (id) do nothing;
+      insert into public.navigator_profiles (user_id, first_name, email, consent_copy_version, privacy_accepted_at)
+        values ('${UID_D}', 'D', 'live-test-d@example.invalid', 'v-test', now())
+        on conflict (user_id) do nothing;
+      insert into public.navigator_state (user_id, domain, payload, payload_version) values
+        ('${UID_D}', 'truck', '{"a":1}'::jsonb, 1),
+        ('${UID_D}', 'hos_clocks', '{"b":2}'::jsonb, 1),
+        ('${UID_D}', 'route_prefs', '{"c":3}'::jsonb, 1)
+        on conflict do nothing;
+      insert into public.navigator_provider_user_usage (month, user_id, units, requests)
+        values ('2026-07', '${UID_D}', 5, 5) on conflict do nothing;
+    `);
+
+    const owned = () => ({
+      profile: scalar(`select count(*) from public.navigator_profiles where user_id='${UID_D}';`),
+      state: scalar(`select count(*) from public.navigator_state where user_id='${UID_D}';`),
+      usage: scalar(
+        `select count(*) from public.navigator_provider_user_usage where user_id='${UID_D}';`,
+      ),
+    });
+
+    const before = owned();
+    check(
+      '13r: the driver owns a profile, three synced domains and a usage row',
+      before.profile === '1' && before.state === '3' && before.usage === '1',
+      JSON.stringify(before),
+    );
+
+    // Exactly what deleteAccountAction does, and nothing else.
+    sql(`delete from auth.users where id = '${UID_D}';`);
+
+    const after = owned();
+    check('13s: deleting the account removes the profile', after.profile === '0');
+    check('13t: …and every synced record with it', after.state === '0', after.state);
+    check('13u: …and the per-user usage row', after.usage === '0', after.usage);
+
+    /* The consent evidence is deliberately NOT cascaded — it is an
+     * append-only record of what a person agreed to, keyed by email rather
+     * than by user id, and a compliance record that vanishes with the account
+     * is not a compliance record. Asserted so that "it survives" stays a
+     * decision rather than becoming an accident. */
+    const consentFk = scalar(`
+      select count(*) from information_schema.table_constraints tc
+        join information_schema.constraint_column_usage ccu
+          on ccu.constraint_name = tc.constraint_name
+       where tc.table_name = 'email_consents' and tc.constraint_type = 'FOREIGN KEY'
+         and ccu.table_name = 'users';`);
+    check(
+      '13v: consent evidence carries no foreign key to auth.users, so deletion cannot erase it',
+      consentFk === '0',
+      consentFk,
+    );
+  }
+
+  /* ===================================================================== *
+   * 14. CLEAN UP
    * ===================================================================== */
   {
     let cleaned = true;

@@ -98,13 +98,22 @@ in this change.** It is asserted by `test-navigator-metered-endpoints`
       verifiable from the build environment — the Supabase management tools
       available there expose no auth/SMTP settings and the network policy blocks
       direct API calls. **Owner action.**
-- [ ] **5. Migrations `049`, `050` and `051` reviewed and applied, in that
-      order.** None has been applied anywhere. None is syntax-validated against
-      a live server.
-- [ ] **6. Terms and Privacy updated.** There is still no Terms of Service page;
-      the signup checkbox accepts the Privacy Policy only and
-      `terms_accepted_at` stays null. The Privacy Policy still does not describe
-      accounts. **Owner action** — no wording has been drafted.
+- [ ] **5. Migrations `049`, `050`, `051` and `052` reviewed and applied, in
+      that order.** None has been applied to any Supabase project.
+      **`052` IS NOT OPTIONAL AND THE SEQUENCE MUST NEVER STOP AT `051`.**
+      Applying 049–051 alone leaves `navigator_profiles` and `navigator_state`
+      with TRUNCATE granted to `authenticated` — and row level security does
+      not filter TRUNCATE, so any signed-in driver could empty both tables for
+      everyone. 050 has been corrected so a fresh apply is safe on its own, but
+      052 is what repairs a project where the older 050 already ran, and
+      applying it is harmless either way. Reproduced and repaired on a real
+      PostgreSQL: `navigator-account-launch-readiness.md` §0.
+- [ ] **6. Terms and Privacy reviewed by the owner and counsel.** Both are now
+      **drafted** on the launch-readiness branch — `/terms` is a new page and
+      the Privacy Policy has a Navigator accounts section — and the signup
+      checkbox names and links both, with `terms_accepted_at` written at signup
+      and `CONSENT_COPY_VERSION` moved to `navigator-account-v2`. **The text is
+      proposed and has not been reviewed by counsel.** Owner action.
 - [ ] **7. Budget configuration set** (section 4 below). Until it is, account
       mode refuses every metered request — which is the intended fail-closed
       behaviour, not a bug to work around.

@@ -22,20 +22,36 @@
  * Stored on every profile and every consent-evidence row, so a row from
  * before an edit still proves what that person actually saw.
  */
-export const CONSENT_COPY_VERSION = 'navigator-account-v1';
+export const CONSENT_COPY_VERSION = 'navigator-account-v2';
 
 export const CONSENT_COPY = Object.freeze({
   /**
    * The required acceptance.
    *
-   * PRIVACY ONLY, DELIBERATELY. This platform has no Terms of Service page —
-   * only /privacy and /sms-terms, the latter being SMS-specific. Asking a
-   * driver to accept "the Terms" while linking nothing, or linking a page
-   * that does not exist, would be recording an agreement to a document that
-   * was never shown. The profile keeps a nullable terms_accepted_at so that
-   * adding Terms later is a copy change, not a migration.
+   * v1 NAMED PRIVACY ONLY, AND SAID WHY: "This platform has no Terms of
+   * Service page … asking a driver to accept 'the Terms' while linking
+   * nothing, or linking a page that does not exist, would be recording an
+   * agreement to a document that was never shown."
+   *
+   * That reasoning has not been relaxed — its premise changed. `/terms` now
+   * exists as a real page describing this product, so naming it here records
+   * an agreement to something a driver can actually open and read. The
+   * `terms_accepted_at` column 050 left nullable for exactly this moment is
+   * now written at signup.
+   *
+   * The version moved with the wording, which is the rule this file states
+   * about itself: a consent row from before this edit still proves what that
+   * person saw, because it carries `navigator-account-v1` and v1's sentence.
+   *
+   * THE COPY IS STILL AHEAD OF ITS REVIEW. The Terms page is marked in its own
+   * header as proposed text pending owner and legal review. If that review
+   * changes the wording of the acceptance sentence, this constant and this
+   * version must move again in the same commit — and they can, freely, because
+   * account mode is enabled nowhere and no driver has yet agreed to anything.
+   * The test that resolves each named document to a real page is what stops
+   * this from drifting back into naming something that is not there.
    */
-  acceptance: 'I agree to the Trucking Life Privacy Policy.',
+  acceptance: 'I agree to the Trucking Life Terms of Service and Privacy Policy.',
 
   /** Optional. Unchecked by default, and never a condition of entry. */
   emailMarketing: 'Email me TLWS news, trucking resources, product updates, and special offers.',
