@@ -11,6 +11,12 @@ Prior work this audit builds on (and does not re-litigate):
 Decisions marked **[ACCEPTED]** there are treated as settled unless new GSC
 evidence contradicts them; none did.
 
+**Owner review, 2026-08-17:** the blueprint was approved subject to one
+correction (§14 — no "Validate Fix" while the Knowledge Search URLs
+intentionally remain noindex) and the owner decisions now recorded as
+settled in §19. This document remains documentation-only; implementation
+begins with PR-A in a separate controlled PR.
+
 ---
 
 ## 1. Executive summary
@@ -421,19 +427,24 @@ behavior change to any indexable page):**
    existing `city && state && category`.
 2. Make the signal count honest: count **stored** amenities (not the
    rendered chip array) — or equivalently compute the gate on raw fields —
-   and keep the bar at ≥2. Expected deltas, precomputed from production
-   data: **+13 pages become indexable; −2 pages
+   and keep the bar at ≥2 real signals. Expected deltas, precomputed from
+   production data: **+13 pages become indexable; −2 pages
    (`cat-scale-circle-k-pelham-pelham-al`, the Georgetown KY weigh station)
-   drop to noindex** because their only real signal is a description. Owner
-   sign-off on those two (or keep the bar at ≥1 real signal; then −0).
+   drop to noindex** because their only real signal is a description.
+   **Settled (owner, 2026-08-17):** the honest ≥2-real-signal rule is
+   approved; the +13/−2 outcome is accepted; the two thin pages remain
+   noindex until their records are enriched with verified information.
 3. Change gated listings to `noindex, follow` semantics (add a `follow`
    option to `buildMetadata` or a second flag) so thin pages still pass
    equity.
 4. Because sitemap + detail page + ItemList + ranking all import the same
    gate, this is a one-function change with wide, consistent effect.
-5. Separately (owner, data-side, no code): backfill the 3 genuinely missing
+5. Separately (owner, data-side, no code): backfill the genuinely missing
    street addresses (Flying J Miami CAT scale, Days Inn Wildwood, TA Lake
-   City, Yellow Hammer Brewton) via the admin editor.
+   City, Yellow Hammer Brewton) via the admin editor. **Settled (owner,
+   2026-08-17):** approved only for fixed businesses whose complete street
+   addresses can be verified from authoritative sources — never guessed or
+   inferred. No production data is written during the documentation step.
 
 **PR-C — Server-rendered links to money pages:**
 1. `Header.tsx` `MENU_GROUPS` School group: add `/academy/curriculum` and
@@ -451,13 +462,19 @@ behavior change to any indexable page):**
 Split via Next's `generateSitemaps` into: `core` (statics + academy + CDL +
 KC + store + tests), `directory-hubs` (categories/states/corridors/flows
 steps), `directory-exits`, `directory-details`, `directory-directions`.
-Submit the index in GSC after deploy. Justification is monitoring and
+`/sitemap.xml` remains the stable entry point — it becomes the index; the
+URL never changes. Submit in GSC only after tests pass and the live
+production output is verified. Justification is monitoring and
 prioritization only — 4,890 is far below any sitemap limit.
 
 **PR-E / PR-F — Template + conversion improvements** (academy/CDL content
-depth per the Aug audit's [OWNER] items once resolved; state/corridor/detail
-template data-surfacing; email capture on directory templates; trip-planner
-CTAs on exit/corridor pages; Navigator funnel links from parking flows).
+depth; state/corridor/detail template data-surfacing; email capture on
+directory templates; trip-planner CTAs on exit/corridor pages; Navigator
+funnel links from parking flows). **Settled (owner, 2026-08-17), binding on
+PR-E:** the Dalton school is not yet open. Course schema and copy must not
+represent it as currently operating or enrolling at a confirmed facility
+until that becomes true — use accurate planned/opening language, and never
+fabricate dates, prices, approvals, or an address.
 
 ## 11. Files expected to change
 
@@ -506,12 +523,19 @@ Each PR is an independent, small, revertible commit; none touches data.
 1. After PR-A/D deploy + live spot-checks: submit the sitemap index; leave
    the old submission in place until child sitemaps show "Success," then
    remove it.
-2. After PR-B deploy: URL-inspect the three example location pages, confirm
-   "Indexing allowed: Yes," then Request Indexing for those three (and the
-   other 10 affected once spot-checked). Only then press **Validate Fix** on
-   the "Excluded by 'noindex'" report — with the expectation it validates
-   only the location pages; the two `/knowledge/search` URLs will
-   (correctly) remain excluded, so expect a "partial" validation outcome.
+2. After PR-B deploy, the "Excluded by 'noindex'" report is handled by
+   inspection and recrawl — **not** by the report's "Validate Fix" button:
+   1. URL-inspect the 13 affected location pages.
+   2. Confirm the live versions return `index, follow` with correct
+      self-referencing canonicals.
+   3. Request Indexing only for the highest-value affected URLs.
+   4. Monitor the Page Indexing report as Google recrawls the rest.
+   5. Do **not** press "Validate Fix" unless the affected population Google
+      shows contains only URLs that were intended to become indexable.
+      `/knowledge/search` and its `?q=` variants intentionally remain
+      noindex, and while they appear in that report's population a
+      validation run would (correctly) fail on them — a failure that tells
+      us nothing and muddies the report history.
 3. After PR-C deploy: Request Indexing for the ten priority pages (§16).
 4. Weekly: export Pages report per child sitemap; no other GSC changes.
 
@@ -600,11 +624,11 @@ Navigator → 3. high-impression local/corridor pages → 4. KC informational �
 
 ## 18. Dangerous findings (owner attention)
 
-- **Academy operational claims** (carried from the Aug audit, still open):
-  Course schema + present-tense enrollment copy vs. an unannounced facility
-  address. If FMCSA/ELDT registration isn't complete, this is a
-  trust/compliance exposure on the site's highest-revenue pages — resolve
-  before spending the PR-E hours promoting them.
+- **Academy operational claims** (carried from the Aug audit): Course schema
+  + present-tense enrollment copy vs. an unannounced facility address.
+  **Owner decision recorded (2026-08-17):** the Dalton school is not yet
+  open; PR-E must correct schema and copy to accurate planned/opening
+  language before any content investment promotes those pages.
 - **Netlify cached-404 class on exit pages** (documented open defect:
   `/directory/i75/exit-369` once served a cached 404 with 11 published
   rows): if it recurs while Google crawls the 1,292 exit URLs, sitemap URLs
@@ -614,12 +638,40 @@ Navigator → 3. high-impression local/corridor pages → 4. KC informational �
   remains unresolved — one is wrong; external verification blocked from this
   environment.
 
-## 19. Decisions requiring owner approval
+## 19. Owner decisions — settled 2026-08-17
 
-1. Gate redesign trade (PR-B): accept the two thin currently-indexed pages
-   dropping to noindex, or keep the effective ≥1-signal bar.
-2. Address backfill for the 3–4 fixed businesses (data change, admin UI).
-3. Header/footer/homepage link additions (visible UI change).
-4. Direction-page policy at day 30 (keep vs canonicalize-to-corridor).
-5. Academy schema/copy claims (§18) before PR-E content investment.
-6. GSC sitemap-index resubmission timing (§14).
+Recorded from the owner's review of this blueprint. These are the governing
+choices for the implementation PRs; nothing here re-opens without a new
+owner decision.
+
+1. **Gate redesign (PR-B): approved** — the honest ≥2-real-signal rule.
+   Expected and accepted result: +13 pages indexable, −2 to noindex
+   (`cat-scale-circle-k-pelham-pelham-al` and the Georgetown KY weigh
+   station stay noindex until their records are enriched with verified
+   information).
+2. **Address backfills: approved for fixed businesses only**, and only where
+   the complete street address can be verified from authoritative sources.
+   Never guess or infer an address. No production data is written during the
+   documentation step.
+3. **Visible internal links: approved** — curriculum and financing links in
+   the header, footer, and homepage, plus the proposed directory
+   engine↔flow cross-links (PR-C).
+4. **Direction pages: leave unchanged initially.** Retain-vs-canonicalize is
+   decided at the 30-day measurement gate (§15) on actual Search Console
+   evidence, not before.
+5. **Academy claims: the Dalton school is not yet open.** Course schema and
+   present-tense claims must not represent it as currently operating or
+   enrolling at a confirmed facility until that becomes true. PR-E uses
+   accurate planned/opening language and fabricates no dates, prices,
+   approvals, or address.
+6. **Sitemap segmentation (PR-D): approved**, effective only after the
+   implementation passes its tests and live production verification.
+   `/sitemap.xml` is preserved as the stable entry point (it becomes the
+   index; the URL never changes).
+7. **Search Console timing:** no sitemap submission, indexing request, or
+   validation action of any kind until the relevant code is deployed and
+   verified on production. "Validate Fix" is additionally constrained by
+   §14: never while the intentionally-noindex Knowledge Search URLs sit in
+   the affected population.
+
+Implementation proceeds in separate controlled PRs, beginning with PR-A.
