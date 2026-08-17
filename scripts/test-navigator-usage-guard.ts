@@ -701,16 +701,40 @@ const CONFIG: UsageGuardConfig = (() => {
     '11f: RLS is on for all three tables',
     (MIGRATION.match(/enable row level security/g) ?? []).length === 3,
   );
+  /*
+   * 11g SAID "executable by a driver" AND TREATED THAT AS CORRECT. It was the
+   * defect, asserted as the requirement.
+   *
+   * The function takes both thresholds as arguments and runs SECURITY DEFINER,
+   * so any caller who can reach it chooses its own limits. Reachability was
+   * real: PostgREST exposes functions in `public` to any role holding EXECUTE,
+   * and Supabase's default privileges grant EXECUTE on new functions to `anon`
+   * and `authenticated` — which `revoke … from public` does not remove. One
+   * call with a caller-supplied threshold drove the shared month counter to
+   * 2,000,041 against a server threshold of 100 on a real server.
+   *
+   * The application never used the grant; reservations go through the
+   * `server-only` service-role client. So the requirement is the opposite of
+   * what was written, and it is now asserted as such: revoked from all three
+   * of public/anon/authenticated, granted to service_role alone.
+   */
   check(
-    '11g: only the reservation function is executable by a driver',
-    /grant execute on function public\.navigator_reserve_provider_units/.test(MIGRATION),
-  );
-  check(
-    '11h: and it is revoked from public first',
-    /revoke all on function public\.navigator_reserve_provider_units[\s\S]{0,120}from public/.test(
+    '11g: the reservation function is granted to service_role, never to a driver',
+    /grant execute on function public\.navigator_reserve_provider_units[\s\S]{0,160}to service_role/.test(
       MIGRATION,
-    ),
+    ) &&
+      !/grant execute on function public\.navigator_reserve_provider_units[\s\S]{0,160}to authenticated/.test(
+        MIGRATION,
+      ),
   );
+  for (const role of ['public', 'anon', 'authenticated']) {
+    check(
+      `11h: …and execute is revoked from ${role}`,
+      new RegExp(
+        `revoke all on function public\\.navigator_reserve_provider_units[^;]{0,120}from ${role};`,
+      ).test(MIGRATION),
+    );
+  }
   const guardSrc = read('src/lib/navigator-api/usage-guard.ts');
   check('11i: the policy module logs nothing', !/console\./.test(guardSrc));
   check(

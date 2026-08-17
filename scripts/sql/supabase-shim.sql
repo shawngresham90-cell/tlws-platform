@@ -87,6 +87,28 @@ alter default privileges in schema public
 alter default privileges in schema public
   grant all on sequences to anon, authenticated, service_role;
 
+/*
+ * FUNCTIONS TOO — AND OMITTING THIS HID A CRITICAL DEFECT.
+ *
+ * Supabase's bootstrap grants default EXECUTE on new functions in `public` to
+ * all three roles, exactly as it does for tables. This shim modelled tables and
+ * sequences but not functions, and the gap was not academic: §9 of
+ * `test-live-postgres.mjs` asserted "anon CANNOT execute the reservation
+ * function" and passed here, while on a real Supabase project anon and
+ * authenticated both held EXECUTE on it. Migration 053 is the repair; this line
+ * is why the test can see the thing it claims to test.
+ *
+ * Read off the production project's own `pg_default_acl`, which reads
+ * `anon=X/postgres | authenticated=X/postgres | service_role=X/postgres` for
+ * object type `f`.
+ *
+ * A TEST ENVIRONMENT THAT IS SAFER THAN PRODUCTION DOES NOT TEST PRODUCTION.
+ * Every privilege default this shim omits is a class of finding the live suite
+ * is structurally unable to report.
+ */
+alter default privileges in schema public
+  grant all on functions to anon, authenticated, service_role;
+
 -- From migration 013. Re-created here only when absent, because a throwaway
 -- cluster starts from nothing rather than from migration 001.
 create or replace function public.tlws_set_updated_at()

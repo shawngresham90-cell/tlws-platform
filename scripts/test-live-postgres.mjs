@@ -76,6 +76,10 @@ const MIGRATIONS = [
   // fix has to work on a project that already ran the older 050, and applying
   // both in order is the only run that proves it does.
   'supabase/migrations/052_navigator_account_table_privileges.sql',
+  // 053 locks the reservation function to service_role. 051 granted EXECUTE to
+  // `authenticated`, and Supabase's function default privileges hand it to
+  // `anon` too — neither of which `revoke … from public` removes.
+  'supabase/migrations/053_navigator_reservation_service_role_only.sql',
 ];
 
 let passed = 0;
@@ -776,24 +780,122 @@ async function section4to11() {
     }
     check('9a: anon CANNOT execute the reservation function', anonBlocked, anonError.slice(0, 120));
     check(
-      '9b: …because execute was revoked from public and granted only to authenticated',
+      '9b: …because execute is revoked from public, anon and authenticated',
       /permission denied/i.test(anonError),
       anonError.slice(0, 120),
     );
 
-    /* An authenticated driver may reserve — through the function only. */
-    let authedOk = false;
+    /* ------------------------------------------------------------------ *
+     * 9c ASSERTED THE OPPOSITE OF THIS, AND PASSED, AND WAS WRONG.
+     * ------------------------------------------------------------------ *
+     * The previous form read:
+     *
+     *     check('9c: an authenticated caller may execute it', authedOk)
+     *
+     * It encoded a vulnerability as the expected behaviour. Migration 051
+     * granted EXECUTE to `authenticated`, and PostgREST exposes any function
+     * in an exposed schema to any role holding EXECUTE as
+     * `POST /rest/v1/rpc/<name>` — so a signed-in browser could call this
+     * directly, and (because Supabase's default privileges grant EXECUTE on
+     * new functions to `anon` as well, which `revoke … from public` does not
+     * remove) so could a caller holding only the publishable key.
+     *
+     * That would be untidy but survivable if the function defended itself. It
+     * does not: it takes BOTH THRESHOLDS AS ARGUMENTS and is SECURITY DEFINER,
+     * so it checks the new total against a ceiling the caller chose. Three
+     * abuses were demonstrated on a real server before migration 053:
+     * an anonymous reservation; a driver charging units to another driver's
+     * uuid; and one call with a caller-supplied threshold driving the shared
+     * month row to 2,000,041 against a server threshold of 100 — a total,
+     * month-long denial of service for every driver, from one request.
+     *
+     * The application never needed the grant: `reserveProviderUnits` uses the
+     * `server-only` service-role client. So the correct assertion is that a
+     * driver is refused, and the checks below prove the refusal holds even
+     * when the caller is the very user being charged.
+     */
+    let authedBlocked = false;
+    let authedError = '';
     try {
       sql(
         `select * from ${RESERVE}('${UID_A}'::uuid, 'navigator.route', 1, '2026-08', 10, 10);`,
         asAuthed,
       );
-      authedOk = true;
     } catch (e) {
-      authedOk = false;
-      anonError = e.message;
+      authedBlocked = true;
+      authedError = e.message;
     }
-    check('9c: an authenticated caller may execute it', authedOk, anonError.slice(0, 160));
+    check(
+      '9c: an AUTHENTICATED caller cannot execute it either (053)',
+      authedBlocked && /permission denied/i.test(authedError),
+      authedError.slice(0, 160),
+    );
+
+    /* The three demonstrated abuses, each asserted as refused. They are
+     * written out separately rather than folded into 9c because they fail for
+     * the same reason today and would fail for different reasons if somebody
+     * re-granted EXECUTE — and then the names say which door reopened. */
+    for (const [label, args] of [
+      [
+        'spoofing another driver as the charged user',
+        `'${UID_B}'::uuid, 'navigator.route', 40, '2026-08', 100, 50`,
+      ],
+      [
+        'choosing its own global threshold',
+        `'${UID_A}'::uuid, 'navigator.route', 2000000, '2026-08', 2147483647, 2147483647`,
+      ],
+      [
+        'choosing its own units and month',
+        `'${UID_A}'::uuid, 'navigator.route', 999999, '2099-01', 100, 50`,
+      ],
+    ]) {
+      let refused = false;
+      try {
+        sql(`select * from ${RESERVE}(${args});`, asAuthed);
+      } catch {
+        refused = true;
+      }
+      check(`9c2: an authenticated caller is refused when ${label}`, refused);
+    }
+
+    /* And the path the application actually uses still works. A lockdown that
+     * also locked out the server would be caught here rather than in
+     * production, where it would look like the guard being unavailable and
+     * would fail every metered request closed. */
+    let serviceOk = false;
+    let serviceError = '';
+    try {
+      sql(`select * from ${RESERVE}('${UID_A}'::uuid, 'navigator.route', 1, '2026-09', 10, 10);`, {
+        role: 'service_role',
+        claims: JSON.stringify({ role: 'service_role' }),
+      });
+      serviceOk = true;
+    } catch (e) {
+      serviceError = e.message;
+    }
+    check(
+      '9c3: service_role — the only caller the app uses — still may',
+      serviceOk,
+      serviceError.slice(0, 160),
+    );
+
+    /* The general form, so a function added later cannot reintroduce this. */
+    const reachable = sql(`
+      select p.proname || ' -> ' || r.rolname
+        from pg_proc p
+        join pg_namespace n on n.oid = p.pronamespace, aclexplode(p.proacl) a
+        join pg_roles r on r.oid = a.grantee
+       where n.nspname = 'public' and a.privilege_type = 'EXECUTE'
+         and r.rolname in ('anon','authenticated')
+         and p.proname like 'navigator_%'
+       order by 1;`)
+      .split('\n')
+      .filter(Boolean);
+    check(
+      '9c4: no navigator_* function is executable by anon or authenticated',
+      reachable.length === 0,
+      reachable,
+    );
 
     /* But may not read or write the ledger directly. */
     for (const t of [
@@ -937,14 +1039,26 @@ async function section4to11() {
       `global=${after.globalUnits} user=${after.userUnits}`,
     );
 
-    // --- reachable, but not permitted, is the same answer ----------------
+    /* --- reachable, but not permitted, is the same answer ----------------
+     *
+     * THIS SECTION USED TO REVOKE FROM — AND THEN RE-GRANT TO — `authenticated`,
+     * and the re-grant was a live defect in the test file itself. It ran after
+     * §9 and before §13, so it silently restored the exact privilege 053
+     * removes, and §13n then asserted that privilege as correct and passed.
+     * A negative control caught it: the database was left with `authenticated`
+     * holding EXECUTE at the end of a run that claimed to have locked it down.
+     *
+     * The role exercised now is `service_role`, because that is the caller the
+     * application actually uses — so this measures the real dependency, and
+     * the restore puts back the real grant rather than a forbidden one.
+     */
     sql(`revoke execute on function ${RESERVE}(uuid, text, integer, text, integer, integer)
-           from authenticated;`);
+           from service_role;`);
     let deniedErr = '';
     try {
       sql(
         `select * from ${RESERVE}('${UID_A}'::uuid, 'navigator.route', 1, ${quote(M)}, 100, 50);`,
-        { role: 'authenticated', claims: JSON.stringify({ sub: UID_A, role: 'authenticated' }) },
+        { role: 'service_role', claims: JSON.stringify({ role: 'service_role' }) },
       );
     } catch (e) {
       deniedErr = e.message;
@@ -956,7 +1070,15 @@ async function section4to11() {
     );
     sql(`reset role;
          grant execute on function ${RESERVE}(uuid, text, integer, text, integer, integer)
-           to authenticated;`);
+           to service_role;`);
+    check(
+      '11e2: the restore put back service_role only — no driver grant reappeared',
+      sql(`select coalesce(string_agg(r.rolname, ',' order by r.rolname), '')
+             from pg_proc p, aclexplode(p.proacl) a join pg_roles r on r.oid = a.grantee
+            where p.proname = 'navigator_reserve_provider_units'
+              and a.privilege_type = 'EXECUTE'
+              and r.rolname in ('anon','authenticated');`) === '',
+    );
 
     /* The application half of the same claim. The database erroring is only
      * useful if the code above it turns that into a refusal rather than a
@@ -1291,9 +1413,15 @@ async function section4to11() {
         join pg_roles r on r.oid = a.grantee
        where p.proname='navigator_reserve_provider_units' and a.privilege_type='EXECUTE'
        order by 1;`);
+    /* 13n ASSERTED THE VULNERABILITY AS THE REQUIREMENT — and passed, because
+     * §11 re-granted to `authenticated` a few sections earlier. Two wrongs
+     * agreeing is not a green test, it is a blind spot with a tick next to it.
+     * The requirement is service_role alone; §9c4 covers the general form. */
     check(
-      '13n: execute on the reservation function is granted to authenticated, never anon',
-      fnGrants.includes('authenticated') && !fnGrants.includes('anon'),
+      '13n: execute on the reservation function is service_role only',
+      fnGrants.includes('service_role') &&
+        !fnGrants.includes('authenticated') &&
+        !fnGrants.includes('anon'),
       fnGrants,
     );
 
