@@ -5,6 +5,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { stateByCode } from '@/lib/directory/states';
 import { directionsForInterstate, interstateFromSlug } from '@/lib/directory/corridor';
+import { flowEngineReturnLinks } from '@/lib/directory/scope-links';
 
 export const revalidate = 300;
 
@@ -71,6 +72,19 @@ export default async function CatScaleDirectionPickerPage({ params }: { params: 
             </Link>
           ))}
         </div>
+        {flowEngineReturnLinks(code, designation).length > 0 && (
+          <p className="doc-caption mt-8">
+            Browse the full directory:{' '}
+            {flowEngineReturnLinks(code, designation).map((l, i) => (
+              <span key={l.href}>
+                {i > 0 && ' · '}
+                <Link className="text-signal underline-offset-4 hover:underline" href={l.href}>
+                  {l.label}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )}
         <p className="doc-caption mt-8">
           <Link
             className="text-muted hover:text-signal"

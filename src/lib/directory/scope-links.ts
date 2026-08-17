@@ -1,8 +1,9 @@
 import type { DirectoryEntry } from './types';
-import type { DirectoryFacets } from './data';
+import type { DirectoryFacets, ParkingFacets } from './data';
 import { DIRECTORY_CATEGORIES, categoryHref } from './categories';
 import { stateByCode } from './states';
 import { interstateSlug, exitSlug } from './interstates';
+import { interstateToSlug } from './corridor';
 import { interstatesIn, adjacentExits, groupByCategory } from './related';
 import type { RelatedLinkGroup } from '@/components/directory/RelatedLinks';
 import { COMMUNITY_LINKS } from '@/components/directory/RelatedLinks';
@@ -153,4 +154,101 @@ export function categoryScopeLinks(facets: DirectoryFacets): RelatedLinkGroup[] 
     { heading: 'Browse by corridor', links: interstateLinks(facets.interstates, facets) },
     COMMUNITY_LINKS,
   ];
+}
+
+/* ----------------------------------------------------------------------
+ * Engine ⇄ corridor-flow cross-links (SEO blueprint PR-C, 2026-08-17).
+ *
+ * The parking and CAT-scale flow trees used to hang off their two hub
+ * blocks with no links to or from the engine pages. These helpers connect
+ * them — and, like everything else in this module, a link renders ONLY when
+ * the destination has real facet data behind it. An empty facet read (DB
+ * hiccup, no coverage) simply renders no links; RelatedLinks drops empty
+ * groups.
+ * -------------------------------------------------------------------- */
+
+/**
+ * Flow-tree entry points for one state's engine page: the state's parking
+ * and CAT-scale route flows, each only when that state actually appears in
+ * the flow's facets.
+ */
+export function stateFlowLinks(
+  stateName: string,
+  stateCode: string,
+  parkingFlow: ParkingFacets,
+  catScaleFlow: ParkingFacets,
+): RelatedLinkGroup {
+  const code = stateCode.toUpperCase();
+  const links: { href: string; label: string }[] = [];
+  if (stateByCode(code)) {
+    const parking = parkingFlow.states.find((s) => s.code === code);
+    if (parking && parking.count > 0) {
+      links.push({
+        href: `/directory/parking/${code.toLowerCase()}`,
+        label: `Truck parking by route (${parking.count})`,
+      });
+    }
+    const scales = catScaleFlow.states.find((s) => s.code === code);
+    if (scales && scales.count > 0) {
+      links.push({
+        href: `/directory/cat-scales/${code.toLowerCase()}`,
+        label: `CAT Scales by route (${scales.count})`,
+      });
+    }
+  }
+  return { heading: `Plan a ${stateName} run`, links };
+}
+
+/**
+ * Flow corridor steps for a corridor engine page: every state whose flow
+ * facets carry this designation, for both flow trees. Nothing is emitted
+ * for states or corridors the facets don't back.
+ */
+export function interstateFlowLinks(
+  designation: string,
+  parkingFlow: ParkingFacets,
+  catScaleFlow: ParkingFacets,
+): RelatedLinkGroup {
+  const links: { href: string; label: string }[] = [];
+  const collect = (base: string, flow: ParkingFacets, kind: string) => {
+    for (const { code } of flow.states) {
+      const state = stateByCode(code);
+      if (!state) continue;
+      const onCorridor = (flow.interstatesByState[code] ?? []).some(
+        (i) => i.designation === designation,
+      );
+      if (onCorridor) {
+        links.push({
+          href: `${base}/${code.toLowerCase()}/${interstateToSlug(designation)}`,
+          label: `${kind} through ${state.name}`,
+        });
+      }
+    }
+  };
+  collect('/directory/parking', parkingFlow, 'Parking');
+  collect('/directory/cat-scales', catScaleFlow, 'CAT Scales');
+  return { heading: `${designation} by route & direction`, links };
+}
+
+/**
+ * Return links from a flow page back to the engine pages that cover the
+ * same listings. Validated through the state registry and the interstate
+ * slug parser — an unknown code or non-I-nnn designation emits nothing.
+ */
+export function flowEngineReturnLinks(
+  stateCode: string,
+  designation?: string,
+): { href: string; label: string }[] {
+  const links: { href: string; label: string }[] = [];
+  const state = stateByCode(stateCode.toUpperCase());
+  if (state) {
+    links.push({ href: `/directory/${state.slug}`, label: `All ${state.name} listings` });
+  }
+  if (designation) {
+    const islug = interstateSlug(designation);
+    if (islug) {
+      links.push({ href: `/directory/${islug}`, label: `All of ${designation}` });
+    }
+  }
+  return links;
 }

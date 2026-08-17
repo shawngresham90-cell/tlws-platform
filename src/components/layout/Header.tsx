@@ -25,6 +25,11 @@ const MENU_GROUPS: Array<{
     heading: 'School',
     links: [
       { label: 'Academy', href: '/academy' },
+      // Direct anchors to the money pages (SEO blueprint PR-C): before this,
+      // no header/footer/homepage link reached any academy sub-page, leaving
+      // them a closed crawl cluster behind /academy alone.
+      { label: 'Curriculum', href: '/academy/curriculum' },
+      { label: 'Financing', href: '/academy/financing' },
       { label: 'Apply', href: '/academy/apply' },
       { label: 'CDL Pre-School', href: '/cdl-pre-school' },
       { label: 'Founders Wall', href: '/founders' },
