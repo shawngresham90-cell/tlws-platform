@@ -59,6 +59,10 @@ for (const name of harnesses) {
         // page modules get an empty cookie jar instead (no session — exactly
         // the anon posture every public read already assumes).
         '--alias:next/headers=./scripts/shims/next-headers.ts',
+        // Server-action modules import next/cache at module scope, which
+        // drags Next's tracer (and optional @opentelemetry/api) into the
+        // bundle. Revalidation is a no-op outside a running server.
+        '--alias:next/cache=./scripts/shims/next-cache.ts',
         // Components may import stylesheets (Leaflet ships its own). Next
         // handles CSS; these offline harnesses only exercise behavior, so
         // stylesheets bundle to nothing rather than failing on their

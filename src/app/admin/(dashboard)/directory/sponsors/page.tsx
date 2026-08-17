@@ -14,6 +14,13 @@ import { createSponsorAction, setSponsorActiveAction, deleteSponsorAction } from
  */
 
 export const dynamic = 'force-dynamic';
+// Explicit noindex, like every other admin page — and a null canonical so the
+// root layout's homepage canonical cannot inherit onto an admin URL.
+export const metadata = {
+  title: 'Admin — Directory Sponsors',
+  robots: { index: false, follow: false },
+  alternates: { canonical: null },
+};
 
 type Row = {
   id: string;

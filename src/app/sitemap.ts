@@ -29,32 +29,37 @@ import { publishedTests, testHref } from '@/lib/tests/catalog';
  * Sitemap. Static routes + every Knowledge Center category and published article,
  * pulled at build/revalidate. New KC content shows up automatically — no manual
  * XML edits. Uses the cookieless client so it runs outside a request scope.
+ *
+ * lastModified policy (2026-08-17 crawl/indexing audit): a <lastmod> is
+ * emitted ONLY where a real, persisted content-modification date exists —
+ * listing detail pages (locations.updated_at) and Knowledge Center articles
+ * (kc_articles.updated_at). Every other entry omits the field. This route
+ * regenerates hourly; stamping generation time made ~2,390 unchanged URLs
+ * claim fresh modification on every pass, which teaches Google to distrust
+ * the signal entirely. Never substitute build/request/deploy time for a
+ * modification date.
  */
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
   const entries: MetadataRoute.Sitemap = [
-    { url: SITE.url, lastModified: now, changeFrequency: 'weekly', priority: 1 },
-    { url: `${SITE.url}/knowledge`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: SITE.url, changeFrequency: 'weekly', priority: 1 },
+    { url: `${SITE.url}/knowledge`, changeFrequency: 'daily', priority: 0.9 },
     // Founders Wall (Milestone 9).
-    { url: `${SITE.url}/founders`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE.url}/founders`, changeFrequency: 'weekly', priority: 0.8 },
     // CDL Pre-School (Founding Student offer).
     {
       url: `${SITE.url}/cdl-pre-school`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
       url: `${SITE.url}/cdl-pre-school/founding-students`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     },
     {
       url: `${SITE.url}/cdl-pre-school/founding-student-claim`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.4,
     },
@@ -77,12 +82,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ['/tools/hos-calculator', 0.7],
     ['/supply-the-classroom', 0.8],
     ['/privacy', 0.3],
+    ['/terms', 0.3],
     ['/sms-terms', 0.3],
   ];
   for (const [path, priority] of topLevelPaths) {
     entries.push({
       url: `${SITE.url}${path}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority,
     });
@@ -103,7 +108,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const path of academyPaths) {
     entries.push({
       url: `${SITE.url}${path}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: path === '/academy' ? 0.9 : 0.7,
     });
@@ -114,14 +118,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // an ASIN is confirmed), so they belong in the sitemap.
   entries.push({
     url: `${SITE.url}/store`,
-    lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.8,
   });
   // Physical-product policy — public and stable.
   entries.push({
     url: `${SITE.url}${SHIPPING_RETURNS_HREF}`,
-    lastModified: now,
     changeFrequency: 'yearly',
     priority: 0.4,
   });
@@ -129,7 +131,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const product of DIRECT_PRODUCTS) {
     entries.push({
       url: `${SITE.url}${directProductHref(product.slug)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -141,7 +142,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (productsInCategory(category.slug).length === 0) continue;
     entries.push({
       url: `${SITE.url}${storeCategoryHref(category.slug)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -149,7 +149,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const product of STORE_PRODUCTS) {
     entries.push({
       url: `${SITE.url}${productHref(product.slug)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.6,
     });
@@ -160,7 +159,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (visibleGuides.length > 0) {
     entries.push({
       url: `${SITE.url}/store/guides`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -168,7 +166,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (shawnsPicks().length > 0) {
     entries.push({
       url: `${SITE.url}/store/shawns-picks`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -176,7 +173,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const guide of visibleGuides) {
     entries.push({
       url: `${SITE.url}${guideHref(guide.slug)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -186,14 +182,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // render from the TS catalog, so their URLs ship even before a bank is seeded.
   entries.push({
     url: `${SITE.url}/practice-tests`,
-    lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.8,
   });
   for (const test of publishedTests()) {
     entries.push({
       url: `${SITE.url}${testHref(test.slug)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -202,14 +196,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Directory Engine (Milestone 11) — hub + every category in the registry.
   entries.push({
     url: `${SITE.url}/directory`,
-    lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.8,
   });
   // Public interactive map (Milestone 19).
   entries.push({
     url: `${SITE.url}/directory/map`,
-    lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.8,
   });
@@ -217,26 +209,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   entries.push(
     {
       url: `${SITE.url}/directory/submit`,
-      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.6,
     },
     {
       url: `${SITE.url}/directory/reviews`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.7,
     },
     // Growth surfaces (Milestone 25).
     {
       url: `${SITE.url}/directory/recently-updated`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.6,
     },
     {
       url: `${SITE.url}/directory/new-locations`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.6,
     },
@@ -244,7 +232,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const category of DIRECTORY_CATEGORIES) {
     entries.push({
       url: `${SITE.url}${categoryHref(category)}`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     });
@@ -259,14 +246,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (!state) continue;
       entries.push({
         url: `${SITE.url}/directory/${state.slug}`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
       });
       // Top-truck-stops landing page for the state (Milestone 25).
       entries.push({
         url: `${SITE.url}/directory/${state.slug}/top-truck-stops`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.6,
       });
@@ -276,21 +261,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (!slug) continue;
       entries.push({
         url: `${SITE.url}/directory/${slug}`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
       });
       // Corridor parking landing page (Milestone 25).
       entries.push({
         url: `${SITE.url}/directory/${slug}/truck-parking`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.6,
       });
       for (const exit of facets.exitsByInterstate[designation] ?? []) {
         entries.push({
           url: `${SITE.url}/directory/${slug}/${exitSlug(exit)}`,
-          lastModified: now,
           changeFrequency: 'weekly',
           priority: 0.6,
         });
@@ -308,7 +290,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // published listings exist behind it, matching each page's own gates.
   entries.push({
     url: `${SITE.url}/directory/cat-scales/near-me`,
-    lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.7,
   });
@@ -323,7 +304,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const statePath = `${base}/${code.toLowerCase()}`;
         entries.push({
           url: `${SITE.url}${statePath}`,
-          lastModified: now,
           changeFrequency: 'weekly',
           priority: 0.6,
         });
@@ -331,14 +311,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           const corridorPath = `${statePath}/${interstateToSlug(designation)}`;
           entries.push({
             url: `${SITE.url}${corridorPath}`,
-            lastModified: now,
             changeFrequency: 'weekly',
             priority: 0.6,
           });
           for (const direction of directionsForInterstate(designation)) {
             entries.push({
               url: `${SITE.url}${corridorPath}/${direction}`,
-              lastModified: now,
               changeFrequency: 'weekly',
               priority: 0.6,
             });
@@ -357,9 +335,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const listings = await getAllPublishedEntries();
     for (const entry of listings) {
       if (!entry.detailSlug || !isDetailIndexable(entry)) continue;
+      // Real modification date only; a row without one gets no <lastmod>
+      // rather than a fabricated "now".
       entries.push({
         url: `${SITE.url}${detailHref(entry.detailSlug)}`,
-        lastModified: entry.updatedAt ? new Date(entry.updatedAt) : now,
+        ...(entry.updatedAt ? { lastModified: new Date(entry.updatedAt) } : {}),
         changeFrequency: 'weekly',
         priority: 0.6,
       });
@@ -377,7 +357,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const c of cats ?? []) {
       entries.push({
         url: `${SITE.url}/knowledge/${(c as { slug: string }).slug}`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
       });
@@ -389,12 +368,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const a of arts ?? []) {
       const row = a as unknown as {
         slug: string;
-        updated_at: string;
+        updated_at: string | null;
         kc_categories: { slug: string };
       };
+      // Same policy as detail pages: only the article's own updated_at, and
+      // only when the row actually carries one.
       entries.push({
         url: `${SITE.url}/knowledge/${row.kc_categories.slug}/${row.slug}`,
-        lastModified: new Date(row.updated_at),
+        ...(row.updated_at ? { lastModified: new Date(row.updated_at) } : {}),
         changeFrequency: 'monthly',
         priority: 0.6,
       });

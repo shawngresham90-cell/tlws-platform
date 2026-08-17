@@ -11,9 +11,11 @@
  * What is asserted is the CONTRACT, not the spelling: which route families
  * appear, that every indexable published listing is represented exactly once,
  * that thin/unpublished/deleted rows stay out, that URLs are well formed on
- * the canonical origin, that lastModified is a real date (and comes from
- * updated_at where the row has one), and that robots.ts advertises the
- * sitemap while no emitted URL falls under a robots disallow rule.
+ * the canonical origin, that lastModified is emitted ONLY from a persisted
+ * source date (locations.updated_at / kc_articles.updated_at — never the
+ * clock, so hourly regeneration cannot make unchanged URLs look modified),
+ * and that robots.ts advertises the sitemap while no emitted URL falls under
+ * a robots disallow rule.
  *
  * Run:
  *   npx esbuild scripts/test-sitemap-contract.ts --bundle --platform=node \
@@ -43,7 +45,7 @@ function check(name: string, cond: boolean, detail?: unknown): void {
  *  - loc-001/002: GA on I-75 (exits 333/320), complete rows → detail pages,
  *    state + corridor + exit URLs, parking-flow GA/I-75.
  *  - loc-003: TN CAT scale on I-40 exit 7B → cat-scales flow TN/I-40 and the
- *    lettered-exit slug; null updated_at → lastModified falls back safely.
+ *    lettered-exit slug; null updated_at → NO lastModified (never the clock).
  *  - loc-004: TX, published but THIN (no address) → its state/flow URLs exist,
  *    its detail page must NOT.
  *  - loc-005: FL, unpublished → invisible everywhere.
@@ -296,6 +298,30 @@ const TABLES: Record<string, Record<string, unknown>[]> = {
 
 /* ------------------------------------------------------------------ tests */
 
+/**
+ * Pin the no-argument Date constructor (and Date.now) to a fixed instant, so
+ * two sitemap generations can run under different "clocks". Argument-ful
+ * constructions (new Date(updated_at)) keep their real behavior — those are
+ * the only Date uses the honest-lastmod contract permits.
+ */
+const RealDate = Date;
+function withFakeClock(iso: string): () => void {
+  const fixed = new RealDate(iso).getTime();
+  class FakeDate extends RealDate {
+    constructor(...args: unknown[]) {
+      if (args.length === 0) super(fixed);
+      else super(...(args as [string | number | Date]));
+    }
+    static now(): number {
+      return fixed;
+    }
+  }
+  (globalThis as { Date: DateConstructor }).Date = FakeDate as DateConstructor;
+  return () => {
+    (globalThis as { Date: DateConstructor }).Date = RealDate;
+  };
+}
+
 async function main() {
   process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://placeholder.supabase.co';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'placeholder-anon-key';
@@ -319,9 +345,15 @@ async function main() {
     '/store',
     '/founders',
     '/trip-planner',
+    // Legal pages — /terms was the one indexable footer-linked page missing
+    // from the sitemap (2026-08-17 audit).
+    '/privacy',
+    '/terms',
+    '/sms-terms',
   ]) {
     check(`static route ${path} present`, has(path));
   }
+  check('/terms appears exactly once', urls.filter((u) => u === `${SITE.url}/terms`).length === 1);
   check('homepage present', urlSet.has(SITE.url));
 
   /* ------------------------------------- state pages, from published rows */
@@ -415,7 +447,10 @@ async function main() {
         parsed.hash !== '' ||
         /\/\//.test(parsed.pathname) ||
         /\s/.test(u) ||
-        (parsed.pathname !== '/' && parsed.pathname.endsWith('/'))
+        (parsed.pathname !== '/' && parsed.pathname.endsWith('/')) ||
+        // Canonical paths are lowercase; a cased URL would split signals
+        // with its lowercase canonical.
+        parsed.pathname !== parsed.pathname.toLowerCase()
       );
     } catch {
       return true;
@@ -447,14 +482,54 @@ async function main() {
         new Date('2026-06-15T12:00:00Z').getTime(),
     loves?.lastModified,
   );
+  // The old contract here accepted a clock-time fallback for rows without an
+  // updated_at ("null updated_at still yields a valid lastModified"). That
+  // codified the false-freshness defect: hourly regeneration stamped every
+  // such URL as newly modified. The honest contract is the inverse — no
+  // source date, no <lastmod>.
   const nullUpdated = entries.find(
     (e) => e.url === detailOf('cat-scale-knoxville-west-knoxville-tn'),
   );
   check(
-    'null updated_at still yields a valid lastModified',
-    nullUpdated?.lastModified !== undefined &&
-      !Number.isNaN(new Date(nullUpdated.lastModified as string | Date).getTime()),
+    'null updated_at yields NO lastModified (never the clock)',
+    nullUpdated !== undefined && nullUpdated.lastModified === undefined,
+    nullUpdated?.lastModified,
   );
+  const kcArticle = entries.find((e) => e.url === `${SITE.url}/knowledge/regulations/eld-basics`);
+  check(
+    'KC article lastModified comes from the row updated_at',
+    kcArticle?.lastModified !== undefined &&
+      new Date(kcArticle.lastModified as string | Date).getTime() ===
+        new Date('2026-06-01T00:00:00Z').getTime(),
+    kcArticle?.lastModified,
+  );
+  // Only persisted source dates may carry <lastmod>: with these fixtures that
+  // is exactly two detail rows (loc-001, loc-002) and one KC article. Every
+  // other family — statics, academy, store, tests, states, corridors, exits,
+  // flow steps, KC categories — must omit the field.
+  const dated = entries.filter((e) => e.lastModified !== undefined);
+  check(
+    'lastModified appears on exactly the source-dated fixtures',
+    dated.length === 3 &&
+      dated.every(
+        (e) =>
+          e.url === detailOf('love-s-travel-stop-333-dalton-ga') ||
+          e.url === detailOf('carbondale-truck-lot-dalton-ga') ||
+          e.url === `${SITE.url}/knowledge/regulations/eld-basics`,
+      ),
+    dated.map((e) => e.url).slice(0, 6),
+  );
+
+  /* --------------------------------- clock independence / determinism */
+  // Two generations under different clocks must be byte-identical for
+  // unchanged fixtures: no entry may derive anything from "now".
+  const restoreT1 = withFakeClock('2026-08-17T00:00:00Z');
+  const runA = JSON.stringify(await sitemap());
+  restoreT1();
+  const restoreT2 = withFakeClock('2027-03-01T12:34:56Z');
+  const runB = JSON.stringify(await sitemap());
+  restoreT2();
+  check('sitemap output is identical across different clock times', runA === runB);
 
   /* --------------------------------------------------- robots contract */
   const r = robots();
