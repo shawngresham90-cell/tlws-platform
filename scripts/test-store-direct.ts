@@ -317,7 +317,7 @@ check(
 );
 check(
   'the sitemap lists the policy page',
-  read('src/app/sitemap.ts').includes('SHIPPING_RETURNS_HREF'),
+  read('src/lib/seo/sitemap-entries.ts').includes('SHIPPING_RETURNS_HREF'),
 );
 
 // What remains blocked, and why. After the 2026-08-02 pricing approval the
@@ -535,7 +535,7 @@ check(
   /directProduct\(params\.slug\)/.test(route),
 );
 check('the product route prerenders direct slugs', /DIRECT_PRODUCTS/.test(route));
-const sitemap = read('src/app/sitemap.ts');
+const sitemap = read('src/lib/seo/sitemap-entries.ts');
 check('sitemap lists direct products', /for \(const product of DIRECT_PRODUCTS\)/.test(sitemap));
 check(
   'sitemap still gates Amazon products on visibility',

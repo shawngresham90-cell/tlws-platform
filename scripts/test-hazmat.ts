@@ -252,7 +252,7 @@ check(
 );
 check(
   'sitemap derives test URLs from publishedTests()',
-  /for \(const test of publishedTests\(\)\)/.test(read('src/app/sitemap.ts')),
+  /for \(const test of publishedTests\(\)\)/.test(read('src/lib/seo/sitemap-entries.ts')),
 );
 check(
   'endorsement badge renders from the catalog field (no hazmat-specific UI)',

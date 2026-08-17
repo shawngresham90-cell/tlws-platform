@@ -19,7 +19,7 @@
  *     --alias:server-only=./scripts/shims/server-only.ts \
  *     --outfile=/tmp/test-sitemap.cjs && node /tmp/test-sitemap.cjs
  */
-import sitemap from '@/app/sitemap';
+import { allSitemapEntries as sitemap } from '@/lib/seo/sitemap-entries';
 import { SITE } from '@/lib/seo/site';
 import { DIRECTORY_CATEGORIES, categoryHref } from '@/lib/directory/categories';
 
