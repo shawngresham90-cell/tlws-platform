@@ -299,9 +299,31 @@ revoke all on public.navigator_provider_usage      from anon, authenticated;
 revoke all on public.navigator_provider_user_usage from anon, authenticated;
 
 -- The one grant: reserving. Not reading, not writing directly.
+-- SERVICE ROLE ONLY, AND THE FIRST FORM OF THIS WAS WRONG IN TWO WAYS.
+--
+-- It read `revoke … from public` followed by `grant execute … to
+-- authenticated`. `revoke … from public` removes only the PUBLIC pseudo-role
+-- grant; it does NOT remove the explicit per-role grants Supabase hands out
+-- via `alter default privileges in schema public grant all on functions to
+-- anon, authenticated, service_role`. So on a real project this left EXECUTE
+-- held by anon AND authenticated. And the grant to `authenticated` was never
+-- needed: the only caller is `reserveProviderUnits`, which uses the
+-- `server-only` service-role client.
+--
+-- That mattered because THIS FUNCTION TRUSTS EVERY ARGUMENT, including both
+-- thresholds, while running SECURITY DEFINER. A caller who can reach it can
+-- hand it its own ceiling. Demonstrated on a real server: an anonymous
+-- reservation; one driver charging units to another driver's uuid; and a
+-- single call driving the shared month row to 2,000,041 units against a server
+-- threshold of 100 — a month-long denial of service for every driver.
+--
+-- Fixed here so a fresh project is correct the moment the function exists.
+-- Migration 053 repairs a project where the older form already ran.
 revoke all on function public.navigator_reserve_provider_units(uuid, text, integer, text, integer, integer) from public;
+revoke all on function public.navigator_reserve_provider_units(uuid, text, integer, text, integer, integer) from anon;
+revoke all on function public.navigator_reserve_provider_units(uuid, text, integer, text, integer, integer) from authenticated;
 grant execute on function public.navigator_reserve_provider_units(uuid, text, integer, text, integer, integer)
-  to authenticated;
+  to service_role;
 
 -- =========================================================================
 -- 6. ADMIN REPORTING VIEW
