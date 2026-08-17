@@ -40,6 +40,8 @@ const LIVE_ROUTES = new Set([
   '/directory',
   '/books',
   '/academy',
+  '/academy/curriculum',
+  '/academy/financing',
   '/dot-tools',
 ]);
 
@@ -83,7 +85,40 @@ check(
 );
 check('fallback: no duplicates', new Set(fallback.map((s) => s.href)).size === fallback.length);
 
-/* ── 3. Prototype-chain category names hit the fallback, never throw ────── */
+/* ── 3. PR-C: academy links only where the subject supports them ────────── */
+// CDL-training/career readers get direct curriculum/financing destinations;
+// compliance, hours-of-service, and health content carries no school
+// promotion, and neither does the unknown-category fallback.
+const ACADEMY_RELEVANT = ['cdl-training', 'getting-your-cdl', 'trucking-careers'];
+const ACADEMY_EXCLUDED = ['dot-compliance', 'hours-of-service', 'health-on-the-road'];
+for (const cat of ACADEMY_RELEVANT) {
+  check(
+    `${cat}: carries an academy destination`,
+    conversionsFor(cat).some((s) => s.href.startsWith('/academy')),
+    conversionsFor(cat).map((s) => s.href),
+  );
+}
+for (const cat of ACADEMY_EXCLUDED) {
+  check(
+    `${cat}: carries NO academy promotion`,
+    conversionsFor(cat).every((s) => !s.href.startsWith('/academy')),
+    conversionsFor(cat).map((s) => s.href),
+  );
+}
+check(
+  'cdl-training links the curriculum page directly',
+  conversionsFor('cdl-training').some((s) => s.href === '/academy/curriculum'),
+);
+check(
+  'cdl-training links the financing page directly',
+  conversionsFor('cdl-training').some((s) => s.href === '/academy/financing'),
+);
+check(
+  'fallback carries no academy promotion',
+  conversionsFor('does-not-exist').every((s) => !s.href.startsWith('/academy')),
+);
+
+/* ── 4. Prototype-chain category names hit the fallback, never throw ────── */
 for (const evil of ['constructor', '__proto__', 'hasOwnProperty', 'toString']) {
   const out = conversionsFor(evil);
   check(

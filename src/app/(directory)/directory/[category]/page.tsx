@@ -18,6 +18,8 @@ import {
   stateScopeLinks,
   interstateScopeLinks,
   categoryScopeLinks,
+  stateFlowLinks,
+  interstateFlowLinks,
 } from '@/lib/directory/scope-links';
 import { ENGINE_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import type { DirectoryCategory } from '@/lib/directory/types';
@@ -33,6 +35,8 @@ import {
   getEntriesByState,
   getEntriesByInterstate,
   getDirectoryFacets,
+  getParkingFacets,
+  getCatScaleFacets,
 } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
@@ -179,9 +183,11 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
 
   if (resolved.kind === 'state') {
     const state = resolved.state;
-    const [entries, facets] = await Promise.all([
+    const [entries, facets, parkingFlow, catScaleFlow] = await Promise.all([
       getEntriesByState(state.code),
       getDirectoryFacets(),
+      getParkingFacets(),
+      getCatScaleFacets(),
     ]);
     const cities = new Set(entries.map((e) => e.city));
     const faqs = buildFaqs(entries, { kind: 'state', label: state.name });
@@ -234,7 +240,14 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
           <MultiCategoryBrowser entries={entries} scopeLabel={state.name} groupBy="category" />
           <NearbySections entries={entries} scopeLabel={state.name} />
           <FaqSection faqs={faqs} heading={`${state.name} driver FAQ`} />
-          <RelatedLinks groups={stateScopeLinks(state.name, state.code, entries, facets)} />
+          <RelatedLinks
+            groups={[
+              // Route-flow entry points first — the highest-intent next step
+              // for a driver planning a run (PR-C). Facet-backed only.
+              stateFlowLinks(state.name, state.code, parkingFlow, catScaleFlow),
+              ...stateScopeLinks(state.name, state.code, entries, facets),
+            ]}
+          />
           <p className="mt-10 text-sm text-muted">
             <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
               View on map →
@@ -250,9 +263,11 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
   }
 
   const interstate = resolved.interstate;
-  const [entries, facets] = await Promise.all([
+  const [entries, facets, parkingFlow, catScaleFlow] = await Promise.all([
     getEntriesByInterstate(interstate.designation),
     getDirectoryFacets(),
+    getParkingFacets(),
+    getCatScaleFacets(),
   ]);
   const exits = facets.exitsByInterstate[interstate.designation] ?? [];
   const stateCodes = new Set(entries.map((e) => e.state));
@@ -328,12 +343,11 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
         <NearbySections entries={entries} scopeLabel={interstate.designation} />
         <FaqSection faqs={faqs} heading={`${interstate.designation} driver FAQ`} />
         <RelatedLinks
-          groups={interstateScopeLinks(
-            interstate.designation,
-            interstate.stateOrder,
-            entries,
-            facets,
-          )}
+          groups={[
+            // Direction-flow steps for this corridor (PR-C). Facet-backed only.
+            interstateFlowLinks(interstate.designation, parkingFlow, catScaleFlow),
+            ...interstateScopeLinks(interstate.designation, interstate.stateOrder, entries, facets),
+          ]}
         />
         <p className="mt-10 text-sm text-muted">
           <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">

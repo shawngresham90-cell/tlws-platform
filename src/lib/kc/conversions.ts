@@ -47,11 +47,22 @@ const BOOKS: KcConversion = {
   cta: 'Browse the books',
 };
 
-const ACADEMY: KcConversion = {
-  title: 'Trucking Life Academy',
-  blurb: 'CDL-A training in Dalton, GA from a 17-year zero-violation driver.',
-  href: '/academy',
-  cta: 'See the Academy',
+// Direct academy sub-page destinations (SEO blueprint PR-C): readers of
+// CDL-training and career content get the specific page that answers their
+// question, not just the hub. Copy states what the pages cover — no dates,
+// prices, approvals, or enrollment claims beyond what those pages say.
+const ACADEMY_CURRICULUM: KcConversion = {
+  title: 'Academy Curriculum',
+  blurb: 'The ELDT-built CDL-A curriculum — theory, range, and road time, laid out plainly.',
+  href: '/academy/curriculum',
+  cta: 'See the curriculum',
+};
+
+const ACADEMY_FINANCING: KcConversion = {
+  title: 'Academy Financing',
+  blurb: 'What CDL training costs and the ways students plan to pay for it.',
+  href: '/academy/financing',
+  cta: 'See financing options',
 };
 
 const DOT_TOOLS: KcConversion = {
@@ -63,13 +74,20 @@ const DOT_TOOLS: KcConversion = {
   cta: 'See what’s coming',
 };
 
-/** Category slug → the two most relevant next steps, in order. */
+/**
+ * Category slug → the two most relevant next steps, in order.
+ *
+ * Academy links appear ONLY in the CDL-training/career categories
+ * (cdl-training, getting-your-cdl, trucking-careers) where the reader's
+ * subject genuinely supports them — compliance, hours-of-service, and
+ * health content stays free of school promotion (PR-C rule).
+ */
 const BY_CATEGORY: Record<string, KcConversion[]> = {
   'dot-compliance': [PRACTICE_TESTS, DOT_TOOLS],
   'hours-of-service': [TRIP_PLANNER, PRACTICE_TESTS],
-  'getting-your-cdl': [PRESCHOOL, PRACTICE_TESTS],
-  'cdl-training': [PRESCHOOL, ACADEMY],
-  'trucking-careers': [ACADEMY, BOOKS],
+  'getting-your-cdl': [PRESCHOOL, ACADEMY_FINANCING],
+  'cdl-training': [ACADEMY_CURRICULUM, ACADEMY_FINANCING],
+  'trucking-careers': [ACADEMY_CURRICULUM, BOOKS],
   'health-on-the-road': [BOOKS, DIRECTORY],
 };
 

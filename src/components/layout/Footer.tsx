@@ -19,6 +19,11 @@ const COLUMNS: Array<{
     heading: 'School',
     links: [
       { label: 'Academy', href: '/academy' },
+      // Direct anchors to the academy sub-pages (SEO blueprint PR-C) —
+      // sitewide inbound links so they stop being a closed crawl cluster.
+      { label: 'Curriculum', href: '/academy/curriculum' },
+      { label: 'Financing', href: '/academy/financing' },
+      { label: 'Requirements', href: '/academy/requirements' },
       { label: 'CDL Pre-School', href: '/cdl-pre-school' },
       { label: 'Founding Students', href: '/cdl-pre-school/founding-students' },
       { label: 'Founders Wall', href: '/founders' },
