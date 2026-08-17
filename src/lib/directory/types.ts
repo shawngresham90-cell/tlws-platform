@@ -22,10 +22,20 @@ export type DirectoryEntry = {
   website?: string;
   /**
    * Short amenity/tag labels rendered as chips, e.g. "Overnight confirmed",
-   * "Showers". The overnight chip is derived from `overnight_status` — never
-   * from the legacy boolean — and is absent when the status is unknown.
+   * "Showers". Includes SYNTHETIC presentation chips: parking-attribute
+   * chips and an overnight chip derived from `overnight_status` (never the
+   * legacy boolean) — the overnight chip is always present, "Overnight
+   * unknown" included, so unknown is stated rather than hidden. Because of
+   * those synthetic chips this array is presentation, not evidence — the
+   * indexability gate must read `storedAmenities` instead.
    */
   amenities?: string[];
+  /**
+   * ONLY the amenities the row actually stores (`locations.amenities`), with
+   * no synthetic chips mixed in. This is what may count as a quality signal
+   * (PR-B, 2026-08-17).
+   */
+  storedAmenities?: string[];
   parkingSpaces?: number;
   description?: string;
   /** Validated https URL to reserve this spot on TruckParkingClub (affiliate). */

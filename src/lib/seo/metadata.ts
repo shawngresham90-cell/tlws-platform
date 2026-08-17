@@ -7,6 +7,14 @@ export function buildMetadata(opts?: {
   description?: string;
   path?: string;
   noindex?: boolean;
+  /**
+   * With `noindex`, emit `noindex, follow` instead of the default
+   * `noindex, nofollow` — for gated-but-legitimate pages (thin directory
+   * details) whose internal links should keep passing equity. Ignored when
+   * the page is indexable; intentionally-private surfaces (search, admin,
+   * app screens) simply don't set it and keep nofollow.
+   */
+  follow?: boolean;
   image?: string;
   type?: 'website' | 'article';
 }): Metadata {
@@ -39,6 +47,8 @@ export function buildMetadata(opts?: {
       description,
       ...(opts?.image ? { images: [opts.image] } : {}),
     },
-    robots: opts?.noindex ? { index: false, follow: false } : { index: true, follow: true },
+    robots: opts?.noindex
+      ? { index: false, follow: opts?.follow ?? false }
+      : { index: true, follow: true },
   };
 }

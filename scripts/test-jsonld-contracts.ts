@@ -111,6 +111,9 @@ const completeEntry: DirectoryEntry = {
   address: '1 Fixture Way',
   phone: '706-555-0100',
   amenities: ['Overnight confirmed', 'Showers'],
+  // The row's actual stored amenity — the rendered chips above are
+  // presentation and don't count as gate evidence (PR-B).
+  storedAmenities: ['Showers'],
   // The manual flag stays FALSE — the gate must not consult it.
   indexable: false,
   overnightStatus: 'confirmed',
@@ -122,7 +125,8 @@ const thinEntry: DirectoryEntry = {
   state: 'GA',
   city: 'Dalton',
   slug: 'thin-fixture-stop',
-  // No address → fails the completeness gate regardless of anything else.
+  // No location identity (no address, corridor, or coordinates) → fails the
+  // indexability gate regardless of anything else.
   indexable: false,
   overnightStatus: 'unknown',
 };

@@ -439,6 +439,19 @@ behavior change to any indexable page):**
    equity.
 4. Because sitemap + detail page + ItemList + ranking all import the same
    gate, this is a one-function change with wide, consistent effect.
+   **Implementation note (2026-08-17, PR-B):** the corridor-position
+   assumption above was corrected after read-only production measurement.
+   Eight of the 13 wrongly-excluded listings (rest areas, welcome centers,
+   mobile roadside services) carry a legitimate stored interstate but no
+   structured exit number, no mile marker, and no coordinates — so the
+   "interstate and (exitNumber or mileMarker)" identity leg would have
+   rescued only 5 of 13 (+5/−2, not the approved +13/−2). Owner-authorized
+   correction: a legitimate stored corridor designation alone (validated as
+   a real "I-nnn" value, never free text, alongside the always-required
+   city + state + known category) satisfies location identity; coordinates
+   remain in the quality-signal model (excluding them would have noindexed
+   1,255 pages whose second signal is their verified coordinates). Measured
+   result of the corrected rule: 2,441 → 2,452 indexable, exactly +13/−2.
 5. Separately (owner, data-side, no code): backfill the genuinely missing
    street addresses (Flying J Miami CAT scale, Days Inn Wildwood, TA Lake
    City, Yellow Hammer Brewton) via the admin editor. **Settled (owner,
