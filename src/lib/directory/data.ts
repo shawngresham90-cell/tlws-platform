@@ -61,6 +61,13 @@ function safeUrl(value: string | null): string | undefined {
 }
 
 function toEntry(row: LocationRow): DirectoryEntry {
+  // What the row actually stores — the ONLY amenities that may count as
+  // indexability evidence (PR-B). The chips below add synthetic presentation
+  // values on top and must never be mistaken for stored data.
+  const storedAmenities: string[] = [];
+  if (Array.isArray(row.amenities)) {
+    for (const a of row.amenities) if (typeof a === 'string') storedAmenities.push(a);
+  }
   // Parking attributes render as chips alongside stored amenities.
   const chips: string[] = [];
   if (row.free_parking) chips.push('Free parking');
@@ -70,9 +77,7 @@ function toEntry(row: LocationRow): DirectoryEntry {
   // `overnight_parking` boolean. All three states are stated explicitly —
   // an unreviewed row reads "Overnight unknown" rather than going silent.
   chips.push(overnightChipFor(row.overnight_status));
-  if (Array.isArray(row.amenities)) {
-    for (const a of row.amenities) if (typeof a === 'string') chips.push(a);
-  }
+  chips.push(...storedAmenities);
 
   return {
     id: row.id,
@@ -86,6 +91,7 @@ function toEntry(row: LocationRow): DirectoryEntry {
     phone: row.phone ?? undefined,
     website: safeUrl(row.website),
     amenities: chips.length ? chips : undefined,
+    storedAmenities: storedAmenities.length ? storedAmenities : undefined,
     parkingSpaces: row.parking_spaces ?? undefined,
     description: row.description ?? undefined,
     tpcUrl: safeUrl(row.tpc_url),

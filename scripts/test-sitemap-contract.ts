@@ -26,6 +26,8 @@
 import sitemap from '@/app/sitemap';
 import robots from '@/app/robots';
 import { SITE } from '@/lib/seo/site';
+import { getEntryByDetailSlug } from '@/lib/directory/data';
+import { isDetailIndexable } from '@/lib/directory/detail';
 import { installPostgrestFake } from './helpers/postgrest-fake';
 
 let passed = 0;
@@ -41,15 +43,21 @@ function check(name: string, cond: boolean, detail?: unknown): void {
 /* ---------------------------------------------------------------- fixtures */
 
 /**
- * Six locations exercising every gate the sitemap applies:
+ * Eight locations exercising every gate the sitemap applies:
  *  - loc-001/002: GA on I-75 (exits 333/320), complete rows → detail pages,
  *    state + corridor + exit URLs, parking-flow GA/I-75.
  *  - loc-003: TN CAT scale on I-40 exit 7B → cat-scales flow TN/I-40 and the
  *    lettered-exit slug; null updated_at → NO lastModified (never the clock).
- *  - loc-004: TX, published but THIN (no address) → its state/flow URLs exist,
- *    its detail page must NOT.
+ *  - loc-004: TX, published but NO location identity (no address, corridor,
+ *    or coordinates) → its state/flow URLs exist, its detail page must NOT.
  *  - loc-005: FL, unpublished → invisible everywhere.
  *  - loc-006: CA, soft-deleted → invisible everywhere.
+ *  - loc-007: GA welcome center — corridor identity ONLY (interstate, no
+ *    address, no exit, no coords) + two real signals → detail page present
+ *    (PR-B: rest areas are located by corridor, not street address).
+ *  - loc-008: GA, address + ONE real signal; raw amenities empty, so only
+ *    the synthetic overnight chip could rescue it — its detail page must be
+ *    absent (PR-B: rendered chips are not evidence).
  */
 const LOCATIONS = [
   {
@@ -268,6 +276,80 @@ const LOCATIONS = [
     is_published: true,
     deleted_at: '2026-07-20T00:00:00Z',
   },
+  {
+    id: 'loc-007',
+    name: 'Georgia Welcome Center — Ringgold',
+    category_slug: 'parking',
+    state: 'GA',
+    city: 'Ringgold',
+    slug: 'ga-welcome-center-ringgold',
+    address: null,
+    zip: null,
+    phone: null,
+    website: null,
+    description:
+      'State welcome center on I-75 southbound with dedicated truck parking rows and staffed restrooms.',
+    parking_spaces: null,
+    amenities: ['Restrooms'],
+    free_parking: null,
+    paid_parking: null,
+    reserved_parking: null,
+    overnight_parking: null,
+    tpc_url: null,
+    is_featured: false,
+    is_indexable: false,
+    lat: null,
+    lng: null,
+    interstate: 'I-75',
+    exit_number: null,
+    mile_marker: null,
+    mile_marker_source: null,
+    overnight_status: null,
+    overnight_status_source: null,
+    created_at: '2026-05-07T00:00:00Z',
+    detail_slug: 'georgia-welcome-center-ringgold-ga',
+    updated_at: null,
+    verified_at: null,
+    is_published: true,
+    deleted_at: null,
+  },
+  {
+    id: 'loc-008',
+    name: 'Chip Trap Stop',
+    category_slug: 'truck-stops',
+    state: 'GA',
+    city: 'Dalton',
+    slug: 'chip-trap-stop',
+    address: '1 Chip Way',
+    zip: '30720',
+    phone: null,
+    website: null,
+    description:
+      'Has an address and a description but nothing else — one real signal is not enough.',
+    parking_spaces: null,
+    amenities: [],
+    free_parking: null,
+    paid_parking: null,
+    reserved_parking: null,
+    overnight_parking: null,
+    tpc_url: null,
+    is_featured: false,
+    is_indexable: false,
+    lat: null,
+    lng: null,
+    interstate: null,
+    exit_number: null,
+    mile_marker: null,
+    mile_marker_source: null,
+    overnight_status: null,
+    overnight_status_source: null,
+    created_at: '2026-05-08T00:00:00Z',
+    detail_slug: 'chip-trap-stop-dalton-ga',
+    updated_at: '2026-07-13T08:00:00Z',
+    verified_at: null,
+    is_published: true,
+    deleted_at: null,
+  },
 ];
 
 const KC_CATEGORIES = [
@@ -420,11 +502,37 @@ async function main() {
     check(`indexable listing ${slug} represented`, urlSet.has(detailOf(slug)));
   }
   check(
-    'thin listing excluded (renders noindex)',
+    'no-identity listing excluded (renders noindex)',
     !urlSet.has(detailOf('amarillo-roadside-stop-amarillo-tx')),
   );
   check('unpublished listing excluded', !urlSet.has(detailOf('unpublished-fuel-plaza-ocala-fl')));
   check('soft-deleted listing excluded', !urlSet.has(detailOf('deleted-weigh-station-barstow-ca')));
+  // PR-B: corridor identity — a rest-area-style row with an interstate but
+  // no address, exit, or coordinates is a real place with real signals.
+  check(
+    'corridor-identity listing represented (no address/exit/coords)',
+    urlSet.has(detailOf('georgia-welcome-center-ringgold-ga')),
+  );
+  // PR-B: the synthetic overnight chip must not count as a second signal.
+  check(
+    'one-real-signal listing excluded (chip is not evidence)',
+    !urlSet.has(detailOf('chip-trap-stop-dalton-ga')),
+  );
+
+  /* ------------------- sitemap ↔ page-gate parity (PR-B) ------------------- */
+  // The sitemap's inclusion decision and the detail page's robots decision
+  // must be the same function over the same data-layer entry — for EVERY
+  // fixture, including unpublished/deleted rows (null entry → gated → absent).
+  for (const row of LOCATIONS) {
+    const slug = row.detail_slug as string;
+    const e = await getEntryByDetailSlug(slug);
+    const gate = e !== null && isDetailIndexable(e);
+    const inSitemap = urlSet.has(detailOf(slug));
+    check(`parity: ${slug} sitemap inclusion matches the page gate`, inSitemap === gate, {
+      inSitemap,
+      gate,
+    });
+  }
 
   /* -------------------------------------------------- knowledge center */
   check('active KC category present', has('/knowledge/regulations'));

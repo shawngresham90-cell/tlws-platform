@@ -1,5 +1,6 @@
 import type { DirectoryEntry } from './types';
 import { getCategory } from './categories';
+import { canonicalDesignation } from './interstates';
 import { haversineMiles } from '@/lib/map/geo';
 import { directionsUrl } from '@/lib/map/explore';
 
@@ -144,22 +145,62 @@ export function nearbySections(current: DirectoryEntry, pool: DirectoryEntry[]):
 }
 
 /**
- * The indexability gate. A page earns a place in search results when it says
- * something useful beyond name + city: a street address plus at least two
- * substance signals. Thin pages still render — they just carry noindex until
- * the data fills in. (locations.is_indexable stays an unused manual override
- * upstream of this: it is false on every current row, so the deterministic
- * gate below is what decides.)
+ * Verified stored coordinates: both halves present, finite, inside
+ * real-world ranges, and not the 0,0 null-island placeholder. Reads only
+ * what the row already stores — never a guessed or freshly geocoded value.
+ */
+export function hasVerifiedCoordinates(entry: DirectoryEntry): boolean {
+  return (
+    entry.lat != null &&
+    entry.lng != null &&
+    Number.isFinite(entry.lat) &&
+    Number.isFinite(entry.lng) &&
+    Math.abs(entry.lat) <= 90 &&
+    Math.abs(entry.lng) <= 180 &&
+    !(entry.lat === 0 && entry.lng === 0)
+  );
+}
+
+/**
+ * The indexability gate (redesigned per the 2026-08-17 crawl/indexing audit,
+ * PR-B). A page earns a place in search results when it can say WHERE the
+ * facility is and at least two substantive things ABOUT it.
+ *
+ * Location identity — one of:
+ *   - a street address;
+ *   - a legitimate stored corridor designation (canonicalDesignation accepts
+ *     only real "I-nnn" values, never free text — rest areas, welcome
+ *     centers, and mobile roadside services are located by corridor, not by
+ *     street address; owner decision 2026-08-17, no exit number or mile
+ *     marker required when a corridor is present);
+ *   - verified stored coordinates.
+ * plus city + state + a known category, always.
+ *
+ * Quality signals — at least two of: phone, website, a meaningful
+ * description, at least one STORED amenity, verified coordinates, a
+ * truck-space count. `entry.amenities` is the rendered chip array and always
+ * contains a synthetic overnight-status chip, so it must never be counted as
+ * evidence — `storedAmenities` carries only what the row actually stores.
+ *
+ * Thin pages still render — they just carry noindex (follow) until the data
+ * fills in. (locations.is_indexable stays an unused manual override upstream
+ * of this: it is false on every current row, so the deterministic gate below
+ * is what decides.)
  */
 export function isDetailIndexable(entry: DirectoryEntry): boolean {
-  if (!entry.address || !entry.city || !entry.state) return false;
+  if (!entry.city || !entry.state) return false;
   if (!getCategory(entry.category)) return false;
+  const hasLocationIdentity =
+    Boolean(entry.address) ||
+    canonicalDesignation(entry.interstate) !== null ||
+    hasVerifiedCoordinates(entry);
+  if (!hasLocationIdentity) return false;
   let signals = 0;
   if (entry.phone) signals += 1;
   if (entry.website) signals += 1;
   if ((entry.description ?? '').trim().length >= 30) signals += 1;
-  if ((entry.amenities ?? []).length >= 1) signals += 1;
-  if (entry.lat != null && entry.lng != null) signals += 1;
+  if ((entry.storedAmenities ?? []).length >= 1) signals += 1;
+  if (hasVerifiedCoordinates(entry)) signals += 1;
   if (entry.parkingSpaces != null) signals += 1;
   return signals >= 2;
 }

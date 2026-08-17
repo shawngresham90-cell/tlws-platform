@@ -157,9 +157,10 @@ const full = (over: Partial<DirectoryEntry> = {}): DirectoryEntry =>
 
 /* ---------------- topRanked: detail-indexable gate + cap + no filler ---------------- */
 {
-  // The gate is the deterministic isDetailIndexable (address + >=2 signals),
-  // NOT the unused is_indexable column — so full() entries qualify regardless
-  // of their `indexable` flag, and a thin entry (no address) is excluded.
+  // The gate is the deterministic isDetailIndexable (location identity +
+  // >=2 real signals, PR-B), NOT the unused is_indexable column — so full()
+  // entries qualify regardless of their `indexable` flag, and a thin entry
+  // (no identity at all) is excluded.
   const eligible1 = full({ id: 'e1', indexable: false });
   const eligible2 = full({ id: 'e2', indexable: false });
   const thin = entry({ id: 'thin', name: 'Thin' }); // no address → fails isDetailIndexable

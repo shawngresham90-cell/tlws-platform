@@ -81,6 +81,10 @@ export async function generateMetadata({
     description: detailDescription(entry),
     path: detailHref(params.slug),
     noindex: !isDetailIndexable(entry),
+    // Gated details are noindex, FOLLOW: the page is real and its internal
+    // links (nearby listings, state/corridor pages) should pass equity while
+    // the listing's own data fills in (PR-B, 2026-08-17).
+    follow: true,
   });
 }
 

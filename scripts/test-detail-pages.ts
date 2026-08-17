@@ -276,31 +276,95 @@ const POOL: DirectoryEntry[] = [
   );
 }
 
-/* ------------------------- completeness gate ------------------------- */
+/* --------------- indexability gate (PR-B truth table, 2026-08-17) --------------- */
 {
-  const rich = entry({
-    address: '324 Carbondale Rd',
-    phone: '(706) 555-0100',
-    website: 'https://example.com',
-    amenities: ['Showers'],
-  });
-  check('indexable: address + 2 signals', isDetailIndexable(rich));
+  // Two genuine stored quality signals, reusable across identity cases.
+  const twoSignals = { phone: '(706) 555-0100', website: 'https://example.com' };
+
+  // Location identity — each accepted form, with the base fields intact.
   check(
-    'indexable: coords count as a signal',
+    'gate: street-address identity + 2 signals → indexable',
+    isDetailIndexable(entry({ address: '324 Carbondale Rd', ...twoSignals })),
+  );
+  check(
+    'gate: corridor + exit identity + 2 signals → indexable',
+    isDetailIndexable(entry({ interstate: 'I-75', exitNumber: '2', ...twoSignals })),
+  );
+  check(
+    'gate: corridor + mile-marker identity + 2 signals → indexable',
+    isDetailIndexable(entry({ interstate: 'I-75', mileMarker: 63, ...twoSignals })),
+  );
+  // Owner decision 2026-08-17: a legitimate stored corridor alone is
+  // identity — rest areas / welcome centers / mobile services carry no
+  // structured exit, mile marker, or coordinates.
+  check(
+    'gate: corridor identity alone (no exit/mm) + 2 signals → indexable',
+    isDetailIndexable(entry({ interstate: 'I-75', ...twoSignals })),
+  );
+  check(
+    'gate: free-text corridor value is NOT identity',
+    !isDetailIndexable(entry({ interstate: 'Alligator Alley', ...twoSignals })),
+  );
+  check(
+    'gate: verified-coordinate identity (+coord signal) + 1 more signal → indexable',
+    isDetailIndexable(entry({ lat: 34.7357, lng: -84.9227, phone: '555' })),
+  );
+  check(
+    'gate: 0,0 coordinates are NOT identity',
+    !isDetailIndexable(entry({ lat: 0, lng: 0, ...twoSignals })),
+  );
+  check(
+    'gate: out-of-range coordinates are NOT identity',
+    !isDetailIndexable(entry({ lat: 134.7, lng: -84.9, ...twoSignals })),
+  );
+  check(
+    'gate: non-finite coordinates are NOT identity',
+    !isDetailIndexable(entry({ lat: Number.NaN, lng: -84.9, ...twoSignals })),
+  );
+
+  // Base fields are always required, identity or not.
+  check(
+    'gate: missing city → noindex',
+    !isDetailIndexable(entry({ city: '', address: 'x', ...twoSignals })),
+  );
+  check(
+    'gate: missing state → noindex',
+    !isDetailIndexable(entry({ state: '', address: 'x', ...twoSignals })),
+  );
+  check(
+    'gate: unknown category → noindex',
+    !isDetailIndexable(entry({ category: 'mystery', address: 'x', ...twoSignals })),
+  );
+  check('gate: no location identity at all → noindex', !isDetailIndexable(entry(twoSignals)));
+
+  // Signal counting.
+  check(
+    'gate: identity + only 1 signal → noindex',
+    !isDetailIndexable(entry({ address: 'x', phone: '555' })),
+  );
+  check(
+    'gate: short description is not a signal',
+    !isDetailIndexable(entry({ address: 'x', phone: '555', description: 'ok' })),
+  );
+  check(
+    'gate: synthetic overnight chip in amenities is NOT a signal',
+    !isDetailIndexable(entry({ address: 'x', phone: '555', amenities: ['Overnight unknown'] })),
+  );
+  check(
+    'gate: rendered chips array is never evidence (even real-looking chips)',
+    !isDetailIndexable(entry({ address: 'x', phone: '555', amenities: ['Showers'] })),
+  );
+  check(
+    'gate: a genuine STORED amenity is a signal',
+    isDetailIndexable(entry({ address: 'x', phone: '555', storedAmenities: ['Showers'] })),
+  );
+  check(
+    'gate: verified coordinates count as a quality signal',
     isDetailIndexable(entry({ address: 'x', lat: 34, lng: -84, phone: '555' })),
   );
-  const thin = entry({});
-  check('noindex: no address', !isDetailIndexable(thin));
-  check('noindex: address but 1 signal', !isDetailIndexable(entry({ address: 'x', phone: '555' })));
   check(
-    'noindex: short description not a signal',
-    !isDetailIndexable(entry({ address: 'x', description: 'ok' })),
-  );
-  check(
-    'noindex: unknown category',
-    !isDetailIndexable(
-      entry({ category: 'mystery', address: 'x', phone: '5', website: 'https://x.com' }),
-    ),
+    'gate: 0,0 coordinates are not a signal either',
+    !isDetailIndexable(entry({ address: 'x', phone: '555', lat: 0, lng: 0 })),
   );
 }
 
