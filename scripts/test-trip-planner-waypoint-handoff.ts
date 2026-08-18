@@ -36,7 +36,13 @@ import {
   tripKeyFor,
   type PlannedStop,
 } from '@/lib/trip-planner/planned-stop';
-import { driveWindow } from '@/lib/trip-planner/drive-window';
+import {
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+  SAFETY_BUFFER_PRESETS,
+  driveWindow,
+  isSafetyBufferPreset,
+} from '@/lib/trip-planner/drive-window';
 import { planBreak } from '@/lib/trip-planner/break-plan';
 import type { ParkingChoice } from '@/lib/trip-planner/plan-my-day';
 import type { RemainingClocks, StopCandidate } from '@/lib/trip-planner/types';
@@ -825,6 +831,123 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
   check(
     '13n: the Navigator compares against the live fingerprint',
     /readPlannedStop\(record, Date\.now\(\), currentInputsFingerprint\(\)\)/.test(first),
+  );
+}
+
+/* ===================================================================== *
+ * 14. THE SAFETY BUFFER — owner-set to 60, and only ever subtractive
+ * ===================================================================== *
+ * The buffer is the one number on this screen a driver can change, and the
+ * one most easily misread as extra legal time. These pin both halves: the
+ * value the owner settled on, and the fact that it moves the STOP TARGET
+ * without moving the legal limit.
+ */
+{
+  check(
+    '14a: Plan My Day recommends exactly 60 minutes',
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 60,
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
+  );
+  check(
+    '14b: the classic planner keeps exactly 30, untouched by that decision',
+    CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30,
+    CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  );
+  check(
+    '14c: the two screens still have genuinely different defaults',
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN !== CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  );
+  check(
+    '14d: both defaults are selectable presets, not off-menu values',
+    isSafetyBufferPreset(PLAN_MY_DAY_DEFAULT_BUFFER_MIN) &&
+      isSafetyBufferPreset(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),
+  );
+  check(
+    '14e: the preset list itself is unchanged by the new default',
+    SAFETY_BUFFER_PRESETS.join(',') === '15,30,45,60,90',
+    SAFETY_BUFFER_PRESETS.join(','),
+  );
+
+  /*
+   * THE BUFFER SUBTRACTS; IT NEVER RELAXES THE CLOCK.
+   *
+   * Same clocks, three buffers. `clockLimitMin` — what the rules allow — is
+   * identical in all three. Only `stopTargetMin` moves. If a future edit ever
+   * let the buffer touch the legal limit, this is where it fails.
+   */
+  const clocks: RemainingClocks = {
+    drivingMin: 300,
+    windowMin: 800,
+    untilBreakMin: 700,
+    cycleMin: 3000,
+    limitedBy: '11-hour',
+    legalDrivingMin: 300,
+  };
+  const at0 = driveWindow(clocks, 0);
+  const at60 = driveWindow(clocks, PLAN_MY_DAY_DEFAULT_BUFFER_MIN);
+  const at30 = driveWindow(clocks, CLASSIC_PLANNER_DEFAULT_BUFFER_MIN);
+
+  check(
+    '14f: the legal clock limit is the same at every buffer',
+    'clockLimitMin' in at0 &&
+      'clockLimitMin' in at60 &&
+      'clockLimitMin' in at30 &&
+      at0.clockLimitMin === 300 &&
+      at60.clockLimitMin === 300 &&
+      at30.clockLimitMin === 300,
+    [at0, at60, at30],
+  );
+  check(
+    '14g: a 60-minute buffer moves the stop target down by exactly 60',
+    'stopTargetMin' in at60 && at60.stopTargetMin === 240,
+    'stopTargetMin' in at60 ? at60.stopTargetMin : at60,
+  );
+  check(
+    '14h: the buffer is recorded as chosen, not silently normalised',
+    'bufferMin' in at60 && at60.bufferMin === 60,
+    'bufferMin' in at60 ? at60.bufferMin : at60,
+  );
+  check(
+    '14i: a wider buffer never produces a target above a narrower one',
+    'stopTargetMin' in at30 && 'stopTargetMin' in at60 && at60.stopTargetMin < at30.stopTargetMin,
+  );
+
+  /* An oversized buffer means "stop now", never a negative target a caller
+   * could add back into the clock. */
+  const huge = driveWindow(clocks, 5000);
+  check(
+    '14j: an oversized buffer floors the target at zero rather than going negative',
+    'stopTargetMin' in huge && huge.stopTargetMin === 0,
+    'stopTargetMin' in huge ? huge.stopTargetMin : huge,
+  );
+  check(
+    '14k: …and still does not shorten the legal limit',
+    'clockLimitMin' in huge && huge.clockLimitMin === 300,
+  );
+
+  /*
+   * CHANGING THE BUFFER INVALIDATES A CHOSEN STOP.
+   *
+   * The buffer is a planning input like any other: a stop that cleared a
+   * 60-minute buffer may sit inside a 90-minute one. The planner's signature
+   * carries it for exactly that reason, and this asserts the wiring rather
+   * than trusting the comment.
+   */
+  const fs = require('node:fs') as typeof import('node:fs');
+  const app = fs.readFileSync('src/components/trip-planner/PlanMyDayApp.tsx', 'utf8');
+  const sig = app.slice(app.indexOf('const planningSignature'), app.indexOf('const lastSignature'));
+  check(
+    '14l: the buffer is part of the planning signature',
+    /buffer:\$\{bufferMin\}/.test(sig),
+    sig.slice(0, 200),
+  );
+  check(
+    '14m: …so a buffer change clears the stored stop like any other input',
+    /clearPlannedStopRecord\(\)/.test(app) && /planningSignature/.test(app),
+  );
+  check(
+    '14n: the screen seeds itself from the owner-set default',
+    /useState<SafetyBufferMin>\(PLAN_MY_DAY_DEFAULT_BUFFER_MIN\)/.test(app),
   );
 }
 

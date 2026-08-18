@@ -134,7 +134,7 @@ asserts it contains no `mph` constant and never imports the estimator.
 - **Stop target** — earlier by the driver's chosen buffer. A preference, not a
   regulation.
 
-Presets are 15 / 30 / 45 / 60 / 90 minutes, **45 recommended**. The buffer is
+Presets are 15 / 30 / 45 / 60 / 90 minutes, **60 recommended**. The buffer is
 clamped at zero so a negative value cannot buy time back, and floored so an
 oversized one means "stop now" rather than a negative target. Proved across
 every preset against a spread of clock sets: **no buffer can move the stop
@@ -296,7 +296,7 @@ So the **validation is shared** and the **defaults are named for their screens**
 
 | Constant | Value | Owner |
 | --- | --- | --- |
-| `PLAN_MY_DAY_DEFAULT_BUFFER_MIN` | 45 | Plan My Day's recommendation |
+| `PLAN_MY_DAY_DEFAULT_BUFFER_MIN` | 60 | Plan My Day's recommendation (owner-set) |
 | `CLASSIC_PLANNER_DEFAULT_BUFFER_MIN` | 30 | the classic cost planner, unchanged |
 
 Both live in `drive-window.ts`, both pass the same `isSafetyBufferPreset`

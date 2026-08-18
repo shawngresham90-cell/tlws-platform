@@ -526,8 +526,8 @@ function clocks(over: Partial<RemainingClocks> = {}): RemainingClocks {
     isSafetyBufferPreset(PLAN_MY_DAY_DEFAULT_BUFFER_MIN),
   );
   check(
-    'buffer: 45 minutes is Plan My Day’s recommendation',
-    PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 45,
+    'buffer: 60 minutes is Plan My Day’s recommendation',
+    PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 60,
     PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
   );
   /*
