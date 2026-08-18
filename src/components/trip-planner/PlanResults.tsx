@@ -1,6 +1,6 @@
 'use client';
 
-import type { PlanMyDay } from '@/lib/trip-planner/plan-my-day';
+import type { ParkingChoice, PlanMyDay } from '@/lib/trip-planner/plan-my-day';
 import { PARKING_SHORTFALL_NOTE } from '@/lib/trip-planner/plan-my-day';
 import { mayClaimLiveTraffic } from '@/lib/trip-planner/traffic';
 import { ZONE_EXPLANATION } from '@/lib/trip-planner/clock-limit-marker';
@@ -37,7 +37,22 @@ function hoursMinutes(min: number): string {
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
 }
 
-export function PlanResults({ plan }: { plan: PlanMyDay }) {
+export function PlanResults({
+  plan,
+  onChooseParking,
+  chosenParkingId = null,
+}: {
+  plan: PlanMyDay;
+  /**
+   * Hand this parking choice to the Navigator as a planned waypoint.
+   * OPTIONAL: the classic planner renders the same results with no
+   * Navigator to hand anything to, and passing nothing simply renders the
+   * cards as they always were.
+   */
+  onChooseParking?: (choice: ParkingChoice) => void;
+  /** The id already sent, so the button can confirm rather than repeat. */
+  chosenParkingId?: string | null;
+}) {
   return (
     <div className="mt-6 space-y-4" data-plan-results="">
       {/* ---- traffic ------------------------------------------------- */}
@@ -186,6 +201,30 @@ export function PlanResults({ plan }: { plan: PlanMyDay }) {
               <p className={`mt-1 ${MUTED}`} data-parking-source="">
                 Record: {choice.source}. Parking availability is not guaranteed.
               </p>
+              {/*
+                Sending a stop to the Navigator is the one action on this
+                screen, so it is a full-width 48px target rather than a link
+                in a row of links — this is read in a cab, and the next thing
+                the driver does is put the phone down.
+
+                The confirmed state does NOT disable the button. A driver who
+                taps twice meant it twice, and re-sending the same stop is
+                harmless (one slot, replaced in place); a disabled control
+                that has already swallowed one tap is how a driver ends up
+                unsure whether it worked at all.
+              */}
+              {onChooseParking === undefined ? null : (
+                <button
+                  type="button"
+                  className="mt-3 min-h-12 w-full rounded-cockpit border border-signal bg-signal/10 px-4 text-lg font-semibold text-ink"
+                  data-send-to-navigator={choice.candidate.id}
+                  onClick={() => onChooseParking(choice)}
+                >
+                  {chosenParkingId === choice.candidate.id
+                    ? 'Sent to Navigator ✓'
+                    : 'Send to Navigator'}
+                </button>
+              )}
             </li>
           ))}
         </ul>

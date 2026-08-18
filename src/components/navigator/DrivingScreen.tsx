@@ -108,6 +108,7 @@ import {
 } from '@/lib/navigator/truck-profile';
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
+import { TripPlanFirst } from './TripPlanFirst';
 import { VoiceControls } from './VoiceControls';
 
 /**
@@ -2247,6 +2248,29 @@ export function DrivingScreen({
         pilot.active && !fullScreen && lcState === 'idle' ? (
           <LockGate action="edit-destination" lockedLabel="Destination search" compact>
             <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
+              {/*
+                Trip plan first? — and, when the driver arrives carrying one,
+                the planned stop itself. Sits ABOVE the search because it is
+                the earlier question: a driver who has already planned should
+                not have to retype the stop they just chose.
+
+                Behind the same edit-destination gate as the search below,
+                because using a planned stop SETS A DESTINATION — a moving
+                truck gets neither.
+
+                Planning is never forced: this renders nothing at all once the
+                driver has answered, and the search underneath is untouched
+                either way.
+              */}
+              <TripPlanFirst
+                onUsePlannedStop={(place) => {
+                  setPicked(place);
+                  // Trip Planner plans U.S. property-carrier hours only, so a
+                  // stop that came from it is attested U.S. — the same
+                  // recorded-at-pick discipline the search uses below.
+                  setPickedCountry('USA');
+                }}
+              />
               <DestinationSearch
                 origin={searchOrigin}
                 disabled={startPending}
