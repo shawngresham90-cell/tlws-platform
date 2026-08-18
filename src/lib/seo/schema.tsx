@@ -1,4 +1,5 @@
 import { SITE } from './site';
+import { ACADEMY_ADDRESS } from '@/lib/academy/program';
 
 /**
  * JSON-LD schema builders. Structured data does double duty: Google rich
@@ -16,8 +17,12 @@ export function organizationSchema() {
     url: SITE.url,
     description: SITE.description,
     slogan: SITE.tagline,
+    // Street from lib/academy/program — the same authority the visible copy
+    // and the Academy JSON-LD read, so the org node can never disagree with
+    // them. Still no postalCode: the ZIP is not a confirmed fact.
     address: {
       '@type': 'PostalAddress',
+      streetAddress: ACADEMY_ADDRESS.street,
       addressLocality: SITE.city,
       addressRegion: SITE.region,
       addressCountry: 'US',
