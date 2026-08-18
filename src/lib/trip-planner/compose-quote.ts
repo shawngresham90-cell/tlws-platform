@@ -537,7 +537,7 @@ export async function composeQuote(
       via: input.via ? input.via.label : null,
       destination: input.destination.label,
     },
-    breakPlan: plan.breakPlan,
+    breakSchedule: plan.breakSchedule,
     parking: plan.parking,
   });
 

@@ -1,9 +1,9 @@
-import type { RemainingClocks } from './types';
+import { HOS, type RemainingClocks } from './types';
 import type { RouteTiming } from './route-time-axis';
-import type { BreakPlan } from './break-plan';
+import type { BreakSchedule } from './break-plan';
 import type { ParkingChoice } from './plan-my-day';
 import type { TripLeg } from './route-legs';
-import { driveWindow, type BindingRule } from './drive-window';
+import { driveWindow, requiredBreaksBefore, type BindingRule } from './drive-window';
 import { reachWithinClocks } from './last-stop';
 
 /**
@@ -144,8 +144,8 @@ export function buildTripPlan(input: {
   /** Provider leg slices (route-legs.ts). */
   legs: TripLeg[];
   labels: { origin: string; via: string | null; destination: string };
-  /** The break the plan already placed (plan-my-day). */
-  breakPlan: BreakPlan | null;
+  /** EVERY required break the plan already placed (plan-my-day, TP-3). */
+  breakSchedule: BreakSchedule | null;
   /** The ranked qualified parking the cards render (plan-my-day). */
   parking: readonly ParkingChoice[];
 }): TripPlan {
@@ -199,32 +199,49 @@ export function buildTripPlan(input: {
     driveMinutes: leg.driveMinutes,
   }));
 
-  /** The via passage, when the route carries one and boundaries exist. */
+  /**
+   * The via passage, when the route carries one and boundaries exist.
+   * Its wall-clock time includes the 30-minute dwell of every break the
+   * truck has already taken by then (TP-3) — the section sum is pure
+   * driving seconds, and the truck really did stand still for each break.
+   */
   const viaEvent = (): Extract<TripPlanEvent, { kind: 'via' }> | null => {
     if (labels.via === null || input.legs.length < 2) return null;
     const first = input.legs[0];
+    const viaDriveMin = first.endS / 60;
+    const dwellMin = HOS.MIN_BREAK_MIN * requiredBreaksBefore(viaDriveMin, clocks.untilBreakMin);
     return {
       kind: 'via',
       label: labels.via,
       mile: first.endMile,
-      atMs: departAtMs + first.endS * 1000,
+      atMs: departAtMs + (first.endS + dwellMin * 60) * 1000,
     };
   };
 
-  /** The break, when one is owed inside the plan's driving. */
-  const breakEvent = (
-    beforeDrivingMin: number,
-  ): Extract<TripPlanEvent, { kind: 'break' }> | null => {
-    const b = input.breakPlan;
-    if (b === null || b.required !== true) return null;
-    if (b.targetMin >= beforeDrivingMin) return null;
-    return {
-      kind: 'break',
-      targetMin: b.targetMin,
-      targetMile: b.targetMile,
-      byMs: b.byMs,
-      coarse: b.coarse,
-    };
+  /** Every break owed inside the plan's driving, in driving order (TP-3). */
+  const breakEvents = (beforeDrivingMin: number): Extract<TripPlanEvent, { kind: 'break' }>[] => {
+    const schedule = input.breakSchedule;
+    if (schedule === null || schedule.problem !== null) return [];
+    return schedule.breaks
+      .filter((b) => b.targetMin < beforeDrivingMin)
+      .map((b) => ({
+        kind: 'break' as const,
+        targetMin: b.targetMin,
+        targetMile: b.targetMile,
+        byMs: b.byMs,
+        coarse: b.coarse,
+      }));
+  };
+
+  /**
+   * Chronological order for the events between start and the terminal
+   * event, by DRIVING minutes — dwell accumulates monotonically, so the
+   * driving order and the wall-clock order are the same order.
+   */
+  const drivingMinutesOf = (e: TripPlanEvent): number => {
+    if (e.kind === 'break') return e.targetMin;
+    if (e.kind === 'via' && input.legs.length >= 2) return input.legs[0].endS / 60;
+    return Number.POSITIVE_INFINITY;
   };
 
   const start: TripPlanEvent = { kind: 'start', label: labels.origin, atMs: departAtMs };
@@ -234,20 +251,10 @@ export function buildTripPlan(input: {
     // No parking stop is invented for a drive the clocks legally cover.
     const clockLeftMin = Math.floor(destinationReach.hosRemainingMinAtArrival);
     const events: TripPlanEvent[] = [start];
-    const brk = breakEvent(destinationReach.driveMinutes);
     const via = viaEvent();
-    // Chronological: order the break and the via by driving minutes.
-    const middle: TripPlanEvent[] = [];
-    if (brk) middle.push(brk);
-    if (via) {
-      const viaDriveMin = (via.atMs - departAtMs) / 60_000;
-      if (brk && brk.targetMin > viaDriveMin) {
-        middle.length = 0;
-        middle.push(via, brk);
-      } else {
-        middle.push(via);
-      }
-    }
+    const middle: TripPlanEvent[] = [...breakEvents(destinationReach.driveMinutes)];
+    if (via) middle.push(via);
+    middle.sort((a, b) => drivingMinutesOf(a) - drivingMinutesOf(b));
     events.push(...middle, {
       kind: 'destination',
       label: labels.destination,
@@ -278,23 +285,12 @@ export function buildTripPlan(input: {
         (top.arriveAtMs - departAtMs) / 60_000
       : (stopDriveMin ?? 0);
 
-  const brk = breakEvent(planEndDrivingMin);
   const via = viaEvent();
-  const middle: TripPlanEvent[] = [];
-  if (brk) middle.push(brk);
-  if (via) {
-    const viaDriveMin = (via.atMs - departAtMs) / 60_000;
-    // The via only appears when the truck actually passes it before the
-    // plan's final stop — later legs are never shown as confirmed.
-    if (viaDriveMin <= planEndDrivingMin) {
-      if (brk && brk.targetMin > viaDriveMin) {
-        middle.length = 0;
-        middle.push(via, brk);
-      } else {
-        middle.push(via);
-      }
-    }
-  }
+  const middle: TripPlanEvent[] = [...breakEvents(planEndDrivingMin)];
+  // The via only appears when the truck actually passes it before the
+  // plan's final stop — later legs are never shown as confirmed.
+  if (via && drivingMinutesOf(via) <= planEndDrivingMin) middle.push(via);
+  middle.sort((a, b) => drivingMinutesOf(a) - drivingMinutesOf(b));
   events.push(...middle);
 
   if (top !== undefined) {

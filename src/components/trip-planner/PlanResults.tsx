@@ -213,6 +213,17 @@ export function PlanResults({
               never pauses.
               {plan.breakMarker?.kind === 'zone' ? ' Shown as a zone: timing here is coarse.' : ''}
             </p>
+            {/*
+              TP-3: a long enough horizon owes ANOTHER break 8 driving
+              hours after this one. The card keeps describing the first;
+              the timeline below carries every one chronologically.
+            */}
+            {plan.breakSchedule !== null && plan.breakSchedule.breaks.length > 1 ? (
+              <p className={`mt-1 ${MUTED}`} data-further-break="">
+                Another 30-minute break becomes required later in this plan — it appears in Your
+                Trip Plan below, and it also costs 14-hour window time.
+              </p>
+            ) : null}
           </div>
         )}
       </section>

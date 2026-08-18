@@ -14,6 +14,8 @@
  *   - a cycle-limited plan renders chronological events in engine order,
  *     ending at the clock-update boundary with the approved wording
  *   - a fresh-clock plan ends at the Destination with no parking stop
+ *   - a multi-break plan (TP-3) renders BOTH breaks chronologically and
+ *     the break card notes the further break
  *   - the screen never scrolls sideways
  *
  *   node scripts/bench/tp2-corridor-viewports.mjs --port 3421
@@ -194,6 +196,28 @@ for (const w of WIDTHS) {
   check(
     `${w}px: no parking stop is invented when the drive is coverable`,
     !reachKinds.includes('parking') && !reachKinds.includes('clock-update'),
+  );
+
+  // ---- scenario 3: two required breaks (TP-3) ------------------------
+  scenario = 'twoBreaks';
+  await page.locator('[data-plan-button]').click();
+  await page.waitForTimeout(600);
+  await page.locator('[data-further-break]').waitFor({ timeout: 10_000 });
+  const twoBreakKinds = await page
+    .locator('[data-trip-event]')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('data-trip-event')));
+  check(
+    `${w}px: the multi-break plan renders the engine's own event order`,
+    twoBreakKinds.join('>') === SCENARIOS.twoBreaks.expectedKinds.join('>'),
+    twoBreakKinds.join('>'),
+  );
+  check(
+    `${w}px: both 30-minute breaks appear chronologically`,
+    twoBreakKinds.filter((k) => k === 'break').length >= 2,
+  );
+  check(
+    `${w}px: the break card admits the further break`,
+    (await page.locator('[data-further-break]').innerText()).includes('Another 30-minute break'),
   );
 
   // ---- the screen never scrolls sideways -----------------------------

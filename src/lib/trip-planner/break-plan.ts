@@ -1,5 +1,6 @@
 import { HOS, type RemainingClocks } from './types';
 import type { RouteTiming } from './route-time-axis';
+import { nthBreakDueAfterMin, requiredBreaksBefore } from './drive-window';
 
 /**
  * Where the 30-minute break should happen — timed by the provider, or not
@@ -49,50 +50,49 @@ export type BreakPlan =
   | { required: false; reason: string }
   | { required: null; problem: string };
 
+/* --------------------------------------------- the full schedule (TP-3) */
+
+/** One required 30-minute break, placed on provider time. */
+export type PlannedBreak = {
+  /** Driving minutes from departure at which this break becomes REQUIRED. */
+  dueAfterDrivingMin: number;
+  /** Driving minutes from departure to the point we aim for (lead applied). */
+  targetMin: number;
+  /** Route miles at that point, from provider timing. */
+  targetMile: number | null;
+  /**
+   * Worst-case wall-clock arrival at the aim point, epoch ms — INCLUDING
+   * the 30-minute dwell of every earlier break in this schedule, because
+   * the truck really does stand still for each one.
+   */
+  byMs: number;
+  /** Minutes this break consumes from the 14-hour window. */
+  costsWindowMin: number;
+  coarse: boolean;
+};
+
 /**
- * Plan the break inside a usable driving window.
- *
- * `usableDriveMin` is the clock limit from `driveWindow` — already net of
- * the break's cost to the 14-hour window, so this function places the break
- * rather than re-charging for it.
+ * Every required break inside the horizon, in driving order — or an
+ * honest refusal. `breaks` is empty when the horizon ends before the
+ * first break falls due; `problem` is set when breaks ARE owed but the
+ * provider returned no usable timing, because a break the planner cannot
+ * place on the road is not one it may confidently draw.
  */
-export function planBreak(input: {
-  clocks: RemainingClocks;
-  usableDriveMin: number;
-  timing: RouteTiming;
-  departAtMs: number;
-}): BreakPlan {
-  const { clocks, usableDriveMin, timing, departAtMs } = input;
+export type BreakSchedule =
+  | { breaks: PlannedBreak[]; problem: null }
+  | { breaks: []; problem: string };
 
-  if (!Number.isFinite(clocks.untilBreakMin) || clocks.untilBreakMin < 0) {
-    return { required: null, problem: 'break clock is not a usable number of minutes.' };
-  }
-
-  /*
-   * NO BREAK INSIDE THIS DRIVE. Said in the engine's own terms — the drive
-   * ends before the break clock does — rather than as a general claim that
-   * the driver needs no break today.
-   */
-  if (clocks.untilBreakMin >= usableDriveMin) {
-    return { required: false, reason: NO_BREAK_EXPECTED };
-  }
-
-  if (timing.kind !== 'provider') {
-    return {
-      required: null,
-      problem: 'cannot place a break safely — the route provider returned no usable travel times.',
-    };
-  }
-
-  // Aim early, but never before departure.
-  const targetMin = Math.max(0, clocks.untilBreakMin - BREAK_LEAD_MIN);
-
-  /*
-   * Find the route mile at that time. The axis answers time→distance only
-   * through distance→time, so this walks candidate miles rather than
-   * inverting: a coarse bisection is enough for a target that is honest to
-   * roughly a provider action anyway, and it never invents a speed.
-   */
+/**
+ * Find the route mile the truck reaches after `targetMin` driving
+ * minutes. The axis answers time→distance only through distance→time, so
+ * this walks candidate miles rather than inverting: a coarse bisection is
+ * enough for a target that is honest to roughly a provider action anyway,
+ * and it never invents a speed.
+ */
+function mileAtDrivingMinutes(
+  timing: Extract<RouteTiming, { kind: 'provider' }>,
+  targetMin: number,
+): { targetMile: number | null; coarse: boolean; byMin: number } {
   let lo = 0;
   let hi = 5000; // miles; far beyond any single duty period
   let targetMile: number | null = null;
@@ -114,13 +114,96 @@ export function planBreak(input: {
       byMin = w.latestMin;
     }
   }
+  return { targetMile, coarse, byMin };
+}
 
+/**
+ * Plan EVERY required break inside a usable driving window (TP-3).
+ *
+ * `usableDriveMin` is the clock limit from `driveWindow` — already net of
+ * every break's cost to the 14-hour window, so this function places the
+ * breaks rather than re-charging for them. Break k falls due after
+ * `nthBreakDueAfterMin(untilBreakMin, k)` driving minutes; one strictly
+ * inside the horizon is planned, one at or past its end is not — the
+ * same strict boundary the window math and the parking filter use,
+ * because all three read the same primitives.
+ *
+ * A qualifying break resets ONLY the break timer. The schedule never
+ * restores driving, window or cycle time — each entry only ADDS its
+ * 30-minute dwell to the wall clock of everything after it.
+ */
+export function planBreakSchedule(input: {
+  clocks: RemainingClocks;
+  usableDriveMin: number;
+  timing: RouteTiming;
+  departAtMs: number;
+}): BreakSchedule {
+  const { clocks, usableDriveMin, timing, departAtMs } = input;
+
+  if (!Number.isFinite(clocks.untilBreakMin) || clocks.untilBreakMin < 0) {
+    return { breaks: [], problem: 'break clock is not a usable number of minutes.' };
+  }
+  const count = requiredBreaksBefore(usableDriveMin, clocks.untilBreakMin);
+  if (count === 0) return { breaks: [], problem: null };
+
+  if (timing.kind !== 'provider') {
+    return {
+      breaks: [],
+      problem: 'cannot place a break safely — the route provider returned no usable travel times.',
+    };
+  }
+
+  const breaks: PlannedBreak[] = [];
+  for (let k = 1; k <= count; k++) {
+    const dueAfterDrivingMin = nthBreakDueAfterMin(clocks.untilBreakMin, k);
+    // Aim early, but never before departure.
+    const targetMin = Math.max(0, dueAfterDrivingMin - BREAK_LEAD_MIN);
+    const placed = mileAtDrivingMinutes(timing, targetMin);
+    breaks.push({
+      dueAfterDrivingMin,
+      targetMin,
+      targetMile: placed.targetMile === null ? null : Number(placed.targetMile.toFixed(1)),
+      // Wall clock = provider driving time to the aim point plus the
+      // dwell of every break already taken before it.
+      byMs: departAtMs + (placed.byMin + (k - 1) * HOS.MIN_BREAK_MIN) * 60_000,
+      costsWindowMin: HOS.MIN_BREAK_MIN,
+      coarse: placed.coarse,
+    });
+  }
+  return { breaks, problem: null };
+}
+
+/**
+ * Plan the FIRST break inside a usable driving window.
+ *
+ * Since TP-3 this is a thin wrapper over `planBreakSchedule` — the single
+ * break-schedule truth — kept because every existing consumer (the break
+ * card, the map marker, the harnesses) wants exactly the first break in
+ * this shape.
+ */
+export function planBreak(input: {
+  clocks: RemainingClocks;
+  usableDriveMin: number;
+  timing: RouteTiming;
+  departAtMs: number;
+}): BreakPlan {
+  const schedule = planBreakSchedule(input);
+  if (schedule.problem !== null) return { required: null, problem: schedule.problem };
+  const first = schedule.breaks[0];
+  if (first === undefined) {
+    /*
+     * NO BREAK INSIDE THIS DRIVE. Said in the engine's own terms — the
+     * drive ends before the break clock does — rather than as a general
+     * claim that the driver needs no break today.
+     */
+    return { required: false, reason: NO_BREAK_EXPECTED };
+  }
   return {
     required: true,
-    targetMin,
-    targetMile: targetMile === null ? null : Number(targetMile.toFixed(1)),
-    byMs: departAtMs + byMin * 60_000,
-    costsWindowMin: HOS.MIN_BREAK_MIN,
-    coarse,
+    targetMin: first.targetMin,
+    targetMile: first.targetMile,
+    byMs: first.byMs,
+    costsWindowMin: first.costsWindowMin,
+    coarse: first.coarse,
   };
 }

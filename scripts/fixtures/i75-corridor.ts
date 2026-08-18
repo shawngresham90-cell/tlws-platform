@@ -183,9 +183,15 @@ export type CorridorRoute = {
  * The fixture "provider" route. `via: true` splits it into two sections
  * at Atlanta exactly as HERE splits a `via=` request; `via: false` is the
  * same road as one section.
+ *
+ * `speedMph` (TP-3, default 60) sets the fixture provider's uniform
+ * speed. A slow variant stretches the same corridor into a multi-break
+ * driving horizon for the browser bench — still deterministic fixture
+ * data standing in for provider output, never an engine assumption.
  */
-export function corridorRoute(opts: { via?: boolean } = {}): CorridorRoute {
+export function corridorRoute(opts: { via?: boolean; speedMph?: number } = {}): CorridorRoute {
   const via = opts.via ?? false;
+  const speedMph = opts.speedMph ?? FIXTURE_MPH;
 
   // Walk the corridor, subdividing every waypoint gap into ≤5-mile pieces
   // so each maneuver stays a tight (≤300 s) provider action.
@@ -211,7 +217,7 @@ export function corridorRoute(opts: { via?: boolean } = {}): CorridorRoute {
       };
       const pieceMiles = gapMiles / pieces;
       const pieceMeters = pieceMiles * METERS_PER_MILE;
-      const pieceSeconds = (pieceMiles / FIXTURE_MPH) * 3600;
+      const pieceSeconds = (pieceMiles / speedMph) * 3600;
       maneuvers.push({
         action: 'continue',
         instruction: `Continue on I-75 (fixture segment ${maneuvers.length + 1})`,

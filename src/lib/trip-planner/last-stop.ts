@@ -35,7 +35,7 @@ import { isProhibitedOvernight } from '@/lib/directory/overnight';
  * the classic planner's 30 because the classic planner is the caller
  * that omits the argument.
  */
-import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
+import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN, requiredBreaksBefore } from './drive-window';
 export { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN };
 
 export type SlotLabel = 'best-reservable' | 'last-reservable' | 'backup-reservable' | 'last-free';
@@ -163,9 +163,14 @@ export function reachWithinClocks(
    * `earliestMin` is used solely to detect the straddle below.
    */
   const passes = (driveMinutes: number) => {
-    // A required 30-minute break extends wall-clock time (and burns the
-    // 14-hour window) when the drive crosses the break clock.
-    const breakMinutes = driveMinutes > clocks.untilBreakMin ? HOS.MIN_BREAK_MIN : 0;
+    // EVERY required 30-minute break extends wall-clock time and burns
+    // the 14-hour window (TP-3). The drive may cross the break clock more
+    // than once — after each qualifying break, another falls due 8
+    // driving hours later — and each one costs 30 window minutes. The
+    // single shared primitive counts them, so this filter, the drive
+    // window and the break planner can never disagree.
+    const breakMinutes =
+      HOS.MIN_BREAK_MIN * requiredBreaksBefore(driveMinutes, clocks.untilBreakMin);
     const wallClockMinutes = driveMinutes + breakMinutes;
     const drivingLeft = clocks.drivingMin - driveMinutes;
     const windowLeft = clocks.windowMin - wallClockMinutes;
