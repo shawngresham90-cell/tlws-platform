@@ -1,6 +1,7 @@
 'use client';
 
 import type { ParkingChoice, PlanMyDay } from '@/lib/trip-planner/plan-my-day';
+import { TIGHT_ARRIVAL_NOTICE } from '@/lib/trip-planner/trip-plan';
 import type { TripPlan, TripPlanEvent } from '@/lib/trip-planner/trip-plan';
 import { PARKING_SHORTFALL_NOTE } from '@/lib/trip-planner/plan-my-day';
 import { mayClaimLiveTraffic } from '@/lib/trip-planner/traffic';
@@ -411,7 +412,7 @@ function TripPlanEventCard({ event }: { event: TripPlanEvent }) {
           </p>
           {event.withinBuffer ? null : (
             <p className={`mt-1 ${MUTED}`} data-trip-tight-arrival="">
-              That is less than your safety buffer — consider stopping earlier.
+              {TIGHT_ARRIVAL_NOTICE}
             </p>
           )}
         </div>

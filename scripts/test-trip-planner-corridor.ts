@@ -210,6 +210,31 @@ const eventOf = <K extends TripPlanEvent['kind']>(
     dest?.clockLeftMin,
   );
   check('A: margin clears the 60-minute buffer', dest?.withinBuffer === true);
+
+  /*
+   * OWNER-APPROVED: the legal limit decides reachability; the buffer only
+   * warns. 200 driving minutes cover the ~165-minute worst-case corridor
+   * legally, but the ~35-minute margin sits inside the 60 buffer — the
+   * destination stays the terminal event, flagged, with no parking stop
+   * manufactured and no false "not reachable".
+   */
+  const tight = corridorPlan(clocks({ drivingMin: 200, legalDrivingMin: 200 }));
+  check(
+    'A: a legally-coverable drive stays reachable inside the buffer',
+    tight.trip.status === 'reachable',
+  );
+  const tightDest = eventOf(tight.trip, 'destination');
+  check(
+    'A: the tight arrival is flagged, not hidden',
+    tightDest !== undefined && tightDest.withinBuffer === false && tightDest.clockLeftMin < 60,
+    tightDest,
+  );
+  check(
+    'A: no parking stop is manufactured for a tight-but-legal arrival',
+    eventOf(tight.trip, 'parking') === undefined &&
+      eventOf(tight.trip, 'clock-update') === undefined,
+    kinds(tight.trip),
+  );
   check(
     'A: worst-case provider arrival, minutes after departure ≈ corridor minutes',
     dest !== undefined &&
@@ -767,6 +792,10 @@ const eventOf = <K extends TripPlanEvent['kind']>(
   check(
     'UI: the boundary wording is the approved sentence, rendered verbatim',
     results.includes('{event.notice}') && results.includes('{event.detail}'),
+  );
+  check(
+    'UI: the tight-arrival advisory is the engine sentence, single-sourced',
+    results.includes('{TIGHT_ARRIVAL_NOTICE}') && results.includes('data-trip-tight-arrival'),
   );
   check(
     'UI: the classic planner is untouched — tripPlan is optional and defaulted',
