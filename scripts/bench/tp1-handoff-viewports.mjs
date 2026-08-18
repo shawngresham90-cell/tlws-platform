@@ -53,6 +53,14 @@ const PLANNED = {
   detourMinutes: 2,
   source: 'TLWS directory',
   plannedAtMs: Date.now(),
+  /*
+   * The fingerprint of the clocks and truck this stop was planned against.
+   * A fresh browser profile has neither set, so the live fingerprint the
+   * Navigator computes is the empty one — and the seeded record must carry
+   * the SAME string or it is correctly refused as inputs-changed. That the
+   * record must match at all is the point; this is not a convenience.
+   */
+  inputsFingerprint: 'clocks:none|truck:none',
 };
 
 let pass = 0,
@@ -91,7 +99,7 @@ for (const w of WIDTHS) {
   await page.waitForTimeout(1500);
   await page.evaluate((rec) => {
     localStorage.setItem('tlws-navigator-planned-stop-v1', JSON.stringify(rec));
-    localStorage.removeItem('tlws-navigator-trip-plan-asked-v1');
+    localStorage.removeItem('tlws-navigator-trip-plan-asked-v2');
   }, PLANNED);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
@@ -135,10 +143,10 @@ for (const w of WIDTHS) {
   const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
   check(`${w}px: the page does not scroll sideways`, scrollW <= w + 1, `scrollWidth=${scrollW}`);
 
-  // Now the other branch: no planned stop -> the Trip plan first? question.
+  // Now the other branch: no planned stop -> the plan-your-stops question.
   await page.evaluate(() => {
     localStorage.removeItem('tlws-navigator-planned-stop-v1');
-    localStorage.removeItem('tlws-navigator-trip-plan-asked-v1');
+    localStorage.removeItem('tlws-navigator-trip-plan-asked-v2');
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
@@ -146,10 +154,18 @@ for (const w of WIDTHS) {
   const ask = page.locator('[data-trip-plan-first]');
   const askSeen = await ask.count();
   check(
-    `${w}px: "Trip plan first?" is offered when no plan exists`,
+    `${w}px: the plan-your-stops question is offered when no plan exists`,
     askSeen > 0,
     `count=${askSeen}`,
   );
+  if (askSeen > 0) {
+    const heading = await ask.first().innerText();
+    check(
+      `${w}px: it uses the approved wording`,
+      /Plan your stops before you drive\?/.test(heading),
+      heading.split('\n')[0],
+    );
+  }
 
   if (askSeen > 0) {
     for (const [label, sel] of [
@@ -174,8 +190,28 @@ for (const w of WIDTHS) {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
     check(
-      `${w}px: …and it stays dismissed after a reload`,
+      `${w}px: …and it stays dismissed after a reload of the SAME trip`,
       (await page.locator('[data-trip-plan-first]').count()) === 0,
+    );
+
+    /*
+     * A DIFFERENT TRIP ASKS AGAIN. Simulated by moving the stored answer onto
+     * another trip key — exactly what changing the destination, or finishing
+     * the trip, does to it. The per-key rule itself is proved deterministically
+     * in the unit harness; this confirms the wiring is real on the rendered
+     * screen rather than only in the pure function.
+     */
+    await page.evaluate(() => {
+      localStorage.setItem(
+        'tlws-navigator-trip-plan-asked-v2',
+        JSON.stringify({ v: 2, answeredForTrip: 'trip:some-other-destination' }),
+      );
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+    check(
+      `${w}px: a different trip asks again`,
+      (await page.locator('[data-trip-plan-first]').count()) > 0,
     );
     // The destination search underneath is untouched by any of this.
     check(

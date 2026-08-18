@@ -62,6 +62,18 @@ function shapePlannedStop(payload: Record<string, unknown>): PlannedStop | null 
   const detourMiles = num(payload.detourMiles);
   const detourMinutes = num(payload.detourMinutes);
   const plannedAtMs = num(payload.plannedAtMs);
+  /*
+   * A record written before fingerprints existed has none. It is dropped
+   * rather than admitted with an empty one: an empty fingerprint would match
+   * nothing and be refused on the next read anyway, and admitting it here
+   * would mean one code path where "no fingerprint" silently means "inputs
+   * unchanged" — the exact assumption this field exists to remove.
+   */
+  const inputsFingerprint =
+    typeof payload.inputsFingerprint === 'string' && payload.inputsFingerprint !== ''
+      ? payload.inputsFingerprint
+      : null;
+  if (inputsFingerprint === null) return null;
   if (
     arriveAtMs === null ||
     clockLeftMin === null ||
@@ -82,6 +94,7 @@ function shapePlannedStop(payload: Record<string, unknown>): PlannedStop | null 
     detourMinutes,
     source: typeof payload.source === 'string' ? payload.source : '',
     plannedAtMs,
+    inputsFingerprint,
   };
 }
 
@@ -105,14 +118,20 @@ export function writePlannedStopRecord(stop: PlannedStop): void {
     detourMinutes: stop.detourMinutes,
     source: stop.source,
     plannedAtMs: stop.plannedAtMs,
+    inputsFingerprint: stop.inputsFingerprint,
   });
 }
 
 /**
  * Clear it. Called when the driver takes the stop (it has served its purpose),
- * when they dismiss it, and when the Navigator refuses it as stale — a record
- * that has been refused once will be refused every time, and leaving it in
- * place would re-offer the same dead plan on every visit.
+ * when they dismiss it, and whenever it is refused — stale, or qualified
+ * against clocks and a truck that have since moved. A record refused once will
+ * be refused every time, and leaving it in place would re-offer the same dead
+ * plan on every visit.
+ *
+ * Also called by the planner the moment any planning input changes, so a stop
+ * stops being on offer at the instant it stops being true rather than at the
+ * next read.
  */
 export function clearPlannedStopRecord(): void {
   clearVersioned(PLANNED_STOP_KEY);

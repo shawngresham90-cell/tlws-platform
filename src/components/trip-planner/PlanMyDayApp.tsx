@@ -20,8 +20,15 @@ import { DestinationSearch } from '@/components/navigator/DestinationSearch';
 import { TRIP_PLANNER_SEARCH_ENDPOINT } from '@/components/navigator/search-port';
 import type { LatLng } from '@/lib/map/bounds';
 import type { ParkingChoice } from '@/lib/trip-planner/plan-my-day';
-import { PLANNED_STOP_SOURCE_NOTICE, plannedStopFromChoice } from '@/lib/trip-planner/planned-stop';
-import { writePlannedStopRecord } from '@/components/navigator/planned-stop-storage';
+import {
+  PLANNED_STOP_SOURCE_NOTICE,
+  plannedStopFromChoice,
+  sharedInputsFingerprint,
+} from '@/lib/trip-planner/planned-stop';
+import {
+  clearPlannedStopRecord,
+  writePlannedStopRecord,
+} from '@/components/navigator/planned-stop-storage';
 
 /**
  * One end of the trip, however the driver arrived at it.
@@ -243,6 +250,59 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
   const [sentStopId, setSentStopId] = useState<string | null>(null);
 
   /**
+   * The clocks and truck this plan was built on, as one comparable string.
+   * Read from the same storage the Navigator reads, so both sides compute it
+   * from one source rather than from two copies that can drift.
+   */
+  function currentFingerprint(): string {
+    const entry = readClocks();
+    const truck = readTruck();
+    return sharedInputsFingerprint({
+      clocks: entry.kind === 'set' ? entry.entered : null,
+      truck: truck === null ? null : truck.profile,
+    });
+  }
+
+  /*
+   * INVALIDATE THE MOMENT AN INPUT MOVES.
+   *
+   * A stop is an answer to one specific question: given THESE clocks, THIS
+   * truck, and THIS origin and destination, where can I legally stop? Change
+   * any term and the answer is stale — not in twelve hours, immediately. The
+   * TTL is the backstop for the case where nothing observable changed and
+   * time simply passed; this is the primary defence.
+   *
+   * Keyed on a signature of the inputs rather than on the values themselves,
+   * so a re-render that produces an equal-but-not-identical object does not
+   * throw away a stop the driver just chose. The plan is included: re-planning
+   * replaces the answer, so the previous answer must go with it.
+   */
+  const planningSignature = [
+    currentFingerprint(),
+    origin === null
+      ? 'origin:none'
+      : `origin:${origin.position.lat.toFixed(4)},${origin.position.lng.toFixed(4)}`,
+    destination === null
+      ? 'dest:none'
+      : `dest:${destination.position.lat.toFixed(4)},${destination.position.lng.toFixed(4)}`,
+    `buffer:${bufferMin}`,
+    plan === null ? 'plan:none' : `plan:${plan.parking.map((c) => c.candidate.id).join(',')}`,
+  ].join('|');
+  const lastSignature = useRef<string | null>(null);
+  useEffect(() => {
+    // The first pass records the baseline; it must not clear a record the
+    // driver may have written on a previous visit to this screen.
+    if (lastSignature.current === null) {
+      lastSignature.current = planningSignature;
+      return;
+    }
+    if (lastSignature.current === planningSignature) return;
+    lastSignature.current = planningSignature;
+    clearPlannedStopRecord();
+    setSentStopId(null);
+  }, [planningSignature]);
+
+  /**
    * Take one parking choice to the Navigator.
    *
    * `Date.now()` is read HERE, at the moment of the tap, and stamped into the
@@ -251,7 +311,7 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
    * computed, which may be minutes earlier while they read the options.
    */
   function chooseParking(choice: ParkingChoice): void {
-    const stop = plannedStopFromChoice(choice, Date.now());
+    const stop = plannedStopFromChoice(choice, Date.now(), currentFingerprint());
     if (stop === null) {
       // A candidate with no id or no usable coordinate. Nothing to route to,
       // so the honest response is to say so rather than to write a record the

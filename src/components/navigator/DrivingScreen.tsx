@@ -109,6 +109,7 @@ import {
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
 import { TripPlanFirst } from './TripPlanFirst';
+import { tripKeyFor } from '@/lib/trip-planner/planned-stop';
 import { VoiceControls } from './VoiceControls';
 
 /**
@@ -2263,6 +2264,13 @@ export function DrivingScreen({
                 either way.
               */}
               <TripPlanFirst
+                /*
+                 * The trip's identity, derived from the chosen destination.
+                 * It moves exactly when the prompt must come back: a
+                 * different destination, a trip that ended (the pick clears),
+                 * or a new one beginning.
+                 */
+                tripKey={tripKeyFor(picked)}
                 onUsePlannedStop={(place) => {
                   setPicked(place);
                   // Trip Planner plans U.S. property-carrier hours only, so a

@@ -21,7 +21,9 @@
  * storage, or needs a network.
  */
 import {
+  NO_DESTINATION_TRIP,
   PLANNED_STOP_FACILITY,
+  PLANNED_STOP_INPUTS_CHANGED_NOTICE,
   PLANNED_STOP_SOURCE_NOTICE,
   PLANNED_STOP_STALE_NOTICE,
   PLANNED_STOP_TTL_MS,
@@ -29,6 +31,9 @@ import {
   plannedStopIsStale,
   plannedStopToDestination,
   readPlannedStop,
+  sharedInputsFingerprint,
+  shouldAskTripPlan,
+  tripKeyFor,
   type PlannedStop,
 } from '@/lib/trip-planner/planned-stop';
 import { driveWindow } from '@/lib/trip-planner/drive-window';
@@ -55,6 +60,25 @@ function check(name: string, cond: boolean, detail?: unknown): void {
 
 /** 2026-03-10T12:00:00Z. Any constant works; a named one reads better. */
 const NOON = 1773144000000;
+
+const CLOCKS_A = {
+  drivingMin: 300,
+  windowMin: 500,
+  untilBreakMin: 200,
+  cycleMin: 2400,
+  cycleRule: '70/8',
+};
+const TRUCK_A = {
+  heightFt: 13.6,
+  widthFt: 8.5,
+  lengthFt: 70,
+  grossWeightLbs: 80000,
+  axles: 5,
+  hazmatClass: null as string | null,
+  avoid: ['tollRoad'] as readonly string[],
+};
+/** The fingerprint the fixtures are planned against. */
+const FP = sharedInputsFingerprint({ clocks: CLOCKS_A, truck: TRUCK_A });
 
 function candidate(over: Partial<StopCandidate> = {}): StopCandidate {
   return {
@@ -258,7 +282,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
  * 3. THE HANDOFF RECORD — built only from a stop that can be routed to
  * ===================================================================== */
 {
-  const stop = plannedStopFromChoice(choice(), NOON);
+  const stop = plannedStopFromChoice(choice(), NOON, FP);
   check('3a: a complete choice becomes a record', stop !== null);
   check('3b: the directory id is carried, so a re-plan replaces it', stop?.id === 'stop-1');
   check('3c: the name is carried for the driver to recognise', stop?.name === 'Sample Truck Plaza');
@@ -277,13 +301,14 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
    * screen down over one bad directory row. */
   check(
     '3g: a candidate with no id cannot be handed over',
-    plannedStopFromChoice(choice({ candidate: candidate({ id: '  ' }) }), NOON) === null,
+    plannedStopFromChoice(choice({ candidate: candidate({ id: '  ' }) }), NOON, FP) === null,
   );
   check(
     '3h: a candidate at 0,0 is refused — that is the Atlantic, not a stop',
     plannedStopFromChoice(
       choice({ candidate: candidate({ position: { lat: 0, lng: 0 } }) }),
       NOON,
+      FP,
     ) === null,
   );
   check(
@@ -291,6 +316,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
     plannedStopFromChoice(
       choice({ candidate: candidate({ position: { lat: Number.NaN, lng: -85 } }) }),
       NOON,
+      FP,
     ) === null,
   );
   check(
@@ -298,6 +324,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
     plannedStopFromChoice(
       choice({ candidate: candidate({ position: { lat: 95, lng: -85 } }) }),
       NOON,
+      FP,
     ) === null,
   );
 }
@@ -310,7 +337,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
  * a driver holds tonight, and nothing in the record's shape says so.
  */
 {
-  const stop = plannedStopFromChoice(choice(), NOON) as PlannedStop;
+  const stop = plannedStopFromChoice(choice(), NOON, FP) as PlannedStop;
 
   check('4a: fresh at the moment it was planned', !plannedStopIsStale(stop, NOON));
   check(
@@ -379,7 +406,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
  * 5. THE NAVIGATOR SHAPE — what actually crosses the seam
  * ===================================================================== */
 {
-  const stop = plannedStopFromChoice(choice(), NOON) as PlannedStop;
+  const stop = plannedStopFromChoice(choice(), NOON, FP) as PlannedStop;
   const dest = plannedStopToDestination(stop);
 
   check('5a: the id survives the conversion', dest.id === 'stop-1');
@@ -447,12 +474,15 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
   const fs = require('node:fs') as typeof import('node:fs');
   const src = fs.readFileSync('src/components/navigator/TripPlanFirst.tsx', 'utf8');
 
-  check('7a: the question is asked in the driver’s words', /Trip plan first\?/.test(src));
+  check(
+    '7a: the question is asked in the driver’s words',
+    /Plan your stops before you drive\?/.test(src),
+  );
   check('7b: Plan My Stops is offered', /Plan My Stops/.test(src));
   check('7c: Just Drive is offered', /Just Drive/.test(src));
   check(
-    '7d: answering is remembered, so it is asked once and not every trip',
-    /writeTripPlanAsked\(\)/.test(src) && /if \(asked\) return null;/.test(src),
+    '7d: answering is remembered for THIS trip, so a reload does not re-ask',
+    /writeTripPlanAnswered\(tripKey\)/.test(src) && /if \(asked\) return null;/.test(src),
   );
   check(
     '7e: a stale plan is explained rather than silently dropped',
@@ -473,7 +503,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
   );
   check(
     '7i: a planned stop is recorded as U.S. — the planner models U.S. hours only',
-    /<TripPlanFirst[\s\S]{0,600}setPickedCountry\('USA'\)/.test(screen),
+    /<TripPlanFirst[\s\S]{0,1400}setPickedCountry\('USA'\)/.test(screen),
   );
 }
 
@@ -492,7 +522,7 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
   );
   check(
     '8c: the tap stamps the moment of choice, not the moment of planning',
-    /plannedStopFromChoice\(choice, Date\.now\(\)\)/.test(app),
+    /plannedStopFromChoice\(choice, Date\.now\(\), currentFingerprint\(\)\)/.test(app),
   );
   check(
     '8d: an unroutable record is refused with a sentence, not written',
@@ -561,6 +591,240 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
   check(
     '10c: the record does not present itself as a compliance artefact',
     !/compliance record|legal(ly)? (safe|compliant)/i.test(plannedStop),
+  );
+}
+
+/* ===================================================================== *
+ * 11. INPUT CHANGE INVALIDATES — the primary defence, TTL is the backstop
+ * ===================================================================== *
+ * A stop answers one question: given THESE clocks and THIS truck, where can I
+ * legally stop? Change a term and the answer is wrong immediately — not in
+ * twelve hours. Every field below is one a driver can actually edit.
+ */
+{
+  const stop = plannedStopFromChoice(choice(), NOON, FP) as PlannedStop;
+  const soon = NOON + 60_000;
+
+  check('11a: unchanged inputs still read ok', readPlannedStop(stop, soon, FP).ok === true);
+
+  /* Each clock, one at a time. A fingerprint that only noticed some of them
+   * would pass a lazy test and fail a real driver. */
+  for (const [label, clocks] of [
+    ['driving', { ...CLOCKS_A, drivingMin: 299 }],
+    ['14-hour window', { ...CLOCKS_A, windowMin: 499 }],
+    ['break', { ...CLOCKS_A, untilBreakMin: 199 }],
+    ['cycle', { ...CLOCKS_A, cycleMin: 2399 }],
+    ['cycle rule', { ...CLOCKS_A, cycleRule: '60/7' }],
+  ] as const) {
+    const changed = sharedInputsFingerprint({ clocks, truck: TRUCK_A });
+    const verdict = readPlannedStop(stop, soon, changed);
+    check(
+      `11b: a changed ${label} clock invalidates the stop`,
+      verdict.ok === false && verdict.problem === 'inputs-changed',
+      verdict,
+    );
+  }
+
+  /* Every truck field that reaches the routing request. */
+  for (const [label, truck] of [
+    ['height', { ...TRUCK_A, heightFt: 13.5 }],
+    ['width', { ...TRUCK_A, widthFt: 8.6 }],
+    ['length', { ...TRUCK_A, lengthFt: 53 }],
+    ['weight', { ...TRUCK_A, grossWeightLbs: 79000 }],
+    ['axle count', { ...TRUCK_A, axles: 6 }],
+    ['hazmat class', { ...TRUCK_A, hazmatClass: '3' }],
+    ['avoidances', { ...TRUCK_A, avoid: ['tollRoad', 'ferry'] as readonly string[] }],
+  ] as const) {
+    const changed = sharedInputsFingerprint({ clocks: CLOCKS_A, truck });
+    const verdict = readPlannedStop(stop, soon, changed);
+    check(
+      `11c: a changed truck ${label} invalidates the stop`,
+      verdict.ok === false && verdict.problem === 'inputs-changed',
+      verdict,
+    );
+  }
+
+  /* Clearing the clocks or the truck entirely is a change too — the honest
+   * reading of "no clocks" is not "the same clocks as before". */
+  check(
+    '11d: clearing the clocks invalidates the stop',
+    readPlannedStop(stop, soon, sharedInputsFingerprint({ clocks: null, truck: TRUCK_A })).ok ===
+      false,
+  );
+  check(
+    '11e: clearing the truck invalidates the stop',
+    readPlannedStop(stop, soon, sharedInputsFingerprint({ clocks: CLOCKS_A, truck: null })).ok ===
+      false,
+  );
+
+  /* Input change is reported BEFORE staleness: both drop the record, but the
+   * driver is told the actionable thing rather than the vaguer one. */
+  const bothWrong = readPlannedStop(stop, NOON + PLANNED_STOP_TTL_MS + 1, 'something-else');
+  check(
+    '11f: a stop that is both stale AND changed reports the change',
+    bothWrong.ok === false && bothWrong.problem === 'inputs-changed',
+    bothWrong,
+  );
+
+  /* The TTL still bites when nothing observable moved — the backstop the
+   * owner asked to keep. */
+  const onlyOld = readPlannedStop(stop, NOON + PLANNED_STOP_TTL_MS + 1, FP);
+  check(
+    '11g: with identical inputs the 12-hour backstop still expires it',
+    onlyOld.ok === false && onlyOld.problem === 'stale',
+    onlyOld,
+  );
+
+  /* Order-independence: the same avoidances listed differently are the same
+   * truck. A fingerprint that said otherwise would invalidate stops for no
+   * reason a driver could see. */
+  check(
+    '11h: avoidance ORDER is not a change',
+    sharedInputsFingerprint({
+      clocks: CLOCKS_A,
+      truck: { ...TRUCK_A, avoid: ['tollRoad'] },
+    }) === FP,
+  );
+
+  /* Float noise is not a change either. */
+  check(
+    '11i: floating-point noise in a dimension is not a change',
+    sharedInputsFingerprint({
+      clocks: CLOCKS_A,
+      truck: { ...TRUCK_A, heightFt: 13.60000000000001 },
+    }) === FP,
+  );
+
+  check(
+    '11j: the notice names the cause and asks for a re-plan',
+    /clocks or truck changed/i.test(PLANNED_STOP_INPUTS_CHANGED_NOTICE) &&
+      /plan again/i.test(PLANNED_STOP_INPUTS_CHANGED_NOTICE),
+  );
+}
+
+/* ===================================================================== *
+ * 12. ASKED ONCE PER TRIP — and reset on every condition the owner named
+ * ===================================================================== */
+{
+  check(
+    '12a: no destination yields the no-destination key',
+    tripKeyFor(null) === NO_DESTINATION_TRIP,
+  );
+  check(
+    '12b: a blank id is treated as no destination',
+    tripKeyFor({ id: '   ' }) === NO_DESTINATION_TRIP,
+  );
+  check('12c: a destination yields its own key', tripKeyFor({ id: 'dest-A' }) === 'trip:dest-A');
+  check(
+    '12d: different destinations are different trips',
+    tripKeyFor({ id: 'dest-A' }) !== tripKeyFor({ id: 'dest-B' }),
+  );
+
+  /* Never answered — ask. */
+  check('12e: an unanswered trip is asked', shouldAskTripPlan(null, 'trip:dest-A').ask === true);
+
+  /* SAME TRIP, RELOADED — must stay dismissed. This is the requirement that
+   * a naive "ask every mount" would break. */
+  const same = shouldAskTripPlan('trip:dest-A', 'trip:dest-A');
+  check('12f: the same trip stays dismissed across a reload', same.ask === false);
+  check('12g: …and needs no rewrite to do so', same.adoptKey === null);
+
+  /* DESTINATION CHANGED — ask again. */
+  check(
+    '12h: changing the destination asks again',
+    shouldAskTripPlan('trip:dest-A', 'trip:dest-B').ask === true,
+  );
+
+  /* TRIP COMPLETED OR CANCELLED — the destination clears, so the key returns
+   * to no-destination and the next trip is asked. */
+  check(
+    '12i: completing or cancelling a trip asks again',
+    shouldAskTripPlan('trip:dest-A', NO_DESTINATION_TRIP).ask === true,
+  );
+
+  /* A NEW TRIP BEGINS — same path as above: cleared destination, then a new
+   * one, and the prompt has already returned at the clear. */
+  check(
+    '12j: a new trip after a finished one is asked',
+    shouldAskTripPlan('trip:dest-A', 'trip:dest-C').ask === true,
+  );
+
+  /* THE CARRY-FORWARD. Answering before choosing a destination, then choosing
+   * one, is ONE trip — not two. Re-asking seconds apart in a single setup is
+   * the nagging that teaches drivers to dismiss without reading. */
+  const adopt = shouldAskTripPlan(NO_DESTINATION_TRIP, 'trip:dest-A');
+  check('12k: answering before picking a destination is not re-asked', adopt.ask === false);
+  check('12l: …and the answer is carried onto the real trip', adopt.adoptKey === 'trip:dest-A');
+
+  /* And once carried, a genuine destination change still asks — proving the
+   * carry-forward is a one-way step out of "no destination yet" rather than a
+   * permanent exemption. */
+  check(
+    '12m: after the carry-forward, changing destination still asks',
+    shouldAskTripPlan('trip:dest-A', 'trip:dest-B').ask === true,
+  );
+
+  check(
+    '12n: answering with no destination twice stays dismissed',
+    shouldAskTripPlan(NO_DESTINATION_TRIP, NO_DESTINATION_TRIP).ask === false,
+  );
+}
+
+/* ===================================================================== *
+ * 13. THE SURFACES CARRY THE APPROVED WORDING AND WIRING
+ * ===================================================================== */
+{
+  const fs = require('node:fs') as typeof import('node:fs');
+  const first = fs.readFileSync('src/components/navigator/TripPlanFirst.tsx', 'utf8');
+  const app = fs.readFileSync('src/components/trip-planner/PlanMyDayApp.tsx', 'utf8');
+  const screen = fs.readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+  const storage = fs.readFileSync('src/components/navigator/planned-stop-storage.ts', 'utf8');
+
+  check('13a: the approved question wording', /Plan your stops before you drive\?/.test(first));
+  check('13b: Plan My Stops is kept', /Plan My Stops/.test(first));
+  check('13c: Just Drive is kept', /Just Drive/.test(first));
+  check('13d: the old device-wide wording is gone', !/Trip plan first\?/.test(first));
+
+  check(
+    '13e: the answer is stored against a trip, not the device',
+    /answeredForTrip/.test(first) && /writeTripPlanAnswered\(tripKey\)/.test(first),
+  );
+  check(
+    '13f: the v1 device-wide key is not reused, so an old dismissal cannot answer for a new trip',
+    /tlws-navigator-trip-plan-asked-v2/.test(first) && /ASKED_VERSION = 2/.test(first),
+  );
+  check('13g: the prompt re-evaluates when the trip changes', /\}, \[tripKey\]\)/.test(first));
+  check(
+    '13h: the driving screen supplies the trip key',
+    /tripKey=\{tripKeyFor\(picked\)\}/.test(screen),
+  );
+
+  check(
+    '13i: the planner stamps the inputs it planned against',
+    /plannedStopFromChoice\(choice, Date\.now\(\), currentFingerprint\(\)\)/.test(app),
+  );
+  check(
+    '13j: the planner clears the stop the moment an input moves',
+    /planningSignature/.test(app) && /clearPlannedStopRecord\(\)/.test(app),
+  );
+  check(
+    '13k: origin, destination, buffer and the plan are all in that signature',
+    /origin:none/.test(app) &&
+      /dest:none/.test(app) &&
+      /buffer:\$\{bufferMin\}/.test(app) &&
+      /plan:none/.test(app),
+  );
+  check(
+    '13l: the first pass records a baseline instead of clearing',
+    /lastSignature\.current === null/.test(app),
+  );
+  check(
+    '13m: a record with no fingerprint is refused rather than assumed unchanged',
+    /inputsFingerprint === null\) return null/.test(storage),
+  );
+  check(
+    '13n: the Navigator compares against the live fingerprint',
+    /readPlannedStop\(record, Date\.now\(\), currentInputsFingerprint\(\)\)/.test(first),
   );
 }
 
