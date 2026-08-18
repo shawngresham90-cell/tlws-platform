@@ -12,7 +12,7 @@ import {
 import { clockLimitMarker, type ClockLimitMarker } from './clock-limit-marker';
 import { planMapLayers, type PlanMapLayers } from './plan-map';
 import { driveWindow, PLANNING_AID_ONLY, type DriveWindow } from './drive-window';
-import { planBreak, type BreakPlan } from './break-plan';
+import { planBreak, planBreakSchedule, type BreakPlan, type BreakSchedule } from './break-plan';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE } from './last-stop';
 import { relevantWeather, type AlertSource, type WeatherRelevance } from './route-weather-timing';
 import type { RouteRegion } from './route-region';
@@ -65,6 +65,12 @@ export type PlanMyDay = {
   stopTarget: ClockLimitMarker;
   breakMarker: ClockLimitMarker | null;
   breakPlan: BreakPlan | null;
+  /**
+   * EVERY required 30-minute break inside the drive window (TP-3), from
+   * the same schedule `breakPlan` is the first entry of. The timeline
+   * renders all of them; the card and the map marker keep the first.
+   */
+  breakSchedule: BreakSchedule | null;
   parking: ParkingChoice[];
   /** The heading the list is shown under — chosen by how many qualified. */
   parkingHeadline: string;
@@ -190,16 +196,22 @@ export function planMyDay(input: {
   const clockLimit = window === null || axis === null ? noMarker : marker(window.clockLimitMin);
   const stopTarget = window === null || axis === null ? noMarker : marker(window.stopTargetMin);
 
-  /* ---- the break, on the same timing --------------------------------- */
+  /* ---- the breaks, on the same timing -------------------------------- */
+  // ONE schedule truth (TP-3): the card and marker read the FIRST break
+  // through the planBreak wrapper; the timeline reads them all. Both come
+  // from planBreakSchedule, so they cannot disagree.
   let breakPlan: BreakPlan | null = null;
+  let breakSchedule: BreakSchedule | null = null;
   let breakMarker: ClockLimitMarker | null = null;
   if (input.clocks !== null && window !== null) {
-    breakPlan = planBreak({
+    const scheduleInput = {
       clocks: input.clocks,
       usableDriveMin: window.clockLimitMin,
       timing,
       departAtMs: input.departAtMs,
-    });
+    };
+    breakSchedule = planBreakSchedule(scheduleInput);
+    breakPlan = planBreak(scheduleInput);
     if (breakPlan.required === true) breakMarker = marker(breakPlan.targetMin);
   }
 
@@ -265,6 +277,7 @@ export function planMyDay(input: {
     stopTarget,
     breakMarker,
     breakPlan,
+    breakSchedule,
     parking,
     parkingHeadline: parkingHeadline(parking.length),
     parkingProblem,

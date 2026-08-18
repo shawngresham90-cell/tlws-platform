@@ -92,6 +92,43 @@ export function isSafetyBufferPreset(v: unknown): v is SafetyBufferMin {
   return typeof v === 'number' && (SAFETY_BUFFER_PRESETS as readonly number[]).includes(v);
 }
 
+/* ------------------------------------------------ the break schedule */
+
+/*
+ * ONE BREAK-ARITHMETIC TRUTH (TP-3). The 30-minute break rule repeats:
+ * after each qualifying break, another becomes required after a further
+ * 8 cumulative driving hours. These two primitives are the ONLY place
+ * that arithmetic lives — the drive window, parking reachability and the
+ * break planner all derive from them, so they cannot disagree about when
+ * break k falls.
+ *
+ * A qualifying break resets ONLY the break timer. It never pauses the
+ * 14-hour window, never restores driving or cycle time, and never
+ * creates a new duty period — those facts are enforced where each clock
+ * is subtracted, and pinned by the TP-3 harness.
+ */
+
+/**
+ * Driving minutes from now until the n-th required break (n >= 1). The
+ * first is the driver's own entered timer; each later one follows a
+ * further 8 driving hours (§395.3(a)(3)(ii), repeated).
+ */
+export function nthBreakDueAfterMin(untilBreakMin: number, n: number): number {
+  return untilBreakMin + (n - 1) * HOS.BREAK_AFTER_DRIVING_MIN;
+}
+
+/**
+ * How many 30-minute breaks become REQUIRED strictly before `drivingMin`
+ * minutes of driving complete. Strict on purpose, at every boundary: a
+ * drive that ends exactly when a break falls due needs no break — the
+ * rule forbids driving PAST the mark, not reaching it.
+ */
+export function requiredBreaksBefore(drivingMin: number, untilBreakMin: number): number {
+  if (!Number.isFinite(drivingMin) || !Number.isFinite(untilBreakMin)) return 0;
+  if (drivingMin <= untilBreakMin) return 0;
+  return Math.ceil((drivingMin - untilBreakMin) / HOS.BREAK_AFTER_DRIVING_MIN);
+}
+
 /** Which rule ran out first. Mirrors RemainingClocks['limitedBy']. */
 export type BindingRule = RemainingClocks['limitedBy'];
 
@@ -108,17 +145,24 @@ export type DriveWindow = {
   /** clockLimitMin − bufferMin, floored at 0. Never greater. */
   stopTargetMin: number;
   /**
-   * Minutes of driving until a 30-minute break becomes required, or null
-   * when no break falls inside `clockLimitMin`.
+   * Minutes of driving until the FIRST 30-minute break the plan must
+   * contain, or null when none falls inside `clockLimitMin`. Preserved
+   * from the single-break era; the full schedule is derived from
+   * `requiredBreakCount` and the primitives above.
    */
   breakDueAfterMin: number | null;
   /**
-   * True when a required break sits inside the drive AND its 30 minutes
-   * were charged against the 14-hour window. The trap new drivers miss:
-   * the window never pauses, so the break costs window time whether the
-   * truck is moving or not.
+   * True when at least one required break was charged against the
+   * 14-hour window. The trap new drivers miss: the window never pauses,
+   * so each break costs window time whether the truck is moving or not.
    */
   breakConsumesWindow: boolean;
+  /**
+   * How many 30-minute breaks the limit already accounts for (TP-3).
+   * Each consumed 30 minutes of the 14-hour window and nothing else —
+   * no break ever restores driving, window or cycle time.
+   */
+  requiredBreakCount: number;
 };
 
 /**
@@ -149,51 +193,74 @@ export function driveWindow(
   const buffer = Number.isFinite(bufferMin) ? Math.max(0, bufferMin) : 0;
 
   /*
-   * THE BREAK BURNS THE WINDOW. If the driver can still drive
-   * `untilBreakMin` before a 30-minute break is required, and there is
-   * driving left afterwards, those 30 minutes come out of the 14-hour
-   * window — which never pauses. So the window available for DRIVING is
-   * reduced by the break before the limits are compared.
+   * EVERY REQUIRED BREAK BURNS THE WINDOW (TP-3). The 14-hour window
+   * never pauses, so each 30-minute break inside the drive costs 30
+   * window minutes. The old model charged AT MOST ONE break; a horizon
+   * long enough for a second break (untilBreak + 8h of further driving)
+   * was silently undercharged — a stop could look reachable when the
+   * second break's window cost made it not.
+   *
+   * THE BRACKET WALK. Between break k and break k+1 the drive has paid
+   * for exactly k breaks, so the window supports `windowMin − 30k`
+   * driving minutes there. Walk the brackets upward: in each, the
+   * feasible driving is capped by driving/cycle, by the break-adjusted
+   * window, and by the bracket's own end (driving past it needs the next
+   * break). The walk stops the first time a bracket cannot be entered —
+   * caps only shrink and bracket floors only grow, so nothing later can
+   * beat what is already in hand. This finds the exact legal maximum:
+   * subtraction only, and a break never buys driving beyond the
+   * driving/cycle/window caps.
    */
-  const breakFallsInsideDrive =
-    clocks.untilBreakMin < clocks.drivingMin && clocks.untilBreakMin < clocks.windowMin;
-  const windowForDriving = breakFallsInsideDrive
-    ? Math.max(0, clocks.windowMin - HOS.MIN_BREAK_MIN)
-    : clocks.windowMin;
-
-  // The binding rule is whichever runs out first. Cycle is on-duty time,
-  // and driving is on-duty, so it caps driving too.
-  const candidates: [BindingRule, number][] = [
-    ['11-hour', clocks.drivingMin],
-    ['14-hour', windowForDriving],
-    ['cycle', clocks.cycleMin],
-  ];
-  let limitedBy: BindingRule = candidates[0][0];
-  let clockLimitMin = candidates[0][1];
-  for (const [rule, minutes] of candidates) {
-    if (minutes < clockLimitMin) {
-      clockLimitMin = minutes;
-      limitedBy = rule;
+  const maxDrive = Math.min(clocks.drivingMin, clocks.cycleMin);
+  let clockLimitMin = 0;
+  let stoppedAtBreakEdge = false;
+  for (let k = 0; ; k++) {
+    const bracketStart = k === 0 ? 0 : nthBreakDueAfterMin(clocks.untilBreakMin, k);
+    const cap = Math.min(maxDrive, clocks.windowMin - HOS.MIN_BREAK_MIN * k);
+    if (cap < bracketStart) break; // this bracket cannot be entered; done
+    const bracketEnd = nthBreakDueAfterMin(clocks.untilBreakMin, k + 1);
+    if (cap <= bracketEnd) {
+      // Capped inside this bracket by driving, cycle or the window.
+      clockLimitMin = Math.max(0, cap);
+      stoppedAtBreakEdge = false;
+      break;
     }
+    // The bracket ends before any cap: the driver reaches the next break
+    // threshold with room to spare, takes the break, and continues in
+    // the next bracket — unless that bracket turns out infeasible, in
+    // which case THIS edge is the honest limit.
+    clockLimitMin = Math.max(0, bracketEnd);
+    stoppedAtBreakEdge = true;
+  }
+  const requiredBreakCount = requiredBreaksBefore(clockLimitMin, clocks.untilBreakMin);
+
+  /*
+   * WHICH RULE PRODUCED THE LIMIT. Driving/cycle caps keep their names
+   * (driving first on a tie, as before). A window cap mid-bracket is the
+   * 14-hour rule genuinely expiring. A limit sitting exactly ON a break
+   * threshold — where driving/cycle would allow more but the window
+   * cannot fund the break plus further driving — is reported as
+   * '30-minute-break', because the break requirement is what actually
+   * ends the day and the driver's next action (break vs. stop) differs.
+   */
+  let limitedBy: BindingRule;
+  if (clockLimitMin >= maxDrive) {
+    limitedBy = clocks.drivingMin <= clocks.cycleMin ? '11-hour' : 'cycle';
+  } else if (stoppedAtBreakEdge) {
+    limitedBy = '30-minute-break';
+  } else {
+    limitedBy = '14-hour';
   }
 
   /*
-   * When the break is what stands between the driver and more driving,
-   * SAY SO rather than reporting the 14-hour rule. The driver's next
-   * action is different: a break resumes the trip, a window expiry ends
-   * the day.
-   *
-   * ONLY when the WINDOW is the rule that produced the limit (TP-2). The
-   * relabel exists because charging the break against the 14-hour window
-   * is what moved the limit — so the break is the real story. When the
-   * cycle (or driving) binds far earlier than the break clock, the break
-   * had nothing to do with the limit, and relabeling it hid the actual
-   * binding rule: a cycle-bound driver was told their break was the
-   * problem. Scenario D (cycle binds) pins the corrected answer.
+   * The first break the plan must contain: one strictly inside the limit
+   * (it will be taken), or the one sitting exactly at a break-edge limit
+   * (it is why the day ends). Otherwise none is claimed.
    */
-  if (breakFallsInsideDrive && limitedBy === '14-hour' && clocks.untilBreakMin >= clockLimitMin) {
-    limitedBy = '30-minute-break';
-  }
+  const breakDueAfterMin =
+    requiredBreakCount >= 1 || (stoppedAtBreakEdge && clockLimitMin < maxDrive)
+      ? clocks.untilBreakMin
+      : null;
 
   return {
     clockLimitMin,
@@ -202,8 +269,9 @@ export function driveWindow(
     // The buffer only ever subtracts. Floored at 0 so an oversized buffer
     // means "stop now", never a negative target a caller could add back.
     stopTargetMin: Math.max(0, clockLimitMin - buffer),
-    breakDueAfterMin: breakFallsInsideDrive ? clocks.untilBreakMin : null,
-    breakConsumesWindow: breakFallsInsideDrive,
+    breakDueAfterMin,
+    breakConsumesWindow: requiredBreakCount >= 1,
+    requiredBreakCount,
   };
 }
 

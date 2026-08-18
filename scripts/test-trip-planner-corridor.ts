@@ -144,7 +144,7 @@ function corridorPlan(
       via: withVia ? ATLANTA_VIA.label : null,
       destination: MACON_DESTINATION.label,
     },
-    breakPlan: plan.breakPlan,
+    breakSchedule: plan.breakSchedule,
     parking: plan.parking,
   });
   return { plan, trip };
@@ -667,7 +667,7 @@ const eventOf = <K extends TripPlanEvent['kind']>(
     totalMiles: route.totalMiles,
     legs,
     labels: { origin: DALTON_ORIGIN.label, via: null, destination: MACON_DESTINATION.label },
-    breakPlan: null,
+    breakSchedule: null,
     parking: [],
   });
   check('J: no confident itinerary without provider timing', trip.status === 'unavailable');

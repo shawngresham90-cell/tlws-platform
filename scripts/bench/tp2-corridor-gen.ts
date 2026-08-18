@@ -22,7 +22,13 @@ import {
 } from '../fixtures/i75-corridor';
 import { composeQuote } from '@/lib/trip-planner/compose-quote';
 import { nullWeatherPort } from '@/lib/trip-planner/providers';
-import { DEFAULT_TRUCK_PROFILE } from '@/lib/trip-planner/types';
+import { DEFAULT_TRUCK_PROFILE, type RemainingClocks } from '@/lib/trip-planner/types';
+import { planMyDay } from '@/lib/trip-planner/plan-my-day';
+import { buildTripPlan } from '@/lib/trip-planner/trip-plan';
+import { sliceTripLegs } from '@/lib/trip-planner/route-legs';
+import { resolveRouteRegion } from '@/lib/trip-planner/route-region';
+import { toStopCandidates } from '@/lib/trip-planner/directory-layer';
+import { buildTimeAxis, routeTimingFromAxis } from '@/lib/trip-planner/route-time-axis';
 
 const out = process.argv[2];
 if (!out) {
@@ -37,6 +43,86 @@ const deps = {
   fuelPrice: async () => null,
   routing: { name: 'fixture', route: async () => corridorRoutingResult(route) },
 };
+
+/*
+ * TP-3, THE TWO-BREAK SCENARIO — BUILT BY DIRECT ENGINE CALLS.
+ *
+ * Under mutually-consistent entered clocks a second required break cannot
+ * arise inside one legal driving horizon: every validated entry path
+ * enforces driving-since-break ≤ driving-used, so the break timer is at
+ * least drivingMin − 180, which puts the SECOND break threshold at least
+ * 300 minutes past the 11-hour cap. The wire (clockStateFromSimple)
+ * clamps accordingly — no composeQuote request can produce two breaks.
+ *
+ * The multi-break engine still matters (the pure functions accept any
+ * snapshot, and the bracket walk also fixed a real one-break edge), and
+ * the timeline must render such a plan correctly wherever it arises. So
+ * this scenario feeds the engine DIRECTLY with a raw snapshot on the
+ * slow corridor (18 mph ≈ 537 driving minutes; timer 100 → breaks at 100
+ * and 580… clamped horizon: breaks at 100 and 580 with a 640-min-capable
+ * snapshot), and emits only the fields the UI reads.
+ */
+function buildTwoBreakPayload() {
+  const slowRoute = corridorRoute({ via: true, speedMph: 15 });
+  const clocks: RemainingClocks = {
+    drivingMin: 660,
+    windowMin: 840,
+    untilBreakMin: 100,
+    cycleMin: 4200,
+    limitedBy: '11-hour',
+    legalDrivingMin: 660,
+  };
+  const region = resolveRouteRegion({
+    origin: DALTON_ORIGIN.position,
+    originCountry: 'US',
+    destination: MACON_DESTINATION.position,
+    destinationCountry: 'US',
+  });
+  const plan = planMyDay({
+    maneuvers: slowRoute.maneuvers,
+    positions: slowRoute.positions,
+    totalSeconds: slowRoute.totalSeconds,
+    baseSeconds: slowRoute.totalSeconds - 600,
+    totalMeters: slowRoute.totalMeters,
+    departureTimeParam: new Date(base.departAtMs).toISOString(),
+    isEstimate: false,
+    clocks,
+    bufferMin: 60,
+    departAtMs: base.departAtMs,
+    candidates: toStopCandidates(corridorListings(), slowRoute.routePoints, 5),
+    alerts: [],
+    region,
+    alertSource: 'nws-us',
+  });
+  const axis = buildTimeAxis({
+    maneuvers: slowRoute.maneuvers,
+    positions: slowRoute.positions,
+    totalSeconds: slowRoute.totalSeconds,
+    totalMeters: slowRoute.totalMeters,
+  });
+  if (!axis.ok) throw new Error('slow-route axis failed: ' + axis.detail);
+  const tripPlan = buildTripPlan({
+    timing: routeTimingFromAxis(axis),
+    clocks,
+    bufferMin: 60,
+    departAtMs: base.departAtMs,
+    totalMiles: slowRoute.totalMiles,
+    legs: sliceTripLegs({
+      maneuvers: slowRoute.maneuvers,
+      sections: slowRoute.sections,
+      totalSeconds: slowRoute.totalSeconds,
+      totalMeters: slowRoute.totalMeters,
+    }),
+    labels: {
+      origin: DALTON_ORIGIN.label,
+      via: ATLANTA_VIA.label,
+      destination: MACON_DESTINATION.label,
+    },
+    breakSchedule: plan.breakSchedule,
+    parking: plan.parking,
+  });
+  return { ok: true as const, plan, tripPlan };
+}
 
 const base = {
   origin: DALTON_ORIGIN,
@@ -89,19 +175,32 @@ async function main() {
     deps,
   );
 
-  if (!reachable.ok || !limited.ok) {
-    console.error('generator: composeQuote failed', reachable, limited);
+  const twoBreaks = buildTwoBreakPayload();
+
+  if (!reachable.ok || !limited.ok || !twoBreaks.ok) {
+    console.error('generator: composeQuote failed', reachable, limited, twoBreaks);
     process.exit(1);
   }
-  const kinds = (q: typeof reachable): string[] =>
-    q.ok && q.tripPlan.status !== 'unavailable' ? q.tripPlan.events.map((e) => e.kind) : [];
+  const kinds = (q: {
+    ok: boolean;
+    tripPlan?: import('@/lib/trip-planner/trip-plan').TripPlan;
+  }): string[] =>
+    q.ok && q.tripPlan !== undefined && q.tripPlan.status !== 'unavailable'
+      ? q.tripPlan.events.map((e) => e.kind)
+      : [];
 
   const reachKinds = kinds(reachable);
   const limitedKinds = kinds(limited);
-  if (!reachKinds.includes('destination') || !limitedKinds.includes('clock-update')) {
+  const twoBreakKinds = kinds(twoBreaks);
+  if (
+    !reachKinds.includes('destination') ||
+    !limitedKinds.includes('clock-update') ||
+    twoBreakKinds.filter((k) => k === 'break').length < 2
+  ) {
     console.error('generator: scenarios did not produce the expected shapes', {
       reachKinds,
       limitedKinds,
+      twoBreakKinds,
     });
     process.exit(1);
   }
@@ -111,9 +210,12 @@ async function main() {
     JSON.stringify({
       reachable: { quote: reachable, expectedKinds: reachKinds },
       limited: { quote: limited, expectedKinds: limitedKinds },
+      twoBreaks: { quote: twoBreaks, expectedKinds: twoBreakKinds },
     }),
   );
-  console.log(`tp2-corridor-gen: reachable=[${reachKinds}] limited=[${limitedKinds}]`);
+  console.log(
+    `tp2-corridor-gen: reachable=[${reachKinds}] limited=[${limitedKinds}] twoBreaks=[${twoBreakKinds}]`,
+  );
 }
 
 void main();
