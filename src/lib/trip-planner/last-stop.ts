@@ -35,7 +35,13 @@ import { isProhibitedOvernight } from '@/lib/directory/overnight';
  * the classic planner's 30 because the classic planner is the caller
  * that omits the argument.
  */
-import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN, requiredBreaksBefore } from './drive-window';
+import {
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  effectiveViaDwell,
+  requiredBreaksWithVia,
+  viaDwellWallMin,
+  type PlannedViaDwell,
+} from './drive-window';
 export { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN };
 
 export type SlotLabel = 'best-reservable' | 'last-reservable' | 'backup-reservable' | 'last-free';
@@ -126,6 +132,8 @@ export function reachWithinClocks(
   clocks: RemainingClocks,
   routeMile: number,
   bufferMin: number,
+  /** The planned via dwell (TP-4), when the plan carries one. */
+  via?: PlannedViaDwell | null,
 ): Reach | null {
   /*
    * NO TIMING, NO ELIGIBILITY.
@@ -162,16 +170,29 @@ export function reachWithinClocks(
    * window; a stop only counts as reachable if it is reachable even then.
    * `earliestMin` is used solely to detect the straddle below.
    */
+  const effectiveVia = effectiveViaDwell(via ?? null);
+
   const passes = (driveMinutes: number) => {
     // EVERY required 30-minute break extends wall-clock time and burns
     // the 14-hour window (TP-3). The drive may cross the break clock more
     // than once — after each qualifying break, another falls due 8
     // driving hours later — and each one costs 30 window minutes. The
-    // single shared primitive counts them, so this filter, the drive
-    // window and the break planner can never disagree.
+    // single shared primitive counts them — via-aware since TP-4, so a
+    // qualifying via dwell shifts later thresholds here exactly as it
+    // does in the drive window and the break planner.
     const breakMinutes =
-      HOS.MIN_BREAK_MIN * requiredBreaksBefore(driveMinutes, clocks.untilBreakMin);
-    const wallClockMinutes = driveMinutes + breakMinutes;
+      HOS.MIN_BREAK_MIN * requiredBreaksWithVia(driveMinutes, clocks.untilBreakMin, effectiveVia);
+    /*
+     * THE VIA DWELL IS WALL-CLOCK TIME THE TRUCK REALLY SPENDS (TP-4).
+     * A stop strictly beyond the via is reached only after the planned
+     * dwell there, so the dwell burns the 14-hour window on the way —
+     * minute for minute, because the window never pauses — and it burns
+     * the cycle too, the conservative duty reading documented on
+     * PlannedViaDwell. It never touches the driving clock: the truck is
+     * standing still.
+     */
+    const dwellMinutes = viaDwellWallMin(driveMinutes, effectiveVia);
+    const wallClockMinutes = driveMinutes + breakMinutes + dwellMinutes;
     const drivingLeft = clocks.drivingMin - driveMinutes;
     const windowLeft = clocks.windowMin - wallClockMinutes;
     /*
@@ -181,9 +202,11 @@ export function reachWithinClocks(
      * cycle is exactly as unreachable as one beyond their driving clock.
      * Before this, a cycle-bound driver could be offered parking their
      * cycle does not allow them to reach. The 30-minute break itself is
-     * off-duty and burns no cycle time.
+     * off-duty and burns no cycle time; the via dwell DOES burn it,
+     * because its duty status is unknowable here and the safe reading is
+     * the one that never offers a stop the cycle may not allow.
      */
-    const cycleLeft = clocks.cycleMin - driveMinutes;
+    const cycleLeft = clocks.cycleMin - driveMinutes - dwellMinutes;
     return {
       ok: drivingLeft >= bufferMin && windowLeft >= bufferMin && cycleLeft >= bufferMin,
       wallClockMinutes,
@@ -287,6 +310,13 @@ export function selectLastStops(args: {
   clocks: RemainingClocks;
   departAtMs: number;
   bufferMin?: number;
+  /**
+   * The planned via dwell (TP-4). Every candidate beyond the via is then
+   * judged on the corrected clocks — dwell charged to window and cycle,
+   * break thresholds shifted when the dwell qualifies — so the parking
+   * cutoff moves exactly as far as the dwell moves it.
+   */
+  via?: PlannedViaDwell | null;
 }): LastStopResult {
   /*
    * An omitted buffer means the CLASSIC planner is asking — it is the
@@ -342,7 +372,7 @@ export function selectLastStops(args: {
     list
       .map((candidate) => ({
         candidate,
-        reach: reachWithinClocks(timing, args.clocks, candidate.routeMile, bufferMin),
+        reach: reachWithinClocks(timing, args.clocks, candidate.routeMile, bufferMin, args.via),
         score: scoreCandidate(candidate, 'overnight').total,
       }))
       .filter((r): r is Scored => r.reach !== null);

@@ -3,7 +3,13 @@ import type { RouteTiming } from './route-time-axis';
 import type { BreakSchedule } from './break-plan';
 import type { ParkingChoice } from './plan-my-day';
 import type { TripLeg } from './route-legs';
-import { driveWindow, requiredBreaksBefore, type BindingRule } from './drive-window';
+import {
+  driveWindow,
+  effectiveViaDwell,
+  requiredBreaksBefore,
+  type BindingRule,
+  type PlannedViaDwell,
+} from './drive-window';
 import { reachWithinClocks } from './last-stop';
 
 /**
@@ -73,8 +79,15 @@ export type TripPlanEvent =
       label: string;
       /** Route mile where the via falls (provider section boundary). */
       mile: number;
-      /** Provider-timed passage, epoch ms (exact section-sum seconds). */
+      /** Provider-timed ARRIVAL at the via, epoch ms — before any dwell. */
       atMs: number;
+      /** Driver-entered planned minutes stopped here (TP-4). 0 = pass through. */
+      dwellMin: number;
+      /**
+       * The driver explicitly planned this dwell to count as their
+       * 30-minute break, and it is long enough to (TP-4). Never inferred.
+       */
+      plannedAsBreak: boolean;
     }
   | {
       kind: 'parking';
@@ -148,8 +161,15 @@ export function buildTripPlan(input: {
   breakSchedule: BreakSchedule | null;
   /** The ranked qualified parking the cards render (plan-my-day). */
   parking: readonly ParkingChoice[];
+  /**
+   * The planned via dwell (TP-4) — the SAME resolved value the drive
+   * window, break schedule and parking filter were computed with, so the
+   * timeline cannot disagree with any of them about what the dwell costs.
+   */
+  viaDwell?: PlannedViaDwell | null;
 }): TripPlan {
   const { timing, clocks, departAtMs, labels } = input;
+  const viaDwell = effectiveViaDwell(input.viaDwell ?? null);
 
   if (clocks === null) {
     return {
@@ -162,7 +182,7 @@ export function buildTripPlan(input: {
     return { status: 'unavailable', why: 'timing-unavailable', reason: timing.reason };
   }
 
-  const window = driveWindow(clocks, input.bufferMin);
+  const window = driveWindow(clocks, input.bufferMin, viaDwell);
   if ('ok' in window) {
     return { status: 'unavailable', why: 'clocks-refused', reason: window.problem };
   }
@@ -188,7 +208,9 @@ export function buildTripPlan(input: {
       (m) => m > 0 && timing.minutesToMile(m) !== null,
     ) ?? null;
   const destinationReach =
-    destinationMile === null ? null : reachWithinClocks(timing, clocks, destinationMile, 0);
+    destinationMile === null
+      ? null
+      : reachWithinClocks(timing, clocks, destinationMile, 0, viaDwell);
 
   const legSummaries: TripLegSummary[] = input.legs.map((leg, i) => ({
     index: leg.index,
@@ -209,12 +231,20 @@ export function buildTripPlan(input: {
     if (labels.via === null || input.legs.length < 2) return null;
     const first = input.legs[0];
     const viaDriveMin = first.endS / 60;
-    const dwellMin = HOS.MIN_BREAK_MIN * requiredBreaksBefore(viaDriveMin, clocks.untilBreakMin);
+    // Breaks due strictly BEFORE the via follow the driver's entered
+    // timer whatever the dwell does — the via dwell never satisfies a
+    // break retroactively, and the truck stood still for each one.
+    const breakDwellMin =
+      HOS.MIN_BREAK_MIN * requiredBreaksBefore(viaDriveMin, clocks.untilBreakMin);
     return {
       kind: 'via',
       label: labels.via,
       mile: first.endMile,
-      atMs: departAtMs + (first.endS + dwellMin * 60) * 1000,
+      // ARRIVAL at the via: the planned dwell happens after this moment,
+      // so it is shown on the event, never added to it (TP-4).
+      atMs: departAtMs + (first.endS + breakDwellMin * 60) * 1000,
+      dwellMin: viaDwell === null ? 0 : viaDwell.dwellMin,
+      plannedAsBreak: viaDwell !== null && viaDwell.qualifiesAsBreak,
     };
   };
 
@@ -279,10 +309,12 @@ export function buildTripPlan(input: {
 
   const planEndDrivingMin =
     top !== undefined
-      ? // The chosen stop's worst-case driving minutes, recovered from its
-        // provider-timed arrival (wall clock minus the break the reach
-        // model charged — both were computed by the same rule).
-        (top.arriveAtMs - departAtMs) / 60_000
+      ? // The chosen stop's worst-case DRIVING minutes. The choice carries
+        // them directly since TP-4; the fallback for an older shape
+        // recovers wall-clock minutes from the arrival, which overstates
+        // the horizon by any break and dwell time — tolerable for event
+        // inclusion, which is all this number decides.
+        (top.driveMinutes ?? (top.arriveAtMs - departAtMs) / 60_000)
       : (stopDriveMin ?? 0);
 
   const via = viaEvent();

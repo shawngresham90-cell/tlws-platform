@@ -9,9 +9,11 @@ import {
   PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
   SAFETY_BUFFER_PRESETS,
   SAFETY_BUFFER_EXPLANATION,
+  VIA_DWELL_PRESETS,
   isSafetyBufferPreset,
   type SafetyBufferMin,
 } from '@/lib/trip-planner/drive-window';
+import { HOS } from '@/lib/trip-planner/types';
 import { readRegionPrefs, writeRegionPrefs } from '@/components/navigator/region-storage';
 import { readTruck } from '@/components/navigator/truck-storage';
 import { readClocks } from '@/components/navigator/clocks-storage';
@@ -242,6 +244,33 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
    * one never adds rest time, and clearing it is always allowed.
    */
   const [via, setVia] = useState<ChosenPlace | null>(null);
+  /**
+   * Planned time at the via stop (TP-4), minutes. Zero — the default —
+   * means the route just passes through; the planner never adds dwell
+   * the driver did not enter.
+   */
+  const [viaDwellMin, setViaDwellMin] = useState(0);
+  /**
+   * The driver EXPLICITLY plans the dwell to count as their 30-minute
+   * break. Defaults to No, always; duration alone never flips it, and
+   * shortening the dwell below 30 minutes clears it (see the setter).
+   */
+  const [viaDwellCountsAsBreak, setViaDwellCountsAsBreak] = useState(false);
+
+  /** Choose a via — clearing it also clears the dwell that belonged to it. */
+  function chooseVia(next: ChosenPlace | null) {
+    setVia(next);
+    if (next === null) {
+      setViaDwellMin(0);
+      setViaDwellCountsAsBreak(false);
+    }
+  }
+
+  /** Choose a dwell preset — a sub-30 dwell can never keep a break claim. */
+  function chooseViaDwell(nextMin: number) {
+    setViaDwellMin(nextMin);
+    if (nextMin < HOS.MIN_BREAK_MIN) setViaDwellCountsAsBreak(false);
+  }
   const [plan, setPlan] = useState<PlanMyDay | null>(null);
   const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -293,7 +322,17 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     destination === null
       ? 'dest:none'
       : `dest:${destination.position.lat.toFixed(4)},${destination.position.lng.toFixed(4)}`,
-    via === null ? 'via:none' : `via:${via.position.lat.toFixed(4)},${via.position.lng.toFixed(4)}`,
+    /*
+     * THE DWELL AND ITS BREAK CLAIM ARE PLANNING INPUTS (TP-4): a stop
+     * chosen against a 0-minute pass-through was NOT qualified against a
+     * 60-minute dock stop, so changing either invalidates it exactly as
+     * moving the via does (scenarios D12/D13).
+     */
+    via === null
+      ? 'via:none'
+      : `via:${via.position.lat.toFixed(4)},${via.position.lng.toFixed(4)}:dwell:${viaDwellMin}:${
+          viaDwellCountsAsBreak ? 'break' : 'no-break'
+        }`,
     `buffer:${bufferMin}`,
     plan === null ? 'plan:none' : `plan:${plan.parking.map((c) => c.candidate.id).join(',')}`,
   ].join('|');
@@ -407,6 +446,15 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
             via === null
               ? null
               : { label: via.label, position: via.position, country: via.country },
+          /*
+           * PLANNED TIME AT THE VIA (TP-4). Sent only as entered — zero
+           * when no via or no dwell — and the break claim is sent only
+           * when the dwell can honor it, mirroring the schema's own
+           * cross-field rules rather than relying on them.
+           */
+          viaDwellMin: via === null ? 0 : viaDwellMin,
+          viaDwellQualifiesForBreak:
+            via !== null && viaDwellMin >= HOS.MIN_BREAK_MIN && viaDwellCountsAsBreak,
           departAtMs: Date.now(),
           /*
            * THE BUFFER THE DRIVER TAPPED, NOT A SERVER DEFAULT. Without
@@ -549,7 +597,7 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
           ariaLabel="Search for an optional stop the route should pass through"
           anchors={anchors}
           chosen={via}
-          onChoose={setVia}
+          onChoose={chooseVia}
           metric={units === 'metric'}
         />
         {via === null ? (
@@ -557,14 +605,85 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
             The route passes through this stop without resting there — your clocks keep running.
           </p>
         ) : (
-          <button
-            type="button"
-            data-remove-via=""
-            onClick={() => setVia(null)}
-            className="mt-2 min-h-12 rounded-cockpit border border-line px-3 text-lg text-ink"
-          >
-            Remove the optional stop
-          </button>
+          <>
+            <button
+              type="button"
+              data-remove-via=""
+              onClick={() => chooseVia(null)}
+              className="mt-2 min-h-12 rounded-cockpit border border-line px-3 text-lg text-ink"
+            >
+              Remove the optional stop
+            </button>
+
+            {/* ---- planned time at this stop (TP-4) ------------------- */}
+            <div className="mt-4">
+              <h4 className={LABEL}>Planned time at this stop</h4>
+              <p className={`mt-1 ${HELP}`}>
+                0 means the route just passes through. Any time you plan here runs your 14-hour
+                window down while the truck is stopped — it never adds driving time back.
+              </p>
+              <div
+                className="mt-2 flex flex-wrap gap-2"
+                role="group"
+                aria-label="Planned time at this stop"
+              >
+                {VIA_DWELL_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    aria-pressed={viaDwellMin === preset}
+                    data-via-dwell-preset={preset}
+                    onClick={() => chooseViaDwell(preset)}
+                    className={`min-h-14 min-w-[4.5rem] flex-1 rounded-cockpit border px-3 text-lg font-semibold ${
+                      viaDwellMin === preset
+                        ? 'border-nav-good bg-nav-good text-asphalt'
+                        : 'border-line text-ink'
+                    }`}
+                  >
+                    {preset} min
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ---- the break question, only when 30+ minutes ----------- */}
+            {viaDwellMin >= HOS.MIN_BREAK_MIN ? (
+              <div className="mt-4" data-via-break-question="">
+                <h4 className={LABEL}>Will this stop count as your 30-minute break?</h4>
+                <p className={`mt-1 ${HELP}`}>
+                  Only choose Yes if your ELD duty status will satisfy the break requirement. This
+                  planner cannot determine that for you.
+                </p>
+                <div
+                  className="mt-2 flex gap-2"
+                  role="group"
+                  aria-label="Will this stop count as your 30-minute break?"
+                >
+                  {(
+                    [
+                      [false, 'No'],
+                      [true, 'Yes'],
+                    ] as const
+                  ).map(([value, text]) => (
+                    <button
+                      key={text}
+                      type="button"
+                      aria-pressed={viaDwellCountsAsBreak === value}
+                      data-via-dwell-break={text}
+                      onClick={() => setViaDwellCountsAsBreak(value)}
+                      className={`min-h-14 flex-1 rounded-cockpit border px-3 text-lg font-semibold ${
+                        viaDwellCountsAsBreak === value
+                          ? 'border-nav-good bg-nav-good text-asphalt'
+                          : 'border-line text-ink'
+                      }`}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </>
         )}
       </section>
 

@@ -383,7 +383,29 @@ function TripPlanEventCard({ event }: { event: TripPlanEvent }) {
         </p>
       );
     case 'via':
-      return (
+      /*
+       * TP-4: a via with planned dwell is a STOP the plan charges for; a
+       * via without one keeps the pass-through wording. The break line
+       * appears only when the driver explicitly chose Yes — the planner
+       * never calls a stop a break on its own.
+       */
+      return event.dwellMin > 0 ? (
+        <div>
+          <p className={BODY}>
+            <span className="font-semibold">Stop at {event.label}</span> — arriving about{' '}
+            {clockTime(event.atMs)}
+          </p>
+          <p className={`mt-1 ${MUTED}`} data-via-dwell={event.dwellMin}>
+            Planned stop: {event.dwellMin} min. Your 14-hour window keeps running while you are
+            stopped.
+          </p>
+          {event.plannedAsBreak ? (
+            <p className={`mt-1 ${MUTED}`} data-via-break-credit="">
+              Planned to count as your 30-minute break — only your ELD duty status makes that true.
+            </p>
+          ) : null}
+        </div>
+      ) : (
         <p className={BODY}>
           <span className="font-semibold">Through {event.label}</span> — about{' '}
           {clockTime(event.atMs)}, without stopping

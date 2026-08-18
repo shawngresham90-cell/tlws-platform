@@ -105,11 +105,18 @@ for (const w of WIDTHS) {
   });
   const page = await ctx.newPage();
 
-  // Which canned quote the next Plan tap receives.
+  // Which canned quote the next Plan tap receives — and what the UI
+  // actually SENT, so the wire fields can be asserted (TP-4).
   let scenario = 'limited';
-  await page.route('**/api/trip-planner/quote', (route) =>
-    route.fulfill({ json: SCENARIOS[scenario].quote }),
-  );
+  let lastQuoteBody = null;
+  await page.route('**/api/trip-planner/quote', (route) => {
+    try {
+      lastQuoteBody = JSON.parse(route.request().postData() ?? 'null');
+    } catch {
+      lastQuoteBody = null;
+    }
+    return route.fulfill({ json: SCENARIOS[scenario].quote });
+  });
   await page.route('**/api/trip-planner/destination-search**', (route) => {
     const q = new URL(route.request().url()).searchParams.get('q')?.toLowerCase() ?? '';
     const match = Object.entries(PLACES).find(([k]) => q.includes(k));
@@ -218,6 +225,96 @@ for (const w of WIDTHS) {
   check(
     `${w}px: the break card admits the further break`,
     (await page.locator('[data-further-break]').innerText()).includes('Another 30-minute break'),
+  );
+
+  // ---- scenario 4: planned dwell at the via (TP-4) -------------------
+  // The dwell controls live in the via section while a via is chosen.
+  const dwellPresets = page.locator('[data-via-dwell-preset]');
+  check(`${w}px: all seven dwell presets render`, (await dwellPresets.count()) === 7);
+  const preset60 = page.locator('[data-via-dwell-preset="60"]');
+  const p60box = await preset60.boundingBox();
+  check(
+    `${w}px: the dwell presets meet the touch floor`,
+    p60box !== null && p60box.height >= TOUCH_FLOOR,
+    p60box ? `h=${Math.round(p60box.height)}` : 'no box',
+  );
+  await preset60.click();
+  const breakQuestion = page.locator('[data-via-break-question]');
+  check(`${w}px: the break question appears at 30+ minutes`, (await breakQuestion.count()) === 1);
+  check(
+    `${w}px: the break question defaults to No`,
+    (await page.locator('[data-via-dwell-break="No"]').getAttribute('aria-pressed')) === 'true' &&
+      (await page.locator('[data-via-dwell-break="Yes"]').getAttribute('aria-pressed')) === 'false',
+  );
+  await page.locator('[data-via-dwell-preset="15"]').click();
+  check(`${w}px: under 30 minutes the question disappears`, (await breakQuestion.count()) === 0);
+  await preset60.click();
+
+  scenario = 'dwell';
+  await page.locator('[data-plan-button]').click();
+  await page.locator('[data-via-dwell]').waitFor({ timeout: 10_000 });
+  check(
+    `${w}px: the wire carries the dwell the driver tapped`,
+    lastQuoteBody !== null && lastQuoteBody.viaDwellMin === 60,
+    lastQuoteBody?.viaDwellMin,
+  );
+  check(
+    `${w}px: the wire never claims a break the driver did not choose`,
+    lastQuoteBody !== null && lastQuoteBody.viaDwellQualifiesForBreak === false,
+  );
+  check(
+    `${w}px: the via card shows the planned stop`,
+    (await page.locator('[data-via-dwell]').innerText()).includes('Planned stop: 60 min'),
+  );
+  check(
+    `${w}px: no break-credit line renders for a No answer`,
+    (await page.locator('[data-via-break-credit]').count()) === 0,
+  );
+  const dwellKinds = await page
+    .locator('[data-trip-event]')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('data-trip-event')));
+  check(
+    `${w}px: the dwelled plan renders the engine's own event order`,
+    dwellKinds.join('>') === SCENARIOS.dwell.expectedKinds.join('>'),
+    dwellKinds.join('>'),
+  );
+
+  // ---- scenario 5: qualifying 30-minute dwell (TP-4) -----------------
+  await page.locator('[data-via-dwell-preset="30"]').click();
+  await page.locator('[data-via-dwell-break="Yes"]').click();
+  scenario = 'dwellQualifying';
+  await page.locator('[data-plan-button]').click();
+  await page.locator('[data-via-break-credit]').waitFor({ timeout: 10_000 });
+  check(
+    `${w}px: the wire carries the explicit break claim`,
+    lastQuoteBody !== null &&
+      lastQuoteBody.viaDwellMin === 30 &&
+      lastQuoteBody.viaDwellQualifiesForBreak === true,
+    lastQuoteBody?.viaDwellQualifiesForBreak,
+  );
+  check(
+    `${w}px: the break-credit line renders for an explicit Yes`,
+    (await page.locator('[data-via-break-credit]').innerText()).includes(
+      'Planned to count as your 30-minute break',
+    ),
+  );
+
+  // ---- scenario 6: changing the dwell invalidates a sent stop --------
+  scenario = 'limited';
+  await page.locator('[data-plan-button]').click();
+  const sendFirst = page.locator('[data-send-to-navigator]').first();
+  await sendFirst.waitFor({ timeout: 10_000 });
+  await sendFirst.click();
+  await page.locator('[data-planned-stop-sent]').waitFor({ timeout: 10_000 });
+  check(
+    `${w}px: a chosen stop reaches the Navigator handoff panel`,
+    (await page.locator('[data-planned-stop-sent]').count()) === 1,
+  );
+  await page.locator('[data-via-dwell-preset="90"]').click();
+  await page.waitForTimeout(300);
+  check(
+    `${w}px: changing the dwell invalidates the sent stop immediately`,
+    (await page.locator('[data-planned-stop-sent]').count()) === 0,
   );
 
   // ---- the screen never scrolls sideways -----------------------------
