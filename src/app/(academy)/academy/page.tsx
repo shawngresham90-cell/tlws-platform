@@ -25,8 +25,13 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { SITE } from '@/lib/seo/site';
 import type { KcFaq } from '@/lib/kc/types';
 
+// LOCAL-SEO-1: /academy is THE Dalton money page — it holds the sitewide nav
+// links and every established program fact, so the local head terms ("CDL
+// school Dalton GA", "CDL training Dalton GA") belong here. The satellite
+// /academy/cdl-school-dalton-ga targets the regional/areas-served long tail
+// instead, so the two pages never bid on the same query.
 export const metadata = buildMetadata({
-  title: 'CDL Training in Dalton, GA — $3,995 Tuition | Trucking Life Academy',
+  title: 'CDL School & Class A Training in Dalton, GA | Trucking Life Academy',
   description: `CDL-A training at ${ACADEMY_ADDRESS.oneLine}. Tuition ${TUITION}. Weekend classes begin October 2026 — Saturdays and Sundays for eight weekends. Weekday program begins January 2027. Manual 10-speed training and job-placement assistance.`,
   path: '/academy',
 });
@@ -262,8 +267,8 @@ export default async function AcademyPage() {
         cinematic
         crumbs={[{ name: 'Home', href: '/' }, { name: 'Academy' }]}
         eyebrow="Trucking Life Academy · Dalton, GA · off I-75"
-        title="The CDL-A school built by a driver,"
-        highlight="for drivers."
+        title="CDL Class A training in Dalton, Georgia —"
+        highlight="built by a driver, for drivers."
         intro="Corporate mills push bodies through a system. Trucking Life Academy trains drivers — ELDT-compliant CDL-A instruction on real trucks, real roads, and real accountability, from a man who’s run 17 years with a clean record."
       >
         <Button href="/academy/apply">Apply to the Academy</Button>
@@ -306,7 +311,11 @@ export default async function AcademyPage() {
           <h2 className="display-section">CDL training in Dalton, Georgia</h2>
           <p className="mt-4 text-lg text-muted">
             Trucking Life Academy is located at{' '}
-            <strong className="text-ink">{ACADEMY_ADDRESS.oneLine}</strong>.
+            <strong className="text-ink">{ACADEMY_ADDRESS.oneLine}</strong>, right off the I-75
+            corridor — serving Whitfield County, North Georgia, and the Chattanooga area.{' '}
+            <Link href="/academy/cdl-school-dalton-ga" className="link-inline text-signal">
+              See the areas we serve →
+            </Link>
           </p>
           <p className="mt-4 text-lg text-muted">
             <strong className="text-ink">Tuition: {TUITION}</strong>

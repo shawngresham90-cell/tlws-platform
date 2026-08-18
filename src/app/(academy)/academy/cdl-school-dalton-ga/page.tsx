@@ -4,12 +4,17 @@ import { PageHero, CardGrid, AcademyFaq, CtaBand, type Card } from '@/components
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { courseSchema, localSchoolSchema } from '@/lib/seo/academy-schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { ACADEMY_ADDRESS, PROGRAM_SUMMARY, ENROLL_CTA_LINE } from '@/lib/academy/program';
 import type { KcFaq } from '@/lib/kc/types';
 
+// LOCAL-SEO-1: this page is the AREAS-SERVED satellite. /academy owns the
+// Dalton head terms ("CDL school Dalton GA"); this page targets the regional
+// long tail — North Georgia, Whitfield County, the Chattanooga side — so the
+// two never cannibalize each other. Its unique value is the service-area
+// detail a searcher from Calhoun or Ringgold actually wants.
 export const metadata = buildMetadata({
-  title: 'CDL School in Dalton, GA — Class A Training off I-75 | Trucking Life Academy',
-  description:
-    'Looking for a CDL school in Dalton, GA? Trucking Life Academy offers ELDT-compliant Class A CDL training on real equipment off I-75, serving North Georgia and the Chattanooga, TN area.',
+  title: 'North Georgia CDL Training — Dalton Campus off I-75 | Trucking Life Academy',
+  description: `Class A CDL training for North Georgia and the Chattanooga area, at ${ACADEMY_ADDRESS.oneLine} off I-75 — an easy drive from Calhoun, Chatsworth, Ringgold, and Cleveland, TN. ELDT-compliant, on real equipment.`,
   path: '/academy/cdl-school-dalton-ga',
 });
 
@@ -93,9 +98,9 @@ export default function CdlSchoolDaltonPage() {
           { name: 'CDL School in Dalton, GA' },
         ]}
         eyebrow="CDL School · Dalton, GA · off I-75"
-        title="Your Class A CDL school in"
-        highlight="Dalton, Georgia."
-        intro="ELDT-compliant CDL-A training on real equipment, right on the I-75 corridor in North Georgia — built by a 17-year driver with zero violations, for the drivers of this region."
+        title="North Georgia's CDL school,"
+        highlight="off I-75 in Dalton."
+        intro="ELDT-compliant CDL-A training on real equipment, right on the I-75 corridor — an easy drive from anywhere in North Georgia or the Chattanooga area, built by a 17-year driver with zero violations for the drivers of this region."
       >
         <Button href="/academy/apply">Apply to the Academy</Button>
         <Button variant="ghost" href="/academy/curriculum">
@@ -135,6 +140,18 @@ export default function CdlSchoolDaltonPage() {
             </li>
           ))}
         </ul>
+        <address className="mt-6 not-italic text-muted">
+          The campus is at <span className="font-semibold text-ink">{ACADEMY_ADDRESS.oneLine}</span>
+          , right off the I-75 corridor.{' '}
+          <Link
+            href={ACADEMY_ADDRESS.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-inline font-semibold text-signal"
+          >
+            Open in Google Maps →
+          </Link>
+        </address>
       </Section>
 
       {/* Program summary + internal links */}
@@ -142,6 +159,7 @@ export default function CdlSchoolDaltonPage() {
         <div className="mb-8 max-w-2xl">
           <Eyebrow>The program</Eyebrow>
           <h2 className="display-section">What Dalton drivers train on</h2>
+          <p className="mt-4 text-muted">{PROGRAM_SUMMARY}</p>
         </div>
         <CardGrid
           cards={[
@@ -179,7 +197,7 @@ export default function CdlSchoolDaltonPage() {
         </p>
       </Section>
 
-      <CtaBand heading="The CDL school Dalton drivers were waiting for" />
+      <CtaBand heading="The CDL school Dalton drivers were waiting for" intro={ENROLL_CTA_LINE} />
     </>
   );
 }

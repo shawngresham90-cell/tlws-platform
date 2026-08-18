@@ -114,6 +114,13 @@ export default async function PracticeTestsHubPage() {
             </p>
           </div>
         </div>
+        <p className="mt-8 max-w-2xl text-sm text-muted">
+          The permit is step one. For behind-the-wheel training,{' '}
+          <Link href="/academy" className="link-inline font-semibold text-signal">
+            Trucking Life Academy — our CDL school in Dalton, Georgia
+          </Link>{' '}
+          takes you the rest of the way.
+        </p>
       </Section>
 
       {/* Academy conversion band — the shared component, so the CTA never drifts. */}
