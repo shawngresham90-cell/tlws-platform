@@ -73,3 +73,37 @@ export function estimateRoute(
     method: `straight-line × ${ROAD_CIRCUITY_FACTOR} circuity at ${avgSpeedMph} mph avg (pre-HERE estimate)`,
   };
 }
+
+/**
+ * Estimate through one via stop (TP-2): two chained straight-line legs.
+ *
+ * Exists so a via request whose live routing fails does not silently
+ * report the DIRECT origin→destination distance, which understates a
+ * dog-leg corridor. Still an ESTIMATE in every sense above — no HOS
+ * marker, break, parking eligibility or trip plan is ever computed from
+ * it (the timing seam refuses estimates wholesale).
+ */
+export function estimateRouteVia(
+  origin: { label: string; position: LatLng },
+  via: { label: string; position: LatLng },
+  destination: { label: string; position: LatLng },
+  opts: { avgSpeedMph?: number } = {},
+): EstimatedRoute {
+  const first = estimateRoute(origin, via, opts);
+  const second = estimateRoute(via, destination, opts);
+  const firstMiles = first.route.totalMiles;
+
+  const route = buildRoute([
+    { ...first.route.legs[0], seq: 0 },
+    { ...second.route.legs[0], seq: 1 },
+  ]);
+  const routePoints: RoutePoint[] = [
+    ...first.routePoints,
+    // The via point itself already ends the first leg; skip the duplicate.
+    ...second.routePoints.slice(1).map((p) => ({
+      position: p.position,
+      routeMile: Number((firstMiles + p.routeMile).toFixed(1)),
+    })),
+  ];
+  return { route, routePoints, isEstimate: true, method: first.method };
+}

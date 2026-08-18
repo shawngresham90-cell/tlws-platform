@@ -218,8 +218,6 @@ export function planMyDay(input: {
     });
     if (!stops.timingAvailable) {
       parkingProblem = TIMING_UNAVAILABLE_NOTICE;
-    } else if (stops.slots.length === 0) {
-      parkingProblem = 'No parking on this corridor is reachable inside your clock and buffer.';
     }
     parking = stops.eligible.slice(0, PARKING_CHOICES).map((e) => ({
       candidate: e.candidate,
@@ -232,11 +230,21 @@ export function planMyDay(input: {
       source: e.candidate.coordVerificationStatus ?? 'unverified',
     }));
     /*
+     * THE PROBLEM SENTENCE DESCRIBES THE LIST THE DRIVER SEES (TP-2).
+     * It used to key off the named SLOTS, which require a reservable or
+     * explicitly-free stop — so a corridor whose only reachable parking
+     * was paid-but-unreservable rendered "No parking … is reachable"
+     * directly above a list of reachable parking. The screen's list is
+     * built from `eligible`, so its emptiness is what the sentence is
+     * about.
+     *
      * FEWER THAN THREE IS A REAL ANSWER. Padding the list with stops that
      * failed the safety filter is exactly the failure the filter exists
      * to prevent, so the list stays short and the HEADING moves instead.
      */
-    if (parkingProblem === null && parking.length < PARKING_CHOICES) {
+    if (parkingProblem === null && parking.length === 0) {
+      parkingProblem = 'No parking on this corridor is reachable inside your clock and buffer.';
+    } else if (parkingProblem === null && parking.length < PARKING_CHOICES) {
       parkingProblem = PARKING_SHORTFALL_NOTE;
     }
   }

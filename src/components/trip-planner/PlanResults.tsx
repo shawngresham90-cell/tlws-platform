@@ -1,6 +1,7 @@
 'use client';
 
 import type { ParkingChoice, PlanMyDay } from '@/lib/trip-planner/plan-my-day';
+import type { TripPlan, TripPlanEvent } from '@/lib/trip-planner/trip-plan';
 import { PARKING_SHORTFALL_NOTE } from '@/lib/trip-planner/plan-my-day';
 import { mayClaimLiveTraffic } from '@/lib/trip-planner/traffic';
 import { ZONE_EXPLANATION } from '@/lib/trip-planner/clock-limit-marker';
@@ -39,10 +40,16 @@ function hoursMinutes(min: number): string {
 
 export function PlanResults({
   plan,
+  tripPlan = null,
   onChooseParking,
   chosenParkingId = null,
 }: {
   plan: PlanMyDay;
+  /**
+   * The chronological TP-2 trip plan. OPTIONAL: the classic planner
+   * passes nothing and renders exactly as before.
+   */
+  tripPlan?: TripPlan | null;
   /**
    * Hand this parking choice to the Navigator as a planned waypoint.
    * OPTIONAL: the classic planner renders the same results with no
@@ -124,6 +131,57 @@ export function PlanResults({
 
       {/* ---- the map, drawn only from what survived the filters ------- */}
       <PlanMap plan={plan} />
+
+      {/* ---- Your Trip Plan (TP-2) ----------------------------------- */}
+      {/*
+        The chronological read of the same plan: one continuous driving
+        stretch, ending at the destination when the entered clocks legally
+        cover it, or at a parking stop and an explicit clock-update
+        boundary when they do not. Everything below the boundary is
+        deliberately absent — the planner never renders unearned hours.
+      */}
+      {tripPlan === null ? null : (
+        <section className={CARD} aria-labelledby="trip-plan-heading" data-trip-plan="">
+          <h2 id="trip-plan-heading" className="text-xl font-bold text-ink">
+            Your Trip Plan
+          </h2>
+          {tripPlan.status === 'unavailable' ? (
+            <p className={`mt-2 ${BODY}`} data-trip-plan-unavailable={tripPlan.why}>
+              {tripPlan.reason}
+            </p>
+          ) : (
+            <>
+              <p className={`mt-1 ${MUTED}`} data-trip-plan-status={tripPlan.status}>
+                {tripPlan.status === 'reachable'
+                  ? 'Your current clocks cover this whole drive.'
+                  : `Your ${tripPlan.limitedBy} clock ends this drive early — plan to stop.`}
+              </p>
+              <ol className="mt-3 space-y-0">
+                {tripPlan.events.map((e, i) => (
+                  <li key={`${e.kind}-${i}`} data-trip-event={e.kind}>
+                    {i > 0 ? (
+                      <div aria-hidden="true" className="py-1 pl-4 text-lg text-ink/40">
+                        ↓
+                      </div>
+                    ) : null}
+                    <TripPlanEventCard event={e} />
+                  </li>
+                ))}
+              </ol>
+              {tripPlan.legs.length > 1 ? (
+                <p className={`mt-3 ${MUTED}`} data-trip-plan-legs={tripPlan.legs.length}>
+                  {tripPlan.legs
+                    .map(
+                      (l) =>
+                        `${l.fromLabel} → ${l.toLabel}: ${Math.round(l.endMile - l.startMile)} mi, ${hoursMinutes(l.driveMinutes)}`,
+                    )
+                    .join(' · ')}
+                </p>
+              ) : null}
+            </>
+          )}
+        </section>
+      )}
 
       {/* ---- the break ----------------------------------------------- */}
       <section className={CARD} aria-labelledby="break-heading">
@@ -288,4 +346,85 @@ export function PlanResults({
       </section>
     </div>
   );
+}
+
+/**
+ * One chronological event, in the driver's words. Every time shown here
+ * is departure plus PROVIDER driving time — nothing in this component
+ * computes a time of its own.
+ */
+function TripPlanEventCard({ event }: { event: TripPlanEvent }) {
+  switch (event.kind) {
+    case 'start':
+      return (
+        <p className={BODY}>
+          <span className="font-semibold">Start</span> — {event.label} at {clockTime(event.atMs)}
+        </p>
+      );
+    case 'break':
+      return (
+        <p className={BODY}>
+          <span className="font-semibold">30-minute break required</span> — plan it around{' '}
+          {clockTime(event.byMs)}
+          {event.targetMile === null ? '' : ` (near mile ${Math.round(event.targetMile)})`}
+          {event.coarse ? '; timing here is approximate' : ''}
+        </p>
+      );
+    case 'via':
+      return (
+        <p className={BODY}>
+          <span className="font-semibold">Through {event.label}</span> — about{' '}
+          {clockTime(event.atMs)}, without stopping
+        </p>
+      );
+    case 'parking':
+      return (
+        <div>
+          <p className={BODY}>
+            <span className="font-semibold">Parking stop</span> — {event.choice.candidate.name},
+            arriving by {clockTime(event.choice.arriveAtMs)} with{' '}
+            {hoursMinutes(Math.floor(event.choice.clockLeftMin))} of clock in hand
+          </p>
+          {event.alternatives > 0 ? (
+            <p className={`mt-1 ${MUTED}`}>
+              {event.alternatives} more qualified option{event.alternatives === 1 ? '' : 's'} in the
+              parking list below.
+            </p>
+          ) : null}
+        </div>
+      );
+    case 'no-parking':
+      return (
+        <p
+          className="rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-lg font-semibold text-ink"
+          data-trip-no-parking=""
+        >
+          {event.notice}
+        </p>
+      );
+    case 'destination':
+      return (
+        <div>
+          <p className={BODY}>
+            <span className="font-semibold">Destination</span> — {event.label}, arriving by{' '}
+            {clockTime(event.arriveByMs)} with {hoursMinutes(event.clockLeftMin)} of clock in hand
+          </p>
+          {event.withinBuffer ? null : (
+            <p className={`mt-1 ${MUTED}`} data-trip-tight-arrival="">
+              That is less than your safety buffer — consider stopping earlier.
+            </p>
+          )}
+        </div>
+      );
+    case 'clock-update':
+      return (
+        <div
+          className="rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2"
+          data-trip-clock-update=""
+        >
+          <p className="text-lg font-semibold text-ink">{event.notice}</p>
+          <p className={`mt-1 ${MUTED}`}>{event.detail}</p>
+        </div>
+      );
+  }
 }

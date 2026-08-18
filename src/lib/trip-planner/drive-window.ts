@@ -182,8 +182,16 @@ export function driveWindow(
    * SAY SO rather than reporting the 14-hour rule. The driver's next
    * action is different: a break resumes the trip, a window expiry ends
    * the day.
+   *
+   * ONLY when the WINDOW is the rule that produced the limit (TP-2). The
+   * relabel exists because charging the break against the 14-hour window
+   * is what moved the limit — so the break is the real story. When the
+   * cycle (or driving) binds far earlier than the break clock, the break
+   * had nothing to do with the limit, and relabeling it hid the actual
+   * binding rule: a cycle-bound driver was told their break was the
+   * problem. Scenario D (cycle binds) pins the corrected answer.
    */
-  if (breakFallsInsideDrive && clocks.untilBreakMin >= clockLimitMin) {
+  if (breakFallsInsideDrive && limitedBy === '14-hour' && clocks.untilBreakMin >= clockLimitMin) {
     limitedBy = '30-minute-break';
   }
 

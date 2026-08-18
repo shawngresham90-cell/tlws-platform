@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { freshClockState, remainingClocks, validateClockState } from './hos-engine';
 import { planTrip } from './optimizer';
-import { estimateRoute } from './route-estimate';
+import { estimateRoute, estimateRouteVia } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
 import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
@@ -22,11 +22,19 @@ import {
   type RemainingClocks,
   type TripCostEstimate,
 } from './types';
-import type { RoutingPort, WeatherAlert, WeatherBand, WeatherPort } from './providers';
+import type {
+  RouteSection,
+  RoutingPort,
+  WeatherAlert,
+  WeatherBand,
+  WeatherPort,
+} from './providers';
 import type { FuelPriceResult } from './eia-fuel';
 import { latLngSchema } from './api-contracts';
 import { TRUCK_LIMITS, type HereManeuver } from './here-routing';
 import { resolveRouteRegion } from './route-region';
+import { sliceTripLegs } from './route-legs';
+import { buildTripPlan, type TripPlan } from './trip-plan';
 
 /**
  * Composite trip quote (Phase 4) — the one call the mobile UI makes. Pure
@@ -115,6 +123,14 @@ const endpointSchema = z.object({
 export const quoteRequestSchema = z.object({
   origin: endpointSchema,
   destination: endpointSchema,
+  /*
+   * ONE OPTIONAL VIA STOP (TP-2). A point the route is shaped THROUGH —
+   * the provider times it as continuous driving, so it is a routing
+   * waypoint, never a rest. Exactly one by design: arbitrary N-waypoint
+   * trip editing is a different product with different failure modes, and
+   * the corridor milestone needs one (Dalton → Atlanta → Macon).
+   */
+  via: endpointSchema.nullish(),
   departAtMs: z.number().int().positive(),
   clocks: simpleClocksSchema,
   fuelLevelFraction: z.number().min(0).max(1).default(1),
@@ -237,6 +253,14 @@ export type QuoteResult = {
    * the weather section cannot disagree about when the truck arrives.
    */
   plan: PlanMyDay;
+  /**
+   * The chronological TP-2 trip plan: start → (break) → (via) →
+   * destination-or-parking, ending at a clock-update boundary whenever
+   * the drive cannot legally finish. Built from the SAME timing axis and
+   * the SAME ranked parking as `plan`, so the timeline and the cards
+   * cannot disagree.
+   */
+  tripPlan: TripPlan;
   itinerary: Itinerary;
   cost: TripCostEstimate;
   fuelPrice: FuelPriceResult | null;
@@ -275,7 +299,11 @@ export async function composeQuote(
 
   let estimated;
   try {
-    estimated = estimateRoute(input.origin, input.destination);
+    // A via request estimates through the via, so a live-routing failure
+    // cannot silently understate a dog-leg corridor's distance.
+    estimated = input.via
+      ? estimateRouteVia(input.origin, input.via, input.destination)
+      : estimateRoute(input.origin, input.destination);
   } catch (e) {
     return { ok: false, error: { code: 'bad-route', message: (e as Error).message } };
   }
@@ -315,6 +343,8 @@ export async function composeQuote(
     geometry?: { lat: number; lng: number }[];
     /** Free-flow baseline: evidence traffic was applied, or null. */
     baseSeconds?: number | null;
+    /** Provider section boundaries — where a via divides the route (TP-2). */
+    sections?: RouteSection[];
   } = {
     route: estimated.route,
     routePoints: estimated.routePoints,
@@ -326,7 +356,10 @@ export async function composeQuote(
       deps.routing.route({
         origin: input.origin.position,
         destination: input.destination.position,
-        waypoints: [],
+        // The one optional via stop, threaded to the port's existing
+        // waypoint support (HERE emits it as `via=`). Empty otherwise —
+        // byte-identical requests for every via-less caller.
+        waypoints: input.via ? [input.via.position] : [],
         truck,
         departAtMs: input.departAtMs,
         avoid: input.avoid,
@@ -343,6 +376,7 @@ export async function composeQuote(
         maneuvers: routingOutcome.value.maneuvers,
         geometry: routingOutcome.value.geometry,
         baseSeconds: routingOutcome.value.summary?.baseSeconds ?? null,
+        sections: routingOutcome.value.summary?.sections,
       };
     } else {
       warnings.push('live truck routing unavailable — distances and times are estimates');
@@ -459,6 +493,54 @@ export async function composeQuote(
   });
   if (!lastStop.timingAvailable) warnings.push(TIMING_UNAVAILABLE_NOTICE);
 
+  const plan = planMyDay({
+    maneuvers: routeData.maneuvers ?? [],
+    positions: routeData.geometry ?? [],
+    totalSeconds: routeData.route.driveMinutes * 60,
+    baseSeconds: routeData.baseSeconds ?? null,
+    totalMeters: routeData.route.totalMiles * 1609.344,
+    // The wire value, not an assumption about what the builder sends.
+    departureTimeParam: routeData.isEstimate ? null : new Date(input.departAtMs).toISOString(),
+    isEstimate: routeData.isEstimate,
+    clocks: remainingAtDeparture,
+    bufferMin: lastStop.bufferMin,
+    departAtMs: input.departAtMs,
+    candidates,
+    alerts: weather.alerts,
+    region,
+    alertSource: 'nws-us',
+  });
+
+  /*
+   * The chronological plan (TP-2), assembled from pieces already computed
+   * above: the SAME provider timing seam, driveWindow's binding rule via
+   * plan, planBreak's placement via plan.breakPlan, and plan.parking —
+   * the identical ranked list the parking cards render. The buffer passed
+   * is the request's own resolved value: Plan My Day always sends 60,
+   * the classic planner's schema default stays 30, and the trip plan can
+   * never silently pick up a different fallback.
+   */
+  const tripPlan = buildTripPlan({
+    timing,
+    clocks: remainingAtDeparture,
+    bufferMin: lastStop.bufferMin,
+    departAtMs: input.departAtMs,
+    totalMiles: routeData.route.totalMiles,
+    legs: sliceTripLegs({
+      maneuvers: routeData.maneuvers ?? [],
+      sections: routeData.sections,
+      totalSeconds: routeData.route.driveMinutes * 60,
+      totalMeters: routeData.route.totalMiles * 1609.344,
+    }),
+    labels: {
+      origin: input.origin.label,
+      via: input.via ? input.via.label : null,
+      destination: input.destination.label,
+    },
+    breakPlan: plan.breakPlan,
+    parking: plan.parking,
+  });
+
   return {
     ok: true,
     routeSummary: {
@@ -470,23 +552,8 @@ export async function composeQuote(
     },
     remainingAtDeparture,
     lastStop,
-    plan: planMyDay({
-      maneuvers: routeData.maneuvers ?? [],
-      positions: routeData.geometry ?? [],
-      totalSeconds: routeData.route.driveMinutes * 60,
-      baseSeconds: routeData.baseSeconds ?? null,
-      totalMeters: routeData.route.totalMiles * 1609.344,
-      // The wire value, not an assumption about what the builder sends.
-      departureTimeParam: routeData.isEstimate ? null : new Date(input.departAtMs).toISOString(),
-      isEstimate: routeData.isEstimate,
-      clocks: remainingAtDeparture,
-      bufferMin: lastStop.bufferMin,
-      departAtMs: input.departAtMs,
-      candidates,
-      alerts: weather.alerts,
-      region,
-      alertSource: 'nws-us',
-    }),
+    plan,
+    tripPlan,
     itinerary,
     cost,
     fuelPrice,

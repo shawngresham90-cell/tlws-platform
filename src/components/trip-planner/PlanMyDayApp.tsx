@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PlannerAnchor } from '@/lib/trip-planner/directory-loader';
 import type { PlanMyDay } from '@/lib/trip-planner/plan-my-day';
+import type { TripPlan } from '@/lib/trip-planner/trip-plan';
 import { PlanResults } from './PlanResults';
 import {
   PLAN_MY_DAY_DEFAULT_BUFFER_MIN,
@@ -235,7 +236,14 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
   const [bufferMin, setBufferMin] = useState<SafetyBufferMin>(PLAN_MY_DAY_DEFAULT_BUFFER_MIN);
   const [origin, setOrigin] = useState<ChosenPlace | null>(null);
   const [destination, setDestination] = useState<ChosenPlace | null>(null);
+  /**
+   * The one optional via stop (TP-2). A point the route is shaped
+   * THROUGH — the provider times it as continuous driving — so choosing
+   * one never adds rest time, and clearing it is always allowed.
+   */
+  const [via, setVia] = useState<ChosenPlace | null>(null);
   const [plan, setPlan] = useState<PlanMyDay | null>(null);
+  const [tripPlan, setTripPlan] = useState<TripPlan | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [truckLabel, setTruckLabel] = useState('Not confirmed');
@@ -285,6 +293,7 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     destination === null
       ? 'dest:none'
       : `dest:${destination.position.lat.toFixed(4)},${destination.position.lng.toFixed(4)}`,
+    via === null ? 'via:none' : `via:${via.position.lat.toFixed(4)},${via.position.lng.toFixed(4)}`,
     `buffer:${bufferMin}`,
     plan === null ? 'plan:none' : `plan:${plan.parking.map((c) => c.candidate.id).join(',')}`,
   ].join('|');
@@ -394,6 +403,10 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
             position: destination.position,
             country: destination.country,
           },
+          via:
+            via === null
+              ? null
+              : { label: via.label, position: via.position, country: via.country },
           departAtMs: Date.now(),
           /*
            * THE BUFFER THE DRIVER TAPPED, NOT A SERVER DEFAULT. Without
@@ -429,13 +442,16 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
       if (!json.ok) {
         setStatus(json.error?.message ?? 'Could not plan this trip.');
         setPlan(null);
+        setTripPlan(null);
         return;
       }
       setPlan(json.plan ?? null);
+      setTripPlan(json.tripPlan ?? null);
       setStatus(null);
     } catch {
       setStatus('Could not reach the planner. Try again.');
       setPlan(null);
+      setTripPlan(null);
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -524,6 +540,32 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
           onChoose={setDestination}
           metric={units === 'metric'}
         />
+
+        <EndpointPicker
+          testId="via"
+          heading="Optional stop along the way"
+          label="Route through a stop (optional)"
+          placeholder="Address, business, truck stop, or city"
+          ariaLabel="Search for an optional stop the route should pass through"
+          anchors={anchors}
+          chosen={via}
+          onChoose={setVia}
+          metric={units === 'metric'}
+        />
+        {via === null ? (
+          <p className={`mt-1 ${HELP}`}>
+            The route passes through this stop without resting there — your clocks keep running.
+          </p>
+        ) : (
+          <button
+            type="button"
+            data-remove-via=""
+            onClick={() => setVia(null)}
+            className="mt-2 min-h-12 rounded-cockpit border border-line px-3 text-lg text-ink"
+          >
+            Remove the optional stop
+          </button>
+        )}
       </section>
 
       {/* ---- 5. clocks ----------------------------------------------- */}
@@ -586,7 +628,12 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
 
       {plan === null ? null : (
         <>
-          <PlanResults plan={plan} onChooseParking={chooseParking} chosenParkingId={sentStopId} />
+          <PlanResults
+            plan={plan}
+            tripPlan={tripPlan}
+            onChooseParking={chooseParking}
+            chosenParkingId={sentStopId}
+          />
           {sentStopId === null ? null : (
             <section
               className="mt-4 rounded-cockpit border border-signal bg-signal/10 p-4"
