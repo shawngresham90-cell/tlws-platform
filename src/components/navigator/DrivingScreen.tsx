@@ -109,6 +109,8 @@ import {
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
 import { TripPlanFirst } from './TripPlanFirst';
+import { resumeEndsAtDestination } from '@/lib/trip-planner/trip-resume';
+import { clearTripResumeRecord, readTripResumeRecord } from './trip-resume-storage';
 import { tripKeyFor } from '@/lib/trip-planner/planned-stop';
 import { VoiceControls } from './VoiceControls';
 
@@ -1896,6 +1898,20 @@ export function DrivingScreen({
       } else if ((lcState === 'arrived' || lcState === 'completed') && prev !== lcState) {
         sessionStorage.removeItem(TRIP_RESTORE_KEY);
         lastSavedMsRef.current = 0;
+        /*
+         * TP-5: a segment ending AT THE ORIGINAL DESTINATION completes the
+         * whole trip, so its resume context goes too. A segment ending at
+         * the planned PARKING stop does not — that is the exact moment the
+         * resume record exists for, and clearing it there would delete the
+         * trip at the instant it becomes resumable.
+         */
+        const resumeRecord = readTripResumeRecord();
+        if (
+          resumeRecord !== null &&
+          resumeEndsAtDestination(resumeRecord, lastDestinationRef.current?.position ?? null)
+        ) {
+          clearTripResumeRecord();
+        }
       }
     } catch {
       // Storage full or blocked: restore is an enhancement, never a crash.

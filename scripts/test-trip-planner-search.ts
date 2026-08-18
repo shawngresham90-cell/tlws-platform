@@ -200,8 +200,12 @@ const PLANNER_UI = read('src/components/trip-planner/PlanMyDayApp.tsx');
   const quoteCalls = (PLANNER_UI.match(/\/api\/trip-planner\/quote/g) ?? []).length;
   check('Plan My Day names the quote endpoint exactly once', quoteCalls === 1, quoteCalls);
   check(
+    // TP-5 gave the handler an optional inputs parameter so a resumed
+    // trip can plan from explicit values; the rule this pins — the quote
+    // endpoint is named ONLY inside planDay, never in an effect — is
+    // unchanged, and the exactly-once count above still enforces it.
     'and only inside the Plan My Day handler, never in an effect',
-    /async function planDay\(\)[\s\S]*?\/api\/trip-planner\/quote/.test(PLANNER_UI),
+    /async function planDay\([^)]*\)[\s\S]*?\/api\/trip-planner\/quote/.test(PLANNER_UI),
   );
   check(
     'the button is disabled until BOTH ends are chosen',
