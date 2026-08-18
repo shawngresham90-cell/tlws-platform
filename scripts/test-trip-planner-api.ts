@@ -810,7 +810,7 @@ async function main() {
       /*
        * OMITTING THE BUFFER IS THE CLASSIC PLANNER SPEAKING. It is the
        * only caller that never sends one, so the wire default must stay
-       * its 30 — collapsing everything to Plan My Day's 45 would silently
+       * its 30 — collapsing everything to Plan My Day's 60 would silently
        * re-rank the stop recommendations on a screen this milestone was
        * told to preserve.
        */
@@ -824,8 +824,8 @@ async function main() {
         }).bufferMin === CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
       );
       check(
-        'buffer: ...which is 30, not Plan My Day’s 45',
-        CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30 && PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 45,
+        'buffer: ...which is 30, not Plan My Day’s 60',
+        CLASSIC_PLANNER_DEFAULT_BUFFER_MIN === 30 && PLAN_MY_DAY_DEFAULT_BUFFER_MIN === 60,
       );
       for (const bad of [-1, 181, 2.5]) {
         check(

@@ -136,7 +136,7 @@ export const quoteRequestSchema = z.object({
    * Omitting it means the CLASSIC cost planner is calling — the only
    * caller that never sends one — so the default here is the classic
    * planner's own 30, preserving the behaviour it has always had. That
-   * constant lives in `drive-window.ts` beside Plan My Day's 45 and
+   * constant lives in `drive-window.ts` beside Plan My Day's 60 and
    * shares its validation; neither is a second declaration.
    */
   bufferMin: z.number().int().min(0).max(180).default(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),

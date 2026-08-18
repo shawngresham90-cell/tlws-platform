@@ -50,8 +50,27 @@ export type SafetyBufferMin = (typeof SAFETY_BUFFER_PRESETS)[number];
  * surface is now mandatory to get a number at all.
  */
 
-/** Plan My Day's recommendation — room to find a second option if the first is full. */
-export const PLAN_MY_DAY_DEFAULT_BUFFER_MIN: SafetyBufferMin = 45;
+/**
+ * Plan My Day's recommendation — room to find a second option if the first is
+ * full, and then a third if that one is too.
+ *
+ * SIXTY, SET BY THE OWNER. An earlier revision of this branch carried 45; the
+ * settled product decision is 60 and this is the single place it lives.
+ *
+ * The number is a judgement about what happens when a plan meets a real yard.
+ * A driver arriving at their chosen stop can find it full, and the buffer is
+ * the time they have left to reach the next one without touching the legal
+ * limit. Forty-five minutes covers one such failure on a good corridor; sixty
+ * covers one on a bad one, and the cost of being generous here is a stop
+ * recommended slightly earlier than strictly necessary — which is the cheap
+ * direction to be wrong in.
+ *
+ * It is NOT extra legal time and must never be described as any. `driveWindow`
+ * subtracts it from `clockLimitMin` to produce `stopTargetMin`; the legal limit
+ * itself is untouched by the buffer, which is what lets a driver widen or
+ * narrow it without ever changing what the law allows them.
+ */
+export const PLAN_MY_DAY_DEFAULT_BUFFER_MIN: SafetyBufferMin = 60;
 
 /**
  * The classic cost planner's long-standing default.

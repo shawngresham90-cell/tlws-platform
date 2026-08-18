@@ -93,7 +93,7 @@ console.log('\n== the classic planner keeps its own 30-minute default ==');
   /*
    * The classic cost planner posts to this same endpoint and has never
    * sent a buffer. Omitting it must therefore still plan against 30
-   * minutes — collapsing every caller onto Plan My Day's 45 would
+   * minutes — collapsing every caller onto Plan My Day's 60 would
    * silently re-rank the stop recommendations on a screen that was
    * supposed to be left alone.
    */

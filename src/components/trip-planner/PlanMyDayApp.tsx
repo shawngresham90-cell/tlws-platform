@@ -19,6 +19,16 @@ import { countryFromStateCode, type CountryClaim } from '@/lib/trip-planner/rout
 import { DestinationSearch } from '@/components/navigator/DestinationSearch';
 import { TRIP_PLANNER_SEARCH_ENDPOINT } from '@/components/navigator/search-port';
 import type { LatLng } from '@/lib/map/bounds';
+import type { ParkingChoice } from '@/lib/trip-planner/plan-my-day';
+import {
+  PLANNED_STOP_SOURCE_NOTICE,
+  plannedStopFromChoice,
+  sharedInputsFingerprint,
+} from '@/lib/trip-planner/planned-stop';
+import {
+  clearPlannedStopRecord,
+  writePlannedStopRecord,
+} from '@/components/navigator/planned-stop-storage';
 
 /**
  * One end of the trip, however the driver arrived at it.
@@ -231,6 +241,89 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
   const [truckLabel, setTruckLabel] = useState('Not confirmed');
   const [clocksLabel, setClocksLabel] = useState('Clocks not set');
   const [units, setUnits] = useState<'imperial' | 'metric'>('imperial');
+  /**
+   * The parking stop handed to the Navigator, if any. Held here rather than
+   * read back from storage so the confirmation reflects THIS tap — a read
+   * could return a record written by an earlier plan and tell the driver
+   * something they did not just do.
+   */
+  const [sentStopId, setSentStopId] = useState<string | null>(null);
+
+  /**
+   * The clocks and truck this plan was built on, as one comparable string.
+   * Read from the same storage the Navigator reads, so both sides compute it
+   * from one source rather than from two copies that can drift.
+   */
+  function currentFingerprint(): string {
+    const entry = readClocks();
+    const truck = readTruck();
+    return sharedInputsFingerprint({
+      clocks: entry.kind === 'set' ? entry.entered : null,
+      truck: truck === null ? null : truck.profile,
+    });
+  }
+
+  /*
+   * INVALIDATE THE MOMENT AN INPUT MOVES.
+   *
+   * A stop is an answer to one specific question: given THESE clocks, THIS
+   * truck, and THIS origin and destination, where can I legally stop? Change
+   * any term and the answer is stale — not in twelve hours, immediately. The
+   * TTL is the backstop for the case where nothing observable changed and
+   * time simply passed; this is the primary defence.
+   *
+   * Keyed on a signature of the inputs rather than on the values themselves,
+   * so a re-render that produces an equal-but-not-identical object does not
+   * throw away a stop the driver just chose. The plan is included: re-planning
+   * replaces the answer, so the previous answer must go with it.
+   */
+  const planningSignature = [
+    currentFingerprint(),
+    origin === null
+      ? 'origin:none'
+      : `origin:${origin.position.lat.toFixed(4)},${origin.position.lng.toFixed(4)}`,
+    destination === null
+      ? 'dest:none'
+      : `dest:${destination.position.lat.toFixed(4)},${destination.position.lng.toFixed(4)}`,
+    `buffer:${bufferMin}`,
+    plan === null ? 'plan:none' : `plan:${plan.parking.map((c) => c.candidate.id).join(',')}`,
+  ].join('|');
+  const lastSignature = useRef<string | null>(null);
+  useEffect(() => {
+    // The first pass records the baseline; it must not clear a record the
+    // driver may have written on a previous visit to this screen.
+    if (lastSignature.current === null) {
+      lastSignature.current = planningSignature;
+      return;
+    }
+    if (lastSignature.current === planningSignature) return;
+    lastSignature.current = planningSignature;
+    clearPlannedStopRecord();
+    setSentStopId(null);
+  }, [planningSignature]);
+
+  /**
+   * Take one parking choice to the Navigator.
+   *
+   * `Date.now()` is read HERE, at the moment of the tap, and stamped into the
+   * record. That is what the Navigator later measures staleness against, so
+   * it has to be the instant the driver chose — not the instant the plan was
+   * computed, which may be minutes earlier while they read the options.
+   */
+  function chooseParking(choice: ParkingChoice): void {
+    const stop = plannedStopFromChoice(choice, Date.now(), currentFingerprint());
+    if (stop === null) {
+      // A candidate with no id or no usable coordinate. Nothing to route to,
+      // so the honest response is to say so rather than to write a record the
+      // Navigator would refuse on arrival.
+      setStatus(
+        'That parking record is missing its location, so it cannot be sent to the Navigator.',
+      );
+      return;
+    }
+    writePlannedStopRecord(stop);
+    setSentStopId(stop.id);
+  }
 
   /*
    * ONE REQUEST PER PLAN, whatever the thumb does. A driver tapping Plan
@@ -491,7 +584,29 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
         </p>
       )}
 
-      {plan === null ? null : <PlanResults plan={plan} />}
+      {plan === null ? null : (
+        <>
+          <PlanResults plan={plan} onChooseParking={chooseParking} chosenParkingId={sentStopId} />
+          {sentStopId === null ? null : (
+            <section
+              className="mt-4 rounded-cockpit border border-signal bg-signal/10 p-4"
+              data-planned-stop-sent=""
+              aria-live="polite"
+            >
+              <p className="text-lg font-semibold text-ink">Planned stop saved for the Navigator</p>
+              <p className="mt-1 text-base leading-snug text-ink/70">
+                {PLANNED_STOP_SOURCE_NOTICE}
+              </p>
+              <a
+                className="mt-3 inline-flex min-h-12 items-center rounded-cockpit border border-signal px-4 text-lg font-semibold text-ink"
+                href="/drive"
+              >
+                Open the Navigator
+              </a>
+            </section>
+          )}
+        </>
+      )}
 
       <p className="pt-2">
         <a
