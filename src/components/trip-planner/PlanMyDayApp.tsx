@@ -46,6 +46,20 @@ import {
   readTripResumeRecord,
   writeTripResumeRecord,
 } from '@/components/navigator/trip-resume-storage';
+import { FieldTestPanel } from './FieldTestPanel';
+import {
+  closeFieldTestSession,
+  dwellBucketOf,
+  sanitizeScoreComponents,
+  setPlanEvidence,
+} from '@/lib/trip-planner/field-test';
+import {
+  readActiveFieldTestSession,
+  readFieldTestArmed,
+  writeActiveFieldTestSession,
+} from '@/components/navigator/field-test-storage';
+import { scoreCandidate } from '@/lib/trip-planner/directory-layer';
+import { detourBucket } from '@/lib/trip-planner/tpc-analytics';
 
 /**
  * One end of the trip, however the driver arrived at it.
@@ -437,6 +451,41 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
       setResume(record);
       setResumeClocksOk(false);
     }
+
+    /*
+     * ROAD-TEST EVIDENCE (TP-6), captured only when field-test mode was
+     * armed from the pilot Navigator AND a session is live. Everything
+     * here is a label, count or bucket read from outputs that already
+     * exist — the ranking engine's own component breakdown, the binding
+     * rule's NAME, the TPC analytics detour bucket — never a coordinate,
+     * never a clock value. The privacy gate at the storage door would
+     * refuse anything else anyway; this call simply has nothing hotter
+     * to offer it.
+     */
+    if (readFieldTestArmed()) {
+      const fieldSession = readActiveFieldTestSession(Date.now());
+      if (fieldSession !== null) {
+        const rank =
+          plan === null ? 0 : plan.parking.findIndex((c) => c.candidate.id === choice.candidate.id);
+        const score = scoreCandidate(choice.candidate, 'overnight');
+        const withEvidence = setPlanEvidence(fieldSession, {
+          limitedBy: plan?.window?.limitedBy ?? null,
+          requiredBreakCount: plan?.window?.requiredBreakCount ?? null,
+          chosenRank: rank >= 0 ? rank + 1 : 0,
+          alternativesShown: plan?.parking.length ?? 0,
+          scoreComponents: sanitizeScoreComponents(score.components),
+          scoreTotal: score.total,
+          overnightStatus: choice.candidate.overnightStatus ?? null,
+          reservable: Boolean(choice.candidate.reservationUrl),
+          detourBucket: detourBucket(choice.detourMinutes),
+          source: choice.candidate.coordVerificationStatus ?? 'unverified',
+          viaDwell: dwellBucketOf(via === null ? 0 : viaDwellMin),
+          viaDwellQualifies:
+            via !== null && viaDwellMin >= HOS.MIN_BREAK_MIN && viaDwellCountsAsBreak,
+        });
+        if (withEvidence !== null) writeActiveFieldTestSession(withEvidence, Date.now());
+      }
+    }
   }
 
   /*
@@ -676,6 +725,12 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
   function endTrip() {
     clearTripResumeRecord();
     setResume(null);
+    // TP-6: explicitly discarding the trip also closes any live road-test
+    // session (FT14). Closed, not deleted — the evidence stays reviewable.
+    const fieldSession = readActiveFieldTestSession(Date.now());
+    if (fieldSession !== null) {
+      writeActiveFieldTestSession(closeFieldTestSession(fieldSession, 'cancelled'), Date.now());
+    }
   }
 
   return (
@@ -1013,6 +1068,13 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
           )}
         </>
       )}
+
+      {/*
+        TP-6: the road-test evidence panel — LAST on the page, after the
+        whole planning workflow, so it can never sit between a driver and
+        a plan. Renders nothing unless armed from the pilot Navigator.
+      */}
+      <FieldTestPanel />
 
       <p className="pt-2">
         <a
