@@ -199,6 +199,32 @@ export type HereManeuver = {
  */
 const MAX_MANEUVERS = 1000;
 
+/**
+ * Where one provider section ends, in every unit downstream code measures
+ * in (TP-2). HERE splits a route into sections at each `via` waypoint, so
+ * with one via there are two sections and this array records where the
+ * first ends — which is the only way a caller can know where the via
+ * falls on the concatenated route.
+ *
+ * All values are CUMULATIVE from the route start, taken from the
+ * provider's own section summaries — never recomputed from geometry or
+ * an assumed speed. `maneuverStart`/`maneuverEnd` slice the parsed
+ * `maneuvers` array so a per-leg time axis can be built from exactly the
+ * actions the provider timed for that leg.
+ */
+export type HereSectionSummary = {
+  /** Cumulative meters from route start at this section's END. */
+  endMeters: number;
+  /** Cumulative traffic-aware seconds at this section's END. */
+  endSeconds: number;
+  /** Index of the last concatenated-geometry point in this section. */
+  endPositionIndex: number;
+  /** Index into `maneuvers` of this section's first maneuver. */
+  maneuverStart: number;
+  /** One past this section's last maneuver (slice-style bound). */
+  maneuverEnd: number;
+};
+
 export type ParsedHereRoute = {
   meters: number;
   seconds: number;
@@ -217,6 +243,13 @@ export type ParsedHereRoute = {
   maneuvers: HereManeuver[];
   /** Provider notices, always an array (empty when none). Additive (N8a). */
   notices: HereRouteNotice[];
+  /**
+   * One entry per provider section, in order (TP-2). A single-section
+   * route yields one entry whose totals equal the route totals; a via
+   * route yields one per leg. Purely additive — every existing consumer
+   * ignores it.
+   */
+  sections: HereSectionSummary[];
 };
 
 /** Extract distance/duration/geometry/instructions. Null on anything malformed. */
@@ -230,7 +263,9 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
   const instructions: string[] = [];
   const maneuvers: HereManeuver[] = [];
   const notices: HereRouteNotice[] = [];
+  const sectionSummaries: HereSectionSummary[] = [];
   for (const s of sections) {
+    const sectionManeuverStart = maneuvers.length;
     for (const n of s.notices ?? []) {
       // Leniency rule as elsewhere: a malformed notice entry is skipped,
       // never fails the route — but a well-formed one is always retained.
@@ -299,6 +334,17 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
         });
       }
     }
+    // Section boundary (TP-2): recorded AFTER this section's meters/seconds
+    // were added and its maneuvers appended, so every value is cumulative
+    // through the end of this section. Straight from the provider's own
+    // summaries — nothing here is recomputed or assumed.
+    sectionSummaries.push({
+      endMeters: meters,
+      endSeconds: seconds,
+      endPositionIndex: Math.max(0, positions.length - 1),
+      maneuverStart: sectionManeuverStart,
+      maneuverEnd: maneuvers.length,
+    });
   }
   if (meters <= 0 || seconds <= 0 || positions.length < 2) return null;
   // Defensive clamp: a provider offset beyond the section's own geometry
@@ -317,6 +363,7 @@ export function parseHereResponse(json: unknown): ParsedHereRoute | null {
     instructions: instructions.slice(0, MAX_INSTRUCTIONS),
     maneuvers,
     notices,
+    sections: sectionSummaries,
   };
 }
 
@@ -621,6 +668,10 @@ export function createHereRoutingPort(
           // asked. Null when the provider did not return one on every
           // section (see ParsedHereRoute.baseSeconds).
           baseSeconds: parsed.baseSeconds,
+          // Section boundaries (TP-2): where each via divides the route,
+          // in the provider's own cumulative units. Ignored by every
+          // pre-TP-2 consumer.
+          sections: parsed.sections,
         },
         geometryPointCount: parsed.positions.length,
         // N8b: full geometry only on explicit opt-in (see the option doc).

@@ -223,9 +223,19 @@ const PLANNER_UI = read('src/components/trip-planner/PlanMyDayApp.tsx');
     'switching the country drops the previous pick',
     /setCountry\(code\);[\s\S]{0,200}onChoose\(null\)/.test(PLANNER_UI),
   );
+  /*
+   * TP-2 UPDATE, EXPLAINED: this used to pin exactly TWO pickers. The
+   * asserted property — every end is searched in its own country — is
+   * unchanged; TP-2 added the optional via stop as a third picker that
+   * carries the same per-end country toggle. The count moves to three and
+   * each picker is now named, so a fourth cannot appear unnoticed either.
+   */
   check(
-    'both ends can be searched in different countries',
-    (PLANNER_UI.match(/<EndpointPicker/g) ?? []).length === 2,
+    'each end — origin, destination and the optional via — searches its own country',
+    (PLANNER_UI.match(/<EndpointPicker/g) ?? []).length === 3 &&
+      /testId="origin"/.test(PLANNER_UI) &&
+      /testId="destination"/.test(PLANNER_UI) &&
+      /testId="via"/.test(PLANNER_UI),
   );
 }
 

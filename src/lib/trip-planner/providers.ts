@@ -56,6 +56,26 @@ export type RouteNotice = {
   severity: string;
 };
 
+/**
+ * Where one provider section ends (TP-2). Providers split a route at each
+ * via waypoint; these cumulative boundaries are the only sound way to know
+ * where a via falls on the route. Structurally identical to the HERE
+ * adapter's `HereSectionSummary` (same pattern as RouteManeuver — this
+ * file cannot import the adapter without a cycle).
+ */
+export type RouteSection = {
+  /** Cumulative meters from route start at this section's END. */
+  endMeters: number;
+  /** Cumulative traffic-aware seconds at this section's END. */
+  endSeconds: number;
+  /** Index of the last route-geometry point in this section. */
+  endPositionIndex: number;
+  /** Index into `maneuvers` of this section's first maneuver. */
+  maneuverStart: number;
+  /** One past this section's last maneuver (slice-style bound). */
+  maneuverEnd: number;
+};
+
 export type RoutingResult = {
   route: Route;
   /** Sampled polyline points with cumulative route-miles (directory layer input). */
@@ -79,7 +99,13 @@ export type RoutingResult = {
    * present only when it actually applied traffic, which is what makes it
    * evidence rather than an assumption.
    */
-  summary?: { meters: number; seconds: number; baseSeconds?: number | null };
+  summary?: {
+    meters: number;
+    seconds: number;
+    baseSeconds?: number | null;
+    /** Per-section cumulative boundaries (TP-2); absent from older adapters. */
+    sections?: RouteSection[];
+  };
   /** Total decoded geometry points behind `routePoints` (which are sampled). */
   geometryPointCount?: number;
   /**

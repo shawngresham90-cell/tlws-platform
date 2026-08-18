@@ -2,6 +2,7 @@ import type { Route, StopCandidate, RemainingClocks } from './types';
 import type { RouteTiming } from './route-time-axis';
 import { HOS } from './types';
 import { NEED_CATEGORIES, hasConfirmedTruckParking, scoreCandidate } from './directory-layer';
+import { isProhibitedOvernight } from '@/lib/directory/overnight';
 
 /**
  * Last Stop selection (docs/trip-planner/last-stop-engine.md) — the named
@@ -144,6 +145,7 @@ export function reachWithinClocks(
     !Number.isFinite(clocks.drivingMin) ||
     !Number.isFinite(clocks.windowMin) ||
     !Number.isFinite(clocks.untilBreakMin) ||
+    !Number.isFinite(clocks.cycleMin) ||
     !Number.isFinite(routeMile) ||
     !Number.isFinite(bufferMin)
   ) {
@@ -167,10 +169,20 @@ export function reachWithinClocks(
     const wallClockMinutes = driveMinutes + breakMinutes;
     const drivingLeft = clocks.drivingMin - driveMinutes;
     const windowLeft = clocks.windowMin - wallClockMinutes;
+    /*
+     * THE CYCLE GATES REACHABILITY TOO (TP-2). Driving is on-duty time,
+     * so every driving minute burns the 60/70-hour cycle exactly as it
+     * burns the 11-hour clock — and a stop beyond the driver's remaining
+     * cycle is exactly as unreachable as one beyond their driving clock.
+     * Before this, a cycle-bound driver could be offered parking their
+     * cycle does not allow them to reach. The 30-minute break itself is
+     * off-duty and burns no cycle time.
+     */
+    const cycleLeft = clocks.cycleMin - driveMinutes;
     return {
-      ok: drivingLeft >= bufferMin && windowLeft >= bufferMin,
+      ok: drivingLeft >= bufferMin && windowLeft >= bufferMin && cycleLeft >= bufferMin,
       wallClockMinutes,
-      hosRemainingMinAtArrival: Math.min(drivingLeft, windowLeft),
+      hosRemainingMinAtArrival: Math.min(drivingLeft, windowLeft, cycleLeft),
     };
   };
 
@@ -282,8 +294,18 @@ export function selectLastStops(args: {
   // legally park here", so a listing without a confirmed positive space
   // count (zero, negative, null, or non-numeric) can never enter ANY slot —
   // reservable or free — regardless of category or score.
+  //
+  // PROHIBITED-OVERNIGHT RULE (TP-2), unified with rankCandidates: a row
+  // whose overnight status is explicitly 'prohibited' is a place the
+  // operator says a truck may NOT stay, and these slots are overnight HOS
+  // stops. rankCandidates has excluded such rows since M3; this path now
+  // applies the same rule, so the two ranking paths cannot disagree about
+  // whether a prohibited lot is offered as legal overnight parking.
   const parkingCandidates = args.candidates.filter(
-    (c) => PARKING_CATEGORIES.has(c.categorySlug) && hasConfirmedTruckParking(c.parkingSpaces),
+    (c) =>
+      PARKING_CATEGORIES.has(c.categorySlug) &&
+      hasConfirmedTruckParking(c.parkingSpaces) &&
+      !isProhibitedOvernight(c.overnightStatus),
   );
   const reservableAll = parkingCandidates.filter((c) => c.reservationUrl);
 
