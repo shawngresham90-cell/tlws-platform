@@ -32,6 +32,20 @@ import {
   clearPlannedStopRecord,
   writePlannedStopRecord,
 } from '@/components/navigator/planned-stop-storage';
+import {
+  buildResumeRecord,
+  readResumeVerdict,
+  resumeClocksConfirmable,
+  resumeMatchesDestination,
+  RESUME_CLOCKS_NOTICE,
+  RESUME_NO_ASSUMPTIONS_NOTICE,
+  type TripResumeRecord,
+} from '@/lib/trip-planner/trip-resume';
+import {
+  clearTripResumeRecord,
+  readTripResumeRecord,
+  writeTripResumeRecord,
+} from '@/components/navigator/trip-resume-storage';
 
 /**
  * One end of the trip, however the driver arrived at it.
@@ -285,6 +299,15 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
    * something they did not just do.
    */
   const [sentStopId, setSentStopId] = useState<string | null>(null);
+  /**
+   * The trip context available to CONTINUE after the driver rests at a
+   * planned stop (TP-5). Read once on mount — a stale or malformed record
+   * is dropped at the door, fail-soft. `resumeClocksOk` says only whether
+   * the stored clocks were entered AFTER the stop was planned; even then,
+   * nothing is planned until the driver's explicit tap.
+   */
+  const [resume, setResume] = useState<TripResumeRecord | null>(null);
+  const [resumeClocksOk, setResumeClocksOk] = useState(false);
 
   /**
    * The clocks and truck this plan was built on, as one comparable string.
@@ -371,6 +394,49 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     }
     writePlannedStopRecord(stop);
     setSentStopId(stop.id);
+
+    /*
+     * PRESERVE THE TRIP CONTEXT PAST THE STOP (TP-5). The handoff record
+     * above dies with its 12-hour TTL and carries no destination; this one
+     * carries exactly what continuing needs — the stop, the original
+     * destination, and any via still ahead of the stop (decided here, once,
+     * from the same plan the driver is looking at) — and nothing about the
+     * clocks, limits or schedules that the rest will make false. One slot:
+     * sending a stop for a different trip replaces the old context (R13).
+     */
+    const record = buildResumeRecord({
+      stop,
+      stopCountry: countryFromStateCode(choice.candidate.state),
+      destination:
+        destination === null
+          ? { label: '', position: { lat: 0, lng: 0 }, country: null }
+          : {
+              label: destination.label,
+              position: destination.position,
+              country: destination.country,
+            },
+      via: via === null ? null : { label: via.label, position: via.position, country: via.country },
+      viaDwellMin,
+      viaDwellQualifiesForBreak: viaDwellMin >= HOS.MIN_BREAK_MIN && viaDwellCountsAsBreak,
+      stopRouteMile: Number.isFinite(choice.candidate.routeMile)
+        ? choice.candidate.routeMile
+        : null,
+      viaRouteMile:
+        tripPlan !== null && tripPlan.status !== 'unavailable' && tripPlan.legs.length > 1
+          ? tripPlan.legs[0].endMile
+          : null,
+      nowMs: Date.now(),
+    });
+    if (record === null) {
+      // Nothing to continue (no destination, or the stop IS the
+      // destination) — and any older trip's context must not linger.
+      clearTripResumeRecord();
+      setResume(null);
+    } else {
+      writeTripResumeRecord(record);
+      setResume(record);
+      setResumeClocksOk(false);
+    }
   }
 
   /*
@@ -395,6 +461,21 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     );
     const clocks = readClocks();
     setClocksLabel(clocks.kind === 'set' ? 'Set' : 'Clocks not set');
+
+    /*
+     * A TRIP WAITING TO CONTINUE (TP-5). Offered only while its own
+     * 72-hour context freshness holds — a stale record is cleared, never
+     * partially trusted. Whether the CLOCKS are fresh is a separate
+     * question with a separate answer: they must have been entered after
+     * the stop was planned, or the card demands an update first.
+     */
+    const verdict = readResumeVerdict(readTripResumeRecord(), Date.now());
+    if (verdict.ok) {
+      setResume(verdict.record);
+      setResumeClocksOk(resumeClocksConfirmable(verdict.record, clocks));
+    } else if (verdict.problem === 'stale') {
+      clearTripResumeRecord();
+    }
   }, []);
 
   function chooseBuffer(next: SafetyBufferMin) {
@@ -406,11 +487,36 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     }
   }
 
-  async function planDay() {
+  /** What one quote is planned from — state by default, or a resume's context. */
+  type PlanInputs = {
+    origin: ChosenPlace;
+    destination: ChosenPlace;
+    via: ChosenPlace | null;
+    viaDwellMin: number;
+    viaDwellCountsAsBreak: boolean;
+  };
+
+  async function planDay(override?: PlanInputs) {
     if (inFlight.current) return;
-    if (origin === null || destination === null) {
+    const req: PlanInputs | null =
+      override ??
+      (origin !== null && destination !== null
+        ? { origin, destination, via, viaDwellMin, viaDwellCountsAsBreak }
+        : null);
+    if (req === null) {
       setStatus('Choose where you are starting and where you are going.');
       return;
+    }
+    /*
+     * PLANNING TOWARD A DIFFERENT DESTINATION IS A NEW TRIP (TP-5, R12).
+     * The old trip's resume context must not survive it — otherwise a
+     * driver who changed their mind would later be offered a continuation
+     * of a trip they abandoned. Continuing the SAME trip (the resume flow
+     * itself, or a re-plan to the same destination) keeps the record.
+     */
+    if (resume !== null && !resumeMatchesDestination(resume, req.destination.position)) {
+      clearTripResumeRecord();
+      setResume(null);
     }
     inFlight.current = true;
     setPending(true);
@@ -433,28 +539,28 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
            * leave both ends unplaceable.
            */
           origin: {
-            label: origin.label,
-            position: origin.position,
-            country: origin.country,
+            label: req.origin.label,
+            position: req.origin.position,
+            country: req.origin.country,
           },
           destination: {
-            label: destination.label,
-            position: destination.position,
-            country: destination.country,
+            label: req.destination.label,
+            position: req.destination.position,
+            country: req.destination.country,
           },
           via:
-            via === null
+            req.via === null
               ? null
-              : { label: via.label, position: via.position, country: via.country },
+              : { label: req.via.label, position: req.via.position, country: req.via.country },
           /*
            * PLANNED TIME AT THE VIA (TP-4). Sent only as entered — zero
            * when no via or no dwell — and the break claim is sent only
            * when the dwell can honor it, mirroring the schema's own
            * cross-field rules rather than relying on them.
            */
-          viaDwellMin: via === null ? 0 : viaDwellMin,
+          viaDwellMin: req.via === null ? 0 : req.viaDwellMin,
           viaDwellQualifiesForBreak:
-            via !== null && viaDwellMin >= HOS.MIN_BREAK_MIN && viaDwellCountsAsBreak,
+            req.via !== null && req.viaDwellMin >= HOS.MIN_BREAK_MIN && req.viaDwellCountsAsBreak,
           departAtMs: Date.now(),
           /*
            * THE BUFFER THE DRIVER TAPPED, NOT A SERVER DEFAULT. Without
@@ -506,8 +612,142 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
     }
   }
 
+  /**
+   * Continue the trip from the planned stop (TP-5). Fires ONLY on the
+   * driver's explicit tap, and only when the stored clocks were entered
+   * after the stop was planned — the tap IS the confirmation that those
+   * are their current clocks. The next segment is a brand-new quote: the
+   * stop is the new origin exactly as stored (never re-geocoded, never
+   * substituted with device location), the original destination and any
+   * still-ahead via are retained, and nothing else survives the rest.
+   */
+  function continueTrip() {
+    if (resume === null) return;
+    if (!resumeClocksConfirmable(resume, readClocks())) {
+      // The store moved backwards since mount (cleared, or another tab).
+      setResumeClocksOk(false);
+      return;
+    }
+    // The old handoff belongs to the finished segment — archive it before
+    // the next segment exists, so the Navigator can never be routed to a
+    // stop the driver already used.
+    clearPlannedStopRecord();
+    setSentStopId(null);
+    const nextOrigin: ChosenPlace = {
+      label: resume.plannedStop.label,
+      position: resume.plannedStop.position,
+      country: resume.plannedStop.country,
+      source: 'directory',
+    };
+    const nextDestination: ChosenPlace = {
+      label: resume.originalDestination.label,
+      position: resume.originalDestination.position,
+      country: resume.originalDestination.country,
+      source: 'search',
+    };
+    const nextVia: ChosenPlace | null =
+      resume.remainingVia === null
+        ? null
+        : {
+            label: resume.remainingVia.label,
+            position: resume.remainingVia.position,
+            country: resume.remainingVia.country,
+            source: 'search',
+          };
+    const nextDwellMin = resume.remainingVia?.dwellMin ?? 0;
+    const nextCounts = resume.remainingVia?.dwellQualifiesForBreak ?? false;
+    setOrigin(nextOrigin);
+    setDestination(nextDestination);
+    setVia(nextVia);
+    setViaDwellMin(nextDwellMin);
+    setViaDwellCountsAsBreak(nextCounts);
+    // State updates land asynchronously; the quote is issued from the same
+    // values explicitly, so it can never read a half-applied screen.
+    void planDay({
+      origin: nextOrigin,
+      destination: nextDestination,
+      via: nextVia,
+      viaDwellMin: nextDwellMin,
+      viaDwellCountsAsBreak: nextCounts,
+    });
+  }
+
+  /** The driver explicitly ends the trip — its resume context goes with it. */
+  function endTrip() {
+    clearTripResumeRecord();
+    setResume(null);
+  }
+
   return (
     <div className="mt-6 space-y-4" data-plan-my-day="">
+      {/* ---- 0. a trip waiting to continue (TP-5) --------------------- */}
+      {/*
+        Shown to a RETURNING driver (no plan on screen yet). The card never
+        auto-resumes and never auto-enters clocks: continuing takes an
+        explicit tap, and the tap is only offered once the clock store
+        holds an entry made AFTER the stop was planned.
+      */}
+      {resume !== null && plan === null ? (
+        <section className={CARD} aria-labelledby="resume-heading" data-trip-resume="">
+          <h2 id="resume-heading" className="text-xl font-bold text-ink">
+            Continue your trip
+          </h2>
+          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <dt className={HELP}>From</dt>
+            <dd className={`${LABEL}`} data-resume-from="">
+              {resume.plannedStop.label}
+            </dd>
+            <dt className={HELP}>To</dt>
+            <dd className={`${LABEL}`} data-resume-to="">
+              {resume.originalDestination.label}
+            </dd>
+            {resume.remainingVia === null ? null : (
+              <>
+                <dt className={HELP}>Still ahead</dt>
+                <dd className={`${LABEL}`} data-resume-via="">
+                  {resume.remainingVia.label}
+                  {resume.remainingVia.dwellMin > 0
+                    ? ` — planned stop ${resume.remainingVia.dwellMin} min`
+                    : ''}
+                </dd>
+              </>
+            )}
+          </dl>
+          <p className={`mt-2 ${HELP}`} data-resume-clocks-notice="">
+            {RESUME_CLOCKS_NOTICE}
+          </p>
+          <p className={`mt-1 ${HELP}`}>{RESUME_NO_ASSUMPTIONS_NOTICE}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {resumeClocksOk ? (
+              <button
+                type="button"
+                data-resume-continue=""
+                onClick={continueTrip}
+                className="min-h-14 flex-1 rounded-cockpit bg-nav-good px-4 text-lg font-bold text-asphalt"
+              >
+                Continue with my updated clocks
+              </button>
+            ) : (
+              <a
+                href="/drive"
+                data-resume-update-clocks=""
+                className="inline-flex min-h-14 flex-1 items-center justify-center rounded-cockpit border border-signal bg-signal/10 px-4 text-lg font-semibold text-ink"
+              >
+                Update Clocks &amp; Continue
+              </a>
+            )}
+            <button
+              type="button"
+              data-resume-end-trip=""
+              onClick={endTrip}
+              className="min-h-14 rounded-cockpit border border-line px-4 text-lg text-ink"
+            >
+              End Trip
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       {/* ---- 1. region and units ------------------------------------- */}
       <section className={CARD} aria-labelledby="units-heading">
         <h2 id="units-heading" className={LABEL}>
@@ -731,7 +971,7 @@ export function PlanMyDayApp({ anchors }: { anchors: PlannerAnchor[] }) {
       {/* ---- 7. plan -------------------------------------------------- */}
       <button
         type="button"
-        onClick={planDay}
+        onClick={() => planDay()}
         disabled={pending || origin === null || destination === null}
         aria-busy={pending}
         className="min-h-[3.5rem] w-full rounded-cockpit bg-nav-good px-4 text-xl font-bold text-asphalt disabled:opacity-60"

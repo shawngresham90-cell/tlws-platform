@@ -739,9 +739,15 @@ const eventsOf = <K extends TripPlanEvent['kind']>(t: TripPlan, kind: K) =>
       app.includes('Only choose Yes if your ELD duty status will satisfy the break requirement.'),
   );
   check(
+    // TP-5 moved the quote body onto explicit request inputs (`req.*`) so
+    // a resumed trip can be planned without reading half-applied state;
+    // the guard's MEANING — dwell fields ride only with a via, and the
+    // break claim only when the dwell can honor it — is unchanged.
     'UI: both dwell fields ride the request body, guarded by the via',
-    app.includes('viaDwellMin: via === null ? 0 : viaDwellMin') &&
-      app.includes('via !== null && viaDwellMin >= HOS.MIN_BREAK_MIN && viaDwellCountsAsBreak'),
+    app.includes('viaDwellMin: req.via === null ? 0 : req.viaDwellMin') &&
+      app.includes('req.via !== null &&') &&
+      app.includes('req.viaDwellMin >= HOS.MIN_BREAK_MIN &&') &&
+      app.includes('req.viaDwellCountsAsBreak'),
   );
 
   const results = readFileSync('src/components/trip-planner/PlanResults.tsx', 'utf8');
