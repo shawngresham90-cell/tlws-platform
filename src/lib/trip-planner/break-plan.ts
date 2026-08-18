@@ -1,6 +1,11 @@
 import { HOS, type RemainingClocks } from './types';
 import type { RouteTiming } from './route-time-axis';
-import { nthBreakDueAfterMin, requiredBreaksBefore } from './drive-window';
+import {
+  effectiveViaDwell,
+  nthBreakDueAfterMin,
+  viaDwellWallMin,
+  type PlannedViaDwell,
+} from './drive-window';
 
 /**
  * Where the 30-minute break should happen — timed by the provider, or not
@@ -137,14 +142,45 @@ export function planBreakSchedule(input: {
   usableDriveMin: number;
   timing: RouteTiming;
   departAtMs: number;
+  /** The planned via dwell (TP-4), when the plan carries one. */
+  via?: PlannedViaDwell | null;
 }): BreakSchedule {
   const { clocks, usableDriveMin, timing, departAtMs } = input;
+  const via = effectiveViaDwell(input.via ?? null);
 
   if (!Number.isFinite(clocks.untilBreakMin) || clocks.untilBreakMin < 0) {
     return { breaks: [], problem: 'break clock is not a usable number of minutes.' };
   }
-  const count = requiredBreaksBefore(usableDriveMin, clocks.untilBreakMin);
-  if (count === 0) return { breaks: [], problem: null };
+
+  /*
+   * WHERE EACH BREAK FALLS DUE, in driving minutes — the same piecewise
+   * arithmetic `requiredBreaksWithVia` counts with (TP-4). Without a
+   * QUALIFYING via dwell the thresholds are the plain TP-3 series. With
+   * one, thresholds strictly before the via keep the driver's entered
+   * timer (a break already due before the via stays due before it), the
+   * qualifying dwell itself satisfies whichever break would next fall due
+   * at or beyond the via, and later thresholds restart 8 driving hours
+   * from the via — which is exactly why no separate break event appears
+   * at the via (scenario D3).
+   */
+  const thresholds: number[] = [];
+  if (via === null || !via.qualifiesAsBreak || usableDriveMin <= via.driveMin) {
+    for (let k = 1; nthBreakDueAfterMin(clocks.untilBreakMin, k) < usableDriveMin; k++) {
+      thresholds.push(nthBreakDueAfterMin(clocks.untilBreakMin, k));
+    }
+  } else {
+    for (
+      let k = 1;
+      nthBreakDueAfterMin(clocks.untilBreakMin, k) < Math.min(usableDriveMin, via.driveMin);
+      k++
+    ) {
+      thresholds.push(nthBreakDueAfterMin(clocks.untilBreakMin, k));
+    }
+    for (let j = 1; via.driveMin + j * HOS.BREAK_AFTER_DRIVING_MIN < usableDriveMin; j++) {
+      thresholds.push(via.driveMin + j * HOS.BREAK_AFTER_DRIVING_MIN);
+    }
+  }
+  if (thresholds.length === 0) return { breaks: [], problem: null };
 
   if (timing.kind !== 'provider') {
     return {
@@ -154,8 +190,8 @@ export function planBreakSchedule(input: {
   }
 
   const breaks: PlannedBreak[] = [];
-  for (let k = 1; k <= count; k++) {
-    const dueAfterDrivingMin = nthBreakDueAfterMin(clocks.untilBreakMin, k);
+  for (let k = 1; k <= thresholds.length; k++) {
+    const dueAfterDrivingMin = thresholds[k - 1];
     // Aim early, but never before departure.
     const targetMin = Math.max(0, dueAfterDrivingMin - BREAK_LEAD_MIN);
     const placed = mileAtDrivingMinutes(timing, targetMin);
@@ -163,9 +199,13 @@ export function planBreakSchedule(input: {
       dueAfterDrivingMin,
       targetMin,
       targetMile: placed.targetMile === null ? null : Number(placed.targetMile.toFixed(1)),
-      // Wall clock = provider driving time to the aim point plus the
-      // dwell of every break already taken before it.
-      byMs: departAtMs + (placed.byMin + (k - 1) * HOS.MIN_BREAK_MIN) * 60_000,
+      // Wall clock = provider driving time to the aim point, plus the
+      // dwell of every break already taken before it, plus the via dwell
+      // when the aim point lies beyond the via (TP-4) — each charged
+      // exactly once.
+      byMs:
+        departAtMs +
+        (placed.byMin + (k - 1) * HOS.MIN_BREAK_MIN + viaDwellWallMin(targetMin, via)) * 60_000,
       costsWindowMin: HOS.MIN_BREAK_MIN,
       coarse: placed.coarse,
     });
@@ -186,6 +226,8 @@ export function planBreak(input: {
   usableDriveMin: number;
   timing: RouteTiming;
   departAtMs: number;
+  /** The planned via dwell (TP-4), passed through to the schedule. */
+  via?: PlannedViaDwell | null;
 }): BreakPlan {
   const schedule = planBreakSchedule(input);
   if (schedule.problem !== null) return { required: null, problem: schedule.problem };

@@ -175,10 +175,56 @@ async function main() {
     deps,
   );
 
+  /*
+   * TP-4: an hour planned at the Atlanta via, explicitly NOT the break.
+   * Fresh clocks still reach Macon, so the bench can assert the dwell
+   * renders on the via card without changing the plan's shape.
+   */
+  const dwell = await composeQuote(
+    {
+      ...base,
+      viaDwellMin: 60,
+      viaDwellQualifiesForBreak: false,
+      clocks: {
+        cycleRule: '70/8',
+        drivingUsedMin: 0,
+        windowElapsedMin: -1,
+        drivingSinceBreakMin: 0,
+        cycleUsedMin: 0,
+      },
+    } as never,
+    deps,
+  );
+
+  // TP-4: thirty minutes at Atlanta the driver EXPLICITLY marked as the
+  // break — the one case the break-credit line may render.
+  const dwellQualifying = await composeQuote(
+    {
+      ...base,
+      viaDwellMin: 30,
+      viaDwellQualifiesForBreak: true,
+      clocks: {
+        cycleRule: '70/8',
+        drivingUsedMin: 0,
+        windowElapsedMin: -1,
+        drivingSinceBreakMin: 0,
+        cycleUsedMin: 0,
+      },
+    } as never,
+    deps,
+  );
+
   const twoBreaks = buildTwoBreakPayload();
 
-  if (!reachable.ok || !limited.ok || !twoBreaks.ok) {
-    console.error('generator: composeQuote failed', reachable, limited, twoBreaks);
+  if (!reachable.ok || !limited.ok || !dwell.ok || !dwellQualifying.ok || !twoBreaks.ok) {
+    console.error(
+      'generator: composeQuote failed',
+      reachable,
+      limited,
+      dwell,
+      dwellQualifying,
+      twoBreaks,
+    );
     process.exit(1);
   }
   const kinds = (q: {
@@ -191,15 +237,33 @@ async function main() {
 
   const reachKinds = kinds(reachable);
   const limitedKinds = kinds(limited);
+  const dwellKinds = kinds(dwell);
+  const dwellQualKinds = kinds(dwellQualifying);
   const twoBreakKinds = kinds(twoBreaks);
+  const viaOf = (q: { tripPlan?: import('@/lib/trip-planner/trip-plan').TripPlan }) =>
+    q.tripPlan !== undefined && q.tripPlan.status !== 'unavailable'
+      ? q.tripPlan.events.find((e) => e.kind === 'via')
+      : undefined;
+  const dwellVia = viaOf(dwell);
+  const dwellQualVia = viaOf(dwellQualifying);
   if (
     !reachKinds.includes('destination') ||
     !limitedKinds.includes('clock-update') ||
-    twoBreakKinds.filter((k) => k === 'break').length < 2
+    twoBreakKinds.filter((k) => k === 'break').length < 2 ||
+    dwellVia?.kind !== 'via' ||
+    dwellVia.dwellMin !== 60 ||
+    dwellVia.plannedAsBreak !== false ||
+    dwellQualVia?.kind !== 'via' ||
+    dwellQualVia.dwellMin !== 30 ||
+    dwellQualVia.plannedAsBreak !== true
   ) {
     console.error('generator: scenarios did not produce the expected shapes', {
       reachKinds,
       limitedKinds,
+      dwellKinds,
+      dwellVia,
+      dwellQualKinds,
+      dwellQualVia,
       twoBreakKinds,
     });
     process.exit(1);
@@ -210,11 +274,13 @@ async function main() {
     JSON.stringify({
       reachable: { quote: reachable, expectedKinds: reachKinds },
       limited: { quote: limited, expectedKinds: limitedKinds },
+      dwell: { quote: dwell, expectedKinds: dwellKinds },
+      dwellQualifying: { quote: dwellQualifying, expectedKinds: dwellQualKinds },
       twoBreaks: { quote: twoBreaks, expectedKinds: twoBreakKinds },
     }),
   );
   console.log(
-    `tp2-corridor-gen: reachable=[${reachKinds}] limited=[${limitedKinds}] twoBreaks=[${twoBreakKinds}]`,
+    `tp2-corridor-gen: reachable=[${reachKinds}] limited=[${limitedKinds}] dwell=[${dwellKinds}] dwellQualifying=[${dwellQualKinds}] twoBreaks=[${twoBreakKinds}]`,
   );
 }
 

@@ -11,7 +11,12 @@ import {
 } from './route-time-axis';
 import { clockLimitMarker, type ClockLimitMarker } from './clock-limit-marker';
 import { planMapLayers, type PlanMapLayers } from './plan-map';
-import { driveWindow, PLANNING_AID_ONLY, type DriveWindow } from './drive-window';
+import {
+  driveWindow,
+  PLANNING_AID_ONLY,
+  type DriveWindow,
+  type PlannedViaDwell,
+} from './drive-window';
 import { planBreak, planBreakSchedule, type BreakPlan, type BreakSchedule } from './break-plan';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE } from './last-stop';
 import { relevantWeather, type AlertSource, type WeatherRelevance } from './route-weather-timing';
@@ -44,6 +49,13 @@ export type ParkingChoice = {
   candidate: StopCandidate;
   /** Provider-timed arrival, epoch ms. */
   arriveAtMs: number;
+  /**
+   * Provider DRIVING minutes from departure to this stop — no break or
+   * dwell time. Optional because older stored shapes predate it; the
+   * planner always sets it, and the trip plan uses it to know how much
+   * driving the day's final stop actually contains.
+   */
+  driveMinutes?: number;
   /** Minutes of clock left on arrival, above the driver's buffer. */
   clockLeftMin: number;
   /** Off-route distance, miles. */
@@ -126,6 +138,14 @@ export function planMyDay(input: {
   alerts: readonly WeatherAlert[];
   region: RouteRegion;
   alertSource: AlertSource;
+  /**
+   * The planned via dwell (TP-4), already resolved onto provider driving
+   * minutes by the caller — `composeQuote` resolves it ONCE from the same
+   * timing axis everything here reads, so the drive window, the break
+   * schedule and the parking filter all see the identical via. Null (or
+   * omitted) means no dwell is planned, which is every pre-TP-4 caller.
+   */
+  viaDwell?: PlannedViaDwell | null;
 }): PlanMyDay {
   const disclaimers = [NOT_AN_ELD, PLANNING_AID_ONLY];
 
@@ -168,12 +188,14 @@ export function planMyDay(input: {
    * CLOCKS UNSET MEANS NO HOS-AWARE PLAN. Not a default, not a fresh
    * shift — the whole HOS half of the screen is absent and says why.
    */
+  const viaDwell = input.viaDwell ?? null;
+
   let window: DriveWindow | null = null;
   let windowProblem: string | null = null;
   if (input.clocks === null) {
     windowProblem = 'Clocks not set — enter your remaining hours for an HOS-aware plan.';
   } else {
-    const w = driveWindow(input.clocks, input.bufferMin);
+    const w = driveWindow(input.clocks, input.bufferMin, viaDwell);
     if ('ok' in w) windowProblem = w.problem;
     else window = w;
   }
@@ -209,6 +231,7 @@ export function planMyDay(input: {
       usableDriveMin: window.clockLimitMin,
       timing,
       departAtMs: input.departAtMs,
+      via: viaDwell,
     };
     breakSchedule = planBreakSchedule(scheduleInput);
     breakPlan = planBreak(scheduleInput);
@@ -227,6 +250,7 @@ export function planMyDay(input: {
       clocks: input.clocks,
       departAtMs: input.departAtMs,
       bufferMin: input.bufferMin,
+      via: viaDwell,
     });
     if (!stops.timingAvailable) {
       parkingProblem = TIMING_UNAVAILABLE_NOTICE;
@@ -234,6 +258,7 @@ export function planMyDay(input: {
     parking = stops.eligible.slice(0, PARKING_CHOICES).map((e) => ({
       candidate: e.candidate,
       arriveAtMs: e.arriveAtMs,
+      driveMinutes: e.driveMinutes,
       clockLeftMin: e.hosRemainingMinAtArrival,
       detourMiles: e.candidate.offRouteMiles,
       detourMinutes: e.detourMinutesEstimate,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { composeQuote, quoteRequestSchema } from '@/lib/trip-planner/compose-quote';
+import { composeQuote, quoteRequestSchemaChecked } from '@/lib/trip-planner/compose-quote';
 import { loadPlannerListings } from '@/lib/trip-planner/directory-loader';
 import { createNwsWeatherPort } from '@/lib/trip-planner/nws-weather';
 import { eiaDieselPrice } from '@/lib/trip-planner/eia-fuel';
@@ -43,7 +43,10 @@ const hereRouting = createHereRoutingPort(
  * server-side; responses contain processed data only.
  */
 export async function POST(req: NextRequest) {
-  const guarded = await guardedParse(req, quoteRequestSchema);
+  // The CHECKED schema (TP-4): cross-field dwell rules reject a dwell
+  // without a via, or a break-qualification claim a sub-30 dwell cannot
+  // honor, instead of silently repairing either.
+  const guarded = await guardedParse(req, quoteRequestSchemaChecked);
   if ('response' in guarded) return guarded.response;
 
   // Short per-request timeouts: providers are fail-soft, and composeQuote

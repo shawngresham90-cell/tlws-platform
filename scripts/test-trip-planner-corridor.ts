@@ -772,8 +772,15 @@ const eventOf = <K extends TripPlanEvent['kind']>(
     /via:\s*\n?\s*via === null/.test(app) || app.includes('via === null\n              ? null'),
   );
   check(
+    // TP-4 widened this pin's target: the signature's via term now also
+    // carries the planned dwell and its break claim, so the one string
+    // invalidates the stop on ANY of the three changes. The original
+    // intent — moving the via kills the planned stop — is unchanged and
+    // still asserted by the same coordinate fragment.
     'UI: changing the via invalidates the planned stop (signature)',
-    app.includes("via === null ? 'via:none' : `via:${via.position.lat.toFixed(4)}"),
+    app.includes("? 'via:none'") &&
+      app.includes('`via:${via.position.lat.toFixed(4)}') &&
+      app.includes(':dwell:${viaDwellMin}:${'),
   );
   check('UI: the via can be removed', app.includes('data-remove-via'));
   check('UI: the trip plan reaches the results screen', app.includes('tripPlan={tripPlan}'));

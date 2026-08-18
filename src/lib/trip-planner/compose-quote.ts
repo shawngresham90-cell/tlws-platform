@@ -4,7 +4,12 @@ import { planTrip } from './optimizer';
 import { estimateRoute, estimateRouteVia } from './route-estimate';
 import { toStopCandidates, type DirectoryListing } from './directory-layer';
 import { selectLastStops, TIMING_UNAVAILABLE_NOTICE, type LastStopResult } from './last-stop';
-import { CLASSIC_PLANNER_DEFAULT_BUFFER_MIN } from './drive-window';
+import {
+  CLASSIC_PLANNER_DEFAULT_BUFFER_MIN,
+  effectiveViaDwell,
+  VIA_DWELL_MAX_MIN,
+  type PlannedViaDwell,
+} from './drive-window';
 import {
   buildTimeAxis,
   routeTimingFromAxis,
@@ -131,6 +136,21 @@ export const quoteRequestSchema = z.object({
    * the corridor milestone needs one (Dalton → Atlanta → Macon).
    */
   via: endpointSchema.nullish(),
+  /*
+   * PLANNED TIME AT THE VIA (TP-4), in minutes. Zero — the default — is
+   * "the route just passes through", which is every pre-TP-4 request.
+   * Bounded and integer; anything outside the range is REJECTED rather
+   * than silently read as zero, because a dwell the driver typed and the
+   * planner dropped would produce a confident plan missing real time.
+   * The ceiling lives beside the arithmetic in drive-window.ts.
+   */
+  viaDwellMin: z.number().int().min(0).max(VIA_DWELL_MAX_MIN).default(0),
+  /*
+   * The driver EXPLICITLY plans the via dwell to count as their
+   * 30-minute break. Never inferred from duration or location type; the
+   * default is always "does not satisfy the break requirement".
+   */
+  viaDwellQualifiesForBreak: z.boolean().default(false),
   departAtMs: z.number().int().positive(),
   clocks: simpleClocksSchema,
   fuelLevelFraction: z.number().min(0).max(1).default(1),
@@ -156,6 +176,33 @@ export const quoteRequestSchema = z.object({
    * shares its validation; neither is a second declaration.
    */
   bufferMin: z.number().int().min(0).max(180).default(CLASSIC_PLANNER_DEFAULT_BUFFER_MIN),
+});
+
+/*
+ * CROSS-FIELD HONESTY FOR THE DWELL (TP-4), rejected loudly rather than
+ * repaired silently: a dwell with no via stop to spend it at is a request
+ * that cannot mean what it says, and a break-qualification claim on a
+ * dwell shorter than the 30-minute break is arithmetic nonsense. The
+ * engine ALSO normalizes the latter (`effectiveViaDwell`) so no internal
+ * caller can slip a short qualifying dwell past the arithmetic — the wire
+ * check exists so a buggy client hears about it instead of being quietly
+ * corrected.
+ */
+export const quoteRequestSchemaChecked = quoteRequestSchema.superRefine((val, ctx) => {
+  if (val.viaDwellMin > 0 && (val.via === null || val.via === undefined)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['viaDwellMin'],
+      message: 'viaDwellMin requires a via stop to spend it at.',
+    });
+  }
+  if (val.viaDwellQualifiesForBreak && val.viaDwellMin < HOS.MIN_BREAK_MIN) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['viaDwellQualifiesForBreak'],
+      message: `a dwell under ${HOS.MIN_BREAK_MIN} minutes cannot count as the 30-minute break.`,
+    });
+  }
 });
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;
 
@@ -484,12 +531,53 @@ export async function composeQuote(
     destinationCountry: input.destination.country ?? null,
   });
 
+  /*
+   * PROVIDER LEG SLICES, computed once — the trip plan renders them, and
+   * the via dwell below needs the via's route mile from the first leg's
+   * end (TP-4).
+   */
+  const legs = sliceTripLegs({
+    maneuvers: routeData.maneuvers ?? [],
+    sections: routeData.sections,
+    totalSeconds: routeData.route.driveMinutes * 60,
+    totalMeters: routeData.route.totalMiles * 1609.344,
+  });
+
+  /*
+   * THE PLANNED VIA DWELL, RESOLVED ONCE (TP-4). The driver's dwell is a
+   * duration; the arithmetic needs to know WHERE in driving minutes the
+   * via falls, and that is a provider-timing fact. So the dwell exists
+   * for planning exactly when the provider timed the route AND its
+   * sections place the via — the same worst-case axis every other
+   * decision reads, so the window, the breaks, the parking filter and
+   * the timeline all see the identical via. Without provider timing the
+   * dwell cannot be placed and is honestly ignored (the plan is already
+   * refusing HOS claims in that state); the warning below says so.
+   */
+  const viaDwell: PlannedViaDwell | null = (() => {
+    if (!input.via || input.viaDwellMin <= 0) return null;
+    if (timing.kind !== 'provider' || legs.length < 2) return null;
+    const atVia = timing.minutesToMile(legs[0].endMile);
+    if (atVia === null) return null;
+    return effectiveViaDwell({
+      driveMin: atVia.latestMin,
+      dwellMin: input.viaDwellMin,
+      qualifiesAsBreak: input.viaDwellQualifiesForBreak,
+    });
+  })();
+  if (input.via && input.viaDwellMin > 0 && viaDwell === null) {
+    warnings.push(
+      'planned time at your stop could not be placed on the route — provider timing is unavailable, so the plan does not include it',
+    );
+  }
+
   const lastStop = selectLastStops({
     timing,
     candidates,
     clocks: remainingAtDeparture,
     departAtMs: input.departAtMs,
     bufferMin: input.bufferMin,
+    via: viaDwell,
   });
   if (!lastStop.timingAvailable) warnings.push(TIMING_UNAVAILABLE_NOTICE);
 
@@ -509,6 +597,7 @@ export async function composeQuote(
     alerts: weather.alerts,
     region,
     alertSource: 'nws-us',
+    viaDwell,
   });
 
   /*
@@ -526,12 +615,8 @@ export async function composeQuote(
     bufferMin: lastStop.bufferMin,
     departAtMs: input.departAtMs,
     totalMiles: routeData.route.totalMiles,
-    legs: sliceTripLegs({
-      maneuvers: routeData.maneuvers ?? [],
-      sections: routeData.sections,
-      totalSeconds: routeData.route.driveMinutes * 60,
-      totalMeters: routeData.route.totalMiles * 1609.344,
-    }),
+    legs,
+    viaDwell,
     labels: {
       origin: input.origin.label,
       via: input.via ? input.via.label : null,
