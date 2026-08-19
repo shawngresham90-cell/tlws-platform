@@ -1,4 +1,5 @@
 import { SITE } from '@/lib/seo/site';
+import { articleImageUrl, articleVisual } from './article-visuals';
 import type { KcArticle, KcCategory } from './types';
 
 /** Article schema (rich result + AI legibility). */
@@ -21,7 +22,12 @@ export function articleSchema(article: KcArticle, category: KcCategory, url: str
     },
     publisher: { '@id': `${SITE.url}/#organization` },
     mainEntityOfPage: url,
-    image: article.hero_image_url ?? undefined,
+    // Resolved, never read straight off the row: an article with no
+    // `hero_image_url` may still publish an approved registry graphic, and
+    // the schema image must be the same asset the page renders and the
+    // social card advertises. `articleImageUrl` is the one place that
+    // decision is made — callers cannot pass a different image.
+    image: articleImageUrl(article.hero_image_url, articleVisual(category.slug, article.slug)),
   };
 }
 

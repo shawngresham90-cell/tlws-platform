@@ -111,6 +111,25 @@
   .link-inline {
     @apply underline underline-offset-4;
   }
+  /* Knowledge Center article figure frame (KC-VIS-1). An art-directed article
+     graphic serves two renditions whose SHAPES differ (a 16:9 master on
+     desktop, a taller stacked frame on phones), so one width/height pair
+     cannot reserve both. The frame takes each rendition's exact ratio from
+     inline custom properties — computed from the registry's declared
+     intrinsic dimensions — and swaps them at the same breakpoint the
+     <picture> source uses, so nothing shifts as either rendition decodes.
+     The 640px here and the `(min-width: 640px)` media in ArticleFigure are
+     one decision: change them together or the frame reserves the wrong shape.
+     A figure with a single rendition never uses this class — plain next/image
+     already reserves its box from width/height. */
+  .kc-figure-frame {
+    aspect-ratio: var(--kc-figure-ratio-mobile);
+  }
+  @media (min-width: 640px) {
+    .kc-figure-frame {
+      aspect-ratio: var(--kc-figure-ratio-desktop);
+    }
+  }
   /* Film grain — SVG data-URI (zero network requests), decorative only.
      Apply to an absolutely-positioned aria-hidden div; opacity stays ≤ .06
      so text contrast is never affected. */
