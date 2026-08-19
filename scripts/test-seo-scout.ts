@@ -324,9 +324,12 @@ check('S15: the empty report still names its period', emptyReport.includes('2026
 
 /* ── S16 Supabase is not used ────────────────────────────────────────── */
 check('S16: scout code never imports or references Supabase', !/supabase/i.test(scoutSources));
-const newMigrations = fs
-  .readdirSync('supabase/migrations')
-  .filter((f) => /05[5-9]|06\d|seo|scout|gsc/.test(f));
+// The scout's invariant is that IT stores nothing — not that the migration
+// directory is frozen at 054 forever. A numeric-range filter here banned every
+// future migration by any track (055_seed_kc_* was the first casualty), so the
+// scan pins the scout-shaped names only; the import ban above already proves
+// the scout code itself never touches the database.
+const newMigrations = fs.readdirSync('supabase/migrations').filter((f) => /seo|scout|gsc/i.test(f));
 check('S16: this milestone adds no database migration', newMigrations.length === 0, newMigrations);
 
 /* ── S17 RLS contract still enforced ─────────────────────────────────── */
