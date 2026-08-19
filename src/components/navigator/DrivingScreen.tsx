@@ -109,8 +109,11 @@ import {
 import type { DestinationCandidate } from '@/lib/navigator-api/destination-search';
 import { PilotTripControls } from './PilotTripControls';
 import { TripPlanFirst } from './TripPlanFirst';
+import { RoadTestArm } from './RoadTestArm';
 import { resumeEndsAtDestination } from '@/lib/trip-planner/trip-resume';
 import { clearTripResumeRecord, readTripResumeRecord } from './trip-resume-storage';
+import { closeFieldTestSession } from '@/lib/trip-planner/field-test';
+import { readActiveFieldTestSession, writeActiveFieldTestSession } from './field-test-storage';
 import { tripKeyFor } from '@/lib/trip-planner/planned-stop';
 import { VoiceControls } from './VoiceControls';
 
@@ -1911,6 +1914,18 @@ export function DrivingScreen({
           resumeEndsAtDestination(resumeRecord, lastDestinationRef.current?.position ?? null)
         ) {
           clearTripResumeRecord();
+          /*
+           * TP-6: the same moment ends any live road-test session — the
+           * trip the evidence was about is over. Closed, not deleted:
+           * the evidence survives for review (FT13).
+           */
+          const fieldSession = readActiveFieldTestSession(Date.now());
+          if (fieldSession !== null) {
+            writeActiveFieldTestSession(
+              closeFieldTestSession(fieldSession, 'completed'),
+              Date.now(),
+            );
+          }
         }
       }
     } catch {
@@ -2295,6 +2310,15 @@ export function DrivingScreen({
                   setPickedCountry('USA');
                 }}
               />
+              {/*
+                TP-6: the road-test arm switch. Rendering INSIDE the
+                pilot-gated Navigator is its access control — the public
+                planner has no way to reach it — and idle-only placement
+                keeps it off the driving surface entirely.
+              */}
+              <div className="mt-3">
+                <RoadTestArm />
+              </div>
               <DestinationSearch
                 origin={searchOrigin}
                 disabled={startPending}
