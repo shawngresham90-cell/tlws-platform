@@ -1,4 +1,5 @@
 import { SITE } from '@/lib/seo/site';
+import { articleVisualImageUrl } from './article-visuals';
 import type { KcArticle, KcCategory } from './types';
 
 /** Article schema (rich result + AI legibility). */
@@ -21,7 +22,10 @@ export function articleSchema(article: KcArticle, category: KcCategory, url: str
     },
     publisher: { '@id': `${SITE.url}/#organization` },
     mainEntityOfPage: url,
-    image: article.hero_image_url ?? undefined,
+    // Same authority the page metadata uses: an explicit hero first, then the
+    // curated article visual. Absolute, because JSON-LD is read away from the
+    // page that served it. A pending visual contributes nothing.
+    image: article.hero_image_url ?? articleVisualImageUrl(article.slug, SITE.url) ?? undefined,
   };
 }
 

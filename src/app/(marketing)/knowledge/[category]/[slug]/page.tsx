@@ -14,7 +14,9 @@ import {
   getRelated,
   getAllArticleRefs,
 } from '@/lib/kc/queries';
-import { renderMarkdown } from '@/lib/kc/mdx';
+import { renderMarkdown, splitHtmlAfterHeading } from '@/lib/kc/mdx';
+import { articleVisual, articleVisualImageUrl } from '@/lib/kc/article-visuals';
+import { ArticleFigure } from '@/components/kc/ArticleFigure';
 import { articleSchema, faqSchema } from '@/lib/kc/schema';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -36,7 +38,11 @@ export async function generateMetadata({ params }: { params: { category: string;
     title: article.meta_title ?? article.title,
     description: article.meta_description ?? article.excerpt ?? undefined,
     path: `/knowledge/${params.category}/${article.slug}`,
-    image: article.hero_image_url ?? undefined,
+    // One image authority: an explicit hero wins, otherwise the curated
+    // article visual — the same asset the body renders inline, so the social
+    // card and the page never advertise different pictures. A pending visual
+    // resolves to null and the page keeps its file-convention OG image.
+    image: article.hero_image_url ?? articleVisualImageUrl(article.slug, SITE.url) ?? undefined,
     type: 'article',
   });
 }
@@ -56,6 +62,13 @@ export default async function ArticlePage({
   const slugById = Object.fromEntries(categories.map((c) => [c.id, c.slug]));
   const { html, toc } = renderMarkdown(article.body_mdx ?? '');
   const url = `${SITE.url}/knowledge/${category.slug}/${article.slug}`;
+
+  // A curated figure is placed at a heading boundary in the rendered body. No
+  // registry entry, a pending one, or a heading that no longer exists all land
+  // the same way: `split` stays null and the body renders in one piece exactly
+  // as it did before this existed.
+  const visual = articleVisual(article.slug);
+  const split = visual ? splitHtmlAfterHeading(html, visual.afterHeadingId) : null;
 
   const schemas = [
     breadcrumbSchema([
@@ -99,11 +112,23 @@ export default async function ArticlePage({
             </div>
           )}
 
-          <div
-            className="mt-8 text-lg"
-            // Body is server-rendered from trusted DB content via our own renderer.
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+          {split && visual ? (
+            <>
+              <div
+                className="mt-8 text-lg"
+                // Body is server-rendered from trusted DB content via our own renderer.
+                dangerouslySetInnerHTML={{ __html: split[0] }}
+              />
+              <ArticleFigure visual={visual} />
+              <div className="text-lg" dangerouslySetInnerHTML={{ __html: split[1] }} />
+            </>
+          ) : (
+            <div
+              className="mt-8 text-lg"
+              // Body is server-rendered from trusted DB content via our own renderer.
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          )}
 
           <FaqBlock faqs={article.faqs} />
           <SourcesBlock sources={article.sources} />

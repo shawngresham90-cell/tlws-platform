@@ -41,6 +41,30 @@ function inline(s: string): string {
   return out;
 }
 
+/**
+ * Split rendered article HTML immediately after a heading, or return null.
+ *
+ * This is how a curated figure gets INTO an article without teaching the
+ * renderer image syntax: the body is rendered exactly as before, then cut at a
+ * heading boundary so a component can be placed between the two halves. The
+ * markdown stays text-only, and database-authored content can never introduce
+ * an image of its own.
+ *
+ * Null when the anchor is absent — a renamed or removed heading degrades to
+ * an article with no figure, never to a figure in an arbitrary position. The
+ * id is matched with its closing quote so `class-a` cannot match
+ * `class-a-vs-class-b-at-a-glance`.
+ */
+export function splitHtmlAfterHeading(html: string, headingId: string): [string, string] | null {
+  const at = html.indexOf(`id="${headingId}"`);
+  if (at === -1) return null;
+  const close = html.indexOf('</h', at);
+  if (close === -1) return null;
+  const end = html.indexOf('>', close);
+  if (end === -1) return null;
+  return [html.slice(0, end + 1), html.slice(end + 1)];
+}
+
 export function renderMarkdown(md: string): { html: string; toc: TocItem[] } {
   const lines = md.split('\n');
   const toc: TocItem[] = [];
