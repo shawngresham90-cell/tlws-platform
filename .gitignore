@@ -41,3 +41,6 @@ data/imports/cat-scale-2026-07-29/local/
 
 # Local email previews (scripts/preview-road-report.ts)
 .road-report-preview/
+
+# SEO-ENGINE-1 Scout output — run artifacts only, never committed
+/seo-scout-output/

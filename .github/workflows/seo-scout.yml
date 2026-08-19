@@ -1,0 +1,56 @@
+name: SEO Scout (manual)
+
+# SEO-ENGINE-1: read-only Search Console opportunity scout.
+#
+# MANUAL DISPATCH ONLY — deliberately no `schedule:` yet. We observe one or
+# two real runs (data quality, thresholds, report shape) before any cron is
+# even considered; automating an unproven collector is how noise becomes
+# policy. The run produces a downloadable artifact and NOTHING else: no
+# commits back to main, no PRs, no pages, no database writes.
+#
+# Credentials: the GSC_SERVICE_ACCOUNT_JSON repository secret (a Google
+# service-account key with readonly Search Console scope, added as a user on
+# the property). Absent/invalid credentials fail the run CLEARLY (exit 2
+# with setup instructions) — the Scout never fabricates data.
+
+on:
+  workflow_dispatch:
+    inputs:
+      property:
+        description: 'GSC property override (default sc-domain:truckinglifewithshawn.com)'
+        required: false
+        default: ''
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Run Scout
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_PROPERTY: ${{ github.event.inputs.property }}
+        run: |
+          # Empty dispatch input must not override the default property.
+          [ -z "$GSC_PROPERTY" ] && unset GSC_PROPERTY
+          npx esbuild scripts/seo-scout.ts --bundle --platform=node --format=cjs \
+            --outfile=/tmp/seo-scout.cjs --log-level=error
+          node /tmp/seo-scout.cjs
+
+      - name: Upload report artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-scout-report
+          path: seo-scout-output/
+          retention-days: 90
