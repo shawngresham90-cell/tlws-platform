@@ -396,7 +396,12 @@ export default async function ParkingQualityPage({ searchParams }: { searchParam
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 break-words text-sm">
-                  <span className="font-semibold text-ink">Next: {ownerActionFor(r)}</span>
+                  {/* The raw URL is dropped here: it is a single unbreakable
+                      345px token that pushed the page 22px wide at 360, and
+                      the same link renders as "Candidate source" alongside. */}
+                  <span className="font-semibold text-ink">
+                    Next: {ownerActionFor(r).replace(/:\s*https?:\/\/\S+$/, '')}
+                  </span>
                   <Link
                     href={`/admin/directory/${r.id}/edit`}
                     className="min-h-[44px] items-center font-semibold text-signal hover:underline"

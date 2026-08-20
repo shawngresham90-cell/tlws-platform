@@ -260,11 +260,19 @@ async function main() {
       );
 
       /* 14-15. no write controls */
-      const buttons = await page.locator('button').count();
-      const forms = await page.locator('form').count();
-      const submits = await page.locator('[type="submit"]').count();
-      check(`${w}: no Apply button`, !/>\s*Apply\b/i.test(await page.content()));
-      check(`${w}: no Publish button`, buttons === 0 && forms === 0 && submits === 0, {
+      // Scope to the QUEUE, not the document. The site header carries an
+      // Academy "Apply" link and the dashboard shell a "Sign out" form —
+      // counting either as a write control on this page keeps the assertion
+      // permanently red for a reason that is not this page's, which is how a
+      // real assertion gets deleted.
+      const main = page.locator('main');
+      const scope = (await main.count()) ? main.first() : page.locator('body');
+      const scopeHtml = await scope.innerHTML();
+      const buttons = await scope.locator('button').count();
+      const forms = await scope.locator('form').count();
+      const submits = await scope.locator('[type="submit"]').count();
+      check(`${w}: no Apply control in the queue`, !/>\s*Apply\b/i.test(scopeHtml));
+      check(`${w}: no write control in the queue`, buttons === 0 && forms === 0 && submits === 0, {
         buttons,
         forms,
         submits,
