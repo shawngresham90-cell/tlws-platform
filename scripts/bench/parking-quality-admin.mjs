@@ -265,8 +265,11 @@ async function main() {
       // counting either as a write control on this page keeps the assertion
       // permanently red for a reason that is not this page's, which is how a
       // real assertion gets deleted.
-      const main = page.locator('main');
-      const scope = (await main.count()) ? main.first() : page.locator('body');
+      // The queue's own region. The admin shell has no <main>, so falling
+      // back to <body> would sweep in its Sign out form and make this red
+      // forever for something this page does not own.
+      const scope = page.locator('[data-testid="pq-queue"]');
+      check(`${w}: the queue exposes its own region`, (await scope.count()) === 1);
       const scopeHtml = await scope.innerHTML();
       const buttons = await scope.locator('button').count();
       const forms = await scope.locator('form').count();

@@ -165,7 +165,10 @@ export default async function ParkingQualityPage({ searchParams }: { searchParam
   const states = [...new Set(results.map((r) => r.state))].sort();
 
   return (
-    <div>
+    /* An explicit region for this page's own content. The admin shell has no
+       <main>, so anything checking "does this screen contain a write control"
+       otherwise falls back to <body> and finds the shell's Sign out form. */
+    <div data-testid="pq-queue">
       <DirectoryToolsNav />
 
       <header className="mt-6">
