@@ -14,5 +14,5 @@
 /** Total edition size — "only 100 made" (fixed fact about the run). */
 export const SHIRTS_TOTAL_RUN = 100;
 
-/** Owner-approved remaining stock (set to 16 on 2026-08-12; was 29). */
-export const SHIRTS_LEFT = 16;
+/** Owner-approved remaining stock set to 7 on 2026-08-20; was 16. */
+export const SHIRTS_LEFT = 7;
