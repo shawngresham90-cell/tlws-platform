@@ -80,17 +80,12 @@ export const ARTICLE_VISUAL_MAX_BYTES = 200 * 1024;
  * `category-slug/article-slug` → visual. Keyed by both slugs because article
  * slugs are only unique within a category.
  *
- * EMPTY ON PURPOSE until the first approved artwork is committed — see the
- * pending block below. Do not register an entry whose files are not on disk.
+ * Only owner-approved artwork that is actually committed belongs here: the
+ * harness validates every registered entry's bytes, dimensions, byte budget
+ * and alt text, so registering an entry whose files are not on disk fails the
+ * suite rather than shipping a broken frame.
  */
-export const ARTICLE_VISUALS: Record<string, ArticleVisual> = {};
-
-/**
- * Approved SPECS awaiting owner-approved artwork. Nothing reads this at
- * runtime; the harness validates each spec's shape and heading anchor so the
- * promotion above is a file drop plus a one-line move.
- */
-export const PENDING_ARTICLE_VISUALS: Record<string, ArticleVisual> = {
+export const ARTICLE_VISUALS: Record<string, ArticleVisual> = {
   'getting-your-cdl/class-a-vs-class-b-cdl': {
     desktop: {
       src: `${ARTICLE_IMAGE_DIR}class-a-vs-class-b-cdl-comparison.webp`,
@@ -113,6 +108,16 @@ export const PENDING_ARTICLE_VISUALS: Record<string, ArticleVisual> = {
     afterHeadingId: 'class-a-vs-class-b-at-a-glance',
   },
 };
+
+/**
+ * Approved SPECS awaiting owner-approved artwork. Nothing reads this at
+ * runtime; the harness validates each spec's shape and heading anchor so the
+ * promotion above is a file drop plus a one-line move.
+ *
+ * Empty today — the Class A vs Class B pair was promoted once its approved
+ * artwork landed. The next article graphic queues here first.
+ */
+export const PENDING_ARTICLE_VISUALS: Record<string, ArticleVisual> = {};
 
 /**
  * The visual for an article, or null when it has none. Null is the normal
