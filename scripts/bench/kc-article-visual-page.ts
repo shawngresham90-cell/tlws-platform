@@ -9,11 +9,9 @@
  * database) built from the committed migration body, so the prose, headings
  * and comparison list are the published text.
  *
- * The visual is registered here at runtime rather than in the repository:
- * the approved artwork does not exist yet, and the registry must stay in its
- * pending state. The browser is handed a stand-in image by route
- * interception at the exact declared aspect ratios — nothing is written into
- * public/.
+ * The visual comes from the repository registry — the approved artwork is
+ * committed, so this renders exactly what production renders. The bench
+ * fulfils the resulting image requests with the real committed bytes.
  *
  * Run (via the bench, not directly):
  *   npx esbuild scripts/bench/kc-article-visual-page.ts --bundle \
@@ -26,11 +24,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
-import {
-  ARTICLE_VISUALS,
-  PENDING_ARTICLE_VISUALS,
-  type ArticleVisual,
-} from '@/lib/kc/article-visuals';
+import { ARTICLE_VISUALS } from '@/lib/kc/article-visuals';
 import type { KcArticle, KcCategory } from '@/lib/kc/types';
 import ArticlePage from '@/app/(marketing)/knowledge/[category]/[slug]/page';
 import { installPostgrestFake } from '../helpers/postgrest-fake';
@@ -109,7 +103,14 @@ async function main() {
     })) as unknown as Record<string, unknown>[],
   });
 
-  ARTICLE_VISUALS[KEY] = PENDING_ARTICLE_VISUALS[KEY] as ArticleVisual;
+  // The visual is registered in the repository now, so the bench renders the
+  // real production state rather than injecting a spec. Fail loudly if it is
+  // ever missing: a figure-less page would otherwise sail through as a
+  // timeout in the browser bench, which is a confusing way to learn that the
+  // registry entry regressed.
+  if (!Object.hasOwn(ARTICLE_VISUALS, KEY)) {
+    throw new Error(`kc-article-visual-page: no registered visual for ${KEY}`);
+  }
   const tree = await ArticlePage({
     params: { category: 'getting-your-cdl', slug: 'class-a-vs-class-b-cdl' },
   });

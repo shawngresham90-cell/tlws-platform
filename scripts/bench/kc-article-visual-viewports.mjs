@@ -18,9 +18,11 @@
  *     and re-checks that the regulatory prose, the comparison list and the
  *     caption are all still on screen.
  *
- * NOT proven here: how the final artwork looks. The approved graphic does
- * not exist yet, so image requests are fulfilled with a stand-in SVG at the
- * exact declared aspect ratio. Nothing is written into public/.
+ * The approved artwork is now committed, so image requests are fulfilled with
+ * the REAL bytes from public/images/knowledge/articles — what renders here is
+ * what ships. Screenshots of the figure at each width are written to
+ * SHOT_DIR (default: a temp dir) for visual inspection. Nothing in public/ is
+ * modified.
  *
  * Setup (browser already present in this image):
  *   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --no-save playwright
@@ -37,6 +39,8 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 const WIDTHS = [360, 390, 430];
+/** Where per-width figure screenshots land for visual inspection. */
+const SHOT_DIR = process.env.SHOT_DIR ?? mkdtempSync(join(tmpdir(), 'kc-vis-shots-'));
 const DESKTOP_FILE = 'class-a-vs-class-b-cdl-comparison.webp';
 const MOBILE_FILE = 'class-a-vs-class-b-cdl-comparison-mobile.webp';
 
@@ -99,12 +103,13 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 const pageFile = join(work, 'article.html');
 writeFileSync(pageFile, html);
 
-/* A stand-in image at the declared ratio — layout stimulus, not artwork. */
-const standIn = (w, h, label) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">` +
-  `<rect width="100%" height="100%" fill="#1F1F22"/>` +
-  `<rect x="8" y="8" width="${w - 16}" height="${h - 16}" fill="none" stroke="#F5A623" stroke-width="6"/>` +
-  `<text x="50%" y="50%" fill="#F2F0EB" font-size="${Math.round(w / 18)}" text-anchor="middle">${label}</text></svg>`;
+/* The real committed artwork — the bench serves exactly what production
+   serves, so a mis-encoded or wrong-sized asset shows up here. */
+const ART_DIR = 'public/images/knowledge/articles';
+const REAL = {
+  [DESKTOP_FILE]: readFileSync(join(process.cwd(), ART_DIR, DESKTOP_FILE)),
+  [MOBILE_FILE]: readFileSync(join(process.cwd(), ART_DIR, MOBILE_FILE)),
+};
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
@@ -137,8 +142,8 @@ async function measure(width, imageMode) {
     const isMobileFile = url.includes(MOBILE_FILE);
     await route.fulfill({
       status: 200,
-      contentType: 'image/svg+xml',
-      body: isMobileFile ? standIn(1080, 1350, 'A / B') : standIn(1600, 900, 'CLASS A / CLASS B'),
+      contentType: 'image/webp',
+      body: REAL[isMobileFile ? MOBILE_FILE : DESKTOP_FILE],
     });
   });
 
@@ -223,6 +228,10 @@ async function measure(width, imageMode) {
     };
   });
 
+  if (imageMode === 'serve') {
+    const fig = await page.$('figure');
+    if (fig) await fig.screenshot({ path: join(SHOT_DIR, `figure-${width}.png`) });
+  }
   await context.close();
   return { ...result, pending, imageRequests, fetchedBeforeScroll };
 }
@@ -339,5 +348,6 @@ check('dead image: the alt text is available to the reader', dead.bodyText.lengt
 await browser.close();
 rmSync(work, { recursive: true, force: true });
 
+console.log(`\nscreenshots: ${SHOT_DIR}`);
 console.log(`\nkc-article-visual-viewports: ${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

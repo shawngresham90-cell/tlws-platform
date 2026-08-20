@@ -19,10 +19,11 @@
  * below) drive the failure cases, so "a missing asset fails validation" is
  * demonstrated rather than assumed.
  *
- * The registry ships EMPTY on purpose: the Class A vs Class B artwork is not
- * approved yet, so its spec waits in PENDING_ARTICLE_VISUALS. Every check
- * here is written to pass in that pending state AND to start enforcing the
- * moment the entry is promoted.
+ * The Class A vs Class B pair is live: its approved artwork is committed and
+ * its entry is active in ARTICLE_VISUALS, so the registry checks now validate
+ * real bytes. Every check is still written to pass while a future entry sits
+ * in PENDING_ARTICLE_VISUALS, and to start enforcing the moment it is
+ * promoted.
  *
  * Filesystem + pure imports + a PostgREST fake. No database, no network.
  *
@@ -662,28 +663,42 @@ async function renderArticle(categorySlug: string, slug: string): Promise<string
 async function pageChecks() {
   const AB_PATH = '/knowledge/getting-your-cdl/class-a-vs-class-b-cdl';
 
-  /* --- with NO visual registered: today's behavior, unchanged --- */
-  const before = await renderArticle('getting-your-cdl', 'class-a-vs-class-b-cdl');
-  check('unregistered article renders no figure', !/kc-figure-frame|<figcaption/.test(before));
-  check(
-    'unregistered article keeps one body block',
-    (before.match(/class="mt-8 text-lg"/g) ?? []).length === 1,
-  );
-  check('unregistered article still renders its comparison list', before.includes('Vehicle type:'));
+  /* --- an article with NO registered visual: pre-KC-VIS-1 behavior, unchanged.
+     Demonstrated on cdl-cost rather than on Class A vs B, which now carries
+     real approved artwork — the no-visual contract has to be proved against an
+     article that genuinely has none, or it proves nothing. --- */
   const plainBefore = await renderArticle('getting-your-cdl', 'cdl-cost');
+  const PLAIN_PATH = '/knowledge/getting-your-cdl/cdl-cost';
+  check(
+    'article without a visual renders no figure',
+    !/kc-figure-frame|<figcaption/.test(plainBefore),
+  );
+  check(
+    'article without a visual keeps one body block',
+    (plainBefore.match(/class="mt-8 text-lg"/g) ?? []).length === 1,
+  );
+  check(
+    'article without a visual still renders its body',
+    plainBefore.includes('Costs at a glance'),
+  );
 
   installFixtures();
   const metaBefore: Metadata = await kcArticleMetadata({
-    params: { category: 'getting-your-cdl', slug: 'class-a-vs-class-b-cdl' },
+    params: { category: 'getting-your-cdl', slug: 'cdl-cost' },
   });
   check('with no visual, no og:image is asserted', metaBefore.openGraph?.images === undefined);
   check(
     'with no visual, Article schema carries no image',
-    (articleSchema(ARTICLE_ROW, CATEGORY, `${SITE.url}${AB_PATH}`) as { image?: string }).image ===
+    (articleSchema(PLAIN_ROW, CATEGORY, `${SITE.url}${PLAIN_PATH}`) as { image?: string }).image ===
       undefined,
   );
 
-  /* --- promote the pending spec at runtime and re-render --- */
+  /* --- the live registration drives the render. Assigning here keeps the
+     block self-contained if the entry is ever pending again; the prior value
+     is restored afterwards so the harness never mutates real state. --- */
+  const priorRegistration = Object.hasOwn(ARTICLE_VISUALS, CLASS_AB_KEY)
+    ? ARTICLE_VISUALS[CLASS_AB_KEY]
+    : null;
   ARTICLE_VISUALS[CLASS_AB_KEY] = abSpec as ArticleVisual;
   try {
     const after = await renderArticle('getting-your-cdl', 'class-a-vs-class-b-cdl');
@@ -790,9 +805,13 @@ async function pageChecks() {
       articleImageUrl(null, null) === undefined,
     );
   } finally {
-    delete ARTICLE_VISUALS[CLASS_AB_KEY];
+    if (priorRegistration) ARTICLE_VISUALS[CLASS_AB_KEY] = priorRegistration;
+    else delete ARTICLE_VISUALS[CLASS_AB_KEY];
   }
-  check('the registry is left in its pending state', !Object.hasOwn(ARTICLE_VISUALS, CLASS_AB_KEY));
+  check(
+    'the harness leaves the registry exactly as it found it',
+    Object.hasOwn(ARTICLE_VISUALS, CLASS_AB_KEY) === !!priorRegistration,
+  );
 }
 
 /* ── 11. scope guards — what KC-VIS-1 must NOT have done ──────────────── */
