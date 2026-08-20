@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { ReviewForm } from '@/components/community/ReviewForm';
 import { ReviewList } from '@/components/community/ReviewList';
-import { getListingRefs, getRecentApprovedReviews } from '@/lib/community/data';
+import { getListingRefsResult, getRecentApprovedReviews } from '@/lib/community/data';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -19,7 +19,13 @@ export const revalidate = 300;
 
 export default async function ReviewsPage() {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
-  const [listings, reviews] = await Promise.all([getListingRefs(), getRecentApprovedReviews(20)]);
+  // One complete listing scan and the recent-reviews read, concurrently —
+  // independent queries against different tables, exactly as before. The
+  // listing read is result-aware so a failure cannot render as "no match".
+  const [listingRefs, reviews] = await Promise.all([
+    getListingRefsResult(),
+    getRecentApprovedReviews(20),
+  ]);
 
   return (
     <>
@@ -52,7 +58,11 @@ export default async function ReviewsPage() {
           <div>
             <h2 className="font-display text-2xl uppercase text-ink">Write a review</h2>
             <div className="mt-4">
-              <ReviewForm siteKey={siteKey} listings={listings} />
+              <ReviewForm
+                siteKey={siteKey}
+                listings={listingRefs.ok ? listingRefs.data : []}
+                listingsUnavailable={!listingRefs.ok}
+              />
             </div>
           </div>
           <div>

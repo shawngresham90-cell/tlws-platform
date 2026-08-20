@@ -19,7 +19,20 @@ const TRUCK_TYPE_OPTIONS = TRUCK_TYPES.map((t) => ({ value: t, label: t }));
 
 type Errors = Record<string, string>;
 
-export function ReviewForm({ siteKey, listings }: { siteKey: string; listings: ListingRef[] }) {
+export function ReviewForm({
+  siteKey,
+  listings,
+  listingsUnavailable,
+}: {
+  siteKey: string;
+  listings: ListingRef[];
+  /**
+   * The listing read failed. A review is always ABOUT a listing, so there is
+   * no half-open path here — the form says the lookup is down rather than
+   * reporting that the driver's stop is not in the directory.
+   */
+  listingsUnavailable?: boolean;
+}) {
   const [locationId, setLocationId] = useState('');
 
   // Detail pages deep-link here (?listing=<detail slug>) with the listing
@@ -62,7 +75,11 @@ export function ReviewForm({ siteKey, listings }: { siteKey: string; listings: L
 
   function validate(): Errors {
     const e: Errors = {};
-    if (!locationId) e.location_id = 'Pick the listing you’re reviewing.';
+    if (listingsUnavailable) {
+      e.location_id = 'Listing search is temporarily unavailable — try again in a minute.';
+    } else if (!locationId) {
+      e.location_id = 'Pick the listing you’re reviewing.';
+    }
     if (rating < 1) e.rating = 'Pick a star rating.';
     if (title.trim().length < 2) e.title = 'Give your review a title.';
     if (body.trim().length < 10) e.body = 'Tell drivers a little more (10+ characters).';
@@ -153,6 +170,8 @@ export function ReviewForm({ siteKey, listings }: { siteKey: string; listings: L
         label="Which listing are you reviewing?"
         required
         listings={listings}
+        unavailable={listingsUnavailable}
+        unavailableAction="Reviews are tied to a listing, so this form needs the lookup back before it can be sent."
         value={locationId}
         onChange={set(setLocationId, 'location_id')}
         error={errors.location_id}

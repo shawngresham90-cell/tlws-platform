@@ -1,60 +1,153 @@
 import { createStaticClient } from '@/lib/supabase/static';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { collectAllRows, failureCode, type DirectoryReadResult } from '@/lib/directory/data';
 
 /**
  * Driver community data layer (Milestone 16) — server-only reads.
  *
  * Listing refs come through the cookieless ANON client, so RLS guarantees only
- * published rows feed the public pickers. Approved reviews live behind RLS
- * with no anon policy, so they are read with the service-role client inside
- * server components ONLY, always filtered to status = 'approved' — pending
- * content never has a path to the browser. Everything fails soft to empty.
+ * published rows feed the public pickers, and they are read COMPLETELY — every
+ * published listing, not a capped prefix (DIR-COMPLETE-2). Approved reviews
+ * live behind RLS with no anon policy, so they are read with the service-role
+ * client inside server components ONLY, always filtered to status =
+ * 'approved' — pending content never has a path to the browser.
+ *
+ * The review reads fail soft to empty: a missing review renders as one fewer
+ * card. The listing read does NOT, because an empty picker is not a harmless
+ * absence — it is a claim that a driver's truck stop is not in the directory.
+ * getListingRefsResult() states failure; getListingRefs() keeps the fail-soft
+ * shape for callers that cannot act on it.
  */
 
-/** Slim published listing shape for the submit/review pickers. */
+/**
+ * Slim published listing shape for the submit/review pickers.
+ *
+ * `category` was here and is GONE (DIR-COMPLETE-2). It was read by nothing —
+ * not the picker, not either form, not either page, not the intake APIs — so
+ * every browser was paying for it: 27,645 bytes of values plus 34,356 of
+ * repeated keys across the live pool. The field is dropped because no
+ * consumer reads it, not to make a payload number smaller; `detailSlug` is
+ * larger still and stays, because the deep links need it.
+ */
 export type ListingRef = {
   id: string;
   name: string;
   city: string;
   state: string;
-  category: string;
   /** Public detail-page slug — lets ?listing= deep links avoid internal ids. */
   detailSlug?: string;
 };
 
-export async function getListingRefs(): Promise<ListingRef[]> {
+type ListingRefRow = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  detail_slug: string | null;
+};
+
+/** Exactly the columns a ListingRef is built from — nothing else leaves the DB. */
+const LISTING_REF_COLUMNS = 'id, name, city, state, detail_slug';
+
+/**
+ * PRESENTATION ORDER, restored in JS because the scan pages by id.
+ *
+ * `localeCompare` is not a stylistic choice: the database this replaces
+ * ordered under ICU `en_US.UTF-8` (pg_database.datlocprovider = 'i'), and on
+ * the punctuation/case cases in the live pool — "ACME Truck & Trailer" vs
+ * "acme truck and trailer", the U+2019 apostrophe in "Love’s" — localeCompare
+ * reproduces that order exactly while code-unit `<` does not. So the visible
+ * order is preserved rather than merely approximated.
+ *
+ * `id` is the final tie-breaker, and it is deliberately NOT redundant even
+ * though today it looks it. Three live-shaped rows can share state, city AND
+ * name. The scan happens to hand this sort an id-ascending array, and
+ * Array.prototype.sort happens to be stable, so ties would currently come out
+ * id-ordered anyway — which means removing this clause changes no observable
+ * output. That is exactly the trap: the visible order would then rest on two
+ * incidental facts (the scan's cursor column, and a language guarantee about
+ * ties) instead of on a stated rule. Stating the rule is what keeps a future
+ * change to either one from silently reshuffling the picker.
+ *
+ * Exported so that rule can be tested on shuffled input directly, rather than
+ * only through a pipeline that hides it.
+ */
+export function compareListingRefs(a: ListingRef, b: ListingRef): number {
+  return (
+    a.state.localeCompare(b.state) ||
+    a.city.localeCompare(b.city) ||
+    a.name.localeCompare(b.name) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+/**
+ * EVERY published listing, for the submit/review pickers — success or failure
+ * stated, never a partial pool dressed as a complete one.
+ *
+ * WHAT WAS WRONG. This read asked for `.limit(2000)` and returned whatever
+ * came back. Production holds 2,454 published rows, so 454 of them were
+ * simply not in the array — and because the query ordered by state first, the
+ * missing 454 were not a random sample but the alphabetical tail: every
+ * published listing in TX, UT, VA, WA, WI, WV, WY and 72 of TN. A driver at a
+ * Texas truck stop searching the picker was told "No published listing
+ * matches" about a listing that exists. No error was raised; the read looked
+ * successful.
+ *
+ * The same keyset scan the directory reads use fixes it, and fixes the latent
+ * half too: a PostgREST instance capping responses server-side would have
+ * truncated this read below 2,000 without changing anything observable in the
+ * response body. `collectAllRows` treats a short page as evidence of nothing
+ * — see its contract — so a cap cannot end the scan early.
+ *
+ * Failure is REPORTED, not flattened to `[]`. "The lookup is down" and "there
+ * are no listings" render as the same sentence to a driver otherwise, and the
+ * first one is a lie.
+ */
+export async function getListingRefsResult(): Promise<DirectoryReadResult<ListingRef[]>> {
   try {
     const supabase = createStaticClient();
-    const { data, error } = await supabase
-      .from('locations')
-      .select('id, name, city, state, category_slug, detail_slug')
-      .eq('is_published', true)
-      .is('deleted_at', null)
-      .order('state', { ascending: true })
-      .order('city', { ascending: true })
-      .order('name', { ascending: true })
-      .limit(2000);
-    if (error || !data) return [];
-    return (
-      data as unknown as {
-        id: string;
-        name: string;
-        city: string;
-        state: string;
-        category_slug: string | null;
-        detail_slug: string | null;
-      }[]
-    ).map((r) => ({
+    const result = await collectAllRows<ListingRefRow>(async (afterId, pageSize) => {
+      // COUNT/PAGE FILTER PARITY, structurally: the exact count rides on the
+      // first page's own query, so no second query's filters can drift from
+      // it. With a cursor applied it would count the remainder, not the set.
+      let q = supabase
+        .from('locations')
+        .select(LISTING_REF_COLUMNS, afterId === null ? { count: 'exact' } : undefined)
+        .eq('is_published', true)
+        .is('deleted_at', null);
+      if (afterId !== null) q = q.gt('id', afterId);
+      const { data, error, count } = await q.order('id', { ascending: true }).limit(pageSize);
+      if (error) return { rows: [], error };
+      return {
+        rows: (data ?? []) as unknown as ListingRefRow[],
+        total: typeof count === 'number' ? count : undefined,
+      };
+    }, null);
+    if (!result.ok) return result;
+
+    const refs = result.data.map((r) => ({
       id: r.id,
       name: r.name,
       city: r.city,
       state: r.state,
-      category: r.category_slug ?? 'other',
       detailSlug: r.detail_slug ?? undefined,
     }));
-  } catch {
-    return [];
+    refs.sort(compareListingRefs);
+    return { ok: true, data: refs };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
+}
+
+/**
+ * Fail-soft view, unchanged in shape for callers that only render. Callers
+ * that must tell "unavailable" apart from "genuinely empty" — both community
+ * pages do — should use getListingRefsResult() instead.
+ */
+export async function getListingRefs(): Promise<ListingRef[]> {
+  const result = await getListingRefsResult();
+  return result.ok ? result.data : [];
 }
 
 export type ApprovedReview = {
