@@ -3,7 +3,7 @@
  * contract (2026-07-29).
  *
  * Release-blocking properties:
- *   - SHIRTS_LEFT is exactly the owner-approved 16, lives in ONE module,
+ *   - SHIRTS_LEFT is exactly the owner-approved 7, lives in ONE module,
  *     and every customer-facing count derives from it — this test FAILS if
  *     the approved figure drifts or any stale hardcoded public count
  *     remains anywhere in src/.
@@ -34,7 +34,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8');
 
 /* ------------------------------------------------- shirt inventory: source */
-check('shirt inventory: approved figure is exactly 16', SHIRTS_LEFT === 16);
+check('shirt inventory: approved figure is exactly 7', SHIRTS_LEFT === 7);
 check('shirt inventory: edition size unchanged (100 made)', SHIRTS_TOTAL_RUN === 100);
 check(
   'shirt inventory: remaining within [0, run]',
