@@ -8,7 +8,7 @@ import {
   tierUsage,
 } from '@/lib/community/campaign';
 import { TIER_CAPACITY, TIER_LABEL, TIER_ORDER } from '@/components/community/tiers';
-import { CampaignThermometer } from '@/components/community/CampaignThermometer';
+import { AdminCampaignThermometer } from '@/components/admin/AdminCampaignThermometer';
 import { ConfirmSubmit } from '@/components/admin/directory/ConfirmSubmit';
 import type { AdminFounderRow } from '@/lib/admin/founders';
 import {
@@ -235,9 +235,9 @@ export default async function AdminFoundersPage({
 
         <div>
           <h2 className="mb-4 font-display text-lg uppercase text-ink">
-            Public thermometer preview
+            Private campaign totals (admin only)
           </h2>
-          <CampaignThermometer
+          <AdminCampaignThermometer
             progress={{
               raised_cents: raised,
               goal_cents: goal,
@@ -247,7 +247,7 @@ export default async function AdminFoundersPage({
             }}
           />
           <p className="mt-2 text-xs text-muted">
-            Rendered by the exact component the homepage, /founders, and /academy use.
+            Admin-only. Public pages show SCHOOL IS FUNDED and no money at all.
           </p>
         </div>
       </section>

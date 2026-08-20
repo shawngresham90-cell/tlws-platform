@@ -108,9 +108,13 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   const card = stripComments(readFileSync('src/components/community/FounderCard.tsx', 'utf8'));
   check('FounderCard code never references an amount', !/amount/i.test(card), card);
   const thermo = stripComments(
-    readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8'),
+    readFileSync('src/components/admin/AdminCampaignThermometer.tsx', 'utf8'),
   );
   check('Thermometer code never references a per-founder amount', !/amount/i.test(thermo), thermo);
+  const fundedPanel = stripComments(
+    readFileSync('src/components/community/FundedStatusPanel.tsx', 'utf8'),
+  );
+  check('FundedStatusPanel never references an amount', !/amount/i.test(fundedPanel), fundedPanel);
 }
 
 /* ---------------------- external links: rel safety ---------------------- */
@@ -250,8 +254,10 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   check('dollarsToCents rejects negatives', dollarsToCents('-5') === null);
   check('dollarsToCents blank = null', dollarsToCents('') === null);
 
-  // Single source of truth: one shared thermometer, no hard-coded totals
-  const thermo = readFileSync('src/components/community/CampaignThermometer.tsx', 'utf8');
+  // Single source of truth: one shared thermometer, no hard-coded totals.
+  // The thermometer is ADMIN-ONLY now that the owner has declared the school
+  // funded; public surfaces render FundedStatusPanel and show no money.
+  const thermo = readFileSync('src/components/admin/AdminCampaignThermometer.tsx', 'utf8');
   check('thermometer has progressbar role', thermo.includes('role="progressbar"'));
   check('thermometer has aria-valuetext sentence', thermo.includes('aria-valuetext'));
   check(
@@ -265,11 +271,19 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
     ['founders wall page', 'src/app/(community)/founders/page.tsx'],
     ['homepage section', 'src/components/sections/FoundersWall.tsx'],
     ['academy page', 'src/app/(academy)/academy/page.tsx'],
-    ['admin preview', 'src/app/admin/(dashboard)/founders/page.tsx'],
   ] as const) {
     const src = readFileSync(path, 'utf8');
-    check(`${label} renders shared CampaignThermometer`, src.includes('CampaignThermometer'));
+    check(`${label} renders shared FundedStatusPanel`, src.includes('FundedStatusPanel'));
+    check(
+      `${label} does NOT render the admin thermometer`,
+      !src.includes('AdminCampaignThermometer'),
+    );
     check(`${label} has no hard-coded raised total`, !/7,?100|59\.2|4,?900/.test(src));
+  }
+  {
+    const src = readFileSync('src/app/admin/(dashboard)/founders/page.tsx', 'utf8');
+    check('admin preview renders the admin thermometer', src.includes('AdminCampaignThermometer'));
+    check('admin preview has no hard-coded raised total', !/7,?100|59\.2|4,?900/.test(src));
   }
   const thermoNoTotals = !/7,?100|59\.2|4,?900|12,?000/.test(thermo);
   check('thermometer component has no hard-coded totals', thermoNoTotals);
@@ -290,13 +304,18 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   );
 }
 
-/* ---- SSR render check: the shared thermometer with the real campaign values ---- */
+/* ---- SSR render check: the ADMIN thermometer with the real campaign values ----
+ * This is requirement 17: admin-only financial visibility must remain intact.
+ * The component moved to components/admin when the school was declared funded,
+ * but it must still render every figure for the owner. ---- */
 {
   const React = require('react');
   // esbuild's classic JSX transform expects a React global when bundling TSX.
   (globalThis as Record<string, unknown>).React = React;
   const { renderToStaticMarkup } = require('react-dom/server');
-  const { CampaignThermometer } = require('@/components/community/CampaignThermometer');
+  const {
+    AdminCampaignThermometer: CampaignThermometer,
+  } = require('@/components/admin/AdminCampaignThermometer');
   const html = renderToStaticMarkup(
     React.createElement(CampaignThermometer, {
       progress: {

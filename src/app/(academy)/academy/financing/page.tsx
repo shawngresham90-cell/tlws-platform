@@ -66,7 +66,7 @@ const ROUTES: Card[] = [
     description:
       'The Founders Wall lets the trucking community help fund seats for drivers who need a hand — drivers helping drivers, made real.',
     href: '/founders',
-    cta: 'Fund the School',
+    cta: 'See the Founders Wall',
   },
   {
     icon: '🎓',
@@ -122,7 +122,7 @@ export default function FinancingPage() {
         intro="The industry is full of schools that funnel students into predatory loans. We’re building the opposite. Tuition is $3,995 for either program — here are the honest routes to fund it."
       >
         <Button variant="secondary" href="/founders">
-          Fund the School
+          See the Founders Wall
         </Button>
         <Button variant="ghost" href="/academy/faq">
           Read the FAQ

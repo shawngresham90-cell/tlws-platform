@@ -1,4 +1,4 @@
-export { CampaignThermometer } from './CampaignThermometer';
+export { FundedStatusPanel } from './FundedStatusPanel';
 export { FounderCard } from './FounderCard';
 export { FoundersWallList } from './FoundersWallList';
 export { BecomeFounderForm } from './BecomeFounderForm';

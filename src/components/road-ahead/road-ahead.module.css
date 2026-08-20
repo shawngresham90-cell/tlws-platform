@@ -1088,7 +1088,12 @@
     cover;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
 }
-.matBrick {
+/* ---- Founder / Shirt: the ORIGINAL red-clay brick ------------------------
+ * Unchanged bytes from the previous .matBrick. Founder / Shirt used to fall
+ * through to the brick material, so when Brick became sandstone this tier
+ * would have silently changed with it. Keeping the clay under its own name
+ * pins Founder / Shirt to exactly the surface it already shipped. */
+.matClay {
   border-radius: 3px;
   background: radial-gradient(120% 90% at 30% 10%, rgba(255, 200, 160, 0.14), rgba(0, 0, 0, 0) 55%),
     linear-gradient(180deg, #a13e2b 0%, #8c3323 52%, #792a1c 100%);
@@ -1099,7 +1104,7 @@
     /* seated into the mortar */ 0 0 0 2px rgba(0, 0, 0, 0.25),
     0 6px 12px rgba(0, 0, 0, 0.5);
 }
-.matBrick::before {
+.matClay::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -1126,6 +1131,55 @@
     cover,
     150px 96px;
   opacity: 0.45;
+  mix-blend-mode: multiply;
+}
+
+/* ---- Brick founders: light warm sandstone ---------------------------------
+ * Was dark red clay (#a13e2b -> #792a1c) carved with near-black #190c07, which
+ * measured 2.38:1 — the names were genuinely hard to read. Inverted to a light
+ * sandstone/ochre face with dark charcoal engraving. The clay grain is kept so
+ * it still reads as a real masonry unit, but the texture opacity is held low
+ * (0.14) because it multiplies toward black: at 0.45 the darkest noise patches
+ * dragged the tier label under 4.5:1. Contrast is verified over the DARKEST
+ * gradient stop plus that texture in scripts/test-founder-wall-contrast.ts. */
+.matBrick {
+  border-radius: 3px;
+  background: radial-gradient(120% 90% at 30% 10%, rgba(255, 250, 235, 0.5), rgba(0, 0, 0, 0) 58%),
+    linear-gradient(180deg, #e9d7b4 0%, #dcc59a 52%, #cdb183 100%);
+  border: 1px solid #8a6f47;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 252, 240, 0.55),
+    inset 0 -4px 9px rgba(90, 66, 32, 0.32),
+    /* seated into the mortar */ 0 0 0 2px rgba(0, 0, 0, 0.25),
+    0 6px 12px rgba(0, 0, 0, 0.5);
+}
+.matBrick::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Sandstone grain + a couple of chips knocked out of the face. */
+  background-image: radial-gradient(
+      circle at 14% 82%,
+      rgba(90, 66, 32, 0.3) 0,
+      rgba(90, 66, 32, 0.3) 2px,
+      transparent 3px
+    ),
+    radial-gradient(
+      circle at 86% 24%,
+      rgba(90, 66, 32, 0.2) 0,
+      rgba(90, 66, 32, 0.2) 2px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 62% 68%, rgba(255, 252, 240, 0.5) 0, transparent 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='90'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045 0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  background-size:
+    cover,
+    cover,
+    cover,
+    150px 96px;
+  opacity: 0.14;
   mix-blend-mode: multiply;
 }
 
@@ -1180,6 +1234,13 @@
     0 1px 0 rgba(255, 190, 150, 0.2),
     0 -1px 2px rgba(0, 0, 0, 0.9),
     0 -2px 3px rgba(0, 0, 0, 0.55);
+}
+.carveSandstone {
+  /* dark charcoal engraved into light sandstone — the readable Brick name */
+  color: #1f1a14;
+  text-shadow:
+    0 1px 0 rgba(255, 252, 240, 0.75),
+    0 -1px 1px rgba(90, 66, 32, 0.45);
 }
 .carveGold {
   /* incised into brass */

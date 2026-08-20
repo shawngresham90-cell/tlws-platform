@@ -113,7 +113,7 @@ const BEATS: Array<[string, RegExp]> = [
     'Jennifer Blount / Idle Leasing sending a trailer',
     /Jennifer Blount from Idle Leasing[\s\S]{0,40}sent a trailer/,
   ],
-  ['50+ drivers funding the school', /More than 50 drivers stepped up to help fund the school/],
+  ['50+ drivers funded the school', /More than 50 drivers stepped up and funded the school/],
 ];
 for (const [name, re] of BEATS) check(`story beat present: ${name}`, re.test(flat), name);
 

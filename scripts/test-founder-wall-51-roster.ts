@@ -278,7 +278,7 @@ check(
 
 /* ------------------------------------------------------- FUNDED wording */
 
-const thermometer = read('src/components/community/CampaignThermometer.tsx');
+const thermometer = read('src/components/admin/AdminCampaignThermometer.tsx');
 check(
   'the literal word FUNDED is shown when the goal is reached',
   /goalReached \?[\s\S]{0,200}FUNDED/.test(thermometer),

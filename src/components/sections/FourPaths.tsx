@@ -112,8 +112,8 @@ export async function FourPaths() {
         <div className="placard placard-money flex flex-col p-4 sm:p-6">
           <h3 className="font-display text-2xl uppercase text-ink">I want to back the mission</h3>
           <p className="mt-2 flex-1 text-base text-muted">
-            Fund the school as a founder and put your name on the wall — or take the full drive
-            through where this is all going.
+            The school is funded. See the founders who built it and put your name on the wall — or
+            take the full drive through where this is all going.
           </p>
           <p className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
             <Link

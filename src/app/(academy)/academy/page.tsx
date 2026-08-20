@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Section, Button, Eyebrow, Placard } from '@/components/ui';
-import { CampaignThermometer } from '@/components/community/CampaignThermometer';
-import { getCampaignProgress } from '@/lib/community/founders';
+import { FundedStatusPanel } from '@/components/community/FundedStatusPanel';
 import {
   PageHero,
   CardGrid,
@@ -37,16 +36,17 @@ export const metadata = buildMetadata({
 });
 
 /**
- * /academy — the Academy overview. Mostly static marketing content, but the
- * "Built founder by founder" section renders the shared CampaignThermometer
- * from the live `campaign_progress` aggregate, so this page must NOT be fully
- * static. Without a revalidate window it is baked at build time and then keeps
- * showing whatever the campaign totals happened to be on deploy day — which is
- * what it did, while /founders and /road-ahead had already moved on.
+ * /academy — the Academy overview. Mostly static marketing content. The
+ * "Built founder by founder" section renders the shared FundedStatusPanel.
  *
- * 60s matches those two, the only other surfaces reading the same aggregate,
- * so the three can never disagree by more than that window. The numbers
- * themselves are never written down here; they come from the reader.
+ * NO CAMPAIGN MONEY, AND NO CAMPAIGN READ. This page used to await the
+ * shared campaign-progress reader and render the live thermometer, which is
+ * why it needed a revalidate window at all: baked statically it kept showing whatever
+ * the totals were on deploy day. The owner has declared the school funded, so
+ * the section is now recognition only and the funded headline is a static
+ * constant — there is nothing left to go stale, and a database outage cannot
+ * turn it into a zero-dollar campaign readout. The revalidate window is kept so the rest of the
+ * page stays on the same 60s cadence as /founders and /road-ahead.
  */
 export const revalidate = 60;
 
@@ -250,7 +250,6 @@ const ENROLLMENT_STATUS: Array<{ label: string; value: string; note: string }> =
 ];
 
 export default async function AcademyPage() {
-  const campaign = await getCampaignProgress();
   return (
     <>
       <JsonLd
@@ -273,7 +272,7 @@ export default async function AcademyPage() {
       >
         <Button href="/academy/apply">Apply to the Academy</Button>
         <Button variant="secondary" href="/founders">
-          Fund the School
+          See the Founders Wall
         </Button>
         <Button variant="ghost" href="/academy/faq">
           Read the FAQ
@@ -564,7 +563,7 @@ export default async function AcademyPage() {
               out a deal on a day cab.
             </p>
             <p>Then Miss Jennifer Blount from Idle Leasing stepped in and sent a trailer.</p>
-            <p>More than 50 drivers stepped up to help fund the school.</p>
+            <p>More than 50 drivers stepped up and funded the school.</p>
             <p>
               <strong className="text-ink">Drivers helping drivers</strong> built Trucking Life
               Academy. It’s not a dream anymore. It’s a mission to help drivers succeed.
@@ -680,17 +679,17 @@ export default async function AcademyPage() {
         </Placard>
       </Section>
 
-      {/* Fundraising — live campaign thermometer (same source as /founders) */}
+      {/* Founders recognition — funded status (same panel as /founders) */}
       <Section className="border-b border-line bg-asphalt-800">
         <div className="mx-auto max-w-2xl">
-          <Eyebrow>Fund the school</Eyebrow>
+          <Eyebrow>The Founders Wall</Eyebrow>
           <h2 className="display-section">Built founder by founder</h2>
           <p className="mt-4 text-muted">
-            The Academy is funded by drivers and businesses who want this school to exist. Every
-            dollar below is the real campaign total.
+            The Academy was funded by the drivers and businesses who wanted this school to exist.
+            Their names are on the Founders Wall.
           </p>
           <div className="mt-6">
-            <CampaignThermometer progress={campaign} />
+            <FundedStatusPanel />
           </div>
           <div className="mt-6">
             <Button href="/founders">Join the Founders Wall</Button>
