@@ -34,6 +34,10 @@
  *   MOCK_FIELD_PROFILE 'production' matches live field
  *                    presence rates + description length (default synthetic)
  *   MOCK_FAIL_TABLE  table whose reads answer 500      (default none)
+ *   MOCK_PARKING_QUALITY shapes the unpublished `parking` rows to the live
+ *                    provenance mix — 91 `csv-import` rows with NO coordinate
+ *                    and 5 `ntad-2019-v04` rows with a coordinate but no
+ *                    recorded geocode source (default off)
  *
  * The dataset is generated with a fixed-seed PRNG: two runs, or two branches,
  * see byte-identical data. Row scale defaults mirror the production counts
@@ -49,6 +53,11 @@ const N_PUBLISHED = Number(process.env.MOCK_ROWS ?? 2454);
 const N_TRUCK_STOPS = Number(process.env.MOCK_TRUCK_STOPS ?? 1882);
 /** Table whose reads answer 500, for exercising read-failure UI. Off by default. */
 const FAIL_TABLE = process.env.MOCK_FAIL_TABLE ?? '';
+/**
+ * Opt-in, default-off like every other profile knob, so the datasets the
+ * DIR-COMPLETE-2 and DIR-PAYLOAD-1 benches measure stay byte-identical.
+ */
+const PARKING_QUALITY = process.env.MOCK_PARKING_QUALITY === '1';
 
 /* ------------------------------------------------------------------ seed */
 
@@ -338,6 +347,40 @@ const LOCATIONS = [];
     }
   }
   if (toStrip > 0) throw new Error(`mock-postgrest: could not reach MOCK_GEOCODED=${N_GEOCODED}`);
+
+  // PARKING-QUALITY-1: give the unpublished `parking` rows the provenance
+  // shape the live table actually has, so the admin queue renders a real
+  // classification rather than a uniform one. Live: 91 csv-import rows with
+  // no coordinate at all, 5 NTAD rows with a coordinate but no recorded
+  // geocode source. Both classes are blocked, for different reasons.
+  if (PARKING_QUALITY) {
+    const unpublishedParking = LOCATIONS.filter(
+      (r) => !r.is_published && r.deleted_at === null && r.category_slug === 'parking',
+    );
+    unpublishedParking.forEach((r, k) => {
+      if (k < 5) {
+        r.source = 'ntad-2019-v04';
+        r.geocode_source = null;
+        r.coord_verification_status = null;
+        r.name = `${r.name} (I-95 Northbound)`;
+        r.website = null;
+        r.address = null;
+      } else {
+        r.source = 'csv-import';
+        r.lat = null;
+        r.lng = null;
+        r.geocode_source = null;
+        r.coord_verification_status = null;
+        r.website = 'https://www.fdot.gov/maintenance/restareas.shtm';
+        if (k % 3 === 0) r.name = `${r.name} Rest Area (Northbound)`;
+        if (k % 11 === 0) r.name = `${r.name} Weigh Station`;
+      }
+      r.manually_verified_at = null;
+      r.hours = {};
+      r.overnight_status = null;
+      r.overnight_status_source = null;
+    });
+  }
 }
 
 /* -------------------------------------------------------- filter engine */

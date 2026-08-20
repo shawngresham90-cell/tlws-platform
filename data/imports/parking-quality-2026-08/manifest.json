@@ -1,0 +1,105 @@
+{
+  "milestone": "PARKING-QUALITY-1",
+  "ruleVersion": 1,
+  "createdAt": "2026-08-20",
+  "sourceMainSha": "82bcbcfe0aa522af0ddadeb59591edcba02ff015",
+  "query": {
+    "table": "public.locations",
+    "filter": "category_slug = 'parking' AND deleted_at IS NULL AND is_published = false",
+    "contextFilter": "is_published = true AND deleted_at IS NULL AND (category_slug = 'parking' OR coordinates present)"
+  },
+  "rowCount": 96,
+  "contextRowCount": 1866,
+  "idFingerprintSha256": "d6b4b07201ec7b595269eb2df6b3e20e33eef18373875caeab5bc1952e590d42",
+  "classification": {
+    "publication": {
+      "ready-for-owner-review": 0,
+      "needs-official-parking-evidence": 0,
+      "needs-coordinate-verification": 0,
+      "needs-identity-enrichment": 0,
+      "needs-duplicate-review": 0,
+      "needs-direction-review": 0,
+      "needs-source-provenance": 92,
+      "held-network-review": 0,
+      "non-parking": 4,
+      "reject": 0,
+      "unverifiable": 0
+    },
+    "overnight": {
+      "confirmed": 0,
+      "prohibited": 0,
+      "unknown": 96
+    },
+    "coordinate": {
+      "verified": 0,
+      "missing": 91,
+      "invalid": 0,
+      "zero": 0,
+      "duplicate-coordinate": 0,
+      "proximity-collision": 0,
+      "direction-conflict": 0,
+      "unverifiable": 5
+    },
+    "facility": {
+      "confirmed-truck-parking": 0,
+      "rest-area-with-truck-evidence": 0,
+      "service-plaza-with-truck-evidence": 0,
+      "converted-weigh-site-with-evidence": 0,
+      "weigh-or-inspection-only": 3,
+      "car-only": 1,
+      "non-parking-business": 0,
+      "unknown": 92
+    },
+    "provenance": {
+      "official-government": 5,
+      "official-operator": 0,
+      "owner-reviewed": 0,
+      "published-listing-relationship": 0,
+      "driver-report-only": 0,
+      "third-party-directory": 0,
+      "legacy-import": 91,
+      "unknown": 0
+    }
+  },
+  "reasonCounts": {
+    "PARKING_SOURCE_MISSING": 96,
+    "TRUCK_ACCESS_UNPROVEN": 96,
+    "COORDINATES_MISSING": 91,
+    "AMENITIES_UNSOURCED": 68,
+    "FREE_PAID_UNSOURCED": 45,
+    "OVERNIGHT_LEGACY_BOOLEAN_ONLY": 12,
+    "SPACE_COUNT_UNSOURCED": 4,
+    "RESERVABILITY_UNSOURCED": 15,
+    "COORDINATE_PROVENANCE_MISSING": 5,
+    "WEIGH_STATION_NOT_PARKING": 3,
+    "CAR_ONLY_REST_AREA": 1
+  },
+  "byState": {
+    "AL": 6,
+    "AR": 7,
+    "CA": 1,
+    "CT": 1,
+    "DE": 2,
+    "FL": 8,
+    "GA": 4,
+    "IL": 3,
+    "IN": 3,
+    "KY": 7,
+    "MD": 4,
+    "ME": 1,
+    "MI": 4,
+    "NC": 12,
+    "OH": 6,
+    "SC": 5,
+    "TN": 14,
+    "VA": 7,
+    "VT": 1
+  },
+  "readyForOwnerReview": 0,
+  "proposedForPublication": 0,
+  "blocked": 96,
+  "evidenceRecordsSupplied": 0,
+  "productionWrites": 0,
+  "sqlExecuted": false,
+  "migrationsAdded": 0
+}

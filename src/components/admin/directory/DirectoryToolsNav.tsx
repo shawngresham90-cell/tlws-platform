@@ -17,6 +17,7 @@ const LINKS = [
   { href: '/admin/directory/export', label: 'Export' },
   { href: '/admin/directory/geocoding', label: 'Geocoding' },
   { href: '/admin/directory/quality', label: 'Quality' },
+  { href: '/admin/directory/parking-quality', label: 'Parking Quality' },
   { href: '/admin/directory/corrections', label: 'Corrections' },
   { href: '/admin/directory/duplicates', label: 'Duplicates' },
   { href: '/admin/directory/tpc', label: 'Truck Parking Club' },

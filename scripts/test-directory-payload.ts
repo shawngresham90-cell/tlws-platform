@@ -775,6 +775,21 @@ async function main() {
     DIRECTORY_PAGE,
   );
 
+  // The scale trigger in the architecture doc was wrong once — "~4,000
+  // listings", which divided the whole data line by the index cost alone and
+  // ignored the JSON-LD tail that scales with it. Wrong in the dangerous
+  // direction: it would have deferred server search ~1,900 rows past the
+  // point the budget actually breaks. Pin the corrected figure so the stale
+  // one cannot come back through a copy-paste.
+  const archDoc = read('docs/directory/directory-payload-architecture.md');
+  check(
+    'DP82 the corrected scale trigger is documented, not the stale 4,000',
+    /~2,130 listings/.test(archDoc) &&
+      /~2,279 coordinate-ready/.test(archDoc) &&
+      !/category past ~4,000/.test(archDoc),
+    { has2130: /~2,130 listings/.test(archDoc), stale: /category past ~4,000/.test(archDoc) },
+  );
+
   /* ------------------------------------------------------------ report */
 
   const expected = Array.from({ length: 60 }, (_, i) => `DP${i + 1}`);

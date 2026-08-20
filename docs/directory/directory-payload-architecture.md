@@ -219,16 +219,41 @@ floor, and `DP80`/`DP81` assert the constant is a real number on the server.
 
 ## 7. What would force the next architecture
 
-- **A category past ~4,000 listings.** The index is ~33 bytes Brotli per row;
-  4,000 rows is ~130 kB and breaks the 90 kB data line. Option B (server-side
-  search) becomes owed.
+- **A category past ~2,130 listings.** Measured at the DIR-PAYLOAD-1
+  production gate (2026-08-20) against merged `main`.
+
+  > **Corrected.** This line first read "~4,000 listings", which was wrong and
+  > wrong in the dangerous direction — it would have deferred the next
+  > architecture well past the point where the budget actually breaks. That
+  > figure divided the whole 90 kB data line by the index's per-row cost and
+  > ignored everything else on the page that scales with row count.
+
+  The marginal cost of one listing is **~42.6 bytes Brotli**, not 33.5:
+
+  | Component | Per row (Brotli) | Scales with rows? |
+  | --- | ---: | --- |
+  | Compact browse index | 33.5 B | yes |
+  | Bounded JSON-LD tail (`url`-only ListItems) | ~9.1 B | yes |
+  | Initial card window (30 cards) | — | no, fixed ~1.4 kB |
+
+  90 kB less the fixed card window, divided by 42.6 B, is **~2,130 rows**.
+  `truck-stops` is at **1,882 — 88% of the line, with ~248 rows of headroom.**
+  Publishing the 69 unpublished truck-stop rows already in the table takes it
+  to ~1,951, or **92%**. Growth here is import-batch-driven rather than
+  organic — every published row was created in a single 2026-07 import — so
+  this line is crossed in one step, not gradually.
+
+- **The map past ~2,279 coordinate-ready listings**, on the same measurement
+  (~40 B Brotli per row against the same 90 kB line). Currently 1,940. The
+  answer there is a cacheable map-data endpoint or viewport chunking, not
+  fewer markers.
+
 - **Search having to cover a field the index does not carry.** Anything new in
   the haystack lands in `searchText` for every row. A long field would need the
   endpoint to take a query — which is the moment the privacy rule changes and
   it must become a POST.
-- **The map exceeding ~2,700 coordinate-ready listings**, at ~40 bytes Brotli
-  per row. The answer there is a cacheable map-data endpoint or viewport
-  chunking, not fewer markers.
 
-Not owed yet, and each is a measurement away from being checked rather than a
-matter of opinion.
+Neither byte line is crossed today, but the category line is close enough that
+any directory import should be followed by `scripts/bench/directory-payload.mjs`
+before the rows are published. `scripts/test-directory-payload.ts` (DP82) fails
+if the stale "~4,000" figure reappears in this document.
