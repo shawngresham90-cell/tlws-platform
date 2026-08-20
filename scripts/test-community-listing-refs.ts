@@ -100,7 +100,8 @@ const TAIL_1K = required(FX.beyond1000, 'listing past rank 1,000');
 const TAIL_2K = required(FX.beyond2000, 'listing past rank 2,000');
 const NULL_CATEGORY = required(FX.nullCategory, 'row with a null category_slug');
 const NULL_SLUG = required(FX.nullDetailSlug, 'row with a null detail_slug');
-const asTable = (rows: unknown[]) => ({ locations: rows as Record<string, unknown>[] }) as FixtureTables;
+const asTable = (rows: unknown[]) =>
+  ({ locations: rows as Record<string, unknown>[] }) as FixtureTables;
 
 function install(rows: unknown[], maxRows?: number) {
   installPostgrestFake(asTable(rows), maxRows === undefined ? {} : { maxRows });
@@ -224,7 +225,10 @@ function installNoCount(rows: unknown[]) {
   globalThis.fetch = (async (i: RequestInfo | URL, x?: RequestInit) => {
     const res = await inner(i, x);
     const body = await res.text();
-    return new Response(body, { status: res.status, headers: { 'content-type': 'application/json' } });
+    return new Response(body, {
+      status: res.status,
+      headers: { 'content-type': 'application/json' },
+    });
   }) as typeof fetch;
 }
 
@@ -376,7 +380,9 @@ async function failures() {
   check(
     'LC26',
     'a row published mid-scan is kept, and the count stays a floor rather than a ceiling',
-    grew.ok && grew.data.length === FX.eligible.length + 1 && grew.data.some((r) => r.id === newcomer.id),
+    grew.ok &&
+      grew.data.length === FX.eligible.length + 1 &&
+      grew.data.some((r) => r.id === newcomer.id),
     { ok: grew.ok, len: grew.ok ? grew.data.length : grew.reason },
   );
 }
@@ -426,7 +432,9 @@ async function queryShape() {
     'LC33',
     'exactly the slim columns are selected, on every page',
     selects.length > 0 &&
-      selects.every((s) => s === 'id, name, city, state, detail_slug' || s === 'id,name,city,state,detail_slug'),
+      selects.every(
+        (s) => s === 'id, name, city, state, detail_slug' || s === 'id,name,city,state,detail_slug',
+      ),
     selects[0],
   );
 
@@ -480,7 +488,9 @@ async function ordering() {
   // so the id is what keeps them distinct.
   const twinIds = FX.twins.map((t) => t.id);
   const twinsInPool = twinIds.filter((id) => list.some((r) => r.id === id));
-  const twinPositions = twinIds.map((id) => list.findIndex((r) => r.id === id)).sort((a, b) => a - b);
+  const twinPositions = twinIds
+    .map((id) => list.findIndex((r) => r.id === id))
+    .sort((a, b) => a - b);
   check(
     'LC37',
     'byte-identical state/city/name rows all survive and stay individually addressable',
@@ -626,7 +636,12 @@ async function pickerBehavior() {
   // LC41–LC43: the tail listing is reachable by each of the three fields the
   // picker searches. Before this milestone it was in none of them.
   const byName = search(render(), 'Tailwatch Beyond Two Thousand');
-  check('LC41', 'the tail listing is findable by name', byName.length === 1 && byName[0].includes('Tailwatch Beyond Two Thousand'), byName);
+  check(
+    'LC41',
+    'the tail listing is findable by name',
+    byName.length === 1 && byName[0].includes('Tailwatch Beyond Two Thousand'),
+    byName,
+  );
 
   const byCity = search(render(), TAIL_2K.city);
   check(
@@ -679,7 +694,11 @@ async function pickerBehavior() {
 
   // LC46: the read failed. The picker must NOT say "no published listing
   // matches" — that sentence is a claim about the directory's contents.
-  const down = render({ unavailable: true, listings: [], unavailableAction: 'Do the other thing.' });
+  const down = render({
+    unavailable: true,
+    listings: [],
+    unavailableAction: 'Do the other thing.',
+  });
   const downText = textOf(down);
   check(
     'LC46',
@@ -733,7 +752,8 @@ async function formsBehavior() {
       deepText.includes(TAIL_2K.city) &&
       deep.root.findAll((n) => n.props.type === 'radio' && n.props.checked === true).length >= 0 &&
       // the picker shows the SELECTED state (a Change control), not a search box
-      deep.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Change').length === 1,
+      deep.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Change')
+        .length === 1,
     deepText.slice(0, 160),
   );
 
@@ -757,7 +777,8 @@ async function formsBehavior() {
     'LC39',
     'an unknown deep-link slug leaves the default form untouched',
     !textOf(unknown).includes(TAIL_2K.name) &&
-      unknown.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Change').length === 0,
+      unknown.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Change')
+        .length === 0,
   );
   check(
     'LC39-hidden',
@@ -854,7 +875,10 @@ function guardrails() {
     'LC50',
     'the listing read adds no write path — select only, no insert/update/delete/rpc',
     !/\.(insert|update|upsert|delete|rpc)\(/.test(
-      COMMUNITY.slice(COMMUNITY.indexOf('getListingRefsResult'), COMMUNITY.indexOf('ApprovedReview')),
+      COMMUNITY.slice(
+        COMMUNITY.indexOf('getListingRefsResult'),
+        COMMUNITY.indexOf('ApprovedReview'),
+      ),
     ),
   );
 
@@ -896,9 +920,8 @@ function guardrails() {
   check(
     'LC-CAP',
     'no capped listing read remains: .limit(2000) is gone from the community layer',
-    !/\.limit\(2000\)/.test(
-      COMMUNITY.slice(0, COMMUNITY.indexOf('getRecentApprovedReviews')),
-    ) && /collectAllRows</.test(COMMUNITY),
+    !/\.limit\(2000\)/.test(COMMUNITY.slice(0, COMMUNITY.indexOf('getRecentApprovedReviews'))) &&
+      /collectAllRows</.test(COMMUNITY),
   );
   check(
     'LC-ONE-TRUTH',
@@ -917,7 +940,8 @@ function guardrails() {
   check(
     'LC-ISR',
     'both pages keep periodic revalidation, so imports appear without a redeploy',
-    /export const revalidate = 300/.test(SUBMIT_PAGE) && /export const revalidate = 300/.test(REVIEWS_PAGE),
+    /export const revalidate = 300/.test(SUBMIT_PAGE) &&
+      /export const revalidate = 300/.test(REVIEWS_PAGE),
   );
   check(
     'LC-NO-CACHE',

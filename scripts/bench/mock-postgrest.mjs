@@ -30,6 +30,8 @@
  *   MOCK_LATENCY_MS  artificial per-request latency   (default 0)
  *   MOCK_ROWS        published row count              (default 2454)
  *   MOCK_TRUCK_STOPS published truck-stops rows       (default 1882)
+ *   MOCK_TEXT_PROFILE 'production' widens listing text (default compact)
+ *   MOCK_FAIL_TABLE  table whose reads answer 500      (default none)
  *
  * The dataset is generated with a fixed-seed PRNG: two runs, or two branches,
  * see byte-identical data. Row scale defaults mirror the production counts
@@ -43,6 +45,8 @@ const LOG = process.env.MOCK_LOG ?? '';
 const LATENCY = Number(process.env.MOCK_LATENCY_MS ?? 0);
 const N_PUBLISHED = Number(process.env.MOCK_ROWS ?? 2454);
 const N_TRUCK_STOPS = Number(process.env.MOCK_TRUCK_STOPS ?? 1882);
+/** Table whose reads answer 500, for exercising read-failure UI. Off by default. */
+const FAIL_TABLE = process.env.MOCK_FAIL_TABLE ?? '';
 
 /* ------------------------------------------------------------------ seed */
 
@@ -76,8 +80,70 @@ const AMENITIES = ['Showers', 'Diesel', 'DEF', 'Scales', 'Laundry', 'WiFi', 'Res
  */
 const OTHER_CATEGORIES = ['parking', 'cat-scales', 'rest-areas', 'weigh-stations', 'truck-washes'];
 
+/**
+ * TEXT PROFILE. The default names ("Bench Stop 00001") and cities ("City123")
+ * are shorter than the real ones, which does not matter for request counts or
+ * wall time — the fields are never compared — but understates any measurement
+ * of BYTES SERIALIZED INTO A PAGE by ~24 bytes per row.
+ *
+ * `MOCK_TEXT_PROFILE=production` widens name / city / detail_slug to the live
+ * table's measured averages (26.0 / 8.4 / 37.2 characters over 2,454 rows,
+ * read 2026-08-20), so a payload benchmark measures production scale rather
+ * than fixture scale. Default is unchanged, so every existing bench and every
+ * before/after comparison built on it stays byte-identical.
+ */
+const TEXT_PROFILE = process.env.MOCK_TEXT_PROFILE ?? 'compact';
+const CHAIN_NAMES = [
+  'Pilot Travel Center',
+  'Love’s Travel Stop',
+  'TA Travel Center',
+  'Petro Stopping Center',
+  'Flying J Travel Plaza',
+  'Bosselman Pump & Pantry',
+  'Sapp Bros Travel Center',
+  'Roady’s Truck Stop',
+];
+const CITY_NAMES = [
+  'Dalton',
+  'Chattanooga',
+  'Knoxville',
+  'Cartersville',
+  'Ringgold',
+  'Calhoun',
+  'Effingham',
+  'Sweetwater',
+  'Bowling Green',
+  'Jeffersonville',
+  'Amarillo',
+  'Laramie',
+  'Walcott',
+  'Ontario',
+  'North Platte',
+  'Baytown',
+  'Wytheville',
+];
+
+/** Name and city for row i, at the configured text scale. */
+function textFor(i, state) {
+  if (TEXT_PROFILE !== 'production') {
+    return { name: `Bench Stop ${String(i).padStart(5, '0')}`, city: `City${i % 500}` };
+  }
+  return {
+    name: `${CHAIN_NAMES[i % CHAIN_NAMES.length]} #${String(1000 + i).padStart(4, '0')}`,
+    city: CITY_NAMES[i % CITY_NAMES.length],
+  };
+}
+
 /** uuid-shaped id whose lexicographic order equals insertion order. */
 const idFor = (i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
+
+/** Mirrors location_detail_slug_base(): the DB derives this, so the mock does. */
+const slugify = (name, city, state) =>
+  `${name}-${city}-${state}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+    .slice(0, 100) || 'listing';
 
 function makeRow(i, { published, deleted, categoryOverride }) {
   const category =
@@ -87,12 +153,13 @@ function makeRow(i, { published, deleted, categoryOverride }) {
   const exit = interstate && rand() < 0.85 ? String(1 + Math.floor(rand() * 400)) : null;
   const geocoded = true; // exact geocoded count is set in a post-pass below
   const created = new Date(Date.UTC(2025, 0, 1) + Math.floor(rand() * 500 * 864e5)).toISOString();
+  const { name, city } = textFor(i, state);
   return {
     id: idFor(i),
-    name: `Bench Stop ${String(i).padStart(5, '0')}`,
+    name,
     category_slug: category,
     state,
-    city: `City${i % 500}`,
+    city,
     slug: `bench-stop-${i}`,
     address: `${100 + (i % 900)} Benchmark Rd`,
     zip: String(10000 + (i % 89999)),
@@ -113,7 +180,10 @@ function makeRow(i, { published, deleted, categoryOverride }) {
     interstate,
     exit_number: exit,
     created_at: created,
-    detail_slug: `bench-stop-${i}-city${i % 500}-${state.toLowerCase()}`,
+    detail_slug:
+      TEXT_PROFILE === 'production'
+        ? `${slugify(name, city, state)}-${i}`
+        : `bench-stop-${i}-city${i % 500}-${state.toLowerCase()}`,
     updated_at: created,
     verified_at: null,
     mile_marker: null,
@@ -326,6 +396,20 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end('[]');
       logDone(2);
+      return;
+    }
+
+    // A read that FAILS is a state the pages must render honestly, and it
+    // cannot be reached from a healthy fixture. Opt-in, default off, so every
+    // other bench sees the server it always saw.
+    if (FAIL_TABLE && table === FAIL_TABLE) {
+      const body = JSON.stringify({
+        code: '57014',
+        message: 'canceling statement due to statement timeout',
+      });
+      res.writeHead(500, { 'content-type': 'application/json' });
+      res.end(body);
+      logDone(body.length);
       return;
     }
 
