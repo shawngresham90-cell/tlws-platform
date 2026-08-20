@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { cache } from 'react';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Section } from '@/components/ui';
 import {
@@ -17,11 +16,12 @@ import { MapPreview } from '@/components/map/MapPreview';
 import { ReviewList, Stars } from '@/components/community/ReviewList';
 import { getCategory, categoryHref } from '@/lib/directory/categories';
 import {
-  getEntryByDetailSlug,
   getPublishedDetailSlugs,
   getEntriesByState,
   getEntriesByInterstate,
+  throwDirectoryUnavailable,
 } from '@/lib/directory/data';
+import { cachedEntryByDetailSlugResult } from '@/lib/directory/request-cache';
 import {
   nearbySections,
   isDetailIndexable,
@@ -35,7 +35,7 @@ import {
   truckParkingFactValue,
   ZERO_PARKING_NOTICE,
 } from '@/lib/directory/parking-disclosure';
-import { resolveSlugRedirect } from '@/lib/directory/redirects';
+import { resolveSlugRedirectResult } from '@/lib/directory/redirects';
 import { interstateSlug, exitSlug } from '@/lib/directory/interstates';
 import { stateByCode } from '@/lib/directory/states';
 import { getApprovedReviewsForLocation, getReviewStatsForLocation } from '@/lib/community/data';
@@ -51,14 +51,33 @@ import { ReportParkingButton } from '@/components/directory/ReportParkingSheet';
  * (RLS enforces the same boundary), so unpublished, soft-deleted, and unknown
  * slugs all 404. Slugs are the only public identifier — internal ids never
  * appear in URLs.
+ *
+ * THE 404 IS DECIDED BY A SUCCESSFUL READ, NEVER BY A FAILED ONE (2026-08-20).
+ * Both reads this route consults return a three-outcome result: `ok` with an
+ * entry, `ok` with null ("no such published listing"), or a failure. Only the
+ * middle one may become `notFound()`. A failure throws
+ * `DirectoryUnavailableError`, which Next serves as a 500 — transient, never
+ * cached as a truth — because this page is ISR (`revalidate = 300`) over
+ * 2,454 sitemap URLs and the anon role carries a 3 s `statement_timeout`, so
+ * a 404 minted from an outage outlives the outage that caused it.
+ *
+ * Nearby listings, reviews and the redirect table's *contents* stay fail-soft
+ * deliberately: they decorate a page whose own subject already resolved, and
+ * degrading a section is not the same defect as denying the page exists.
+ *
+ * ONE CONSEQUENCE, STATED PLAINLY: during `next build` a failed read here now
+ * fails the build instead of prerendering a 404. That is the same posture the
+ * exit page has carried since #215 across its 1,292 prerendered pages, and it
+ * is the trade this fix is: a loud failed deploy beats a quiet shipped 404
+ * over a real listing. `generateStaticParams` stays fail-soft, so a build that
+ * cannot reach the database at all still prerenders nothing and lets pages
+ * render on demand rather than baking 404s.
  */
 
 // dynamicParams stays TRUE (see [category]/page.tsx): Netlify's runtime
 // refuses to re-render locked paths after revalidatePath() purges. Unknown
 // slugs still 404 via the resolver below.
 export const revalidate = 300;
-
-const getEntry = cache((slug: string) => getEntryByDetailSlug(slug));
 
 /** Cap the reviews rendered on the page; the count still shows the total. */
 const REVIEWS_SHOWN = 10;
@@ -74,8 +93,11 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   if (!isValidDetailSlug(params.slug)) return {};
-  const entry = await getEntry(params.slug);
-  if (!entry) return {};
+  // Metadata never decides the response status — the page component below is
+  // what distinguishes 404 from 500 (same rule as the exit page).
+  const result = await cachedEntryByDetailSlugResult(params.slug);
+  if (!result.ok || !result.data) return {};
+  const entry = result.data;
   return buildMetadata({
     title: detailTitle(entry),
     description: detailDescription(entry),
@@ -113,19 +135,28 @@ const actionClasses =
   'font-display text-base uppercase tracking-wide text-ink transition-colors hover:border-signal hover:text-signal';
 
 export default async function ListingDetailPage({ params }: { params: { slug: string } }) {
+  // Canonical path for this slug — the logged route for a failed read and
+  // the page's own canonical URL are the same string.
+  const path = detailHref(params.slug);
+  // Pure shape check against the slug grammar — no database involved, so an
+  // invalid slug is a genuine 404 regardless of database health.
   if (!isValidDetailSlug(params.slug)) notFound();
-  const entry = await getEntry(params.slug);
-  if (!entry) {
-    // A retired slug 301s to the CURRENT canonical slug (Milestone 21); the
-    // lookup fails soft when the redirect table isn't provisioned, so unknown
-    // slugs still 404 and unpublished/deleted destinations never redirect.
-    const redirect = await resolveSlugRedirect(params.slug);
-    if (redirect) permanentRedirect(detailHref(redirect.currentSlug));
+  const result = await cachedEntryByDetailSlugResult(params.slug);
+  // The read FAILED. That is not "no such listing"; surface it as a server
+  // error rather than a 404 this route's ISR cache would then keep serving.
+  if (!result.ok) throwDirectoryUnavailable('listing_detail.entry', path, result);
+  const entry = result.data;
+  if (entry === null) {
+    // The read SUCCEEDED and matched nothing. A retired slug 301s to the
+    // CURRENT canonical slug (Milestone 21) — and that lookup gets the same
+    // treatment: only a successful "no redirect row" may fall through to 404.
+    const redirect = await resolveSlugRedirectResult(params.slug);
+    if (!redirect.ok) throwDirectoryUnavailable('listing_detail.redirect', path, redirect);
+    if (redirect.data) permanentRedirect(detailHref(redirect.data.currentSlug));
     notFound();
   }
 
   const category = getCategory(entry.category);
-  const path = detailHref(params.slug);
   const hasCoords = entry.lat != null && entry.lng != null;
   const directions = detailDirectionsUrl(entry);
   // Bounded, non-personal context shared by the analytics events and the
