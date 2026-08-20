@@ -173,7 +173,7 @@ export class DirectoryUnavailableError extends Error {
  * text and no row data. Only that code is ever surfaced; the driver's message
  * and details are deliberately dropped.
  */
-function failureCode(error: unknown): string | undefined {
+export function failureCode(error: unknown): string | undefined {
   const code = (error as { code?: unknown } | null)?.code;
   return typeof code === 'string' && code.length <= 12 ? code : undefined;
 }
@@ -735,10 +735,29 @@ async function getEntriesWithCoordinatesUncached(
 /**
  * Resolve one published listing by its public detail slug (Milestone 20).
  * Anon client + explicit published/non-deleted filters (RLS enforces the same
- * boundary), so unpublished, soft-deleted, and unknown slugs all resolve to
- * null — the detail route turns that into a 404. Fails soft to null.
+ * boundary), so unpublished, soft-deleted, and unknown slugs all resolve to a
+ * SUCCESSFUL null — the detail route turns that, and only that, into a 404.
+ *
+ * EMPTY VS. ERROR, on the largest 404-gating surface there is (2026-08-20).
+ * This read used to collapse a failed query into the same `null` an unknown
+ * slug produces, and `/directory/location/[slug]` turned `null` into
+ * `notFound()`. That is the exact defect the contract above was written for
+ * after `/directory/i75/exit-369` served a cached 404 over 11 published rows;
+ * #215 fixed the exit page and the 2026-08-04 audit recorded this one as a
+ * surviving instance of the same class. It is the bigger surface: every
+ * published listing has a detail page (2,454 of them, all in the sitemap),
+ * the route is ISR at `revalidate = 300`, and the anon role carries a 3 s
+ * `statement_timeout` — so one slow regeneration bakes a 404 over a real,
+ * indexed page and serves it until something purges it.
+ *
+ * `getEntryByDetailSlugResult` is the single implementation and reports which
+ * of the three outcomes happened. The fail-soft wrapper below still returns
+ * `null` for both "no such listing" and "the read failed", so callers that
+ * legitimately want "render nothing rather than explode" are unchanged.
  */
-export async function getEntryByDetailSlug(detailSlug: string): Promise<DirectoryEntry | null> {
+export async function getEntryByDetailSlugResult(
+  detailSlug: string,
+): Promise<DirectoryReadResult<DirectoryEntry | null>> {
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase
@@ -749,11 +768,23 @@ export async function getEntryByDetailSlug(detailSlug: string): Promise<Director
       .eq('detail_slug', detailSlug)
       .limit(1)
       .maybeSingle();
-    if (error || !data) return null;
-    return toEntry(data as unknown as LocationRow);
-  } catch {
-    return null;
+    if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
+    // The read SUCCEEDED and matched nothing: no such published listing.
+    if (!data) return { ok: true, data: null };
+    return { ok: true, data: toEntry(data as unknown as LocationRow) };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
+}
+
+/**
+ * Fail-soft variant: `null` for a missing listing AND for a failed read. Only
+ * safe where the answer does not decide a response status (the sitemap gate
+ * asks "is this one indexable?", and a failed read simply omits the URL).
+ */
+export async function getEntryByDetailSlug(detailSlug: string): Promise<DirectoryEntry | null> {
+  const result = await getEntryByDetailSlugResult(detailSlug);
+  return result.ok ? result.data : null;
 }
 
 export type DetailSlugRef = {

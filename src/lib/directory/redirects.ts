@@ -1,13 +1,18 @@
 import { createStaticClient } from '@/lib/supabase/static';
+import { failureCode, type DirectoryReadResult } from './data';
 import { isValidDetailSlug } from './detail-slug';
 
 /**
- * Slug redirect resolution + planning (Milestone 21). The redirect table
- * (migration 023) may not exist yet — every read fails SOFT to "no redirect",
- * which is exactly the pre-023 behavior (unknown slugs 404). Resolution goes
+ * Slug redirect resolution + planning (Milestone 21). Resolution goes
  * old_slug → location_id → the listing's CURRENT detail_slug, so a chain of
  * regenerations always collapses to one hop and redirects never go stale.
  * Unpublished/deleted destinations resolve to null (the route 404s).
+ *
+ * The redirect table (migration 023) may not exist yet, and that ONE case
+ * still resolves to "no redirect" — the documented pre-023 behaviour. Every
+ * other read failure is now reported as a failure rather than silently
+ * becoming "no redirect": this lookup sits on the detail route's 404 branch,
+ * and a lookup that could not run is not evidence that a slug is unknown.
  */
 
 export type RedirectTarget = {
@@ -16,13 +21,38 @@ export type RedirectTarget = {
 };
 
 /**
- * Resolve an old slug to the current canonical slug of a PUBLISHED listing.
- * Null when: table missing (023 unapplied), no redirect row, destination
- * unpublished/deleted, or the "current" slug equals the requested one
- * (self-loop guard — never redirect a slug to itself).
+ * A missing relation is the ONLY error this resolver is allowed to treat as
+ * "no redirect". Migration 023 provisions `directory_slug_redirects`; before
+ * it is applied the table genuinely does not exist, and the documented
+ * pre-023 behaviour is that unknown slugs 404. PostgREST reports that as
+ * SQLSTATE `42P01` (undefined_table) or its own `PGRST205` (relation absent
+ * from the schema cache). Every OTHER error — a statement timeout, a dropped
+ * connection, a permission change — is a read that failed over a table that
+ * exists, and must never be reported as "there is no redirect for this slug".
  */
-export async function resolveSlugRedirect(oldSlug: string): Promise<RedirectTarget | null> {
-  if (!isValidDetailSlug(oldSlug)) return null;
+function isMissingRelation(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === '42P01' || code === 'PGRST205';
+}
+
+/**
+ * Resolve an old slug to the current canonical slug of a PUBLISHED listing.
+ *
+ * Three outcomes, not two — this read is consulted on the detail route's 404
+ * branch, so collapsing a failed lookup into "no redirect" manufactures a 404
+ * out of an outage exactly the way the entry read used to (see
+ * `getEntryByDetailSlugResult`). A SUCCESSFUL null means: no redirect row,
+ * destination unpublished/deleted, or the "current" slug equals the requested
+ * one (self-loop guard — never redirect a slug to itself). The pre-023
+ * table-missing case stays a successful null, because there the answer really
+ * is "this database has no redirects".
+ */
+export async function resolveSlugRedirectResult(
+  oldSlug: string,
+): Promise<DirectoryReadResult<RedirectTarget | null>> {
+  // Pure shape check — an invalid slug can hold no redirect regardless of
+  // database health, so this answer never depends on a read.
+  if (!isValidDetailSlug(oldSlug)) return { ok: true, data: null };
   try {
     const supabase = createStaticClient();
     const { data, error } = await supabase
@@ -31,19 +61,31 @@ export async function resolveSlugRedirect(oldSlug: string): Promise<RedirectTarg
       .eq('old_slug', oldSlug)
       .limit(1)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error && !isMissingRelation(error)) {
+      return { ok: false, reason: 'query_error', code: failureCode(error) };
+    }
+    if (error || !data) return { ok: true, data: null };
     const listing = (
       data as unknown as {
         locations: { detail_slug: string | null; is_published: boolean; deleted_at: string | null };
       }
     ).locations;
     if (!listing || !listing.is_published || listing.deleted_at || !listing.detail_slug)
-      return null;
-    if (listing.detail_slug === oldSlug) return null; // self-loop guard
-    return { currentSlug: listing.detail_slug };
-  } catch {
-    return null;
+      return { ok: true, data: null };
+    if (listing.detail_slug === oldSlug) return { ok: true, data: null }; // self-loop guard
+    return { ok: true, data: { currentSlug: listing.detail_slug } };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
+}
+
+/**
+ * Fail-soft variant: `null` for "no redirect" AND for a failed lookup. Kept
+ * for callers that do not decide a response status from the answer.
+ */
+export async function resolveSlugRedirect(oldSlug: string): Promise<RedirectTarget | null> {
+  const result = await resolveSlugRedirectResult(oldSlug);
+  return result.ok ? result.data : null;
 }
 
 /* ------------------------------------------------ regeneration planning */
