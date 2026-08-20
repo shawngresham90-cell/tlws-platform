@@ -8,6 +8,7 @@ import {
 } from '@/lib/navigator-api/destination-search';
 import {
   createSearchCoordinator,
+  type SearchContext,
   type SearchCoordinator,
 } from '@/lib/navigator-api/search-coordination';
 import { searchDestinations, NAVIGATOR_SEARCH_ENDPOINT } from './search-port';
@@ -175,6 +176,12 @@ export function DestinationSearch({
   // enough to re-bias results if the truck actually moves.
   const originKey = origin === null ? null : `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}`;
 
+  // What the coordinator caches under, and what this effect re-runs for,
+  // are the SAME four things. Keeping one list means a cache slot can
+  // never outlive the context that produced it: whenever a change is
+  // worth re-asking the provider, it is also worth a different slot.
+  const searchContext: SearchContext = { country, endpoint, originKey };
+
   useEffect(() => {
     if (settled) return;
     const q = query.trim();
@@ -198,7 +205,7 @@ export function DestinationSearch({
       // transaction at all, and whether an answer is still current when
       // it lands. Retyping a query the driver already searched costs
       // nothing.
-      const decision = coord.next(q, { settled: false });
+      const decision = coord.next(q, searchContext, { settled: false });
       if (decision.kind === 'idle') {
         setSearching(false);
         return;
@@ -209,25 +216,39 @@ export function DestinationSearch({
         setSearching(false);
         return;
       }
-      void searchDestinations(decision.query, at, undefined, country, endpoint)
-        .then((outcome) => {
-          if (outcome.kind === 'failure') {
-            if (coord.accept(decision.seq, [])) {
-              setResults([]);
-              setStatus('Search unavailable right now.');
-            }
-            return;
-          }
-          // A slower earlier response can never overwrite a newer one.
-          if (!coord.accept(decision.seq, outcome.places)) return;
-          setResults(outcome.places);
-          setStatus(
-            outcome.places.length === 0 ? 'No places found. Try a different search.' : null,
-          );
-        })
-        .finally(() => setSearching(false));
+      void searchDestinations(decision.query, at, undefined, country, endpoint).then((outcome) => {
+        // AN ANSWER AND AN ATTEMPT SETTLE DIFFERENTLY. A failure is
+        // reported as a failure, so nothing about it is remembered and
+        // the same query stays askable; only a real answer — including a
+        // real empty one — may be cached. There is no longer a method
+        // that would let this branch say "it succeeded with nothing".
+        const isCurrent =
+          outcome.kind === 'failure'
+            ? coord.settleFailure(decision.seq)
+            : coord.acceptSuccess(decision.seq, outcome.places);
+        // A slower earlier response can never overwrite a newer one —
+        // and that includes the spinner. An old attempt clearing
+        // `searching` would tell the driver the search it can still see
+        // running had stopped.
+        if (!isCurrent) return;
+        setSearching(false);
+        if (outcome.kind === 'failure') {
+          setResults([]);
+          // What is known is that the request did not work — NOT that the
+          // place does not exist. Those are different sentences and the
+          // driver is owed the true one.
+          setStatus('Search unavailable right now.');
+          return;
+        }
+        setResults(outcome.places);
+        setStatus(outcome.places.length === 0 ? 'No places found. Try a different search.' : null);
+      });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
+    // `searchContext` is rebuilt every render from exactly these four
+    // values, so listing them keeps the effect stable while a moving
+    // truck re-renders at 1 Hz.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, originKey, settled, country, endpoint]);
 
   return (

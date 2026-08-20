@@ -138,10 +138,14 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
     ),
   );
   check(
+    // NAV-SEARCH-1 split one settlement method into two; the debounce and
+    // the single-coordinator-per-box rule are untouched, and the
+    // settlement pin now names both halves rather than the removed one.
     'flow: debounce and coordinator survive untouched',
     code.includes('DEBOUNCE_MS = 350') &&
       code.includes('createSearchCoordinator()') &&
-      code.includes('coord.accept(decision.seq'),
+      code.includes('coord.acceptSuccess(decision.seq, outcome.places)') &&
+      code.includes('coord.settleFailure(decision.seq)'),
   );
   check(
     'flow: the card renders candidate fields, not derived guesses',
