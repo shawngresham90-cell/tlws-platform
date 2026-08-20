@@ -29,7 +29,37 @@ function arg(name, fallback = null) {
 
 const TREE = arg('tree', '.');
 const PORT = Number(arg('port', '3155'));
-const MOCK_PORT = Number(arg('mock-port', '54992'));
+
+/**
+ * `NEXT_PUBLIC_SUPABASE_URL` is INLINED AT BUILD TIME — Next replaces every
+ * `process.env.NEXT_PUBLIC_*` read with a literal during compilation, and
+ * `createAdminClient()` reads it like any other. So a production server does
+ * not honour the variable you start it with: it talks to whatever URL the
+ * build baked in. Passing a different --mock-port therefore produced a mock
+ * nobody called and a page whose every read failed, which cost a long
+ * debugging detour.
+ *
+ * Read the baked-in port out of the build and listen there.
+ */
+function bakedMockPort(tree) {
+  const page = path.join(
+    tree,
+    '.next/server/app/admin/(dashboard)/directory/parking-quality/page.js',
+  );
+  if (!fs.existsSync(page)) return null;
+  const m = fs.readFileSync(page, 'utf8').match(/http:\/\/127\.0\.0\.1:(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+const REQUESTED_MOCK_PORT = arg('mock-port', null);
+const BAKED = bakedMockPort(TREE);
+const MOCK_PORT = Number(REQUESTED_MOCK_PORT ?? BAKED ?? 54992);
+if (BAKED && REQUESTED_MOCK_PORT && Number(REQUESTED_MOCK_PORT) !== BAKED) {
+  console.error(
+    `refusing to run: the build talks to 127.0.0.1:${BAKED} (baked in at build time), ` +
+      `but --mock-port ${REQUESTED_MOCK_PORT} was given. Rebuild against that port, or omit --mock-port.`,
+  );
+  process.exit(2);
+}
 const SHOTS = arg('shots', '');
 const WIDTHS = [
   { w: 360, h: 740 },
@@ -145,9 +175,12 @@ async function main() {
       check(`${w}: not redirected to login`, !page.url().includes('/admin/login'), page.url());
 
       /* 1. summary */
+      // `innerText` returns text as CSS renders it, and these labels carry
+      // `text-transform: uppercase` — so match case-insensitively or every
+      // assertion against a styled label silently fails.
       check(
         `${w}: summary renders`,
-        /Published parking/.test(body) && /Ready for owner review/.test(body),
+        /published parking/i.test(body) && /ready for owner review/i.test(body),
       );
       const rows = await page.locator('[data-testid="pq-row"]').count();
       check(`${w}: rows render`, rows > 0, rows);
@@ -189,7 +222,7 @@ async function main() {
       const firstText = await firstRow.innerText();
       check(
         `${w}: a blocked row explains why`,
-        /Why it is blocked/.test(firstText),
+        /why it is blocked/i.test(firstText),
         firstText.slice(0, 80),
       );
 

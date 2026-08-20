@@ -85,6 +85,19 @@ function toParkingRow(r: DbRow): ParkingRow {
   };
 }
 
+/**
+ * A non-empty code for any failed read. Supabase fills `code` for database
+ * errors but leaves it empty for transport failures, and an empty string is
+ * falsy — which is how a failed read once rendered as an empty queue.
+ */
+function errorCode(err: { code?: string | null; message?: string | null }): string {
+  const code = (err.code ?? '').trim();
+  if (code) return code;
+  return /fetch failed|ECONNREFUSED|ENOTFOUND|timeout/i.test(err.message ?? '')
+    ? 'unreachable'
+    : 'read_failed';
+}
+
 export type ParkingQualityQueue = {
   results: ParkingQualityResult[];
   summary: ParkingQualitySummary;
@@ -133,15 +146,13 @@ export async function getParkingQualityQueue(): Promise<ParkingQualityQueue> {
         .is('deleted_at', null),
     ]);
 
-    console.error('PQDBG', JSON.stringify({
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-      unpubErr: unpublished.error, unpubLen: (unpublished.data ?? []).length,
-      ctxErr: context.error, ctxLen: (context.data ?? []).length,
-      cnt: publishedParking.count, cntErr: publishedParking.error,
-    }));
-    if (unpublished.error) return { ...empty, error: unpublished.error.code ?? 'read_failed' };
-    if (context.error) return { ...empty, error: context.error.code ?? 'read_failed' };
+    // `?? 'read_failed'` was a bug, and exactly the one this page exists to
+    // prevent. PostgREST returns `code: ''` for a transport failure
+    // (TypeError: fetch failed), and `'' ?? x` is `''` — falsy — so the page
+    // took the SUCCESS branch and rendered a confident empty queue over a
+    // read that had failed outright. Coalesce on FALSINESS, not nullishness.
+    if (unpublished.error) return { ...empty, error: errorCode(unpublished.error) };
+    if (context.error) return { ...empty, error: errorCode(context.error) };
 
     const rows = (unpublished.data ?? []).map((r) => toParkingRow(r as unknown as DbRow));
     const published = (context.data ?? []).map((r) => {

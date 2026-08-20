@@ -15,20 +15,9 @@ import { DirectoryToolsNav } from '@/components/admin/directory/DirectoryToolsNa
 
 export const dynamic = 'force-dynamic';
 /**
- * KNOWN OPEN ISSUE — see the PR description.
- *
- * Under `next start` this page renders every count as 0 with no error and no
- * outbound request, while the identical read returns 36 rows under `next dev`
- * and 36 rows when driven standalone against the same mock. A queue whose one
- * job is to separate "nothing is waiting" from "we never asked" must not be
- * able to confuse those itself, so this is a blocker for using the queue, not
- * a cosmetic bug.
- *
- * `fetchCache = 'force-no-store'` was the first hypothesis (supabase-js reads
- * through `fetch`, and Next's Data Cache can answer from a build-time entry).
- * It is kept because an always-live read is correct for this page regardless,
- * but it did NOT fix the symptom — a rebuild with it still rendered zeros, so
- * the cause is still open.
+ * An always-live read. supabase-js goes through `fetch`, and Next's Data Cache
+ * can otherwise answer a dynamic page's query from a build-time entry — which
+ * on this page would mean rendering a stale count as current fact.
  */
 export const fetchCache = 'force-no-store';
 export const metadata = {
@@ -121,7 +110,7 @@ function matches(r: ParkingQualityResult, s: Search): boolean {
 
 function Chip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-line px-2 py-0.5 text-xs text-muted">
+    <span className="inline-flex max-w-full flex-wrap items-center gap-1 rounded border border-line px-2 py-0.5 text-xs text-muted">
       <span className="uppercase tracking-wide text-[10px] text-muted/70">{label}</span>
       <span className="font-semibold text-ink">{value}</span>
     </span>
@@ -382,7 +371,7 @@ export default async function ParkingQualityPage({ searchParams }: { searchParam
                   </h4>
                   <ul className="mt-1 space-y-1">
                     {r.reasons.map((code) => (
-                      <li key={code} className="text-sm text-muted">
+                      <li key={code} className="break-words text-sm text-muted">
                         <code className="text-xs font-semibold text-ink">{code}</code>{' '}
                         {REASON_TEXT[code]}
                       </li>
@@ -397,7 +386,7 @@ export default async function ParkingQualityPage({ searchParams }: { searchParam
                     </h4>
                     <ul className="mt-1 space-y-1">
                       {r.duplicateCandidates.map((d) => (
-                        <li key={d.id} className="text-sm text-muted">
+                        <li key={d.id} className="break-words text-sm text-muted">
                           {d.name} — {d.why}
                           {d.distanceMiles != null ? ` (${d.distanceMiles} mi)` : ''}
                         </li>
@@ -406,7 +395,7 @@ export default async function ParkingQualityPage({ searchParams }: { searchParam
                   </div>
                 )}
 
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 break-words text-sm">
                   <span className="font-semibold text-ink">Next: {ownerActionFor(r)}</span>
                   <Link
                     href={`/admin/directory/${r.id}/edit`}

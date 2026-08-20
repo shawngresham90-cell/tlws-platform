@@ -719,6 +719,18 @@ function main() {
 
   const page = read('src/app/admin/(dashboard)/directory/parking-quality/page.tsx');
   const adminLib = read('src/lib/admin/parking-quality.ts');
+
+  // A transport failure gives PostgREST `code: ''`. Coalescing that with `??`
+  // yields '' — falsy — and the page renders a confident empty queue over a
+  // read that never landed. That is the exact lie this whole surface exists
+  // to prevent, so the coalesce must be on falsiness.
+  check(
+    'PQ-extra a failed read always yields a truthy error code',
+    /function errorCode\(/.test(adminLib) &&
+      !/\.error\.code \?\? /.test(adminLib) &&
+      /errorCode\(unpublished\.error\)/.test(adminLib) &&
+      /errorCode\(context\.error\)/.test(adminLib),
+  );
   check(
     'PQ64 admin queue is noindex/nofollow',
     /robots:\s*\{\s*index:\s*false,\s*follow:\s*false\s*\}/.test(page),
