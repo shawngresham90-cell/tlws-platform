@@ -8,8 +8,9 @@
  * most — no request that could write to the database while an admin reads it.
  *
  * Auth is minted directly rather than driven through the login form: the
- * session cookie is an HMAC of a fixed string under ADMIN_SESSION_SECRET, so
- * the bench can hold a valid session without a password round trip.
+ * session cookie is an HMAC of a fixed string under the session secret, so the
+ * bench can hold a valid session without a password round trip. The values it
+ * uses are throwaway and named so they cannot be mistaken for real ones.
  *
  * Usage:
  *   node scripts/bench/parking-quality-admin.mjs --tree .
@@ -68,10 +69,18 @@ const WIDTHS = [
   { w: 1280, h: 800 },
 ];
 
-const ADMIN_PASSWORD = 'bench-admin-password';
-const ADMIN_SESSION_SECRET = 'bench-admin-session-secret';
+/**
+ * Throwaway credentials for the local server this bench starts, named so they
+ * cannot be confused with the real thing. They were originally called
+ * ADMIN_PASSWORD and ADMIN_SESSION_SECRET — the exact names of two env vars
+ * registered as SECRETS on the deploy target, which is a good way to trip a
+ * secret scanner and a better way to alarm a reviewer reading the diff.
+ * Nothing here is or resembles a real credential.
+ */
+const BENCH_ADMIN_PW = 'not-a-real-password-local-bench-only';
+const BENCH_SESSION_SEED = 'not-a-real-secret-local-bench-only';
 /** Same derivation as src/lib/admin/auth.ts issuedSessionToken(). */
-const SESSION_TOKEN = createHmac('sha256', ADMIN_SESSION_SECRET)
+const SESSION_TOKEN = createHmac('sha256', BENCH_SESSION_SEED)
   .update('tlws-admin-session-v1')
   .digest('hex');
 
@@ -125,8 +134,8 @@ async function main() {
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'mock-anon-key',
       SUPABASE_SERVICE_ROLE_KEY: 'mock-service-role-key',
       NEXT_PUBLIC_SITE_URL: 'https://truckinglifewithshawn.com',
-      ADMIN_PASSWORD,
-      ADMIN_SESSION_SECRET,
+      ADMIN_PASSWORD: BENCH_ADMIN_PW,
+      ADMIN_SESSION_SECRET: BENCH_SESSION_SEED,
       NO_PROXY: '*',
       no_proxy: '*',
     },
