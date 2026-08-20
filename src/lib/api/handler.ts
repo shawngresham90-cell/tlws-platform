@@ -86,3 +86,55 @@ export function guardedPost<S extends z.ZodTypeAny>(
     }
   };
 }
+
+/**
+ * The same guard stack for a public READ: rate limit → parse the query string
+ * → zod → handler, with any throw becoming a clean 500.
+ *
+ * GET rather than POST, and the distinction is deliberate rather than
+ * stylistic. `guardedPost` exists because the body is where a USER'S OWN
+ * DATA belongs — /api/directory/nearby takes it because a driver's
+ * coordinates must never reach a request log. A route whose entire input is
+ * a list of public listing ids has no such secret: nothing about the request
+ * describes the person making it, so it can be a URL, and being a URL is
+ * worth something — the CDN can answer a repeat window without waking a
+ * function.
+ *
+ * Never use this for a route whose input is typed text, a location, or
+ * anything else that identifies the user. That is what `guardedPost` is for.
+ */
+export function guardedGet<S extends z.ZodTypeAny>(
+  schema: S,
+  opts: Options,
+  handler: (ctx: GuardedContext<z.infer<S>>) => Promise<Response>,
+) {
+  return async (req: NextRequest): Promise<Response> => {
+    const ip = clientIp(req.headers);
+
+    const rl = rateLimit(
+      `${opts.routeKey}:${ip}`,
+      opts.rateLimitMax ?? 5,
+      opts.rateLimitWindowMs ?? 60_000,
+    );
+    if (!rl.allowed)
+      return fail('Too many requests. Slow down and try again.', 429, 'rate_limited');
+
+    const params: Record<string, string> = {};
+    req.nextUrl.searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+
+    const parsed = schema.safeParse(params);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return fail(first?.message ?? 'Validation failed.', 422, 'validation');
+    }
+
+    try {
+      return await handler({ data: parsed.data, ip, req });
+    } catch (err) {
+      log.error('handler_error', { route: opts.routeKey, message: (err as Error).message });
+      return fail('Something went wrong on our end. Try again shortly.', 500, 'server_error');
+    }
+  };
+}

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { MapExplorer } from '@/components/map/MapExplorer';
 import { getEntriesWithCoordinates, getDirectoryFacets } from '@/lib/directory/data';
+import { toMapEntry } from '@/lib/directory/dto';
 import { DIRECTORY_STATES } from '@/lib/directory/states';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -9,7 +10,8 @@ import { buildMetadata } from '@/lib/seo/metadata';
 /**
  * The public directory map (Milestone 19). The page itself is static + ISR:
  * only coordinate-ready published listings are serialized in (server-side
- * filter — never the full table), and every interactive concern lives in the
+ * filter — never the full table), projected to the narrow map shape on the
+ * way across (DIR-PAYLOAD-1), and every interactive concern lives in the
  * MapExplorer client island. Filter/location states are client-only, so no
  * arbitrary query-parameter pages exist to index — the canonical is always
  * /directory/map.
@@ -60,7 +62,7 @@ export default async function DirectoryMapPage() {
 
         <div className="mt-8">
           <MapExplorer
-            entries={entries}
+            entries={entries.map(toMapEntry)}
             states={statesWithCoords}
             interstates={interstatesWithCoords}
             stateNamesByCode={stateNamesByCode}

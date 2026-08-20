@@ -20,7 +20,7 @@ import {
   type ExploreOrigin,
   type ExploreResult,
 } from '@/lib/map/explore';
-import type { DirectoryEntry } from '@/lib/directory/types';
+import type { DirectoryMapEntry } from '@/lib/directory/dto';
 
 /**
  * The /directory/map experience (Milestone 19). All interactivity lives here,
@@ -55,6 +55,22 @@ const btnClasses =
   'rounded-card border border-line bg-asphalt-800 px-4 py-2 text-sm font-semibold text-ink ' +
   'transition-colors hover:border-signal hover:text-signal focus:outline-none focus:ring-2 focus:ring-signal disabled:opacity-60';
 
+/**
+ * How many result CARDS render at once (DIR-PAYLOAD-1).
+ *
+ * This list used to render every result — 1,940 cards on first paint, 2.5 MB
+ * of markup and 23,120 DOM elements before a driver touched anything, on the
+ * page most likely to be opened from a phone at an exit. The map itself was
+ * never the problem: markers are clustered and capped at 500 inside
+ * LeafletMap. It was the list beside it.
+ *
+ * Bounding the DOM changes nothing about completeness. Every eligible listing
+ * is still in `entries`, still filtered, still counted in the heading, still
+ * a marker. Only the number of cards PAINTED is bounded, and "Show more"
+ * raises it.
+ */
+const LIST_PAGE = 30;
+
 type NearbyApiListing = { id: string; distanceMiles: number };
 
 export function MapExplorer({
@@ -64,7 +80,7 @@ export function MapExplorer({
   stateNamesByCode,
 }: {
   /** Server-filtered: published, non-deleted, valid coordinates only. */
-  entries: DirectoryEntry[];
+  entries: DirectoryMapEntry[];
   states: string[];
   interstates: string[];
   stateNamesByCode: Record<string, string>;
@@ -79,6 +95,7 @@ export function MapExplorer({
   const [mapFailed, setMapFailed] = useState(false);
   const [fitKey, setFitKey] = useState(0);
   const [focus, setFocus] = useState<{ lat: number; lng: number } | null>(null);
+  const [listVisible, setListVisible] = useState(LIST_PAGE);
   const listRef = useRef<HTMLUListElement>(null);
 
   // Detail pages deep-link one listing (?listing=<detail slug>): select it and
@@ -120,7 +137,24 @@ export function MapExplorer({
   // Refit the map when the visible set changes for filter/origin reasons.
   useEffect(() => {
     setFitKey((k) => k + 1);
+    setListVisible(LIST_PAGE);
   }, [filters, origin, entries]);
+
+  /**
+   * The cards actually painted: the first window, plus the selected listing
+   * when the selection came from a marker outside it. Without that second
+   * part, clicking a marker for the 400th result would select a card that is
+   * not in the DOM — the list would not scroll, and the map and the list
+   * would disagree about what is selected.
+   */
+  const shown = useMemo(() => {
+    const window = results.slice(0, listVisible);
+    if (selectedId && !window.some((e) => e.id === selectedId)) {
+      const picked = results.find((e) => e.id === selectedId);
+      if (picked) return [picked, ...window];
+    }
+    return window;
+  }, [results, listVisible, selectedId]);
 
   // Screen-reader status: announce result-count changes.
   useEffect(() => {
@@ -436,16 +470,29 @@ export function MapExplorer({
           </button>
         </div>
       ) : (
-        <ul ref={listRef} className="mt-4 grid gap-4 sm:grid-cols-2" aria-label="Map results">
-          {results.map((e) => (
-            <MapResultCard
-              key={e.id}
-              entry={e}
-              selected={e.id === selectedId}
-              onSelect={() => selectFromCard(e.id)}
-            />
-          ))}
-        </ul>
+        <>
+          <ul ref={listRef} className="mt-4 grid gap-4 sm:grid-cols-2" aria-label="Map results">
+            {shown.map((e) => (
+              <MapResultCard
+                key={e.id}
+                entry={e}
+                selected={e.id === selectedId}
+                onSelect={() => selectFromCard(e.id)}
+              />
+            ))}
+          </ul>
+          {results.length > listVisible && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setListVisible((v) => v + LIST_PAGE)}
+                className={btnClasses}
+              >
+                Show more ({results.length - listVisible} left)
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

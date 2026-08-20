@@ -6,6 +6,7 @@ import { getNewestListings } from '@/lib/directory/data';
 import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { toCardEntry } from '@/lib/directory/dto';
 
 /**
  * "Newest listings" (Milestone 25). Published, non-deleted listings ordered by
@@ -100,7 +101,7 @@ export default async function NewLocationsPage({
                         Added {when}
                       </p>
                     )}
-                    <EntryCard entry={e} />
+                    <EntryCard entry={toCardEntry(e)} />
                   </li>
                 );
               })}

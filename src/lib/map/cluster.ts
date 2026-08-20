@@ -1,4 +1,4 @@
-import type { DirectoryEntry } from '@/lib/directory/types';
+import type { DirectoryMapEntry } from '@/lib/directory/dto';
 import { boundsContain, projectToUnit, type LatLngBounds, type LatLng } from './bounds';
 
 /**
@@ -25,7 +25,7 @@ export type MarkerCluster = {
 };
 
 /** Entries that can appear on a map (published rows with coordinates). */
-export function markersFromEntries(entries: DirectoryEntry[]): MapMarkerDatum[] {
+export function markersFromEntries(entries: DirectoryMapEntry[]): MapMarkerDatum[] {
   return entries
     .filter((e) => e.lat != null && e.lng != null)
     .map((e) => ({

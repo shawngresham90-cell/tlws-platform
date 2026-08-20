@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { DirectoryEntry } from '@/lib/directory/types';
+import type { DirectoryCardEntry } from '@/lib/directory/dto';
 import { detailHref } from '@/lib/directory/detail-slug';
 
 /**
@@ -7,8 +7,13 @@ import { detailHref } from '@/lib/directory/detail-slug';
  * rest, so thin early data and rich future data use the same card. Entries
  * with a detail slug (Milestone 20) link through to their own page; the
  * phone/website/TPC actions stay either way.
+ *
+ * Takes a `DirectoryCardEntry`, not a whole row: the card reads thirteen
+ * fields and a `locations` row has twenty-six, and the other thirteen were
+ * being serialized into every listing on every category page for no reader
+ * (DIR-PAYLOAD-1).
  */
-export function EntryCard({ entry }: { entry: DirectoryEntry }) {
+export function EntryCard({ entry }: { entry: DirectoryCardEntry }) {
   return (
     <div className="flex flex-col rounded-card border border-line bg-asphalt-800 p-5">
       {/* `is_featured` now carries a PAID placement, so the badge discloses it

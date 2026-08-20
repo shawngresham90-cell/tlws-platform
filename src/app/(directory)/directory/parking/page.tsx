@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { TpcReserveCta } from '@/components/directory/TpcReserveCta';
 import { DirectoryBrowser, GetFeaturedCta } from '@/components/directory';
+import { toBrowseIndexEntry, toCardEntry } from '@/lib/directory/dto';
+import { DIRECTORY_PAGE, filterAndSortEntries } from '@/lib/directory/browse';
 import { getEntries, getParkingFacets } from '@/lib/directory/data';
 import { stateByCode } from '@/lib/directory/states';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
@@ -84,6 +86,20 @@ export default async function TruckParkingPage() {
     'Truck Parking',
     '/directory/parking',
   );
+  // Same split as the registry category pages: a complete compact index for
+  // search/filter/sort, plus the first window as rendered cards.
+  const browseIndex = entries.map(toBrowseIndexEntry);
+  const entriesById = new Map(entries.map((e) => [e.id, e]));
+  const initialCards = filterAndSortEntries(browseIndex, {
+    query: '',
+    state: '',
+    city: '',
+    sort: 'featured',
+  })
+    .slice(0, DIRECTORY_PAGE)
+    .map((row) => entriesById.get(row.id))
+    .filter((e): e is (typeof entries)[number] => Boolean(e))
+    .map(toCardEntry);
 
   return (
     <>
@@ -209,7 +225,11 @@ export default async function TruckParkingPage() {
             and city. Verified locations are being loaded state by state.
           </p>
         </div>
-        <DirectoryBrowser categoryTitle="Truck Parking" entries={entries} />
+        <DirectoryBrowser
+          categoryTitle="Truck Parking"
+          index={browseIndex}
+          initialCards={initialCards}
+        />
       </Section>
 
       {/* Back to hub */}

@@ -17,6 +17,7 @@ import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 import type { DirectoryEntry } from '@/lib/directory/types';
+import { toCardEntry } from '@/lib/directory/dto';
 
 /**
  * "Truck parking on [Interstate]" (Milestone 25) — e.g. /directory/i75/truck-parking.
@@ -170,7 +171,7 @@ export default async function InterstateParkingPage({ params }: { params: { cate
                   <ul className="grid gap-5 sm:grid-cols-2">
                     {list.map((e) => (
                       <li key={e.id}>
-                        <EntryCard entry={e} />
+                        <EntryCard entry={toCardEntry(e)} />
                       </li>
                     ))}
                   </ul>

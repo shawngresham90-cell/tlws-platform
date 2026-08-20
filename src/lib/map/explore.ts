@@ -1,4 +1,4 @@
-import type { DirectoryEntry } from '@/lib/directory/types';
+import type { DirectoryMapEntry } from '@/lib/directory/dto';
 import { haversineMiles } from './geo';
 import { boundsForPoints, type LatLngBounds, type LatLng } from './bounds';
 
@@ -53,7 +53,7 @@ export type ExploreOrigin = LatLng & {
   label: string;
 };
 
-export type ExploreResult = DirectoryEntry & { distanceMiles?: number };
+export type ExploreResult = DirectoryMapEntry & { distanceMiles?: number };
 
 /**
  * The whole filter pipeline: facet filters → amenity AND-match → radius
@@ -61,7 +61,7 @@ export type ExploreResult = DirectoryEntry & { distanceMiles?: number };
  * origin exists, featured-then-name otherwise).
  */
 export function applyExploreFilters(
-  entries: DirectoryEntry[],
+  entries: DirectoryMapEntry[],
   filters: ExploreFilters,
   origin: ExploreOrigin | null,
 ): ExploreResult[] {
@@ -101,15 +101,15 @@ export function applyExploreFilters(
 /**
  * The minimal row shape manual location search needs. Callers that only
  * search (the CAT Scale near-me pool) can serialize these six fields instead
- * of whole DirectoryEntry objects — on a ~2,000-row pool that is the
+ * of whole map rows — on a ~2,000-row pool that is the
  * difference between a few-hundred-KB flight payload and a few tens of KB.
  */
 export type SearchableEntry = Pick<
-  DirectoryEntry,
+  DirectoryMapEntry,
   'name' | 'city' | 'state' | 'zip' | 'lat' | 'lng'
 >;
 
-export type LocationSearchResult<E extends SearchableEntry = DirectoryEntry> =
+export type LocationSearchResult<E extends SearchableEntry = DirectoryMapEntry> =
   | { kind: 'match'; matches: E[]; origin: ExploreOrigin; bounds: LatLngBounds }
   | { kind: 'none' };
 
@@ -177,7 +177,7 @@ export function gridSizeForZoom(zoom: number): number {
 }
 
 /** Google Maps directions URL (no API key). Null when coords are unusable. */
-export function directionsUrl(entry: Pick<DirectoryEntry, 'lat' | 'lng'>): string | null {
+export function directionsUrl(entry: { lat?: number; lng?: number }): string | null {
   if (entry.lat == null || entry.lng == null) return null;
   if (!Number.isFinite(entry.lat) || !Number.isFinite(entry.lng)) return null;
   if (entry.lat === 0 && entry.lng === 0) return null;
@@ -185,6 +185,6 @@ export function directionsUrl(entry: Pick<DirectoryEntry, 'lat' | 'lng'>): strin
 }
 
 /** Distinct sorted cities among the pool (for the city filter). */
-export function citiesIn(entries: DirectoryEntry[]): string[] {
+export function citiesIn(entries: Pick<DirectoryMapEntry, 'city'>[]): string[] {
   return [...new Set(entries.map((e) => e.city))].sort();
 }
