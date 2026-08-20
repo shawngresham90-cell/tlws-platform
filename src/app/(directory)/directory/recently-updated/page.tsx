@@ -6,6 +6,7 @@ import { getRecentlyUpdated } from '@/lib/directory/data';
 import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { toCardEntry } from '@/lib/directory/dto';
 
 /**
  * "Recently updated" (Milestone 25). Published, non-deleted listings ordered by
@@ -77,7 +78,7 @@ export default async function RecentlyUpdatedPage() {
                       Directory info updated {when}
                     </p>
                   )}
-                  <EntryCard entry={e} />
+                  <EntryCard entry={toCardEntry(e)} />
                 </li>
               );
             })}

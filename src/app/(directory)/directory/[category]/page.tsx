@@ -39,6 +39,8 @@ import {
   getCatScaleFacets,
 } from '@/lib/directory/data';
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
+import { toBrowseIndexEntry, toCardEntry } from '@/lib/directory/dto';
+import { DIRECTORY_PAGE, filterAndSortEntries } from '@/lib/directory/browse';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -140,6 +142,23 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
       category.title,
       `/directory/${category.slug}`,
     );
+    // What crosses into the browser: a COMPLETE compact index of every
+    // listing (so search, the filters, the sorts and the count all see the
+    // whole category), plus the first window as ready-to-render cards. The
+    // window is computed with the SAME comparator the browser will use for
+    // its default sort, so the server HTML and the first client render agree.
+    const browseIndex = entries.map(toBrowseIndexEntry);
+    const entriesById = new Map(entries.map((e) => [e.id, e]));
+    const initialCards = filterAndSortEntries(browseIndex, {
+      query: '',
+      state: '',
+      city: '',
+      sort: 'featured',
+    })
+      .slice(0, DIRECTORY_PAGE)
+      .map((row) => entriesById.get(row.id))
+      .filter((e): e is (typeof entries)[number] => Boolean(e))
+      .map(toCardEntry);
     return (
       <>
         <JsonLd
@@ -165,7 +184,11 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
         {/* Driver-first CAT Scale flows — Browse Route + Near Me (2026-07). */}
         {category.slug === 'cat-scales' ? <CatScaleFastFind /> : null}
         <Section>
-          <DirectoryBrowser categoryTitle={category.title} entries={entries} />
+          <DirectoryBrowser
+            categoryTitle={category.title}
+            index={browseIndex}
+            initialCards={initialCards}
+          />
           <RelatedLinks groups={categoryScopeLinks(facets)} />
           <p className="mt-10 text-sm text-muted">
             <Link href="/directory/map" className="text-signal underline-offset-4 hover:underline">
@@ -237,7 +260,11 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
               </Link>
             </p>
           )}
-          <MultiCategoryBrowser entries={entries} scopeLabel={state.name} groupBy="category" />
+          <MultiCategoryBrowser
+            entries={entries.map(toCardEntry)}
+            scopeLabel={state.name}
+            groupBy="category"
+          />
           <NearbySections entries={entries} scopeLabel={state.name} />
           <FaqSection faqs={faqs} heading={`${state.name} driver FAQ`} />
           <RelatedLinks
@@ -335,7 +362,7 @@ export default async function DirectoryEnginePage({ params }: { params: { catego
           </nav>
         )}
         <MultiCategoryBrowser
-          entries={entries}
+          entries={entries.map(toCardEntry)}
           scopeLabel={interstate.designation}
           groupBy="state"
           stateOrder={interstate.stateOrder}

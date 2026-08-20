@@ -616,6 +616,52 @@ export function getEntriesByExitResult(
 }
 
 /**
+ * Hard cap on one card lookup (DIR-PAYLOAD-1). Two "Load more" pages worth.
+ * The endpoint rejects a longer list rather than truncating it — a truncated
+ * answer to "give me these ids" is the same class of quiet lie this codebase
+ * spent two milestones removing from the read layer.
+ */
+export const CARD_LOOKUP_MAX_IDS = 60;
+
+/**
+ * Published listings BY ID, for the browse index's card window.
+ *
+ * The category pages ship a compact index of every listing and fetch card
+ * fields only for the rows about to be rendered. This is that read. It is a
+ * lookup, not a search: it takes ids the page already holds and answers with
+ * rows, so there is no query text, no ordering to get wrong, and nothing for
+ * a caller to page through.
+ *
+ * Eligibility is re-checked HERE rather than trusted from the caller. A
+ * client can ask for any id it likes; `is_published` / `deleted_at` and the
+ * anon client's RLS decide what comes back, so an id that was unpublished
+ * since the page was generated simply is not in the answer.
+ *
+ * Returns a Result: a failed lookup must not read as "those listings do not
+ * exist". Ids not present in the answer were not eligible.
+ */
+export async function getEntriesByIdsResult(
+  ids: string[],
+): Promise<DirectoryReadResult<DirectoryEntry[]>> {
+  const wanted = [...new Set(ids)].slice(0, CARD_LOOKUP_MAX_IDS);
+  if (wanted.length === 0) return { ok: true, data: [] };
+  try {
+    const supabase = createStaticClient();
+    const { data, error } = await supabase
+      .from('locations')
+      .select(COLUMNS)
+      .eq('is_published', true)
+      .is('deleted_at', null)
+      .in('id', wanted);
+    if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
+    if (!data) return { ok: false, reason: 'query_error' };
+    return { ok: true, data: (data as unknown as LocationRow[]).map(toEntry) };
+  } catch (error) {
+    return { ok: false, reason: 'unavailable', code: failureCode(error) };
+  }
+}
+
+/**
  * Published listings ordered by most-recently-updated (Milestone 25). Only rows
  * with a real updated_at are returned, so "recently updated" never implies a
  * change that didn't happen. Fails soft to [].

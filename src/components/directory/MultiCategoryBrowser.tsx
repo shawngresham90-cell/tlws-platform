@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { DirectoryEntry } from '@/lib/directory/types';
+import type { DirectoryCardEntry } from '@/lib/directory/dto';
 import { filterAndSortEntries } from '@/lib/directory/browse';
 import { DIRECTORY_CATEGORIES, getCategory } from '@/lib/directory/categories';
 import { stateByCode } from '@/lib/directory/states';
@@ -14,6 +14,11 @@ import { DirectoryEmptyState } from './DirectoryEmptyState';
  * category filter chips with live counts, an automatic Featured section, and
  * results grouped by category (state pages) or by state (corridor pages).
  * Pure display over data the server already fetched — no client fetching.
+ *
+ * Takes card rows rather than whole `locations` rows (DIR-PAYLOAD-1). These
+ * pages are well inside the payload budget at live scale, so they keep the
+ * simple complete-array model; they share `EntryCard`, so they share its
+ * narrower input.
  */
 
 const inputClasses =
@@ -24,7 +29,7 @@ const SECTION_PREVIEW = 12;
 
 type GroupBy = 'category' | 'state';
 
-function groupKey(e: DirectoryEntry, groupBy: GroupBy): string {
+function groupKey(e: DirectoryCardEntry, groupBy: GroupBy): string {
   return groupBy === 'category' ? e.category : e.state;
 }
 
@@ -39,7 +44,7 @@ function Section({
   headingId,
 }: {
   label: string;
-  entries: DirectoryEntry[];
+  entries: DirectoryCardEntry[];
   headingId: string;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -77,7 +82,7 @@ export function MultiCategoryBrowser({
   groupBy = 'category',
   stateOrder = [],
 }: {
-  entries: DirectoryEntry[];
+  entries: DirectoryCardEntry[];
   /** Human label for the scope, e.g. "Georgia" or "I-75" — a11y + empty states. */
   scopeLabel: string;
   groupBy?: GroupBy;
@@ -108,7 +113,7 @@ export function MultiCategoryBrowser({
   const featured = results.filter((e) => e.featured);
 
   const groups = useMemo(() => {
-    const map = new Map<string, DirectoryEntry[]>();
+    const map = new Map<string, DirectoryCardEntry[]>();
     for (const e of results) {
       const key = groupKey(e, groupBy);
       if (!map.has(key)) map.set(key, []);

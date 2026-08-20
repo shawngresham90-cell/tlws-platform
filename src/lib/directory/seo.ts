@@ -2,6 +2,7 @@ import { SITE } from '@/lib/seo/site';
 import { getReviewAggregates, getApprovedReviewsForSeo } from '@/lib/community/data';
 import type { ReviewAggregate, SeoReview } from '@/lib/community/data';
 import { isDetailIndexable } from './detail';
+import { detailHref } from './detail-slug';
 import type { DirectoryEntry } from './types';
 
 /**
@@ -114,7 +115,42 @@ export function listingDetailSchema(
   };
 }
 
-/** ItemList of LocalBusiness/Place for a directory page, or null when empty. */
+/**
+ * How many listings are DESCRIBED IN FULL in a page's ItemList.
+ *
+ * The list used to carry a complete LocalBusiness object — address, phone,
+ * geo, reviews — for every indexable entry on the page: 1,785 of them on
+ * /directory/truck-stops, 638 kB of JSON-LD in a document that rendered
+ * thirty cards. That is 45 kB Brotli spent describing listings the page does
+ * not show, each of which already has its own detail page carrying its own
+ * LocalBusiness schema — so the full objects here were a duplicate of the
+ * authority, not the authority.
+ *
+ * 30 is the page's own first window: the listings a visitor and a crawler
+ * both actually see rendered. Everything past it stays in the list as a
+ * ListItem pointing at its detail page, which is what a ListItem is for and
+ * what keeps `numberOfItems` honest.
+ */
+const SCHEMA_DETAILED_ITEMS = 30;
+
+/**
+ * ItemList of LocalBusiness/Place for a directory page, or null when empty.
+ *
+ * TWO KINDS OF ENTRY, both truthful about the page they describe. The first
+ * `SCHEMA_DETAILED_ITEMS` — the window the server renders as cards — carry
+ * the full object. The rest are `ListItem`s with a `url` pointing at the
+ * listing's own detail page, where its full schema lives.
+ *
+ * `numberOfItems` still counts every indexable listing on the page, because
+ * every one of them IS on the page: reachable through the same complete index
+ * the browser filters, and counted in the heading the visitor reads. The list
+ * is not truncated — only the depth of description varies, which is exactly
+ * the distinction ItemList's `item` versus `url` draws.
+ *
+ * Entries without a detail slug are left out of the tail rather than given a
+ * bare position: a ListItem with neither an item nor a URL asserts a rank and
+ * nothing else.
+ */
 export function listingListSchema(
   entries: DirectoryEntry[],
   listName: string,
@@ -123,17 +159,30 @@ export function listingListSchema(
 ): object | null {
   const indexable = entries.filter(isDetailIndexable);
   if (indexable.length === 0) return null;
+  const itemListElement: object[] = [];
+  indexable.forEach((e, i) => {
+    if (i < SCHEMA_DETAILED_ITEMS) {
+      itemListElement.push({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: listingSchema(e, reviewSeo),
+      });
+      return;
+    }
+    if (!e.detailSlug) return;
+    itemListElement.push({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${SITE.url}${detailHref(e.detailSlug)}`,
+    });
+  });
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `${listName} — ${SITE.brand}`,
     url: `${SITE.url}${path}`,
     numberOfItems: indexable.length,
-    itemListElement: indexable.map((e, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      item: listingSchema(e, reviewSeo),
-    })),
+    itemListElement,
   };
 }
 

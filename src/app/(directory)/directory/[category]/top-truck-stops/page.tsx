@@ -17,6 +17,7 @@ import { stateScopeLinks } from '@/lib/directory/scope-links';
 import { listingListSchema } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { toCardEntry } from '@/lib/directory/dto';
 
 /**
  * "Top truck stops in [State]" (Milestone 25). A conservative, factual leader
@@ -116,7 +117,7 @@ export default async function TopTruckStopsPage({ params }: { params: { category
             <ol className="grid gap-5 sm:grid-cols-2">
               {ranked.map((r) => (
                 <li key={r.entry.id}>
-                  <EntryCard entry={r.entry} />
+                  <EntryCard entry={toCardEntry(r.entry)} />
                 </li>
               ))}
             </ol>

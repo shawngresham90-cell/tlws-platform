@@ -31,6 +31,8 @@
  *   MOCK_ROWS        published row count              (default 2454)
  *   MOCK_TRUCK_STOPS published truck-stops rows       (default 1882)
  *   MOCK_TEXT_PROFILE 'production' widens listing text (default compact)
+ *   MOCK_FIELD_PROFILE 'production' matches live field
+ *                    presence rates + description length (default synthetic)
  *   MOCK_FAIL_TABLE  table whose reads answer 500      (default none)
  *
  * The dataset is generated with a fixed-seed PRNG: two runs, or two branches,
@@ -93,6 +95,118 @@ const OTHER_CATEGORIES = ['parking', 'cat-scales', 'rest-areas', 'weigh-stations
  * before/after comparison built on it stays byte-identical.
  */
 const TEXT_PROFILE = process.env.MOCK_TEXT_PROFILE ?? 'compact';
+
+/**
+ * FIELD PROFILE. `MOCK_TEXT_PROFILE` widened name / city / detail_slug, but
+ * left every other column at its synthetic rate — and several of those are
+ * badly off the live table, in BOTH directions:
+ *
+ *                        synthetic   live (2,454 published, read 2026-08-20)
+ *   description present     100%       49.2%   (1,208 rows)
+ *   description length     ~29 ch       167 ch
+ *   phone present              0%       41.2%   (1,011)
+ *   website present            0%       30.0%   (736)
+ *   tpc_url present            0%        2.3%   (57)
+ *   parking_spaces present    60%       75.7%   (1,857)
+ *   free / paid / reserved  50/20/15%  7.8 / 6.2 / 6.2%
+ *   amenities per row       ~2.1        1.59  (only 43.1% carry any)
+ *   is_featured                2%        0%
+ *
+ * A payload measurement taken against the synthetic rates is wrong in a way
+ * that MATTERS: it understates `description` fivefold while overstating the
+ * parking chips that make up most of `amenities`, so the two errors hide each
+ * other in the total and misreport which field is worth removing.
+ *
+ * `MOCK_FIELD_PROFILE=production` sets these to the measured live rates. It
+ * is opt-in, and — this is the constraint that shapes the code below — it
+ * DRAWS THE SAME NUMBER OF rand() VALUES IN THE SAME ORDER as the default.
+ * Presence that has no rand() call to reuse is derived from the row index
+ * instead of adding one. So with the profile off, every generated row is
+ * byte-identical to before, and every bench built on the default (including
+ * DIR-COMPLETE-2's) measures exactly what it measured yesterday.
+ */
+const FIELD_PROFILE = process.env.MOCK_FIELD_PROFILE ?? 'synthetic';
+const LIVE = FIELD_PROFILE === 'production';
+
+/** Thresholds compared against the SAME rand() draws either way. */
+const RATE = LIVE
+  ? { spaces: 0.757, free: 0.078, paid: 0.062, reserved: 0.062, amenity: 0.221, featured: 0 }
+  : { spaces: 0.6, free: 0.5, paid: 0.2, reserved: 0.15, amenity: 0.3, featured: 0.02 };
+
+/**
+ * Deterministic 0-999 spread for row i. A plain `i % 1000` would put every
+ * presence decision on a 1,000-row block boundary, so the final partial block
+ * (rows 2,000-2,453) would be uniformly "present" and skew every rate. The
+ * multiplicative hash spreads them evenly at any row count, with no rand()
+ * draw and no dependence on where the published set happens to end.
+ */
+const spread = (i, salt) => (Math.imul(i + salt, 2654435761) >>> 0) % 1000;
+
+/**
+ * Live descriptions: present on 49.2% of rows, averaging 167 characters.
+ * Built from the row's own facts, so the text varies the way real listing
+ * copy does rather than being one repeated string a compressor would flatter.
+ */
+function descriptionFor(i, name, city, state) {
+  if (!LIVE) return `Synthetic benchmark row ${i}.`;
+  if (spread(i, 11) >= 492) return null;
+  return (
+    `${name} is a driver stop in ${city}, ${state}, with truck parking and ` +
+    `fuel lanes on site. Amenities and hours are verified against the operator listing.`
+  );
+}
+
+/**
+ * Coordinate PRECISION, which turned out to be one of the three biggest
+ * payload drivers on the map page. A JS float serializes every digit it has:
+ * `25 + rand() * 23` produces 25.082000711699948 — seventeen significant
+ * digits of incompressible noise, seventeen bytes per coordinate, and NOT
+ * what the live table holds. Measured decimal places over the 1,940 geocoded
+ * published rows (2026-08-20):
+ *
+ *   13 dp  584 rows      6 dp  769 rows      3 dp   28 rows
+ *   12 dp   56           5 dp  155           2 dp    1
+ *   11 dp   10           4 dp  243
+ *    9 dp    1           7 dp   90
+ *    8 dp    3
+ *
+ * Rounding the synthetic value to a live-shaped number of places keeps the
+ * geography identical while making the SERIALIZED WIDTH honest, so a payload
+ * measurement is not dominated by digits production never had.
+ */
+const DP_BUCKETS = [
+  [584, 13],
+  [56, 12],
+  [10, 11],
+  [1, 9],
+  [3, 8],
+  [90, 7],
+  [769, 6],
+  [155, 5],
+  [243, 4],
+  [28, 3],
+  [1, 2],
+];
+const DP_TOTAL = DP_BUCKETS.reduce((a, [n]) => a + n, 0);
+function decimalsFor(i) {
+  let at = spread(i, 71) * (DP_TOTAL / 1000);
+  for (const [n, dp] of DP_BUCKETS) {
+    if (at < n) return dp;
+    at -= n;
+  }
+  return 6;
+}
+const roundTo = (v, dp) => Number(v.toFixed(dp));
+
+/** Live phone / website / tpc presence, index-derived for the same reason. */
+const phoneFor = (i) =>
+  LIVE && spread(i, 23) < 412 ? `423-555-${String(1000 + (i % 9000))}` : null;
+const websiteFor = (i, city, state) =>
+  LIVE && spread(i, 37) < 300
+    ? `https://www.example-truckstop.com/${state.toLowerCase()}/${city.toLowerCase()}/${i}`
+    : null;
+const tpcFor = (i) =>
+  LIVE && spread(i, 53) < 23 ? `https://truckparkingclub.com/l/bench-${i}?ref=tlws` : null;
 const CHAIN_NAMES = [
   'Pilot Travel Center',
   'Love’s Travel Stop',
@@ -163,20 +277,24 @@ function makeRow(i, { published, deleted, categoryOverride }) {
     slug: `bench-stop-${i}`,
     address: `${100 + (i % 900)} Benchmark Rd`,
     zip: String(10000 + (i % 89999)),
-    phone: null,
-    website: null,
-    description: `Synthetic benchmark row ${i}.`,
-    parking_spaces: rand() < 0.6 ? Math.floor(rand() * 250) : null,
-    amenities: AMENITIES.filter(() => rand() < 0.3),
-    free_parking: rand() < 0.5,
-    paid_parking: rand() < 0.2,
-    reserved_parking: rand() < 0.15,
+    phone: phoneFor(i),
+    website: websiteFor(i, city, state),
+    description: descriptionFor(i, name, city, state),
+    parking_spaces: rand() < RATE.spaces ? Math.floor(rand() * 250) : null,
+    amenities: AMENITIES.filter(() => rand() < RATE.amenity),
+    free_parking: rand() < RATE.free,
+    paid_parking: rand() < RATE.paid,
+    reserved_parking: rand() < RATE.reserved,
     overnight_parking: rand() < 0.5,
-    tpc_url: null,
-    is_featured: rand() < 0.02,
+    tpc_url: tpcFor(i),
+    is_featured: rand() < RATE.featured,
     is_indexable: true,
-    lat: geocoded ? 25 + rand() * 23 : null,
-    lng: geocoded ? -124 + rand() * 57 : null,
+    lat: geocoded ? (LIVE ? roundTo(25 + rand() * 23, decimalsFor(i)) : 25 + rand() * 23) : null,
+    lng: geocoded
+      ? LIVE
+        ? roundTo(-124 + rand() * 57, decimalsFor(i))
+        : -124 + rand() * 57
+      : null,
     interstate,
     exit_number: exit,
     created_at: created,

@@ -32,6 +32,7 @@ import {
 import { listingListSchemaWithReviews } from '@/lib/directory/seo';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { toCardEntry } from '@/lib/directory/dto';
 
 /**
  * Interstate exit pages (/directory/i75/exit-201): everything a driver can
@@ -189,7 +190,7 @@ export default async function ExitPage({ params }: { params: { category: string;
       />
       <Section>
         <MultiCategoryBrowser
-          entries={entries}
+          entries={entries.map(toCardEntry)}
           scopeLabel={`${interstate.designation} Exit ${exit}`}
           groupBy="state"
           stateOrder={interstate.stateOrder}
