@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Section, Eyebrow } from '@/components/ui';
 import { SubmitLocationForm } from '@/components/community/SubmitLocationForm';
-import { getListingRefs } from '@/lib/community/data';
+import { getListingRefsResult } from '@/lib/community/data';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -13,12 +13,17 @@ export const metadata = buildMetadata({
 });
 
 // Static with periodic refresh: the only data baked in is the published
-// listing picker, which should track imports without a redeploy.
+// listing picker, which should track imports without a redeploy. The picker
+// now holds EVERY published listing, so a newly imported one becomes findable
+// on the same schedule as before — one revalidation, no redeploy.
 export const revalidate = 300;
 
 export default async function SubmitPage() {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
-  const listings = await getListingRefs();
+  // Result-aware, not fail-soft: a failed read must not render as "no
+  // published listing matches" — see getListingRefsResult(). The page itself
+  // still renders, because reporting a NEW location never needed the picker.
+  const listingRefs = await getListingRefsResult();
 
   return (
     <>
@@ -48,7 +53,11 @@ export default async function SubmitPage() {
         </div>
 
         <div className="mt-10 max-w-3xl">
-          <SubmitLocationForm siteKey={siteKey} listings={listings} />
+          <SubmitLocationForm
+            siteKey={siteKey}
+            listings={listingRefs.ok ? listingRefs.data : []}
+            listingsUnavailable={!listingRefs.ok}
+          />
         </div>
       </Section>
     </>

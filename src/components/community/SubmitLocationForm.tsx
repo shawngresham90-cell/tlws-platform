@@ -77,9 +77,16 @@ type Errors = Record<string, string>;
 export function SubmitLocationForm({
   siteKey,
   listings,
+  listingsUnavailable,
 }: {
   siteKey: string;
   listings: ListingRef[];
+  /**
+   * The listing read failed. Reporting a NEW location never needed the
+   * picker, so that path stays fully open; the report kinds that do need it
+   * say why they cannot proceed instead of claiming no listing matches.
+   */
+  listingsUnavailable?: boolean;
 }) {
   const [kind, setKind] = useState<SubmissionKind>('new');
   const [locationId, setLocationId] = useState('');
@@ -136,6 +143,7 @@ export function SubmitLocationForm({
   const showDetails = DETAIL_KINDS.includes(kind);
   const showAmenities = AMENITY_KINDS.includes(kind);
   const needsPicker = kind !== 'new';
+  const pickerBlocked = needsPicker && listingsUnavailable;
   const selectedListing = listings.find((l) => l.id === locationId);
 
   function set<T>(setter: (v: T) => void, key: string) {
@@ -152,7 +160,11 @@ export function SubmitLocationForm({
 
   function validate(): Errors {
     const e: Errors = {};
-    if (needsPicker && !locationId) e.location_id = 'Pick the listing this report is about.';
+    if (pickerBlocked) {
+      e.location_id = 'Listing search is temporarily unavailable — try again in a minute.';
+    } else if (needsPicker && !locationId) {
+      e.location_id = 'Pick the listing this report is about.';
+    }
     if (kind === 'new') {
       if (name.trim().length < 2) e.name = 'Enter the business name.';
       if (!category) e.category_slug = 'Pick a category.';
@@ -307,6 +319,8 @@ export function SubmitLocationForm({
             value={locationId}
             onChange={set(setLocationId, 'location_id')}
             error={errors.location_id}
+            unavailable={listingsUnavailable}
+            unavailableAction="In the meantime you can still submit this place as a new location."
           />
         </div>
       )}

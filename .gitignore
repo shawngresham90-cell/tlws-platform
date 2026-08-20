@@ -44,3 +44,6 @@ data/imports/cat-scale-2026-07-29/local/
 
 # SEO-ENGINE-1 Scout output — run artifacts only, never committed
 /seo-scout-output/
+
+# Whole-.next snapshot the community picker bench swaps in and out.
+/.next.bench-snapshot/
