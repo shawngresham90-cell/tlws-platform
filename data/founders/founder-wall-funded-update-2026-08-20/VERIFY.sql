@@ -35,11 +35,11 @@ UNION ALL SELECT 'new rows carry no invented payment data',
 FROM public.founders
  WHERE display_name IN ('Wayne''s Meat Market','Globe Life','Margaret Abbey')
    AND (amount_cents IS NOT NULL OR payment_provider IS NOT NULL OR payment_ref IS NOT NULL)
-UNION ALL SELECT 'new rows carry the owner-supplied 2026-02-08',
+UNION ALL SELECT 'new rows carry the owner-supplied 2026-08-08',
        CASE WHEN count(*) = 3  THEN 'PASS' ELSE 'FAIL: ' || count(*) END
 FROM public.founders
  WHERE display_name IN ('Wayne''s Meat Market','Globe Life','Margaret Abbey')
-   AND paid_at = '2026-02-08'::timestamptz
+   AND paid_at = '2026-08-08'::timestamptz
 UNION ALL SELECT 'Ricky kept amount + paid_at',
        CASE WHEN count(*) = 1  THEN 'PASS' ELSE 'FAIL' END
 FROM public.founders

@@ -263,7 +263,7 @@ check(
 );
 check(
   '10. APPLY sets the owner-supplied paid_at',
-  /\\set new_rows_paid_at '2026-02-08'/.test(apply),
+  /\\set new_rows_paid_at '2026-08-08'/.test(apply),
   apply.match(/\\set new_rows_paid_at.*/)?.[0],
 );
 check('10. the inserts bind paid_at to that variable', insert.includes('v_paid_ts'), insert);
@@ -273,12 +273,12 @@ check(
 );
 check(
   '10. VERIFY re-checks the supplied date',
-  verify.includes("paid_at = '2026-02-08'::timestamptz"),
+  verify.includes("paid_at = '2026-08-08'::timestamptz"),
 );
 check(
   '10. manifest records the paid_at decision and its source',
   manifest.paid_at_decision?.field === 'public.founders.paid_at' &&
-    manifest.paid_at_decision?.value === '2026-02-08' &&
+    manifest.paid_at_decision?.value === '2026-08-08' &&
     /owner-supplied/i.test(manifest.paid_at_decision?.source ?? ''),
   manifest.paid_at_decision,
 );
@@ -287,7 +287,7 @@ check(
   manifest.blocked_on_owner_input === undefined,
 );
 for (const row of manifest.changes.inserts) {
-  check(`10. ${row.display_name} records paid_at 2026-02-08`, row.paid_at === '2026-02-08');
+  check(`10. ${row.display_name} records paid_at 2026-08-08`, row.paid_at === '2026-08-08');
 }
 
 /* --------------------------- 11. moved rows preserve financial/payment */

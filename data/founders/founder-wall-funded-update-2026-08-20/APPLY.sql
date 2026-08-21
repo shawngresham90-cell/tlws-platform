@@ -10,7 +10,7 @@
 --   * ADD   Globe Life                              -> iron/6
 --   * ADD   Margaret Abbey                          -> brick/21
 --
--- The three added rows carry paid_at = 2026-02-08 (owner-supplied) and NULL
+-- The three added rows carry paid_at = 2026-08-08 (owner-supplied) and NULL
 -- for amount_cents, payment_provider and payment_ref.
 --
 -- The two moves change tier + position and NOTHING else: amount_cents,
@@ -30,13 +30,15 @@
 -- one. Rather than let the default stamp the three new rows with whatever
 -- moment APPLY happens to run, the value is supplied explicitly.
 --
--- The owner confirmed on 2026-08-21: all three paid on 2026-02-08.
+-- The owner confirmed on 2026-08-21: all three paid on 2026-08-08.
+-- (First given as 2026-02-08, then corrected to August 8th — the two are
+--  digit-swaps, so the value is spelled out here to keep it unambiguous.)
 --
 -- The placeholder guard below is kept deliberately. If this value is ever
 -- blanked or reset while editing, the script aborts before writing rather
 -- than falling back to now().
 -- ============================================================================
-\set new_rows_paid_at '2026-02-08'
+\set new_rows_paid_at '2026-08-08'
 
 BEGIN;
 

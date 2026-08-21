@@ -104,7 +104,7 @@
         "amount_cents": null,
         "payment_provider": null,
         "payment_ref": null,
-        "paid_at": "2026-02-08"
+        "paid_at": "2026-08-08"
       },
       {
         "display_name": "Globe Life",
@@ -115,7 +115,7 @@
         "amount_cents": null,
         "payment_provider": null,
         "payment_ref": null,
-        "paid_at": "2026-02-08"
+        "paid_at": "2026-08-08"
       },
       {
         "display_name": "Margaret Abbey",
@@ -126,7 +126,7 @@
         "amount_cents": null,
         "payment_provider": null,
         "payment_ref": null,
-        "paid_at": "2026-02-08"
+        "paid_at": "2026-08-08"
       }
     ],
     "steel_positions_vacated": [
@@ -174,8 +174,8 @@
   "paid_at_decision": {
     "field": "public.founders.paid_at",
     "constraint": "timestamptz NOT NULL DEFAULT now()",
-    "value": "2026-02-08",
-    "source": "owner-supplied 2026-08-21 ('All three paid on 2026-02-08')",
+    "value": "2026-08-08",
+    "source": "owner-supplied 2026-08-21: first given as 2026-02-08, then corrected to 2026-08-08 ('aug 08') after the digit-swap with Phil's 2026-08-02 was flagged",
     "why_explicit": "The column is NOT NULL, so every row must carry a payment timestamp. APPLY.sql sets it explicitly rather than letting DEFAULT now() stamp the rows with whatever moment it runs, and still aborts if the value is ever blanked.",
     "applies_to": [
       "Wayne's Meat Market",

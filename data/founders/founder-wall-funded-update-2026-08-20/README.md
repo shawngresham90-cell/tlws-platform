@@ -58,24 +58,23 @@ Rather than let the default stamp the three new rows with whatever moment APPLY
 happens to run, the value is set explicitly:
 
 ```sql
-\set new_rows_paid_at '2026-02-08'
+\set new_rows_paid_at '2026-08-08'
 ```
 
-**Owner-supplied 2026-08-21: all three paid on 2026-02-08.** APPLY verifies after
-writing that exactly three rows carry that timestamp, and `VERIFY.sql` re-checks
-it. The placeholder guard is kept: if the value is ever blanked while editing,
+**Owner-supplied 2026-08-21: all three paid on 2026-08-08.** APPLY verifies after
+writing that exactly three rows carry that timestamp, and `VERIFY.sql` re-checks it. The placeholder guard is kept: if the value is ever blanked while editing,
 the script aborts rather than silently falling back to `now()`.
 
 `amount_cents`, `payment_provider` and `payment_ref` needed no such decision —
 all three are nullable, so the new rows carry no money at all. (`amount_cents`
 has a `CHECK (amount_cents > 0)`, which `NULL` satisfies.)
 
-> Note for the owner: 2026-02-08 is earlier than every other `paid_at` in the
-> table (the rest fall in Jul–Aug 2026). That is entirely consistent with a
-> contribution recorded after the fact, and it does not affect wall order —
-> position drives that. Flagged only because `2026-02-08` and Phil's existing
-> `2026-08-02` are digit-swaps of each other, so it is worth a second look
-> before APPLY is run.
+> The date was first given as 2026-02-08 and corrected to **2026-08-08**
+> ("aug 08"). The two are digit-swaps of each other, and 2026-02-08 would also
+> have predated every other `paid_at` in the table, so it was queried before
+> APPLY ran. 2026-08-08 sits naturally among the existing dates (Ricky
+> 2026-07-13, Phil 2026-08-02). Either way the value does not affect wall order
+> — position drives that.
 
 ## Order of operations
 
@@ -97,4 +96,4 @@ of the three new names already exists; iron 5–8 or brick 21 is occupied. After
 writing it re-checks the totals, that steel 8/9 are vacated, that all five target
 names appear exactly once, that no tier has duplicate positions, that both moved
 rows kept their financial and payment fields, that the new rows carry no payment
-data, and that all three carry the owner-supplied 2026-02-08.
+data, and that all three carry the owner-supplied 2026-08-08.
