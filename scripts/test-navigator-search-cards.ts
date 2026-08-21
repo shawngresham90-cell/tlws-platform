@@ -204,9 +204,18 @@ function renderCard(over: Partial<DestinationCandidate> = {}): string {
     'path: the Phase 3 briefing receives the selected destination unchanged',
     CONTROLS_SRC.includes('destination={picked}'),
   );
+  /*
+   * The stationary-only gate is gone from the search (NAV-ENTRY-1, owner
+   * decision): a driver may change where they are going at any motion state,
+   * with a reminder to do it parked and nothing disabled. What still holds
+   * the search in place is the mount condition — parked map, idle lifecycle —
+   * which is a statement about the SCREEN's state rather than about the
+   * driver's.
+   */
   check(
-    'path: the search still lives behind the stationary-only gate',
-    /<LockGate[^>]*action="edit-destination"/.test(SCREEN_SRC),
+    'path: the search mounts on the parked map only, and carries no motion gate',
+    SCREEN_SRC.includes("pilot.active && !fullScreen && lcState === 'idle'") &&
+      !/mapSearchSlot=\{[\s\S]{0,600}<LockGate/.test(SCREEN_SRC),
   );
 }
 

@@ -708,9 +708,16 @@ async function main(): Promise<void> {
       'structure: the input never autofocuses (no keyboard auto-open)',
       !search.includes('autoFocus'),
     );
+    /*
+     * The slot is no longer wrapped in a motion gate at all (NAV-ENTRY-1).
+     * The wrapper was removed rather than left around an action the shared
+     * map now always permits, because a gate that can never fire reads like a
+     * protection that exists. What still constrains the slot is WHERE it
+     * mounts — parked map, idle only — asserted immediately below.
+     */
     check(
-      'structure: the map search rides the EXISTING edit-destination lock class',
-      /mapSearchSlot=\{[\s\S]{0,600}action="edit-destination"/.test(screen),
+      'structure: the map search carries no motion gate of its own',
+      !/mapSearchSlot=\{[\s\S]{0,600}<LockGate/.test(screen),
     );
     check(
       'structure: the search only mounts parked and idle',

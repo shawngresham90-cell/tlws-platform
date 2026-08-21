@@ -1048,16 +1048,21 @@ export function DrivingScreenView({
         {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
         {mapStyleSlot}
 
-        {/* Stationary-only affordance — gated by the shared map,
-            demonstrating default-deny end to end. Pilot Mode mounts the
-            trip controls here; otherwise the honest placeholder stands. */}
-        <LockGate action="edit-destination" lockedLabel="Destination entry">
-          {destinationSlot ?? (
-            <p className="text-xl text-ink/80">
-              Destination entry unlocks here when routing ships (a later milestone).
-            </p>
-          )}
-        </LockGate>
+        {/*
+          NOT GATED (NAV-ENTRY-1). This slot used to sit behind the shared
+          motion lock, so a moving truck got a locked card offering passenger
+          access instead of the trip controls. The owner's decision is that a
+          driver may change their own trip whenever they like; the reminder to
+          do it parked is a sentence on the settings surface, not a gate here.
+          The wrapper is REMOVED rather than left in place around an action the
+          map now always permits — a gate that can never fire reads like a
+          protection that exists.
+        */}
+        {destinationSlot ?? (
+          <p className="text-xl text-ink/80">
+            Destination entry unlocks here when routing ships (a later milestone).
+          </p>
+        )}
       </div>
     </div>
   );
@@ -2364,9 +2369,8 @@ export function DrivingScreen({
        */
       mapSearchSlot={
         pilot.active && !fullScreen && lcState === 'idle' ? (
-          <LockGate action="edit-destination" lockedLabel="Destination search" compact>
-            <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
-              {/*
+          <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
+            {/*
                 Trip plan first? — and, when the driver arrives carrying one,
                 the planned stop itself. Sits ABOVE the search because it is
                 the earlier question: a driver who has already planned should
@@ -2380,64 +2384,63 @@ export function DrivingScreen({
                 driver has answered, and the search underneath is untouched
                 either way.
               */}
-              <TripPlanFirst
-                /*
-                 * The trip's identity, derived from the chosen destination.
-                 * It moves exactly when the prompt must come back: a
-                 * different destination, a trip that ended (the pick clears),
-                 * or a new one beginning.
-                 */
-                tripKey={tripKeyFor(picked)}
-                onUsePlannedStop={(place) => {
-                  setPicked(place);
-                  // Trip Planner plans U.S. property-carrier hours only, so a
-                  // stop that came from it is attested U.S. — the same
-                  // recorded-at-pick discipline the search uses below.
-                  setPickedCountry('USA');
-                }}
-              />
-              {/*
+            <TripPlanFirst
+              /*
+               * The trip's identity, derived from the chosen destination.
+               * It moves exactly when the prompt must come back: a
+               * different destination, a trip that ended (the pick clears),
+               * or a new one beginning.
+               */
+              tripKey={tripKeyFor(picked)}
+              onUsePlannedStop={(place) => {
+                setPicked(place);
+                // Trip Planner plans U.S. property-carrier hours only, so a
+                // stop that came from it is attested U.S. — the same
+                // recorded-at-pick discipline the search uses below.
+                setPickedCountry('USA');
+              }}
+            />
+            {/*
                 TP-6: the road-test arm switch. Rendering INSIDE the
                 pilot-gated Navigator is its access control — the public
                 planner has no way to reach it — and idle-only placement
                 keeps it off the driving surface entirely.
               */}
-              <div className="mt-3">
-                <RoadTestArm />
-              </div>
-              <DestinationSearch
-                origin={searchOrigin}
-                disabled={startPending}
-                onPick={(place) => {
-                  setPicked(place);
-                  // WHICH COUNTRY THIS RESULT CAME FROM, recorded at the
-                  // moment of the pick. The provider filtered the list to
-                  // one country, so this is attested rather than inferred
-                  // — and it is what makes the cross-border reminder
-                  // correct in the Windsor/Detroit corridor, where no
-                  // coordinate rule can be.
-                  setPickedCountry(searchCountryFor(searchRegion));
-                }}
-                onClear={() => {
-                  setPicked(null);
-                  setPickedCountry(null);
-                }}
-                country={searchCountryFor(searchRegion)}
-                metric={metric}
-              />
-              {/* Crossing the border is DELIBERATE: one tap, clearly
+            <div className="mt-3">
+              <RoadTestArm />
+            </div>
+            <DestinationSearch
+              origin={searchOrigin}
+              disabled={startPending}
+              onPick={(place) => {
+                setPicked(place);
+                // WHICH COUNTRY THIS RESULT CAME FROM, recorded at the
+                // moment of the pick. The provider filtered the list to
+                // one country, so this is attested rather than inferred
+                // — and it is what makes the cross-border reminder
+                // correct in the Windsor/Detroit corridor, where no
+                // coordinate rule can be.
+                setPickedCountry(searchCountryFor(searchRegion));
+              }}
+              onClear={() => {
+                setPicked(null);
+                setPickedCountry(null);
+              }}
+              country={searchCountryFor(searchRegion)}
+              metric={metric}
+            />
+            {/* Crossing the border is DELIBERATE: one tap, clearly
                   labelled, never a side effect of typing. It swaps only
                   which country this search asks about — the region
                   setting, the units and the truck are untouched. */}
-              <button
-                type="button"
-                onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
-                className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
-              >
-                {crossBorderSearchLabel(searchRegion)}
-              </button>
-            </div>
-          </LockGate>
+            <button
+              type="button"
+              onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
+              className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
+            >
+              {crossBorderSearchLabel(searchRegion)}
+            </button>
+          </div>
         ) : null
       }
       destinationSlot={

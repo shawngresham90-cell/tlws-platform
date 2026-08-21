@@ -109,11 +109,18 @@ const MUTATIONS = [
     mustFail: 'navigator-fast-start',
   },
   {
-    name: 'the setup window starts permitting a driving action',
+    /*
+     * The setup-window exemption is gone (NAV-ENTRY-1) — editing is permitted
+     * outright, so there is no second map left to widen. What replaced it as
+     * the thing worth guarding is the CAMERA half of the permission map: it
+     * is all that `locked` still governs, and "just let them pan while
+     * moving" is exactly the change someone will propose.
+     */
+    name: 'the camera becomes usable while moving (map follow weakened)',
     file: GATE,
-    from: 'export function allowedDuringSetupWindow(action: string): boolean {',
-    to: 'export function allowedDuringSetupWindow(action: string): boolean {\n  if (action) return true;',
-    mustFail: 'navigator-fast-start safety-gating',
+    from: "  'pan-map': false,",
+    to: "  'pan-map': true,",
+    mustFail: 'navigator-fast-start safety-gating navigation-map-ui',
   },
 ];
 
