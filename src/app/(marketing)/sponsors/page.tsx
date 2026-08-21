@@ -16,9 +16,14 @@ export const metadata = buildMetadata({
 
 /**
  * Sponsor front door. Describes the real placement inventory (the same
- * placements the directory sponsor system serves) and files inquiries into
- * the existing CRM pipeline via /api/sponsor-inquiry. No rates are published
- * — every engagement starts with a conversation.
+ * placements the directory sponsor system serves), publishes the three
+ * approved Directory offers, and files inquiries into the existing CRM
+ * pipeline via /api/sponsor-inquiry.
+ *
+ * Every price on this page is read from the offer authority
+ * (src/lib/directory/offers.ts) — nothing here is typed by hand, so the table
+ * and the form's dropdown cannot disagree. Sending the form is an inquiry: it
+ * takes no payment, holds no slot, and activates nothing.
  */
 const PLACEMENT_BLURBS: Record<string, string> = {
   'directory-hub': 'The front page of the truck stop & parking directory.',
@@ -108,11 +113,18 @@ export default function SponsorsPage({
       <Section className="border-b border-line bg-asphalt-800">
         <Eyebrow>Placement inventory</Eyebrow>
         <h2 className="display-section mb-4">Where your name shows up</h2>
+        {/* This paragraph used to end "contact us for current rates — nothing is
+            published", immediately above a table publishing three prices. A
+            business reading top to bottom was told rates are unpublished and
+            then shown them. The two statements are about different things —
+            these six placement slots are the inventory; the three offers below
+            are the priced products — so say which is which. */}
         <p className="mb-8 max-w-2xl text-muted">
           Sponsored placements run across the truck stop &amp; parking directory — the same slots
-          the platform serves today. Placements start small and scale with the audience;{' '}
-          <span className="font-semibold text-ink">contact us for current rates</span> — nothing is
-          published or committed until we talk.
+          the platform serves today. The{' '}
+          <span className="font-semibold text-ink">three offers below carry published prices</span>;
+          anything outside them is quoted in conversation. Nothing is committed until we talk, and
+          no placement is held on an inquiry.
         </p>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SPONSOR_PLACEMENTS.map((p) => (
