@@ -335,3 +335,148 @@ honest answer, and I'd rather say that than make something up."
 - No tagging or naming a business that has not asked to be named.
 - No DMs to businesses as part of the campaign — outreach is the separate top-25
   list, and it needs its own approval.
+
+---
+
+## Founder announcement (post this first, Day 1, before anything else)
+
+The only post that is about Shawn rather than the product. It buys the right to
+post the other eight.
+
+> Seventeen years, about two million miles, and I have lost more nights than I
+> can count to the same problem: I did not know where I was stopping.
+>
+> Not "which stop is nicest". Where there was a legal space at 9pm with the
+> clock running out.
+>
+> So we built one. A directory of truck stops, parking, scales, washes, tire
+> shops and roadside service — sorted by interstate and exit, because that is
+> how you actually think about it when you are tired.
+>
+> It is free, there is no login, and it works on a phone in the dark.
+>
+> It is also not finished. Some listings are thin. Some hours are probably
+> wrong. I built a lot of it from public information and I would rather you told
+> me than have me guess.
+>
+> That is the deal I am offering: you use it, and when it is wrong you tell me,
+> and I keep it honest.
+>
+> 👉 truckinglifewithshawn.com/directory
+
+**One CTA:** open the directory. **Link:** `/directory` (no token — a driver is
+not a lead).
+
+## Free-listing-claim announcement (Day 3, owners)
+
+> Quick one for the shop owners, tow operators and independent stop owners
+> following this page.
+>
+> You are probably already on our directory. I built those listings from public
+> information, which means some of them are wrong — hours, services, the phone
+> number.
+>
+> **Claiming your listing is free.** Not free-for-now, not free-until-we-launch.
+> Free. You check it, I fix what is wrong, and it stays free whether or not you
+> ever spend a penny with me.
+>
+> There is no account to make. There is nothing to buy. There is not a
+> salesperson who calls you afterwards unless you ask one to.
+>
+> 👉 truckinglifewithshawn.com/sponsors?from=fb-claim#inquire
+
+**One CTA:** claim your listing. **Link:** `/sponsors?from=fb-claim#inquire`.
+
+## Sponsored-placement announcement (Day 6, owners)
+
+> I have been asked what the paid option is, so here it is with no wrapping.
+>
+> **Featured listing — $99 a month, or $999 a year.** Your listing sits at the
+> top of its category or corridor page, with the word Sponsored on it. Up to
+> three businesses per page, so it does not become a wall of ads.
+>
+> **Corridor sponsor — $299 a month, or $2,999 a year.** One business per
+> corridor, across the pages a driver browses when they are planning that run.
+>
+> Claiming your listing is still free and always will be. I do not move paying
+> businesses up the review queue.
+>
+> And the part most people leave out: I am not going to tell you how many people
+> use it. Measurement is still being set up and any number I gave you today
+> would be invented. When I have figures I will publish them — including if they
+> are small.
+>
+> 👉 truckinglifewithshawn.com/sponsors?from=fb-sponsored#inquire
+
+**One CTA:** ask about placement. **Link:** `/sponsors?from=fb-sponsored#inquire`.
+
+## Driver nomination post (Day 4, drivers — the highest-value post in the set)
+
+This one does double duty: it is the most engaging post for drivers *and* it
+generates the next round of prospects, from people who have actually used them.
+
+> Drivers — who has saved your bacon?
+>
+> Not the big chains. The independent tire guy who came out at 2am. The wrecker
+> that actually turned up. The wash that did not take an hour.
+>
+> Name them and the exit, and I will look them up and get them on the directory
+> properly. If they are already on it I will make sure their details are right.
+>
+> I am not paying anybody for a mention and nobody is paying me for one. I just
+> want the list to be the one you would actually give another driver.
+>
+> 👉 truckinglifewithshawn.com/directory
+
+**One CTA:** name a business in the comments. **Link:** `/directory`.
+
+**What to do with the replies:** every named business is a warm prospect —
+recommended by a customer, unprompted. Add them to the pipeline at stage 1 with
+a note saying who named them. That is a materially better opener than a cold
+one, and it costs nothing.
+
+## Short-form hooks (first three seconds, for Reels / TikTok / Shorts)
+
+The scripts are above; these are the openers to test. One idea each, spoken
+plainly, no music sting, no "wait for it".
+
+| # | Hook | For |
+| --: | --- | --- |
+| 1 | "It's 9pm, you've got thirty minutes on the clock, and you don't know where you're parking." | drivers |
+| 2 | "Nobody builds anything for the guy who's tired at 2am. So I did." | drivers |
+| 3 | "This is every truck stop on I-75, by exit number. That's it. That's the video." | drivers |
+| 4 | "If you own a truck shop, I've probably already listed you. And I probably got something wrong." | owners |
+| 5 | "Here's what 'Sponsored' means on my directory — because a few people asked and I'd rather say it out loud." | owners |
+| 6 | "I'm not going to tell you how many people use it. I don't have a number I'd stand behind." | owners |
+
+Hooks 2 and 6 are the honest ones and will probably outperform the clever ones.
+That has been true of everything else on this channel.
+
+## CTA and attribution index
+
+One CTA per post, one token per post, never reused. Driver-facing posts carry no
+token — a driver is not a lead and there is nothing to attribute.
+
+| Post | Audience | Single CTA | Link |
+| --- | --- | --- | --- |
+| Founder announcement | drivers | Open the directory | `/directory` |
+| FB post 1 (drivers) | drivers | Open the directory | `/directory` |
+| FB post 2 (drivers) | drivers | Open the directory | `/directory` |
+| Driver nomination post | drivers | Comment a business | `/directory` |
+| Reel 1 / hooks 1–3 | drivers | Link in bio | `/directory` |
+| YT community 1 & 2 | drivers | Tell me what's wrong | `/directory` |
+| Story slides (drivers) | drivers | Swipe up | `/directory` |
+| Free-claim announcement | owners | Claim your listing | `/sponsors?from=fb-claim#inquire` |
+| FB business post 1 | owners | Claim your listing | `/sponsors?from=fb-biz-1#inquire` |
+| FB business post 2 | owners | Claim your listing | `/sponsors?from=fb-biz-2#inquire` |
+| Sponsored announcement | owners | Ask about placement | `/sponsors?from=fb-sponsored#inquire` |
+| Reel 2 / hook 4 | owners | Link in bio | `/sponsors?from=reel-2#inquire` |
+| Reel 3 / hooks 5–6 | owners | Link in bio | `/sponsors?from=reel-3#inquire` |
+| YT community 3 | owners | Ask about placement | `/sponsors?from=yt-3#inquire` |
+| YT long-form read | both | Open the directory | `/sponsors?from=yt-video#inquire` |
+| FB Live | both | Claim your listing | `/sponsors?from=fb-live#inquire` |
+| Story slides (owners) | owners | Swipe up | `/sponsors?from=story#inquire` |
+| Pinned post | both | Claim your listing | `/sponsors?from=pinned#inquire` |
+
+Every token is slugified and length-capped server-side, so a mistyped link
+degrades to no source rather than breaking the form.

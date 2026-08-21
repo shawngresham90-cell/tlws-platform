@@ -5,12 +5,17 @@ import { OFFERS, priceLabel, getOffer } from '@/lib/directory/offers';
 import {
   FEATURED_PER_PAGE,
   PRIMARY_CORRIDOR_SPONSORS,
+  TERM_HEALTH_LABEL,
+  currentTerm,
   featuredUsage,
   isHeldBrand,
   promotionBlockers,
+  termHealth,
   windowStatus,
   type CorridorSponsorRow,
   type PromotableListing,
+  type RecordedTerm,
+  type TermHealth,
 } from '@/lib/directory/placements';
 import {
   activateCorridorSponsorAction,
@@ -40,6 +45,9 @@ export const metadata = { title: 'Admin — Placements', robots: { index: false,
 const LISTING_COLS =
   'id, name, category_slug, interstate, state, city, detail_slug, is_published, is_featured, deleted_at';
 const SPONSOR_COLS = 'id, name, tagline, url, placements, interstates, active, starts_at, ends_at';
+const CRM_COLS = 'id, company, tier_interest, notes, status, next_action_date';
+
+type TermRow = { sponsorId: string; company: string; term: RecordedTerm; health: TermHealth };
 
 type ListingRow = PromotableListing & { city: string | null; detailSlug: string | null };
 
@@ -78,7 +86,7 @@ function toSponsor(r: Record<string, unknown>): CorridorSponsorRow & {
 async function load(query: string) {
   try {
     const supabase = createAdminClient();
-    const [featured, sponsors, matches] = await Promise.all([
+    const [featured, sponsors, matches, crm] = await Promise.all([
       supabase
         .from('locations')
         .select(LISTING_COLS)
@@ -96,15 +104,33 @@ async function load(query: string) {
             .order('name')
             .limit(20)
         : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      supabase.from('sponsors').select(CRM_COLS).limit(500),
     ]);
+    // The agreed term for a featured listing lives in the CRM note — the
+    // boolean it flips has nowhere to keep an end date. Read it back so an
+    // overdue placement is visible instead of silently running on.
+    const terms: TermRow[] = [];
+    for (const r of (crm.data as Record<string, unknown>[]) ?? []) {
+      const term = currentTerm(r.notes as string | null);
+      if (!term) continue;
+      terms.push({
+        sponsorId: String(r.id),
+        company: String(r.company ?? ''),
+        term,
+        health: termHealth(term),
+      });
+    }
+    const ORDER: TermHealth[] = ['overdue', 'due-soon', 'running', 'scheduled', 'no-term-recorded'];
+    terms.sort((a, b) => ORDER.indexOf(a.health) - ORDER.indexOf(b.health));
     return {
       ok: true,
       featured: ((featured.data as Record<string, unknown>[]) ?? []).map(toListing),
       sponsors: ((sponsors.data as Record<string, unknown>[]) ?? []).map(toSponsor),
       matches: ((matches.data as Record<string, unknown>[]) ?? []).map(toListing),
+      terms,
     };
   } catch {
-    return { ok: false, featured: [], sponsors: [], matches: [] };
+    return { ok: false, featured: [], sponsors: [], matches: [], terms: [] as TermRow[] };
   }
 }
 
@@ -128,7 +154,9 @@ export default async function PlacementsPage({
   const err = one(searchParams?.err);
   const ok = one(searchParams?.ok);
 
-  const { ok: loaded, featured, sponsors, matches } = await load(query);
+  const { ok: loaded, featured, sponsors, matches, terms } = await load(query);
+  const overdue = terms.filter((t) => t.health === 'overdue');
+  const dueSoon = terms.filter((t) => t.health === 'due-soon');
 
   // Capacity per page, computed from the live featured set.
   const byCategory = new Map<string, number>();
@@ -173,6 +201,38 @@ export default async function PlacementsPage({
         <p className="mt-4 rounded-card border border-signal bg-signal/10 px-4 py-3 text-sm text-ink">
           {ok}
         </p>
+      )}
+
+      {/* --------------------------------------------------- the term register */}
+      {(overdue.length > 0 || dueSoon.length > 0) && (
+        <div
+          className={`mt-6 rounded-card border px-4 py-3 text-sm ${
+            overdue.length
+              ? 'border-diesel bg-diesel/10 text-diesel-300'
+              : 'border-signal bg-signal/10 text-ink'
+          }`}
+        >
+          <p className="font-semibold">
+            {overdue.length > 0
+              ? `${overdue.length} placement${overdue.length === 1 ? ' is' : 's are'} past the end date you agreed.`
+              : `${dueSoon.length} placement${dueSoon.length === 1 ? '' : 's'} end within 7 days.`}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {[...overdue, ...dueSoon].map((t) => (
+              <li key={t.sponsorId}>
+                {t.company} — {t.term.target} · ends {t.term.endsOn} ·{' '}
+                <span className="font-semibold">{TERM_HEALTH_LABEL[t.health]}</span>
+              </li>
+            ))}
+          </ul>
+          {overdue.length > 0 && (
+            <p className="mt-2 text-xs">
+              A featured listing has no end date in the database — it keeps running until it is
+              stopped here. Until you stop it, the customer is getting inventory they have not paid
+              for and the slot cannot be sold to anyone else.
+            </p>
+          )}
+        </div>
       )}
 
       {/* ------------------------------------------------ capacity overview */}
@@ -514,6 +574,79 @@ export default async function PlacementsPage({
           <button className={btn}>Activate corridor sponsor</button>
         </div>
       </form>
+
+      {/* ------------------------------------------------- terms on record */}
+      <h2 className="mt-12 font-display text-lg uppercase text-ink">Terms on record</h2>
+      <p className="mt-1 text-xs text-muted">
+        Read back from the CRM note each activation writes. A placement only appears here if it was
+        activated through this console <em>with</em> a CRM row id — which is why the activation
+        checklist asks for one.
+      </p>
+      {terms.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">No placement terms recorded yet.</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {terms.map((t) => (
+            <li
+              key={t.sponsorId}
+              className="rounded-card border border-line bg-asphalt-800 p-3 text-sm"
+            >
+              <span className="text-ink">{t.company}</span> — {t.term.target}
+              <span className="text-muted">
+                {' '}
+                · {t.term.billing ?? 'billing not recorded'} · {t.term.startsOn ?? 'no start'} →{' '}
+                {t.term.endsOn ?? 'no end'} · by {t.term.reviewer || 'unknown'}
+              </span>
+              <span
+                className={`ml-2 font-semibold ${
+                  t.health === 'overdue' ? 'text-diesel-300' : 'text-signal'
+                }`}
+              >
+                {TERM_HEALTH_LABEL[t.health]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* -------------------------------------------- printable checklist */}
+      <h2 className="mt-12 font-display text-lg uppercase text-ink">Activation checklist</h2>
+      <p className="mt-1 text-xs text-muted">
+        Print this page to take the checklist to the phone. The forms above are hidden when printed.
+      </p>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-muted">
+        <li>
+          <span className="font-semibold text-ink">Payment has cleared.</span> Not promised — in the
+          account. Nothing below happens before this.
+        </li>
+        <li>The offer, price and term are confirmed in writing by the business.</li>
+        <li>
+          Capacity is free <em>today</em> on both pages the listing appears on.
+        </li>
+        <li>The listing has been claimed and the business confirmed its details are right.</li>
+        <li>
+          Billing, start date and <span className="font-semibold text-ink">end date</span> entered.
+          The end date is required — this console will not activate without one.
+        </li>
+        <li>
+          Reviewer name and the CRM row id entered, so the term appears in{' '}
+          <span className="font-semibold text-ink">Terms on record</span> above.
+        </li>
+        <li>
+          <span className="font-semibold text-ink">Calendar reminder created</span> for the end
+          date, and one a week before. A featured listing will not expire on its own.
+        </li>
+        <li>Typed ACTIVATE, and only then submitted.</li>
+        <li>
+          Opened the live category page and the corridor page: the listing is above the standard
+          results and badged Sponsored.
+        </li>
+        <li>Counted the sponsored listings on that page. Four means roll back and refund.</li>
+      </ol>
+      <p className="mt-3 text-xs text-muted">
+        Rolling back needs no confirmation and takes one click. Stopping is always safe; starting is
+        the dangerous direction.
+      </p>
 
       <p className="mt-8 text-xs text-muted">
         Capacity is checked against live data at the moment you activate. It is an application

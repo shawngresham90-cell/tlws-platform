@@ -43,3 +43,24 @@ OPENINGS = {
     'e2d59ea7': "You're listed as Oasis Travel Center (Lakewood Landing) on our I-95 page at Exit 168 — tell me which name you would rather drivers see.",
     '12fa9201': "You're on our I-75 page at Exit 195 near Hy-Miler — I built the listing from public information and I want your hours right.",
 }
+
+"""Per-prospect commercial reason for the first-contact queue.
+
+Each is a statement about the fit — the category's buying moment, the corridor's
+measured depth, and anything we hold about the operator. None of them claims
+traffic, results, or a figure about the business's own revenue. Keyed by the
+first 8 characters of the listing id.
+"""
+
+REASONS = {
+    'e945424b': 'Roadside repair on I-40 between Little Rock and Memphis. A driver looking for this is stationary and buying now — one job pays for months of placement, so the payback threshold is a single customer.',
+    '910b954b': 'I-40 Exit 287 roadside, one exit from another listing of ours. Breakdown demand on our second-deepest corridor (240 published listings, 68 of them service businesses).',
+    '50c54637': 'An International dealer service point at I-40 Exit 288. Larger service capacity than a one-truck operator and a real local marketing budget — but confirm on the call that Cookeville can buy its own placement rather than group marketing.',
+    '8bb903e1': 'I-40 tire at Exit 44, west Asheville — the last commercial tire option we list before the Tennessee grade. Blowout demand, our second-deepest corridor.',
+    'fef1dd1a': 'Cincinnati tire on I-75, our deepest corridor by a distance (404 published listings, 97 service businesses). Both a phone and a site on the listing, so outreach can start today.',
+    '4be0bff5': 'I-75 tire north of Toledo, near two independent stops we also list. Deepest corridor in the directory and a reachable contact on the record.',
+    '9659739b': 'Three sites in our data and two of them on I-95 — the only prospect in the queue where a single corridor sponsorship covers more than one location. Treat Florence and Savannah as one sale.',
+    '8f2aedd7': 'Towing and recovery at I-95 Exit 87A. The buyer cannot move and picks the first callable listing; a single recovery job is worth many months of placement.',
+    '605eb2aa': 'Mobile on-site repair on the Gary stretch of I-65 (162 published listings, 41 service businesses). On-site repair is the definition of buy-now demand.',
+    '7fd02b6b': 'The second Snider site on I-95. Same conversation as Florence — do not pitch this one separately or you are selling the same corridor page twice.',
+}

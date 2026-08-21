@@ -577,6 +577,22 @@ try {
       'placements: sends claims elsewhere',
       /Claims are free and are handled on/i.test(console_),
     );
+    // The term register and the printable checklist are the two things that
+    // stand between the pilot and a featured listing quietly running forever.
+    check('placements: shows the term register', /Terms on record/i.test(console_));
+    check('placements: carries the activation checklist', /Activation checklist/i.test(console_));
+    check(
+      'placements: the checklist demands cleared payment first',
+      /Payment has cleared/i.test(console_),
+    );
+    check(
+      'placements: the checklist demands a calendar reminder',
+      /Calendar reminder created/i.test(console_),
+    );
+    check(
+      'placements: the checklist says a featured listing will not expire itself',
+      /will not expire on its own/i.test(console_),
+    );
     // Keyboard: the corridor activation form is fully reachable by Tab.
     await page.locator('body').press('Tab');
     const ids = [];
