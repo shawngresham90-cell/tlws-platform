@@ -39,6 +39,7 @@ import {
   standardAmountCents,
 } from './offers';
 import type { PlacementKind } from './placements';
+import type { FeaturedSchema } from './featured-window';
 
 /* ------------------------------------------------------------------ stages */
 
@@ -460,6 +461,14 @@ export function renewalView(
   renewalDate: string | null,
   isLive: boolean,
   now: Date,
+  /**
+   * REVENUE-2. A featured listing auto-expires only once migration 057 has
+   * given it a term the public read path can see. Before that the offer's
+   * `autoExpires: true` is a statement about the product, not about this
+   * database — so the schema state is what decides whether an expired
+   * placement is already gone or still sitting on the page.
+   */
+  featuredSchema: FeaturedSchema = 'ready',
 ): RenewalView {
   if (!renewalDate || !DAY_RE.test(renewalDate))
     return {
@@ -479,7 +488,11 @@ export function renewalView(
     };
 
   const days = Math.ceil((end - now.getTime()) / 86_400_000);
-  const autoExpires = offerId ? getOffer(offerId).autoExpires : false;
+  const offerAutoExpires = offerId ? getOffer(offerId).autoExpires : false;
+  // A corridor sponsor has always enforced its own window. A featured listing
+  // now does too — but only where the term column exists to be read.
+  const autoExpires =
+    offerId === 'featured-listing' ? featuredSchema === 'ready' : offerAutoExpires;
 
   if (days < 0) {
     const needsManualStop = isLive && !autoExpires;
@@ -489,7 +502,7 @@ export function renewalView(
       needsManualStop,
       label: needsManualStop
         ? `Term ended ${-days} days ago and the placement is STILL SHOWING. Stop it or renew it.`
-        : `Term ended ${-days} days ago. The placement stopped showing on its own.`,
+        : `Term ended ${-days} days ago. The public placement ended automatically — renew it, or clear the flag when convenient.`,
     };
   }
   if (days <= RENEWAL_LEAD_DAYS)

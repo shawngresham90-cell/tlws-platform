@@ -54,6 +54,19 @@ function check(name: string, cond: boolean, detail: unknown = '') {
 
 const NOW = new Date('2026-08-01T12:00:00Z');
 
+/**
+ * REVENUE-2: a featured row now carries a term, and migration 057's CHECK makes
+ * that structural — `not is_featured or featured_until is not null`. So the
+ * fixture default is a far-future term, and a row that sets `isFeatured: true`
+ * without saying otherwise is an ACTIVE placement, which is what every capacity
+ * and eligibility case below was always about. Cases that care about expiry
+ * override `featuredUntil` explicitly.
+ *
+ * The date is a fixed literal rather than a computed offset so these stay
+ * deterministic under an injected clock.
+ */
+const FAR_FUTURE = '2099-01-01T00:00:00.000Z';
+
 function listing(over: Partial<PromotableListing> = {}): PromotableListing {
   return {
     id: 'l1',
@@ -64,6 +77,7 @@ function listing(over: Partial<PromotableListing> = {}): PromotableListing {
     isPublished: true,
     isFeatured: false,
     deletedAt: null,
+    featuredUntil: FAR_FUTURE,
     ...over,
   };
 }
