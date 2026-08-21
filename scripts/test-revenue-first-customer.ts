@@ -435,6 +435,22 @@ check(
     s.overdueNextActions === 2,
     s.overdueNextActions,
   );
+
+  // A finished deal is not neglected work. A closed row with no next action
+  // must not be counted, or the number the owner is meant to drive to zero
+  // never reaches zero and stops meaning anything.
+  const closed: SponsorSaleRow[] = [
+    { ...rows[0], id: '4', stage: 'closed_won', status: 'active' },
+    { ...rows[0], id: '5', stage: 'closed_lost', status: 'contacted' },
+  ];
+  const withClosed = pipelineSummary([...rows, ...closed], NOW);
+  extra(
+    'a closed deal with no next action is not overdue work',
+    withClosed.overdueNextActions === 2,
+    withClosed.overdueNextActions,
+  );
+  const page = src('src/app/admin/(dashboard)/directory/revenue/page.tsx');
+  extra('the opportunities table scopes its overdue flag the same way', /openDeal\s*&&/.test(page));
 }
 
 check(

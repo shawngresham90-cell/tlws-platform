@@ -450,9 +450,15 @@ export default async function RevenuePage({
             </thead>
             <tbody className="divide-y divide-line">
               {enriched.map((e) => {
+                // Only an OPEN deal can have an overdue next action. A closed-won
+                // or closed-lost row with none set is finished, not neglected —
+                // colouring it red is noise, and noise is what teaches an owner
+                // to stop reading the red.
+                const openDeal = e.sale.stage !== 'closed_won' && e.sale.stage !== 'closed_lost';
                 const overdue =
-                  !e.row.next_action?.trim() ||
-                  (e.sale.renewalDate !== null && e.sale.renewalDate < today);
+                  openDeal &&
+                  (!e.row.next_action?.trim() ||
+                    (e.sale.renewalDate !== null && e.sale.renewalDate < today));
                 return (
                   <tr key={e.row.id}>
                     <td className="px-4 py-3 align-top">
