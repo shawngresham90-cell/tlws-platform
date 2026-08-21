@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { INQUIRY_OPTION_IDS } from '@/lib/directory/offers';
 
 /** Shared field builders — one source of truth for validation rules. */
 const email = z.string().trim().toLowerCase().email('Enter a valid email.').max(254);
@@ -74,12 +75,23 @@ export const leadCaptureSchema = z.object({
 });
 
 // --- Sponsor inquiry: business-side lead ---
+// `tier_interest` is the OFFER the business asked about, and it is bounded to
+// the approved set rather than free text. It was `z.string().max(60)`, which
+// meant a crafted request could store any 60 characters as the "tier" on a CRM
+// row — including a price, a discount, or a tier that does not exist. The
+// admin, the pipeline and the activation gate all key off this value, so it is
+// an enum over the offer authority: an offer id is never invented by a caller,
+// and a link cannot preselect an offer the platform does not sell.
 export const sponsorInquirySchema = z.object({
   company: z.string().trim().min(1).max(120),
   contact_name: name.optional(),
   email,
   phone,
-  tier_interest: z.string().trim().max(60).optional(),
+  tier_interest: z
+    .enum(INQUIRY_OPTION_IDS, {
+      errorMap: () => ({ message: 'Choose one of the listed options.' }),
+    })
+    .optional(),
   message: z.string().trim().max(2000).optional(),
   turnstileToken,
 });

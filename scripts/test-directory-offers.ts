@@ -21,6 +21,8 @@
 import { readFileSync } from 'node:fs';
 import {
   BILLING_LABEL,
+  INQUIRY_OPTIONS,
+  INQUIRY_OPTION_IDS,
   OFFERS,
   annualSavingsCents,
   formatPrice,
@@ -116,17 +118,51 @@ check('CTA hard-codes no dollar figure outside the module', !/\$\d/.test(src.cta
 check('sponsors page renders the offer table', /<OfferTable/.test(src.sponsors));
 check('sponsors page hard-codes no dollar figure', !/\$\d/.test(src.sponsors));
 
-// The form's <select> labels are the one place a price is written inline, so
-// assert they match the module exactly rather than allowing drift.
+// The form's <select> labels used to be the one place a price was written
+// inline, kept honest by asserting the literal string matched. They are now
+// built from the offer authority instead, so the contract is stronger: the
+// form hard-codes no dollar figure at all, and the option labels themselves
+// carry the module's prices.
 check(
-  'form featured option matches the module price',
-  src.form.includes(`Featured listing — ${priceLabel(featured)}`),
+  'form hard-codes no dollar figure',
+  !/\$\d/.test(src.form),
+  (src.form.match(/\$\d[^\s'"`]*/g) ?? []).join(', '),
+);
+check('form takes its options from the offer authority', /INQUIRY_OPTIONS/.test(src.form));
+const featuredOption = INQUIRY_OPTIONS.find((o) => o.value === 'featured-listing');
+const corridorOption = INQUIRY_OPTIONS.find((o) => o.value === 'corridor-sponsor');
+const claimOption = INQUIRY_OPTIONS.find((o) => o.value === 'listing-claim');
+check(
+  'inquiry option: featured label carries the module price',
+  featuredOption?.label === `Featured listing — ${priceLabel(featured)}`,
+  featuredOption?.label,
 );
 check(
-  'form corridor option matches the module price',
-  src.form.includes(`Corridor sponsor — ${priceLabel(corridor)}`),
+  'inquiry option: corridor label carries the module price',
+  corridorOption?.label === `Corridor sponsor — ${priceLabel(corridor)}`,
+  corridorOption?.label,
 );
-check('form claim option says free', /Claim my directory listing \(free\)/i.test(src.form));
+check(
+  'inquiry option: claim option says free',
+  /free/i.test(claimOption?.label ?? ''),
+  claimOption?.label,
+);
+
+// Every option the form can submit is one the API schema accepts, and every
+// offer is reachable from the form. A drift either way is a funnel that
+// advertises something the server refuses.
+check(
+  'every inquiry option is bounded',
+  INQUIRY_OPTIONS.every((o) => (INQUIRY_OPTION_IDS as readonly string[]).includes(o.value)),
+);
+check(
+  'every offer is reachable from the inquiry form',
+  OFFERS.every((o) => INQUIRY_OPTIONS.some((opt) => opt.value === o.id)),
+);
+check(
+  'no query parameter can set a price',
+  !/searchParams[^\n]*(price|amount|cents)/i.test(src.sponsors),
+);
 
 // ---- honesty: no guarantees, no fake scarcity, no purchase language ----
 // Scanned against user-visible copy only: comments are stripped first, so a

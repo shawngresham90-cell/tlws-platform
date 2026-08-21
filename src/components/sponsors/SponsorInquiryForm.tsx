@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { trackEvent } from '@/lib/analytics';
+import { INQUIRY_OPTIONS } from '@/lib/directory/offers';
 import {
   DIRECTORY_EVENTS,
   boundCorridor,
@@ -21,15 +22,12 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
 
-const INTEREST_OPTIONS = [
-  { value: 'listing-claim', label: 'Claim my directory listing (free)' },
-  { value: 'featured-listing', label: 'Featured listing — $99/month or $999/year' },
-  { value: 'corridor-sponsor', label: 'Corridor sponsor — $299/month or $2,999/year' },
-  { value: 'founding-sponsor', label: 'Founding Sponsor' },
-  { value: 'directory-placement', label: 'Directory placement (not sure which)' },
-  { value: 'equipment-or-students', label: 'Equipment / sponsor a student' },
-  { value: 'other', label: 'Something else' },
-];
+/**
+ * The options come from the offer authority, prices included, so the dropdown
+ * cannot drift from the offer table rendered directly above it — and so the
+ * bounded set the API validates against is the same list the form renders.
+ */
+const INTEREST_OPTIONS = INQUIRY_OPTIONS;
 
 /** Billing preference is recorded on the inquiry — it never charges anything. */
 const BILLING_OPTIONS = [
@@ -49,7 +47,7 @@ export type InquiryListing = {
 
 type Errors = Record<string, string>;
 
-const INTEREST_VALUES = new Set(INTEREST_OPTIONS.map((o) => o.value));
+const INTEREST_VALUES: ReadonlySet<string> = new Set(INTEREST_OPTIONS.map((o) => o.value));
 
 export function SponsorInquiryForm({
   siteKey,
@@ -205,8 +203,16 @@ export function SponsorInquiryForm({
         </div>
         <h3 className="display-section mt-6 text-2xl">Inquiry received</h3>
         <p className="mx-auto mt-3 max-w-md text-muted">
-          Thanks{contactName ? `, ${contactName}` : ''} — Shawn will reach out personally to talk
-          placements, goals, and rates. Nothing is committed until you talk.
+          Thanks{contactName ? `, ${contactName}` : ''} — Shawn reads every inquiry himself and
+          replies personally. Nothing is committed until you talk.
+        </p>
+        {/* What happens next, stated plainly. No promised reply time we have
+            not agreed to, and no implication that a placement is now held: a
+            paid slot is subject to review and to the page still having room. */}
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted">
+          Placement is subject to review and availability — pages have a fixed number of sponsored
+          slots and we do not hold one on an inquiry. Nothing was charged and no payment details
+          were collected.
         </p>
       </div>
     );
@@ -286,7 +292,7 @@ export function SponsorInquiryForm({
           label="What are you interested in? (optional)"
           value={interest}
           onChange={set(setInterest, 'interest')}
-          options={INTEREST_OPTIONS}
+          options={[...INTEREST_OPTIONS]}
           placeholder="Not sure yet"
         />
         <SelectField
