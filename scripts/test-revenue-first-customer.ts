@@ -601,6 +601,73 @@ const WINDOW = { startsAt: '2026-09-01T00:00:00.000Z', endsAt: '2027-09-01T23:59
     saleActivationBlockers('corridor-sponsor', sold, WINDOW),
   );
 
+  // A re-quote and a corrected payment both APPEND. The latest statement is the
+  // current one, and reading the first instead is a money bug: quote monthly,
+  // the business switches to annual, re-quote — a first-match read still says
+  // monthly, the gate refuses the correct twelve-month window, and the way to
+  // make it "work" is to give an annual-paying sponsor one month of placement.
+  {
+    const requoted = readSaleState(
+      soldRow({
+        pledgedCents: 299900,
+        paidCents: 299900,
+        notes: [
+          agreedOfferNoteLine(
+            {
+              offerId: 'corridor-sponsor',
+              term: 'monthly',
+              quotedCents: 29900,
+              reason: '',
+              recordedBy: 'Shawn',
+            },
+            new Date('2026-08-20T00:00:00Z'),
+          ),
+          agreedOfferNoteLine(
+            {
+              offerId: 'corridor-sponsor',
+              term: 'annual',
+              quotedCents: 299900,
+              reason: '',
+              recordedBy: 'Shawn',
+            },
+            new Date('2026-08-28T00:00:00Z'),
+          ),
+          paymentNoteLine(
+            {
+              paidCents: 29900,
+              paidOn: '2026-08-21',
+              confirmed: true,
+              reference: 'first attempt',
+              recordedBy: 'Shawn',
+            },
+            new Date('2026-08-21T00:00:00Z'),
+          ),
+          paymentNoteLine(
+            {
+              paidCents: 299900,
+              paidOn: '2026-08-30',
+              confirmed: true,
+              reference: 'check 1042',
+              recordedBy: 'Shawn',
+            },
+            new Date('2026-08-30T00:00:00Z'),
+          ),
+        ].reduce((acc: string | null, line) => appendNote(acc, line), null),
+      }),
+    );
+    extra('a re-quote wins over the earlier quote', requoted.term === 'annual', requoted.term);
+    extra(
+      'a corrected payment wins over the earlier one',
+      requoted.paidOn === '2026-08-30' && requoted.paymentReference === 'check 1042',
+      [requoted.paidOn, requoted.paymentReference],
+    );
+    extra(
+      'the re-quoted annual term passes the gate with a twelve-month window',
+      saleActivationBlockers('corridor-sponsor', requoted, WINDOW).length === 0,
+      saleActivationBlockers('corridor-sponsor', requoted, WINDOW),
+    );
+  }
+
   check(
     'REV31',
     'unpaid sponsor cannot activate',

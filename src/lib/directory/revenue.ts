@@ -300,17 +300,42 @@ export type SaleState = {
   renewalDate: string | null;
 };
 
-const TERM_RE = /^Agreed offer:.*?·\s*(monthly|annual)\s*·/im;
-const PAYMENT_RE = /^Payment confirmed:.*?received (\d{4}-\d{2}-\d{2})/im;
-const PAYMENT_REF_RE = /^Payment confirmed:.*?·\s*ref:\s*(.+?)\s*(?:·|$)/im;
-const CLOSED_LOST_RE = /^Closed lost:\s*reason\s*—\s*(.+?)\s*(?:·|$)/im;
+/**
+ * Notes are APPEND-ONLY, so a fact can be stated more than once and the LAST
+ * statement is the current one. Every regex here is global and read through
+ * `lastMatch` for that reason.
+ *
+ * Reading the first match instead is not a stylistic difference, it is a money
+ * bug: quote a deal monthly, have the business switch to annual, re-quote — and
+ * a first-match read still reports `monthly`. The activation gate would then
+ * refuse the correct twelve-month window, and the way to make it "work" would
+ * be to give an annual-paying sponsor a one-month placement.
+ */
+const TERM_RE = /^Agreed offer:.*?·\s*(monthly|annual)\s*·/gim;
+const PAYMENT_RE = /^Payment confirmed:.*?received (\d{4}-\d{2}-\d{2})/gim;
+const PAYMENT_REF_RE = /^Payment confirmed:.*?·\s*ref:\s*(.+?)\s*(?:·|$)/gim;
+const CLOSED_LOST_RE = /^Closed lost:\s*reason\s*—\s*(.+?)\s*(?:·|$)/gim;
+
+/** The final match of a global regex, or null. Resets `lastIndex` on the way in. */
+function lastMatch(re: RegExp, text: string): RegExpExecArray | null {
+  re.lastIndex = 0;
+  let found: RegExpExecArray | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    found = m;
+    // A zero-length match would spin forever; step past it.
+    if (m.index === re.lastIndex) re.lastIndex++;
+  }
+  re.lastIndex = 0;
+  return found;
+}
 
 export function readSaleState(row: SponsorSaleRow): SaleState {
   const notes = row.notes ?? '';
-  const term = TERM_RE.exec(notes);
-  const payment = PAYMENT_RE.exec(notes);
-  const ref = PAYMENT_REF_RE.exec(notes);
-  const lost = CLOSED_LOST_RE.exec(notes);
+  const term = lastMatch(TERM_RE, notes);
+  const payment = lastMatch(PAYMENT_RE, notes);
+  const ref = lastMatch(PAYMENT_REF_RE, notes);
+  const lost = lastMatch(CLOSED_LOST_RE, notes);
   return {
     id: row.id,
     stage: isSponsorStage(row.stage) ? row.stage : 'prospect',
