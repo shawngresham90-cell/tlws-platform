@@ -90,7 +90,8 @@ const SPONSOR_FIXTURES = [
     priority: 3,
     next_action: 'Reply to this inquiry',
     next_action_date: '2026-08-20',
-    notes: 'Came from: i75\n\nRegarding directory listing: Fixture Truck Wash · truck-washes · GA · I-75 (/directory/location/fixture-truck-wash)',
+    notes:
+      'Came from: i75\n\nRegarding directory listing: Fixture Truck Wash · truck-washes · GA · I-75 (/directory/location/fixture-truck-wash)',
     created_at: '2026-08-20T10:00:00Z',
   },
   {
@@ -683,11 +684,7 @@ const server = http.createServer((req, res) => {
     }
 
     const dataset =
-      table === 'locations'
-        ? LOCATIONS
-        : table === 'sponsors' && REVENUE
-          ? SPONSOR_FIXTURES
-          : [];
+      table === 'locations' ? LOCATIONS : table === 'sponsors' && REVENUE ? SPONSOR_FIXTURES : [];
     let result;
     try {
       // supabase-js .range() arrives as a Range header; normalize to offset/limit.

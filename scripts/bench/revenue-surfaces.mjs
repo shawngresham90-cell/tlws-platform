@@ -85,6 +85,16 @@ const SESSION_TOKEN = createHmac('sha256', BENCH_SESSION_SEED)
   .update('tlws-admin-session-v1')
   .digest('hex');
 
+/**
+ * Console output this build emits for a reason that is not the page's.
+ * `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a deploy secret and is deliberately absent
+ * from a local bench build, so the widget logs that it cannot render. Treating
+ * that as a page defect keeps this assertion permanently red for something the
+ * bench itself causes, which is how a real assertion gets deleted.
+ */
+const KNOWN_BUILD_ENV_WARNINGS = [/NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set in this build/];
+const isPageError = (text) => !KNOWN_BUILD_ENV_WARNINGS.some((re) => re.test(text));
+
 let passed = 0;
 let failed = 0;
 const check = (name, cond, detail) => {
@@ -118,19 +128,38 @@ async function smallTargets(page, scope) {
     const nodes = [...root.querySelectorAll('a, button, input, select, textarea, [type="submit"]')];
     return nodes
       .filter((n) => {
-        const r = n.getBoundingClientRect();
+        // A link inside a sentence is exempt. WCAG 2.5.5 / 2.5.8 both carve out
+        // targets in a block of text, and for a good reason: padding an inline
+        // link to 44px breaks the line box around it and makes the paragraph
+        // harder to read, not easier. The rule is about controls you aim at,
+        // and these are read, not aimed at.
+        if (n.tagName === 'A' && n.parentElement?.tagName === 'P') return false;
+        // For a checkbox or radio the label is the control you actually tap, so
+        // that is what has to clear 44px — a 44px checkbox is not the fix.
+        const measured =
+          (n.type === 'checkbox' || n.type === 'radio') && n.closest('label')
+            ? n.closest('label')
+            : n;
+        const r = measured.getBoundingClientRect();
         // Ignore anything not laid out (inside a closed <details>, hidden).
         return r.width > 0 && r.height > 0 && r.height < 44;
       })
       .slice(0, 8)
-      .map((n) => `${n.tagName.toLowerCase()}${n.type ? `[${n.type}]` : ''} h=${Math.round(n.getBoundingClientRect().height)} "${(n.textContent ?? '').trim().slice(0, 30)}"`);
+      .map(
+        (n) =>
+          `${n.tagName.toLowerCase()}${n.type ? `[${n.type}]` : ''} h=${Math.round(n.getBoundingClientRect().height)} "${(n.textContent ?? '').trim().slice(0, 30)}"`,
+      );
   }, scope);
 }
 
 async function horizontalOverflow(page) {
   return page.evaluate(() => {
     const d = document.documentElement;
-    return { scroll: d.scrollWidth, client: d.clientWidth, over: d.scrollWidth > d.clientWidth + 1 };
+    return {
+      scroll: d.scrollWidth,
+      client: d.clientWidth,
+      over: d.scrollWidth > d.clientWidth + 1,
+    };
   });
 }
 
@@ -148,8 +177,23 @@ async function main() {
     },
     stdio: ['ignore', 'ignore', 'inherit'],
   });
+  // If something is already on the port, this bench's own mock never binds and
+  // every assertion below silently describes a server nobody here configured —
+  // a leftover from a previous run serves a different fixture set and the
+  // results look plausible. Fail loudly instead.
+  let mockFailed = null;
+  mock.on('exit', (code) => {
+    if (code !== 0 && code !== null) mockFailed = code;
+  });
   if (!(await waitFor(`http://127.0.0.1:${MOCK_PORT}/__mock/health`))) {
     throw new Error('mock did not start');
+  }
+  await sleep(300);
+  if (mockFailed !== null) {
+    throw new Error(
+      `refusing to run: this bench's mock exited (${mockFailed}) but 127.0.0.1:${MOCK_PORT} is ` +
+        `answering, so something else is serving it. Stop the stale process and re-run.`,
+    );
   }
 
   const server = spawn('npx', ['next', 'start', '-p', String(PORT)], {
@@ -182,11 +226,10 @@ async function main() {
       const res = await page.goto(`${base}/admin/directory/revenue`, {
         waitUntil: 'domcontentloaded',
       });
-      check(
-        'anon: the revenue console redirects to login',
-        page.url().includes('/admin/login'),
-        { url: page.url(), status: res?.status() },
-      );
+      check('anon: the revenue console redirects to login', page.url().includes('/admin/login'), {
+        url: page.url(),
+        status: res?.status(),
+      });
       const body = await page.locator('body').innerText();
       check(
         'anon: no CRM data leaks on the way out',
@@ -204,7 +247,8 @@ async function main() {
         const page = await ctx.newPage();
         const consoleErrors = [];
         page.on('console', (m) => {
-          if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 140));
+          if (m.type() === 'error' && isPageError(m.text()))
+            consoleErrors.push(m.text().slice(0, 140));
         });
 
         const res = await page.goto(`${base}/sponsors?interest=corridor-sponsor&from=i75`, {
@@ -213,7 +257,12 @@ async function main() {
         check(`${w}: /sponsors renders`, res.status() === 200, res.status());
 
         const body = await page.locator('body').innerText();
-        check(`${w}: the offer table shows all three offers`, /Listing claim/i.test(body) && /Featured listing/i.test(body) && /Corridor sponsor/i.test(body));
+        check(
+          `${w}: the offer table shows all three offers`,
+          /Listing claim/i.test(body) &&
+            /Featured listing/i.test(body) &&
+            /Corridor sponsor/i.test(body),
+        );
         check(`${w}: prices render`, /\$99/.test(body) && /\$2,999/.test(body));
         check(`${w}: sponsored disclosure stated`, /rel="sponsored"|carries rel/i.test(body));
         check(`${w}: no guarantee language`, !/\bguarantee/i.test(body));
@@ -221,7 +270,11 @@ async function main() {
         // The deep link preselects the offer and shows the source back.
         const interest = await page.locator('#sponsor_interest').inputValue();
         check(`${w}: offer preselected from the link`, interest === 'corridor-sponsor', interest);
-        check(`${w}: the source is shown back, not hidden`, /Came from: i75/.test(body), body.match(/Came from: [^\n]*/)?.[0]);
+        check(
+          `${w}: the source is shown back, not hidden`,
+          /Came from: i75/.test(body),
+          body.match(/Came from: [^\n]*/)?.[0],
+        );
 
         // Every form field is labelled and reachable.
         const unlabelled = await page.evaluate(() =>
@@ -236,7 +289,10 @@ async function main() {
         );
         check(`${w}: every inquiry field is labelled`, unlabelled.length === 0, unlabelled);
 
-        check(`${w}: the error region is aria-live`, (await page.locator('[aria-live="assertive"]').count()) >= 1);
+        check(
+          `${w}: the error region is aria-live`,
+          (await page.locator('[aria-live="assertive"]').count()) >= 1,
+        );
 
         const small = await smallTargets(page, 'form');
         check(`${w}: inquiry controls are at least 44px tall`, small.length === 0, small);
@@ -247,9 +303,7 @@ async function main() {
 
         // Keyboard: the submit button is reachable and shows a focus ring.
         const focusVisible = await page.evaluate(() => {
-          const btn = [...document.querySelectorAll('button')].find(
-            (b) => b.type === 'submit',
-          );
+          const btn = [...document.querySelectorAll('button')].find((b) => b.type === 'submit');
           if (!btn) return null;
           btn.focus();
           const s = getComputedStyle(btn);
@@ -279,12 +333,17 @@ async function main() {
         const page = await ctx.newPage();
         const consoleErrors = [];
         page.on('console', (m) => {
-          if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 140));
+          if (m.type() === 'error' && isPageError(m.text()))
+            consoleErrors.push(m.text().slice(0, 140));
         });
 
         const url = `${base}/admin/directory/revenue`;
         const res = await page.goto(url, { waitUntil: 'networkidle' });
-        check(`${w}: revenue console renders for an authed admin`, res.status() === 200, res.status());
+        check(
+          `${w}: revenue console renders for an authed admin`,
+          res.status() === 200,
+          res.status(),
+        );
         check(`${w}: not redirected to login`, !page.url().includes('/admin/login'));
 
         const body = await page.locator('body').innerText();
@@ -314,7 +373,7 @@ async function main() {
         check(`${w}: the prospect shortlist renders`, /Who to call first/i.test(body));
         check(
           `${w}: the shortlist states what it does not know`,
-          /no traffic estimate/i.test(body) && /likelihood to buy/i.test(body),
+          /no traffic estimate/i.test(body) && /likelihood[\s-]to[\s-]buy/i.test(body),
         );
         check(
           `${w}: the shortlist states truncation`,
@@ -343,7 +402,11 @@ async function main() {
             .map((n) => `${n.name}|${n.getAttribute('autocomplete') ?? ''}`)
             .filter((s) => /card|cc-number|cvv|cvc|iban|routing|account_number/i.test(s)),
         );
-        check(`${w}: no payment instrument field exists`, instrumentFields.length === 0, instrumentFields);
+        check(
+          `${w}: no payment instrument field exists`,
+          instrumentFields.length === 0,
+          instrumentFields,
+        );
 
         /* layout */
         const of = await horizontalOverflow(page);
@@ -363,22 +426,33 @@ async function main() {
           longName,
         );
 
-        check(`${w}: revenue console is aria-live for its result banner`, (await page.locator('[aria-live="polite"]').count()) >= 1);
+        check(
+          `${w}: revenue console is aria-live for its result banner`,
+          (await page.locator('[aria-live="polite"]').count()) >= 1,
+        );
         check(`${w}: revenue console is clean`, consoleErrors.length === 0, consoleErrors);
 
         /* the open-deal panel: every step present, in order, 44px targets */
+        // Navigate to the panel's own URL rather than click-and-wait: after a
+        // click, `waitForLoadState('networkidle')` can resolve against the page
+        // you were already on, and the assertions then read the old DOM.
         const firstManage = page.locator('a:has-text("Manage")').first();
-        if (await firstManage.count()) {
-          await firstManage.click();
-          await page.waitForLoadState('networkidle');
-          const panel = await page.locator('body').innerText();
+        const manageHref = (await firstManage.count())
+          ? await firstManage.getAttribute('href')
+          : null;
+        if (manageHref) {
+          await page.goto(`${url}${manageHref}`, { waitUntil: 'networkidle' });
+          // `innerText` returns text as CSS renders it, and these headings carry
+          // `text-transform: uppercase` — so match case-insensitively or every
+          // assertion against a styled heading silently fails.
+          const panel = (await page.locator('body').innerText()).toLowerCase();
           const steps = [
-            '1 · Record a contact',
-            '2 · Qualification',
-            '3 · Move the stage',
-            '4 · Record the offer',
-            '5 · Record payment',
-            '6 · Record the term',
+            '1 · record a contact',
+            '2 · qualification',
+            '3 · move the stage',
+            '4 · record the offer',
+            '5 · record payment',
+            '6 · record the term',
           ];
           const positions = steps.map((s) => panel.indexOf(s));
           check(
@@ -393,16 +467,23 @@ async function main() {
           );
           check(
             `${w}: the payment step warns against typing card details`,
-            /Never type a card number/i.test(panel),
+            /never type a card number/.test(panel),
           );
           check(
             `${w}: the stage control only offers the next legal stage`,
             !/Closed won/.test(
-              await page.locator('select[name="stage"]').innerText().catch(() => ''),
+              await page
+                .locator('select[name="stage"]')
+                .innerText()
+                .catch(() => ''),
             ),
           );
           const smallAdmin = await smallTargets(page, 'section');
-          check(`${w}: deal-panel controls are at least 44px tall`, smallAdmin.length === 0, smallAdmin);
+          check(
+            `${w}: deal-panel controls are at least 44px tall`,
+            smallAdmin.length === 0,
+            smallAdmin,
+          );
           const of2 = await horizontalOverflow(page);
           check(`${w}: the deal panel has no horizontal overflow`, !of2.over, of2);
         } else {
@@ -441,11 +522,18 @@ async function main() {
           return el ? el.hasAttribute('required') : null;
         });
         check(`${w}: the CRM row id input is marked required`, required === true, required);
-        check(`${w}: the public preview is shown before activation`, /what the public sees/i.test(body));
-        check(`${w}: the blank-corridor wildcard is refused in copy`, /every corridor page/i.test(body));
+        check(
+          `${w}: the public preview is shown before activation`,
+          /what the public sees/i.test(body),
+        );
+        check(
+          `${w}: the blank-corridor wildcard is refused in copy`,
+          /every corridor page/i.test(body),
+        );
         check(
           `${w}: term-expired and placement-hidden are distinguished`,
-          /two different\s+things/i.test(body.replace(/\s+/g, ' ')) || /two different things/i.test(body),
+          /two different\s+things/i.test(body.replace(/\s+/g, ' ')) ||
+            /two different things/i.test(body),
         );
 
         const of = await horizontalOverflow(page);
@@ -463,7 +551,15 @@ async function main() {
       await sleep(400);
       const emptyMock = spawn('node', [path.join('scripts', 'bench', 'mock-postgrest.mjs')], {
         cwd: TREE,
-        env: { ...process.env, MOCK_PORT: String(MOCK_PORT), MOCK_TEXT_PROFILE: 'production' },
+        env: {
+          ...process.env,
+          MOCK_PORT: String(MOCK_PORT),
+          MOCK_TEXT_PROFILE: 'production',
+          // Same field profile as the populated run: the ONLY difference between
+          // the two is MOCK_REVENUE, so an empty-state failure is about the
+          // empty pipeline and not about a listing fixture with no phone number.
+          MOCK_FIELD_PROFILE: 'production',
+        },
         stdio: ['ignore', 'ignore', 'inherit'],
       });
       if (!(await waitFor(`http://127.0.0.1:${MOCK_PORT}/__mock/health`)))

@@ -160,7 +160,11 @@ async function load(): Promise<{ ok: boolean; rows: RawRow[]; listings: Prospect
   }
 }
 
-const input = 'w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
+// 44px minimum on every actionable control. `px-3 py-2 text-sm` lands at 37-38px,
+// which is under the touch target this admin is worked from — the owner uses it
+// on a phone between calls, not only at a desk.
+const input =
+  'min-h-[44px] w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
 const label = 'block text-xs text-muted';
 const btn =
   'min-h-[44px] rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt hover:bg-signal-600';
@@ -699,8 +703,10 @@ export default async function RevenuePage({
               Recorded by
               <input name="actor" className={input} placeholder="Shawn" />
             </label>
-            <label className="flex items-start gap-2 text-xs text-muted sm:col-span-4">
-              <input type="checkbox" name="confirmed" value="yes" className="mt-0.5 h-5 w-5" />
+            {/* The label is the touch target and is sized for it; the box stays a
+                normal visual size. Tapping anywhere on the sentence toggles it. */}
+            <label className="flex min-h-[44px] items-center gap-3 text-xs text-muted sm:col-span-4">
+              <input type="checkbox" name="confirmed" value="yes" className="h-6 w-6 shrink-0" />
               <span>
                 I have seen this money arrive. Nothing goes live on an unconfirmed payment.
               </span>
@@ -789,7 +795,7 @@ export default async function RevenuePage({
       <p className="mt-1 text-xs text-muted">
         Built only from the public directory: the business phone and website already printed on the
         listing page, the corridor it sits on, and how complete the listing is. There is no traffic
-        estimate and no likelihood-to-buy here, because we hold neither. Nothing on this list has
+        estimate and no likelihood to buy here, because we hold neither. Nothing on this list has
         been contacted and nothing here sends anything —{' '}
         <span className="font-semibold text-ink">copying it is a decision you make</span>.
       </p>
