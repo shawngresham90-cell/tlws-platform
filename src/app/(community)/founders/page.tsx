@@ -89,7 +89,7 @@ export default async function FoundersPage() {
         <div className="mb-10 max-w-2xl">
           <h2 className="display-section">The founders</h2>
           <p className="mt-4 text-muted">
-            The drivers and businesses building this school, shown in founder order within each
+            The drivers and businesses who built this school, shown in founder order within each
             tier.
           </p>
         </div>
