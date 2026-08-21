@@ -14,24 +14,40 @@
  *                           speed unavailable and underivable
  *                           — ALWAYS treated as MOVING (locked)
  *
- * The passenger override (doc 06 §2) is deliberately high-friction and
- * lives here as pure state: offered only on a locked-action attempt while
- * MOVING, granted for 15 minutes, revoked by a stop/start cycle, never
- * persisted (this module cannot persist anything — it has no I/O). The
- * override log carries NO position, NO identity, NO speed.
+ * WHAT THIS CONTROLLER NO LONGER DOES (NAV-ENTRY-1). It used to gate the
+ * driver's own EDITING — destination, truck, clocks, preferences — behind
+ * motion, with a passenger override as the way out: a press-and-hold dialog
+ * asking whoever held the phone to declare they were not driving. The owner
+ * removed both. A parked driver whose GPS died under a truck-stop canopy was
+ * being asked to declare something false in order to change their own
+ * destination, and an app that makes a driver lie to it has already lost the
+ * argument. Editing is now available at every motion state, with a reminder
+ * that says so and disables nothing.
+ *
+ * WHAT IT STILL DOES, and why it was not deleted: the CAMERA. Dragging the
+ * map away from the truck, opening the whole-route overview and switching the
+ * basemap are attention sinks that leave a driver looking at somewhere they
+ * are not — that is camera discipline, not editing policy, and it stands.
+ * Everything downstream of `locked` is now exactly those three actions.
+ *
+ * There is no override of any kind. A locked camera control says what it is
+ * and waits for the truck to stop; nothing anywhere can grant an exception,
+ * because there is no longer a function that could.
  *
  * THE SETUP WINDOW (pilot round 3, startup simplification — doc 06 §1a):
  * `setupWindow` is true while motion has been UNKNOWN continuously since
  * this lock was created — the cold start, before any watch has produced
- * a single MOVING or STATIONARY determination. In that window the app has
- * ZERO motion evidence either way, and the owner's decision for the pilot
- * is that a parked driver must be able to choose a destination and tap
- * Start BEFORE granting location. The window latches shut forever the
- * moment motion is first determined: after that, UNKNOWN goes back to
- * being treated as MOVING, because once motion has been seen, absence of
- * evidence is not evidence of stopping. What the window may unlock is not
- * decided here — that stays in the shared ACTION_PERMISSIONS authority
- * (actions.ts), which grants it to the trip-setup surface only.
+ * a single MOVING or STATIONARY determination. It latches shut forever the
+ * moment motion is first determined: after that, UNKNOWN goes back to being
+ * treated as MOVING, because once motion has been seen, absence of evidence
+ * is not evidence of stopping.
+ *
+ * It no longer unlocks anything — the editing it used to exempt is now
+ * unconditionally available. What still reads it is the driving screen, which
+ * hides the redundant "Enable location" button during a cold start because
+ * the one-tap Start already owns location at that point. A cold start is
+ * genuinely different from a truck that has been seen moving, and the screen
+ * is entitled to say so.
  */
 
 import type { PositionState } from './types';
@@ -43,7 +59,6 @@ export const MOVING_DWELL_MS = 10_000;
 export const STATIONARY_SPEED_MPH = 3;
 export const STATIONARY_DWELL_MS = 30_000;
 export const POSITION_FRESH_MS = 10_000;
-export const OVERRIDE_DURATION_MS = 15 * 60_000;
 
 /**
  * How long a VERIFIED-STATIONARY truck keeps its parked setup after the
@@ -51,9 +66,10 @@ export const OVERRIDE_DURATION_MS = 15 * 60_000;
  *
  * The pilot complaint this closes: a driver parked at a truck stop gets a
  * fix, is determined STATIONARY, then loses the fix under a canopy. Motion
- * falls to UNKNOWN, UNKNOWN is treated as MOVING, and the parked driver was
- * offered a PASSENGER DECLARATION to edit their own setup. The truck had not
- * moved; the app had merely stopped being able to see it.
+ * falls to UNKNOWN and UNKNOWN is treated as MOVING — so a truck that had not
+ * moved was reported as one that might be. The app had merely stopped being
+ * able to see it, and the status line should say that rather than imply
+ * movement nobody observed.
  *
  * The existing rule — "once motion has been seen, absence of evidence is not
  * evidence of stopping" — is correct after MOVEMENT and wrong after a
@@ -61,56 +77,44 @@ export const OVERRIDE_DURATION_MS = 15 * 60_000;
  * already doing. So the grace applies to exactly one prior state: STATIONARY.
  * After MOVING, GPS loss stays locked with no grace at all.
  *
- * 60 s is the documented ceiling. It is deliberately shorter than the
- * 15-minute passenger override and is cancelled instantly by any positive
- * movement evidence — a single sample at or above the moving threshold ends
- * it, without waiting for the 10 s dwell that a full MOVING determination
- * needs. Evidence of motion is allowed to be faster than certainty of motion,
- * because the two errors are not symmetric.
+ * 60 s is the documented ceiling, and it is cancelled instantly by any
+ * positive movement evidence — a single sample at or above the moving
+ * threshold ends it, without waiting for the 10 s dwell that a full MOVING
+ * determination needs. Evidence of motion is allowed to be faster than
+ * certainty of motion, because the two errors are not symmetric.
  */
 export const STATIONARY_GRACE_MS = 60_000;
 
-export type OverrideLogEntry = {
-  /** When the override was granted (epoch ms). */
-  tMs: number;
-  /** Ephemeral session id — never a user identity. */
-  sessionId: string;
-  durationMs: number;
-  /** The class of locked action that triggered the offer. */
-  actionClass: string;
-};
-
 export type SafetyLockState = {
   motion: MotionState;
-  /** UNKNOWN is treated as MOVING: locked is false ONLY when STATIONARY. */
+  /**
+   * UNKNOWN is treated as MOVING: locked is false ONLY when STATIONARY.
+   *
+   * Since NAV-ENTRY-1 this governs the CAMERA actions alone — pan, route
+   * overview, basemap style. No editing surface consults it, and nothing can
+   * override it.
+   */
   locked: boolean;
-  /** Milliseconds remaining on an active passenger override, else 0. */
-  overrideRemainingMs: number;
-  /** True when the interface is usable despite motion (active override). */
-  overrideActive: boolean;
   /**
    * True while motion has been UNKNOWN since this lock was created (the
-   * cold start — no watch determination has ever been made). Latches
-   * false forever on the first MOVING or STATIONARY determination. Only
-   * actions the shared map explicitly marks setup-window-permitted may
-   * read anything into it.
+   * cold start — no watch determination has ever been made). Latches false
+   * forever on the first MOVING or STATIONARY determination.
    */
   setupWindow: boolean;
   /**
    * True while a VERIFIED-STATIONARY truck has temporarily lost its
-   * location signal, for up to `STATIONARY_GRACE_MS`. The parked setup
-   * actions stay available and no passenger declaration is offered.
-   * Cancelled immediately by any positive movement evidence, and never
-   * entered from MOVING.
+   * location signal, for up to `STATIONARY_GRACE_MS`. Cancelled immediately
+   * by any positive movement evidence, and never entered from MOVING. The
+   * status line reads it so a parked driver is told the signal dropped
+   * rather than told they might be moving.
    */
   parkedGrace: boolean;
   /**
    * WHY the interface is locked, so a gate can say something true.
    *
-   * `'moving'` is the only reason that may offer a passenger override —
-   * the override exists for a real passenger in a moving vehicle, and
-   * offering it to a parked driver asks them to declare something false.
-   * `'location-unknown'` means the app cannot see the vehicle and says so.
+   * `'moving'` means the truck was observed moving. `'location-unknown'`
+   * means the app cannot see the vehicle and says exactly that, rather than
+   * reporting movement nobody observed.
    */
   lockReason: 'moving' | 'location-unknown' | null;
 };
@@ -118,26 +122,14 @@ export type SafetyLockState = {
 export type SafetyLock = {
   /** Feed the current gated position snapshot; returns the new state. */
   sample(position: PositionState, nowMs: number): SafetyLockState;
-  /**
-   * Grant the passenger override. Callers must only invoke this from the
-   * explicit press-and-hold acknowledgment (doc 06 §2). No-op unless the
-   * lock is currently engaged for motion (MOVING or UNKNOWN).
-   */
-  grantOverride(nowMs: number, actionClass: string): SafetyLockState;
   state(nowMs: number): SafetyLockState;
-  /** In-memory override log — position-free by construction. */
-  overrideLog(): readonly OverrideLogEntry[];
 };
 
-export function createSafetyLock(sessionId: string): SafetyLock {
+export function createSafetyLock(): SafetyLock {
   let motion: MotionState = 'UNKNOWN';
   // Dwell anchors: when the speed first crossed the relevant threshold.
   let aboveSinceMs: number | null = null;
   let belowSinceMs: number | null = null;
-  let overrideUntilMs = 0;
-  // Stop/start revocation: one full MOVING → STATIONARY → MOVING cycle
-  // clears the grant, so track whether we stopped while an override ran.
-  let stoppedDuringOverride = false;
   // The setup window (doc 06 §1a): open until the FIRST motion
   // determination, then shut for the life of this lock. Deliberately
   // never re-opened — not on watch stop, not on position reset — because
@@ -152,7 +144,6 @@ export function createSafetyLock(sessionId: string): SafetyLock {
   let lastDetermined: 'STATIONARY' | 'MOVING' | null = null;
   /** When the signal was lost while verified stationary, else null. */
   let stationaryLostAtMs: number | null = null;
-  const log: OverrideLogEntry[] = [];
 
   // Same-state calls return the SAME reference (matching the gps-session
   // discipline) so the provider's setState bails out and an idle, parked
@@ -160,8 +151,7 @@ export function createSafetyLock(sessionId: string): SafetyLock {
   let lastState: SafetyLockState | null = null;
 
   function currentState(nowMs: number): SafetyLockState {
-    const overrideActive = overrideUntilMs > nowMs;
-    const locked = motion !== 'STATIONARY' && !overrideActive;
+    const locked = motion !== 'STATIONARY';
     /*
      * The grace is a property of TIME as well as state, so it is computed
      * here rather than latched in `sample` — a screen that stops sampling
@@ -176,23 +166,14 @@ export function createSafetyLock(sessionId: string): SafetyLock {
     const next: SafetyLockState = {
       motion,
       locked,
-      overrideRemainingMs: overrideActive ? overrideUntilMs - nowMs : 0,
-      overrideActive,
       setupWindow: !everDetermined,
       parkedGrace,
-      /*
-       * MOVING is the only honest reason to offer a passenger override.
-       * An unknown location is reported as exactly that — the app cannot
-       * see the vehicle — rather than as movement nobody observed.
-       */
       lockReason: !locked ? null : motion === 'MOVING' ? 'moving' : 'location-unknown',
     };
     if (
       lastState &&
       lastState.motion === next.motion &&
       lastState.locked === next.locked &&
-      lastState.overrideRemainingMs === next.overrideRemainingMs &&
-      lastState.overrideActive === next.overrideActive &&
       lastState.setupWindow === next.setupWindow &&
       lastState.parkedGrace === next.parkedGrace &&
       lastState.lockReason === next.lockReason
@@ -213,8 +194,7 @@ export function createSafetyLock(sessionId: string): SafetyLock {
     if (speed === null || !Number.isFinite(speed)) {
       // No permission, no fix, stale fix, or underivable speed: UNKNOWN,
       // treated as MOVING. Dwell anchors reset — certainty must be
-      // re-earned. An active override keeps counting down: motion did not
-      // verifiably STOP, so the grant is not revoked.
+      // re-earned.
       /*
        * The signal went quiet. If the truck was VERIFIED STATIONARY when
        * that happened, start the parked grace — it did not move, we simply
@@ -241,11 +221,6 @@ export function createSafetyLock(sessionId: string): SafetyLock {
         motion = 'MOVING';
         everDetermined = true;
         lastDetermined = 'MOVING';
-        if (stoppedDuringOverride && overrideUntilMs > nowMs) {
-          // MOVING → STATIONARY → MOVING: the grant is revoked immediately.
-          overrideUntilMs = 0;
-        }
-        stoppedDuringOverride = false;
       }
     } else if (speed < STATIONARY_SPEED_MPH) {
       aboveSinceMs = null;
@@ -256,7 +231,6 @@ export function createSafetyLock(sessionId: string): SafetyLock {
         lastDetermined = 'STATIONARY';
         // Re-established: a future signal loss earns a fresh grace.
         stationaryLostAtMs = null;
-        if (overrideUntilMs > nowMs) stoppedDuringOverride = true;
       }
     } else {
       // 3–5 mph hysteresis band: neither dwell advances; state holds (an
@@ -268,24 +242,5 @@ export function createSafetyLock(sessionId: string): SafetyLock {
     return currentState(nowMs);
   }
 
-  function grantOverride(nowMs: number, actionClass: string): SafetyLockState {
-    const now = currentState(nowMs);
-    if (!now.locked) return now; // nothing to override when already usable
-    overrideUntilMs = nowMs + OVERRIDE_DURATION_MS;
-    stoppedDuringOverride = false;
-    log.push({
-      tMs: nowMs,
-      sessionId,
-      durationMs: OVERRIDE_DURATION_MS,
-      actionClass,
-    });
-    return currentState(nowMs);
-  }
-
-  return {
-    sample,
-    grantOverride,
-    state: currentState,
-    overrideLog: () => log,
-  };
+  return { sample, state: currentState };
 }

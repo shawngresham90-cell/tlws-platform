@@ -101,6 +101,17 @@ const session = new MemoryStorage();
   addEventListener() {},
   removeEventListener() {},
 };
+
+/*
+ * `self` and an idle scheduler. The driving screen links to Settings with
+ * next/link, whose prefetch schedules work through `requestIdleCallback` on
+ * `self` — neither of which exists in a node harness. Shimmed beside the
+ * other browser globals; the idle callback is dropped rather than run,
+ * because prefetching is not what any of these harnesses is testing.
+ */
+(globalThis as any).self = globalThis;
+(globalThis as any).requestIdleCallback = () => 0;
+(globalThis as any).cancelIdleCallback = () => {};
 (globalThis as any).localStorage = local;
 (globalThis as any).sessionStorage = session;
 
@@ -397,9 +408,17 @@ async function main(): Promise<void> {
 
   // --- parked, before anything is tapped ------------------------------
   clocksIntact(h, 'parked');
+  /*
+   * The name is no longer DISPLAYED on the driving screen — the field that
+   * showed it moved to /drive/settings with the rest of the setup. What this
+   * block cares about is that the record survives a reload and reaches the
+   * one thing the name exists for, which is being spoken; that is asserted in
+   * test-navigator-startup's greeting scenario. Here the useful statement is
+   * the negative one: the driving screen does not ask for it again.
+   */
   check(
-    'parked: the saved name came back, so the checklist is satisfied',
-    h.text().includes('Driving as  Shawn') || h.text().includes('Shawn'),
+    'parked: the screen does not re-ask for a name it already has',
+    !h.text().includes('Save name') && !h.text().includes('First name'),
   );
   check(
     'parked: the saved truck came back confirmed, so Start is not gated on it',

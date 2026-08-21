@@ -12,12 +12,13 @@
  */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { allowedWhileMoving } from '@/lib/navigator/actions';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { LockGate } from '@/components/navigator/LockGate';
 import { MotionLockOverlay } from '@/components/navigator/MotionLockOverlay';
-import { PassengerOverrideDialog, HOLD_MS } from '@/components/navigator/PassengerOverrideDialog';
 
 let passed = 0;
 let failed = 0;
@@ -37,21 +38,17 @@ function inProviders(child: ReturnType<typeof createElement>): string {
 }
 
 /*
- * Default state (no fix → UNKNOWN). Two regimes since the startup
- * simplification (doc 06 §1a):
+ * Default state (no fix → UNKNOWN). ONE regime since NAV-ENTRY-1:
  *
- *   - 'edit-destination' is the ONE setup-window action: at a cold start
- *     (motion UNKNOWN since the lock was created, no determination ever
- *     made) it renders, because the simplified flow chooses a
- *     destination BEFORE location exists. The window latches shut on the
- *     first motion determination — the moving-lock case is exercised
- *     with real fixes in test-safety-lock/test-navigator-startup, which
- *     a static render cannot reach.
+ *   - every EDITING action renders, always. Destination, truck, clocks,
+ *     preferences, settings — the owner's decision is that a driver may
+ *     change their own trip whenever they like, so these are permitted
+ *     outright rather than exempted by a cold-start window.
  *
- *   - every OTHER stationary-only action keeps the plain default-deny:
- *     UNKNOWN is treated as MOVING, children are not rendered, and the
- *     locked copy + passenger path stand. 'edit-truck-profile' proves it
- *     here — deliberately an action absent from SETUP_WINDOW_PERMISSIONS.
+ *   - the three CAMERA actions keep default-deny: UNKNOWN is treated as
+ *     MOVING and children are not rendered. 'route-overview' proves it here.
+ *     There is no passenger path out of it, because there is no passenger
+ *     path left anywhere.
  */
 {
   const html = inProviders(
@@ -62,7 +59,7 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     ),
   );
   check(
-    'setup window: destination entry renders at a cold start (doc 06 §1a)',
+    'destination entry renders at a cold start — and at every other motion state',
     html.includes('SETUP-WINDOW-CONTENT'),
   );
 }
@@ -70,7 +67,7 @@ function inProviders(child: ReturnType<typeof createElement>): string {
   const html = inProviders(
     createElement(
       LockGate,
-      { action: 'edit-truck-profile', lockedLabel: 'Truck profile' },
+      { action: 'route-overview', lockedLabel: 'Route overview' },
       createElement('p', null, 'SHOULD-NOT-RENDER'),
     ),
   );
@@ -79,24 +76,16 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     !html.includes('SHOULD-NOT-RENDER'),
   );
   /*
-   * THE COPY CHANGED WITH THE POLICY (Fast Start milestone), and these
-   * assertions changed with it rather than being deleted.
-   *
-   * This render has never had a fix, so motion is UNKNOWN and the lock
-   * reason is `location-unknown`. The old screen said "locked while the
-   * vehicle is moving … or motion is unknown" and offered a PASSENGER
-   * ACCESS button. That is the exact thing the pilot reported: a parked
-   * driver asked to declare they are not driving, because the app could
-   * not see them.
-   *
-   * The new rule is narrower and more honest: a passenger override is
-   * offered ONLY for confirmed motion. An unknown location says the app
-   * cannot see the vehicle, and says nothing about who is driving.
+   * The remaining gate is the CAMERA, and its copy says what is true without
+   * asking the driver anything. This render has never had a fix, so motion is
+   * UNKNOWN and the lock reason is `location-unknown`: the app cannot see the
+   * vehicle, and it says exactly that rather than claiming movement nobody
+   * observed — or asking whoever is holding the phone to declare they are not
+   * driving, which is what it used to do.
    */
   check(
     'locked action: an unknown location is named as exactly that',
-    html.includes("can't confirm this vehicle's location") ||
-      html.includes('can&#x27;t confirm this vehicle&#x27;s location'),
+    html.includes('confirm this vehicle') && html.includes('location'),
     html.slice(0, 400),
   );
   check(
@@ -104,8 +93,8 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     !html.includes('locked while the vehicle is moving'),
   );
   check(
-    'locked action: and NEVER offers a passenger declaration to a driver who has not moved',
-    !html.includes('Passenger access') && !html.includes('I am not the driver'),
+    'locked action: and offers no passenger declaration, at any motion state',
+    !/passenger/i.test(html) && !html.includes('I am not the driver'),
   );
   check(
     'locked action: the reason is machine-readable for the bench',
@@ -172,22 +161,37 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     blockHtml.includes('rounded-card') && !blockHtml.includes('rounded-cockpit'),
   );
 }
-// The setup-window map itself stays exactly one action wide: widening it
-// is an owner decision this harness makes loud.
+// The permission map is where the owner's decision lives, so it is asserted
+// directly: editing is permitted at speed, the camera is not, and there is no
+// second map that could quietly exempt anything.
 {
   const src = strip(readFileSync('src/lib/navigator/actions.ts', 'utf8'));
-  const mapBody = /SETUP_WINDOW_PERMISSIONS[^=]*=\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-  const entries = mapBody.split(',').filter((line) => line.includes(':'));
   check(
-    'setup window: exactly ONE action is exempt, and it is edit-destination',
-    entries.length === 1 && /'edit-destination':\s*true/.test(mapBody),
-    mapBody.trim(),
+    'the setup-window exemption map is GONE, not merely emptied',
+    !/SETUP_WINDOW_PERMISSIONS/.test(src) && !/allowedDuringSetupWindow/.test(src),
   );
+  for (const action of [
+    'edit-destination',
+    'edit-truck-profile',
+    'add-stop',
+    'enter-text',
+    'open-deep-settings',
+    'view-trip-summary',
+  ]) {
+    check(`permission map: ${action} is available while moving`, allowedWhileMoving(action));
+  }
+  for (const action of ['pan-map', 'route-overview', 'change-map-style']) {
+    check(`permission map: ${action} stays stationary-only`, !allowedWhileMoving(action));
+  }
   const lockSrc = strip(readFileSync('src/lib/navigator/safety-lock.ts', 'utf8'));
   check(
     'setup window: latches shut on the FIRST determination and never re-opens',
     (lockSrc.match(/everDetermined = true/g) ?? []).length === 2 &&
       !/everDetermined = false/.test(lockSrc.replace(/let everDetermined = false/, '')),
+  );
+  check(
+    'the controller can no longer grant anything',
+    !/grantOverride/.test(lockSrc) && !/overrideUntilMs/.test(lockSrc),
   );
 }
 
@@ -223,57 +227,63 @@ function inProviders(child: ReturnType<typeof createElement>): string {
     html.includes('aria-live="polite"') && html.includes('role="status"'),
   );
   /*
-   * A cold-start render is inside the setup window, so the overlay says
-   * setup is available — claiming "controls limited" there would be a
-   * lie, and claiming "Parked" would invent motion knowledge. The
-   * post-determination UNKNOWN label survives in source for the state a
-   * static render cannot reach.
+   * The overlay reports what the app can SEE, and no longer what the driver
+   * may do — because motion no longer decides what the driver may do. A
+   * cold-start render says location checks start when they do.
    */
   check(
-    'overlay: cold start reads as the setup window, honestly',
-    html.includes('Trip setup available — motion checks begin when location starts'),
+    'overlay: cold start says when location checks begin',
+    html.includes('Location checks begin when you start'),
   );
   const overlaySrc = readFileSync('src/components/navigator/MotionLockOverlay.tsx', 'utf8');
   check(
-    'overlay: post-determination UNKNOWN still reads as limited controls',
-    overlaySrc.includes('Motion unknown — controls limited for safety'),
+    'overlay: it never tells the driver their controls are limited',
+    !/controls limited/i.test(strip(overlaySrc)) && !/passenger/i.test(strip(overlaySrc)),
+  );
+  check(
+    'overlay: a parked truck that lost signal is not reported as moving',
+    overlaySrc.includes('Parked — location signal lost'),
   );
 }
 
-// Override dialog: verbatim architecture wording, hold semantics, targets.
+// THE OVERRIDE DIALOG IS GONE — asserted as an absence across the whole tree.
+/*
+ * This block used to check the dialog's wording, its two-second hold, its
+ * pointer-cancel handling and its 64px targets. All of that was correct work
+ * on a control the owner has now removed, so the test that replaces it asks
+ * the only remaining useful question: can anything in the Navigator still ask
+ * a driver to declare they are a passenger?
+ */
 {
-  const html = renderToStaticMarkup(
-    createElement(PassengerOverrideDialog, {
-      actionClass: 'edit-destination',
-      onConfirm: () => undefined,
-      onCancel: () => undefined,
-    }),
-  );
   check(
-    'dialog: the acknowledgment wording is the architecture document’s, verbatim',
-    html.includes('Only a passenger may use this. I am not the driver of this vehicle.'),
+    'the dialog component no longer exists',
+    !readdirSync('src/components/navigator').includes('PassengerOverrideDialog.tsx'),
   );
+  const navFiles = readdirSync('src/components/navigator').filter(
+    (f) => f.endsWith('.tsx') || f.endsWith('.ts'),
+  );
+  for (const f of navFiles) {
+    /*
+     * COMMENTS ARE STRIPPED FIRST, deliberately. Several files explain in
+     * prose what passenger access WAS and why it is gone — that history is
+     * the most useful thing a future reader can find, and banning the word
+     * from comments would delete the explanation along with the feature.
+     * What must not survive is the word reaching a DRIVER, which is what the
+     * scrubbed source proves.
+     */
+    const src = strip(readFileSync(join('src/components/navigator', f), 'utf8'));
+    check(
+      `no passenger vocabulary reaches the screen in ${f}`,
+      !/passenger|press[- ]and[- ]hold|I am not the driver/i.test(src),
+    );
+  }
+  const provider = strip(readFileSync('src/components/navigator/SafetyLockProvider.tsx', 'utf8'));
+  check('the provider exposes no way to grant an exception', !/grantOverride/.test(provider));
+  const gate = strip(readFileSync('src/components/navigator/LockGate.tsx', 'utf8'));
   check(
-    'dialog: press-and-hold affordance, not a tap',
-    html.includes('Press and hold (2 seconds)'),
+    'the gate has no hold timer, countdown, or grant path',
+    !/setInterval|setTimeout|grantOverride|HOLD_MS/.test(gate),
   );
-  check('dialog: role alertdialog with an accessible name', html.includes('role="alertdialog"'));
-  check('dialog: cancel path present', html.includes('Cancel passenger access'));
-  check('dialog: 64px minimum targets', (html.match(/min-h-16/g) ?? []).length >= 2);
-  check('dialog: 2000 ms hold constant', HOLD_MS === 2000);
-  const src = strip(readFileSync('src/components/navigator/PassengerOverrideDialog.tsx', 'utf8'));
-  check(
-    'dialog: hold wired to pointer down/up/leave/CANCEL (a cancelled touch must end the hold)',
-    /onPointerDown/.test(src) &&
-      /onPointerUp/.test(src) &&
-      /onPointerLeave/.test(src) &&
-      /onPointerCancel/.test(src),
-  );
-  check(
-    'dialog: keyboard hold (Enter/Space down + up)',
-    /onKeyDown/.test(src) && /onKeyUp/.test(src),
-  );
-  check('dialog: hold timer cleaned up on unmount', /clearInterval/.test(src));
 }
 
 // Provider structure: single evaluate interval, cleanup, no persistence.

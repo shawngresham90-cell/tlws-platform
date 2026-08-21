@@ -262,7 +262,16 @@ const provider = readFileSync('src/components/navigator/GpsProvider.tsx', 'utf8'
     // test-navigator-canada, test-navigator-pretrip) pin which keys exist
     // and what may go in them; here the sanctioned call shapes are
     // scrubbed and every other storage token stays banned.
-    const storageSanctioned = f === 'DrivingScreen.tsx' || /-storage\.ts$/.test(f);
+    /*
+     * NavigatorSettings.tsx joins the sanctioned list (NAV-ENTRY-1): it READS
+     * the trip snapshot, through the same parser the driving screen uses, to
+     * decide whether a routing edit needs the "applies to your next route"
+     * notice. It never writes or clears it — the settings route has no
+     * lifecycle at all, which is what makes "opening Settings mid-trip cannot
+     * destroy the trip" a fact about the file rather than a promise.
+     */
+    const storageSanctioned =
+      f === 'DrivingScreen.tsx' || f === 'NavigatorSettings.tsx' || /-storage\.ts$/.test(f);
     const scrubbed = storageSanctioned
       ? src
           .replace(

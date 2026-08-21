@@ -26,6 +26,8 @@ import {
 } from '@/lib/navigator/heading';
 import { maplibreRasterStyle, resolveMapStyle, type MapStyleId } from '@/lib/navigator/map-style';
 import { vehicleMarkerRotationDeg, vehicleMarkerSvg, VEHICLE_MARKER_PX } from './vehicle-marker';
+import { MAP_VOID_COLOR } from '@/lib/navigator/display-mode';
+import { useDisplayMode } from './DisplayModeProvider';
 
 /**
  * The driving map — MapLibre GL, heading-up (owner decision 6, resolved).
@@ -244,6 +246,13 @@ export function NavigationMap({
    */
   const routeDataRef = useRef<unknown>(EMPTY_ROUTE);
   const styledRef = useRef<MapStyleId | null>(null);
+  /*
+   * The driver's palette. Read through the provider rather than passed as a
+   * prop: the map is mounted by the driving screen, which does not otherwise
+   * care what colour anything is, and threading a theme prop through it would
+   * give a second component a chance to disagree about the answer.
+   */
+  const { theme } = useDisplayMode();
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -414,6 +423,35 @@ export function NavigationMap({
       ensureRouteLayers(map, routeDataRef.current);
     });
   }, [ready, styleId]);
+
+  /*
+   * --- display theme: the VOID colour only (NAV-ENTRY-1) -----------------
+   *
+   * What shows through where a tile has not loaded yet. It follows the
+   * driver's Automatic/Night/Day choice through a single `setPaintProperty`
+   * call — not `setStyle`, so there is no style swap, no source rebuild, no
+   * route re-add, no camera touch and no remount. Switching the display mode
+   * mid-drive changes one colour and nothing else, which is what makes it
+   * presentation rather than route state.
+   *
+   * THE BASEMAP ITSELF IS NOT RETHEMED, deliberately. OpenStreetMap raster
+   * tiles are day tiles and there is no night tile set behind them; inverting
+   * or dimming them would repaint roads into something a driver could mistake
+   * for information. The existing mild desaturation stays identical in both
+   * modes, so labels, the route line and the truck marker keep exactly the
+   * contrast they were tested with.
+   */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || map === null) return;
+    try {
+      if (map.getLayer('background') !== undefined) {
+        map.setPaintProperty('background', 'background-color', MAP_VOID_COLOR[theme]);
+      }
+    } catch {
+      /* a style mid-swap has no background layer yet; the next pass paints it */
+    }
+  }, [ready, theme, styleId]);
 
   // --- gestures follow the lock, never a local speed check ---------------
   useEffect(() => {

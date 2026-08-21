@@ -517,10 +517,25 @@ void (async () => {
   {
     const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
     check('9. the screen persists under the versioned key', screen.includes('TRIP_RESTORE_KEY'));
+    /*
+     * The write moved into `saveSnapshotNow()` so the periodic save and the
+     * leaving-the-screen flush are literally the same code (NAV-ENTRY-1).
+     * Both guards are asserted here rather than one: the periodic save still
+     * only runs while guidance is live, and the flush — which is what lets a
+     * driver open Settings mid-trip and come back to it — is gated on the
+     * same ACTIVE list, read from the lifecycle at cleanup time.
+     */
+    const flat = screen.replace(/\s+/g, ' ');
     check(
-      '9. persistence runs only while guidance is live',
-      /ACTIVE_LIFECYCLE_STATES\.includes\(lcState\)\)\s*\{\s*const planned = lastRouteRef/.test(
-        screen.replace(/\s+/g, ' '),
+      '9. periodic persistence runs only while guidance is live',
+      /ACTIVE_LIFECYCLE_STATES\.includes\(lcState\)\) \{ if \(Date\.now\(\) - lastSavedMsRef\.current >= RESTORE_REFRESH_MS\) saveSnapshotNow\(\);/.test(
+        flat,
+      ),
+    );
+    check(
+      '9. the unmount flush is gated on the same ACTIVE list, and runs BEFORE the cancel',
+      /if \(ACTIVE_LIFECYCLE_STATES\.includes\(lifecycle\.state\(\)\)\) saveSnapshotNow\(\);[\s\S]{0,200}lifecycle\.cancel/.test(
+        flat,
       ),
     );
     check(

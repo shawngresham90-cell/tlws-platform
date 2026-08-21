@@ -309,9 +309,32 @@ const p = (over: Partial<EditableProfile> = {}): EditableProfile => ({
     })(),
   );
   const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
+  const settings = readFileSync('src/components/navigator/NavigatorSettings.tsx', 'utf8');
+  /*
+   * A ROUTE CAN NO LONGER OUTLIVE THE TRUCK IT WAS PLANNED FOR, and the
+   * guarantee got stronger rather than weaker (NAV-ENTRY-1).
+   *
+   * The truck editor used to sit on the driving screen beside a planned
+   * route, so editing it had to explicitly `discardRoute`. The editor is on
+   * /drive/settings now — a different route, with no lifecycle mounted at
+   * all. Reaching it unmounts the driving screen, and a `route-ready` plan is
+   * not an ACTIVE state, so nothing is flushed and the plan is gone. The
+   * driver comes back and plans again, with the truck they just saved.
+   *
+   * So this asserts the two halves of that: the settings surface cannot touch
+   * a lifecycle, and only ACTIVE trips survive the trip to it.
+   */
   check(
-    'confirmation: a changed profile discards a route planned for the old truck',
-    /onChange=\{\(next\) => \{[\s\S]{0,900}discardRoute/.test(screen),
+    'confirmation: the truck editor has no lifecycle to plan a stale route with',
+    !/lifecycle|discardRoute|NavigationLifecycle/.test(
+      settings.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' '),
+    ),
+  );
+  check(
+    'confirmation: only an ACTIVE trip survives leaving the driving screen',
+    /if \(ACTIVE_LIFECYCLE_STATES\.includes\(lifecycle\.state\(\)\)\) saveSnapshotNow\(\);/.test(
+      screen.replace(/\s+/g, ' '),
+    ),
   );
   check(
     // Read the CODE: the component's own doc comment explains that it has

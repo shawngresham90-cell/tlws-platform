@@ -6,9 +6,26 @@
  * affordance can never be silently permitted at speed. Per-component
  * `if (moving)` checks are prohibited — this map is the only authority.
  *
- * Values come straight from the doc's capability matrix. Actions whose
- * surfaces ship in later milestones are mapped now so the matrix is
- * complete on day one.
+ * WHAT NAV-ENTRY-1 CHANGED, and why the map still exists.
+ *
+ * Every EDITING action below is now `true`. The owner's decision: a driver
+ * may change their own destination, truck, clocks, preferences and settings
+ * whenever they like, with a reminder to do it parked and nothing disabled if
+ * they do not. What the old `false` bought was not safety — a determined
+ * driver simply used the press-and-hold passenger override, and a PARKED
+ * driver whose GPS died under a canopy was locked out of their own setup and
+ * asked to declare they were a passenger. It cost the honest driver and not
+ * the other one.
+ *
+ * What stays `false` is the CAMERA: dragging the map off the truck, the
+ * whole-route overview, the basemap switch. Those are not edits. They point
+ * the driver's attention at somewhere they are not, and no amount of
+ * "the driver is an adult" makes a moving truck a good place to be reading a
+ * map of thirty miles ahead. Camera discipline is unchanged, and follow mode
+ * is unchanged with it.
+ *
+ * So the map is smaller in effect but not gone, and DEFAULT-DENY still holds:
+ * a new affordance nobody has classified is still locked at speed.
  */
 
 export type UIAction =
@@ -51,20 +68,25 @@ export const ACTION_PERMISSIONS: Record<UIAction, boolean> = {
   'view-status': true,
   'open-emergency': true,
   'mute-voice': true,
-  'edit-destination': false,
-  'edit-truck-profile': false,
-  'add-stop': false,
-  'submit-driver-report': false,
-  'enter-text': false,
-  'browse-directory': false,
-  'open-deep-settings': false,
-  'view-trip-summary': false,
-  // Zoom and pan were one permission ('browse-map', stationary-only) until
-  // the owner's road test split them. Zooming out for road context keeps
-  // the camera on the truck, so it rides along with driving; dragging the
-  // camera somewhere else does not, and stays locked. Recenter (part of
-  // 'view-status') remains one touch away either way. Overview and style
-  // switching are deliberate, two-handed decisions — stationary only.
+  // --- editing: the driver's own trip, their own truck, their own clocks.
+  // Available at every motion state (NAV-ENTRY-1, owner decision). The
+  // reminder that says "only make changes when safely parked" is a sentence,
+  // not a gate, and it is the whole of the mechanism now.
+  'edit-destination': true,
+  'edit-truck-profile': true,
+  'add-stop': true,
+  'submit-driver-report': true,
+  'enter-text': true,
+  'browse-directory': true,
+  'open-deep-settings': true,
+  'view-trip-summary': true,
+  // --- the camera. Zoom and pan were one permission ('browse-map',
+  // stationary-only) until the owner's road test split them. Zooming out for
+  // road context keeps the camera on the truck, so it rides along with
+  // driving; dragging the camera somewhere else does not, and stays locked.
+  // Recenter (part of 'view-status') remains one touch away either way.
+  // Overview and style switching are deliberate, two-handed decisions —
+  // stationary only. These three are what `locked` now governs, in full.
   'zoom-map': true,
   'pan-map': false,
   'route-overview': false,
@@ -77,34 +99,13 @@ export function allowedWhileMoving(action: string): boolean {
 }
 
 /**
- * The SETUP WINDOW exemption (doc 06 §1a, pilot round 3 startup
- * simplification): actions additionally permitted while the safety lock's
- * cold-start window is open — motion UNKNOWN continuously since the lock
- * was created, before any watch has ever produced a MOVING or STATIONARY
- * determination.
+ * THE SETUP-WINDOW EXEMPTION IS GONE, and its absence is the point.
  *
- * Why it exists: the simplified startup is destination → Start, with
- * location permission requested BY the Start tap. Before that tap there
- * is no GPS at all, so motion is UNKNOWN — and under the plain matrix the
- * destination surface would be locked, which forced the old enable-
- * location-then-wait-out-the-dwell flow the pilot driver reported as too
- * many steps. In the window the app has zero motion evidence either way;
- * the owner's decision is that trip setup is available then, exactly the
- * way any parked phone app is.
- *
- * Why it is narrow: ONE action, the trip-setup surface. The window
- * latches shut on the first motion determination and never re-opens
- * (safety-lock.ts), so a driver who has ever been seen moving gets the
- * full unknown-is-locked treatment for the rest of the session. Every
- * other action keeps the plain matrix. Default-deny is preserved: an
- * action absent from BOTH maps is locked, and the harness asserts this
- * map stays this small.
+ * It existed to unlock exactly one action — the trip-setup surface — during a
+ * cold start, because the plain matrix locked destination entry before any
+ * GPS existed and a parked driver could not type where they were going. That
+ * whole problem disappeared when editing stopped being motion-gated: the
+ * exemption's only grant is now the ordinary rule. Keeping an empty second
+ * permission map beside the real one would be a place for a future exemption
+ * to hide, so it is deleted rather than emptied.
  */
-export const SETUP_WINDOW_PERMISSIONS: Partial<Record<UIAction, boolean>> = {
-  'edit-destination': true,
-};
-
-/** Default-deny lookup for the setup window. */
-export function allowedDuringSetupWindow(action: string): boolean {
-  return SETUP_WINDOW_PERMISSIONS[action as UIAction] === true;
-}
