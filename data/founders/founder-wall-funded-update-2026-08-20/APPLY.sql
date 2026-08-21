@@ -10,6 +10,9 @@
 --   * ADD   Globe Life                              -> iron/6
 --   * ADD   Margaret Abbey                          -> brick/21
 --
+-- The three added rows carry paid_at = 2026-02-08 (owner-supplied) and NULL
+-- for amount_cents, payment_provider and payment_ref.
+--
 -- The two moves change tier + position and NOTHING else: amount_cents,
 -- payment_provider, payment_ref, paid_at, status and is_public are all left
 -- exactly as they are. campaign_settings is never touched by this file.
@@ -20,18 +23,20 @@
 -- only uniqueness within a tier matters, and that is asserted below.
 --
 -- ============================================================================
--- OWNER INPUT REQUIRED — READ BEFORE RUNNING
+-- paid_at — OWNER-SUPPLIED, NOT INVENTED
 -- ============================================================================
 -- public.founders.paid_at is `timestamptz NOT NULL DEFAULT now()`. Every row
 -- MUST carry a payment timestamp; there is no way to insert a founder without
--- one. The owner instructed that contribution dates must not be invented, so
--- this script does NOT silently let the default stamp the three new rows with
--- whatever moment APPLY happens to run.
+-- one. Rather than let the default stamp the three new rows with whatever
+-- moment APPLY happens to run, the value is supplied explicitly.
 --
--- Set the value below to the date the owner wants recorded, then run.
--- Left as-is, the script aborts before writing anything.
+-- The owner confirmed on 2026-08-21: all three paid on 2026-02-08.
+--
+-- The placeholder guard below is kept deliberately. If this value is ever
+-- blanked or reset while editing, the script aborts before writing rather
+-- than falling back to now().
 -- ============================================================================
-\set new_rows_paid_at 'OWNER_MUST_SET_THIS'
+\set new_rows_paid_at '2026-02-08'
 
 BEGIN;
 
@@ -158,6 +163,14 @@ BEGIN
    WHERE display_name IN ('Wayne''s Meat Market','Globe Life','Margaret Abbey')
      AND (amount_cents IS NOT NULL OR payment_provider IS NOT NULL OR payment_ref IS NOT NULL);
   IF v_n <> 0 THEN RAISE EXCEPTION 'a new row carries invented payment data'; END IF;
+
+  -- ...and that they carry the owner-supplied date, not now().
+  SELECT count(*) INTO v_n FROM public.founders
+   WHERE display_name IN ('Wayne''s Meat Market','Globe Life','Margaret Abbey')
+     AND paid_at = v_paid_ts;
+  IF v_n <> 3 THEN
+    RAISE EXCEPTION 'expected 3 new rows stamped %, found %', v_paid_ts, v_n;
+  END IF;
 
   RAISE NOTICE 'FOUNDER-WALL-FUNDED-1 applied: 54 founders (iron 8, steel 9, brick 21, shirt 16)';
 END $$;

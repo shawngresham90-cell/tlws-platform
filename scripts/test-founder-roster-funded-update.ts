@@ -255,11 +255,40 @@ check(
   '10. APPLY re-checks the new rows carry no payment data',
   /a new row carries invented payment data/.test(apply),
 );
-check('10. APPLY refuses to invent paid_at', /will not invent a contribution date/.test(apply));
+// paid_at is NOT NULL, so a value is unavoidable. It must be the OWNER'S date,
+// set explicitly — never the DEFAULT now() stamp of whenever APPLY happened to run.
 check(
-  '10. manifest records the paid_at owner gate',
-  manifest.blocked_on_owner_input?.field === 'public.founders.paid_at',
+  '10. APPLY still refuses to invent paid_at',
+  /will not invent a contribution date/.test(apply),
 );
+check(
+  '10. APPLY sets the owner-supplied paid_at',
+  /\\set new_rows_paid_at '2026-02-08'/.test(apply),
+  apply.match(/\\set new_rows_paid_at.*/)?.[0],
+);
+check('10. the inserts bind paid_at to that variable', insert.includes('v_paid_ts'), insert);
+check(
+  '10. APPLY verifies all three rows carry the supplied date',
+  /expected 3 new rows stamped/.test(apply),
+);
+check(
+  '10. VERIFY re-checks the supplied date',
+  verify.includes("paid_at = '2026-02-08'::timestamptz"),
+);
+check(
+  '10. manifest records the paid_at decision and its source',
+  manifest.paid_at_decision?.field === 'public.founders.paid_at' &&
+    manifest.paid_at_decision?.value === '2026-02-08' &&
+    /owner-supplied/i.test(manifest.paid_at_decision?.source ?? ''),
+  manifest.paid_at_decision,
+);
+check(
+  '10. manifest no longer claims the package is blocked',
+  manifest.blocked_on_owner_input === undefined,
+);
+for (const row of manifest.changes.inserts) {
+  check(`10. ${row.display_name} records paid_at 2026-02-08`, row.paid_at === '2026-02-08');
+}
 
 /* --------------------------- 11. moved rows preserve financial/payment */
 
