@@ -4,8 +4,10 @@ import { TIER_LABEL } from './tiers';
 /**
  * A single founder on the wall. Business links render rel="sponsored nofollow"
  * to stay Google-compliant for paid placement. Individual dollar amounts are
- * deliberately not shown — the aggregate lives in the thermometer; the wall is
- * about recognition, not disclosing what anyone gave.
+ * deliberately not shown, and no aggregate money appears on any public surface
+ * now that the school is funded — the wall is recognition, not a disclosure of
+ * what anyone gave. Dark asphalt card with text-ink names, so the 2D wall stays
+ * readable independently of the 3D plaque materials.
  */
 export function FounderCard({ founder }: { founder: PublicFounder }) {
   const { display_name, business_name, business_url, tier, message } = founder;

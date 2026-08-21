@@ -1,36 +1,37 @@
 import { Section, Button } from '@/components/ui';
 import { PageHero, Placeholder, AcademyFaq } from '@/components/academy';
 import {
-  CampaignThermometer,
+  FundedStatusPanel,
   FoundersWallList,
   BecomeFounderForm,
   FOUNDER_TIERS,
 } from '@/components/community';
-import { getCampaignProgress, getPublicFounders } from '@/lib/community/founders';
+import { getPublicFounders } from '@/lib/community/founders';
 import { tierRemaining, tierUsage } from '@/lib/community/campaign';
 import { JsonLd, breadcrumbSchema } from '@/lib/seo/schema';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 export const metadata = buildMetadata({
-  title: 'Founders Wall — Help Build the School | Trucking Life Academy',
+  title: 'Founders Wall — School Is Funded | Trucking Life Academy',
   description:
-    'Back Trucking Life Academy and get your name on the Founders Wall. Community-funded CDL training in Dalton, GA — drivers helping drivers put real people behind the wheel.',
+    'The school is funded. Trucking Life Academy was built founder by founder — see the drivers and businesses recognized on the Founders Wall in Dalton, GA.',
   path: '/founders',
 });
 
 /**
  * /founders — the Founders Wall (Milestone 9). Public, ISR-rendered from the
- * existing `founders` table + `campaign_progress` view. Shows the live campaign
- * thermometer, the wall of public founders grouped by tier, the giving tiers,
- * an interest-capture form (no payment processing — that's a later milestone),
- * and an FAQ. No email/SMS is sent.
+ * existing `founders` table. The owner has declared the school funded, so the
+ * page shows the SCHOOL IS FUNDED panel (no aggregate money anywhere), the wall
+ * of public founders grouped by tier, the recognition tiers, an interest-capture
+ * form (no payment processing), and an FAQ. No email/SMS is sent. The campaign
+ * thermometer moved to admin-only; `campaign_progress` is no longer read here.
  */
 export const revalidate = 60;
 
 const FAQS = [
   {
     q: 'What is the Founders Wall?',
-    a: 'It’s how the community helps build Trucking Life Academy. Founders who back the school get their name — and their business, if they have one — recognized on the wall. The money funds real drivers getting a real shot behind the wheel.',
+    a: 'It’s how the community built Trucking Life Academy. The school is funded, and the founders who backed it keep their name — and their business, if they have one — recognized on the wall.',
   },
   {
     q: 'Is my contribution tax-deductible?',
@@ -47,7 +48,7 @@ const FAQS = [
 ];
 
 export default async function FoundersPage() {
-  const [progress, founders] = await Promise.all([getCampaignProgress(), getPublicFounders()]);
+  const founders = await getPublicFounders();
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
   const usage = tierUsage(founders);
 
@@ -63,9 +64,9 @@ export default async function FoundersPage() {
       <PageHero
         crumbs={[{ name: 'Home', href: '/' }, { name: 'Founders Wall' }]}
         eyebrow="Founders Wall"
-        title="Help build the school,"
+        title="School is funded,"
         highlight="brick by brick."
-        intro="Trucking Life Academy is being built by drivers, for drivers. Every founder who backs it gets their name on the wall — and puts a real person one step closer to a CDL."
+        intro="Trucking Life Academy was built by drivers, for drivers. Every founder who backed it is recognized on the wall below."
       >
         <Button href="#join">Become a founder</Button>
         <Button variant="ghost" href="/academy">
@@ -76,9 +77,9 @@ export default async function FoundersPage() {
       {/* Live campaign */}
       <Section id="campaign" className="border-b border-line">
         <div className="mx-auto max-w-2xl">
-          <CampaignThermometer progress={progress} />
+          <FundedStatusPanel founderCount={founders.length} />
           <p className="mt-4 text-center text-sm text-muted">
-            Goal shown is the current build target. Founders are recognized on the wall below.
+            Founders are recognized on the wall below, in founder order within each tier.
           </p>
         </div>
       </Section>
@@ -88,7 +89,7 @@ export default async function FoundersPage() {
         <div className="mb-10 max-w-2xl">
           <h2 className="display-section">The founders</h2>
           <p className="mt-4 text-muted">
-            The drivers and businesses building this school, shown in founder order within each
+            The drivers and businesses who built this school, shown in founder order within each
             tier.
           </p>
         </div>

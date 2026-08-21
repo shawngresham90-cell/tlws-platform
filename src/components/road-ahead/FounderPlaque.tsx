@@ -13,7 +13,8 @@ import styles from './road-ahead.module.css';
 
 /**
  * One founder rendered as a real physical plaque — forged iron, brushed steel,
- * carved red-clay brick, or a premium brass sponsor plaque, per tier. As the
+ * carved sandstone brick, red-clay shirt brick, or a premium brass sponsor
+ * plaque, per tier. As the
  * visitor scrolls the plaque into the centre band the "camera" pushes toward it
  * (translateZ) and the name is cut in letter-by-letter: each glyph drops into
  * its groove, kicks up material dust, and — when the visitor has enabled sound —
@@ -26,7 +27,7 @@ import styles from './road-ahead.module.css';
  * no animation, no audio.
  */
 
-type MaterialKey = 'iron' | 'steel' | 'brick' | 'sponsor';
+type MaterialKey = 'iron' | 'steel' | 'brick' | 'founder_shirt' | 'sponsor';
 type PlaqueSize = 'lg' | 'md' | 'sm';
 
 const MATERIALS: Record<
@@ -58,8 +59,24 @@ const MATERIALS: Record<
     label: 'text-black/55',
     link: 'text-black/65 hover:text-black',
   },
+  // Light sandstone with dark charcoal engraving. The old dark-clay brick put
+  // #190c07 names on #8c3323 (2.38:1) with text-white/60 labels, so the names
+  // were hard to read; these colours are contrast-checked over the darkest
+  // gradient stop in scripts/test-founder-wall-contrast.ts. Deliberately no
+  // bright-yellow body text and no low-opacity white: both failed on sandstone.
   brick: {
     surface: styles.matBrick,
+    carve: styles.carveSandstone,
+    dust: 'rgba(120,95,55,0.85)',
+    sound: 'stone',
+    label: 'text-[#3A2E1C]',
+    link: 'text-[#3D2708] underline decoration-[#8A6F47] underline-offset-2 hover:text-black hover:decoration-black',
+  },
+  // Founder / Shirt keeps the ORIGINAL red-clay brick. It used to reach the
+  // brick material by fall-through, so without this explicit entry it would
+  // have silently turned to sandstone when Brick changed.
+  founder_shirt: {
+    surface: styles.matClay,
     carve: styles.carveStone,
     dust: 'rgba(120,60,40,0.85)',
     sound: 'stone',
@@ -81,6 +98,9 @@ export function materialForTier(tier: FounderTier): MaterialKey {
   if (tier === 'equipment_sponsor' || tier === 'student_sponsor') return 'sponsor';
   if (tier === 'iron') return 'iron';
   if (tier === 'steel') return 'steel';
+  // EXPLICIT, not fall-through. founder_shirt reaching 'brick' by default is
+  // what coupled the two tiers' styling in the first place.
+  if (tier === 'founder_shirt') return 'founder_shirt';
   return 'brick';
 }
 

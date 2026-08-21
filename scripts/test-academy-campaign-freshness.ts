@@ -1,7 +1,7 @@
 /**
  * Guards that /academy shows CURRENT Founder Wall campaign data.
  *
- * The page renders the shared CampaignThermometer from the live
+ * The page renders the shared FundedStatusPanel instead of the live
  * `campaign_progress` aggregate but carried no revalidate window, so Next
  * prerendered it once at build time and it kept serving whatever the totals
  * were on deploy day. /founders and /road-ahead were already ISR at 60s, so
@@ -13,7 +13,7 @@
  *      of bug, not just the one instance;
  *   3. the page reads through the authoritative reader and hands the result
  *      straight to the shared component;
- *   4. the funded wording stays owned by CampaignThermometer;
+ *   4. the funded wording stays owned by AdminCampaignThermometer (admin-only);
  *   5. no campaign figure is hard-coded into the page, where it would silently
  *      go stale exactly like the prerendered HTML did.
  *
@@ -39,7 +39,7 @@ const read = (p: string) => fs.readFileSync(path.join(root, p), 'utf8');
 const ACADEMY = 'src/app/(academy)/academy/page.tsx';
 const FOUNDERS = 'src/app/(community)/founders/page.tsx';
 const ROAD_AHEAD = 'src/app/(marketing)/road-ahead/page.tsx';
-const THERMOMETER = 'src/components/community/CampaignThermometer.tsx';
+const THERMOMETER = 'src/components/admin/AdminCampaignThermometer.tsx';
 
 const academy = read(ACADEMY);
 const thermometer = read(THERMOMETER);
@@ -87,13 +87,18 @@ function pagesReadingCampaign(): string[] {
 }
 
 const readers = pagesReadingCampaign();
+// Now that the school is funded, the campaign aggregate is PUBLIC-READ BY
+// NOBODY except the Road Ahead wall, which uses it only for the founder COUNT.
+// /academy and /founders dropped the read entirely, so their funded headline
+// cannot be affected by a database outage. Asserting the exact set (rather
+// than "at least three") is what keeps a money read from creeping back in.
 check(
-  'the campaign aggregate is read by at least the three known pages',
-  readers.length >= 3,
+  'road ahead still reads the aggregate (founder count only)',
+  readers.includes(ROAD_AHEAD),
   readers,
 );
-for (const p of [ACADEMY, FOUNDERS, ROAD_AHEAD]) {
-  check(`${p} is a known campaign reader`, readers.includes(p), readers);
+for (const p of [ACADEMY, FOUNDERS]) {
+  check(`${p} no longer reads the campaign aggregate`, !readers.includes(p), readers);
 }
 for (const p of readers) {
   const src = codeOnly(read(p));
@@ -117,29 +122,31 @@ check(
 );
 
 /* 3. the authoritative data path is unchanged ------------------------- */
+// The owner declared the school funded, so /academy no longer reads campaign
+// money at all: the funded headline is a static constant, not a query. These
+// assertions are STRICTER than the ones they replace — the page must render
+// the shared funded panel, must not import the admin thermometer, and must not
+// touch the campaign aggregate or the database.
 
+check('academy renders the shared FundedStatusPanel', /<FundedStatusPanel\s*\/>/.test(academyCode));
 check(
-  'academy imports the shared reader',
-  /import\s*\{\s*getCampaignProgress\s*\}\s*from\s*'@\/lib\/community\/founders'/.test(academyCode),
-);
-check('academy awaits getCampaignProgress()', /await getCampaignProgress\(\)/.test(academyCode));
-check(
-  'academy renders the shared CampaignThermometer with that result',
-  /<CampaignThermometer\s+progress=\{campaign\}\s*\/>/.test(academyCode),
-);
-check(
-  'academy imports the thermometer from the shared community component',
-  /import\s*\{\s*CampaignThermometer\s*\}\s*from\s*'@\/components\/community\/CampaignThermometer'/.test(
+  'academy imports the funded panel from the shared community component',
+  /import\s*\{\s*FundedStatusPanel\s*\}\s*from\s*'@\/components\/community\/FundedStatusPanel'/.test(
     academyCode,
   ),
 );
+check(
+  'academy no longer reads the campaign aggregate',
+  !/getCampaignProgress|campaign_progress/.test(academyCode),
+);
+check('academy never renders the admin thermometer', !/CampaignThermometer/.test(academyCode));
 check(
   'academy does not build its own progress object',
   !/raised_cents|goal_cents|remaining_cents|pct_to_goal|founder_count/.test(academyCode),
 );
 check(
   'academy does not query the database directly',
-  !/createClient|createStaticClient|from\('founders'\)|campaign_progress/.test(academyCode),
+  !/createClient|createStaticClient|from\('founders'\)/.test(academyCode),
 );
 
 /* 4. funded wording stays owned by the shared component ---------------- */

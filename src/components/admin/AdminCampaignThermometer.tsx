@@ -2,19 +2,21 @@ import type { CampaignProgress } from '@/lib/community/founders';
 import { dollars, pctToGoal, remainingCents } from '@/lib/community/campaign';
 
 /**
- * THE fundraising thermometer — one component for every surface (Founders Wall
- * page, homepage teaser, Academy fundraising section, admin preview) so the
- * numbers can never disagree. Pure props, no data fetching; remaining and
- * percentage are recomputed here from raised + goal via the shared clamped
- * math (remaining ≥ 0, percentage ≤ 100), so a stale or uncapped view value
- * can never render wrong. Shows the AGGREGATE campaign total only — never any
- * individual founder's contribution.
+ * ADMIN-ONLY campaign thermometer — private aggregate totals for the owner.
  *
- * Accessibility: role="progressbar" with numeric values AND a full
- * aria-valuetext sentence; the percentage and dollar figures are visible text,
- * so meaning never relies on the bar color alone.
+ * NOT FOR PUBLIC SURFACES. The owner has declared the school funded, so no
+ * public page may show raised / goal / remaining / percentage or a campaign
+ * progress bar. Public founder surfaces render FundedStatusPanel instead; this
+ * component keeps the real figures visible where only the owner can see them,
+ * which is why it lives under components/admin and is imported solely by
+ * /admin. scripts/test-funded-status.ts fails if any public surface imports it.
+ *
+ * Pure props, no data fetching; remaining and percentage are recomputed here
+ * from raised + goal via the shared clamped math (remaining >= 0, percentage
+ * <= 100). Shows the AGGREGATE campaign total only — never any individual
+ * founder's contribution.
  */
-export function CampaignThermometer({
+export function AdminCampaignThermometer({
   progress,
   showFounderCount = true,
 }: {

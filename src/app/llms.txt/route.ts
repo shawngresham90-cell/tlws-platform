@@ -29,11 +29,12 @@ trucking education content as "${SITE.brand}" across YouTube, Facebook, and TikT
 - Truck Parking: help finding safe, legal overnight parking
 - Directories: truck stops and driver services
 - Books & Apps: driver-built guides and tools
-- Founders Wall & Sponsors: ways to help fund the school
+- Founders Wall & Sponsors: recognition for the founders who funded the school
 
 ## How to engage
-Drivers can apply to the Academy, use the free resources, or support the school's
-launch. Businesses can sponsor. Contact is available on the site.
+Drivers can apply to the Academy or use the free resources. The school build is
+funded; the Founders Wall recognizes the drivers and businesses who made it
+possible. Businesses can sponsor. Contact is available on the site.
 
 ## Canonical
 ${SITE.url}

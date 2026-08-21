@@ -2,7 +2,7 @@ import { Section, Button } from '@/components/ui';
 
 /**
  * The Academy conversion band — the three actions every page funnels toward,
- * in priority order: Apply, Fund the School, Contact. Reused verbatim at the
+ * in priority order: Apply, See the Founders Wall, Contact. Reused verbatim at the
  * foot of each Academy page so the call to action never drifts.
  *
  * Both destinations are live modules: the application system at
@@ -24,7 +24,7 @@ export function CtaBand({
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button href="/academy/apply">Apply to the Academy</Button>
         <Button variant="secondary" href="/founders">
-          Fund the School
+          See the Founders Wall
         </Button>
         <Button variant="ghost" href="/academy/faq">
           Read the FAQ

@@ -1,0 +1,186 @@
+{
+  "milestone": "FOUNDER-WALL-FUNDED-1",
+  "package": "founder-wall-funded-update-2026-08-20",
+  "kind": "incremental-founder-data-change",
+  "note": "Not a schema migration. Does not supersede or rewrite data/founders/lauren-gresham-2026-07-26.",
+  "applied": false,
+  "apply_gate": "owner-authorized, post-merge, manual",
+  "preflight": {
+    "source": "production project cgvxwvymkembftznhcdl (tlws-platform), read-only",
+    "taken_at": "2026-08-20",
+    "total_founders": 51,
+    "tier_counts": {
+      "iron": 4,
+      "steel": 11,
+      "brick": 20,
+      "founder_shirt": 16
+    },
+    "max_position": {
+      "iron": 4,
+      "steel": 11,
+      "brick": 20,
+      "founder_shirt": 16
+    },
+    "null_positions": 0,
+    "duplicate_tier_positions": 0,
+    "rows_to_move": [
+      {
+        "id": "4086e3dd-b14f-44a5-aae4-57b77434993a",
+        "display_name": "Ricky M. Rosenbalm",
+        "tier": "steel",
+        "position": 8,
+        "status": "submitted",
+        "is_public": true,
+        "amount_cents": 50000,
+        "payment_provider": null,
+        "payment_ref": null,
+        "paid_at": "2026-07-13 02:28:10.532489+00",
+        "verified_unique": true
+      },
+      {
+        "id": "84af1472-7efd-4dba-a104-80e24bb76a4c",
+        "display_name": "Phil Ciarco — NPM Trucking LLC",
+        "tier": "steel",
+        "position": 9,
+        "status": "approved",
+        "is_public": true,
+        "amount_cents": 50000,
+        "payment_provider": null,
+        "payment_ref": null,
+        "paid_at": "2026-08-02 00:26:31.442987+00",
+        "verified_unique": true
+      }
+    ],
+    "names_confirmed_absent": [
+      "Wayne's Meat Market",
+      "Globe Life",
+      "Margaret Abbey"
+    ]
+  },
+  "changes": {
+    "moves": [
+      {
+        "id": "4086e3dd-b14f-44a5-aae4-57b77434993a",
+        "display_name": "Ricky M. Rosenbalm",
+        "from": {
+          "tier": "steel",
+          "position": 8
+        },
+        "to": {
+          "tier": "iron",
+          "position": 7
+        },
+        "fields_changed": [
+          "tier",
+          "position",
+          "updated_at"
+        ]
+      },
+      {
+        "id": "84af1472-7efd-4dba-a104-80e24bb76a4c",
+        "display_name": "Phil Ciarco — NPM Trucking LLC",
+        "from": {
+          "tier": "steel",
+          "position": 9
+        },
+        "to": {
+          "tier": "iron",
+          "position": 8
+        },
+        "fields_changed": [
+          "tier",
+          "position",
+          "updated_at"
+        ]
+      }
+    ],
+    "inserts": [
+      {
+        "display_name": "Wayne's Meat Market",
+        "tier": "iron",
+        "position": 5,
+        "status": "approved",
+        "is_public": true,
+        "amount_cents": null,
+        "payment_provider": null,
+        "payment_ref": null,
+        "paid_at": "2026-08-08"
+      },
+      {
+        "display_name": "Globe Life",
+        "tier": "iron",
+        "position": 6,
+        "status": "approved",
+        "is_public": true,
+        "amount_cents": null,
+        "payment_provider": null,
+        "payment_ref": null,
+        "paid_at": "2026-08-08"
+      },
+      {
+        "display_name": "Margaret Abbey",
+        "tier": "brick",
+        "position": 21,
+        "status": "approved",
+        "is_public": true,
+        "amount_cents": null,
+        "payment_provider": null,
+        "payment_ref": null,
+        "paid_at": "2026-08-08"
+      }
+    ],
+    "steel_positions_vacated": [
+      8,
+      9
+    ],
+    "steel_renumbered": false,
+    "steel_positions_after": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      11
+    ]
+  },
+  "expected_post_state": {
+    "total_founders": 54,
+    "tier_counts": {
+      "iron": 8,
+      "steel": 9,
+      "brick": 21,
+      "founder_shirt": 16
+    }
+  },
+  "untouched": {
+    "campaign_settings": "no statement in this package references campaign_settings",
+    "raised_cents_override": "unchanged",
+    "goal_cents": "unchanged",
+    "existing_amount_cents": "unchanged",
+    "existing_payment_provider": "unchanged",
+    "existing_payment_ref": "unchanged",
+    "existing_paid_at": "unchanged",
+    "tables_other_than_founders": "none written"
+  },
+  "files": {
+    "PRECHECK.sql": "read-only production check; compare to preflight above",
+    "APPLY.sql": "single transaction; re-asserts pre-state, writes, then verifies",
+    "VERIFY.sql": "read-only post-apply assertions",
+    "ROLLBACK.sql": "restores steel/8 and steel/9, deletes the three added rows"
+  },
+  "paid_at_decision": {
+    "field": "public.founders.paid_at",
+    "constraint": "timestamptz NOT NULL DEFAULT now()",
+    "value": "2026-08-08",
+    "source": "owner-supplied 2026-08-21: first given as 2026-02-08, then corrected to 2026-08-08 ('aug 08') after the digit-swap with Phil's 2026-08-02 was flagged",
+    "why_explicit": "The column is NOT NULL, so every row must carry a payment timestamp. APPLY.sql sets it explicitly rather than letting DEFAULT now() stamp the rows with whatever moment it runs, and still aborts if the value is ever blanked.",
+    "applies_to": [
+      "Wayne's Meat Market",
+      "Globe Life",
+      "Margaret Abbey"
+    ]
+  }
+}
