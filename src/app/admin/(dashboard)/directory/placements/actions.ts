@@ -10,16 +10,24 @@ import {
   placementNoteLine,
   placementTouchSummary,
   type CorridorSponsorRow,
+  type PlacementKind,
   type PlacementRecord,
   type PromotableListing,
 } from '@/lib/directory/placements';
+import {
+  isoDay,
+  readSaleState,
+  saleActivationBlockers,
+  type SaleState,
+  type SponsorSaleRow,
+} from '@/lib/directory/revenue';
 
 /**
  * Paid placement writes. Every action: admin gate → load current state →
  * refuse on any blocker → write → mirror the decision into the CRM audit trail
  * → revalidate.
  *
- * These are the ONLY writes in the app that turn revenue on. Three rules hold
+ * These are the ONLY writes in the app that turn revenue on. Four rules hold
  * throughout:
  *
  *   1. No activation happens without an explicit typed confirmation.
@@ -27,6 +35,14 @@ import {
  *      moment of the write, not trusted from the form.
  *   3. Nothing here collects payment. Activation is a record made AFTER Shawn
  *      has confirmed payment outside the platform.
+ *   4. And — the rule this file was missing — that record has to EXIST. The CRM
+ *      row was previously an optional free-text box used only to file an audit
+ *      note, so a placement could be switched on with no opportunity behind it,
+ *      no offer, no term and no payment. It is now required, and
+ *      `saleActivationBlockers` re-reads the opportunity from the database at
+ *      the moment of the write: committed or closed-won, the right offer, an
+ *      agreed term, and a confirmed payment covering the agreed amount. A
+ *      free listing claim can never satisfy it, because a claim has no payment.
  *
  * The capacity check is check-then-act, not a database invariant — that would
  * need a partial unique index, i.e. a migration. Sound for one administrator;
@@ -111,6 +127,85 @@ function revalidatePlacement(categorySlug: string | null) {
   revalidatePath('/directory/location/[slug]', 'page');
 }
 
+const SALE_COLS =
+  'id, stage, status, tier_interest, pledged_cents, paid_cents, next_action, next_action_date, notes';
+
+/**
+ * Read the opportunity this placement is being sold to, as it stands right now.
+ * Returns null when the id names nothing — the caller treats that the same as
+ * "no opportunity selected", because an id that resolves to nothing is not a
+ * sale.
+ */
+async function loadSale(
+  supabase: ReturnType<typeof createAdminClient>,
+  sponsorId: string,
+): Promise<SaleState | null> {
+  if (!sponsorId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('sponsors')
+      .select(SALE_COLS)
+      .eq('id', sponsorId)
+      .single();
+    if (error || !data) return null;
+    const r = data as unknown as {
+      id: string;
+      stage: string | null;
+      status: string | null;
+      tier_interest: string | null;
+      pledged_cents: number | null;
+      paid_cents: number | null;
+      next_action: string | null;
+      next_action_date: string | null;
+      notes: string | null;
+    };
+    const row: SponsorSaleRow = {
+      id: r.id,
+      stage: r.stage,
+      status: r.status,
+      tierInterest: r.tier_interest,
+      pledgedCents: r.pledged_cents,
+      paidCents: r.paid_cents,
+      nextAction: r.next_action,
+      nextActionDate: r.next_action_date,
+      notes: r.notes,
+    };
+    return readSaleState(row);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Mark the opportunity live and set the renewal date the term implies, so the
+ * revenue console's renewal queue knows about this placement the moment it goes
+ * on. Without this the queue is blind to exactly the placement that most needs
+ * watching — a featured listing, which will not stop by itself.
+ */
+async function markLive(
+  supabase: ReturnType<typeof createAdminClient>,
+  sponsorId: string,
+  kind: PlacementKind,
+  endsAt: string | null,
+): Promise<void> {
+  try {
+    const autoExpires = kind === 'corridor-sponsor';
+    await supabase
+      .from('sponsors')
+      .update({
+        status: 'active',
+        stage: 'closed_won',
+        next_action: autoExpires
+          ? 'Renew the corridor sponsorship before it lapses'
+          : 'Stop or renew the featured listing — it will NOT lapse on its own',
+        next_action_date: endsAt ? isoDay(new Date(endsAt)) : null,
+      })
+      .eq('id', sponsorId);
+  } catch {
+    /* The placement is already live; the bookkeeping mirror is best effort. */
+  }
+}
+
 /* ------------------------------------------------------- featured listing */
 
 /**
@@ -130,6 +225,8 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
 
   const upfront: string[] = [];
   if (!listingId) upfront.push('No listing selected.');
+  if (!sponsorId)
+    upfront.push('The paying CRM opportunity is required. A placement never goes live unsold.');
   if (!reviewer) upfront.push('Reviewer name is required — this is the audit trail.');
   if (!billing) upfront.push('Choose monthly or annual billing.');
   if (!startsAt) upfront.push('A start date is required.');
@@ -140,6 +237,13 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
   if (upfront.length) fail(upfront);
 
   const supabase = createAdminClient();
+
+  // The sale side of the gate, re-read from the database rather than trusted
+  // from the form: committed or won, the right offer, an agreed term, and a
+  // confirmed payment that covers the agreed amount.
+  const sale = await loadSale(supabase, sponsorId);
+  const saleBlockers = saleActivationBlockers('featured-listing', sale, { startsAt, endsAt });
+  if (saleBlockers.length) fail(saleBlockers);
 
   const { data: targetRow, error: targetErr } = await supabase
     .from('locations')
@@ -169,23 +273,24 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
   if (error) fail(['The update failed. Nothing was changed.']);
 
   const at = new Date().toISOString();
-  if (sponsorId)
-    await recordAudit(
-      supabase,
-      sponsorId,
-      {
-        kind: 'featured-listing',
-        target: target.name ?? listingId,
-        billing,
-        startsAt,
-        endsAt,
-        reviewer,
-        action: 'activated',
-      },
-      at,
-    );
+  await recordAudit(
+    supabase,
+    sponsorId,
+    {
+      kind: 'featured-listing',
+      target: target.name ?? listingId,
+      billing,
+      startsAt,
+      endsAt,
+      reviewer,
+      action: 'activated',
+    },
+    at,
+  );
+  await markLive(supabase, sponsorId, 'featured-listing', endsAt);
 
   revalidatePlacement(target.categorySlug);
+  revalidatePath('/admin/directory/revenue');
   back({ ok: `Featured listing activated for ${target.name ?? listingId}.` });
 }
 
@@ -265,6 +370,8 @@ export async function activateCorridorSponsorAction(formData: FormData): Promise
   const endsAt = isoDate(field(formData, 'ends_on'), true);
 
   const upfront: string[] = [];
+  if (!sponsorId)
+    upfront.push('The paying CRM opportunity is required. A placement never goes live unsold.');
   if (!reviewer) upfront.push('Reviewer name is required — this is the audit trail.');
   if (!billing) upfront.push('Choose monthly or annual billing.');
   if (!startsAt) upfront.push('A start date is required.');
@@ -274,6 +381,15 @@ export async function activateCorridorSponsorAction(formData: FormData): Promise
   if (upfront.length) fail(upfront);
 
   const supabase = createAdminClient();
+
+  // The sale side of the gate. Same rules as a featured listing, and it also
+  // catches the case where the deal bought the OTHER offer — activating a
+  // $299 corridor slot against a $99 featured sale is a real way to give away
+  // the difference, and it is refused here rather than noticed later.
+  const sale = await loadSale(supabase, sponsorId);
+  const saleBlockers = saleActivationBlockers('corridor-sponsor', sale, { startsAt, endsAt });
+  if (saleBlockers.length) fail(saleBlockers);
+
   const { data: rows } = await supabase.from('directory_sponsors').select(SPONSOR_COLS).limit(500);
   const existing = ((rows as Record<string, unknown>[]) ?? []).map(toSponsorRow);
 
@@ -299,23 +415,24 @@ export async function activateCorridorSponsorAction(formData: FormData): Promise
   });
   if (error) fail(['The sponsor could not be created. Nothing was changed.']);
 
-  if (sponsorId)
-    await recordAudit(
-      supabase,
-      sponsorId,
-      {
-        kind: 'corridor-sponsor',
-        target: `${name} on ${corridor}`,
-        billing,
-        startsAt,
-        endsAt,
-        reviewer,
-        action: 'activated',
-      },
-      new Date().toISOString(),
-    );
+  await recordAudit(
+    supabase,
+    sponsorId,
+    {
+      kind: 'corridor-sponsor',
+      target: `${name} on ${corridor}`,
+      billing,
+      startsAt,
+      endsAt,
+      reviewer,
+      action: 'activated',
+    },
+    new Date().toISOString(),
+  );
+  await markLive(supabase, sponsorId, 'corridor-sponsor', endsAt);
 
   revalidatePath(PATH);
+  revalidatePath('/admin/directory/revenue');
   revalidatePath('/directory');
   revalidatePath(`/directory/${corridor.toLowerCase().replace('-', '')}`);
   back({ ok: `${name} is now the primary sponsor on ${corridor}.` });

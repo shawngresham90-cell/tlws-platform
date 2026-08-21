@@ -236,8 +236,14 @@ export default async function PlacementsPage({
         Sponsored listings ({featured.length})
       </h2>
       <p className="mt-1 text-xs text-muted">
-        A featured listing has no end date in the database — it runs until it is stopped here. The
-        agreed term is recorded on the CRM row; the reminder is yours to keep.
+        A featured listing has no end date in the database — it runs until it is stopped here.
+        &ldquo;Term expired&rdquo; and &ldquo;placement hidden&rdquo; are therefore two different
+        things for this offer: the term ending changes nothing on the public site by itself. The
+        agreed term is recorded on the CRM row and{' '}
+        <Link href="/admin/directory/revenue" className="text-signal underline">
+          the revenue console
+        </Link>{' '}
+        raises an overdue warning when it passes.
       </p>
       {featured.length === 0 ? (
         <p className="mt-3 text-sm text-muted">None.</p>
@@ -262,7 +268,7 @@ export default async function PlacementsPage({
                   <input name="reviewer" className={`${input} w-32`} placeholder="Shawn" />
                 </label>
                 <label className={label}>
-                  CRM row id (optional)
+                  CRM row id (for the audit trail)
                   <input name="sponsor_id" className={`${input} w-44`} />
                 </label>
                 <button className={btnGhost}>Stop sponsorship</button>
@@ -347,16 +353,38 @@ export default async function PlacementsPage({
                   <input name="reviewer" placeholder="Shawn" className={input} />
                 </label>
                 <label className={label}>
-                  CRM row id (optional)
-                  <input name="sponsor_id" className={input} />
+                  CRM row id (required)
+                  <input name="sponsor_id" required className={input} />
                 </label>
                 <label className={label}>
                   Type ACTIVATE to confirm
                   <input name="confirm" autoComplete="off" className={input} />
                 </label>
+                <div className="rounded-card border border-dashed border-line bg-asphalt p-3 sm:col-span-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                    Preview — what the public sees
+                  </p>
+                  <p className="mt-2 text-sm text-ink">
+                    {l.name}{' '}
+                    <span className="rounded-card border border-line px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-muted">
+                      Sponsored
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Sorted first on the {usage.category.slug} page
+                    {usage.corridor ? ` and the ${usage.corridor.corridor} page` : ''}, with a
+                    Sponsored badge on the card and the detail page. Its hours, services, parking
+                    and reviews are unchanged — payment never edits a listing.
+                  </p>
+                </div>
                 <p className="text-xs text-muted sm:col-span-3">
-                  Confirm payment has already been received. This flips the listing to Sponsored on
-                  every page it appears on.
+                  This is refused unless the CRM opportunity is committed or closed-won, has the
+                  featured-listing offer and an agreed term recorded, and has a confirmed payment
+                  covering the agreed amount. Record all of that on{' '}
+                  <Link href="/admin/directory/revenue" className="text-signal underline">
+                    the revenue console
+                  </Link>{' '}
+                  first.
                 </p>
                 <div className="sm:col-span-3">
                   <button className={btn}>Activate featured listing</button>
@@ -454,16 +482,33 @@ export default async function PlacementsPage({
           <input name="reviewer" placeholder="Shawn" required className={input} />
         </label>
         <label className={label}>
-          CRM row id (optional)
-          <input name="sponsor_id" className={input} />
+          CRM row id (required)
+          <input name="sponsor_id" required className={input} />
         </label>
         <label className={label}>
           Type ACTIVATE to confirm
           <input name="confirm" autoComplete="off" className={input} />
         </label>
+        <div className="rounded-card border border-dashed border-line bg-asphalt p-3 sm:col-span-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+            Preview — what the public sees
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            A block headed <span className="font-semibold text-ink">Sponsored</span>, set apart from
+            the listings, carrying the business name, its tagline, and one outbound link with
+            rel=&quot;sponsored noopener noreferrer&quot;. It is never ranked among listings and
+            never styled as one, and it disappears on its own once the end date passes.
+          </p>
+        </div>
         <p className="text-xs text-muted sm:col-span-3">
           Leaving the corridor blank is refused — a blank corridor would target every corridor page
-          in the country, not none.
+          in the country, not none. Activation is also refused unless the CRM opportunity is
+          committed or closed-won, has the corridor-sponsor offer and an agreed term recorded, and
+          has a confirmed payment covering the agreed amount (
+          <Link href="/admin/directory/revenue" className="text-signal underline">
+            the revenue console
+          </Link>
+          ).
         </p>
         <div className="sm:col-span-3">
           <button className={btn}>Activate corridor sponsor</button>

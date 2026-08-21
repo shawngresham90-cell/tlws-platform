@@ -34,6 +34,10 @@
  *   MOCK_FIELD_PROFILE 'production' matches live field
  *                    presence rates + description length (default synthetic)
  *   MOCK_FAIL_TABLE  table whose reads answer 500      (default none)
+ *   MOCK_REVENUE     serves fixture `sponsors` rows so the revenue console
+ *                    can be driven in a browser. Off by default: with it off
+ *                    the table answers [], which is the LIVE production state
+ *                    (zero CRM rows) and the empty states worth checking.
  *   MOCK_PARKING_QUALITY shapes the unpublished `parking` rows to the live
  *                    provenance mix — 91 `csv-import` rows with NO coordinate
  *                    and 5 `ntad-2019-v04` rows with a coordinate but no
@@ -58,6 +62,110 @@ const FAIL_TABLE = process.env.MOCK_FAIL_TABLE ?? '';
  * DIR-COMPLETE-2 and DIR-PAYLOAD-1 benches measure stay byte-identical.
  */
 const PARKING_QUALITY = process.env.MOCK_PARKING_QUALITY === '1';
+const REVENUE = process.env.MOCK_REVENUE === '1';
+
+/**
+ * Fixture sponsor pipeline for the revenue console bench.
+ *
+ * Deliberately awkward rather than tidy: an absurdly long company name (the
+ * one that breaks a table layout), a duplicate pair (the flag has to show), a
+ * live placement whose term lapsed three weeks ago (the red overdue warning),
+ * a paid deal waiting to be activated, and a lost deal. Dates are fixed
+ * strings so the bench does not drift with the calendar.
+ *
+ * Every value here is invented. No real business, person, email or phone.
+ */
+const SPONSOR_FIXTURES = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    company: 'Fixture Truck Wash & Roadside Service of the Northern Georgia Corridor, LLC',
+    contact_name: 'Fixture Contact',
+    email: 'fixture-a@example.invalid',
+    phone: '(555) 555-0100',
+    stage: 'prospect',
+    status: 'new',
+    tier_interest: 'corridor-sponsor',
+    pledged_cents: 0,
+    paid_cents: 0,
+    priority: 3,
+    next_action: 'Reply to this inquiry',
+    next_action_date: '2026-08-20',
+    notes: 'Came from: i75\n\nRegarding directory listing: Fixture Truck Wash · truck-washes · GA · I-75 (/directory/location/fixture-truck-wash)',
+    created_at: '2026-08-20T10:00:00Z',
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    company: 'Fixture Truck Wash of the Northern Georgia Corridor LLC',
+    contact_name: 'Fixture Contact',
+    email: 'fixture-a@example.invalid',
+    phone: null,
+    stage: 'contacted',
+    status: 'contacted',
+    tier_interest: 'featured-listing',
+    pledged_cents: 0,
+    paid_cents: 0,
+    priority: 2,
+    next_action: null,
+    next_action_date: null,
+    notes: 'Came from: fb-launch-1',
+    created_at: '2026-08-21T10:00:00Z',
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    company: 'Fixture Tire Repair',
+    contact_name: 'Fixture Contact',
+    email: 'fixture-b@example.invalid',
+    phone: '(555) 555-0111',
+    stage: 'committed',
+    status: 'paid',
+    tier_interest: 'corridor-sponsor',
+    pledged_cents: 299900,
+    paid_cents: 299900,
+    priority: 1,
+    next_action: 'Activate the placement that was paid for',
+    next_action_date: '2026-08-30',
+    notes:
+      'Agreed offer: corridor-sponsor · annual · quoted $2,999 · by Shawn on 2026-08-28\n\n' +
+      'Payment confirmed: $2,999 received 2026-08-29 · ref: check 1042 · by Shawn on 2026-08-29',
+    created_at: '2026-08-10T10:00:00Z',
+  },
+  {
+    id: '44444444-4444-4444-8444-444444444444',
+    company: 'Fixture Roadside Service',
+    contact_name: 'Fixture Contact',
+    email: 'fixture-c@example.invalid',
+    phone: '(555) 555-0122',
+    stage: 'closed_won',
+    status: 'active',
+    tier_interest: 'featured-listing',
+    pledged_cents: 9900,
+    paid_cents: 9900,
+    priority: 1,
+    next_action: 'Stop or renew the featured listing — it will NOT lapse on its own',
+    next_action_date: '2026-08-01',
+    notes:
+      'Agreed offer: featured-listing · monthly · quoted $99 · by Shawn on 2026-06-28\n\n' +
+      'Payment confirmed: $99 received 2026-06-29 · ref: bank transfer · by Shawn on 2026-06-29',
+    created_at: '2026-06-01T10:00:00Z',
+  },
+  {
+    id: '55555555-5555-4555-8555-555555555555',
+    company: 'Fixture Diner',
+    contact_name: 'Fixture Contact',
+    email: 'fixture-d@example.invalid',
+    phone: '(555) 555-0133',
+    stage: 'closed_lost',
+    status: 'contacted',
+    tier_interest: 'directory-placement',
+    pledged_cents: 0,
+    paid_cents: 0,
+    priority: 5,
+    next_action: null,
+    next_action_date: null,
+    notes: 'Closed lost: reason — no marketing budget this year · by Shawn on 2026-08-05',
+    created_at: '2026-07-15T10:00:00Z',
+  },
+];
 
 /* ------------------------------------------------------------------ seed */
 
@@ -574,7 +682,12 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const dataset = table === 'locations' ? LOCATIONS : [];
+    const dataset =
+      table === 'locations'
+        ? LOCATIONS
+        : table === 'sponsors' && REVENUE
+          ? SPONSOR_FIXTURES
+          : [];
     let result;
     try {
       // supabase-js .range() arrives as a Range header; normalize to offset/limit.

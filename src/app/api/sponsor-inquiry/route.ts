@@ -7,8 +7,19 @@ import { log } from '@/lib/api/logger';
 export const runtime = 'nodejs';
 
 /**
- * Sponsor inquiry. Inserts a prospect into the sponsor pipeline (stage
- * 'contacted', inbound) and logs an inbound touch. Feeds the sprint CRM.
+ * Sponsor inquiry. Files a prospect into the sponsor pipeline and logs the
+ * inbound touch that started it.
+ *
+ * The row lands at stage `prospect`, not `contacted`. An arriving inquiry means
+ * a business reached out — it does not mean anyone has replied, and recording
+ * it as "contacted" made the pipeline unable to tell "nobody has answered this
+ * yet" from "I called them", which is the single most useful distinction the
+ * owner has when the queue is more than one row long. Moving to `contacted` is
+ * a deliberate act on the revenue console, and it is what "contact rate"
+ * counts.
+ *
+ * `tier_interest` is validated against the approved offer set by the schema, so
+ * the offer recorded here is always one the platform actually sells.
  */
 export const POST = guardedPost(
   sponsorInquirySchema,
@@ -24,8 +35,12 @@ export const POST = guardedPost(
         email: data.email,
         phone: data.phone || null,
         tier_interest: data.tier_interest ?? null,
-        stage: 'contacted',
+        stage: 'prospect',
         priority: 3,
+        // A new inquiry arrives with its first action already set, so it shows
+        // up in the owner's queue as work rather than as a row to notice.
+        next_action: 'Reply to this inquiry',
+        next_action_date: new Date().toISOString().slice(0, 10),
         notes: data.message ?? null,
       })
       .select('id')
@@ -40,7 +55,7 @@ export const POST = guardedPost(
       sponsor_id: sponsor.id,
       touch_type: 'other',
       direction: 'inbound',
-      summary: 'Website sponsor inquiry',
+      summary: `Website sponsor inquiry${data.tier_interest ? ` — ${data.tier_interest}` : ''}`,
     });
 
     log.info('sponsor_inquiry_created', { sponsor_id: sponsor.id });
