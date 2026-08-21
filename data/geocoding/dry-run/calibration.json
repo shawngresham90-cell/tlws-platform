@@ -34,15 +34,15 @@
         "milepost": 13,
         "lat": 30.77424,
         "lng": -83.29849,
-        "listingId": "dd7fbadd-a3f0-4c41-a4dd-8cb7a57ad7ba",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "listingId": "371724fa-2260-4d55-bbc7-0ddeeb680138",
+        "source": "directory-verified"
       },
       {
         "milepost": 16,
         "lat": 30.821132,
         "lng": -83.310514,
         "listingId": "3123ff2a-256c-46fd-a7de-2571ee9f2abb",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 39,
@@ -62,7 +62,7 @@
         "milepost": 60,
         "lat": 31.428514,
         "lng": -83.51632,
-        "listingId": "55f53612-5494-460b-9ee1-2ac92f154285",
+        "listingId": "51453818-0072-4986-b256-b8c8c38fe0b2",
         "source": "directory-verified"
       },
       {
@@ -77,7 +77,7 @@
         "lat": 31.975579,
         "lng": -83.758552,
         "listingId": "f4591f0b-087b-4856-8957-5a7e020fa209",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 109,
@@ -91,7 +91,7 @@
         "lat": 32.256023,
         "lng": -83.738816,
         "listingId": "d296a4d1-0b43-4775-8060-7aff11dcba16",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 146,
@@ -104,7 +104,7 @@
         "milepost": 153,
         "lat": 32.717528,
         "lng": -83.733418,
-        "listingId": "c0c4681b-ae70-4873-8240-f1542361338e",
+        "listingId": "5708e6e0-a61e-4647-a361-32610aeb680a",
         "source": "directory-verified"
       },
       {
@@ -122,11 +122,18 @@
         "source": "directory-verified"
       },
       {
+        "milepost": 290,
+        "lat": 34.204645,
+        "lng": -84.765267,
+        "listingId": "e1219266-0289-4b70-83aa-b122fa95993d",
+        "source": "directory-verified"
+      },
+      {
         "milepost": 293,
         "lat": 34.241411,
         "lng": -84.774739,
         "listingId": "c9d1ece9-f5fc-4358-a8c5-6467efdda424",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 296,
@@ -181,35 +188,35 @@
         "lat": 35.063425,
         "lng": -85.07313,
         "listingId": "b76a9ddb-e96a-4ae7-941c-03d2cee8417a",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 20,
         "lat": 35.153142,
         "lng": -84.952948,
-        "listingId": "cce804c6-fbf4-4d3b-8e4f-000952e40fc6",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "listingId": "444e4c77-93aa-4cbc-a8f7-825079fac2f3",
+        "source": "directory-verified"
       },
       {
         "milepost": 25,
         "lat": 35.189995,
         "lng": -84.88141,
         "listingId": "6388ce8e-6d60-43c0-a9ad-5069f26781b8",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 33,
         "lat": 35.291951,
         "lng": -84.818048,
         "listingId": "08d24d71-a131-473b-9ffd-cc56b92b5466",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 49,
         "lat": 35.469129,
         "lng": -84.652949,
-        "listingId": "c73ec493-6f43-42fd-94ef-d086b83eaf2b",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "listingId": "6a03a2b8-5d79-4192-b5a9-5572e6162957",
+        "source": "directory-verified"
       },
       {
         "milepost": 56,
@@ -219,39 +226,46 @@
         "source": "directory-verified"
       },
       {
+        "milepost": 60,
+        "lat": 35.59857,
+        "lng": -84.516427,
+        "listingId": "20b3d4b8-3e07-4795-8441-3711c7cf8a06",
+        "source": "directory-verified"
+      },
+      {
         "milepost": 62,
         "lat": 35.625271,
         "lng": -84.491883,
         "listingId": "1a87c0af-66ae-46d8-8732-4539b477e0ac",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 72,
         "lat": 35.733196,
         "lng": -84.397797,
-        "listingId": "317477d8-2741-495d-a3b5-3c5e6eec68ed",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "listingId": "0b49a63f-9886-4ac2-a547-81b6ecda5d6f",
+        "source": "directory-verified"
       },
       {
         "milepost": 117,
         "lat": 36.11107,
         "lng": -84.020183,
         "listingId": "bc4ff9f8-a138-4a2c-9fc2-e6b9017faea7",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 134,
         "lat": 36.29564,
         "lng": -84.214299,
         "listingId": "2f6979c4-6292-4910-8d54-1e1b5e216ef7",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       },
       {
         "milepost": 141,
         "lat": 36.37677,
         "lng": -84.248712,
         "listingId": "03c57077-85f1-4fea-8838-348d2f8a3b5f",
-        "source": "geocoding-batch:i75-ga-tn-geocoding-batch-001.csv"
+        "source": "directory-verified"
       }
     ]
   }
