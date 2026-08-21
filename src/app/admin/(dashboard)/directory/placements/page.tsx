@@ -12,10 +12,17 @@ import {
   type CorridorSponsorRow,
   type PromotableListing,
 } from '@/lib/directory/placements';
+import { adminFeaturedSchema } from '@/lib/admin/featured-schema';
+import {
+  FEATURED_STATUS_LABEL,
+  featuredWindowStatus,
+  type FeaturedSchema,
+} from '@/lib/directory/featured-window';
 import {
   activateCorridorSponsorAction,
   activateFeaturedAction,
   deactivateFeaturedAction,
+  renewFeaturedAction,
   setCorridorSponsorActiveAction,
 } from './actions';
 
@@ -28,7 +35,9 @@ import {
  * two: `locations.is_featured` for a featured listing, and a
  * `directory_sponsors` row for a corridor sponsor. Their behaviour differs in
  * one way that matters commercially and is stated on the page — a corridor
- * sponsor expires by itself, a featured listing does not.
+ * sponsor expires by itself, and since REVENUE-2 a featured listing does too —
+ * but only once migration 057 has given it a term. Until then this page says so
+ * and refuses to activate one.
  *
  * Nothing here takes payment. Activation is a record made after Shawn has
  * confirmed payment outside the platform.
@@ -37,8 +46,12 @@ import {
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin — Placements', robots: { index: false, follow: false } };
 
-const LISTING_COLS =
+const LISTING_COLS_BASE =
   'id, name, category_slug, interstate, state, city, detail_slug, is_published, is_featured, deleted_at';
+
+function listingCols(schema: FeaturedSchema): string {
+  return schema === 'ready' ? `${LISTING_COLS_BASE}, featured_until` : LISTING_COLS_BASE;
+}
 const SPONSOR_COLS = 'id, name, tagline, url, placements, interstates, active, starts_at, ends_at';
 
 type ListingRow = PromotableListing & { city: string | null; detailSlug: string | null };
@@ -54,6 +67,7 @@ function toListing(r: Record<string, unknown>): ListingRow {
     detailSlug: (r.detail_slug as string) ?? null,
     isPublished: Boolean(r.is_published),
     isFeatured: Boolean(r.is_featured),
+    featuredUntil: (r.featured_until as string | null | undefined) ?? undefined,
     deletedAt: (r.deleted_at as string) ?? null,
   };
 }
@@ -75,13 +89,13 @@ function toSponsor(r: Record<string, unknown>): CorridorSponsorRow & {
   };
 }
 
-async function load(query: string) {
+async function load(query: string, schema: FeaturedSchema) {
   try {
     const supabase = createAdminClient();
     const [featured, sponsors, matches] = await Promise.all([
       supabase
         .from('locations')
-        .select(LISTING_COLS)
+        .select(listingCols(schema))
         .eq('is_featured', true)
         .is('deleted_at', null)
         .limit(200),
@@ -89,7 +103,7 @@ async function load(query: string) {
       query
         ? supabase
             .from('locations')
-            .select(LISTING_COLS)
+            .select(listingCols(schema))
             .ilike('name', `%${query}%`)
             .eq('is_published', true)
             .is('deleted_at', null)
@@ -99,9 +113,11 @@ async function load(query: string) {
     ]);
     return {
       ok: true,
-      featured: ((featured.data as Record<string, unknown>[]) ?? []).map(toListing),
+      featured: ((featured.data as unknown as Record<string, unknown>[] | null) ?? []).map(
+        toListing,
+      ),
       sponsors: ((sponsors.data as Record<string, unknown>[]) ?? []).map(toSponsor),
-      matches: ((matches.data as Record<string, unknown>[]) ?? []).map(toListing),
+      matches: ((matches.data as unknown as Record<string, unknown>[] | null) ?? []).map(toListing),
     };
   } catch {
     return { ok: false, featured: [], sponsors: [], matches: [] };
@@ -128,12 +144,22 @@ export default async function PlacementsPage({
   const err = one(searchParams?.err);
   const ok = one(searchParams?.ok);
 
-  const { ok: loaded, featured, sponsors, matches } = await load(query);
+  const schema = await adminFeaturedSchema();
+  const now = new Date();
+  const { ok: loaded, featured, sponsors, matches } = await load(query, schema);
+
+  /** Where each currently-flagged listing sits against its paid term. */
+  const featuredStatus = new Map(
+    featured.map((l) => [l.id, featuredWindowStatus(l, now, schema)] as const),
+  );
 
   // Capacity per page, computed from the live featured set.
   const byCategory = new Map<string, number>();
   const byCorridor = new Map<string, number>();
-  for (const l of featured.filter((f) => f.isPublished)) {
+  // Only placements still IN TERM occupy a slot. A row whose term has passed is
+  // already off the public page, so counting it would show a page as full that a
+  // driver sees as empty.
+  for (const l of featured.filter((f) => f.isPublished && featuredStatus.get(f.id) === 'active')) {
     if (l.categorySlug) byCategory.set(l.categorySlug, (byCategory.get(l.categorySlug) ?? 0) + 1);
     if (l.interstate) byCorridor.set(l.interstate, (byCorridor.get(l.interstate) ?? 0) + 1);
   }
@@ -235,16 +261,22 @@ export default async function PlacementsPage({
       <h2 className="mt-10 font-display text-lg uppercase text-ink">
         Sponsored listings ({featured.length})
       </h2>
-      <p className="mt-1 text-xs text-muted">
-        A featured listing has no end date in the database — it runs until it is stopped here.
-        &ldquo;Term expired&rdquo; and &ldquo;placement hidden&rdquo; are therefore two different
-        things for this offer: the term ending changes nothing on the public site by itself. The
-        agreed term is recorded on the CRM row and{' '}
-        <Link href="/admin/directory/revenue" className="text-signal underline">
-          the revenue console
-        </Link>{' '}
-        raises an overdue warning when it passes.
-      </p>
+      {schema === 'ready' ? (
+        <p className="mt-1 text-xs text-muted">
+          A featured listing now carries its own end date and stops showing the moment the term
+          passes — no action needed, exactly like a corridor sponsor. A row left flagged after that
+          is housekeeping, not a live placement: it is already off every public page.
+        </p>
+      ) : (
+        <p className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm text-diesel-300">
+          <span className="font-semibold">Featured-expiry schema is not active yet.</span> Migration
+          057 has not been applied, so <code>featured_until</code> cannot be read or written. Until
+          it is: any featured listing runs until it is stopped by hand here, the term ending changes
+          nothing on the public site by itself, and activating a NEW featured listing is blocked —
+          switching one on without a term is the defect this migration removes. Corridor sponsorship
+          is unaffected and can be sold and activated normally.
+        </p>
+      )}
       {featured.length === 0 ? (
         <p className="mt-3 text-sm text-muted">None.</p>
       ) : (
@@ -260,19 +292,59 @@ export default async function PlacementsPage({
                   {[l.categorySlug, l.city, l.state, l.interstate].filter(Boolean).join(' · ')}
                   {!l.isPublished && ' · NOT PUBLISHED'}
                 </p>
+                {/* Status carries a word, never a colour alone. */}
+                <p
+                  className={`mt-1 text-xs font-semibold ${
+                    featuredStatus.get(l.id) === 'active' ? 'text-ink' : 'text-diesel-300'
+                  }`}
+                >
+                  {FEATURED_STATUS_LABEL[featuredStatus.get(l.id) ?? 'inactive']}
+                  {l.featuredUntil ? ` · term ends ${l.featuredUntil.slice(0, 10)}` : ''}
+                </p>
               </div>
-              <form action={deactivateFeaturedAction} className="flex items-end gap-2">
-                <input type="hidden" name="listing_id" value={l.id} />
-                <label className={label}>
-                  Reviewer
-                  <input name="reviewer" className={`${input} w-32`} placeholder="Shawn" />
-                </label>
-                <label className={label}>
-                  CRM row id (for the audit trail)
-                  <input name="sponsor_id" className={`${input} w-44`} />
-                </label>
-                <button className={btnGhost}>Stop sponsorship</button>
-              </form>
+              <div className="flex flex-wrap items-end gap-4">
+                <form action={deactivateFeaturedAction} className="flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="listing_id" value={l.id} />
+                  <label className={label}>
+                    Reviewer
+                    <input name="reviewer" className={`${input} w-32`} placeholder="Shawn" />
+                  </label>
+                  <label className={label}>
+                    CRM row id (for the audit trail)
+                    <input name="sponsor_id" className={`${input} w-44`} />
+                  </label>
+                  <button className={btnGhost}>Stop sponsorship</button>
+                </form>
+
+                {/* Renewal is a SECOND SALE, so it asks for the same things
+                    activation does and refuses on the same grounds. It can
+                    restore a placement whose term already lapsed. */}
+                {schema === 'ready' && (
+                  <form action={renewFeaturedAction} className="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="listing_id" value={l.id} />
+                    <label className={label}>
+                      Renew for
+                      <select name="billing" defaultValue="monthly" className={`${input} w-28`}>
+                        <option value="monthly">Monthly</option>
+                        <option value="annual">Annual</option>
+                      </select>
+                    </label>
+                    <label className={label}>
+                      Reviewer
+                      <input name="reviewer" className={`${input} w-32`} placeholder="Shawn" />
+                    </label>
+                    <label className={label}>
+                      Paying CRM row id
+                      <input name="sponsor_id" required className={`${input} w-44`} />
+                    </label>
+                    <label className={label}>
+                      Type ACTIVATE
+                      <input name="confirm" autoComplete="off" className={`${input} w-28`} />
+                    </label>
+                    <button className={btnGhost}>Renew</button>
+                  </form>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -296,7 +368,7 @@ export default async function PlacementsPage({
 
       {matches.map((l) => {
         const blockers = promotionBlockers(l);
-        const usage = featuredUsage(l, featured);
+        const usage = featuredUsage(l, featured, now, schema);
         const full =
           usage.category.used >= usage.category.limit ||
           (usage.corridor != null && usage.corridor.used >= usage.corridor.limit);
@@ -326,7 +398,13 @@ export default async function PlacementsPage({
             )}
             {l.isFeatured && <p className="mt-2 text-xs text-muted">Already sponsored.</p>}
 
-            {blockers.length === 0 && !full && !l.isFeatured && (
+            {schema !== 'ready' && !l.isFeatured && (
+              <p className="mt-2 rounded-card border border-diesel bg-diesel/10 px-3 py-2 text-xs text-diesel-300">
+                Activation is blocked until migration 057 is applied. Switching a listing on now
+                would give it no expiry, which is exactly what this milestone removes.
+              </p>
+            )}
+            {schema === 'ready' && blockers.length === 0 && !full && !l.isFeatured && (
               <form action={activateFeaturedAction} className="mt-3 grid gap-3 sm:grid-cols-3">
                 <input type="hidden" name="listing_id" value={l.id} />
                 <label className={label}>
@@ -340,14 +418,18 @@ export default async function PlacementsPage({
                     </option>
                   </select>
                 </label>
-                <label className={label}>
-                  Starts
-                  <input type="date" name="starts_on" defaultValue={today()} className={input} />
-                </label>
-                <label className={label}>
-                  Ends (required)
-                  <input type="date" name="ends_on" className={input} />
-                </label>
+                {/* MODEL B: the window is derived, so there is nothing to type
+                    and nothing to get wrong. The term starts on activation and
+                    the end follows from the billing period — the date written to
+                    the row and the date the public pages honour are one value.
+                    A future start was previously accepted here and then ignored
+                    by every public surface; that field is gone rather than
+                    lying. */}
+                <p className="text-xs text-muted sm:col-span-3">
+                  Term: starts the moment you activate, ends automatically one {'month or year'}{' '}
+                  later depending on the billing period above. The exact end date is written to the
+                  listing and shown here once it is live.
+                </p>
                 <label className={label}>
                   Reviewer
                   <input name="reviewer" placeholder="Shawn" className={input} />
@@ -380,7 +462,8 @@ export default async function PlacementsPage({
                 <p className="text-xs text-muted sm:col-span-3">
                   This is refused unless the CRM opportunity is committed or closed-won, has the
                   featured-listing offer and an agreed term recorded, and has a confirmed payment
-                  covering the agreed amount. Record all of that on{' '}
+                  covering the agreed amount. The placement then ends on its own at the end of the
+                  term. Record all of that on{' '}
                   <Link href="/admin/directory/revenue" className="text-signal underline">
                     the revenue console
                   </Link>{' '}

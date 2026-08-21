@@ -554,7 +554,11 @@ const OPEN_STAGES: readonly SponsorStage[] = ['prospect', 'contacted', 'warm', '
  * are computed for display only where a denominator exists (`rate` below), and
  * return null otherwise so the UI can say "no data yet" honestly.
  */
-export function pipelineSummary(rows: SponsorSaleRow[], now: Date): PipelineSummary {
+export function pipelineSummary(
+  rows: SponsorSaleRow[],
+  now: Date,
+  featuredSchema: FeaturedSchema = 'ready',
+): PipelineSummary {
   const byStage = Object.fromEntries(SPONSOR_STAGES.map((s) => [s, 0])) as Record<
     SponsorStage,
     number
@@ -591,7 +595,7 @@ export function pipelineSummary(rows: SponsorSaleRow[], now: Date): PipelineSumm
       summary.awaitingActivation += 1;
 
     if (isLive) {
-      const view = renewalView(sale.offerId, sale.renewalDate, true, now);
+      const view = renewalView(sale.offerId, sale.renewalDate, true, now, featuredSchema);
       if (view.state === 'overdue') summary.renewalOverdue += 1;
       else if (view.state === 'due') summary.renewalDue += 1;
     }

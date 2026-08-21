@@ -591,10 +591,25 @@ check(
   'the placements console admits the capacity check is not a DB constraint',
   /not a database constraint/i.test(src.placementPage),
 );
-check(
-  'the placements console admits a featured listing does not self-expire',
-  /no end date in the database/i.test(src.placementPage),
-);
+// REVENUE-2 CHANGED THIS CONTRACT, deliberately. A featured listing DOES
+// self-expire now — but only once migration 057 has given it a term the public
+// read path can see. So the console must state whichever of those is currently
+// true, and both branches have to exist in the source.
+{
+  // JSX wraps prose across lines, so compare against a whitespace-collapsed
+  // copy — otherwise this assertion breaks the next time Prettier reflows a
+  // paragraph, which is how a real check gets deleted for being flaky.
+  const consoleCopy = src.placementPage.replace(/\s+/g, ' ');
+  check(
+    'the placements console states the self-expiry position for both schema states',
+    // Post-migration: the placement ends on its own.
+    /stops showing the moment the term passes/i.test(consoleCopy) &&
+      // Pre-migration: the old warning is still accurate, and activation is barred.
+      /Featured-expiry schema is not active yet/i.test(consoleCopy) &&
+      /stopped by hand/i.test(consoleCopy) &&
+      /Activation is blocked until migration 057/i.test(consoleCopy),
+  );
+}
 check(
   'the placements console warns about the every-corridor wildcard',
   /EVERY CORRIDOR|every corridor page/i.test(src.placementPage),
