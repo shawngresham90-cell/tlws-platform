@@ -1,5 +1,5 @@
 import 'server-only';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createUncachedAdminClient } from '@/lib/supabase/admin';
 import type { FeaturedSchema } from '@/lib/directory/featured-window';
 
 /**
@@ -39,7 +39,9 @@ export function __resetAdminFeaturedSchemaMemo(): void {
 
 async function probe(): Promise<FeaturedSchema> {
   try {
-    const supabase = createAdminClient();
+    // UNCACHED: a cached answer to a schema-shape question outlives the schema
+    // it described. See createUncachedAdminClient.
+    const supabase = createUncachedAdminClient();
     const { error } = await supabase.from('locations').select(FEATURED_COLUMN).limit(1);
     if (!error) return 'ready';
     if (isMissingFeaturedColumn(error)) return 'unavailable';

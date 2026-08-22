@@ -421,7 +421,11 @@ check(
     const data = src('src/lib/directory/data.ts');
     return (
       /throw error;/.test(data) &&
-      /featuredSchemaMemo = attempt\.catch\(\(\) => \{\s*\n\s*featuredSchemaMemo = null;/.test(data)
+      // Indeterminate: nothing is remembered, and the next read asks again.
+      // Scoped past the test seam, which clears the same two variables.
+      /featuredSchemaMemo = null;\s*\n\s*memoGoodUntil = 0;/.test(
+        data.slice(data.indexOf('export async function featuredSchema')),
+      )
     );
   })(),
 );
@@ -457,6 +461,87 @@ check(
     );
   })(),
 );
+
+// The schema probe must never be answered from a cache.
+//
+// Found by the browser bench, not by review: Next caches `fetch` GETs in a Data
+// Cache that survives between deploys, and a build reused a stale
+// `200 [{"featured_until":null}]` for the probe URL. Every read then named a
+// column the database did not have, and PostgREST failed the WHOLE query —
+// 4,099 prerender failures on pages with nothing to do with featured
+// placements. The compatibility bridge's own outage, walked back in through the
+// cache.
+{
+  const staticClients = src('src/lib/supabase/static.ts');
+  const adminClients = src('src/lib/supabase/admin.ts');
+  extra(
+    'an uncached client exists for schema-shape questions',
+    /export function createUncachedStaticClient\(/.test(staticClients) &&
+      /export function createUncachedAdminClient\(/.test(adminClients),
+  );
+  extra(
+    'both uncached clients actually set no-store',
+    (staticClients.match(/cache: 'no-store'/g) ?? []).length === 1 &&
+      (adminClients.match(/cache: 'no-store'/g) ?? []).length === 1,
+  );
+  extra(
+    'the public probe uses the uncached client',
+    /const supabase = createUncachedStaticClient\(\);/.test(
+      src('src/lib/directory/data.ts').slice(
+        src('src/lib/directory/data.ts').indexOf('async function probeFeaturedSchema'),
+        src('src/lib/directory/data.ts').indexOf('export async function featuredSchema'),
+      ),
+    ),
+  );
+  extra(
+    'the admin probe uses the uncached client',
+    /createUncachedAdminClient\(\)/.test(src('src/lib/admin/featured-schema.ts')) &&
+      !/[^d]createAdminClient\(\)/.test(src('src/lib/admin/featured-schema.ts')),
+  );
+  extra(
+    'ordinary directory reads keep the CACHED client — this is a probe rule, not a blanket one',
+    (src('src/lib/directory/data.ts').match(/createStaticClient\(\)/g) ?? []).length >= 8,
+  );
+}
+
+// The build phase does not probe at all, and that is deliberate.
+//
+// `cache: 'no-store'` is the documented way to defeat the Data Cache, but
+// inside a prerender it bails static generation — so during a build there is no
+// way to ask a fresh question without either throwing or turning 2,454 static
+// pages dynamic. The build therefore answers `unavailable` without asking,
+// which is the fail-safe direction: it can never name a column that is not
+// there. Prerendered pages then use the legacy rule until their first
+// revalidation, which is the ISR window that already governed them.
+{
+  const data = src('src/lib/directory/data.ts');
+  const probeBody = data.slice(
+    data.indexOf('async function probeFeaturedSchema'),
+    data.indexOf('const UNAVAILABLE_TTL_MS'),
+  );
+  extra(
+    'the build phase answers unavailable without a network call',
+    /if \(isDirectoryBuildPhase\(\)\) return 'unavailable';/.test(probeBody),
+  );
+  extra(
+    'the build-phase short-circuit comes BEFORE the client is constructed',
+    probeBody.indexOf('isDirectoryBuildPhase()') <
+      probeBody.indexOf('createUncachedStaticClient()'),
+  );
+  // `ready` is permanent; `unavailable` expires, so applying 057 under a
+  // running server is picked up without a redeploy.
+  extra(
+    'a ready answer is remembered permanently',
+    /if \(value === 'ready'\) memoGoodUntil = Number\.POSITIVE_INFINITY;/.test(data),
+  );
+  extra('an unavailable answer expires', /const UNAVAILABLE_TTL_MS = 60_000;/.test(data));
+  extra(
+    'the memo slot is claimed before the first await, so a burst shares one probe',
+    /memoGoodUntil = Date\.now\(\) \+ UNAVAILABLE_TTL_MS;\s*\n\s*const attempt = probeFeaturedSchema\(\);/.test(
+      data,
+    ),
+  );
+}
 
 /* ============================================== 6 · the public read surfaces */
 
@@ -1262,8 +1347,14 @@ check(
       )) as Pred,
     /** FE29 — an indeterminate probe is not memoized. */
     reprobes: ((t) =>
-      /featuredSchemaMemo = attempt\.catch\(\(\) => \{\s*\n\s*featuredSchemaMemo = null;/.test(
-        t,
+      // Scoped to featuredSchema()'s own body — `__resetFeaturedSchemaMemo`
+      // clears the same two variables, and an unscoped match would report the
+      // test seam as the protection and never notice it had been removed.
+      /featuredSchemaMemo = null;\s*\n\s*memoGoodUntil = 0;/.test(
+        t.slice(
+          t.indexOf('export async function featuredSchema'),
+          t.indexOf('/** The projection for the current schema state. */'),
+        ),
       )) as Pred,
     /** FE74 / FE78 — the migration proves its own post-conditions. */
     verifiedMigration: ((t) =>
@@ -1484,10 +1575,7 @@ check(
         ),
     ),
     sourceMutation('memoizing an indeterminate probe would be caught', data, P.reprobes, (t) =>
-      t.replace(
-        'featuredSchemaMemo = attempt.catch(() => {\n    featuredSchemaMemo = null;',
-        'featuredSchemaMemo = attempt.catch(() => {\n    // pinned',
-      ),
+      t.replace('      featuredSchemaMemo = null;\n      memoGoodUntil = 0;', '      // pinned'),
     ),
     sourceMutation(
       'letting the admin probe memoize "unavailable" would be caught',

@@ -1,4 +1,4 @@
-import { createStaticClient } from '@/lib/supabase/static';
+import { createStaticClient, createUncachedStaticClient } from '@/lib/supabase/static';
 import { canonicalDesignation, canonicalExitNumber } from '@/lib/directory/interstates';
 import { log } from '@/lib/api/logger';
 import { normalizeOvernightStatus, overnightChipFor } from './overnight';
@@ -191,10 +191,35 @@ let featuredSchemaMemo: Promise<FeaturedSchema> | null = null;
 /** Test seam: forget the probe so a fixture can change the answer. */
 export function __resetFeaturedSchemaMemo(): void {
   featuredSchemaMemo = null;
+  memoGoodUntil = 0;
 }
 
 async function probeFeaturedSchema(): Promise<FeaturedSchema> {
-  const supabase = createStaticClient();
+  // DURING A BUILD, DON'T ASK. This is deliberate and it is the safe direction.
+  //
+  // Next caches `fetch` GETs in a Data Cache that build platforms restore
+  // between deploys, so a build can be handed a response written before the
+  // schema changed. Observed here, not theorised: a stale
+  // `200 [{"featured_until":null}]` made a build conclude the column existed,
+  // and PostgREST then failed the WHOLE query for every read that named it —
+  // 4,099 prerender failures on pages with nothing to do with placements.
+  //
+  // The documented opt-out (`cache: 'no-store'`) cannot be used here: inside a
+  // prerender it bails static generation, so it either throws or turns 2,454
+  // static pages dynamic. There is no way to ask a fresh question during a
+  // build without paying one of those prices.
+  //
+  // So the build answers `unavailable` without asking, and that costs nothing
+  // observable: prerendered pages then use the legacy rule, and every directory
+  // page is ISR at `revalidate = 300`, so the first regeneration — which reads
+  // at RUNTIME, where the probe is uncached and correct — puts the term back in
+  // charge. The staleness bound is the ISR window that already governed the
+  // page, not a new one. Getting this wrong the other way is a full outage.
+  if (isDirectoryBuildPhase()) return 'unavailable';
+
+  // At runtime, ask, and ask WITHOUT the cache — for the same reason the build
+  // does not ask at all. See createUncachedStaticClient.
+  const supabase = createUncachedStaticClient();
   const { error } = await supabase.from('locations').select(FEATURED_COLUMN).limit(1);
   if (!error) return 'ready';
   if (isMissingFeaturedColumn(error)) return 'unavailable';
@@ -202,15 +227,43 @@ async function probeFeaturedSchema(): Promise<FeaturedSchema> {
   throw error;
 }
 
+/**
+ * How long an `unavailable` answer is trusted before the process asks again.
+ *
+ * `ready` is remembered for good — a column does not un-exist while a server is
+ * running, and a rollback is an operator action that redeploys anyway.
+ * `unavailable` is remembered only briefly, because the whole point of the
+ * bridge is that the migration lands WHILE this code is deployed: pinning the
+ * pre-migration answer for the life of the process would mean the term column
+ * appeared and nothing read it until someone redeployed. A minute bounds the
+ * cost at one extra request per process per minute, and bounds the delay
+ * between applying 057 and the site honouring it at the same minute.
+ */
+const UNAVAILABLE_TTL_MS = 60_000;
+
+/** When the memo stops being trusted. `Infinity` once `ready` is proven. */
+let memoGoodUntil = 0;
+
 export async function featuredSchema(): Promise<FeaturedSchema> {
-  if (featuredSchemaMemo) return featuredSchemaMemo;
+  if (featuredSchemaMemo && Date.now() < memoGoodUntil) return featuredSchemaMemo;
+  // Claim the slot SYNCHRONOUSLY, before the first await, so a burst of
+  // concurrent reads shares one probe instead of each starting its own.
+  memoGoodUntil = Date.now() + UNAVAILABLE_TTL_MS;
   const attempt = probeFeaturedSchema();
-  // Memoize only a DEFINITE answer. An indeterminate probe must not pin the
-  // process to a guess for its whole lifetime.
-  featuredSchemaMemo = attempt.catch(() => {
-    featuredSchemaMemo = null;
-    return 'unavailable' as const;
-  });
+  featuredSchemaMemo = attempt
+    .then((value) => {
+      // A column does not un-exist while a server runs, so `ready` is final.
+      if (value === 'ready') memoGoodUntil = Number.POSITIVE_INFINITY;
+      return value;
+    })
+    .catch(() => {
+      // Indeterminate: no answer is remembered at all, and the next read asks
+      // again. Pinning a guess for the life of the process is the one outcome
+      // worse than a retry.
+      featuredSchemaMemo = null;
+      memoGoodUntil = 0;
+      return 'unavailable' as const;
+    });
   return featuredSchemaMemo;
 }
 
