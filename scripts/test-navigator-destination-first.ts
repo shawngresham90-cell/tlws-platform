@@ -114,6 +114,20 @@ check(
   SCREEN_CODE.indexOf('{mapSearchSlot}') < SCREEN_CODE.indexOf('{mapSlot}'),
 );
 
+/*
+ * NED1b exists because NED1 alone was not enough, and a mutation proved it.
+ * `indexOf` finds the FIRST occurrence, so adding a SECOND copy of the
+ * search below the map left NED1 perfectly happy — the first one was still
+ * before the map — while the driver got two destination boxes and the
+ * milestone's "do not create a second search implementation" rail was
+ * quietly gone. Counting is the fix: one slot, one render, one place.
+ */
+check(
+  'NED1b: …and it renders exactly ONCE — no second box below the map',
+  (SCREEN_CODE.match(/\{mapSearchSlot\}/g) ?? []).length === 1,
+  (SCREEN_CODE.match(/\{mapSearchSlot\}/g) ?? []).length,
+);
+
 check(
   'NED2: the search is a SIBLING of the map, not a child of its wrapper',
   /<div className=\{mapWrapCls\}>\{mapSlot\}<\/div>/.test(SCREEN_CODE.replace(/\s+/g, ' ')),
@@ -210,22 +224,106 @@ check(
  * how the harness proves the rule would have caught the shipped defect.
  */
 const BEFORE: Readonly<Record<string, DestinationMeasurement>> = {
-  '360x740': { top: 813, bottom: 877, height: 64, visibleHeight: 0, viewportHeight: 740, obstructionTop: 683 },
-  '390x844': { top: 753, bottom: 817, height: 64, visibleHeight: 0, viewportHeight: 844, obstructionTop: 787 },
-  '430x932': { top: 731, bottom: 795, height: 64, visibleHeight: 0, viewportHeight: 932, obstructionTop: 875 },
-  '844x390': { top: 649, bottom: 713, height: 64, visibleHeight: 0, viewportHeight: 390, obstructionTop: 390 },
-  '932x430': { top: 649, bottom: 713, height: 64, visibleHeight: 0, viewportHeight: 430, obstructionTop: 430 },
-  '1280x800': { top: 649, bottom: 713, height: 64, visibleHeight: 0, viewportHeight: 800, obstructionTop: 800 },
+  '360x740': {
+    top: 813,
+    bottom: 877,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 740,
+    obstructionTop: 683,
+  },
+  '390x844': {
+    top: 753,
+    bottom: 817,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 844,
+    obstructionTop: 787,
+  },
+  '430x932': {
+    top: 731,
+    bottom: 795,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 932,
+    obstructionTop: 875,
+  },
+  '844x390': {
+    top: 649,
+    bottom: 713,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 390,
+    obstructionTop: 390,
+  },
+  '932x430': {
+    top: 649,
+    bottom: 713,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 430,
+    obstructionTop: 430,
+  },
+  '1280x800': {
+    top: 649,
+    bottom: 713,
+    height: 64,
+    visibleHeight: 0,
+    viewportHeight: 800,
+    obstructionTop: 800,
+  },
 };
 
 /** The measured after-state on this branch, same build settings. */
 const AFTER: Readonly<Record<string, DestinationMeasurement>> = {
-  '360x740': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 740, obstructionTop: 683 },
-  '390x844': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 844, obstructionTop: 787 },
-  '430x932': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 932, obstructionTop: 875 },
-  '844x390': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 390, obstructionTop: 390 },
-  '932x430': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 430, obstructionTop: 430 },
-  '1280x800': { top: 146, bottom: 210, height: 64, visibleHeight: 64, viewportHeight: 800, obstructionTop: 800 },
+  '360x740': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 740,
+    obstructionTop: 683,
+  },
+  '390x844': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 844,
+    obstructionTop: 787,
+  },
+  '430x932': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 932,
+    obstructionTop: 875,
+  },
+  '844x390': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 390,
+    obstructionTop: 390,
+  },
+  '932x430': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 430,
+    obstructionTop: 430,
+  },
+  '1280x800': {
+    top: 146,
+    bottom: 210,
+    height: 64,
+    visibleHeight: 64,
+    viewportHeight: 800,
+    obstructionTop: 800,
+  },
 };
 
 for (const v of REQUIRED_VIEWPORTS) {
@@ -392,9 +490,8 @@ check(
 );
 
 check(
-  "NED34: the standard truck is 13 ft 6 in (13.5 ft) and 80,000 lb",
-  DEFAULT_EDITABLE_PROFILE.heightFt === 13.5 &&
-    DEFAULT_EDITABLE_PROFILE.grossWeightLbs === 80000,
+  'NED34: the standard truck is 13 ft 6 in (13.5 ft) and 80,000 lb',
+  DEFAULT_EDITABLE_PROFILE.heightFt === 13.5 && DEFAULT_EDITABLE_PROFILE.grossWeightLbs === 80000,
   { ...DEFAULT_EDITABLE_PROFILE },
 );
 
@@ -529,7 +626,11 @@ check(
     'view-trip-summary',
   ] as const;
   const gated = EDITING.filter((a) => ACTION_PERMISSIONS[a] !== true);
-  check('NED48: no EDITING action in the permission map is disabled by motion', gated.length === 0, gated);
+  check(
+    'NED48: no EDITING action in the permission map is disabled by motion',
+    gated.length === 0,
+    gated,
+  );
 }
 
 check(
@@ -566,7 +667,11 @@ check(
     const src = code(read(f));
     for (const re of forbidden) if (re.test(src)) offenders.push(`${f} :: ${String(re)}`);
   }
-  check('NED51: Passenger Access and every override rail stay absent', offenders.length === 0, offenders);
+  check(
+    'NED51: Passenger Access and every override rail stay absent',
+    offenders.length === 0,
+    offenders,
+  );
 }
 
 check(
@@ -603,8 +708,7 @@ check(
 
 check(
   'NED57: the full-screen branch keeps its own ordering — no parked order class leaks in',
-  !/fullScreen \? 'order-/.test(SCREEN_CODE) &&
-    /fullScreen \? '' : 'order-1'/.test(SCREEN_CODE),
+  !/fullScreen \? 'order-/.test(SCREEN_CODE) && /fullScreen \? '' : 'order-1'/.test(SCREEN_CODE),
 );
 
 /* =================================================================== */
@@ -638,7 +742,9 @@ check(
   );
   check(
     'NED60: the browser bench measures exactly the six required viewports',
-    bench !== '' && named && bench.includes(`MIN_DESTINATION_TARGET_PX = ${MIN_DESTINATION_TARGET_PX}`),
+    bench !== '' &&
+      named &&
+      bench.includes(`MIN_DESTINATION_TARGET_PX = ${MIN_DESTINATION_TARGET_PX}`),
   );
 }
 

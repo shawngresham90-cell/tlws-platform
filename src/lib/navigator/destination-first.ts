@@ -130,7 +130,9 @@ export type DestinationVerdict = Readonly<{
 export function destinationEntryUsable(m: DestinationMeasurement): DestinationVerdict {
   const reasons: string[] = [];
   if (m.height < MIN_DESTINATION_TARGET_PX) {
-    reasons.push(`target ${Math.round(m.height)}px is under the ${MIN_DESTINATION_TARGET_PX}px floor`);
+    reasons.push(
+      `target ${Math.round(m.height)}px is under the ${MIN_DESTINATION_TARGET_PX}px floor`,
+    );
   }
   if (m.top < 0) {
     reasons.push(`top ${Math.round(m.top)}px is above the viewport`);
