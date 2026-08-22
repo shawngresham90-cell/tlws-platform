@@ -64,6 +64,13 @@ function bakedMockPort(tree) {
   const candidates = [
     '.next/server/app/(directory)/directory/[category]/page.js',
     '.next/server/app/admin/(dashboard)/directory/placements/page.js',
+    // Whether the URL is inlined into a given page chunk depends on how the
+    // build split the modules. When none of the pages carries it, falling back
+    // to a default port starts a mock nobody is talking to and produces a page
+    // of failures about empty data — a wrong answer that looks exactly like a
+    // regression. `middleware.js` sees the URL on every build.
+    '.next/server/src/middleware.js',
+    '.next/server/middleware.js',
   ];
   for (const rel of candidates) {
     const p = path.join(tree, rel);
