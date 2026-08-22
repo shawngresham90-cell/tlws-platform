@@ -189,6 +189,16 @@ async function login(page) {
     savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(700);
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — that is what an unauthorized visitor is redirected away from and
+   * back to — and the helper then lands on the driving surface this bench is
+   * about, so every measurement below still describes the same screen.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  // Let the surface hydrate before a caller starts looking for controls.
+  await page.waitForTimeout(900);
 }
 
 async function makeContext(browser, { w, h }, { clocks = MID_SHIFT_CLOCKS, longNames = false }) {

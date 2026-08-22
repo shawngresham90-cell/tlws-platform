@@ -59,6 +59,17 @@ export function LockGate({
    * temporary states the driver does not need to act on.
    */
   const unknown = lock.lockReason === 'location-unknown';
+  /*
+   * TWO STRINGS PER REASON, and deliberately not one.
+   *
+   * `summary` is the ACCESSIBLE NAME — short, because a screen reader reads
+   * the whole thing every time focus lands on the control, and a paragraph
+   * there is worse than useless at 60 mph. `reason` is what a sighted driver
+   * reads on the block variant, where there is room to explain.
+   */
+  const summary = unknown
+    ? `this vehicle’s location can’t be confirmed right now`
+    : `the vehicle is moving`;
   const reason = unknown
     ? `We can’t confirm this vehicle’s location right now, so this control is paused. It returns on its own once the signal comes back.`
     : `This view moves the map away from your truck, so it waits until you’re stopped. It returns on its own.`;
@@ -78,7 +89,7 @@ export function LockGate({
         aria-disabled="true"
         data-lock-reason={unknown ? 'location-unknown' : 'moving'}
         className="min-h-16 min-w-0 w-full truncate rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink/80"
-        aria-label={`${lockedLabel} is paused — ${reason}`}
+        aria-label={`${lockedLabel} is paused — ${summary}`}
       >
         <span aria-hidden="true">{unknown ? '📡 ' : '⏸ '}</span>
         {lockedLabel} paused

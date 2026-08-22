@@ -350,6 +350,16 @@ async function login(page) {
     savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(600); // hydration
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — that is what an unauthorized visitor is redirected away from and
+   * back to — and the helper then lands on the driving surface this bench is
+   * about, so every measurement below still describes the same screen.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  // Let the surface hydrate before a caller starts looking for controls.
+  await page.waitForTimeout(900);
 }
 
 const geo = {
@@ -718,9 +728,18 @@ scenarios.s7 = async (browser) => {
   const { context, page } = await makeContext(browser, { mode: 'granted' });
   try {
     await login(page);
-    await feedParked(page, 2);
+    /*
+     * NAV-ENTRY-1 moved the name field to /drive/settings — the driving
+     * screen only ever READS a name, because the only thing it does with one
+     * is speak it. The scenario sets it where a driver would and comes back
+     * to the surface it is testing.
+     */
+    await page.goto(`${BASE}/drive/settings`, { waitUntil: 'domcontentloaded' });
     await page.getByLabel(/Your first name/i).fill('Shawn');
     await page.getByRole('button', { name: /Save name/i }).click();
+    await page.getByText(/Driving as/i).waitFor({ timeout: 10_000 });
+    await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+    await feedParked(page, 2);
     await page.getByRole('button', { name: /Enable voice/i }).click();
     await page.waitForTimeout(1500); // greeting window: passive line lands after the confirmation
     await pickDestination(page);
@@ -840,27 +859,49 @@ scenarios.s10 = async (browser) => {
   }
 };
 
-/** s11 — motion safety: destination editing locks while moving. */
+/**
+ * s11 — motion and editing: the driver keeps their own destination.
+ *
+ * THIS SCENARIO INVERTED, by owner decision (NAV-ENTRY-1). It used to assert
+ * that destination entry disappeared above 5 mph and was replaced by a locked
+ * card offering PASSENGER ACCESS — a press-and-hold dialog asking whoever held
+ * the phone to declare they were not driving. A parked driver whose GPS died
+ * under a truck-stop canopy got the same question, which has no honest answer,
+ * and a determined driver simply tapped through it. It cost the honest driver
+ * and not the other one.
+ *
+ * What is asserted instead is the pair that makes the new rule real: the field
+ * survives confirmed motion, and nothing offers a way to "unlock" it — because
+ * there is nothing to unlock.
+ */
 scenarios.s11 = async (browser) => {
   const { context, page } = await makeContext(browser, { mode: 'granted' });
   try {
     await login(page);
     verdict(
-      's11: destination entry available while parked (setup window)',
+      's11: destination entry available while parked',
       await page.getByLabel(/Search for a destination/).isVisible(),
     );
     // Now the truck moves: 12 s above the 5 mph threshold trips MOVING.
     await feedMoving(page, 13, 12);
     const text = await bodyText(page);
-    verdict('s11: destination entry LOCKED while moving', /Destination entry is locked/.test(text));
     verdict(
-      's11: search input no longer reachable',
-      !(await page
+      's11: the truck really is moving, so this is a real motion state',
+      /\bMoving\b/.test(text),
+      text.match(/\b(Moving|Parked|Location [a-z ]+)\b/)?.[0] ?? 'no motion line',
+    );
+    verdict(
+      's11: destination entry SURVIVES confirmed motion',
+      await page
         .getByLabel(/Search for a destination/)
         .isVisible()
-        .catch(() => false)),
+        .catch(() => false),
     );
-    if (SHOTS) await page.screenshot({ path: `${SHOTS}/s11-moving-locked.png` });
+    verdict(
+      's11: and nothing offers passenger access to get it back',
+      !/passenger|press and hold|is locked/i.test(text),
+    );
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/s11-moving-editable.png` });
   } finally {
     await context.close();
   }

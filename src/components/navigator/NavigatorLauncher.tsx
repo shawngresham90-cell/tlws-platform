@@ -90,8 +90,21 @@ function LauncherButton({
        */
       className="flex min-h-[6rem] w-full flex-col justify-center gap-1 rounded-cockpit border border-line bg-nav-surface px-5 py-4 text-left"
     >
-      <span className="font-display text-2xl uppercase tracking-wide text-ink">{action.label}</span>
-      <span className="text-lg text-ink/70">{action.supporting}</span>
+      {/*
+        `break-words` is the 200%-zoom fix, and it was found by measurement
+        rather than guessed. At a 32px root font on a 360-390px phone the
+        label and the supporting line rendered a few pixels wider than their
+        own boxes — "SETTINGS" alone measured 170px inside a 148px box — which
+        is text lost at a zoom level WCAG 1.4.4 requires to work. Allowing a
+        word to break is the smallest fix that keeps every word visible;
+        shrinking the type instead would have solved the measurement by
+        making the button harder to read, which is the wrong trade for a
+        control a driver uses with gloves on.
+      */}
+      <span className="break-words font-display text-2xl uppercase tracking-wide text-ink">
+        {action.label}
+      </span>
+      <span className="break-words text-lg text-ink/70">{action.supporting}</span>
     </Link>
   );
 }

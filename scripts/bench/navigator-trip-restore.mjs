@@ -184,6 +184,11 @@ async function main() {
   await page.click('button[type="submit"]');
   await page.waitForLoadState('networkidle');
   await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the launcher now. The gate is still entered through `/drive`.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
   if (page.url().includes('/navigator/access')) {
     throw new Error('the pilot gate did not accept the password');
   }

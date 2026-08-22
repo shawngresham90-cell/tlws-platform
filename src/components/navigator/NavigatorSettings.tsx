@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { PARKED_REMINDER } from '@/lib/navigator/navigator-entry';
+import { PARKED_REMINDER, standardSetupDecision } from '@/lib/navigator/navigator-entry';
 import { DISPLAY_MODE_CHOICES, type DisplayMode } from '@/lib/navigator/display-mode';
 import {
   CANADA_HOS_NOTICE,
@@ -120,10 +120,23 @@ export function NavigatorSettings({
     const prefs = readRegionPrefs();
     setRegion(prefs.region);
     setUnits(prefs.units);
+    /*
+     * THE SAME STANDARD-SETUP RULE THE DRIVING SCREEN USES, from the same
+     * authority. A driver who opens Settings before ever opening the map
+     * has no saved truck yet — and showing them the full five-row editor
+     * there would reintroduce, on this screen, exactly the setup wall this
+     * milestone removed from the other one. They see the standard truck as
+     * theirs, with one way in to change it.
+     */
     const saved = readTruck();
-    if (saved !== null) {
+    if (standardSetupDecision(saved) === 'keep-saved' && saved !== null) {
       setTruckProfile(saved.profile);
       setTruckSaved(true);
+    } else {
+      setTruckProfile(DEFAULT_EDITABLE_PROFILE);
+      setTruckSaved(true);
+      writeTruck(DEFAULT_EDITABLE_PROFILE, confirmProfile(DEFAULT_EDITABLE_PROFILE));
+      notifySaved('truck');
     }
     setRoutePrefs(readRoutePrefs());
     setClockEntry(readClocks());
