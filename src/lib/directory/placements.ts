@@ -17,6 +17,8 @@
  * same instant could still overrun, and the admin UI says so.
  */
 
+import { isFeaturedActive, type FeaturedSchema } from './featured-window';
+
 /** Approved capacity. One primary sponsor per corridor page. */
 export const PRIMARY_CORRIDOR_SPONSORS = 1;
 /** Approved capacity. Up to three sponsored businesses per category/corridor page. */
@@ -60,6 +62,11 @@ export type PromotableListing = {
   isPublished: boolean;
   isFeatured: boolean;
   deletedAt: string | null;
+  /**
+   * End of the paid featured term. `undefined` when migration 057 has not been
+   * applied and the column could not be read.
+   */
+  featuredUntil?: string | null;
 };
 
 /**
@@ -139,16 +146,38 @@ export type FeaturedUsage = {
 };
 
 /**
- * How full the pages a listing would appear on already are. `existing` is every
- * currently featured, published, non-deleted listing; the target itself is
- * excluded so re-activating an already-featured listing is not counted twice.
+ * How full the pages a listing would appear on already are.
+ *
+ * "Full" means occupied by a placement that is CURRENTLY IN TERM. A row still
+ * carrying `is_featured = true` after its term ended is not on the page any
+ * more — it lost its badge, its sorting and its map treatment the moment the
+ * term passed — so counting it would let a stale boolean block a new sale on a
+ * page that is visibly empty. That is the same defect as a placement running
+ * past its term, pointed the other way.
+ *
+ * The target itself is always excluded, so renewing an existing placement is
+ * never blocked by its own occupancy.
  */
 export function featuredUsage(
   target: Pick<PromotableListing, 'id' | 'categorySlug' | 'interstate'>,
   existing: PromotableListing[],
+  now: Date = new Date(),
+  schema: FeaturedSchema = 'ready',
 ): FeaturedUsage {
   const others = existing.filter(
-    (l) => l.id !== target.id && l.isFeatured && l.isPublished && !l.deletedAt,
+    (l) =>
+      l.id !== target.id &&
+      isFeaturedActive(
+        {
+          isFeatured: l.isFeatured,
+          isPublished: l.isPublished,
+          deletedAt: l.deletedAt,
+          name: l.name,
+          featuredUntil: l.featuredUntil,
+        },
+        now,
+        schema,
+      ),
   );
   const category = {
     slug: target.categorySlug ?? '',
@@ -176,9 +205,11 @@ export function canActivateFeatured(
   target: PromotableListing,
   existing: PromotableListing[],
   window: Window,
+  now: Date = new Date(),
+  schema: FeaturedSchema = 'ready',
 ): { ok: boolean; blockers: string[]; usage: FeaturedUsage } {
   const blockers = [...promotionBlockers(target), ...windowBlockers(window)];
-  const usage = featuredUsage(target, existing);
+  const usage = featuredUsage(target, existing, now, schema);
   if (usage.category.slug && usage.category.used >= usage.category.limit)
     blockers.push(
       `The ${usage.category.slug} category page already has ${usage.category.used} sponsored listings (limit ${usage.category.limit}).`,

@@ -14,6 +14,12 @@ import {
   type PlacementRecord,
   type PromotableListing,
 } from '@/lib/directory/placements';
+import { adminFeaturedSchema } from '@/lib/admin/featured-schema';
+import {
+  featuredExpiryFrom,
+  featuredWindowBlockers,
+  type FeaturedSchema,
+} from '@/lib/directory/featured-window';
 import {
   isoDay,
   readSaleState,
@@ -83,11 +89,19 @@ function toPromotable(r: Record<string, unknown>): PromotableListing {
     isPublished: Boolean(r.is_published),
     isFeatured: Boolean(r.is_featured),
     deletedAt: (r.deleted_at as string) ?? null,
+    // `undefined` when the column was not selected, which is how the capacity
+    // rule tells "no term recorded" from "schema not readable".
+    featuredUntil: (r.featured_until as string | null | undefined) ?? undefined,
   };
 }
 
-const LISTING_COLS =
+const LISTING_COLS_BASE =
   'id, name, category_slug, interstate, state, is_published, is_featured, deleted_at';
+
+/** Ask for the term only when the column exists. */
+function listingCols(schema: FeaturedSchema): string {
+  return schema === 'ready' ? `${LISTING_COLS_BASE}, featured_until` : LISTING_COLS_BASE;
+}
 
 /**
  * Append one labelled line to a CRM row's notes and mirror it as a touch.
@@ -220,8 +234,16 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
   const billingRaw = field(formData, 'billing');
   const billing = billingRaw === 'annual' ? 'annual' : billingRaw === 'monthly' ? 'monthly' : null;
   const sponsorId = field(formData, 'sponsor_id');
-  const startsAt = isoDate(field(formData, 'starts_on'));
-  const endsAt = isoDate(field(formData, 'ends_on'), true);
+
+  // MODEL B: the window is DERIVED, not typed. Activation starts the term now
+  // and the expiry follows from the billing period, so the date recorded on the
+  // row and the date the public pages honour cannot disagree — they are the
+  // same value. A future start is refused below rather than recorded and
+  // ignored, which is what used to happen.
+  const now = new Date();
+  const schema = await adminFeaturedSchema();
+  const startsAt = now.toISOString();
+  const endsAt = billing ? featuredExpiryFrom(now, billing).toISOString() : null;
 
   const upfront: string[] = [];
   if (!listingId) upfront.push('No listing selected.');
@@ -229,9 +251,7 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
     upfront.push('The paying CRM opportunity is required. A placement never goes live unsold.');
   if (!reviewer) upfront.push('Reviewer name is required — this is the audit trail.');
   if (!billing) upfront.push('Choose monthly or annual billing.');
-  if (!startsAt) upfront.push('A start date is required.');
-  if (!endsAt)
-    upfront.push('An end date is required — a featured listing cannot expire by itself.');
+  upfront.push(...featuredWindowBlockers(field(formData, 'starts_on') || null, now, schema));
   if (field(formData, 'confirm') !== CONFIRM_WORD)
     upfront.push(`Type ${CONFIRM_WORD} to confirm. Nothing was changed.`);
   if (upfront.length) fail(upfront);
@@ -247,32 +267,39 @@ export async function activateFeaturedAction(formData: FormData): Promise<void> 
 
   const { data: targetRow, error: targetErr } = await supabase
     .from('locations')
-    .select(LISTING_COLS)
+    .select(listingCols(schema))
     .eq('id', listingId)
     .single();
   if (targetErr || !targetRow) fail(['That listing could not be loaded. Nothing was changed.']);
-  const target = toPromotable(targetRow as Record<string, unknown>);
+  const target = toPromotable(targetRow as unknown as Record<string, unknown>);
 
   // Live capacity, not whatever the form believed when it was rendered.
   const { data: featuredRows } = await supabase
     .from('locations')
-    .select(LISTING_COLS)
+    .select(listingCols(schema))
     .eq('is_featured', true)
     .eq('is_published', true)
     .is('deleted_at', null)
     .limit(500);
-  const existing = ((featuredRows as Record<string, unknown>[]) ?? []).map(toPromotable);
+  const existing = ((featuredRows as unknown as Record<string, unknown>[] | null) ?? []).map(
+    toPromotable,
+  );
 
-  const verdict = canActivateFeatured(target, existing, { startsAt, endsAt });
+  const verdict = canActivateFeatured(target, existing, { startsAt, endsAt }, now, schema);
   if (!verdict.ok) fail(verdict.blockers);
 
+  // ONE update: the flag and the term land together or not at all. Writing the
+  // boolean first and the term second would leave a window — however short —
+  // in which a placement is public with no expiry, which is the exact state
+  // this milestone exists to make unreachable. Migration 057's CHECK would also
+  // reject the intermediate row, so a split write could not even succeed.
   const { error } = await supabase
     .from('locations')
-    .update({ is_featured: true })
+    .update({ is_featured: true, featured_until: endsAt })
     .eq('id', listingId);
   if (error) fail(['The update failed. Nothing was changed.']);
 
-  const at = new Date().toISOString();
+  const at = now.toISOString();
   await recordAudit(
     supabase,
     sponsorId,
@@ -302,18 +329,27 @@ export async function deactivateFeaturedAction(formData: FormData): Promise<void
   const sponsorId = field(formData, 'sponsor_id');
   if (!listingId) fail(['No listing selected.']);
 
+  const schema = await adminFeaturedSchema();
   const supabase = createAdminClient();
   const { data: targetRow } = await supabase
     .from('locations')
-    .select(LISTING_COLS)
+    .select(listingCols(schema))
     .eq('id', listingId)
     .single();
-  const target = targetRow ? toPromotable(targetRow as Record<string, unknown>) : null;
+  const target = targetRow ? toPromotable(targetRow as unknown as Record<string, unknown>) : null;
 
-  const { error } = await supabase
-    .from('locations')
-    .update({ is_featured: false })
-    .eq('id', listingId);
+  // Stopping is always safe and never requires payment, so this keeps its
+  // one-click shape. The term is cleared with the flag: leaving a stale
+  // `featured_until` behind on an unfeatured row would make the next renewal
+  // look like it had a window it does not have.
+  //
+  // The AUDIT is not erased. What the business bought, what they paid and when
+  // the placement ran live on in `sponsors.notes` and `sponsor_touches`, which
+  // is where the commercial history belongs — the listing row only ever carried
+  // the current state.
+  const patch: Record<string, unknown> =
+    schema === 'ready' ? { is_featured: false, featured_until: null } : { is_featured: false };
+  const { error } = await supabase.from('locations').update(patch).eq('id', listingId);
   if (error) fail(['The update failed. Nothing was changed.']);
 
   if (sponsorId)
@@ -334,6 +370,111 @@ export async function deactivateFeaturedAction(formData: FormData): Promise<void
 
   revalidatePlacement(target?.categorySlug ?? null);
   back({ ok: `Featured listing stopped for ${target?.name ?? listingId}.` });
+}
+
+/**
+ * Renew a featured listing: extend the paid term, and bring the placement back
+ * if it had already lapsed.
+ *
+ * Every gate activation applies here too, re-read at write time, and for
+ * the same reason: a renewal is a second sale. What differs is only that the
+ * listing may already be featured — so capacity excludes the target from its
+ * own count, and an expired placement can be restored rather than needing to be
+ * stopped and re-activated.
+ *
+ * The renewed term runs from NOW, not from the old expiry. Extending from a
+ * lapsed date would hand back days the business did not pay for; extending from
+ * a future date would need a scheduled start, which Model B does not have.
+ */
+export async function renewFeaturedAction(formData: FormData): Promise<void> {
+  requireAdmin();
+
+  const listingId = field(formData, 'listing_id');
+  const reviewer = field(formData, 'reviewer');
+  const billingRaw = field(formData, 'billing');
+  const billing = billingRaw === 'annual' ? 'annual' : billingRaw === 'monthly' ? 'monthly' : null;
+  const sponsorId = field(formData, 'sponsor_id');
+
+  const now = new Date();
+  const schema = await adminFeaturedSchema();
+  const startsAt = now.toISOString();
+  const endsAt = billing ? featuredExpiryFrom(now, billing).toISOString() : null;
+
+  const upfront: string[] = [];
+  if (!listingId) upfront.push('No listing selected.');
+  if (!sponsorId)
+    upfront.push('The paying CRM opportunity is required. A renewal is a second sale.');
+  if (!reviewer) upfront.push('Reviewer name is required — this is the audit trail.');
+  if (!billing) upfront.push('Choose the renewed billing period.');
+  upfront.push(...featuredWindowBlockers(null, now, schema));
+  if (field(formData, 'confirm') !== CONFIRM_WORD)
+    upfront.push(`Type ${CONFIRM_WORD} to confirm. Nothing was changed.`);
+  if (upfront.length) fail(upfront);
+
+  const supabase = createAdminClient();
+
+  // The renewal has to have been PAID FOR. `saleActivationBlockers` re-reads
+  // the opportunity: the latest quote, the latest confirmed payment covering
+  // it, the agreed term matching the window. Recording the renewal payment
+  // happens first, on the revenue console.
+  const sale = await loadSale(supabase, sponsorId);
+  const saleBlockers = saleActivationBlockers('featured-listing', sale, { startsAt, endsAt });
+  if (saleBlockers.length) fail(saleBlockers);
+
+  const { data: targetRow, error: targetErr } = await supabase
+    .from('locations')
+    .select(listingCols(schema))
+    .eq('id', listingId)
+    .single();
+  if (targetErr || !targetRow) fail(['That listing could not be loaded. Nothing was changed.']);
+  const target = toPromotable(targetRow as unknown as Record<string, unknown>);
+
+  const { data: featuredRows } = await supabase
+    .from('locations')
+    .select(listingCols(schema))
+    .eq('is_featured', true)
+    .eq('is_published', true)
+    .is('deleted_at', null)
+    .limit(500);
+  const existing = ((featuredRows as unknown as Record<string, unknown>[] | null) ?? []).map(
+    toPromotable,
+  );
+
+  // `canActivateFeatured` already excludes the target from its own capacity, so
+  // renewing the third placement on a full page is allowed while adding a
+  // fourth is not.
+  const verdict = canActivateFeatured(target, existing, { startsAt, endsAt }, now, schema);
+  if (!verdict.ok) fail(verdict.blockers);
+
+  const { error } = await supabase
+    .from('locations')
+    .update({ is_featured: true, featured_until: endsAt })
+    .eq('id', listingId);
+  if (error) fail(['The renewal failed. Nothing was changed.']);
+
+  // Appended, never overwritten: the original activation stays in the history
+  // above this line, and the renewal reads as the separate event it is.
+  await recordAudit(
+    supabase,
+    sponsorId,
+    {
+      kind: 'featured-listing',
+      target: target.name ?? listingId,
+      billing,
+      startsAt,
+      endsAt,
+      reviewer,
+      action: 'activated',
+    },
+    now.toISOString(),
+  );
+  await markLive(supabase, sponsorId, 'featured-listing', endsAt);
+
+  revalidatePlacement(target.categorySlug);
+  revalidatePath('/admin/directory/revenue');
+  back({
+    ok: `Featured listing renewed for ${target.name ?? listingId} through ${endsAt?.slice(0, 10)}.`,
+  });
 }
 
 /* ------------------------------------------------------- corridor sponsor */

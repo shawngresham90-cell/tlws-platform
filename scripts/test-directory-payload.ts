@@ -187,13 +187,37 @@ async function main() {
         toCardEntry(unknownEntry).amenities?.includes('Overnight confirmed') !== true),
   );
 
-  const featuredRow = { ...FX.eligible[3], is_featured: true };
+  // REVENUE-2: a paid placement is a WINDOW now, so the fixture carries the
+  // term the row would really have. The assertion is unchanged — a sponsored
+  // listing still reaches the card DTO as `featured: true`. What changed is
+  // that `is_featured` alone no longer means sponsored: a flagged row with no
+  // recorded term fails closed, which DP8a below asserts directly.
+  const featuredUntil = new Date(Date.now() + 30 * 86_400_000).toISOString();
+  const featuredRow = { ...FX.eligible[3], is_featured: true, featured_until: featuredUntil };
   install(FX.rows.map((r) => (r.id === featuredRow.id ? featuredRow : r)));
   const withFeatured = await getEntries('truck-stops');
   const featuredCard = withFeatured.find((e) => e.id === featuredRow.id);
   check(
     'DP8 sponsored status unchanged',
     Boolean(featuredCard) && toCardEntry(featuredCard!).featured === true,
+  );
+
+  // The same row with an expired term is an ordinary listing: still present,
+  // still published, simply no longer sponsored.
+  const expiredRow = {
+    ...FX.eligible[3],
+    is_featured: true,
+    featured_until: new Date(Date.now() - 86_400_000).toISOString(),
+  };
+  install(FX.rows.map((r) => (r.id === expiredRow.id ? expiredRow : r)));
+  const withExpired = await getEntries('truck-stops');
+  const expiredCard = withExpired.find((e) => e.id === expiredRow.id);
+  check(
+    'DP8a expired sponsorship falls back to an ordinary listing',
+    // The DTO omits `featured` entirely when false (it is an optional field,
+    // dropped to save bytes), so the claim to assert is "the card does not say
+    // sponsored" rather than "the card says false".
+    Boolean(expiredCard) && toCardEntry(expiredCard!).featured !== true,
   );
   install(FX.rows);
 

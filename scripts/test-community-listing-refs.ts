@@ -883,11 +883,45 @@ function guardrails() {
   );
 
   const migrations = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql'));
+  /**
+   * Migrations that arrived AFTER this milestone and belong to another one.
+   *
+   * The original form of this check was "056 is the highest", which said the
+   * right thing and aged badly: the next milestone to add a migration for its
+   * own reasons broke a guard about THIS milestone's scope. Naming them keeps
+   * the teeth — an unexplained new migration still trips it — without the
+   * assertion becoming a lie the moment the repository moves on.
+   */
+  const LATER_MILESTONE_MIGRATIONS: Record<string, string> = {
+    '057_featured_listing_term.sql': 'REVENUE-2 — adds locations.featured_until',
+  };
+  const unexplained = migrations
+    .filter((f) => /^0(5[7-9]|[6-9]\d)/.test(f))
+    .filter((f) => !(f in LATER_MILESTONE_MIGRATIONS));
   check(
     'LC51',
-    'no migration was added for this milestone (056 remains the highest)',
-    migrations.filter((f) => /^0(5[7-9]|[6-9]\d)/.test(f)).length === 0,
-    migrations.slice(-3),
+    'this milestone added no migration, and every later one is accounted for',
+    unexplained.length === 0,
+    unexplained,
+  );
+  // And the later ones must not disturb what this path reads. 057 adds a column
+  // to `public.locations`, which this milestone selects from — so "it is
+  // additive" is a claim worth checking rather than asserting.
+  check(
+    'LC51a',
+    'no later migration drops or renames anything the listing-ref read selects',
+    Object.keys(LATER_MILESTONE_MIGRATIONS).every((f) => {
+      const sql = read(`supabase/migrations/${f}`)
+        .split('\n')
+        .filter((l) => !l.trimStart().startsWith('--'))
+        .join('\n');
+      const touched = /\b(drop column|rename column|drop table|alter column)\b/i.test(sql);
+      const selected = ['id', 'name', 'city', 'state', 'detail_slug'];
+      return (
+        !touched &&
+        !selected.some((c) => new RegExp(`\\b(drop|rename)\\s+\\w*\\s*${c}\\b`, 'i').test(sql))
+      );
+    }),
   );
   check(
     'LC52',

@@ -49,6 +49,15 @@ function bakedMockPort(tree) {
   const candidates = [
     '.next/server/app/admin/(dashboard)/directory/revenue/page.js',
     '.next/server/app/admin/(dashboard)/directory/placements/page.js',
+    // Whether the URL is inlined into a given page chunk depends on how the
+    // build split the modules, and these two do not always carry it. When they
+    // do not, this used to fall back to a default port, start a mock nobody was
+    // talking to, and report 33 failures about an empty console — a wrong
+    // answer that looks exactly like a regression. `middleware.js` sees the URL
+    // on every build, so it is the reliable place to read it from.
+    '.next/server/src/middleware.js',
+    '.next/server/middleware.js',
+    '.next/server/app/(marketing)/sponsors/page.js',
   ];
   for (const rel of candidates) {
     const p = path.join(tree, rel);
@@ -530,10 +539,24 @@ async function main() {
           `${w}: the blank-corridor wildcard is refused in copy`,
           /every corridor page/i.test(body),
         );
+        // REVENUE-2 CHANGED THIS CONTRACT, deliberately.
+        //
+        // Before it, "the term ended" and "the placement is hidden" were two
+        // different events and the console had to say so in those words. After
+        // it, which of them is true depends on whether migration 057 has been
+        // applied — so the console states whichever is currently the case, and
+        // this asserts it says one of them rather than pinning the old wording.
+        const copy = body.replace(/\s+/g, ' ');
         check(
           `${w}: term-expired and placement-hidden are distinguished`,
-          /two different\s+things/i.test(body.replace(/\s+/g, ' ')) ||
-            /two different things/i.test(body),
+          // Post-057: the placement ends on its own, and a flagged row is
+          // housekeeping rather than a live placement.
+          (/stops showing the moment the term/i.test(copy) &&
+            /housekeeping, not a live placement/i.test(copy)) ||
+            // Pre-057: the old truth, still true, and activation is barred.
+            (/stopped by hand/i.test(copy) &&
+              /Featured-expiry schema is not active yet/i.test(copy)),
+          copy.slice(0, 300),
         );
 
         const of = await horizontalOverflow(page);

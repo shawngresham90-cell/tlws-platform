@@ -930,6 +930,15 @@ const FIXTURE_SPONSOR: Sponsor = {
 
 /* ============================================ 8 · featured placement rules */
 
+/**
+ * REVENUE-2: a featured row carries a term now, and migration 057's CHECK makes
+ * that structural. A fixture that sets `isFeatured: true` therefore means an
+ * ACTIVE placement, which is what every capacity case below was always about.
+ * Fixed literal rather than a computed offset, so the clock cases stay
+ * deterministic.
+ */
+const FAR_FUTURE = '2099-01-01T00:00:00.000Z';
+
 function listing(over: Partial<PromotableListing> = {}): PromotableListing {
   return {
     id: 'L1',
@@ -940,6 +949,7 @@ function listing(over: Partial<PromotableListing> = {}): PromotableListing {
     isPublished: true,
     isFeatured: false,
     deletedAt: null,
+    featuredUntil: FAR_FUTURE,
     ...over,
   };
 }
@@ -1021,36 +1031,46 @@ check(
     renewalDateFor('2026-09-01', 'monthly') === '2026-10-01',
 );
 
-// REV54 / REV55 — the manual-expiry limitation is stated where an operator
-// reads it, and an overdue featured listing says the placement is STILL
-// SHOWING rather than pretending it lapsed.
+// REV54 / REV55 — REVENUE-2 CHANGED BOTH CONTRACTS, deliberately.
+//
+// REVENUE-1 asserted that a featured listing does NOT auto-expire and that the
+// admin warns it is STILL SHOWING once the term passes. Migration 057 gives the
+// placement a real term the public read path enforces, so that warning would
+// now be a lie. What replaces it is narrower and conditional: the guarantee
+// holds where the term column exists, and where it does not the old warning is
+// still correct and still shown. Both halves are asserted.
 {
   const overdueFeatured = renewalView('featured-listing', '2026-08-01', true, NOW);
   const overdueCorridor = renewalView('corridor-sponsor', '2026-08-01', true, NOW);
   const revenuePage = src('src/app/admin/(dashboard)/directory/revenue/page.tsx');
   const placementsPage = src('src/app/admin/(dashboard)/directory/placements/page.tsx');
+  const overdueNoSchema = renewalView('featured-listing', '2026-08-01', true, NOW, 'unavailable');
   check(
     'REV54',
-    'manual-expiry limitation visible',
-    getOffer('featured-listing').autoExpires === false &&
+    'expiry limitation is stated, and is now conditional on the schema',
+    getOffer('featured-listing').autoExpires === true &&
       getOffer('corridor-sponsor').autoExpires === true &&
-      /does not/i.test(revenuePage) &&
-      /cannot expire by itself|will NOT lapse|two different/i.test(
-        placementsPage +
-          revenuePage +
-          src('src/app/admin/(dashboard)/directory/placements/actions.ts'),
+      // Before migration 057 an expired featured placement really is still
+      // public, and the admin must keep saying so.
+      overdueNoSchema.needsManualStop === true &&
+      /schema is not active yet|Featured-expiry schema/i.test(
+        placementsPage + revenuePage + src('src/lib/directory/featured-window.ts'),
       ),
   );
   check(
     'REV55',
-    'overdue deactivation warning',
+    'overdue warning tells the truth in both schema states',
+    // With the term column live: the placement already ended, so no manual stop
+    // is outstanding and the admin must not claim one is.
     overdueFeatured.state === 'overdue' &&
-      overdueFeatured.needsManualStop === true &&
-      /STILL SHOWING/.test(overdueFeatured.label) &&
+      overdueFeatured.needsManualStop === false &&
+      /ended automatically/.test(overdueFeatured.label) &&
+      // Without it: the old, still-accurate warning.
+      overdueNoSchema.needsManualStop === true &&
+      /STILL SHOWING/.test(overdueNoSchema.label) &&
       overdueCorridor.state === 'overdue' &&
-      overdueCorridor.needsManualStop === false &&
-      /stopped showing on its own/.test(overdueCorridor.label),
-    [overdueFeatured.label, overdueCorridor.label],
+      overdueCorridor.needsManualStop === false,
+    [overdueFeatured.label, overdueNoSchema.label, overdueCorridor.label],
   );
 }
 
@@ -1062,19 +1082,24 @@ check(
   const from = actions.indexOf('export async function deactivateFeaturedAction');
   const next = actions.indexOf('export async function', from + 1);
   const deactivate = actions.slice(from, next === -1 ? undefined : next);
-  const updates = deactivate.match(/\.update\(\{[^}]*\}\)/g) ?? [];
+  // The write is a patch object now — it clears the term alongside the flag —
+  // so assert the CLAIM rather than the literal `.update({...})` shape:
+  // stopping a placement touches the two featured fields and nothing else.
+  const written = [...deactivate.matchAll(/^\s{4}([a-z_]+):/gm)].map((m) => m[1]);
   check(
     'REV56',
     'deactivation removes Sponsored only',
-    updates.length === 1 &&
-      /is_featured:\s*false/.test(updates[0]) &&
-      !/is_published/.test(updates[0]),
-    updates,
+    /is_featured:\s*false/.test(deactivate) &&
+      /featured_until:\s*null/.test(deactivate) &&
+      !written.includes('is_published') &&
+      !written.includes('deleted_at'),
+    written,
   );
   check(
     'REV57',
     'listing remains published',
-    !/is_published:\s*false/.test(deactivate) && !/deleted_at/.test(updates.join(' ')),
+    !/is_published:\s*false/.test(deactivate) && !written.includes('deleted_at'),
+    written,
   );
 }
 
@@ -1559,13 +1584,18 @@ check(
       /Sponsored/.test(src('src/app/(directory)/directory/location/[slug]/page.tsx')),
   );
 
-  // 8–9. the term ends and the admin says so, loudly
+  // 8–9. the term ends, and REVENUE-2 changed what that means. It no longer
+  // merely flags a placement for a human to stop — the placement is already
+  // gone from every public surface, so the admin reports renewal work rather
+  // than an outstanding manual stop.
   const end = renewalDateFor('2026-09-05', 'monthly');
   step('8 term date reaches expiry', end === '2026-10-05');
   const overdue = renewalView('featured-listing', end, true, new Date('2026-10-12T00:00:00Z'));
   step(
-    '9 admin shows overdue deactivation warning',
-    overdue.state === 'overdue' && overdue.needsManualStop && /STILL SHOWING/.test(overdue.label),
+    '9 admin shows the term overdue and the placement already ended',
+    overdue.state === 'overdue' &&
+      overdue.needsManualStop === false &&
+      /ended automatically/.test(overdue.label),
   );
 
   // 10–11. deactivation removes the sponsorship and nothing else

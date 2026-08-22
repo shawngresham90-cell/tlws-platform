@@ -1,8 +1,9 @@
-import { createStaticClient } from '@/lib/supabase/static';
+import { createStaticClient, createUncachedStaticClient } from '@/lib/supabase/static';
 import { canonicalDesignation, canonicalExitNumber } from '@/lib/directory/interstates';
 import { log } from '@/lib/api/logger';
 import { normalizeOvernightStatus, overnightChipFor } from './overnight';
 import type { DirectoryEntry } from './types';
+import { isFeaturedActive, type FeaturedSchema } from './featured-window';
 
 /**
  * Directory data layer — Milestone 12: real reads from `public.locations`.
@@ -34,6 +35,8 @@ type LocationRow = {
   overnight_parking: boolean | null;
   tpc_url: string | null;
   is_featured: boolean | null;
+  /** Absent when migration 057 has not been applied yet. */
+  featured_until?: string | null;
   is_indexable: boolean | null;
   lat: number | null;
   lng: number | null;
@@ -60,7 +63,7 @@ function safeUrl(value: string | null): string | undefined {
   }
 }
 
-function toEntry(row: LocationRow): DirectoryEntry {
+function toEntry(row: LocationRow, ctx: EntryContext): DirectoryEntry {
   // What the row actually stores — the ONLY amenities that may count as
   // indexability evidence (PR-B). The chips below add synthetic presentation
   // values on top and must never be mistaken for stored data.
@@ -95,7 +98,22 @@ function toEntry(row: LocationRow): DirectoryEntry {
     parkingSpaces: row.parking_spaces ?? undefined,
     description: row.description ?? undefined,
     tpcUrl: safeUrl(row.tpc_url),
-    featured: row.is_featured ?? false,
+    // Paid featured treatment is a WINDOW, not a boolean. One authority
+    // decides it (featured-window.ts) so the badge, the sort, the map and the
+    // capacity count can never disagree about whether a term is still running.
+    // Before migration 057 is applied the column is not there to read, and the
+    // authority falls back to the pre-057 rule.
+    featured: isFeaturedActive(
+      {
+        isFeatured: row.is_featured ?? false,
+        isPublished: true,
+        deletedAt: null,
+        name: row.name,
+        featuredUntil: row.featured_until,
+      },
+      ctx.now,
+      ctx.schema,
+    ),
     indexable: row.is_indexable ?? false,
     lat: row.lat ?? undefined,
     lng: row.lng ?? undefined,
@@ -112,12 +130,155 @@ function toEntry(row: LocationRow): DirectoryEntry {
   };
 }
 
-const COLUMNS =
+const BASE_COLUMNS =
   'id, name, category_slug, state, city, slug, address, zip, phone, website, description, ' +
   'parking_spaces, amenities, free_parking, paid_parking, reserved_parking, overnight_parking, ' +
   'tpc_url, is_featured, is_indexable, lat, lng, interstate, exit_number, created_at, ' +
   'detail_slug, updated_at, verified_at, mile_marker, mile_marker_source, ' +
   'overnight_status, overnight_status_source';
+
+/* ------------------------------------------- featured-term schema bridge */
+
+/**
+ * Netlify deploys the application on merge; the Supabase migration is applied
+ * separately afterwards. So there is a real window during which this code
+ * knows about `locations.featured_until` and the database does not, and asking
+ * for a column that is not there fails EVERY directory read — the whole public
+ * Directory, not just the badge.
+ *
+ * The bridge is one probe, memoized per process. Reads then ask for the column
+ * only when it exists.
+ *
+ * WHICH WAY THIS FAILS, AND WHY
+ *
+ * An indeterminate probe (a timeout, a network blip — anything that is not a
+ * definite "no such column") resolves to `unavailable` for that attempt and is
+ * NOT memoized, so the next read probes again. That direction is deliberate:
+ *
+ *   * failing to `unavailable` means an expired placement may stay visible
+ *     until the next successful probe — we give away a little placement, and
+ *     it corrects itself;
+ *   * failing to `ready` would put a non-existent column into every query and
+ *     take the entire public Directory down.
+ *
+ * The first is a bounded commercial cost. The second is an outage. The
+ * limitation is stated in docs/operations/revenue-2-featured-expiry.md rather
+ * than hidden here.
+ */
+export type EntryContext = { schema: FeaturedSchema; now: Date };
+
+const FEATURED_COLUMN = 'featured_until';
+
+/**
+ * Is this error specifically "that column does not exist"?
+ *
+ * Deliberately narrow. `42703` is the PostgreSQL undefined-column SQLSTATE and
+ * `PGRST204` is PostgREST's schema-cache miss; the message check additionally
+ * requires the column to be named, so an undefined-column error about some
+ * OTHER column is not silently read as "057 is unapplied". Every other failure
+ * keeps the existing honest empty-vs-error handling.
+ */
+function isMissingFeaturedColumn(error: unknown): boolean {
+  const e = error as { code?: unknown; message?: unknown } | null;
+  const code = typeof e?.code === 'string' ? e.code : '';
+  const message = typeof e?.message === 'string' ? e.message : '';
+  if (code !== '42703' && code !== 'PGRST204') return false;
+  return message.includes(FEATURED_COLUMN);
+}
+
+let featuredSchemaMemo: Promise<FeaturedSchema> | null = null;
+
+/** Test seam: forget the probe so a fixture can change the answer. */
+export function __resetFeaturedSchemaMemo(): void {
+  featuredSchemaMemo = null;
+  memoGoodUntil = 0;
+}
+
+async function probeFeaturedSchema(): Promise<FeaturedSchema> {
+  // DURING A BUILD, DON'T ASK. This is deliberate and it is the safe direction.
+  //
+  // Next caches `fetch` GETs in a Data Cache that build platforms restore
+  // between deploys, so a build can be handed a response written before the
+  // schema changed. Observed here, not theorised: a stale
+  // `200 [{"featured_until":null}]` made a build conclude the column existed,
+  // and PostgREST then failed the WHOLE query for every read that named it —
+  // 4,099 prerender failures on pages with nothing to do with placements.
+  //
+  // The documented opt-out (`cache: 'no-store'`) cannot be used here: inside a
+  // prerender it bails static generation, so it either throws or turns 2,454
+  // static pages dynamic. There is no way to ask a fresh question during a
+  // build without paying one of those prices.
+  //
+  // So the build answers `unavailable` without asking, and that costs nothing
+  // observable: prerendered pages then use the legacy rule, and every directory
+  // page is ISR at `revalidate = 300`, so the first regeneration — which reads
+  // at RUNTIME, where the probe is uncached and correct — puts the term back in
+  // charge. The staleness bound is the ISR window that already governed the
+  // page, not a new one. Getting this wrong the other way is a full outage.
+  if (isDirectoryBuildPhase()) return 'unavailable';
+
+  // At runtime, ask, and ask WITHOUT the cache — for the same reason the build
+  // does not ask at all. See createUncachedStaticClient.
+  const supabase = createUncachedStaticClient();
+  const { error } = await supabase.from('locations').select(FEATURED_COLUMN).limit(1);
+  if (!error) return 'ready';
+  if (isMissingFeaturedColumn(error)) return 'unavailable';
+  // Indeterminate. Throw so the caller declines to memoize and re-probes.
+  throw error;
+}
+
+/**
+ * How long an `unavailable` answer is trusted before the process asks again.
+ *
+ * `ready` is remembered for good — a column does not un-exist while a server is
+ * running, and a rollback is an operator action that redeploys anyway.
+ * `unavailable` is remembered only briefly, because the whole point of the
+ * bridge is that the migration lands WHILE this code is deployed: pinning the
+ * pre-migration answer for the life of the process would mean the term column
+ * appeared and nothing read it until someone redeployed. A minute bounds the
+ * cost at one extra request per process per minute, and bounds the delay
+ * between applying 057 and the site honouring it at the same minute.
+ */
+const UNAVAILABLE_TTL_MS = 60_000;
+
+/** When the memo stops being trusted. `Infinity` once `ready` is proven. */
+let memoGoodUntil = 0;
+
+export async function featuredSchema(): Promise<FeaturedSchema> {
+  if (featuredSchemaMemo && Date.now() < memoGoodUntil) return featuredSchemaMemo;
+  // Claim the slot SYNCHRONOUSLY, before the first await, so a burst of
+  // concurrent reads shares one probe instead of each starting its own.
+  memoGoodUntil = Date.now() + UNAVAILABLE_TTL_MS;
+  const attempt = probeFeaturedSchema();
+  featuredSchemaMemo = attempt
+    .then((value) => {
+      // A column does not un-exist while a server runs, so `ready` is final.
+      if (value === 'ready') memoGoodUntil = Number.POSITIVE_INFINITY;
+      return value;
+    })
+    .catch(() => {
+      // Indeterminate: no answer is remembered at all, and the next read asks
+      // again. Pinning a guess for the life of the process is the one outcome
+      // worse than a retry.
+      featuredSchemaMemo = null;
+      memoGoodUntil = 0;
+      return 'unavailable' as const;
+    });
+  return featuredSchemaMemo;
+}
+
+/** The projection for the current schema state. */
+function columnsFor(schema: FeaturedSchema): string {
+  return schema === 'ready' ? `${BASE_COLUMNS}, ${FEATURED_COLUMN}` : BASE_COLUMNS;
+}
+
+/**
+ * One clock and one schema answer per read, so every row in a page is judged
+ * against the same instant rather than each against its own.
+ */
+async function entryContext(): Promise<EntryContext> {
+  return { schema: await featuredSchema(), now: new Date() };
+}
 
 /* ------------------------------------------------- read result contract */
 
@@ -495,6 +656,7 @@ async function selectEntriesUncached(
   filters: Record<string, string>,
 ): Promise<DirectoryReadResult<DirectoryEntry[]>> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
 
     // Interstate/exit filters match CANONICALLY, exactly like the facet
@@ -515,7 +677,7 @@ async function selectEntriesUncached(
     const result = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select(COLUMNS, afterId === null ? { count: 'exact' } : undefined)
+        .select(columnsFor(ctx.schema), afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null);
       for (const [column, value] of serverFilters) q = q.eq(column, value);
@@ -547,7 +709,7 @@ async function selectEntriesUncached(
     // restored here — the same featured-then-name order the old query asked
     // the database for, now applied to the COMPLETE set instead of to an
     // arbitrary first 1,000 rows.
-    const entries = rows.map(toEntry);
+    const entries = rows.map((r) => toEntry(r, ctx));
     entries.sort((a, b) => Number(b.featured) - Number(a.featured) || a.name.localeCompare(b.name));
     return { ok: true, data: entries };
   } catch (error) {
@@ -646,16 +808,17 @@ export async function getEntriesByIdsResult(
   const wanted = [...new Set(ids)].slice(0, CARD_LOOKUP_MAX_IDS);
   if (wanted.length === 0) return { ok: true, data: [] };
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .in('id', wanted);
     if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
     if (!data) return { ok: false, reason: 'query_error' };
-    return { ok: true, data: (data as unknown as LocationRow[]).map(toEntry) };
+    return { ok: true, data: (data as unknown as LocationRow[]).map((r) => toEntry(r, ctx)) };
   } catch (error) {
     return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
@@ -668,17 +831,18 @@ export async function getEntriesByIdsResult(
  */
 export async function getRecentlyUpdated(limit = 50): Promise<DirectoryEntry[]> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .not('updated_at', 'is', null)
       .order('updated_at', { ascending: false })
       .limit(Math.min(Math.max(limit, 1), 200));
     if (error || !data) return [];
-    return (data as unknown as LocationRow[]).map(toEntry);
+    return (data as unknown as LocationRow[]).map((r) => toEntry(r, ctx));
   } catch {
     return [];
   }
@@ -691,18 +855,19 @@ export async function getRecentlyUpdated(limit = 50): Promise<DirectoryEntry[]> 
  */
 export async function getNewestListings(limit = 24, offset = 0): Promise<DirectoryEntry[]> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const from = Math.max(offset, 0);
     const to = from + Math.min(Math.max(limit, 1), 100) - 1;
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .order('created_at', { ascending: false, nullsFirst: false })
       .range(from, to);
     if (error || !data) return [];
-    return (data as unknown as LocationRow[]).map(toEntry);
+    return (data as unknown as LocationRow[]).map((r) => toEntry(r, ctx));
   } catch {
     return [];
   }
@@ -732,6 +897,7 @@ async function getEntriesWithCoordinatesUncached(
   filters: { category?: string; state?: string; interstate?: string } = {},
 ): Promise<DirectoryReadResult<DirectoryEntry[]>> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     // COUNT/PAGE FILTER PARITY, structurally: one query carries both the page
     // and the exact count, so eligibility — published, not deleted, lat AND
@@ -743,7 +909,7 @@ async function getEntriesWithCoordinatesUncached(
     const scan = await collectAllRows<LocationRow>(async (afterId, pageSize) => {
       let q = supabase
         .from('locations')
-        .select(COLUMNS, afterId === null ? { count: 'exact' } : undefined)
+        .select(columnsFor(ctx.schema), afterId === null ? { count: 'exact' } : undefined)
         .eq('is_published', true)
         .is('deleted_at', null)
         .not('lat', 'is', null)
@@ -771,7 +937,7 @@ async function getEntriesWithCoordinatesUncached(
     // against 1,940 published geocoded rows - 60 rows of headroom).
     return {
       ok: true,
-      data: rows.map(toEntry).sort((a, b) => a.name.localeCompare(b.name)),
+      data: rows.map((r) => toEntry(r, ctx)).sort((a, b) => a.name.localeCompare(b.name)),
     };
   } catch (error) {
     return { ok: false, reason: 'unavailable', code: failureCode(error) };
@@ -805,10 +971,11 @@ export async function getEntryByDetailSlugResult(
   detailSlug: string,
 ): Promise<DirectoryReadResult<DirectoryEntry | null>> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .eq('detail_slug', detailSlug)
@@ -817,7 +984,7 @@ export async function getEntryByDetailSlugResult(
     if (error) return { ok: false, reason: 'query_error', code: failureCode(error) };
     // The read SUCCEEDED and matched nothing: no such published listing.
     if (!data) return { ok: true, data: null };
-    return { ok: true, data: toEntry(data as unknown as LocationRow) };
+    return { ok: true, data: toEntry(data as unknown as LocationRow, ctx) };
   } catch (error) {
     return { ok: false, reason: 'unavailable', code: failureCode(error) };
   }
@@ -1036,10 +1203,11 @@ export async function getCorridorEntriesForCategories(
   interstate: string,
 ): Promise<DirectoryEntry[]> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .eq('state', stateCode.toUpperCase())
@@ -1048,7 +1216,7 @@ export async function getCorridorEntriesForCategories(
       .order('name', { ascending: true })
       .limit(1000);
     if (error || !data) return [];
-    return (data as unknown as LocationRow[]).map(toEntry);
+    return (data as unknown as LocationRow[]).map((r) => toEntry(r, ctx));
   } catch {
     return [];
   }
@@ -1189,10 +1357,11 @@ export async function getCatScaleCorridorEntries(
 /** Published CAT Scale listings with verified coordinates — Near Me pool. */
 export async function getCatScaleMapEntries(): Promise<DirectoryEntry[]> {
   try {
+    const ctx = await entryContext();
     const supabase = createStaticClient();
     const { data, error } = await supabase
       .from('locations')
-      .select(COLUMNS)
+      .select(columnsFor(ctx.schema))
       .eq('is_published', true)
       .is('deleted_at', null)
       .in('category_slug', CAT_SCALE_CATEGORIES)
@@ -1201,7 +1370,7 @@ export async function getCatScaleMapEntries(): Promise<DirectoryEntry[]> {
       .order('name', { ascending: true })
       .limit(3000);
     if (error || !data) return [];
-    return (data as unknown as LocationRow[]).map(toEntry);
+    return (data as unknown as LocationRow[]).map((r) => toEntry(r, ctx));
   } catch {
     return [];
   }

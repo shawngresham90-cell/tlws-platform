@@ -114,15 +114,22 @@ export const OFFERS: readonly Offer[] = [
     paid: true,
     mechanism: 'locations.is_featured',
     maxPerSurface: 3,
-    // A bare boolean cannot expire. The term is recorded on the CRM row and the
-    // admin warns when it lapses, but a human has to stop the placement.
-    autoExpires: false,
+    // REVENUE-2: `locations.featured_until` gives the placement a real term and
+    // the public read path enforces it, so a featured listing now stops showing
+    // on its own exactly as a corridor sponsor does.
+    //
+    // This describes the PRODUCT. Whether this particular database can deliver
+    // it depends on migration 057 having been applied, which is why
+    // `renewalView` takes the schema state rather than trusting this flag
+    // alone — before the migration an expired placement really is still
+    // showing, and the admin says so.
+    autoExpires: true,
     targetType: 'listing',
     disclosure: 'Sponsored',
     limitations: [
       ...UNIVERSAL_LIMITATIONS,
       'Not exclusive — up to three sponsored listings share a page.',
-      'The placement is stopped by hand at the end of the term; it does not lapse on its own.',
+      'The placement ends automatically when the paid term does; it is not renewed unless you renew it.',
       'A sponsored listing is still ranked and described by the same rules as every other listing.',
     ],
     capacity: 'Up to three featured businesses per category or corridor page',

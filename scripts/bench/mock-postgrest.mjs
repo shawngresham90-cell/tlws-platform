@@ -38,6 +38,18 @@
  *                    can be driven in a browser. Off by default: with it off
  *                    the table answers [], which is the LIVE production state
  *                    (zero CRM rows) and the empty states worth checking.
+ *   MOCK_FEATURED_SCHEMA 'ready' serves `locations.featured_until`;
+ *                    'unavailable' (default) answers 42703 for any select
+ *                    naming it, which is the LIVE pre-migration-057 state.
+ *                    Getting this wrong matters: the projection below turns an
+ *                    unknown column into `null`, and the application reads a
+ *                    null term as "withhold this placement" — so a mock that
+ *                    silently answered null would test a state that does not
+ *                    exist in production and hide the bridge entirely.
+ *   MOCK_FEATURED_FIXTURES '1' pins four known rows featured on one category
+ *                    and one corridor, so capacity and expiry are reachable
+ *                    from a browser. Off by default; the generated dataset is
+ *                    untouched, so every existing bench measures what it did.
  *   MOCK_PARKING_QUALITY shapes the unpublished `parking` rows to the live
  *                    provenance mix — 91 `csv-import` rows with NO coordinate
  *                    and 5 `ntad-2019-v04` rows with a coordinate but no
@@ -63,6 +75,53 @@ const FAIL_TABLE = process.env.MOCK_FAIL_TABLE ?? '';
  */
 const PARKING_QUALITY = process.env.MOCK_PARKING_QUALITY === '1';
 const REVENUE = process.env.MOCK_REVENUE === '1';
+
+/* ------------------------------------------- REVENUE-2: term + clock control */
+
+/**
+ * Whether this mock has migration 057 applied.
+ *
+ * `unavailable` is the default because it is the CURRENT production state, and
+ * a bench that only ever saw the post-migration schema would never exercise the
+ * compatibility bridge — which is the half of REVENUE-2 that ships first.
+ */
+const FEATURED_SCHEMA = process.env.MOCK_FEATURED_SCHEMA === 'ready' ? 'ready' : 'unavailable';
+const FEATURED_FIXTURES = process.env.MOCK_FEATURED_FIXTURES === '1';
+
+/**
+ * The controllable clock.
+ *
+ * Expiry is decided on the SERVER, against the server's own `now`. A bench
+ * cannot move that clock — but it does not need to. What decides the outcome is
+ * where `now` sits relative to `featured_until`, so moving the TERM is exactly
+ * equivalent to moving the clock, and it works against a real `next start`
+ * with no instrumentation compiled into the application.
+ *
+ * `POST /__mock/clock {"offsetMs": n}` sets every fixture placement's term to
+ * `Date.now() + n` at the moment of the call. The bench then reloads the page
+ * and reads what the server decided:
+ *
+ *   +3600000  comfortably inside the term      → placement live
+ *      +2000  two seconds before expiry        → placement live
+ *          0  the term ends at this instant    → placement over on the next read
+ *      -2000  two seconds past the term        → placement over
+ *
+ * The `0` step is honest about what it can prove: a page rendered after the
+ * call necessarily reads a clock at or past the boundary, so it proves the
+ * boundary instant belongs to the EXPIRED side. Which side a single
+ * millisecond falls on is pinned deterministically in
+ * scripts/test-revenue-featured-expiry.ts (FE10, FE12); this proves the server
+ * agrees.
+ */
+let featuredUntil = null;
+
+/** Rows pinned featured so capacity and expiry are reachable from a browser. */
+const FEATURED_FIXTURE_IDS = [
+  '0f000000-0000-4000-8000-000000000001',
+  '0f000000-0000-4000-8000-000000000002',
+  '0f000000-0000-4000-8000-000000000003',
+  '0f000000-0000-4000-8000-000000000004',
+];
 
 /**
  * Fixture sponsor pipeline for the revenue console bench.
@@ -457,6 +516,35 @@ const LOCATIONS = [];
   }
   if (toStrip > 0) throw new Error(`mock-postgrest: could not reach MOCK_GEOCODED=${N_GEOCODED}`);
 
+  // REVENUE-2: four known featured placements on ONE category page and ONE
+  // corridor page, so a browser can reach both the three-per-page capacity
+  // ceiling and the moment a term lapses. Four, not three, because the case
+  // that matters is the FOURTH sale: it must be refused while three are live
+  // and permitted the instant one lapses.
+  //
+  // Appended rather than flipping generated rows, so `LOCATIONS.length` and
+  // every existing count stay exactly where they were for other benches.
+  if (FEATURED_FIXTURES) {
+    FEATURED_FIXTURE_IDS.forEach((id, k) => {
+      const base = makeRow(N_PUBLISHED + 400 + k, { published: true });
+      LOCATIONS.push({
+        ...base,
+        id,
+        name: `Bench Featured Placement ${k + 1}`,
+        slug: `bench-featured-${k + 1}`,
+        detail_slug: `bench-featured-placement-${k + 1}`,
+        category_slug: 'truck-washes',
+        interstate: 'I-75',
+        state: 'GA',
+        is_published: true,
+        is_indexable: true,
+        deleted_at: null,
+        // The fourth is the CANDIDATE — unfeatured, waiting for a slot.
+        is_featured: k < 3,
+      });
+    });
+  }
+
   // PARKING-QUALITY-1: give the unpublished `parking` rows the provenance
   // shape the live table actually has, so the admin queue renders a real
   // classification rather than a uniform one. Live: 91 csv-import rows with
@@ -621,6 +709,26 @@ function runQuery(rows, url) {
   return { rows: out, total, offset };
 }
 
+/**
+ * The term a fixture placement currently carries, for the clock the bench set.
+ * Applied at READ time rather than baked into the row, so a single `POST
+ * /__mock/clock` moves every placement at once with no regeneration.
+ */
+function featuredTermFor(row) {
+  if (!row.is_featured) return null;
+  if (!FEATURED_FIXTURE_IDS.includes(row.id)) {
+    // A generated featured row (synthetic profile only) gets a term far enough
+    // out that it is never the thing under test.
+    return new Date(Date.now() + 365 * 864e5).toISOString();
+  }
+  return featuredUntil;
+}
+
+/** Does this select name the term column? */
+function asksForTerm(select) {
+  return typeof select === 'string' && /\bfeatured_until\b/.test(select);
+}
+
 /* --------------------------------------------------------------- server */
 
 let requestCount = 0;
@@ -654,7 +762,28 @@ const server = http.createServer((req, res) => {
 
     // Health probe for the bench orchestrator.
     if (url.pathname === '/__mock/health') {
-      const body = JSON.stringify({ ok: true, requests: requestCount, rows: LOCATIONS.length });
+      const body = JSON.stringify({
+        ok: true,
+        requests: requestCount,
+        rows: LOCATIONS.length,
+        featuredSchema: FEATURED_SCHEMA,
+        featuredFixtures: FEATURED_FIXTURES,
+        featuredUntil,
+      });
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(body);
+      logDone(body.length);
+      return;
+    }
+
+    // REVENUE-2 clock control: place every fixture placement's term at
+    // `Date.now() + offsetMs`. See the note at the top of this file — moving
+    // the term is equivalent to moving the server's clock, and it needs no
+    // instrumentation inside the application.
+    if (url.pathname === '/__mock/clock') {
+      const offset = Number(url.searchParams.get('offsetMs') ?? 0);
+      featuredUntil = Number.isFinite(offset) ? new Date(Date.now() + offset).toISOString() : null;
+      const body = JSON.stringify({ ok: true, featuredUntil, offsetMs: offset });
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(body);
       logDone(body.length);
@@ -672,6 +801,29 @@ const server = http.createServer((req, res) => {
     // A read that FAILS is a state the pages must render honestly, and it
     // cannot be reached from a healthy fixture. Opt-in, default off, so every
     // other bench sees the server it always saw.
+    // Pre-migration-057: `locations.featured_until` does not exist, and asking
+    // for it fails the whole read. This is the branch the compatibility bridge
+    // is written for, and it must be an ERROR — the projection above would
+    // otherwise answer `null`, which the application reads as "withhold this
+    // placement", so a silently-null mock would test a state production has
+    // never been in.
+    if (
+      FEATURED_SCHEMA === 'unavailable' &&
+      table === 'locations' &&
+      asksForTerm(url.searchParams.get('select'))
+    ) {
+      const body = JSON.stringify({
+        code: '42703',
+        message: 'column locations.featured_until does not exist',
+        hint: null,
+        details: null,
+      });
+      res.writeHead(400, { 'content-type': 'application/json' });
+      res.end(body);
+      logDone(body.length);
+      return;
+    }
+
     if (FAIL_TABLE && table === FAIL_TABLE) {
       const body = JSON.stringify({
         code: '57014',
@@ -683,8 +835,12 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const dataset =
+    let dataset =
       table === 'locations' ? LOCATIONS : table === 'sponsors' && REVENUE ? SPONSOR_FIXTURES : [];
+    // Post-migration: the column exists, and carries whatever term the clock
+    // control last set.
+    if (FEATURED_SCHEMA === 'ready' && table === 'locations')
+      dataset = dataset.map((r) => ({ ...r, featured_until: featuredTermFor(r) }));
     let result;
     try {
       // supabase-js .range() arrives as a Range header; normalize to offset/limit.
