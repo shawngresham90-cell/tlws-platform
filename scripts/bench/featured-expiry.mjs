@@ -575,9 +575,17 @@ async function main() {
       await page.goto(`${base}/admin/directory/placements`, { waitUntil: 'networkidle' });
       // Case-insensitive throughout: `innerText` reflects CSS `text-transform`.
       const liveText = await page.locator('body').innerText();
+      // REVENUE-3 changed the WORD, not the contract. Its §8 requires a live
+      // placement to read ACTIVATED and an ended one to read ENDED — a state
+      // in one word, chosen over the status-label phrasing this line used to
+      // match. Both spellings are accepted so this assertion keeps stating its
+      // intent (a live placement is described as live, and never as expired)
+      // rather than pinning one milestone's copy.
       check(
         'admin: a live placement reads Active',
-        /\bActive\b/i.test(liveText) && !/Term expired/i.test(liveText),
+        /\bActive\b|\bACTIVATED\b/i.test(liveText) &&
+          !/Term expired/i.test(liveText) &&
+          !/\bENDED\b/.test(liveText),
         liveText.slice(0, 200),
       );
 
@@ -589,7 +597,12 @@ async function main() {
       // than emergency.
       check(
         'admin: an expired placement reads as ended, in words',
-        /Term expired/i.test(expiredText),
+        // See the note above: REVENUE-3 §8 states this as ENDED plus a plain
+        // sentence about what a driver sees. Either wording satisfies the
+        // contract, which is that the console says the placement is over.
+        /Term expired/i.test(expiredText) ||
+          (/\bENDED\b/.test(expiredText) &&
+            /the Sponsored label[^.]*already gone/i.test(expiredText)),
         expiredText.slice(-400),
       );
       check(
