@@ -84,8 +84,23 @@ export const NAVIGATOR_TOUCH_FLOOR_PX = 64;
  */
 export const PARKED_HIERARCHY: readonly string[] = Object.freeze([
   'destination-search',
+  /*
+   * NAV-ENTRY-3 INSERTED THIS, AND THE INSERTION IS THE MILESTONE.
+   *
+   * The confirmation of what the driver picked, and the Start that commits
+   * to it, used to come after the map — and after the status line, the
+   * clock card and the control row with it. Measured on main at 86b417e,
+   * that put Start 859-1182 px down with a painted height of ZERO at all
+   * six required viewports: a driver tapped a search result and got no
+   * visible acknowledgement and no visible next step.
+   *
+   * It sits between the search and the map now. The map is still here and
+   * still large; at the moment just after choosing, it is context for the
+   * choice rather than the thing being chosen.
+   */
+  'route-start-cluster',
   'map',
-  'route-start-controls',
+  'search-scope',
   'trip-planning',
   'motion-status',
   'map-style',
