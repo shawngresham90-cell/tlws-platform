@@ -582,6 +582,14 @@ async function main(): Promise<void> {
    * ===================================================================== */
   {
     resetDevice();
+    /*
+     * This driver already has a truck. Without one the screen would seed the
+     * shipped standard on mount (NAV-ENTRY-1) and nudge sync for it — a
+     * legitimate write, and a second one landing inside the window this
+     * section is measuring. The scenario here is a driver making five rapid
+     * PREFERENCE edits, and such a driver has a truck.
+     */
+    writeTruck(TRUCK, { confirmedFingerprint: routingFingerprint(TRUCK) });
     const t = makeTransport();
     const r = mount({ accountMode: true, transport: t.transport });
     await settle(1);
@@ -710,36 +718,64 @@ async function main(): Promise<void> {
    * ===================================================================== */
   {
     const SCREEN = read('src/components/navigator/DrivingScreen.tsx');
+    /*
+     * SYNC LIVES WHERE THE EDITING LIVES (NAV-ENTRY-1). The truck, the route
+     * preferences and the clocks are changed on the settings surface now, so
+     * that is where their nudges are. The driving screen keeps the hook — it
+     * still seeds the standard truck and still passes the briefing callback
+     * down — and both files are checked, because a record whose editor moved
+     * without its nudge is a driver's second phone going quietly stale.
+     */
+    const SETTINGS = read('src/components/navigator/NavigatorSettings.tsx');
     const HOOK = read('src/components/navigator/account-sync.ts');
-    const stripped = SCREEN.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+    const declutter = (src: string) =>
+      src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+    const stripped = declutter(SCREEN);
+    const settings = declutter(SETTINGS);
 
     check('12a: the screen calls the sync hook', /useAccountSync\(\{/.test(stripped));
-    for (const [domain, after] of [
-      ['truck', 'writeTruck'],
-      ['route_prefs', 'writeRoutePrefs'],
-      ['hos_clocks', 'writeClocks'],
+    check('12a2: so does the settings surface', /useAccountSync\(\{/.test(settings));
+    for (const [domain, after, src, where] of [
+      ['truck', 'writeTruck', settings, 'settings'],
+      ['route_prefs', 'writeRoutePrefs', settings, 'settings'],
+      ['hos_clocks', 'writeClocks', settings, 'settings'],
     ] as const) {
       /*
        * LOCAL FIRST. The local write must appear BEFORE the sync nudge on every
        * path — not merely somewhere in the file. This is the ordering that makes
        * a cloud failure survivable, so it is asserted positionally.
        */
-      const w = stripped.indexOf(`${after}(`);
-      const n = stripped.indexOf(`notifySaved('${domain}')`);
-      check(`12b: ${domain} is written locally before sync is told`, w >= 0 && n > w, `${w}/${n}`);
+      const w = src.indexOf(`${after}(`);
+      const n = src.indexOf(`notifySaved('${domain}')`);
+      check(
+        `12b: ${domain} is written locally before sync is told (${where})`,
+        w >= 0 && n > w,
+        `${w}/${n}`,
+      );
     }
+    check(
+      '12b2: the driving screen still nudges sync for the truck it seeds',
+      stripped.indexOf('writeTruck(') >= 0 &&
+        stripped.indexOf("notifySaved('truck')") > stripped.indexOf('writeTruck('),
+    );
     check(
       '12c: the briefing is synced through the callback the screen passes down',
       /onOnboardingSeen=\{\(\) => notifySaved\('onboarding'\)\}/.test(stripped),
     );
     check(
       '12d: every restore effect re-reads on the restore nonce',
-      (stripped.match(/\}, \[restoreNonce\]\);/g) ?? []).length === 3,
-      (stripped.match(/\}, \[restoreNonce\]\);/g) ?? []).length,
+      (stripped.match(/\}, \[restoreNonce\]\);/g) ?? []).length +
+        (settings.match(/\}, \[restoreNonce\]\);/g) ?? []).length >=
+        3,
+      [
+        (stripped.match(/\}, \[restoreNonce\]\);/g) ?? []).length,
+        (settings.match(/\}, \[restoreNonce\]\);/g) ?? []).length,
+      ],
     );
     check(
       '12e: sync is off unless the SERVER says account mode',
-      /useAccountSync\(\{\s*enabled: accountMode/.test(stripped),
+      /useAccountSync\(\{\s*enabled: accountMode/.test(stripped) &&
+        /useAccountSync\(\{\s*enabled: accountMode/.test(settings),
     );
     check(
       '12f: the driving surface renders no sync status and no retry control',

@@ -331,9 +331,17 @@ function clocksWith(over: Partial<ClockState>): ClockState {
     /<LockGate[^>]*action="view-trip-summary"[^>]*lockedLabel="Detailed clocks"/s.test(SCREEN),
   );
   const actions = readFileSync('src/lib/navigator/actions.ts', 'utf8');
+  /*
+   * The owner made every EDITING action available while moving
+   * (NAV-ENTRY-1), and reading your own clocks is squarely in that set — a
+   * driver checking how much drive time is left is doing the thing the app
+   * exists to help with. What this check now protects is the part that did
+   * not change: the action is still routed through the SHARED map rather
+   * than through a motion test written into the strip.
+   */
   check(
-    'gate: that action is stationary-only in the shared map (no new permission)',
-    /'view-trip-summary':\s*false/.test(actions),
+    'gate: that action is available while moving, through the shared map',
+    /'view-trip-summary':\s*true/.test(actions),
   );
   check(
     'gate: the compact strip itself never inspects motion (doc 06 §1)',

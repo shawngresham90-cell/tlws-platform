@@ -147,7 +147,33 @@ const baseView: DrivingView = {
   );
   check('drive page: 404 when the flag is off', page.includes('if (!ENABLED) notFound()'));
   check('drive page: noindex', page.includes('noindex: true'));
-  check('drive page: says it is not turn-by-turn', page.includes('not turn-by-turn navigation'));
+  /*
+   * The old assertion was that /drive said "not turn-by-turn navigation".
+   * That sentence was written before routing shipped and had become untrue —
+   * Navigator does give turn-by-turn guidance now — and /drive is the
+   * launcher rather than the driving surface. What replaces it is the claim
+   * the app must still never make: that it is an ELD, or a substitute for the
+   * driver's own read of the road.
+   */
+  check('launcher: still refuses the two claims it must never make', page.includes('not an ELD'));
+  /*
+   * The launcher's children inherit the gate through the `/drive` prefix, but
+   * every Navigator page also carries its own copy — a matcher edit must not
+   * be able to open one. Asserted per page rather than assumed.
+   */
+  for (const child of ['navigate', 'settings']) {
+    const childPage = readFileSync(`src/app/(navigator)/drive/${child}/page.tsx`, 'utf8');
+    check(
+      `drive/${child}: opt-in flag, default OFF`,
+      childPage.includes("process.env.NEXT_PUBLIC_NAVIGATOR_ENABLED === 'true'"),
+    );
+    check(
+      `drive/${child}: 404 when the flag is off`,
+      childPage.includes('if (!ENABLED) notFound()'),
+    );
+    check(`drive/${child}: its own access check`, childPage.includes('requireNavigatorAccess'));
+    check(`drive/${child}: noindex`, childPage.includes('noindex: true'));
+  }
   const sitemap = readFileSync('src/lib/seo/sitemap-entries.ts', 'utf8');
   check('sitemap has no /drive entry', !/\/drive/.test(sitemap));
   const { readdirSync } = require('node:fs') as typeof import('node:fs');
@@ -163,7 +189,10 @@ const baseView: DrivingView = {
     'SafetyLockProvider.tsx',
     'LockGate.tsx',
     'MotionLockOverlay.tsx',
-    'PassengerOverrideDialog.tsx',
+    // PassengerOverrideDialog.tsx was deleted with the feature (NAV-ENTRY-1).
+    // Its replacements in this list are the surfaces that took over its job of
+    // being the thing a driver meets when they want to change something.
+    'NavigatorLauncher.tsx',
     'DrivingScreen.tsx',
   ]) {
     const src = strip(readFileSync(`src/components/navigator/${f}`, 'utf8'));

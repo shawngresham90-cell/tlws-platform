@@ -99,10 +99,20 @@ const HOS = readFileSync('src/components/navigator/HosStrip.tsx', 'utf8');
     }
   };
   walk('src');
+  /*
+   * The day theme is WIRED now (NAV-ENTRY-1) — the blueprint said flipping it
+   * on was "a wiring decision, not a design one", and the owner made it.
+   *
+   * The assertion inverts rather than disappears: exactly ONE module may set
+   * `data-theme`, and it is the display-mode provider. A palette with two
+   * writers is a palette that flickers, and the failure would show up on a
+   * driver's screen at night rather than here.
+   */
+  const themeWriters = offenders.filter((p) => !p.endsWith('display-mode.ts'));
   check(
-    'tokens: the day theme is dormant — no code sets data-theme',
-    offenders.length === 0,
-    offenders,
+    'tokens: exactly one module activates the day palette',
+    themeWriters.length === 1 && themeWriters[0].endsWith('DisplayModeProvider.tsx'),
+    themeWriters,
   );
 
   // Type scale: floors per the blueprint, with the 16px drive floor winning

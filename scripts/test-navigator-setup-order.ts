@@ -55,6 +55,15 @@ const COMPACT_STRIP = readFileSync('src/components/navigator/HosCompactStrip.tsx
 const SCREEN = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
 const TRUCK_STORE = readFileSync('src/components/navigator/truck-storage.ts', 'utf8');
 const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8');
+/*
+ * The setup surface (NAV-ENTRY-1). Every panel this file used to find on the
+ * driving screen — the truck editor, the clocks, the preferences, the name —
+ * moved here, to /drive/settings, so the driver reaches the road without
+ * walking through them. The guarantees did not move: they are asserted below
+ * against whichever file owns them now.
+ */
+const SETTINGS = readFileSync('src/components/navigator/NavigatorSettings.tsx', 'utf8');
+const settingsCode = SETTINGS.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
 
 /* ===================================================================== */
 /* 1. THE VISIBLE ORDER                                                   */
@@ -160,10 +169,16 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
         CONTROLS,
       ),
   );
+  /*
+   * The four-line checklist left the screen with the setup it was checking.
+   * What it existed to guarantee is unchanged and is what is asserted: the
+   * button's disabled state and the sentence beside it come from ONE
+   * `setupStatus` call, so they cannot disagree about why Start is blocked.
+   */
   check(
-    'gate: one value feeds the button and the checklist',
+    'gate: one value feeds the button and its reason',
     /startBlockedReason=\{setup\.blockedReason\}/.test(SCREEN) &&
-      /<SetupStatus status=\{setup\} \/>/.test(SCREEN),
+      (SCREEN.match(/const setup = setupStatus\(\{/g) ?? []).length === 1,
   );
 
   /*
@@ -327,25 +342,54 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
 }
 
 /* ===================================================================== */
-/* 4. AN EDITED TRUCK INVALIDATES A CALCULATED ROUTE                      */
+/* 4. AN EDITED TRUCK CANNOT REACH A ROUTE ALREADY CALCULATED             */
 /* ===================================================================== */
 {
-  const onChange = SCREEN.slice(
-    SCREEN.indexOf('onChange={(next) => {'),
-    SCREEN.indexOf('onChange={(next) => {') + 900,
+  const onChange = settingsCode.slice(
+    settingsCode.indexOf('const saveTruck ='),
+    settingsCode.indexOf('const saveTruck =') + 700,
+  );
+  /*
+   * IT IS STRUCTURAL NOW, and stronger for it. The editor used to sit beside
+   * a planned route on the driving screen, so editing had to remember to
+   * `discardRoute`. It is on a different route now, with no lifecycle mounted
+   * — reaching it unmounts the driving screen, and a `route-ready` plan is not
+   * an ACTIVE state, so it is never flushed to the snapshot and never comes
+   * back. There is no stale route left to hand the new truck to.
+   */
+  check(
+    'route: the truck editor has no lifecycle to reuse a route with',
+    !/lifecycle|discardRoute/.test(settingsCode),
   );
   check(
-    'route: a truck edit discards a route already calculated',
-    /lifecycle\.state\(\) === 'route-ready'/.test(onChange) &&
-      /lifecycle\.discardRoute\(/.test(onChange),
+    'route: and only an ACTIVE trip survives leaving the driving screen',
+    SCREEN.replace(/\s+/g, ' ').includes(
+      'if (ACTIVE_LIFECYCLE_STATES.includes(lifecycle.state())) saveSnapshotNow();',
+    ),
+  );
+  /*
+   * SAVING NOW CONFIRMS — the owner's decision about the confirm tap. The
+   * person tapping is the person who knows the truck, and asking them to
+   * re-confirm numbers they just typed was friction without a safety benefit.
+   * What did NOT change is the half that protects a driver from values nobody
+   * checked: an INVALID profile is written unconfirmed, so `profileGate`
+   * returns 'invalid' and Start stays blocked.
+   */
+  check(
+    'route: a valid edit is saved already confirmed',
+    /writeTruck\(next, valid \? confirmProfile\(next\)/.test(onChange),
   );
   check(
-    'route: the edit persists the truck WITHOUT re-confirming it',
-    /persistTruck\(next, truckConfirmation\)/.test(onChange),
+    'route: an invalid edit is saved WITHOUT a confirmation',
+    /: \{ confirmedFingerprint: null \}/.test(onChange),
+  );
+  check(
+    'route: validity is decided by the one existing authority',
+    /validateEditableProfile\(next\)\.length === 0/.test(onChange),
   );
   check(
     'route: editing costs no provider request and no location permission',
-    !/planRoute|gps\.start\(|getCurrentPosition|watchPosition/.test(onChange),
+    !/planRoute|gps\.start\(|getCurrentPosition|watchPosition/.test(settingsCode),
   );
 }
 
@@ -367,12 +411,15 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
     /Not used for routing/.test(SUMMARY),
   );
   check(
-    'summary: shown only for a CONFIRMED truck, editor otherwise',
-    /truckConfirmed && !editingTruck \? \(/.test(SCREEN),
+    'summary: shown only for a saved, valid truck — the editor otherwise',
+    /truckConfirmed \? \(/.test(settingsCode) &&
+      /truckSaved && validateEditableProfile\(truckProfile\)\.length === 0 && !editingTruck/.test(
+        settingsCode.replace(/\s+/g, ' '),
+      ),
   );
   check(
-    'summary: confirming closes the editor again',
-    /setEditingTruck\(false\)/.test(SCREEN) && /setEditingTruck\(true\)/.test(SCREEN),
+    'summary: done closes the editor again',
+    /setEditingTruck\(false\)/.test(settingsCode) && /setEditingTruck\(true\)/.test(settingsCode),
   );
 }
 
@@ -495,15 +542,20 @@ const SUMMARY = readFileSync('src/components/navigator/TruckSummary.tsx', 'utf8'
     (CONTROLS.match(/<DriverNameEntry/g) ?? []).length === 0,
     'the field is passed in as driverSlot; a second copy here would give one value two controls',
   );
+  /*
+   * The name field lives on the settings surface now. The driving screen only
+   * READS the name, because the only thing it does with one is speak it —
+   * which is why there is no writer there at all.
+   */
+  check('driver: the settings surface owns the field', /<DriverNameEntry/.test(settingsCode));
   check(
-    'driver: the screen supplies it as driverSlot',
-    /driverSlot=\{\s*<DriverNameEntry/.test(SCREEN.replace(/\s+/g, ' ').replace(/ /g, ' ')) ||
-      /driverSlot=\{[\s\S]{0,80}<DriverNameEntry/.test(SCREEN),
+    'driver: the driving screen reads a name but never asks for one',
+    /readDriverName/.test(SCREEN) && !/<DriverNameEntry/.test(SCREEN),
   );
   check(
-    'driver: exactly one DriverNameEntry across the whole screen',
-    (SCREEN.match(/<DriverNameEntry/g) ?? []).length === 1,
-    (SCREEN.match(/<DriverNameEntry/g) ?? []).length,
+    'driver: exactly one DriverNameEntry across the setup surface',
+    (SETTINGS.match(/<DriverNameEntry/g) ?? []).length === 1,
+    (SETTINGS.match(/<DriverNameEntry/g) ?? []).length,
   );
 }
 

@@ -200,13 +200,17 @@ function input(over: Partial<RoadTestInput> = {}): RoadTestInput {
   const controls = readFileSync('src/components/navigator/PilotTripControls.tsx', 'utf8');
   const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
 
-  // The report lives inside PilotTripControls, which the driving screen
-  // renders inside the stationary-only 'edit-destination' gate. Writing a
-  // note at speed is exactly what doc 06 locks — and this inherits that
-  // rail rather than inventing a second one.
+  /*
+   * The report lives inside PilotTripControls, in the driving screen's
+   * destination slot. That slot used to sit behind the stationary-only
+   * 'edit-destination' gate; the owner removed motion-based editing locks
+   * (NAV-ENTRY-1), so what this check protects now is the part that still
+   * matters — the report rides an EXISTING slot and did not invent a surface
+   * or a permission of its own.
+   */
   check(
-    'affordance: it renders inside the stationary-only pilot slot',
-    /<LockGate[^>]*action="edit-destination"/.test(screen) && screen.includes('destinationSlot={'),
+    'affordance: it renders inside the existing pilot slot',
+    screen.includes('destinationSlot={') && controls.includes('buildReport'),
   );
   check(
     'affordance: no new permission was invented for it',

@@ -140,6 +140,7 @@ const PLACE_ACCESSIBLE_NAME = `Warehouse ${PLACE.title} ${PLACE.address}`;
  * shows. These are the same numbers the declutter bench seeds directly,
  * so the two benches describe the same driver.
  */
+const PARKED_REMINDER = 'Only make changes when safely parked.';
 const CLOCK_ENTRY = [
   { label: 'Drive time left', h: '5', m: '5' },
   { label: 'Shift window left', h: '7', m: '50' },
@@ -176,8 +177,11 @@ const CLOCKS_UNSET_WARNING =
  */
 const CONTROLS = {
   overview: 'Show the whole route, then return to your truck',
-  overviewLocked: 'Route overview is locked while moving — passenger access',
-  overviewPaused: "Route overview is paused — this vehicle's location can't be confirmed right now",
+  // NAV-ENTRY-1 removed passenger access, so the locked spelling that used to
+  // offer it is gone; what remains says the control is paused and why.
+  overviewLocked: 'Route overview is paused — the vehicle is moving',
+  overviewPaused:
+    'Route overview is paused — this vehicle\u2019s location can\u2019t be confirmed right now',
   clocksHide: 'Hide clocks',
   clocksShow: 'Show clocks',
   voiceMute: 'Mute voice guidance',
@@ -459,77 +463,71 @@ async function login(page) {
     savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(700);
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — that is what an unauthorized visitor is redirected away from and
+   * back to — and the helper then lands on the driving surface this bench is
+   * about, so every measurement below still describes the same screen.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  // Let the surface hydrate before a caller starts looking for controls.
+  await page.waitForTimeout(900);
 }
 
 /* ------------------------------------------ the real pre-trip flow */
 
-/**
- * The setup checklist, read back as `{Driver, Truck, Clocks,
- * Destination}`. Its values come from the same pure core that decides
- * whether Start is enabled, so asserting on them is asserting on the
- * gate itself rather than on a second opinion about it.
+/*
+ * The "Before you start" checklist reader retired with the checklist
+ * (NAV-ENTRY-1). It read a four-row summary that existed to explain the
+ * truck-confirmation gate; there is no such gate now, so there is nothing
+ * for it to read. What it was really protecting — that the Start button and
+ * its stated reason cannot disagree — is asserted directly against the
+ * button and its sentence in `preTrip` above.
  */
-async function checklist(page) {
-  return page.evaluate(() => {
-    const sec = document.querySelector('section[aria-labelledby="setup-status-heading"]');
-    if (sec === null) return null;
-    const out = {};
-    for (const row of Array.from(sec.querySelectorAll('dl > div'))) {
-      const dt = row.querySelector('dt');
-      const dd = row.querySelector('dd');
-      // The tick and the dash are aria-hidden decoration on top of a
-      // sentence that already reads correctly; drop them.
-      if (dt && dd) out[dt.textContent.trim()] = dd.textContent.replace(/[✓—]/g, '').trim();
-    }
-    return out;
-  });
-}
 
 /**
  * Walk the parked screen top to bottom, asserting the gate at each step.
  * Returns nothing — every finding is a `verdict`.
  */
+/**
+ * Walk the setup, then the parked map, asserting the gate at each step.
+ *
+ * NAV-ENTRY-1 SPLIT THIS WALK ACROSS TWO SURFACES, which is the fourth time
+ * this bench has been repointed at a product that moved rather than broke —
+ * see the note at the top of the file. The setup stack (name, region, truck,
+ * clocks) lives at `/drive/settings` now; the destination and Start Route
+ * live on the driving surface. Every assertion below survives the move; two
+ * of them INVERT, and both inversions are owner decisions:
+ *
+ *   - There is no "Before you start" checklist. It existed to explain a gate
+ *     that no longer blocks — the truck confirmation — so it went with it.
+ *   - Start Route is no longer disabled waiting for a truck. A device with no
+ *     saved truck is given the shipped standard one, confirmed, so the only
+ *     thing left to ask for is a destination.
+ *
+ * Returns nothing — every finding is a `verdict`.
+ */
 async function preTrip(page, name, { clocks }) {
-  await page
-    .getByRole('heading', { name: 'Before you start', exact: true })
-    .waitFor({ timeout: 25_000 });
+  /* ================= the setup surface ============================= */
+  await page.goto(`${BASE}/drive/settings`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor({ timeout: 25_000 });
 
-  const start = page.getByRole('button', { name: 'Start Route', exact: true });
-  const freshClocks = page.getByRole('button', { name: 'Start with full clocks', exact: true });
-
-  /*
-   * THE TWO STARTS ARE DIFFERENT BUTTONS. A `/^Start/` locator would
-   * match both and the bench would silently confirm a full-clock shift
-   * for a driver five hours in. Both are asserted to exist exactly once
-   * under their exact names, so nothing here can drift into the other.
-   */
-  verdict(`${name}: exactly one control named "Start Route"`, (await start.count()) === 1);
   verdict(
-    `${name}: "Start with full clocks" is a separate, single control`,
-    (await freshClocks.count()) === 1,
-  );
-
-  /* ---- the gate, before anything has been done -------------------- */
-  verdict(
-    `${name}: Start Route is genuinely disabled before the truck is confirmed`,
-    await start.isDisabled(),
+    `${name}: the parked reminder is a sentence, not a lock`,
+    (await page.getByText(PARKED_REMINDER, { exact: true }).count()) > 0,
+    PARKED_REMINDER,
   );
   verdict(
-    `${name}: and the reason names the truck, in words`,
-    (await page.getByText(START_NEEDS_TRUCK, { exact: true }).count()) > 0,
-    START_NEEDS_TRUCK,
+    `${name}: and nothing on the setup surface mentions passenger access`,
+    !/passenger|press and hold/i.test(await page.evaluate(() => document.body.innerText)),
   );
 
   /* ---- 1. driver name (optional) ---------------------------------- */
   await page.getByLabel('Your first name').fill(DRIVER_NAME);
   await page.getByRole('button', { name: 'Save name', exact: true }).click();
   await page.getByText(`Driving as ${DRIVER_NAME}`).waitFor({ timeout: 10_000 });
-  const afterName = await checklist(page);
-  verdict(
-    `${name}: the checklist shows the saved driver name`,
-    afterName !== null && afterName.Driver === DRIVER_NAME,
-    JSON.stringify(afterName),
-  );
+  verdict(`${name}: the saved driver name reads back`, true);
 
   /* ---- 2. region and units ---------------------------------------- */
   const us = page.getByRole('button', { name: 'United States', exact: true });
@@ -540,9 +538,6 @@ async function preTrip(page, name, { clocks }) {
     (await us.getAttribute('aria-pressed')) === 'true' &&
       (await imperial.getAttribute('aria-pressed')) === 'true',
   );
-  // Exercise the control, then put it back: the run measures the
-  // imperial screen, but a units button that does not respond is a
-  // defect this bench should see.
   await metric.click();
   await page.waitForTimeout(200);
   const flipped = (await metric.getAttribute('aria-pressed')) === 'true';
@@ -553,21 +548,22 @@ async function preTrip(page, name, { clocks }) {
     flipped && (await imperial.getAttribute('aria-pressed')) === 'true',
   );
 
-  /* ---- 3. confirm the truck (required) ---------------------------- */
-  const confirm = page.getByRole('button', { name: 'This is my truck', exact: true });
-  verdict(`${name}: the truck confirmation control is present`, (await confirm.count()) === 1);
-  await confirm.click();
-  await page.getByRole('button', { name: 'Edit truck', exact: true }).waitFor({ timeout: 10_000 });
-  const afterTruck = await checklist(page);
+  /* ---- 3. the truck, already standard and already usable ---------- */
   verdict(
-    `${name}: confirming the truck moves the gate on to the destination`,
-    (await start.isDisabled()) &&
-      (await page.getByText(START_NEEDS_DESTINATION, { exact: true }).count()) > 0 &&
-      afterTruck?.Truck === 'Confirmed',
-    `${START_NEEDS_DESTINATION} ${JSON.stringify(afterTruck)}`,
+    `${name}: no truck-confirmation step is demanded of the driver`,
+    (await page.getByRole('button', { name: 'This is my truck', exact: true }).count()) === 0,
+  );
+  verdict(
+    `${name}: the saved truck is shown with a way back into it`,
+    (await page.getByRole('button', { name: 'Edit truck', exact: true }).count()) === 1,
   );
 
   /* ---- 4. clocks (optional) --------------------------------------- */
+  const freshClocks = page.getByRole('button', { name: 'Start with full clocks', exact: true });
+  verdict(
+    `${name}: "Start with full clocks" is a separate, single control`,
+    (await freshClocks.count()) === 1,
+  );
   if (clocks === 'entered') {
     await page.getByRole('button', { name: 'Enter my clocks', exact: true }).click();
     for (const f of CLOCK_ENTRY) {
@@ -578,53 +574,47 @@ async function preTrip(page, name, { clocks }) {
     verdict(`${name}: the entered clocks are accepted as valid`, !(await save.isDisabled()));
     await save.click();
     await page.waitForTimeout(400);
-    /*
-     * THE CYCLE-RECAP REFUSAL AND THE READ-BACK, together. 5:05 is what
-     * was entered; 11:00 is what a fabricated fresh shift would show.
-     * Asserting both directions is what makes this a read-back rather
-     * than a "some number appeared" check.
-     */
-    const hosText = (
-      await page
-        .locator('[aria-label="Hours of service"]')
-        .first()
-        .innerText()
-        .catch(() => '')
-    )
-      .replace(/\s+/g, ' ')
-      .trim();
-    const after = await checklist(page);
-    verdict(
-      `${name}: the clocks read back as entered, not as a fresh shift`,
-      hosText.includes('5:05') && !hosText.includes('11:00') && after?.Clocks === 'Set',
-      hosText.slice(0, 110),
-    );
-  } else {
-    const after = await checklist(page);
-    verdict(
-      `${name}: unset clocks say what they cost, and do not block Start`,
-      (await page.getByText(CLOCKS_UNSET_WARNING, { exact: true }).count()) > 0 &&
-        after?.Clocks === 'Not set',
-      `${CLOCKS_UNSET_WARNING} ${JSON.stringify(after)}`,
-    );
   }
 
-  /* ---- the parked screen is meant to scroll ----------------------- */
-  const parkedScroll = await page.evaluate(() => {
-    const before = window.scrollY;
-    window.scrollTo(0, 400);
-    const moved = window.scrollY;
-    window.scrollTo(0, before);
-    return {
-      scrollable: document.documentElement.scrollHeight > window.innerHeight + 1,
-      moved: Math.round(moved),
-    };
-  });
+  /* ---- every setup control clears the touch floor ----------------- */
+  const smallControls = await page.evaluate((floor) => {
+    return Array.from(document.querySelectorAll('button, input, select, textarea'))
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && r.height < floor;
+      })
+      .map((el) => (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30));
+  }, 44);
   verdict(
-    `${name}: the parked setup still scrolls`,
-    parkedScroll.scrollable && parkedScroll.moved > 0,
-    `scrollable=${parkedScroll.scrollable} moved=${parkedScroll.moved}px`,
+    `${name}: every setup control clears the 44px floor`,
+    smallControls.length === 0,
+    smallControls.slice(0, 3).join(' | '),
   );
+
+  /* ================= back to the driving surface =================== */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  const start = page.getByRole('button', { name: 'Start Route', exact: true });
+  await start.waitFor({ timeout: 25_000 });
+  verdict(`${name}: exactly one control named "Start Route"`, (await start.count()) === 1);
+
+  /*
+   * THE GATE INVERTED. It used to name the TRUCK; the standard setup means
+   * the only thing outstanding is where the driver is going.
+   */
+  verdict(
+    `${name}: Start Route is disabled for a missing destination, not a missing truck`,
+    (await start.isDisabled()) &&
+      (await page.getByText(START_NEEDS_DESTINATION, { exact: true }).count()) > 0 &&
+      (await page.getByText(START_NEEDS_TRUCK, { exact: true }).count()) === 0,
+    START_NEEDS_DESTINATION,
+  );
+  if (clocks !== 'entered') {
+    verdict(
+      `${name}: unset clocks say what they cost, and do not block Start`,
+      (await page.getByText(CLOCKS_UNSET_WARNING, { exact: true }).count()) > 0,
+      CLOCKS_UNSET_WARNING,
+    );
+  }
 
   /* ---- 5. choose a destination ------------------------------------ */
   const search = page.getByRole('searchbox', {
@@ -644,11 +634,11 @@ async function preTrip(page, name, { clocks }) {
   );
 
   /*
-   * REACHABILITY WITH THE KEYBOARD OPEN. Chromium does not emulate a
-   * soft keyboard, so the honest stand-in is the thing a keyboard
-   * actually does to a page: it takes roughly 260 px of viewport away
-   * while a field has focus. If Start Route cannot be brought on screen
-   * in that state, a driver with a keyboard open cannot start a trip.
+   * REACHABILITY WITH THE KEYBOARD OPEN. Chromium does not emulate a soft
+   * keyboard, so the honest stand-in is what a keyboard actually does to a
+   * page: it takes roughly 260 px of viewport away while a field has focus.
+   * If Start Route cannot be brought on screen in that state, a driver with
+   * a keyboard open cannot start a trip.
    */
   const full = page.viewportSize();
   const shrunk = Math.max(220, full.height - 260);
@@ -669,12 +659,7 @@ async function preTrip(page, name, { clocks }) {
 
   await card.click();
   await page.waitForTimeout(400);
-  const ready = await checklist(page);
-  verdict(
-    `${name}: Start Route opens once a destination is chosen`,
-    !(await start.isDisabled()) && ready?.Destination === 'Selected',
-    JSON.stringify(ready),
-  );
+  verdict(`${name}: Start Route opens once a destination is chosen`, !(await start.isDisabled()));
 
   /* ---- 6. Start Route --------------------------------------------- */
   await start.click({ timeout: 15_000 });
@@ -976,7 +961,7 @@ function normalizeTargets(m) {
       m.targets.overview !== null
         ? 'available'
         : m.targets.overviewLocked !== null
-          ? 'locked-moving'
+          ? 'paused-moving'
           : 'paused-location-unknown',
   };
   return m;

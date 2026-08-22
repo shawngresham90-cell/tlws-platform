@@ -135,6 +135,17 @@ const fakeSynth = {
   removeEventListener() {},
 };
 
+/*
+ * `self` and an idle scheduler. The driving screen links to Settings with
+ * next/link, whose prefetch schedules work through `requestIdleCallback` on
+ * `self` — neither of which exists in a node harness. Shimmed beside the
+ * other browser globals; the idle callback is dropped rather than run,
+ * because prefetching is not what any of these harnesses is testing.
+ */
+(globalThis as any).self = globalThis;
+(globalThis as any).requestIdleCallback = () => 0;
+(globalThis as any).cancelIdleCallback = () => {};
+
 type RouteBody = {
   origin: { lat: number; lng: number };
   destination: { lat: number; lng: number };
@@ -482,9 +493,7 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('prompt');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush mount effects; the standard truck needs no confirm tap
 
     check('parked: the search renders at a cold start', h.searchInput() !== null);
     check(
@@ -590,9 +599,7 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush mount effects; the standard truck needs no confirm tap
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');
@@ -617,9 +624,7 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('prompt');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush mount effects; the standard truck needs no confirm tap
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');
@@ -648,9 +653,7 @@ async function main(): Promise<void> {
     routeResponder = () => ({ status: 500, payload: { ok: false } });
     searchResponder = () => ({ status: 200, payload: { ok: true, places: [PLACE_A] } });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush mount effects; the standard truck needs no confirm tap
     await h.type('pilot ringgold');
     await h.advance(350);
     await h.pickResult('Pilot Travel Center');
@@ -660,24 +663,27 @@ async function main(): Promise<void> {
     }
     await h.settle();
     check('moving: no trip is running (the plan failed)', pilotState(h) === null, pilotState(h));
-    check('moving: the text field is GONE while moving', h.searchInput() === null);
+    /*
+     * THE OWNER REVERSED THIS (NAV-ENTRY-1). The field used to vanish at
+     * speed and be replaced by a locked row offering PASSENGER ACCESS. A
+     * driver whose plan just failed at 40 mph is exactly the person who needs
+     * to fix their destination — at the next stop, with a reminder that says
+     * so — and taking the control away did not stop them, it only made them
+     * use the passenger declaration to get it back.
+     */
+    check('moving: the text field is STILL THERE', h.searchInput() !== null);
     check(
-      'moving: the shared lock explains itself in place (compact row)',
+      'moving: and nothing offers a passenger declaration to get it back',
       h.renderer.root.findAll(
-        (n) =>
-          n.type === 'button' &&
-          String(n.props['aria-label'] ?? '').includes('Destination search is locked'),
-      ).length === 1,
+        (n) => n.type === 'button' && /passenger/i.test(String(n.props['aria-label'] ?? '')),
+      ).length === 0,
     );
 
-    // GPS loss AFTER established motion: UNKNOWN must stay locked — a
-    // truck that vanished from GPS at 40 mph has not parked.
+    // GPS loss AFTER established motion: the app cannot see the truck. It
+    // says so elsewhere; it does not take the driver's destination away.
     await h.emitError('unavailable');
     await h.settle();
-    check(
-      'gps-loss: the field stays locked when position is lost after motion',
-      h.searchInput() === null,
-    );
+    check('gps-loss: the field survives a position lost after motion', h.searchInput() !== null);
     await h.unmount();
   }
 
@@ -702,9 +708,16 @@ async function main(): Promise<void> {
       'structure: the input never autofocuses (no keyboard auto-open)',
       !search.includes('autoFocus'),
     );
+    /*
+     * The slot is no longer wrapped in a motion gate at all (NAV-ENTRY-1).
+     * The wrapper was removed rather than left around an action the shared
+     * map now always permits, because a gate that can never fire reads like a
+     * protection that exists. What still constrains the slot is WHERE it
+     * mounts — parked map, idle only — asserted immediately below.
+     */
     check(
-      'structure: the map search rides the EXISTING edit-destination lock class',
-      /mapSearchSlot=\{[\s\S]{0,600}action="edit-destination"/.test(screen),
+      'structure: the map search carries no motion gate of its own',
+      !/mapSearchSlot=\{[\s\S]{0,600}<LockGate/.test(screen),
     );
     check(
       'structure: the search only mounts parked and idle',

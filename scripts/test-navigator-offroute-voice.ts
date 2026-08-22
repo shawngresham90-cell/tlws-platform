@@ -136,6 +136,31 @@ const fakeSynth = {
   removeEventListener() {},
 };
 
+/*
+ * A real, Map-backed storage layer. The driver's name is a Settings field
+ * now, so a scenario that needs a saved name arrives with one — written
+ * through the app's own storage module, exactly as a returning driver's
+ * phone would have it.
+ */
+const storageMap = new Map<string, string>();
+(globalThis as any).window.localStorage = {
+  getItem: (k: string) => storageMap.get(k) ?? null,
+  setItem: (k: string, v: string) => void storageMap.set(k, String(v)),
+  removeItem: (k: string) => void storageMap.delete(k),
+  clear: () => storageMap.clear(),
+};
+
+/*
+ * `self` and an idle scheduler. The driving screen links to Settings with
+ * next/link, whose prefetch schedules work through `requestIdleCallback` on
+ * `self` — neither of which exists in a node harness. Shimmed beside the
+ * other browser globals; the idle callback is dropped rather than run,
+ * because prefetching is not what any of these harnesses is testing.
+ */
+(globalThis as any).self = globalThis;
+(globalThis as any).requestIdleCallback = () => 0;
+(globalThis as any).cancelIdleCallback = () => {};
+
 // --- fetch stub for /api/navigator/route ----------------------------------
 // The REAL route-port builds the request and parses this response; the stub
 // is the network, not the port. `routeResponder` is re-pointed per phase.
@@ -188,6 +213,7 @@ import { VOICE_ENABLED_CONFIRMATION } from '@/components/navigator/VoiceControls
 import { OFF_ROUTE_SPEECH } from '@/lib/navigator/voice-guidance';
 import { routeStartText } from '@/lib/navigator/driver-greeting';
 import type { GeolocationPort } from '@/lib/navigator/ports';
+import { readDriverName, writeDriverName } from '@/components/navigator/driver-storage';
 import type { LatLng } from '@/lib/map/bounds';
 
 let passed = 0;
@@ -383,6 +409,7 @@ const trace: { tick: number; state: string | null }[] = [];
 
 async function main(): Promise<void> {
   const Screen = DrivingScreen as (props: { authorized?: boolean }) => JSX.Element;
+  writeDriverName('Alex');
   const renderer = TestRenderer.create(
     createElement(GpsProvider, {
       port: gpsPort,
@@ -405,17 +432,13 @@ async function main(): Promise<void> {
   );
 
   // -- give the driver a name (so route-start suppression is a REAL check) --
-  const nameInput = renderer.root.findAll(
-    (n) => n.type === 'input' && n.props.autoComplete === 'given-name',
-  )[0];
-  await act(async () => {
-    nameInput.props.onChange({ target: { value: 'Alex' } });
-  });
-  const nameForm = renderer.root.findAll((n) => n.type === 'form')[0];
-  await act(async () => {
-    nameForm.props.onSubmit({ preventDefault() {} });
-  });
-  check('behavior: name accepted', renderedText(renderer).includes('Driving as'));
+  /*
+   * The name arrives ALREADY SAVED (NAV-ENTRY-1). It was typed into a field
+   * on this screen; that field is on /drive/settings now, and the driving
+   * screen only ever reads the record — the single thing it does with a name
+   * is speak it. `writeDriverName` before the mount above puts it there.
+   */
+  check('behavior: the saved name is in place for the greeting', readDriverName() === 'Alex');
 
   // -- enable voice through the real control (the unlock gesture) -----------
   await act(async () => {
@@ -453,12 +476,12 @@ async function main(): Promise<void> {
   await act(async () => {
     lngInput.props.onChange({ target: { value: String(DESTINATION.lng) } });
   });
-  await act(async () => {
-    // The truck must be confirmed before a route may be requested
-    // (truck-route confidence milestone): Start refuses to spend a
-    // provider transaction on a profile no human has verified.
-    findButton(renderer, (l) => l.trim() === 'This is my truck').props.onClick();
-  });
+  /*
+   * No confirmation tap (NAV-ENTRY-1): a device with no saved truck starts
+   * with the shipped standard one, already confirmed, so Start may spend a
+   * provider transaction immediately. The profile a route is planned for is
+   * still exactly the one the driver can read on screen.
+   */
   await act(async () => {
     // Renamed 'Start' → 'Start Route' in the pre-trip setup milestone.
     // Matched by exact alternatives, never by prefix: 'Start navigation'
