@@ -80,6 +80,8 @@ import {
 } from '@/lib/directory/prospects';
 import { funnelHref, boundToken } from '@/lib/directory/funnel';
 
+import { opportunityView, pipelineBuckets } from '@/lib/directory/money-queue';
+
 let passed = 0;
 let failed = 0;
 const seen = new Set<string>();
@@ -449,8 +451,45 @@ check(
     withClosed.overdueNextActions === 2,
     withClosed.overdueNextActions,
   );
-  const page = src('src/app/admin/(dashboard)/directory/revenue/page.tsx');
-  extra('the opportunities table scopes its overdue flag the same way', /openDeal\s*&&/.test(page));
+  // REVENUE-4 moved this scoping out of the page and into the money queue, so
+  // the assertion now states the CONTRACT behaviourally instead of matching the
+  // JSX that used to implement it: a finished deal with no next step is not
+  // neglected work, and must not be counted as such.
+  {
+    const views = [
+      ...rows,
+      {
+        ...rows[0],
+        id: 'c1',
+        stage: 'closed_lost',
+        status: 'contacted',
+        nextAction: null,
+        nextActionDate: null,
+      },
+    ].map((r) =>
+      opportunityView(
+        {
+          id: r.id,
+          company: 'Fixture',
+          sale: readSaleState(r),
+          nextAction: r.nextAction,
+          nextActionDate: r.nextActionDate,
+          placement: { kind: 'none' },
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+        NOW,
+      ),
+    );
+    const closedView = views.find((v) => v.id === 'c1');
+    extra('a closed deal is not counted as neglected work', closedView?.bucket === 'lost');
+    extra(
+      'the missing-next-step count excludes closed deals',
+      pipelineBuckets(views).missingNextAction ===
+        views.filter(
+          (v) => v.nextActionState === 'none' && v.bucket !== 'lost' && v.bucket !== 'live',
+        ).length,
+    );
+  }
 }
 
 check(
@@ -1758,8 +1797,12 @@ check(
   extra('empty pipeline counts are zero', empty.total === 0 && empty.collectedCents === 0);
   extra(
     'the console says so in words',
+    // Whitespace-collapsed, matching the convention the REVENUE-2 harness
+    // documents: JSX wraps prose across lines, so a raw-source match breaks the
+    // next time Prettier reflows a paragraph — which is how a real check gets
+    // deleted for being flaky rather than for being wrong.
     /no conversion rate to show|invented number/i.test(
-      src('src/app/admin/(dashboard)/directory/revenue/page.tsx'),
+      src('src/app/admin/(dashboard)/directory/revenue/page.tsx').replace(/\s+/g, ' '),
     ),
   );
 }
