@@ -356,14 +356,20 @@ function wireRoute(route, turnDirection) {
 const FLAT_TILE = makePng(256, [58, 62, 68]);
 
 /**
- * Confirm the truck before Start (truck-route confidence milestone):
- * an unconfirmed profile spends nothing, so every flow that plans a
- * route passes through the same tap a driver makes.
+ * Confirm the truck before Start, IF there is anything to confirm.
+ *
+ * NAV-ENTRY-1 gives a device with no saved truck the shipped standard one,
+ * already confirmed, so this control is correctly absent for most runs — and
+ * waiting for it was costing this bench thirty seconds per scenario before
+ * timing the whole run out. It is kept rather than deleted because a driver
+ * whose stored truck fails its fingerprint check still meets it, and that
+ * path must keep working.
  */
 async function confirmTruck(page) {
   const btn = page.getByRole('button', { name: /This is my truck|Truck confirmed/ });
-  await btn.scrollIntoViewIfNeeded();
-  if (!(await btn.isDisabled())) await btn.click();
+  if ((await btn.count()) === 0) return;
+  await btn.first().scrollIntoViewIfNeeded();
+  if (!(await btn.first().isDisabled())) await btn.first().click();
   await page.waitForTimeout(150);
 }
 
@@ -384,6 +390,16 @@ async function login(page) {
     savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(600); // hydration
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — that is what an unauthorized visitor is redirected away from and
+   * back to — and the helper then lands on the driving surface this bench is
+   * about, so every measurement below still describes the same screen.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  // Let the surface hydrate before a caller starts looking for controls.
+  await page.waitForTimeout(900);
 }
 
 /**

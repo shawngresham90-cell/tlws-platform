@@ -866,6 +866,9 @@ async function main() {
    * the same server-side check that already gated the route.
    */
   const drivePage = readFileSync('src/app/(navigator)/drive/page.tsx', 'utf8');
+  // `/drive` is the launcher since NAV-ENTRY-1; the driving screen it used to
+  // host lives at `/drive/navigate`, under the same protected prefix.
+  const navigatePage = readFileSync('src/app/(navigator)/drive/navigate/page.tsx', 'utf8');
   check(
     'fix: the driving screen accepts the server authorization verdict',
     /DrivingScreen\(\{\s*authorized/.test(drivingSrc),
@@ -884,8 +887,8 @@ async function main() {
   );
   check(
     'fix: and hands the verified verdict to the screen',
-    drivePage.includes('navigatorAccessGranted(mode)') &&
-      /<DrivingScreen[^>]*\bauthorized=\{authorized\}/.test(drivePage),
+    navigatePage.includes('navigatorAccessGranted(mode)') &&
+      /<DrivingScreen[^>]*\bauthorized=\{authorized\}/.test(navigatePage),
   );
   check(
     'security: the screen never reads the pilot password',
@@ -962,9 +965,19 @@ async function main() {
     '/drive page still 404s without the flag',
     pageSrc.includes("NEXT_PUBLIC_NAVIGATOR_ENABLED === 'true'") && pageSrc.includes('notFound()'),
   );
+  /*
+   * Reversed by owner decision (NAV-ENTRY-1). A driver may change their own
+   * destination at any motion state; the reminder to do it parked is a
+   * sentence, not a gate. The map is still the single authority — which is
+   * what the camera half of this pair proves.
+   */
   check(
-    'destination entry remains stationary-only in the action map',
-    /'edit-destination':\s*false/.test(actionsSrc),
+    'destination entry is available at every motion state',
+    /'edit-destination':\s*true/.test(actionsSrc),
+  );
+  check(
+    'the camera is still stationary-only, so the map is still an authority',
+    /'pan-map':\s*false/.test(actionsSrc) && /'route-overview':\s*false/.test(actionsSrc),
   );
 
   /* --------------------------------------------------------- summary */

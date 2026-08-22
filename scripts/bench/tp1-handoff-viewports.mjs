@@ -55,12 +55,22 @@ const PLANNED = {
   plannedAtMs: Date.now(),
   /*
    * The fingerprint of the clocks and truck this stop was planned against.
-   * A fresh browser profile has neither set, so the live fingerprint the
-   * Navigator computes is the empty one — and the seeded record must carry
-   * the SAME string or it is correctly refused as inputs-changed. That the
-   * record must match at all is the point; this is not a convenience.
+   * The seeded record must carry the SAME string the Navigator computes live,
+   * or it is correctly refused as inputs-changed. That the record must match
+   * at all is the point; this is not a convenience.
+   *
+   * IT CHANGED WITH NAV-ENTRY-1, and the change is the product being right.
+   * A fresh profile used to have no truck, so the live fingerprint was
+   * `truck:none`. A fresh profile now gets the shipped standard truck, so the
+   * live fingerprint names it — and a stop planned for "no truck known" is a
+   * stop planned against different inputs. The bench follows the app rather
+   * than the app being loosened to accept a stale record.
+   *
+   * Built from DEFAULT_TRUCK_PROFILE the way `plannedStopInputsFingerprint`
+   * builds it: height, width, length to one decimal, then weight, axles,
+   * hazmat, and the sorted avoid list (empty here).
    */
-  inputsFingerprint: 'clocks:none|truck:none',
+  inputsFingerprint: 'clocks:none|truck:13.5,8.5,70.0,80000,5,none,',
 };
 
 let pass = 0,
@@ -88,14 +98,23 @@ for (const w of WIDTHS) {
   const page = await ctx.newPage();
 
   // Unlock the pilot gate exactly as the navigator bench does.
+  // NAV-ENTRY-1: the gate is entered at `/drive`; the cockpit is a child of it.
   await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   if (page.url().includes('/navigator/access')) {
     await page.waitForSelector('input[type="password"]', { timeout: 30_000 });
     await page.fill('input[type="password"]', PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/drive/, { timeout: 20_000 }).catch(() => {});
-    await page.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
   }
+  /*
+   * ALWAYS land on the cockpit, not only after an authentication round.
+   * `/drive` is the launcher since NAV-ENTRY-1, and a context that reuses a
+   * saved session skips the branch above entirely — which left this bench
+   * seeding a planned stop and then looking for its card on a page that does
+   * not render one.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1500);
   await page.evaluate((rec) => {
     localStorage.setItem('tlws-navigator-planned-stop-v1', JSON.stringify(rec));

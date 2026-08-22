@@ -216,6 +216,14 @@ async function main() {
   if (page.url().includes('/navigator/access')) {
     throw new Error('the pilot gate did not accept the password');
   }
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — the check above is what this bench relies on — and the cockpit
+   * this bench measures is one hop further in.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(900);
 
   // Simplified startup (pilot round 3): destination entry is available at
   // a cold start (the setup window), permission is already granted so the

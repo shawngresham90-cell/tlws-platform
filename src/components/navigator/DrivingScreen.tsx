@@ -57,30 +57,24 @@ import { MotionLockOverlay } from './MotionLockOverlay';
 import { HosStrip } from './HosStrip';
 import { LockGate } from './LockGate';
 import { DestinationSearch } from './DestinationSearch';
-import { TruckProfileEditor } from './TruckProfileEditor';
-import { RegionPanel } from './RegionPanel';
 import {
-  canadaPilotStatus,
   crossBorderSearchLabel,
-  defaultUnitsFor,
   looksCrossBorder,
   searchCountryFor,
   CANADA_HOS_NOTICE,
   type Region,
   type UnitSystem,
 } from '@/lib/navigator/region';
-import { DEFAULT_REGION_PREFS, readRegionPrefs, writeRegionPrefs } from './region-storage';
+import { DEFAULT_REGION_PREFS, readRegionPrefs } from './region-storage';
 import { clearDriverName, readDriverName, writeDriverName } from './driver-storage';
 import { readTruck, writeTruck } from './truck-storage';
 import { readRoutePrefs, writeRoutePrefs } from './route-prefs-storage';
 import {
   DEFAULT_ROUTE_PREFERENCES,
-  preferencesChanged,
   preferencesToAvoid,
   type RoutePreferences,
 } from '@/lib/navigator/route-preferences';
-import { RoutePreferencesPanel } from './RoutePreferencesPanel';
-import { readClocks, writeClocks } from './clocks-storage';
+import { readClocks } from './clocks-storage';
 import { useAccountSync, type SyncTransport } from './account-sync';
 import { readHosVisibility, writeHosVisibility } from './hos-visibility-storage';
 import {
@@ -90,19 +84,13 @@ import {
   type HosVisibility,
 } from '@/lib/navigator/hos-visibility';
 import { clocksProvenance } from '@/lib/navigator/hos-clocks';
-import { ClockSetup } from './ClockSetup';
-import { DriverNameEntry } from './DriverNameEntry';
 import { engineStateFor, CLOCKS_UNSET, type ClockEntryState } from '@/lib/navigator/hos-clocks';
-import { SetupStatus } from './SetupStatus';
-import { SetupSummary } from './SetupSummary';
-import { TruckSummary } from './TruckSummary';
 import { setupStatus } from '@/lib/navigator/setup-status';
 import {
   confirmProfile,
   profileGate,
   routingFingerprint,
   DEFAULT_EDITABLE_PROFILE,
-  NO_CONFIRMATION,
   type ConfirmationState,
   type EditableProfile,
 } from '@/lib/navigator/truck-profile';
@@ -116,6 +104,17 @@ import { closeFieldTestSession } from '@/lib/trip-planner/field-test';
 import { readActiveFieldTestSession, writeActiveFieldTestSession } from './field-test-storage';
 import { tripKeyFor } from '@/lib/trip-planner/planned-stop';
 import { VoiceControls } from './VoiceControls';
+import Link from 'next/link';
+import {
+  STANDARD_SETUP_BODY,
+  STANDARD_SETUP_HEADLINE,
+  standardSetupDecision,
+  standardSetupSpecs,
+  truckSummaryLine,
+} from '@/lib/navigator/navigator-entry';
+import { readStandardNoticeSeen, writeStandardNoticeSeen } from './standard-notice-storage';
+import { speechWasPrimed, VOICE_UNAVAILABLE_TEXT } from './speech-unlock';
+import { voiceEnabledByDefault } from './voice-storage';
 
 /**
  * Driving screen (milestone N5 visuals; milestone P1 wires the completed
@@ -1049,16 +1048,21 @@ export function DrivingScreenView({
         {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
         {mapStyleSlot}
 
-        {/* Stationary-only affordance — gated by the shared map,
-            demonstrating default-deny end to end. Pilot Mode mounts the
-            trip controls here; otherwise the honest placeholder stands. */}
-        <LockGate action="edit-destination" lockedLabel="Destination entry">
-          {destinationSlot ?? (
-            <p className="text-xl text-ink/80">
-              Destination entry unlocks here when routing ships (a later milestone).
-            </p>
-          )}
-        </LockGate>
+        {/*
+          NOT GATED (NAV-ENTRY-1). This slot used to sit behind the shared
+          motion lock, so a moving truck got a locked card offering passenger
+          access instead of the trip controls. The owner's decision is that a
+          driver may change their own trip whenever they like; the reminder to
+          do it parked is a sentence on the settings surface, not a gate here.
+          The wrapper is REMOVED rather than left in place around an action the
+          map now always permits — a gate that can never fire reads like a
+          protection that exists.
+        */}
+        {destinationSlot ?? (
+          <p className="text-xl text-ink/80">
+            Destination entry unlocks here when routing ships (a later milestone).
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1312,9 +1316,12 @@ export function DrivingScreen({
     setRegion(stored.region);
     setUnits(stored.units);
   }, []);
-  const persistRegion = (r: Region, u: UnitSystem) => {
-    writeRegionPrefs({ region: r, units: u });
-  };
+  /*
+   * Region and units are READ here and changed in Settings (NAV-ENTRY-1).
+   * The driving screen still needs both — the search asks one country and the
+   * driver reads one unit system — but the picker that sets them lives with
+   * the other preferences now, so there is no writer on this screen at all.
+   */
   // The voice tick reads the preference through a ref: the guidance
   // effect must not re-subscribe because a driver changed units while
   // parked, and re-running it would re-arm announcers that exist to
@@ -1346,32 +1353,37 @@ export function DrivingScreen({
    * a truck nobody checked.
    */
   const [truckProfile, setTruckProfile] = useState<EditableProfile>(DEFAULT_EDITABLE_PROFILE);
-  const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(NO_CONFIRMATION);
+  /*
+   * THE STANDARD TRUCK IS THE STARTING STATE, not something an effect grants
+   * (NAV-ENTRY-1, owner decision).
+   *
+   * `confirmProfile` is pure — it hashes the values that reach the provider —
+   * so this is deterministic, identical on the server and the client, and
+   * needs no storage read to compute. That matters more than it looks: making
+   * the standard setup an EFFECT would mean the screen renders once in a
+   * not-yet-routable state, and every consumer (the Start gate, the checklist,
+   * any harness that does not flush effects) would see a truck the owner
+   * decided a driver should never have to think about.
+   *
+   * A driver with a SAVED truck has it adopted by the effect below, which
+   * overrides this. A saved truck's confirmation is still held to the
+   * fingerprint rule in `truck-storage` — restoring a truck must never restore
+   * permission to route for a truck nobody checked. That rule protects
+   * records that came from STORAGE; this constant is the shipped standard,
+   * and it is the one the notice tells the driver to verify.
+   */
+  const [truckConfirmation, setTruckConfirmation] = useState<ConfirmationState>(() =>
+    confirmProfile(DEFAULT_EDITABLE_PROFILE),
+  );
   const [truckTouched, setTruckTouched] = useState(false);
-  /** Open the full editor even though a confirmed truck exists. */
-  const [editingTruck, setEditingTruck] = useState(false);
   /*
-   * The driver's own answer about the long setup — `null` until they say
-   * something, so the DEFAULT below can differ by who they are.
+   * THE LONG-SETUP STATE IS GONE (NAV-ENTRY-1). `editingTruck`, `setupOpen`
+   * and `arrivedConfigured` all existed to decide whether this screen showed
+   * the full setup form or the collapsed summary. There is no full setup form
+   * here any more — it is /drive/settings — so there is nothing left to
+   * decide, and keeping the flags would leave three pieces of state that can
+   * only ever hold one value.
    */
-  const [setupOpen, setSetupOpen] = useState<boolean | null>(null);
-  /*
-   * Did this visit BEGIN with a confirmed truck?
-   *
-   * This is the returning-driver test, and it is latched at restore
-   * rather than recomputed, because "is setup complete right now?" is the
-   * wrong question for choosing the default.
-   *
-   * A first-time driver works down the page: name, region, truck,
-   * preferences, clocks. If the screen collapsed the instant they tapped
-   * "This is my truck", the form would vanish under their thumb halfway
-   * through — they would lose their place, and the clocks and preferences
-   * they had not reached yet would disappear without ever being seen.
-   * So the short screen is what a driver ARRIVES to, not something that
-   * happens to them mid-setup. They leave it by tapping "Done with
-   * setup", which is a decision rather than a side effect.
-   */
-  const [arrivedConfigured, setArrivedConfigured] = useState(false);
 
   /*
    * ACCOUNT SYNC (account mode only).
@@ -1402,19 +1414,50 @@ export function DrivingScreen({
     transport: syncTransport,
   });
 
+  /**
+   * True the first time a device is given the standard setup, so the notice
+   * below can appear exactly once. Never true for a driver whose own truck
+   * was restored.
+   */
+  const [showStandardNotice, setShowStandardNotice] = useState(false);
   useEffect(() => {
     const saved = readTruck();
-    if (saved === null) return;
-    setTruckProfile(saved.profile);
-    setTruckConfirmation(saved.confirmation);
-    setTruckTouched(true);
-    // The same fingerprint rule the gate uses: a restored confirmation
-    // counts only while it still matches the restored values. A truck that
-    // arrived from the account is held to it too — restoring a truck must
-    // never restore permission to route for a truck nobody checked.
-    setArrivedConfigured(
-      saved.confirmation.confirmedFingerprint === routingFingerprint(saved.profile),
-    );
+    if (standardSetupDecision(saved) === 'keep-saved' && saved !== null) {
+      setTruckProfile(saved.profile);
+      setTruckConfirmation(saved.confirmation);
+      setTruckTouched(true);
+      // The same fingerprint rule the gate uses: a restored confirmation
+      // counts only while it still matches the restored values. A truck that
+      // arrived from the account is held to it too — restoring a truck must
+      // never restore permission to route for a truck nobody checked.
+      return;
+    }
+    /*
+     * NO USABLE TRUCK: LOAD THE STANDARD ONE (NAV-ENTRY-1, owner decision).
+     *
+     * `readTruck` already treats a damaged, wrong-version or shape-failing
+     * record as absent, so "never set one up" and "the saved one is corrupt"
+     * arrive here identically — and the right answer is the same for both.
+     * Only the truck record is replaced: the clocks, the name, the
+     * preferences and the region are separate records behind separate
+     * parsers and none of them is touched.
+     *
+     * The profile is ALREADY in state (see the initializer above) — this
+     * writes it down so the next visit adopts it through the ordinary saved
+     * path, and shows the notice once. It is written CONFIRMED, which is what
+     * removes the old "Confirm your truck" wall in front of Start Route: the
+     * check did not disappear, it moved into a sentence the driver actually
+     * reads, stating the height and the weight that will reach the provider
+     * and asking them to verify it.
+     */
+    persistTruck(DEFAULT_EDITABLE_PROFILE, confirmProfile(DEFAULT_EDITABLE_PROFILE));
+    if (!readStandardNoticeSeen()) {
+      setShowStandardNotice(true);
+      writeStandardNoticeSeen();
+    }
+    // `persistTruck` is stable for the life of this screen; listing it would
+    // re-run the seed on every account-sync notification.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoreNonce]);
   const persistTruck = (profile: EditableProfile, confirmation: ConfirmationState) => {
     writeTruck(profile, confirmation);
@@ -1436,19 +1479,6 @@ export function DrivingScreen({
   useEffect(() => {
     setRoutePrefs(readRoutePrefs());
   }, [restoreNonce]);
-  const changeRoutePrefs = (next: RoutePreferences) => {
-    const changed = preferencesChanged(routePrefs, next);
-    setRoutePrefs(next);
-    writeRoutePrefs(next);
-    notifySaved('route_prefs');
-    /*
-     * A PREFERENCE CHANGE IS A ROUTE CHANGE. The provider drew the
-     * existing line around a different set of restrictions, so it is
-     * discarded rather than reused — the same rule a truck edit follows.
-     */
-    if (changed && lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
-    bump();
-  };
   /*
    * THE DRIVER'S CLOCKS. Restored from `clocks-storage`, which returns
    * `unset` for a first-time driver AND for every failure mode — a
@@ -1459,12 +1489,6 @@ export function DrivingScreen({
   useEffect(() => {
     setClockEntry(readClocks());
   }, [restoreNonce]);
-  const saveClocks = (next: ClockEntryState) => {
-    setClockEntry(next);
-    writeClocks(next);
-    notifySaved('hos_clocks');
-    bump();
-  };
   /*
    * WHETHER THE DRIVING CLOCKS ARE ON SCREEN (declutter milestone).
    *
@@ -1501,7 +1525,6 @@ export function DrivingScreen({
 
   /** The gate the whole setup turns on, computed from the existing authority. */
   const truckGateState = profileGate(truckProfile, truckConfirmation);
-  const truckConfirmed = truckGateState === 'ready';
   /**
    * Whether the developer coordinate box holds a usable destination,
    * reported upward by PilotTripControls. That box is a preview-build
@@ -1568,6 +1591,39 @@ export function DrivingScreen({
    * that cannot make a sound. Voice starts muted, so this starts false.
    */
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  /**
+   * Set when the driver wanted voice and the engine could not provide it.
+   * Terminal and honest: it names Settings and stops. No retry, no second
+   * attempt on the next render, no modal at 70 mph.
+   */
+  const [voiceUnavailable, setVoiceUnavailable] = useState(false);
+
+  /*
+   * ADOPT THE SAVED VOICE PREFERENCE (NAV-ENTRY-1). The default is ON, and
+   * the gesture that unlocked the engine was the START DRIVING tap on the
+   * launcher — one document ago, client-side, so the unlock is still live.
+   *
+   * Nothing is SPOKEN here. Unmuting is a state change on the guidance
+   * module; the launcher already said the confirmation out loud, and
+   * repeating it on arrival would be the app talking about itself. A driver
+   * who reached this screen without that tap (a direct URL, a reload
+   * mid-trip) gets the preference honoured only if a gesture in this document
+   * genuinely unlocked speech — otherwise the browser would accept the
+   * utterances and speak none of them, which is the silent failure this whole
+   * rail exists to avoid.
+   */
+  useEffect(() => {
+    const voice = voiceRef.current;
+    if (voice === null) return;
+    if (!voiceEnabledByDefault()) return;
+    if (!voice.snapshot().supported) {
+      setVoiceUnavailable(true);
+      return;
+    }
+    if (!speechWasPrimed()) return;
+    voice.unmute();
+    setVoiceEnabled(true);
+  }, []);
 
   /*
    * Off-route episodes, and whether the app is currently holding out for a
@@ -1871,6 +1927,37 @@ export function DrivingScreen({
    * idle too, and clearing there would delete the snapshot the restore
    * effect is about to read.
    */
+  /**
+   * Write the snapshot now, ignoring the refresh throttle.
+   *
+   * Extracted so the periodic save and the LEAVE-THE-SCREEN flush below are
+   * literally the same write. Returns false when there is nothing to save,
+   * which is the ordinary case outside a trip.
+   */
+  const saveSnapshotNow = (): boolean => {
+    if (typeof sessionStorage === 'undefined') return false;
+    const planned = lastRouteRef.current;
+    const destination = lastDestinationRef.current;
+    if (planned === null || destination === null) return false;
+    const now = Date.now();
+    try {
+      sessionStorage.setItem(
+        TRIP_RESTORE_KEY,
+        serializeTripSnapshot({
+          route: planned.route,
+          request: planned.req,
+          destination,
+          savedAtMs: now,
+          ...(hosClocksRef.current === null ? {} : { clocks: hosClocksRef.current }),
+        }),
+      );
+      lastSavedMsRef.current = now;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const prevPersistStateRef = useRef<LifecycleState>('idle');
   useEffect(() => {
     if (typeof sessionStorage === 'undefined') return;
@@ -1878,26 +1965,7 @@ export function DrivingScreen({
     prevPersistStateRef.current = lcState;
     try {
       if (ACTIVE_LIFECYCLE_STATES.includes(lcState)) {
-        const planned = lastRouteRef.current;
-        const destination = lastDestinationRef.current;
-        const now = Date.now();
-        if (
-          planned !== null &&
-          destination !== null &&
-          now - lastSavedMsRef.current >= RESTORE_REFRESH_MS
-        ) {
-          sessionStorage.setItem(
-            TRIP_RESTORE_KEY,
-            serializeTripSnapshot({
-              route: planned.route,
-              request: planned.req,
-              destination,
-              savedAtMs: now,
-              ...(hosClocksRef.current === null ? {} : { clocks: hosClocksRef.current }),
-            }),
-          );
-          lastSavedMsRef.current = now;
-        }
+        if (Date.now() - lastSavedMsRef.current >= RESTORE_REFRESH_MS) saveSnapshotNow();
       } else if ((lcState === 'arrived' || lcState === 'completed') && prev !== lcState) {
         sessionStorage.removeItem(TRIP_RESTORE_KEY);
         lastSavedMsRef.current = 0;
@@ -2040,14 +2108,37 @@ export function DrivingScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pilot.active, start]);
 
-  // Unmount = leaving the screen: stale speech dies with the surface and
-  // any live trip is cancelled so no engine outlives its owner
-  // (GpsProvider tears the watch down the same way).
+  /*
+   * LEAVING THE SCREEN — flush first, then release.
+   *
+   * Unmount happens for two very different reasons and the cleanup cannot
+   * tell them apart: the driver closed Navigator, or the driver tapped
+   * SETTINGS and this route is being swapped for that one. The second is
+   * ordinary now that the launcher exists, and it must not cost them the
+   * trip they are driving.
+   *
+   * So the snapshot is written UNCONDITIONALLY and unthrottled before
+   * anything is torn down. Coming back through START DRIVING then restores
+   * it through the lifecycle's own front door with the payload already armed
+   * — no network, no provider spend, every transition invariant intact,
+   * exactly the path a mid-drive reload has always taken.
+   *
+   * The cancel still happens, and still must: engines are released, stale
+   * speech dies with the surface, and no lifecycle outlives its owner. The
+   * ORDER is the whole fix. Cancelling first would move the machine into
+   * `completed`, and `completed` is a state whose job is to delete the
+   * snapshot.
+   */
   useEffect(
     () => () => {
+      if (ACTIVE_LIFECYCLE_STATES.includes(lifecycle.state())) saveSnapshotNow();
       voiceRef.current?.clearPending();
       void lifecycle.cancel(Date.now());
     },
+    // `saveSnapshotNow` closes over refs only, so it is stable in every way
+    // that matters here; listing it would re-arm this cleanup every render
+    // and cancel the trip on the next one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lifecycle],
   );
 
@@ -2278,9 +2369,8 @@ export function DrivingScreen({
        */
       mapSearchSlot={
         pilot.active && !fullScreen && lcState === 'idle' ? (
-          <LockGate action="edit-destination" lockedLabel="Destination search" compact>
-            <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
-              {/*
+          <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
+            {/*
                 Trip plan first? — and, when the driver arrives carrying one,
                 the planned stop itself. Sits ABOVE the search because it is
                 the earlier question: a driver who has already planned should
@@ -2294,64 +2384,63 @@ export function DrivingScreen({
                 driver has answered, and the search underneath is untouched
                 either way.
               */}
-              <TripPlanFirst
-                /*
-                 * The trip's identity, derived from the chosen destination.
-                 * It moves exactly when the prompt must come back: a
-                 * different destination, a trip that ended (the pick clears),
-                 * or a new one beginning.
-                 */
-                tripKey={tripKeyFor(picked)}
-                onUsePlannedStop={(place) => {
-                  setPicked(place);
-                  // Trip Planner plans U.S. property-carrier hours only, so a
-                  // stop that came from it is attested U.S. — the same
-                  // recorded-at-pick discipline the search uses below.
-                  setPickedCountry('USA');
-                }}
-              />
-              {/*
+            <TripPlanFirst
+              /*
+               * The trip's identity, derived from the chosen destination.
+               * It moves exactly when the prompt must come back: a
+               * different destination, a trip that ended (the pick clears),
+               * or a new one beginning.
+               */
+              tripKey={tripKeyFor(picked)}
+              onUsePlannedStop={(place) => {
+                setPicked(place);
+                // Trip Planner plans U.S. property-carrier hours only, so a
+                // stop that came from it is attested U.S. — the same
+                // recorded-at-pick discipline the search uses below.
+                setPickedCountry('USA');
+              }}
+            />
+            {/*
                 TP-6: the road-test arm switch. Rendering INSIDE the
                 pilot-gated Navigator is its access control — the public
                 planner has no way to reach it — and idle-only placement
                 keeps it off the driving surface entirely.
               */}
-              <div className="mt-3">
-                <RoadTestArm />
-              </div>
-              <DestinationSearch
-                origin={searchOrigin}
-                disabled={startPending}
-                onPick={(place) => {
-                  setPicked(place);
-                  // WHICH COUNTRY THIS RESULT CAME FROM, recorded at the
-                  // moment of the pick. The provider filtered the list to
-                  // one country, so this is attested rather than inferred
-                  // — and it is what makes the cross-border reminder
-                  // correct in the Windsor/Detroit corridor, where no
-                  // coordinate rule can be.
-                  setPickedCountry(searchCountryFor(searchRegion));
-                }}
-                onClear={() => {
-                  setPicked(null);
-                  setPickedCountry(null);
-                }}
-                country={searchCountryFor(searchRegion)}
-                metric={metric}
-              />
-              {/* Crossing the border is DELIBERATE: one tap, clearly
+            <div className="mt-3">
+              <RoadTestArm />
+            </div>
+            <DestinationSearch
+              origin={searchOrigin}
+              disabled={startPending}
+              onPick={(place) => {
+                setPicked(place);
+                // WHICH COUNTRY THIS RESULT CAME FROM, recorded at the
+                // moment of the pick. The provider filtered the list to
+                // one country, so this is attested rather than inferred
+                // — and it is what makes the cross-border reminder
+                // correct in the Windsor/Detroit corridor, where no
+                // coordinate rule can be.
+                setPickedCountry(searchCountryFor(searchRegion));
+              }}
+              onClear={() => {
+                setPicked(null);
+                setPickedCountry(null);
+              }}
+              country={searchCountryFor(searchRegion)}
+              metric={metric}
+            />
+            {/* Crossing the border is DELIBERATE: one tap, clearly
                   labelled, never a side effect of typing. It swaps only
                   which country this search asks about — the region
                   setting, the units and the truck are untouched. */}
-              <button
-                type="button"
-                onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
-                className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
-              >
-                {crossBorderSearchLabel(searchRegion)}
-              </button>
-            </div>
-          </LockGate>
+            <button
+              type="button"
+              onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
+              className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
+            >
+              {crossBorderSearchLabel(searchRegion)}
+            </button>
+          </div>
         ) : null
       }
       destinationSlot={
@@ -2372,26 +2461,6 @@ export function DrivingScreen({
             onDestinationReady={setDevDestinationReady}
             truckProfile={truckProfile}
             truckGate={truckGateState}
-            regionPanel={
-              <RegionPanel
-                region={region}
-                units={units}
-                onRegion={(r) => {
-                  setRegion(r);
-                  // The region's usual units follow, from the one
-                  // authority; the unit buttons still override.
-                  const u = defaultUnitsFor(r);
-                  setUnits(u);
-                  persistRegion(r, u);
-                  bump();
-                }}
-                onUnits={(u) => {
-                  setUnits(u);
-                  persistRegion(region, u);
-                  bump();
-                }}
-              />
-            }
             metric={metric}
             crossBorder={looksCrossBorder({
               region,
@@ -2400,100 +2469,73 @@ export function DrivingScreen({
               destination: picked?.position ?? null,
             })}
             hosUnavailable={region === 'CA'}
-            setupStatusSlot={<SetupStatus status={setup} />}
             startBlockedReason={setup.blockedReason}
             /*
-             * THE COLLAPSE, from the one pure gate. `configured` and
-             * `blockedReason` come out of the same `setupStatus` call, so
-             * the short screen and the Start button cannot disagree about
-             * whether setup is finished — the failure that would matter
-             * here is a compact summary shown over an unconfirmed truck,
-             * and it is unreachable by construction.
+             * THE SETUP STACK IS NOT ON THIS SCREEN ANY MORE (NAV-ENTRY-1).
              *
-             * An open truck editor forces the long order: the driver is
-             * mid-edit, and collapsing the panel they are typing in would
-             * be its own defect.
+             * `setupConfigured` is pinned true and `setupOpen` false, which
+             * is how `PilotTripControls` renders its SHORT order —
+             * destination, Start, then a summary — and never expands the
+             * long one. The name field, the region picker, the truck editor,
+             * the preference panel and the clock form all live on
+             * /drive/settings now, mounted from the same components against
+             * the same storage. Nothing was duplicated and nothing was lost;
+             * it stopped standing between the driver and the road.
+             *
+             * The pinning is deliberate rather than a prop nobody sets: this
+             * screen has no way to open the long form, so the two states the
+             * control used to switch between are one state.
              */
-            setupConfigured={setup.configured && !editingTruck}
-            setupOpen={setupOpen ?? !arrivedConfigured}
-            onSetupOpen={setSetupOpen}
+            setupConfigured
+            setupOpen={false}
             setupSummarySlot={
-              <SetupSummary
-                status={setup}
-                profile={truckProfile}
-                prefs={routePrefs}
-                clocks={clockEntry}
-                driverName={firstName}
-                metric={metric}
-                onEditTruck={() => setEditingTruck(true)}
-                onOpenSetup={() => setSetupOpen(true)}
-              />
-            }
-            driverSlot={
-              <DriverNameEntry
-                firstName={firstName}
-                onAccept={acceptFirstName}
-                onClear={forgetFirstName}
-              />
+              <div className="space-y-2">
+                {showStandardNotice ? (
+                  /*
+                   * THE FIRST-TIME NOTICE. It is a status region, not a
+                   * dialog: no backdrop, no confirm button, nothing to
+                   * dismiss, and it is rendered BELOW Start rather than over
+                   * the map or the search — a message that covers the thing
+                   * the driver came for is a modal wearing a different hat.
+                   * It never appears during guidance because this whole slot
+                   * only renders on the idle branch.
+                   */
+                  <div
+                    role="status"
+                    data-standard-setup-notice=""
+                    className="rounded-cockpit border border-line px-3 py-2"
+                  >
+                    <p className="text-lg font-bold text-ink">{STANDARD_SETUP_HEADLINE}</p>
+                    <p className="num-data text-xl font-semibold text-ink">
+                      {standardSetupSpecs(truckProfile)}
+                    </p>
+                    <p className="mt-1 text-base text-ink/80">{STANDARD_SETUP_BODY}</p>
+                  </div>
+                ) : null}
+                {/*
+                  The whole truck, in one line, with the one place it can be
+                  changed. This replaces a card of four numbers plus an Edit
+                  button that opened a form on this screen — the form is a
+                  route away now, so the line names the route.
+                */}
+                <p className="text-base text-ink/70" data-truck-line="">
+                  {truckSummaryLine(truckProfile)}
+                </p>
+                {voiceUnavailable ? (
+                  <p role="status" data-voice-unavailable="" className="text-base text-ink">
+                    {VOICE_UNAVAILABLE_TEXT}
+                  </p>
+                ) : null}
+                <Link
+                  href="/drive/settings"
+                  data-open-settings=""
+                  className="flex min-h-16 w-full items-center justify-center rounded-cockpit border border-line bg-nav-surface px-4 text-lg font-semibold text-ink"
+                >
+                  Settings
+                </Link>
+              </div>
             }
             routeAvoid={preferencesToAvoid(routePrefs)}
-            prefsPanel={<RoutePreferencesPanel prefs={routePrefs} onChange={changeRoutePrefs} />}
-            clocksPanel={
-              <ClockSetup
-                state={clockEntry}
-                onSave={saveClocks}
-                onClear={() => saveClocks(CLOCKS_UNSET)}
-                unsupported={region === 'CA' ? CANADA_HOS_NOTICE : null}
-                nowMs={Date.now()}
-              />
-            }
-            truckSlot={
-              /*
-               * A returning driver whose truck was restored sees FOUR
-               * NUMBERS and a way back in, not the whole form again. The
-               * editor is still the only place a truck can be changed —
-               * the summary is a read-only echo — so there remains
-               * exactly one edit path and exactly one confirmation
-               * after it.
-               */
-              truckConfirmed && !editingTruck ? (
-                <TruckSummary
-                  profile={truckProfile}
-                  metric={metric}
-                  onEdit={() => setEditingTruck(true)}
-                />
-              ) : (
-                <TruckProfileEditor
-                  profile={truckProfile}
-                  confirmed={
-                    truckConfirmation.confirmedFingerprint === routingFingerprint(truckProfile)
-                  }
-                  isDefault={!truckTouched}
-                  metric={metric}
-                  onChange={(next) => {
-                    // A routing value that changed invalidates the
-                    // confirmation by construction: the gate compares
-                    // fingerprints, so nothing here has to remember which
-                    // fields mattered. No provider request occurs.
-                    setTruckProfile(next);
-                    setTruckTouched(true);
-                    persistTruck(next, truckConfirmation);
-                    // A planned route belongs to the OLD truck. Discard it
-                    // rather than let Start reuse it for a different one.
-                    if (lifecycle.state() === 'route-ready') lifecycle.discardRoute(Date.now());
-                    bump();
-                  }}
-                  onConfirm={() => {
-                    setEditingTruck(false);
-                    const next = confirmProfile(truckProfile);
-                    setTruckConfirmation(next);
-                    setTruckTouched(true);
-                    persistTruck(truckProfile, next);
-                    bump();
-                  }}
-                />
-              )
-            }
             onChanged={bump}
           />
         ) : null

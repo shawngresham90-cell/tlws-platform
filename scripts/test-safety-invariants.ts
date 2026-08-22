@@ -20,7 +20,7 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { createSafetyLock, OVERRIDE_DURATION_MS } from '@/lib/navigator/safety-lock';
+import { createSafetyLock } from '@/lib/navigator/safety-lock';
 import { ACTION_PERMISSIONS, allowedWhileMoving, type UIAction } from '@/lib/navigator/actions';
 import { createManeuverAnnouncer, createVoiceGuidance } from '@/lib/navigator/voice-guidance';
 import { createOffRouteDetector } from '@/lib/navigator/off-route-detector';
@@ -60,13 +60,13 @@ const base: PositionState = {
     ['speed null', { ...base, speedMph: null }],
     ['speed NaN', { ...base, speedMph: Number.NaN }],
   ];
-  check('invariant 1: pristine controller is locked', createSafetyLock('i').state(T0).locked);
+  check('invariant 1: pristine controller is locked', createSafetyLock().state(T0).locked);
   for (const [name, p] of entries) {
-    const lock = createSafetyLock('i1');
+    const lock = createSafetyLock();
     const s = lock.sample(p, T0);
     check(`invariant 1: ${name} → locked`, s.locked, s);
   }
-  const staleLock = createSafetyLock('i1s');
+  const staleLock = createSafetyLock();
   const s = staleLock.sample(base, T0 + 10_001);
   check('invariant 1: stale fix (>10 s) → locked', s.locked && s.motion === 'UNKNOWN');
 }
@@ -102,23 +102,60 @@ function componentMotionChecksAbsent(): boolean {
   return true;
 }
 
-// INVARIANT 3 — expiry + stop/start revocation (behavioral, real controller).
+// INVARIANT 3 — THERE IS NO OVERRIDE TO EXPIRE (NAV-ENTRY-1).
+/*
+ * This invariant used to assert that a passenger override expired at exactly
+ * fifteen minutes and was revoked by a stop/start cycle. The owner removed the
+ * override, so the strongest available statement of the same safety property
+ * is that nothing can grant one at all — an expiry test on a feature that does
+ * not exist would pass forever while proving nothing.
+ *
+ * The behavioural half of the old invariant survives below it: a truck that is
+ * observed moving reports locked, and stays locked for as long as it is
+ * moving, with no API anywhere that can say otherwise.
+ */
 {
-  const lock = createSafetyLock('i3');
+  const lock = createSafetyLock();
+  check(
+    'invariant 3: the controller has no grant function',
+    !('grantOverride' in lock) && !('overrideLog' in lock),
+  );
   for (let t = 0; t <= 10_000; t += 1000)
     lock.sample({ ...base, lastFixMs: T0 + t, fix: { ...base.fix!, tMs: T0 + t } }, T0 + t);
-  lock.grantOverride(T0 + 11_000, 'edit-destination');
+  const moving = lock.state(T0 + 11_000);
+  check('invariant 3: a moving truck is locked', moving.locked && moving.motion === 'MOVING');
   check(
-    'invariant 3: active inside 15 min',
-    lock.state(T0 + 11_000 + OVERRIDE_DURATION_MS - 1).overrideActive,
+    'invariant 3: it is STILL locked fifteen minutes later — nothing timed out into permission',
+    lock.state(T0 + 11_000 + 15 * 60_000).locked,
   );
   check(
-    'invariant 3: expired at 15 min',
-    !lock.state(T0 + 11_000 + OVERRIDE_DURATION_MS).overrideActive,
+    'invariant 3: no override field survives on the state',
+    !('overrideActive' in (moving as Record<string, unknown>)) &&
+      !('overrideRemainingMs' in (moving as Record<string, unknown>)),
   );
 }
 
-// INVARIANT 4 — nothing persists the override (source scan, comment-stripped).
+// INVARIANT 3b — no passenger vocabulary anywhere in the Navigator UI.
+{
+  const uiFiles = readdirSync('src/components/navigator')
+    .filter((f) => f.endsWith('.tsx'))
+    .map((f) => join('src/components/navigator', f));
+  const banned = /passenger|press[- ]and[- ]hold|grantOverride|override countdown/i;
+  for (const f of uiFiles) {
+    // Stripped: a comment explaining what was removed is documentation, not
+    // an affordance. The ban is on what a driver can read.
+    check(
+      `invariant 3b: ${f.split('/').pop()} carries no passenger-access vocabulary`,
+      !banned.test(strip(readFileSync(f, 'utf8'))),
+    );
+  }
+  check(
+    'invariant 3b: the passenger dialog component is gone from the tree',
+    !readdirSync('src/components/navigator').includes('PassengerOverrideDialog.tsx'),
+  );
+}
+
+// INVARIANT 4 — the Navigator UI persists nothing but its sanctioned records.
 {
   const files = [
     'src/lib/navigator/safety-lock.ts',
@@ -138,7 +175,18 @@ function componentMotionChecksAbsent(): boolean {
     // test-navigator-canada) pin which keys exist; here the sanctioned
     // CALL SHAPES are scrubbed and everything else — every other storage
     // token, every other file — stays banned.
-    const storageSanctioned = f.endsWith('DrivingScreen.tsx') || /-storage\.ts$/.test(f);
+    /*
+     * NavigatorSettings.tsx joins the sanctioned list (NAV-ENTRY-1). It READS
+     * the trip snapshot — through the same parser the driving screen uses — to
+     * decide whether to tell the driver that a change applies to their next
+     * route. It never writes or clears it: the settings screen has no
+     * lifecycle, which is the property that makes "opening Settings mid-trip
+     * cannot destroy the trip" structural rather than remembered.
+     */
+    const storageSanctioned =
+      f.endsWith('DrivingScreen.tsx') ||
+      f.endsWith('NavigatorSettings.tsx') ||
+      /-storage\.ts$/.test(f);
     const scrubbed = storageSanctioned
       ? src
           .replace(

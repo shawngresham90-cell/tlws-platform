@@ -29,7 +29,7 @@ import {
   STATIONARY_GRACE_MS,
   POSITION_FRESH_MS,
 } from '@/lib/navigator/safety-lock';
-import { allowedDuringSetupWindow } from '@/lib/navigator/actions';
+import { allowedWhileMoving } from '@/lib/navigator/actions';
 import {
   DEFAULT_ROUTE_PREFERENCES,
   ROUTE_PREFERENCE_SPECS,
@@ -128,7 +128,7 @@ function settle(
 
 /* ============ 14. a parked driver is never called a passenger ======= */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   // Cold start, no fix ever: the setup window is open and setup is usable.
   const cold = lock.sample(NO_FIX, T0);
   check('cold start: motion is UNKNOWN and the setup window is open', cold.setupWindow === true);
@@ -137,15 +137,30 @@ function settle(
     cold.lockReason === 'location-unknown',
     cold.lockReason,
   );
+  /*
+   * The setup-window exemption is gone (NAV-ENTRY-1). Destination entry is
+   * permitted outright now, which is a strictly stronger version of what this
+   * check has always been protecting: a parked driver can type where they are
+   * going. It no longer depends on the cold-start window being open, so it
+   * also holds for the driver whose window has latched shut.
+   */
   check(
-    'cold start: the parked setup action is permitted',
-    allowedDuringSetupWindow('edit-destination'),
+    'cold start: the parked driver can still set a destination',
+    allowedWhileMoving('edit-destination'),
+  );
+  check(
+    'and they are not asked to declare themselves a passenger to do it',
+    !/passenger/i.test(
+      read('src/components/navigator/LockGate.tsx')
+        .replace(/\/\*[\s\S]*?\*\//g, ' ')
+        .replace(/^\s*\/\/.*$/gm, ' '),
+    ),
   );
 }
 
 /* ============ 15/16. the full motion table ========================== */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   // --- verified stationary -----------------------------------------
   const tStat = settle(lock, 0, T0, STATIONARY_DWELL_MS + 2000);
   const stationary = lock.state(tStat);
@@ -177,7 +192,7 @@ function settle(
 
 /* ---- positive movement evidence ends the grace immediately -------- */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   const tStat = settle(lock, 0, T0, STATIONARY_DWELL_MS + 2000);
   lock.sample(NO_FIX, tStat + 1000);
   check('grace is running before the truck moves', lock.state(tStat + 1000).parkedGrace === true);
@@ -193,7 +208,7 @@ function settle(
 
 /* ---- verified moving, then signal loss: NO grace ------------------ */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   const tMove = settle(lock, 30, T0, MOVING_DWELL_MS + 2000);
   const moving = lock.state(tMove);
   check('verified moving: locked', moving.locked === true);
@@ -217,7 +232,7 @@ function settle(
 
 /* ---- moving → verified stationary unlocks only the existing way --- */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   const tMove = settle(lock, 30, T0, MOVING_DWELL_MS + 2000);
   // Slowing down is not stopping: the dwell must be served in full.
   const half = settle(lock, 0, tMove + 1000, STATIONARY_DWELL_MS / 2);
@@ -229,7 +244,7 @@ function settle(
 
 /* ---- a stale fix is not a fresh one ------------------------------- */
 {
-  const lock = createSafetyLock('t');
+  const lock = createSafetyLock();
   const tStat = settle(lock, 0, T0, STATIONARY_DWELL_MS + 2000);
   // A fix older than the freshness window is UNKNOWN, not stationary.
   const stale = lock.sample(at(0, tStat), tStat + POSITION_FRESH_MS + 5000);
@@ -499,9 +514,26 @@ function settle(
     'start: rapid taps are deduped by an in-flight guard, not by state',
     /attemptActive/.test(controls),
   );
+  /*
+   * A PREFERENCE CHANGE STILL CANNOT REUSE AN OLD ROUTE (NAV-ENTRY-1) — it is
+   * simply no longer possible to make one while a route is planned. The
+   * preference panel moved to /drive/settings, which mounts no lifecycle at
+   * all, and reaching it unmounts the driving screen. A `route-ready` plan is
+   * not an ACTIVE state, so it is not flushed to the snapshot and does not
+   * come back. The driver plans again, against the preferences they just set.
+   */
+  const settingsSrc = read('src/components/navigator/NavigatorSettings.tsx')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ');
   check(
-    'start: a preference change discards a route built for the old one',
-    read('src/components/navigator/DrivingScreen.tsx').includes('if (changed && lifecycle.state()'),
+    'start: the preference editor has no lifecycle to hand a stale route to',
+    /writeRoutePrefs\(/.test(settingsSrc) && !/lifecycle/.test(settingsSrc),
+  );
+  check(
+    'start: and only an ACTIVE trip survives leaving the driving screen',
+    read('src/components/navigator/DrivingScreen.tsx')
+      .replace(/\s+/g, ' ')
+      .includes('if (ACTIVE_LIFECYCLE_STATES.includes(lifecycle.state())) saveSnapshotNow();'),
   );
 }
 

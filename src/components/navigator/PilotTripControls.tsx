@@ -196,7 +196,7 @@ export function PilotTripControls({
   truckGate: 'invalid' | 'unconfirmed' | 'ready';
   /** The parked profile editor, rendered by the owner. */
   /** The truck section: the editor, or the saved summary with Edit truck. */
-  truckSlot: ReactNode;
+  truckSlot?: ReactNode;
   /** The driver-name field, now FIRST in the setup order. */
   driverSlot?: ReactNode;
   /** The four-line "before you start" checklist. */

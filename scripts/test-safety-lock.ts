@@ -14,8 +14,8 @@ import {
   createSafetyLock,
   MOVING_DWELL_MS,
   STATIONARY_DWELL_MS,
-  OVERRIDE_DURATION_MS,
 } from '@/lib/navigator/safety-lock';
+import { allowedWhileMoving } from '@/lib/navigator/actions';
 import type { PositionState } from '@/lib/navigator/types';
 
 let passed = 0;
@@ -46,7 +46,7 @@ const parked = (t: number) => pos({ speedMph: 0 }, t);
 
 // ---------------------------------------------- every UNKNOWN path locks
 {
-  const lock = createSafetyLock('s1');
+  const lock = createSafetyLock();
   check(
     'initial state is UNKNOWN and locked',
     lock.state(T0).motion === 'UNKNOWN' && lock.state(T0).locked,
@@ -71,7 +71,7 @@ const parked = (t: number) => pos({ speedMph: 0 }, t);
 
 // ------------------------------------------- dwell: sustained, not instant
 {
-  const lock = createSafetyLock('s2');
+  const lock = createSafetyLock();
   const first = lock.sample(moving(T0), T0);
   check('one fast fix is NOT moving yet (10 s dwell)', first.motion !== 'MOVING');
   const mid = lock.sample(moving(T0 + 5_000), T0 + 5_000);
@@ -102,76 +102,70 @@ const parked = (t: number) => pos({ speedMph: 0 }, t);
   check('a 2 s speed spike does not unlock… lock MOVING', backSlow.motion === 'STATIONARY');
 }
 
-// ------------------------------------------------------- override lifecycle
+// ------------------------------------------------- the override is GONE
+/*
+ * NAV-ENTRY-1 removed the passenger override outright. These used to be the
+ * grant/expiry/revocation tests; they are now ABSENCE tests, because the
+ * failure this file has to catch changed shape. Nobody is going to
+ * accidentally re-implement a fifteen-minute countdown — what could happen is
+ * a well-meaning "let the driver unlock the camera for a second", and that is
+ * exactly what an absent API prevents.
+ */
 {
-  const lock = createSafetyLock('s3');
+  const lock = createSafetyLock();
+  const surface = Object.keys(lock).sort().join(',');
+  check('the controller exposes ONLY sample and state', surface === 'sample,state', surface);
+  check(
+    'there is no way to grant an override',
+    !('grantOverride' in lock) && !('overrideLog' in lock),
+  );
+
   for (let t = 0; t <= MOVING_DWELL_MS; t += 1000) lock.sample(moving(T0 + t), T0 + t);
-  check('setup: MOVING', lock.state(T0 + MOVING_DWELL_MS).motion === 'MOVING');
-  const t1 = T0 + MOVING_DWELL_MS + 1000;
-  const granted = lock.grantOverride(t1, 'edit-destination');
-  check('override grants 15 min while MOVING', granted.overrideActive && !granted.locked);
-  check('countdown exposed', granted.overrideRemainingMs === OVERRIDE_DURATION_MS);
-  const nearEnd = lock.state(t1 + OVERRIDE_DURATION_MS - 1);
-  check('still active at 14:59.999', nearEnd.overrideActive);
-  const expired = lock.state(t1 + OVERRIDE_DURATION_MS);
-  check('EXPIRES at exactly 15 min → locked again', !expired.overrideActive && expired.locked);
-
-  // Stop/start revocation on a fresh grant.
-  const lock2 = createSafetyLock('s4');
-  for (let t = 0; t <= MOVING_DWELL_MS; t += 1000) lock2.sample(moving(T0 + t), T0 + t);
-  const g = lock2.grantOverride(T0 + 11_000, 'add-stop');
-  check('grant active', g.overrideActive);
-  let t = T0 + 12_000;
-  for (let i = 0; i <= STATIONARY_DWELL_MS; i += 1000) lock2.sample(parked(t + i), t + i);
+  const movingState = lock.state(T0 + MOVING_DWELL_MS) as Record<string, unknown>;
+  check('setup: MOVING', movingState.motion === 'MOVING');
   check(
-    'stopped with override still ticking',
-    lock2.state(t + STATIONARY_DWELL_MS).motion === 'STATIONARY',
+    'a moving truck is locked, with no exception available',
+    movingState.locked === true && movingState.lockReason === 'moving',
   );
-  t = t + STATIONARY_DWELL_MS + 1000;
-  let after = lock2.state(t);
-  for (let i = 0; i <= MOVING_DWELL_MS; i += 1000) after = lock2.sample(moving(t + i), t + i);
   check(
-    'MOVING → STATIONARY → MOVING revokes the grant immediately',
-    after.motion === 'MOVING' && !after.overrideActive && after.locked,
+    'the state carries no override fields at all',
+    !('overrideActive' in movingState) && !('overrideRemainingMs' in movingState),
   );
-
-  // UNKNOWN mid-grant does not revoke (motion did not verifiably stop).
-  const lock3 = createSafetyLock('s5');
-  for (let i = 0; i <= MOVING_DWELL_MS; i += 1000) lock3.sample(moving(T0 + i), T0 + i);
-  lock3.grantOverride(T0 + 11_000, 'enter-text');
-  const unk = lock3.sample(pos({ speedMph: null }, T0 + 12_000), T0 + 12_000);
-  check('UNKNOWN mid-grant keeps the countdown', unk.motion === 'UNKNOWN' && unk.overrideActive);
-
-  // No-op when already usable.
-  const lock4 = createSafetyLock('s6');
-  for (let i = 0; i <= STATIONARY_DWELL_MS; i += 1000) lock4.sample(parked(T0 + i), T0 + i);
-  const noop = lock4.grantOverride(T0 + 40_000, 'edit-destination');
-  check('override is a no-op when STATIONARY (nothing to override)', !noop.overrideActive);
-  check('no log entry for the no-op', lock4.overrideLog().length === 0);
+  check(
+    'the state is exactly the five facts the UI is allowed to read',
+    Object.keys(movingState).sort().join(',') ===
+      'lockReason,locked,motion,parkedGrace,setupWindow',
+    Object.keys(movingState),
+  );
 }
 
-// ------------------------------------------------------- override log shape
+// ---------------------------- what `locked` may still govern: the CAMERA
 {
-  const lock = createSafetyLock('session-x');
-  for (let i = 0; i <= MOVING_DWELL_MS; i += 1000) lock.sample(moving(T0 + i), T0 + i);
-  lock.grantOverride(T0 + 11_000, 'edit-destination');
-  const log = lock.overrideLog();
-  check('override logged once', log.length === 1);
-  const entry = log[0] as Record<string, unknown>;
-  check(
-    'log carries ONLY {tMs, sessionId, durationMs, actionClass}',
-    Object.keys(entry).sort().join(',') === 'actionClass,durationMs,sessionId,tMs',
-    Object.keys(entry),
-  );
-  check(
-    'log has NO position, identity, or speed',
-    !('lat' in entry) && !('lng' in entry) && !('speedMph' in entry),
-  );
+  /*
+   * The permission map is the authority, so this asserts against it rather
+   * than against a list retyped here. Editing must be permitted at speed;
+   * the three camera actions must not be.
+   */
+  const editing = [
+    'edit-destination',
+    'edit-truck-profile',
+    'add-stop',
+    'enter-text',
+    'open-deep-settings',
+    'view-trip-summary',
+  ];
+  for (const action of editing) {
+    check(`editing stays available while moving: ${action}`, allowedWhileMoving(action));
+  }
+  for (const action of ['pan-map', 'route-overview', 'change-map-style']) {
+    check(`camera stays stationary-only: ${action}`, !allowedWhileMoving(action));
+  }
+  check('an unmapped action is still default-denied', !allowedWhileMoving('invented-action'));
 }
 
 // ---------------------------------------- same-state reference bailout
 {
-  const lock = createSafetyLock('s7');
+  const lock = createSafetyLock();
   for (let t = 0; t <= STATIONARY_DWELL_MS; t += 1000) lock.sample(parked(T0 + t), T0 + t);
   const a = lock.sample(parked(T0 + 40_000), T0 + 40_000);
   const b = lock.sample(parked(T0 + 41_000), T0 + 41_000);

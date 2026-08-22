@@ -15,7 +15,7 @@ import {
   type SafetyLock,
   type SafetyLockState,
 } from '@/lib/navigator/safety-lock';
-import { allowedDuringSetupWindow, allowedWhileMoving } from '@/lib/navigator/actions';
+import { allowedWhileMoving } from '@/lib/navigator/actions';
 import { useGps } from './GpsProvider';
 
 /**
@@ -24,17 +24,18 @@ import { useGps } from './GpsProvider';
  * consults the shared ACTION_PERMISSIONS map through this context.
  * Per-component motion checks are prohibited (doc 06 §1) — they drift.
  *
- * Privacy: the pure controller's override log carries no position, no
- * identity, no speed, and lives only in this component's memory. Nothing
- * here persists, transmits, or logs anything.
+ * Since NAV-ENTRY-1 there is no override to grant, so this context offers no
+ * way to grant one. The three camera actions are the only things `locked`
+ * still governs; every editing surface is permitted outright by the map.
+ *
+ * Privacy: nothing here persists, transmits, or logs anything, and the state
+ * it holds carries no position, no identity and no speed.
  */
 
 const EVALUATE_MS = 1000;
 
 type SafetyContextValue = {
   lock: SafetyLockState;
-  /** Explicit passenger acknowledgment path — see PassengerOverrideDialog. */
-  grantOverride: (actionClass: string) => void;
   permits: (action: string) => boolean;
 };
 
@@ -46,18 +47,10 @@ export function useSafetyLock(): SafetyContextValue {
   return value;
 }
 
-function ephemeralSessionId(): string {
-  try {
-    return globalThis.crypto?.randomUUID?.() ?? `s-${Date.now().toString(36)}`;
-  } catch {
-    return `s-${Date.now().toString(36)}`;
-  }
-}
-
 export function SafetyLockProvider({ children }: { children: ReactNode }) {
   const { position } = useGps();
   const lockRef = useRef<SafetyLock | null>(null);
-  if (lockRef.current === null) lockRef.current = createSafetyLock(ephemeralSessionId());
+  if (lockRef.current === null) lockRef.current = createSafetyLock();
   const controller = lockRef.current;
 
   const [lock, setLock] = useState<SafetyLockState>(() => controller.sample(position, Date.now()));
@@ -75,36 +68,21 @@ export function SafetyLockProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(tick);
   }, [controller]);
 
-  const grantOverride = useCallback(
-    (actionClass: string) => setLock(controller.grantOverride(Date.now(), actionClass)),
-    [controller],
-  );
-
-  // Three ways an action can be usable, all decided by shared maps and
-  // shared lock state — never per-component: the lock is open
-  // (STATIONARY or an active override), the action is explicitly
-  // permitted while moving, or the cold-start SETUP WINDOW is open and
-  // the action is one the setup map explicitly names (doc 06 §1a).
   /*
-   * FOUR ways an action can be usable, all decided by shared maps and
-   * shared lock state — never per-component: the lock is open (STATIONARY
-   * or an active override), the action is explicitly permitted while
-   * moving, the cold-start SETUP WINDOW is open, or the PARKED GRACE is
-   * running — a verified-stationary truck whose signal went quiet.
+   * TWO ways an action can be usable, both decided by the shared map and the
+   * shared lock state — never per-component: the truck is verifiably
+   * STATIONARY, or the action is one the map permits while moving.
    *
-   * The grace deliberately permits exactly the setup-window set and
-   * nothing more: "keep only the parked setup actions that were already
-   * available". It never widens the surface, it only stops withdrawing
-   * one from a driver who has not moved.
+   * There is no third way any more. The setup-window and parked-grace
+   * exemptions both existed to hand editing back to a parked driver the lock
+   * could not see; editing is no longer taken away, so there is nothing left
+   * to hand back.
    */
   const permits = useCallback(
-    (action: string) =>
-      !lock.locked ||
-      allowedWhileMoving(action) ||
-      ((lock.setupWindow || lock.parkedGrace) && allowedDuringSetupWindow(action)),
-    [lock.locked, lock.setupWindow, lock.parkedGrace],
+    (action: string) => !lock.locked || allowedWhileMoving(action),
+    [lock.locked],
   );
 
-  const value = useMemo(() => ({ lock, grantOverride, permits }), [lock, grantOverride, permits]);
+  const value = useMemo(() => ({ lock, permits }), [lock, permits]);
   return <SafetyContext.Provider value={value}>{children}</SafetyContext.Provider>;
 }

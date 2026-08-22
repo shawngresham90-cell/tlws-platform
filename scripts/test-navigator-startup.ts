@@ -106,6 +106,38 @@ const fakeSynth = {
   removeEventListener() {},
 };
 
+/*
+ * `self` and an idle scheduler. The driving screen links to Settings with
+ * next/link, whose prefetch schedules work through `requestIdleCallback` on
+ * `self` — neither of which exists in this node harness. Shimmed here beside
+ * the other browser globals rather than avoided in the component: a plain
+ * <a> would give up client-side navigation, and losing that would cost the
+ * live trip and the speech unlock every time a driver opened Settings.
+ *
+ * The idle callback is dropped rather than run. Prefetching is not what this
+ * harness is testing, and firing it would pull the router into a tree that
+ * deliberately has no router.
+ */
+/*
+ * A REAL storage layer, Map-backed. The driver's name used to be typed into
+ * a field on this screen; it is a Settings field now, so a scenario that
+ * needs a saved name has to arrive with one — exactly like a returning
+ * driver's phone does. Seeding it through the app's own storage module keeps
+ * the harness honest: the record is written by the code that owns it, and
+ * read back by the code that owns reading it.
+ */
+const storageMap = new Map<string, string>();
+(globalThis as any).window.localStorage = {
+  getItem: (k: string) => storageMap.get(k) ?? null,
+  setItem: (k: string, v: string) => void storageMap.set(k, String(v)),
+  removeItem: (k: string) => void storageMap.delete(k),
+  clear: () => storageMap.clear(),
+};
+
+(globalThis as any).self = globalThis;
+(globalThis as any).requestIdleCallback = () => 0;
+(globalThis as any).cancelIdleCallback = () => {};
+
 type RouteBody = {
   origin: { lat: number; lng: number };
   destination: { lat: number; lng: number };
@@ -125,6 +157,7 @@ let routeCallLog: { body: RouteBody; status: number }[] = [];
 // ---------------------------------------------------------------------------
 
 import { createElement } from 'react';
+import { writeDriverName } from '@/components/navigator/driver-storage';
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
@@ -207,7 +240,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
 // ====================================================== setup window (lock)
 
 {
-  const lock = createSafetyLock('s-test');
+  const lock = createSafetyLock();
   const cold: PositionState = {
     fix: null,
     health: 'unavailable',
@@ -251,7 +284,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
   );
 
   // And the STATIONARY determination latches it too, on a fresh lock.
-  const lock2 = createSafetyLock('s-test2');
+  const lock2 = createSafetyLock();
   let t2 = T0;
   let st2 = lock2.sample(cold, t2);
   check('setup window: open before any determination', st2.setupWindow);
@@ -521,9 +554,25 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    /*
+     * NO CONFIRM TAP (NAV-ENTRY-1). A device with no saved truck is given the
+     * shipped standard one — 13'6", 80,000 lb — already confirmed, so Start
+     * Route is available immediately. The check that replaced the tap is the
+     * one that matters: the button is not merely skipped, it is not there,
+     * and the screen still reaches a routable state without it.
+     */
+    check(
+      'no truck-confirmation step stands in front of Start',
+      !h.text().includes('This is my truck'),
+    );
+    /*
+     * Let the mount effects run. This used to happen as a side effect of
+     * tapping "This is my truck" — the first act() of the test flushed
+     * everything the initial render had scheduled. With no confirmation step
+     * left to tap, the flush has to be asked for explicitly rather than
+     * inherited from a control that no longer exists.
+     */
+    await h.settle();
 
     check(
       'cold start: destination entry present with NO location step first',
@@ -534,8 +583,8 @@ async function main(): Promise<void> {
       !h.text().includes('Enable location'),
     );
     check(
-      'cold start: overlay explains the setup window',
-      h.text().includes('Trip setup available'),
+      'cold start: the status line says when location checks begin',
+      h.text().includes('Location checks begin when you start'),
     );
 
     await setDevDestination(h, DEST);
@@ -571,9 +620,7 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('prompt');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     check('prompt: watch requested by the tap', h.watchCalls() === 1);
@@ -598,9 +645,7 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('denied');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.settle();
@@ -619,9 +664,7 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitError('timeout');
@@ -648,9 +691,7 @@ async function main(): Promise<void> {
       return { status: 200, payload: wireRoute() };
     };
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitFix();
@@ -675,9 +716,7 @@ async function main(): Promise<void> {
       payload: wireRoute(['Route includes a segment the validator flagged.']),
     });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     await h.emitFix();
@@ -695,21 +734,16 @@ async function main(): Promise<void> {
   // ---------------- name + voice: the greeting survives auto-start --------
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
+    /*
+     * The driver arrives with a saved name, the way a returning driver does.
+     * The name entry itself lives on /drive/settings now — the driving screen
+     * only ever READS the name, because the only thing it does with it is
+     * speak it.
+     */
+    writeDriverName('Shawn');
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
 
-    const nameInput = h.renderer.root.findAll(
-      (n) => n.type === 'input' && n.props.autoComplete === 'given-name',
-    )[0];
-    await act(async () => {
-      nameInput.props.onChange({ target: { value: 'Shawn' } });
-    });
-    const nameForm = h.renderer.root.findAll((n) => n.type === 'form')[0];
-    await act(async () => {
-      nameForm.props.onSubmit({ preventDefault() {} });
-    });
     await h.tap('Enable voice guidance');
     await h.settle();
     check(
@@ -745,9 +779,7 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     await setDevDestination(h, DEST);
     await h.tap('Start');
     // Mid-attempt sabotage: change the coordinate box before the fix
@@ -768,9 +800,7 @@ async function main(): Promise<void> {
   {
     routeResponder = () => ({ status: 200, payload: wireRoute() });
     const h = await mount('granted');
-    // The truck must be CONFIRMED before any route may be requested
-    // (truck-route confidence milestone). One tap, once per session.
-    await h.tap('This is my truck');
+    await h.settle(); // flush the mount effects (see the first block)
     check('moving: setup present while cold', h.text().includes('Where are you going?'));
     // Start the watch through the app's own gesture (destination + Start
     // would plan, so use Start with no destination: the honest note path

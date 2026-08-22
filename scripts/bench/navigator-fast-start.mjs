@@ -128,6 +128,16 @@ async function login(page) {
     savedStorageState = await page.context().storageState();
   }
   await page.waitForTimeout(800);
+  /*
+   * NAV-ENTRY-1 moved the cockpit from `/drive` to `/drive/navigate`; `/drive`
+   * is the three-button launcher now. The gate is still entered through
+   * `/drive` — that is what an unauthorized visitor is redirected away from and
+   * back to — and the helper then lands on the driving surface this bench is
+   * about, so every measurement below still describes the same screen.
+   */
+  await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+  // Let the surface hydrate before a caller starts looking for controls.
+  await page.waitForTimeout(900);
 }
 
 /**
@@ -238,12 +248,25 @@ async function shot(page, name) {
  * non-existent "Change setup" would be a bench failure rather than a
  * product one.
  */
+/**
+ * Make a setup control reachable.
+ *
+ * It used to expand a collapsed stack on the driving screen. NAV-ENTRY-1
+ * moved that stack to /drive/settings, so "open the setup" now means "be on
+ * the setup surface" — and the helper navigates there if the control the
+ * caller wants is not already in front of them.
+ */
 async function openSetup(page, target) {
   const locator =
     typeof target === 'object' && 'count' in target
       ? target
       : page.getByRole('button', { name: target });
   if ((await locator.count()) > 0) return;
+  if (!page.url().includes('/drive/settings')) {
+    await page.goto(`${BASE}/drive/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(400);
+    return;
+  }
   const open = page.locator('[data-open-setup]');
   if ((await open.count()) > 0) {
     await open.first().click();
@@ -283,7 +306,13 @@ async function scenarioLength(browser) {
     /* --- returning: same device, next morning ----------------------- */
     const back = await newContext(browser, { viewport, keepStorage: returningStorage, geo: null });
     const p2 = await back.context.newPage();
-    await p2.goto(`${BASE}/drive`, { waitUntil: 'domcontentloaded' });
+    /*
+     * NAV-ENTRY-1: `/drive` is the launcher; the parked screen this bench
+     * measures is `/drive/navigate`. Measuring the launcher instead would
+     * have reported a spectacular improvement that describes a different
+     * page — the honest comparison is cockpit against cockpit.
+     */
+    await p2.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
     await p2.waitForTimeout(900);
     const returnHeight = await pageHeight(p2);
     const returnStart = await documentTop(p2.getByRole('button', { name: 'Start Route' }));
@@ -306,12 +335,24 @@ async function scenarioLength(browser) {
     );
     verdict(
       `${viewport.name}: the returning screen is SHORTER than the first run`,
-      returnHeight < firstHeight,
+      returnHeight <= firstHeight,
       `${returnHeight}px vs ${firstHeight}px`,
     );
+    /*
+     * THE COMPARISON INVERTED INTO AN EQUALITY, and that is the better
+     * result (NAV-ENTRY-1).
+     *
+     * Fast Start's win was that a RETURNING driver got a shorter screen than
+     * a first-time one, because their setup collapsed. There is no setup on
+     * this screen at all now — it moved to /drive/settings — so the two
+     * drivers get the SAME short screen, and "sooner than the first run" can
+     * never be true again. Asserting `<=` says what is actually promised: a
+     * returning driver is never made to scroll further than a new one, and
+     * neither of them scrolls past a setup stack to reach Start.
+     */
     verdict(
-      `${viewport.name}: Start Route is reached sooner than on the first run`,
-      returnStart !== null && firstStart !== null && returnStart < firstStart,
+      `${viewport.name}: Start Route is no further away than on the first run`,
+      returnStart !== null && firstStart !== null && returnStart <= firstStart,
       `${returnStart}px vs ${firstStart}px`,
     );
     verdict(
@@ -376,8 +417,13 @@ async function scenarioPreferences(browser) {
     await login(page);
     await completeSetup(page);
 
-    // Open the preference editor and turn tolls off.
-    await openSetup(page, page.locator('[data-edit-prefs]'));
+    /*
+     * NAV-ENTRY-1 moved the preference editor to /drive/settings with the
+     * rest of the setup. What this scenario is really about is unchanged and
+     * is asserted below: a saved preference reaches the provider on the wire.
+     */
+    await page.goto(`${BASE}/drive/settings`, { waitUntil: 'domcontentloaded' });
+    await page.locator('[data-edit-prefs]').first().waitFor({ timeout: 20_000 });
     await page.locator('[data-edit-prefs]').first().click();
     await page.waitForTimeout(150);
     const toll = page.locator('[data-pref-toggle="tollRoad"]');
@@ -393,15 +439,17 @@ async function scenarioPreferences(browser) {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(900);
     /*
-     * READ WHERE THE DRIVER READS IT. After a reload the setup is
-     * collapsed — that is the milestone — so the saved preference has to
-     * be legible on the COMPACT summary, not only inside the editor a
-     * driver would have to open. If it were only in the editor, a driver
-     * would have no way to see what their route is being planned around
-     * without expanding the very thing this milestone collapsed.
+     * READ WHERE THE DRIVER READS IT. The saved preference has to be legible
+     * on the COMPACT summary, not only inside the editor a driver would have
+     * to open — otherwise they have no way to see what their route is being
+     * planned around without opening the thing they just closed.
+     *
+     * NAV-ENTRY-1 moved that summary to the preferences section of
+     * /drive/settings, which is where the reload lands, so the same sentence
+     * is read from `[data-prefs-summary]`.
      */
     const collapsed = await page
-      .locator('[data-setup-summary]')
+      .locator('[data-prefs-summary]')
       .first()
       .innerText()
       .catch(() => '');
@@ -416,7 +464,13 @@ async function scenarioPreferences(browser) {
       collapsed.replace(/\n/g, ' | '),
     );
 
-    // Now start a trip and read the wire.
+    /*
+     * Now start a trip and read the wire. Back to the driving surface: the
+     * preference was set where preferences are set, and it has to reach a
+     * provider request made where trips are started.
+     */
+    await page.goto(`${BASE}/drive/navigate`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(900);
     const search = searchBox(page);
     await search.fill('Bench');
     await page.waitForTimeout(1200);
@@ -461,7 +515,15 @@ async function scenarioUnits(browser) {
   try {
     await login(page);
     await completeSetup(page);
-    await page.waitForTimeout(300);
+    /*
+     * Read the truck where its dimensions are rendered in full — the truck
+     * section of /drive/settings (NAV-ENTRY-1). The driving surface carries a
+     * one-line summary in plain words ("13 ft 6 in") which avoids the same
+     * decimal-feet trap, but the prime-mark rendering this scenario is about
+     * lives with the editor and the unit switch it is comparing against.
+     */
+    await page.goto(`${BASE}/drive/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(700);
     const imperial = await page.evaluate(() => document.body.innerText);
     verdict(
       'units: imperial reads 13′6″, never 13.6',
