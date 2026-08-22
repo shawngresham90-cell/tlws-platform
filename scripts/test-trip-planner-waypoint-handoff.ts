@@ -499,13 +499,36 @@ function choice(over: Partial<ParkingChoice> = {}): ParkingChoice {
     /clearPlannedStopRecord\(\)/.test(src),
   );
 
-  /* Mounted behind the same edit-destination gate as the search, because
-   * using a planned stop sets a destination and a moving truck gets neither. */
+  /*
+   * 7h WAS A STALE ASSERTION, AND IT WAS PASSING BY ACCIDENT.
+   *
+   * It read `/edit-destination[\s\S]{0,1200}<TripPlanFirst/` and its name
+   * said "inside the edit-destination lock gate". There is no such gate:
+   * NAV-ENTRY-1 set every editing action in `ACTION_PERMISSIONS` to `true`
+   * and REMOVED the wrapper, on the owner's decision that motion must
+   * never disable editing. What the regex actually matched, from that
+   * milestone onward, was the WORD "edit-destination" in a nearby comment.
+   * A proximity match on prose is not a gate, and NAV-ENTRY-2 moving the
+   * block out of comment range is what exposed it.
+   *
+   * It is replaced by the two facts that are true and that matter. First,
+   * the choice mounts on exactly the same condition as the search it feeds
+   * — parked, pilot, and idle — which is the real constraint on when a
+   * destination may be set. Second, it carries NO motion gate, asserted
+   * rather than assumed, so the NAV-ENTRY-1 decision cannot be quietly
+   * reversed here. Comments are stripped, so no future comment can satisfy
+   * either check.
+   */
   const screen = fs.readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
-  check('7g: the choice is mounted on the parked screen', /<TripPlanFirst/.test(screen));
+  const screenCode = screen.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  check('7g: the choice is mounted on the parked screen', /<TripPlanFirst/.test(screenCode));
   check(
-    '7h: …inside the edit-destination lock gate',
-    /edit-destination[\s\S]{0,1200}<TripPlanFirst/.test(screen),
+    '7h: …on the same parked-and-idle condition as the search it feeds',
+    /parkedPlanSlot=\{\s*pilot\.active && !fullScreen && lcState === 'idle'/.test(screenCode),
+  );
+  check(
+    '7h2: …and carries no motion gate, per the NAV-ENTRY-1 decision',
+    !/<LockGate[\s\S]{0,600}<TripPlanFirst/.test(screenCode),
   );
   check(
     '7i: a planned stop is recorded as U.S. — the planner models U.S. hours only',

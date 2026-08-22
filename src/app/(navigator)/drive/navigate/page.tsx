@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { Container, Section } from '@/components/ui';
 import { GpsProvider } from '@/components/navigator/GpsProvider';
 import { SafetyLockProvider } from '@/components/navigator/SafetyLockProvider';
 import { DrivingScreen } from '@/components/navigator/DrivingScreen';
@@ -54,9 +53,28 @@ export default async function DriveNavigatePage() {
   const mode = navigatorAccessMode();
   const authorized = await navigatorAccessGranted(mode);
   return (
-    <Section>
-      <Container>
-        <div className="max-w-2xl space-y-6">
+    /*
+     * THE PAGE CHROME IS A TIGHT WRAPPER, NOT A MARKETING SECTION
+     * (NAV-ENTRY-2).
+     *
+     * This used to be the shared `<Section>`, whose whole job is to space
+     * a marketing block off the one above it: `py-16 sm:py-24` — 64 px of
+     * empty page above the driving surface on a phone, 96 px on a desktop,
+     * plus a second `<Container>` nested inside the one `Section` already
+     * renders. On a 390x844 phone that put the first pixel of the surface
+     * at 129 px with 65 px of it being site header, and every pixel of
+     * that padding pushed the destination search further from the top.
+     *
+     * A driver who has just tapped START DRIVING is not reading a page,
+     * so the padding that separates prose from prose is replaced by the
+     * small amount this surface actually wants. The landmark stays a
+     * `<section>` and the container's own gutters are unchanged, so
+     * nothing about the page's structure or its horizontal rhythm moves —
+     * only the dead vertical space above the fold.
+     */
+    <section className="px-5 pb-8 pt-4 [@media(max-height:480px)]:pt-2 sm:px-8">
+      <div className="mx-auto w-full max-w-content">
+        <div className="max-w-2xl space-y-4">
           {mode === 'public' && <PublicBetaNotice />}
           <GpsProvider>
             <SafetyLockProvider>
@@ -72,7 +90,7 @@ export default async function DriveNavigatePage() {
             </SafetyLockProvider>
           </GpsProvider>
         </div>
-      </Container>
-    </Section>
+      </div>
+    </section>
   );
 }

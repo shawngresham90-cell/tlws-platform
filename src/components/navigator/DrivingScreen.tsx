@@ -176,7 +176,15 @@ const ACTIVE_LIFECYCLE_STATES: readonly string[] = [
 const NavigationMap = dynamic(() => import('./NavigationMap').then((m) => m.NavigationMap), {
   ssr: false,
   loading: () => (
-    <div className="flex h-72 w-full items-center justify-center rounded-cockpit border border-line bg-nav-surface text-lg text-muted sm:h-96">
+    /*
+     * THE PLACEHOLDER PROMISES THE BOX THE MAP WILL TAKE, and that promise
+     * is what stops the page jumping when the chunk lands. NAV-ENTRY-2
+     * changed the parked box from a fixed 288/384 px to a viewport
+     * fraction with a floor, so this string changed with it — the two are
+     * one invariant, and the harness counts both occurrences precisely so
+     * they cannot drift apart again.
+     */
+    <div className="flex h-[38dvh] min-h-[200px] w-full items-center justify-center rounded-cockpit border border-line bg-nav-surface text-lg text-muted [@media(max-height:480px)]:min-h-[150px]">
       Loading map…
     </div>
   ),
@@ -209,6 +217,7 @@ export function DrivingScreenView({
   onHosClocks,
   onBottomInset,
   mapSearchSlot = null,
+  parkedPlanSlot = null,
   regionPanel = null,
   metric = false,
   crossBorder = false,
@@ -294,6 +303,13 @@ export function DrivingScreenView({
    * that (the caller wraps this slot in the edit-destination LockGate).
    */
   mapSearchSlot?: ReactNode;
+  /**
+   * Parked-only planning material that must NOT stand between the driver
+   * and the destination box: the plan-your-stops prompt and the road-test
+   * arm. Rendered after the map and beside the Start controls, which is
+   * where a driver looks once they have said where they are going.
+   */
+  parkedPlanSlot?: ReactNode;
   /** Region + units + the Canadian pilot status, parked-only. */
   regionPanel?: ReactNode;
   /** Show distances, speeds and dimensions in metric. */
@@ -463,7 +479,25 @@ export function DrivingScreenView({
   // name when the provider named one, and the following turn. Blueprint §5
   // hierarchy: the DISTANCE is the largest thing on the screen (numerals
   // are the product), the instruction is the largest prose beneath it.
-  const maneuverCard = (
+  /*
+   * THE CARD EARNS ITS PLACE, OR IT IS NOT THERE (NAV-ENTRY-2).
+   *
+   * Parked with no route, this card said "No maneuver to show" in a 50 px
+   * box at the very top of the screen — the first thing a driver who had
+   * just tapped START DRIVING met, and a statement of a fact they had not
+   * asked about. It is the literal shape the milestone names: information
+   * ABOVE the destination search.
+   *
+   * It is suppressed only when all three are true: parked, no maneuver,
+   * and not arrived. "You have arrived" is the one thing this card can say
+   * without a live maneuver that a driver needs, so it survives. WHILE
+   * GUIDANCE IS LIVE THE CARD ALWAYS RENDERS, unchanged — the active
+   * hierarchy puts the maneuver first and this milestone does not touch
+   * it. Rendering `null` here keeps the child position, so the map below
+   * is not remounted when the card comes and goes.
+   */
+  const maneuverCardEarnsPlace = fullScreen || m !== null || view.status === 'arrived';
+  const maneuverCard = !maneuverCardEarnsPlace ? null : (
     <section
       ref={navTopRef}
       aria-label="Next maneuver"
@@ -691,7 +725,16 @@ export function DrivingScreenView({
     ? 'relative flex h-[100dvh] flex-col gap-2 p-2 [@media(max-height:480px)]:gap-1 ' +
       'pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]'
-    : 'space-y-6';
+    : /*
+       * PARKED RHYTHM (NAV-ENTRY-2). `space-y-6` is the site's prose
+       * rhythm and it was costing 24 px between every block on a surface
+       * that is not prose. Sixteen keeps the blocks clearly separate —
+       * still above the blueprint's 12 px minimum between adjacent touch
+       * targets — and on a short screen (a phone in landscape, where the
+       * header alone is a sixth of the viewport) it tightens again so the
+       * map keeps as much of what is left as it can.
+       */
+      'space-y-4 [@media(max-height:480px)]:space-y-2';
   const colOne = fullScreen ? 'relative z-10 shrink-0 landscape:max-w-[38vw]' : '';
   /*
    * The BOTTOM band takes the width the screen actually has.
@@ -707,19 +750,33 @@ export function DrivingScreenView({
    */
   const colBottom = fullScreen ? 'relative z-10 shrink-0' : '';
   // Parked, the map gets the SAME box the dynamic-import placeholder
-  // promises (h-72/sm:h-96, cockpit border). It used to get no class at
-  // all: a bare auto-height div, in which the map's h-full computed to
-  // 0px — so the mounted map was invisible on the parked page (the Phase
-  // 3 briefing framing never showed), the placeholder's 288px box
-  // collapsed the moment Leaflet finished loading, and the canvas
-  // Leaflet measured at creation was 0px tall — the stale size the
-  // driving surface then inherited as the half-blank map. Height only
-  // when a map is actually mounted: before Enable location the slot is
-  // null and an empty bordered box would be a lie.
+  // promises, cockpit border and all. It used to get no class at all: a
+  // bare auto-height div, in which the map's h-full computed to 0px — so
+  // the mounted map was invisible on the parked page (the Phase 3
+  // briefing framing never showed), the placeholder's box collapsed the
+  // moment the renderer finished loading, and the canvas it measured at
+  // creation was 0px tall — the stale size the driving surface then
+  // inherited as the half-blank map. Height only when a map is actually
+  // mounted: before Enable location the slot is null and an empty
+  // bordered box would be a lie.
+  /*
+   * PARKED HEIGHT IS VIEWPORT-RELATIVE (NAV-ENTRY-2), not a fixed 288 px
+   * that grew to 384 px at the `sm` breakpoint. The breakpoint was the
+   * problem: `sm` is a WIDTH query, and the two landscape phone shapes
+   * this milestone must satisfy (844x390, 932x430) are wide and SHORT, so
+   * they were handed the tallest map on the shortest screen — 384 px of a
+   * 390 px viewport, leaving nothing for the controls under it.
+   *
+   * A dvh fraction asks the question that actually matters (how much
+   * screen is there?) and the floor keeps the map genuinely useful rather
+   * than a letterbox on a short screen. The map is still the biggest
+   * single element on the parked page; it simply no longer decides where
+   * the destination search ends up, because the search is above it now.
+   */
   const mapWrapCls = fullScreen
     ? 'absolute inset-0 z-0 overflow-hidden'
     : mapSlot !== null
-      ? 'relative h-72 w-full overflow-hidden rounded-cockpit border border-line sm:h-96'
+      ? 'relative h-[38dvh] min-h-[200px] [@media(max-height:480px)]:min-h-[150px] w-full overflow-hidden rounded-cockpit border border-line'
       : '';
 
   return (
@@ -756,40 +813,49 @@ export function DrivingScreenView({
           </p>
         ) : null}
 
+        {/*
+            THE DESTINATION SEARCH, FIRST (NAV-ENTRY-2).
+
+            WHERE IT USED TO BE, AND WHY THAT FAILED. This block was a
+            child of the map wrapper: an absolutely positioned overlay
+            pinned inside the parked map box, scrolling internally
+            (`max-h-full overflow-y-auto`). The intent was sound — put
+            "where are you going?" on the thing the driver is looking at —
+            but the box it lived in is 286 px tall and the content above
+            the input (the plan-your-stops prompt, then the road-test arm)
+            was 541 px. Measured on the shipped build at all six required
+            viewports, the destination input's VISIBLE HEIGHT WAS 0 px:
+            not merely low on the page, but clipped out of an inner
+            scroller most drivers have no reason to suspect exists. The
+            document-coordinate top ranged 649-813 px.
+
+            WHERE IT IS NOW. A sibling of the map, immediately BEFORE it,
+            in ordinary flow. The driver has already said what they want
+            by tapping START DRIVING, so the next question is the first
+            thing on the screen and the map is the second. Nothing can
+            clip it, because nothing above it scrolls.
+
+            THE MAP INSTANCE SURVIVES THIS. The slot is a STATIC child
+            position that renders `null` whenever guidance is live
+            (`mapSearchSlot` is only ever non-null while parked and idle),
+            so the map wrapper keeps the same index in the child list in
+            both modes. React reconciles by position, and a null child
+            still holds its position — which is the same discipline the
+            rest of this tree already relies on: one element order, only
+            classes change, so the map is never torn down to move UI.
+        */}
+        <div
+          className={fullScreen ? '' : 'scroll-mt-4'}
+          data-parked-search={fullScreen ? undefined : ''}
+        >
+          {mapSearchSlot}
+        </div>
+
         {/* The map: the driving surface's primary element, and the one
             component that must survive the layout switch untouched. In
             full-screen it is the z-0 BACKGROUND filling the whole
             surface; parked it stays the bordered page box. */}
-        <div className={mapWrapCls}>
-          {mapSlot}
-          {/* PARKED SEARCH, over the top of the map. The driver is
-              looking at the map, so "where are you going?" belongs
-              there — and putting it over the map instead of above it is
-              what keeps the parked page from growing back into the tall
-              stack the round-3 startup work removed. z-[500] clears
-              Leaflet's own panes (400) and sits under its controls
-              (1000); the wrapper is pointer-events-none so the map keeps
-              every pixel the control itself does not occupy, and the
-              inner scroll (max-h-full + overflow-y-auto) is what keeps a
-              long result list REACHABLE inside the map box instead of
-              clipped by its overflow-hidden — including with the phone
-              keyboard up, when the page can still scroll but this box
-              cannot grow. */}
-          {mapSearchSlot === null ? null : mapSlot !== null ? (
-            <div className="pointer-events-none absolute inset-0 z-[500] flex flex-col p-2">
-              <div className="pointer-events-auto min-h-0 max-h-full overflow-y-auto">
-                {mapSearchSlot}
-              </div>
-            </div>
-          ) : (
-            /* Cold start: permission not granted yet, so no map is
-               mounted — there is honestly nothing to overlay. The SAME
-               control renders in normal flow, in the exact spot the map
-               will occupy, so the search does not jump when the map
-               appears (auto-resume, or the first Start). */
-            mapSearchSlot
-          )}
-        </div>
+        <div className={mapWrapCls}>{mapSlot}</div>
 
         {/* NO TRUCK-PROFILE OVERLAY HERE, deliberately (final pilot
             milestone). The chip repeated numbers the driver had already
@@ -890,11 +956,21 @@ export function DrivingScreenView({
           <div className={fullScreen ? colBottom : ''}>
             {fullScreen ? (
               compactStrip
-            ) : (
+            ) : view.totalMi !== null ? (
+              /*
+               * PARKED, THIS LIST ONLY EXISTS ONCE THERE IS A ROUTE TO
+               * REPORT ON (NAV-ENTRY-2). With none, all three rows read
+               * "—" — three lines of nothing, sitting between the map and
+               * the Start control, on the screen whose whole job is to get
+               * a destination entered. `totalMi` is the honest test: it is
+               * the planned route's own length, so the list appears exactly
+               * when the numbers in it can be real. Nothing is hidden that
+               * had anything to say.
+               */
               <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xl text-ink/90">
                 <dt>Route progress</dt>
                 <dd>
-                  {view.routeMile !== null && view.totalMi !== null
+                  {view.routeMile !== null
                     ? `mile ${view.routeMile.toFixed(1)} of ${view.totalMi.toFixed(1)}`
                     : '—'}
                 </dd>
@@ -903,7 +979,7 @@ export function DrivingScreenView({
                 <dt>Speed</dt>
                 <dd>{formatSpeed(view.speedMph, metric)}</dd>
               </dl>
-            )}
+            ) : null}
           </div>
 
           {/* Permanent HOS strip (milestone N6) — the driver's clocks against
@@ -1043,10 +1119,42 @@ export function DrivingScreenView({
       {/* Below the driving surface: everything that must not compete with
           guidance. In full-screen this sits past the fold; on the ordinary
           page it simply continues. */}
-      <div className={fullScreen ? 'space-y-4 p-4' : 'mt-6 space-y-6'}>
-        <MotionLockOverlay />
-        {lifecycleLine ? <p className="text-lg text-ink/70">{lifecycleLine}</p> : null}
-        {mapStyleSlot}
+      {/*
+          PARKED, START COMES STRAIGHT AFTER THE MAP (NAV-ENTRY-2).
+
+          The milestone's hierarchy is destination -> map -> route/start
+          controls. The DOM order here was written for the driving surface,
+          where this whole region is past the fold and the order inside it
+          barely matters: motion status, pilot line, basemap picker, and
+          only then the trip controls that carry Start.
+
+          Parked that is the wrong way round, so the parked branch is a flex
+          column and the trip controls take `order-1`. The DOM is untouched
+          and IDENTICAL in both modes — only classes change, the same
+          discipline the surface above uses — so nothing is remounted and
+          the full-screen region below guidance keeps exactly the order it
+          shipped with.
+      */}
+      <div className={fullScreen ? 'space-y-4 p-4' : 'mt-6 flex flex-col gap-6'}>
+        {/*
+            The planning material, AFTER the map and beside Start
+            (NAV-ENTRY-2). It used to sit above the destination box inside
+            the map overlay, where it was the single largest thing standing
+            between a driver and the question they came to answer.
+
+            It is not hidden and it is not weakened: the prompt still asks
+            once per trip on exactly the conditions it always did, and a
+            driver who arrives carrying a planned stop still finds it — one
+            block below the map, next to the Start it feeds.
+        */}
+        <div className={fullScreen ? '' : 'order-2'}>{parkedPlanSlot}</div>
+        <div className={fullScreen ? '' : 'order-3'}>
+          <MotionLockOverlay />
+        </div>
+        {lifecycleLine ? (
+          <p className={`text-lg text-ink/70${fullScreen ? '' : ' order-4'}`}>{lifecycleLine}</p>
+        ) : null}
+        <div className={fullScreen ? '' : 'order-5'}>{mapStyleSlot}</div>
 
         {/*
           NOT GATED (NAV-ENTRY-1). This slot used to sit behind the shared
@@ -1058,11 +1166,13 @@ export function DrivingScreenView({
           map now always permits — a gate that can never fire reads like a
           protection that exists.
         */}
-        {destinationSlot ?? (
-          <p className="text-xl text-ink/80">
-            Destination entry unlocks here when routing ships (a later milestone).
-          </p>
-        )}
+        <div className={fullScreen ? '' : 'order-1'}>
+          {destinationSlot ?? (
+            <p className="text-xl text-ink/80">
+              Destination entry unlocks here when routing ships (a later milestone).
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2367,48 +2477,42 @@ export function DrivingScreen({
        * stays tied to the Start tap, and a search with no fix runs in
        * the server's honest unbiased mode.
        */
+      /*
+       * THE PARKED DESTINATION SEARCH — the first thing on the screen
+       * (NAV-ENTRY-2). Only while the lifecycle is idle: the moment an
+       * attempt leaves 'idle' (planning, the briefing, live guidance) the
+       * box is gone, exactly like the old in-controls search that only
+       * rendered on the idle branch.
+       *
+       * NOTHING ABOUT THE SEARCH ITSELF CHANGED. Same `DestinationSearch`
+       * component, same provider, same coordinator, same debounce, same
+       * result cards, same cancellation. This milestone moved WHERE it
+       * renders and WHAT sits above it; it did not add a second search, a
+       * second endpoint, or an autocomplete the contract does not have.
+       *
+       * Typing requests nothing but a search: location permission stays
+       * tied to the Start tap, a search with no fix runs in the server's
+       * honest unbiased mode, and no route is requested until the driver
+       * taps Start.
+       */
       mapSearchSlot={
         pilot.active && !fullScreen && lcState === 'idle' ? (
           <div className="rounded-cockpit border border-line bg-asphalt/95 p-3">
             {/*
-                Trip plan first? — and, when the driver arrives carrying one,
-                the planned stop itself. Sits ABOVE the search because it is
-                the earlier question: a driver who has already planned should
-                not have to retype the stop they just chose.
+                THE SEARCH IS THE FIRST THING IN THIS BLOCK (NAV-ENTRY-2).
 
-                Behind the same edit-destination gate as the search below,
-                because using a planned stop SETS A DESTINATION — a moving
-                truck gets neither.
+                It used to be the last. Above it sat the plan-your-stops
+                prompt and then the road-test arm — together 541 px of
+                material measured on the shipped build — inside a box that
+                scrolled internally, which is how the destination input
+                ended up with a VISIBLE HEIGHT OF 0 px at every required
+                viewport.
 
-                Planning is never forced: this renders nothing at all once the
-                driver has answered, and the search underneath is untouched
-                either way.
+                Neither block below went away and neither was weakened.
+                They simply stopped standing in front of the question the
+                driver came here to answer, and both still render on
+                exactly the conditions they always did.
               */}
-            <TripPlanFirst
-              /*
-               * The trip's identity, derived from the chosen destination.
-               * It moves exactly when the prompt must come back: a
-               * different destination, a trip that ended (the pick clears),
-               * or a new one beginning.
-               */
-              tripKey={tripKeyFor(picked)}
-              onUsePlannedStop={(place) => {
-                setPicked(place);
-                // Trip Planner plans U.S. property-carrier hours only, so a
-                // stop that came from it is attested U.S. — the same
-                // recorded-at-pick discipline the search uses below.
-                setPickedCountry('USA');
-              }}
-            />
-            {/*
-                TP-6: the road-test arm switch. Rendering INSIDE the
-                pilot-gated Navigator is its access control — the public
-                planner has no way to reach it — and idle-only placement
-                keeps it off the driving surface entirely.
-              */}
-            <div className="mt-3">
-              <RoadTestArm />
-            </div>
             <DestinationSearch
               origin={searchOrigin}
               disabled={startPending}
@@ -2440,6 +2544,56 @@ export function DrivingScreen({
             >
               {crossBorderSearchLabel(searchRegion)}
             </button>
+          </div>
+        ) : null
+      }
+      /*
+       * The planning material, parked and idle only — the SAME two blocks
+       * that used to sit above the destination search inside the map
+       * overlay, on the SAME conditions, simply rendered after the map.
+       */
+      parkedPlanSlot={
+        pilot.active && !fullScreen && lcState === 'idle' ? (
+          <div className="space-y-3">
+            {/*
+                Trip plan first? — and, when the driver arrives carrying
+                one, the planned stop itself. It asks the EARLIER question,
+                which is why it used to sit above the search; the trouble is
+                that a driver who has NOT planned had to read past it to
+                reach the box they came for, and that reading cost more
+                screen than everything else on the page combined.
+
+                Here it costs that driver nothing and still answers the one
+                who did plan: using a planned stop sets the destination
+                directly, so the search above simply becomes the path they
+                did not need. Planning is never forced — this renders
+                nothing at all once the driver has answered.
+              */}
+            <TripPlanFirst
+              /*
+               * The trip's identity, derived from the chosen destination.
+               * It moves exactly when the prompt must come back: a
+               * different destination, a trip that ended (the pick clears),
+               * or a new one beginning.
+               */
+              tripKey={tripKeyFor(picked)}
+              onUsePlannedStop={(place) => {
+                setPicked(place);
+                // Trip Planner plans U.S. property-carrier hours only, so a
+                // stop that came from it is attested U.S. — the same
+                // recorded-at-pick discipline the search uses.
+                setPickedCountry('USA');
+              }}
+            />
+            {/*
+                TP-6: the road-test arm switch. Rendering INSIDE the
+                pilot-gated Navigator is its access control — the public
+                planner has no way to reach it — and idle-only placement
+                keeps it off the driving surface entirely. It is an
+                instrument for a road test, not a step in a driver's trip,
+                so it goes last.
+              */}
+            <RoadTestArm />
           </div>
         ) : null
       }

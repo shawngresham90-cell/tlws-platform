@@ -584,9 +584,15 @@ const surface = foldAt > 0 ? html.slice(0, foldAt) : html;
       ),
     ),
   );
+  /*
+   * The box is a viewport fraction with a floor since NAV-ENTRY-2 (see
+   * test-navigation-map-ui #34); the invariant it protects — a MOUNTED map
+   * gets the same box the loading placeholder promised, so nothing jumps —
+   * is the same one, asserted against the current class string.
+   */
   check(
     'parked: the mounted map sits in the placeholder-sized box',
-    /class="[^"]*h-72[^"]*sm:h-96[^"]*"><div data-test-map="live"/.test(parked),
+    /class="[^"]*h-\[38dvh\][^"]*min-h-\[200px\][^"]*"><div data-test-map="live"/.test(parked),
     parked.match(/class="([^"]*)"><div data-test-map="live"/)?.[1],
   );
   const noMap = renderToStaticMarkup(
