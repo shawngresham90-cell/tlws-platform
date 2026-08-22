@@ -14,7 +14,7 @@ import {
   type PlacementRecord,
   type PromotableListing,
 } from '@/lib/directory/placements';
-import { adminFeaturedSchema } from '@/lib/admin/featured-schema';
+import { adminFeaturedSchema, isMissingFeaturedColumn } from '@/lib/admin/featured-schema';
 import {
   featuredExpiryFrom,
   featuredWindowBlockers,
@@ -343,14 +343,38 @@ export async function deactivateFeaturedAction(formData: FormData): Promise<void
   // `featured_until` behind on an unfeatured row would make the next renewal
   // look like it had a window it does not have.
   //
+  // ATTEMPT THE FULL CLEAR FIRST, whatever the probe said.
+  //
+  // `adminFeaturedSchema()` answers `unavailable` for an INDETERMINATE probe as
+  // well as for a genuinely absent column — deliberately, because an admin that
+  // cannot prove the column exists must not activate. That is the right bias for
+  // a write that turns revenue ON and the wrong one for a write that turns it
+  // OFF: branching the patch on it meant one dropped request during a stop left
+  // `featured_until` behind on an unfeatured row, against a database that has
+  // had the column since migration 057 was applied. So the clear is attempted
+  // unconditionally and only retried without the term when PostgREST says, in
+  // those words, that the column does not exist.
+  //
+  // Exactly two fields are ever written. Publication, indexability, category,
+  // coordinates and every other column are untouched: ending a sponsorship
+  // must never remove a business from the directory.
+  //
   // The AUDIT is not erased. What the business bought, what they paid and when
   // the placement ran live on in `sponsors.notes` and `sponsor_touches`, which
   // is where the commercial history belongs — the listing row only ever carried
   // the current state.
-  const patch: Record<string, unknown> =
-    schema === 'ready' ? { is_featured: false, featured_until: null } : { is_featured: false };
-  const { error } = await supabase.from('locations').update(patch).eq('id', listingId);
-  if (error) fail(['The update failed. Nothing was changed.']);
+  const { error } = await supabase
+    .from('locations')
+    .update({ is_featured: false, featured_until: null })
+    .eq('id', listingId);
+  if (error) {
+    if (!isMissingFeaturedColumn(error)) fail(['The update failed. Nothing was changed.']);
+    const { error: legacyError } = await supabase
+      .from('locations')
+      .update({ is_featured: false })
+      .eq('id', listingId);
+    if (legacyError) fail(['The update failed. Nothing was changed.']);
+  }
 
   if (sponsorId)
     await recordAudit(

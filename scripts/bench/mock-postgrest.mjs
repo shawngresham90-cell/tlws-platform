@@ -38,6 +38,10 @@
  *                    can be driven in a browser. Off by default: with it off
  *                    the table answers [], which is the LIVE production state
  *                    (zero CRM rows) and the empty states worth checking.
+ *   MOCK_FIRST_SALE  '1' adds the `Placement activated:` audit line to the
+ *                    paid featured-listing opportunity, so the placements
+ *                    console can match a live placement to the deal that paid
+ *                    for it. Off by default; requires MOCK_REVENUE.
  *   MOCK_FEATURED_SCHEMA 'ready' serves `locations.featured_until`;
  *                    'unavailable' (default) answers 42703 for any select
  *                    naming it, which is the LIVE pre-migration-057 state.
@@ -75,6 +79,17 @@ const FAIL_TABLE = process.env.MOCK_FAIL_TABLE ?? '';
  */
 const PARKING_QUALITY = process.env.MOCK_PARKING_QUALITY === '1';
 const REVENUE = process.env.MOCK_REVENUE === '1';
+/**
+ * REVENUE-3. Adds the `Placement activated:` audit line to the paid
+ * featured-listing opportunity, naming Bench Featured Placement 1.
+ *
+ * That line is the only link between a `locations` row and the CRM row that
+ * paid for it — `locations` has no column pointing at `sponsors` — so without
+ * it the console can only report the absence, and the first-sale bench could
+ * never see a matched placement. Opt-in and default-off like every other knob
+ * here, so the fixture set every existing bench reads stays byte-identical.
+ */
+const FIRST_SALE = process.env.MOCK_FIRST_SALE === '1';
 
 /* ------------------------------------------- REVENUE-2: term + clock control */
 
@@ -226,6 +241,23 @@ const SPONSOR_FIXTURES = [
     created_at: '2026-07-15T10:00:00Z',
   },
 ];
+
+/**
+ * The sponsor fixtures as served. The audit line is appended here rather than
+ * written into the literal above, so `SPONSOR_FIXTURES` stays exactly what
+ * every other bench has always read.
+ */
+function sponsorRows() {
+  if (!FIRST_SALE) return SPONSOR_FIXTURES;
+  return SPONSOR_FIXTURES.map((r) =>
+    r.id === '44444444-4444-4444-8444-444444444444'
+      ? {
+          ...r,
+          notes: `${r.notes}\n\nPlacement activated: Featured listing — Bench Featured Placement 1 · billing monthly · from 2026-06-29 · to 2026-07-29 · by Shawn · on 2026-06-29`,
+        }
+      : r,
+  );
+}
 
 /* ------------------------------------------------------------------ seed */
 
@@ -836,7 +868,7 @@ const server = http.createServer((req, res) => {
     }
 
     let dataset =
-      table === 'locations' ? LOCATIONS : table === 'sponsors' && REVENUE ? SPONSOR_FIXTURES : [];
+      table === 'locations' ? LOCATIONS : table === 'sponsors' && REVENUE ? sponsorRows() : [];
     // Post-migration: the column exists, and carries whatever term the clock
     // control last set.
     if (FEATURED_SCHEMA === 'ready' && table === 'locations')

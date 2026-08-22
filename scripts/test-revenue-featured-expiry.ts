@@ -792,9 +792,15 @@ check(
   'the activation action asks the admin client, not the public one, whether it may write',
   (() => {
     const action = src('src/app/admin/(dashboard)/directory/placements/actions.ts');
+    // The named list is not pinned — REVENUE-3 imports the missing-column
+    // narrowing alongside it. What this asserts is the SOURCE: the probe comes
+    // from the admin module (service-role client, refuses when indeterminate),
+    // never from the public data module (anon client, falls back to showing
+    // yesterday's answer). Those two biases are opposite on purpose.
     return (
-      /import \{ adminFeaturedSchema \}/.test(action) &&
-      !/from '@\/lib\/directory\/data'/.test(action)
+      /import \{[^}]*\badminFeaturedSchema\b[^}]*\} from '@\/lib\/admin\/featured-schema'/.test(
+        action,
+      ) && !/from '@\/lib\/directory\/data'/.test(action)
     );
   })(),
 );
@@ -850,9 +856,31 @@ check(
 check(
   'FE54',
   'stopping a placement clears the term with the flag',
-  /schema === 'ready' \? \{ is_featured: false, featured_until: null \} : \{ is_featured: false \}/.test(
-    src('src/app/admin/(dashboard)/directory/placements/actions.ts'),
-  ),
+  (() => {
+    // REVENUE-3 rewrote the shape this assertion used to match, so the
+    // assertion now states the CONTRACT instead of the implementation.
+    //
+    // The old code branched the patch on `adminFeaturedSchema()`, which answers
+    // `unavailable` for an INDETERMINATE probe as well as an absent column — so
+    // one dropped request during a stop left `featured_until` behind on a
+    // database that has had the column since 057 was applied. The clear is now
+    // attempted unconditionally and narrowed only when PostgREST actually says
+    // the column is missing. That is strictly stronger than what this line
+    // checked before, and the check is written to say so: the stop path must
+    // contain a both-fields clear, must NOT branch the patch on the probe, and
+    // any flag-only fallback must be guarded by the missing-column narrowing.
+    const actions = src('src/app/admin/(dashboard)/directory/placements/actions.ts');
+    const stop = actions.slice(actions.indexOf('export async function deactivateFeaturedAction'));
+    const body = stop
+      .slice(0, stop.indexOf('export async function renewFeaturedAction'))
+      .replace(/\s+/g, ' ');
+    return (
+      /\.update\(\{ is_featured: false, featured_until: null \}\)/.test(body) &&
+      !/schema === 'ready' \? \{ is_featured: false/.test(body) &&
+      (!/\.update\(\{ is_featured: false \}\)/.test(body) ||
+        /isMissingFeaturedColumn\(error\)/.test(body))
+    );
+  })(),
 );
 
 check(
@@ -1718,10 +1746,13 @@ check(
       'making expiration unpublish the listing would be caught',
       actions,
       P.expiryNeverUnpublishes,
+      // Retargeted with the REVENUE-3 stop shape. `sourceMutation` reports an
+      // uncaught mutation when the edit does not apply, so a stale find string
+      // fails loudly here rather than passing for the wrong reason.
       (t) =>
         t.replace(
-          "schema === 'ready' ? { is_featured: false, featured_until: null } : { is_featured: false }",
-          "schema === 'ready'\n      ? { is_featured: false, is_published: false, featured_until: null }\n      : { is_featured: false, is_published: false }",
+          '.update({ is_featured: false, featured_until: null })',
+          '.update({ is_featured: false, is_published: false, featured_until: null })',
         ),
     ),
     sourceMutation(

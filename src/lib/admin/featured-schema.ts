@@ -21,8 +21,15 @@ import type { FeaturedSchema } from '@/lib/directory/featured-window';
 
 const FEATURED_COLUMN = 'featured_until';
 
-/** Narrow: the column is missing, not "some query failed". */
-function isMissingFeaturedColumn(error: unknown): boolean {
+/**
+ * Narrow: the column is missing, not "some query failed".
+ *
+ * Exported because the STOP action needs the same narrowing at write time. The
+ * probe answers `unavailable` for an indeterminate result as well as a genuinely
+ * missing column — correct for deciding whether to allow a write, wrong for
+ * deciding what to write. See `deactivateFeaturedAction`.
+ */
+export function isMissingFeaturedColumn(error: unknown): boolean {
   const e = error as { code?: unknown; message?: unknown } | null;
   const code = typeof e?.code === 'string' ? e.code : '';
   const message = typeof e?.message === 'string' ? e.message : '';
