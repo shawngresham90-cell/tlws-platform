@@ -5,28 +5,24 @@ import {
   BILLING_LABEL,
   OFFERS,
   formatPrice,
-  getOffer,
   paidOffers,
   priceLabel,
   standardAmountCents,
 } from '@/lib/directory/offers';
 import {
-  RENEWAL_LEAD_DAYS,
-  SPONSOR_STAGES,
   STAGE_LABEL,
   STAGE_TRANSITIONS,
   findDuplicates,
   isoDay,
+  normaliseCompany,
   pipelineSummary,
   rate,
   readSaleState,
-  renewalView,
-  saleActivationBlockers,
   type SponsorSaleRow,
 } from '@/lib/directory/revenue';
 import { FEATURED_PER_PAGE, PRIMARY_CORRIDOR_SPONSORS } from '@/lib/directory/placements';
-import { parseDirectoryInquiry } from '@/lib/admin/directory-inquiry';
 import { adminFeaturedSchema } from '@/lib/admin/featured-schema';
+import type { FeaturedSchema } from '@/lib/directory/featured-window';
 import {
   MONETIZABLE_CATEGORIES,
   outreachQueueLines,
@@ -34,7 +30,26 @@ import {
   type ProspectListing,
 } from '@/lib/directory/prospects';
 import {
+  BUCKET_LABEL,
+  MONEY_BUCKETS,
+  NEXT_ACTION_LABEL,
+  RENEWAL_STANDING_LABEL,
+  activationHandoffHref,
+  corridorPlacementState,
+  featuredPlacementState,
+  matchesFilter,
+  moneyQueue,
+  opportunityView,
+  pipelineBuckets,
+  renewalQueue,
+  type OpportunityView,
+  type PlacementState,
+  type QueueFilter,
+} from '@/lib/directory/money-queue';
+import { matchFeaturedOpportunity } from '@/lib/directory/first-sale';
+import {
   addTouchAction,
+  createOpportunityAction,
   recordPaymentAction,
   recordQualificationAction,
   recordQuoteAction,
@@ -128,10 +143,43 @@ function toProspectListing(r: Record<string, unknown>): ProspectListing {
   };
 }
 
-async function load(): Promise<{ ok: boolean; rows: RawRow[]; listings: ProspectListing[] }> {
+/**
+ * The `locations` columns the featured authority needs, and nothing else. No
+ * commercial field is read here and none could be: this projection is the whole
+ * of what the revenue console learns about a listing.
+ */
+const FEATURED_COLS_BASE = 'id, name, is_featured, is_published, deleted_at';
+const CORRIDOR_COLS = 'id, name, active, starts_at, ends_at';
+
+type LoadResult = {
+  ok: boolean;
+  rows: RawRow[];
+  listings: ProspectListing[];
+  featured: FeaturedRow[];
+  corridor: CorridorRow[];
+};
+
+type FeaturedRow = {
+  id: string;
+  name: string | null;
+  isFeatured: boolean;
+  isPublished: boolean;
+  deletedAt: string | null;
+  featuredUntil?: string | null;
+};
+
+type CorridorRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+async function load(featuredSchema: FeaturedSchema): Promise<LoadResult> {
   try {
     const supabase = createAdminClient();
-    const [crm, candidates] = await Promise.all([
+    const [crm, candidates, featuredRows, corridorRows] = await Promise.all([
       supabase
         .from('sponsors')
         .select(ROW_COLS)
@@ -149,17 +197,51 @@ async function load(): Promise<{ ok: boolean; rows: RawRow[]; listings: Prospect
         .not('interstate', 'is', null)
         .order('name')
         .limit(400),
+      // THE PLACEMENT AUTHORITIES. Liveness is not read from `sponsors.status`:
+      // that column is a mirror written at activation, and stopping a featured
+      // listing never clears it, so a stopped placement keeps reading `active`
+      // with its old renewal date. These two reads are what "live" means.
+      supabase
+        .from('locations')
+        .select(
+          featuredSchema === 'ready' ? `${FEATURED_COLS_BASE}, featured_until` : FEATURED_COLS_BASE,
+        )
+        .eq('is_featured', true)
+        .is('deleted_at', null)
+        .limit(200),
+      supabase.from('directory_sponsors').select(CORRIDOR_COLS).limit(200),
     ]);
-    if (crm.error) return { ok: false, rows: [], listings: [] };
+    if (crm.error) return EMPTY;
     return {
       ok: true,
       rows: (crm.data as unknown as RawRow[]) ?? [],
       listings: ((candidates.data as Record<string, unknown>[]) ?? []).map(toProspectListing),
+      featured: ((featuredRows.data as unknown as Record<string, unknown>[] | null) ?? []).map(
+        (r) => ({
+          id: String(r.id),
+          name: (r.name as string) ?? null,
+          isFeatured: Boolean(r.is_featured),
+          isPublished: Boolean(r.is_published),
+          deletedAt: (r.deleted_at as string) ?? null,
+          featuredUntil: (r.featured_until as string | null | undefined) ?? undefined,
+        }),
+      ),
+      corridor: ((corridorRows.data as unknown as Record<string, unknown>[] | null) ?? []).map(
+        (r) => ({
+          id: String(r.id),
+          name: String(r.name ?? ''),
+          active: Boolean(r.active),
+          startsAt: (r.starts_at as string) ?? null,
+          endsAt: (r.ends_at as string) ?? null,
+        }),
+      ),
     };
   } catch {
-    return { ok: false, rows: [], listings: [] };
+    return EMPTY;
   }
 }
+
+const EMPTY: LoadResult = { ok: false, rows: [], listings: [], featured: [], corridor: [] };
 
 // 44px minimum on every actionable control. `px-3 py-2 text-sm` lands at 37-38px,
 // which is under the touch target this admin is worked from — the owner uses it
@@ -188,6 +270,105 @@ function Tile({ label: text, value, tone }: { label: string; value: string; tone
   );
 }
 
+/**
+ * One opportunity, answering the five questions an owner should not have to
+ * open another screen for: who, what are we selling, how much, where are we,
+ * and what do I do next.
+ *
+ * State is carried by a WORD in every case. A row that is overdue says
+ * "Overdue"; it is not merely tinted red, because the owner reads this on a
+ * phone in daylight and because colour alone is not an accessible signal.
+ */
+function OpportunityCard({
+  view,
+  openHref,
+  showBucket,
+}: {
+  view: OpportunityView;
+  openHref: string;
+  showBucket?: boolean;
+}) {
+  const handoff = activationHandoffHref(view);
+  const urgent =
+    view.nextActionState === 'overdue' ||
+    view.bucket === 'ready-to-activate' ||
+    view.bucket === 'awaiting-payment';
+  return (
+    <li
+      className={`rounded-card border bg-asphalt-800 p-4 ${
+        urgent ? 'border-signal' : 'border-line'
+      }`}
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        {/* 1 · who */}
+        <p className="break-words font-display text-base uppercase text-ink">{view.company}</p>
+        {/* 4 · where are we */}
+        <p className="text-xs font-bold uppercase tracking-widest text-signal">
+          {showBucket ? BUCKET_LABEL[view.bucket] : view.saleStepLabel}
+        </p>
+      </div>
+
+      {/* 2 · what are we selling · 3 · how much */}
+      <p className="mt-1 break-words text-xs text-muted">
+        {view.product}
+        {view.term ? ` · ${BILLING_LABEL[view.term]}` : ''} ·{' '}
+        <span className="text-ink">{view.amountLabel}</span>
+        {view.amountCents !== null && !view.amountIsAgreed && ' (list price — nothing agreed yet)'}
+      </p>
+
+      {/* 5 · what do I do next */}
+      <p className="mt-2 break-words text-sm">
+        <span
+          className={`mr-2 text-[10px] font-bold uppercase tracking-widest ${
+            view.nextActionState === 'overdue' || view.nextActionState === 'none'
+              ? 'text-diesel-300'
+              : 'text-muted'
+          }`}
+        >
+          {NEXT_ACTION_LABEL[view.nextActionState]}
+        </span>
+        <span className="text-ink">
+          {view.nextAction ?? 'Decide what happens next and put a date on it.'}
+        </span>
+        {view.nextActionDate && view.nextActionState !== 'none' && (
+          <span className="text-muted">
+            {' '}
+            · {view.nextActionDate}
+            {view.daysOverdue !== null &&
+              ` · ${view.daysOverdue} ${view.daysOverdue === 1 ? 'day' : 'days'} late`}
+          </span>
+        )}
+      </p>
+
+      {view.placement.kind !== 'none' && (
+        <p className="mt-1 text-xs text-muted">
+          {view.placement.live ? 'Live' : 'Not showing'}
+          {view.placement.endsAt ? ` · ends ${view.placement.endsAt.slice(0, 10)}` : ''}
+          {view.placement.daysRemaining !== null &&
+            ` · ${
+              view.placement.daysRemaining > 0
+                ? `${view.placement.daysRemaining} ${view.placement.daysRemaining === 1 ? 'day' : 'days'} left`
+                : `ended ${-view.placement.daysRemaining} ${view.placement.daysRemaining === -1 ? 'day' : 'days'} ago`
+            }`}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link href={openHref} className={`${btnGhost} inline-flex items-center`}>
+          Open
+        </Link>
+        {/* THE HANDOFF. A link and nothing more — it writes nothing, and every
+            gate still runs on the placements console where ACTIVATE is typed. */}
+        {view.bucket === 'ready-to-activate' && handoff && (
+          <Link href={handoff} className={`${btn} inline-flex items-center`}>
+            Activate this placement
+          </Link>
+        )}
+      </div>
+    </li>
+  );
+}
+
 export default async function RevenuePage({
   searchParams,
 }: {
@@ -200,7 +381,7 @@ export default async function RevenuePage({
   const openId = one(searchParams?.open);
 
   const featuredSchema = await adminFeaturedSchema();
-  const { ok: loaded, rows, listings } = await load();
+  const { ok: loaded, rows, listings, featured, corridor } = await load(featuredSchema);
   const now = new Date();
   const today = isoDay(now);
   const saleRows = rows.map(toSaleRow);
@@ -214,33 +395,75 @@ export default async function RevenuePage({
   );
   const paidRate = rate(summary.paid + summary.active, summary.total);
 
+  // Liveness, the renewal view and the parsed inquiry all moved to the money
+  // queue, which reads the placement authority rather than the CRM mirror. What
+  // is still needed per row is the sale state and the duplicate warning.
   const enriched = rows.map((r) => {
     const sale = readSaleState(toSaleRow(r));
-    const dir = parseDirectoryInquiry(r.tier_interest, r.notes);
-    const isLive = r.status === 'active';
-    const renewal = renewalView(sale.offerId, sale.renewalDate, isLive, now, featuredSchema);
     const duplicates = findDuplicates(
       { id: r.id, company: r.company, email: r.email, phone: r.phone },
       rows.map((o) => ({ id: o.id, company: o.company, email: o.email, phone: o.phone })),
     );
-    return { row: r, sale, dir, isLive, renewal, duplicates };
+    return { row: r, sale, duplicates };
   });
 
-  const renewalQueue = enriched
-    .filter((e) => e.isLive && (e.renewal.state === 'due' || e.renewal.state === 'overdue'))
-    .sort((a, b) => (a.sale.renewalDate ?? '').localeCompare(b.sale.renewalDate ?? ''));
+  /* ------------------------------------------------- the placement authority
 
-  const awaiting = enriched.filter(
-    (e) =>
-      !e.isLive &&
-      e.sale.paymentConfirmed &&
-      e.sale.paidCents > 0 &&
-      (e.sale.stage === 'committed' || e.sale.stage === 'closed_won'),
+     Which opportunity paid for which live placement. `locations` has no column
+     pointing at the CRM, so a featured listing is matched through the audit line
+     REVENUE-3 writes into `sponsors.notes` at activation — reading the trail as
+     it was designed to be read. A corridor sponsor is matched on the business
+     name, which is what `directory_sponsors` stores.
+
+     Unmatched either way is a real state, not a failure: a placement flagged by
+     an import, or one whose audit note never landed. Those simply have no
+     opportunity attached and the console says so rather than guessing. */
+  const noteRows = rows.map((r) => ({ id: r.id, notes: r.notes }));
+  const placementBySponsor = new Map<string, PlacementState>();
+  for (const listing of featured) {
+    const match = matchFeaturedOpportunity(listing.name, noteRows);
+    if (match && !placementBySponsor.has(match.id))
+      placementBySponsor.set(match.id, featuredPlacementState(listing, now, featuredSchema));
+  }
+  for (const sponsor of corridor) {
+    const key = normaliseCompany(sponsor.name);
+    if (!key) continue;
+    const owner = rows.find((r) => normaliseCompany(r.company) === key);
+    if (owner && !placementBySponsor.has(owner.id))
+      placementBySponsor.set(owner.id, corridorPlacementState(sponsor, now));
+  }
+
+  const views: OpportunityView[] = enriched.map((e) =>
+    opportunityView(
+      {
+        id: e.row.id,
+        company: e.row.company,
+        sale: e.sale,
+        nextAction: e.row.next_action,
+        nextActionDate: e.row.next_action_date,
+        placement: placementBySponsor.get(e.row.id) ?? { kind: 'none' },
+        createdAt: e.row.created_at,
+      },
+      now,
+    ),
   );
+  const queue = moneyQueue(views);
+  const buckets = pipelineBuckets(views);
+  const renewals = renewalQueue(views, now);
+
+  const filter: QueueFilter = {
+    q: one(searchParams?.q).slice(0, 60),
+    bucket: (one(searchParams?.bucket) || '') as QueueFilter['bucket'],
+    offerId: (one(searchParams?.offer) || '') as QueueFilter['offerId'],
+    nextAction: (one(searchParams?.na) || '') as QueueFilter['nextAction'],
+  };
+  const filtered = views
+    .filter((v) => matchesFilter(v, filter))
+    .sort((a, b) => a.rank - b.rank || a.company.localeCompare(b.company));
 
   const open = enriched.find((e) => e.row.id === openId) ?? null;
 
-  const queue = shortlist(
+  const prospectQueue = shortlist(
     listings,
     rows.map((r) => ({ id: r.id, company: r.company })),
     25,
@@ -295,44 +518,100 @@ export default async function RevenuePage({
         )}
       </div>
 
+      {/* --------------------------------------------------- today's money */}
+      <h2 className="mt-10 font-display text-lg uppercase text-ink">
+        Today&rsquo;s money ({queue.length})
+      </h2>
+      {summary.total === 0 ? (
+        <div className="mt-3 rounded-card border border-signal bg-asphalt-800 p-4 sm:p-5">
+          <p className="font-display text-base uppercase text-ink">Nothing in the pipeline yet</p>
+          <p className="mt-2 text-sm text-muted">
+            This is not an error — no business has inquired and none has been opened by hand. There
+            are two ways to start, and neither of them is waiting.
+          </p>
+          <ol className="mt-3 space-y-2 text-sm text-muted">
+            <li>
+              <span className="font-semibold text-ink">1 · Pick someone to call.</span> The
+              shortlist at the bottom of this page ranks {MONETIZABLE_CATEGORIES.length} monetizable
+              categories by how complete their listing already is — built only from public directory
+              data, and it contacts nobody.
+            </li>
+            <li>
+              <span className="font-semibold text-ink">2 · Open the opportunity here.</span> Use the
+              form below the moment the call ends, while you still remember what they said. Every
+              step after that — quote, payment, activation — starts from the row you create.
+            </li>
+          </ol>
+          <p className="mt-3 text-xs text-muted">
+            An inbound inquiry through{' '}
+            <Link href="/sponsors" className="text-signal underline">
+              /sponsors
+            </Link>{' '}
+            lands here on its own, with its first follow-up already scheduled.
+          </p>
+        </div>
+      ) : queue.length === 0 ? (
+        <p className="mt-3 rounded-card border border-line bg-asphalt-800 p-4 text-sm text-muted">
+          Nothing needs you today. Every open opportunity is scheduled for a later date, already
+          live, or closed. The full list is below.
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-xs text-muted">
+            Worked top to bottom. A business that has already paid comes first — the only thing
+            between that money and a live placement is you — then people who said yes, then
+            follow-ups you owe.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {queue.map((v) => (
+              <OpportunityCard key={v.id} view={v} openHref={`?open=${v.id}`} />
+            ))}
+          </ul>
+        </>
+      )}
+
       {/* ------------------------------------------------------- summary */}
       <h2 className="mt-10 font-display text-lg uppercase text-ink">Pipeline</h2>
       {summary.total === 0 ? (
         <p className="mt-2 rounded-card border border-line bg-asphalt-800 p-4 text-sm text-muted">
-          No inquiries yet. There is nothing to summarise and no conversion rate to show — a rate
-          over zero inquiries would be an invented number, not a result. The first inquiry through{' '}
-          <Link href="/sponsors" className="text-signal underline">
-            /sponsors
-          </Link>{' '}
-          appears here.
+          Nothing to summarise yet. A conversion rate over zero inquiries would be an invented
+          number rather than a result, so none is shown.
         </p>
       ) : (
         <>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {SPONSOR_STAGES.map((s) => (
-              <Tile key={s} label={STAGE_LABEL[s]} value={String(summary.byStage[s])} />
-            ))}
-            <Tile label="Payment recorded" value={String(summary.paid)} />
-            <Tile label="Placement live" value={String(summary.active)} />
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <Tile label="New leads" value={String(buckets.newLeads)} />
             <Tile
-              label="Paid, awaiting activation"
-              value={String(summary.awaitingActivation)}
-              tone={summary.awaitingActivation > 0 ? 'warn' : undefined}
+              label="Follow up today"
+              value={String(buckets.followUpToday)}
+              tone={buckets.followUpToday > 0 ? 'warn' : undefined}
             />
             <Tile
-              label="Renewal due"
-              value={String(summary.renewalDue)}
-              tone={summary.renewalDue > 0 ? 'warn' : undefined}
+              label="Overdue follow-up"
+              value={String(buckets.followUpOverdue)}
+              tone={buckets.followUpOverdue > 0 ? 'warn' : undefined}
+            />
+            <Tile label="Quoted" value={String(buckets.quoted)} />
+            <Tile
+              label="Said yes — not paid"
+              value={String(buckets.awaitingPayment)}
+              tone={buckets.awaitingPayment > 0 ? 'warn' : undefined}
             />
             <Tile
-              label="Renewal overdue"
-              value={String(summary.renewalOverdue)}
-              tone={summary.renewalOverdue > 0 ? 'warn' : undefined}
+              label="Paid — activate now"
+              value={String(buckets.readyToActivate)}
+              tone={buckets.readyToActivate > 0 ? 'warn' : undefined}
+            />
+            <Tile label="Live" value={String(buckets.live)} />
+            <Tile
+              label="Renewals due"
+              value={String(buckets.renewalsDue)}
+              tone={buckets.renewalsDue > 0 ? 'warn' : undefined}
             />
             <Tile
-              label="Overdue next actions"
-              value={String(summary.overdueNextActions)}
-              tone={summary.overdueNextActions > 0 ? 'warn' : undefined}
+              label="No next step set"
+              value={String(buckets.missingNextAction)}
+              tone={buckets.missingNextAction > 0 ? 'warn' : undefined}
             />
             <Tile label="Open pipeline" value={formatPrice(summary.openPipelineCents)} />
             <Tile label="Collected" value={formatPrice(summary.collectedCents)} />
@@ -340,218 +619,204 @@ export default async function RevenuePage({
           <p className="mt-3 text-xs text-muted">
             Contacted {contactRate === null ? 'no data' : `${contactRate}%`} · warm or better{' '}
             {warmRate === null ? 'no data' : `${warmRate}%`} · paid{' '}
-            {paidRate === null ? 'no data' : `${paidRate}%`}. Pipeline and collected figures are
-            sums of amounts explicitly recorded on a deal — nothing is estimated or forecast.
+            {paidRate === null ? 'no data' : `${paidRate}%`}. Every count above is a count of the
+            same opportunities listed on this page — a tile and the list under it cannot disagree.
+            Live and renewal figures come from the placement itself, not from the CRM&rsquo;s copy
+            of it.
           </p>
         </>
       )}
 
       {/* ------------------------------------------------------- renewals */}
       <h2 className="mt-10 font-display text-lg uppercase text-ink">
-        Renewals and expiry ({renewalQueue.length})
+        Renewals and expiry ({renewals.length})
       </h2>
       <p className="mt-1 text-xs text-muted">
-        {featuredSchema === 'ready' ? (
-          <>
-            Both offers stop showing the moment their window passes — a corridor sponsor always did,
-            and since migration 057 a featured listing does too. So this queue is about RENEWAL, not
-            rescue: a row here has either ended or is about to, and the public pages have already
-            acted on it.
-          </>
-        ) : (
-          <>
-            A corridor sponsor stops showing the moment its window passes. A featured listing{' '}
-            <span className="font-semibold text-ink">does not yet</span> — migration 057 is not
-            applied, so its term ending is still a job for a human, and this queue is where that job
-            appears.
-          </>
-        )}{' '}
-        Rows show inside {RENEWAL_LEAD_DAYS} days of the recorded term end.
+        Read from the placement itself — <span className="text-ink">featured_until</span> for a
+        featured listing, the sponsorship window for a corridor sponsor — so a placement stopped by
+        hand stops appearing here even if the CRM row still says it is live. Nothing renews or
+        charges by itself; every renewal is a fresh sale you press.
       </p>
-      {renewalQueue.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">
-          {summary.active === 0
-            ? 'No placement is live, so nothing can be due.'
-            : 'Nothing due or overdue.'}
-        </p>
+      {renewals.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">No placement is near the end of its term.</p>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {renewalQueue.map((e) => (
-            <li
-              key={e.row.id}
-              className={`rounded-card border p-4 ${
-                e.renewal.needsManualStop
-                  ? 'border-diesel bg-diesel/10'
-                  : 'border-line bg-asphalt-800'
-              }`}
-            >
-              <p className="break-words font-display text-base uppercase text-ink">
-                {e.row.company}
-              </p>
+        <ul className="mt-3 space-y-3">
+          {renewals.map((v) => (
+            <li key={v.id} className="rounded-card border border-line bg-asphalt-800 p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="break-words font-display text-base uppercase text-ink">{v.company}</p>
+                <p
+                  className={`text-xs font-bold uppercase tracking-widest ${
+                    v.standing === 'approaching' ? 'text-ink' : 'text-diesel-300'
+                  }`}
+                >
+                  {RENEWAL_STANDING_LABEL[v.standing]}
+                </p>
+              </div>
               <p className="mt-1 text-xs text-muted">
-                {e.sale.offerId ? getOffer(e.sale.offerId).name : 'No offer recorded'} ·{' '}
-                {e.sale.term ? BILLING_LABEL[e.sale.term] : 'no term'} · term ends{' '}
-                {fmtDay(e.sale.renewalDate)}
+                {v.product}
+                {v.term ? ` · ${BILLING_LABEL[v.term]}` : ''} ·{' '}
+                {v.placement.kind === 'none'
+                  ? 'no placement'
+                  : v.placement.endsAt
+                    ? `ends ${v.placement.endsAt.slice(0, 10)}`
+                    : 'no end date recorded'}
+                {' · '}
+                {v.days > 0
+                  ? `${v.days} ${v.days === 1 ? 'day' : 'days'} left`
+                  : `ended ${-v.days} ${v.days === -1 ? 'day' : 'days'} ago`}
               </p>
-              <p
-                className={`mt-1 text-xs font-semibold ${
-                  e.renewal.needsManualStop ? 'text-diesel-300' : 'text-ink'
-                }`}
-              >
-                {e.renewal.needsManualStop ? '⚠ ' : ''}
-                {e.renewal.label}
-              </p>
-              <Link
-                href="/admin/directory/placements"
-                className="mt-2 inline-block text-xs text-signal underline"
-              >
-                Stop or renew on the placements console →
-              </Link>
+              {/* REVENUE-3 preserved Model B: a renewal runs from the day it is
+                  pressed. Saying so here is the difference between an informed
+                  decision and an accidental refund of days already paid for. */}
+              {v.renewalCost && (
+                <p className="mt-2 rounded-card border border-signal bg-signal/10 px-3 py-2 text-xs text-ink">
+                  Renewing today replaces the {v.renewalCost.unusedDays} paid{' '}
+                  {v.renewalCost.unusedDays === 1 ? 'day' : 'days'} still left on this term rather
+                  than adding to them. Renew on the last day to give none of it away.
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link href={`?open=${v.id}`} className={`${btnGhost} inline-flex items-center`}>
+                  Open the opportunity
+                </Link>
+                {activationHandoffHref(v) && (
+                  <Link
+                    href={activationHandoffHref(v)!}
+                    className={`${btnGhost} inline-flex items-center`}
+                  >
+                    Renew on the placements console
+                  </Link>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
 
-      {/* --------------------------------------------- awaiting activation */}
+      {/* ---------------------------------------------------- the full list */}
       <h2 className="mt-10 font-display text-lg uppercase text-ink">
-        Paid, ready to activate ({awaiting.length})
+        All opportunities ({filtered.length}
+        {filtered.length !== views.length ? ` of ${views.length}` : ''})
       </h2>
-      {awaiting.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">Nothing is paid and waiting.</p>
+
+      {views.length > 0 && (
+        <form method="get" className="mt-3 grid gap-3 sm:grid-cols-4">
+          <label className={`${label} sm:col-span-2`}>
+            Business
+            <input name="q" defaultValue={filter.q ?? ''} placeholder="Search…" className={input} />
+          </label>
+          <label className={label}>
+            Pile
+            <select name="bucket" defaultValue={filter.bucket ?? ''} className={input}>
+              <option value="">Any</option>
+              {[...MONEY_BUCKETS, 'live', 'later', 'lost'].map((b) => (
+                <option key={b} value={b}>
+                  {BUCKET_LABEL[b as keyof typeof BUCKET_LABEL]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={label}>
+            Product
+            <select name="offer" defaultValue={filter.offerId ?? ''} className={input}>
+              <option value="">Any</option>
+              {OFFERS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={label}>
+            Follow-up
+            <select name="na" defaultValue={filter.nextAction ?? ''} className={input}>
+              <option value="">Any</option>
+              {(['overdue', 'today', 'upcoming', 'none'] as const).map((n) => (
+                <option key={n} value={n}>
+                  {NEXT_ACTION_LABEL[n]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap gap-2 sm:col-span-4">
+            <button className={btnGhost}>Filter</button>
+            <Link
+              href="/admin/directory/revenue"
+              className={`${btnGhost} inline-flex items-center`}
+            >
+              Clear
+            </Link>
+          </div>
+        </form>
+      )}
+
+      {views.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">Nothing in the pipeline yet.</p>
+      ) : filtered.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">
+          Nothing matches that filter. Clear it to see all {views.length} opportunities.
+        </p>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {awaiting.map((e) => {
-            const kind =
-              e.sale.offerId === 'corridor-sponsor'
-                ? ('corridor-sponsor' as const)
-                : e.sale.offerId === 'featured-listing'
-                  ? ('featured-listing' as const)
-                  : null;
-            const blockers = kind
-              ? saleActivationBlockers(kind, e.sale, { startsAt: null, endsAt: null })
-              : ['No placement offer is recorded, so there is nothing to activate.'];
-            return (
-              <li key={e.row.id} className="rounded-card border border-line bg-asphalt-800 p-4">
-                <p className="break-words font-display text-base uppercase text-ink">
-                  {e.row.company}
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  {e.sale.offerId ? getOffer(e.sale.offerId).name : '—'} ·{' '}
-                  {e.sale.term ? BILLING_LABEL[e.sale.term] : 'no term'} ·{' '}
-                  {formatPrice(e.sale.paidCents)} paid {e.sale.paidOn ?? ''}
-                </p>
-                {blockers.length === 0 ? (
-                  <p className="mt-2 text-xs text-ink">
-                    Sale checks pass. Copy this CRM row id into the placements console:{' '}
-                    <code className="break-all text-signal">{e.row.id}</code>
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-diesel-300">{blockers.join(' ')}</p>
-                )}
-              </li>
-            );
-          })}
+        <ul className="mt-3 space-y-3">
+          {filtered.map((v) => (
+            <OpportunityCard key={v.id} view={v} openHref={`?open=${v.id}`} showBucket />
+          ))}
         </ul>
       )}
 
-      {/* ---------------------------------------------------- the pipeline */}
-      <h2 className="mt-10 font-display text-lg uppercase text-ink">
-        Opportunities ({rows.length})
-      </h2>
-      {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">Nothing in the pipeline yet.</p>
-      ) : (
-        <div className="mt-3 overflow-x-auto rounded-card border border-line">
-          <table className="w-full min-w-[900px] text-sm">
-            <thead className="bg-asphalt-800 text-left text-muted">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Business</th>
-                <th className="px-4 py-3 font-semibold">Offer</th>
-                <th className="px-4 py-3 font-semibold">Stage</th>
-                <th className="px-4 py-3 font-semibold">Money</th>
-                <th className="px-4 py-3 font-semibold">Next action</th>
-                <th className="px-4 py-3 font-semibold">Manage</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {enriched.map((e) => {
-                // Only an OPEN deal can have an overdue next action. A closed-won
-                // or closed-lost row with none set is finished, not neglected —
-                // colouring it red is noise, and noise is what teaches an owner
-                // to stop reading the red.
-                const openDeal = e.sale.stage !== 'closed_won' && e.sale.stage !== 'closed_lost';
-                const overdue =
-                  openDeal &&
-                  (!e.row.next_action?.trim() ||
-                    (e.sale.renewalDate !== null && e.sale.renewalDate < today));
-                return (
-                  <tr key={e.row.id}>
-                    <td className="px-4 py-3 align-top">
-                      <div className="break-words text-ink">{e.row.company}</div>
-                      {e.duplicates.length > 0 && (
-                        <div className="mt-1 text-xs font-semibold text-diesel-300">
-                          ⚠ {e.duplicates.length} possible duplicate
-                          {e.duplicates.length === 1 ? '' : 's'} (
-                          {[...new Set(e.duplicates.map((d) => d.reason))].join(', ')}) — check
-                          before selling twice
-                        </div>
-                      )}
-                      {e.dir.source && (
-                        <div className="mt-1 text-xs text-muted">Source: {e.dir.source}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-top text-muted">
-                      <div className="whitespace-nowrap">
-                        {e.sale.offerId
-                          ? getOffer(e.sale.offerId).name
-                          : (e.row.tier_interest ?? '—')}
-                      </div>
-                      <div className="mt-1 whitespace-nowrap text-xs">
-                        {e.sale.term ? BILLING_LABEL[e.sale.term] : 'no term agreed'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="whitespace-nowrap text-muted">
-                        {STAGE_LABEL[e.sale.stage]}
-                      </div>
-                      <div className="mt-1 whitespace-nowrap text-xs text-muted">
-                        status: {e.row.status ?? '—'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top text-muted">
-                      <div className="whitespace-nowrap">
-                        quoted {formatPrice(e.sale.quotedCents)}
-                      </div>
-                      <div className="mt-1 whitespace-nowrap text-xs">
-                        paid {formatPrice(e.sale.paidCents)}
-                        {e.sale.paymentConfirmed ? ' · confirmed' : ' · unconfirmed'}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div
-                        className={`text-xs ${overdue ? 'font-semibold text-diesel-300' : 'text-muted'}`}
-                      >
-                        {e.row.next_action || 'None set'}
-                      </div>
-                      <div className="mt-1 whitespace-nowrap text-xs text-muted">
-                        {fmtDay(e.row.next_action_date)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <Link
-                        href={`?open=${e.row.id}`}
-                        className="whitespace-nowrap text-xs text-signal underline"
-                      >
-                        {openId === e.row.id ? 'Open below ↓' : 'Manage →'}
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* ------------------------------------------- open one by hand */}
+      <h2 className="mt-10 font-display text-lg uppercase text-ink">Open an opportunity</h2>
+      <p className="mt-1 text-xs text-muted">
+        For a business you called yourself. An inbound inquiry through /sponsors arrives here on its
+        own — this is for the ones you go and get. It records a conversation you have already had:
+        nothing is sent, nobody is contacted, and no money is recorded until the quote and payment
+        steps.
+      </p>
+      <form
+        action={createOpportunityAction}
+        className="mt-3 grid gap-3 rounded-card border border-line bg-asphalt-800 p-4 sm:grid-cols-2 sm:p-5"
+      >
+        <label className={label}>
+          Business name
+          <input name="company" required className={input} placeholder="Florence Truck Wash" />
+        </label>
+        <label className={label}>
+          Who you spoke to
+          <input name="contact_name" className={input} placeholder="Dale" />
+        </label>
+        <label className={label}>
+          Email
+          <input name="email" type="email" className={input} placeholder="dale@example.com" />
+        </label>
+        <label className={label}>
+          Phone
+          <input name="phone" className={input} placeholder="(555) 555-0100" />
+        </label>
+        <label className={`${label} sm:col-span-2`}>
+          What happened
+          <input
+            name="note"
+            className={input}
+            placeholder="Owner is interested, wants to see the corridor page first"
+          />
+        </label>
+        <label className={label}>
+          Next step
+          <input name="next_action" className={input} placeholder="Call back with the page" />
+        </label>
+        <label className={label}>
+          Next step on
+          <input type="date" name="next_action_date" defaultValue={today} className={input} />
+        </label>
+        <label className={label}>
+          Opened by
+          <input name="recorded_by" required placeholder="Shawn" className={input} />
+        </label>
+        <div className="flex items-end">
+          <button className={btn}>Open opportunity</button>
         </div>
-      )}
+      </form>
 
       {/* ------------------------------------------------- the one open deal */}
       {open && (
@@ -821,7 +1086,7 @@ export default async function RevenuePage({
 
       {/* -------------------------------------------------- prospect shortlist */}
       <h2 className="mt-10 font-display text-lg uppercase text-ink">
-        Who to call first ({queue.prospects.length})
+        Who to call first ({prospectQueue.prospects.length})
       </h2>
       <p className="mt-1 text-xs text-muted">
         Built only from the public directory: the business phone and website already printed on the
@@ -830,7 +1095,7 @@ export default async function RevenuePage({
         been contacted and nothing here sends anything —{' '}
         <span className="font-semibold text-ink">copying it is a decision you make</span>.
       </p>
-      {queue.prospects.length === 0 ? (
+      {prospectQueue.prospects.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
           No eligible listing found. Eligibility is: published, not deleted, not already sponsored,
           not a held brand, in a category with somebody to sell to, and carrying a public business
@@ -839,9 +1104,10 @@ export default async function RevenuePage({
       ) : (
         <>
           <p className="mt-2 text-xs text-muted">
-            Showing {queue.prospects.length} of {queue.eligible} eligible
-            {queue.dropped > 0 ? ` — ${queue.dropped} not shown` : ''}. Candidates are read from a
-            bounded query, so this is the best of what was read, not a census of the directory.
+            Showing {prospectQueue.prospects.length} of {prospectQueue.eligible} eligible
+            {prospectQueue.dropped > 0 ? ` — ${prospectQueue.dropped} not shown` : ''}. Candidates
+            are read from a bounded query, so this is the best of what was read, not a census of the
+            directory.
           </p>
           <div className="mt-3 overflow-x-auto rounded-card border border-line">
             <table className="w-full min-w-[800px] text-sm">
@@ -854,7 +1120,7 @@ export default async function RevenuePage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {queue.prospects.map((p) => (
+                {prospectQueue.prospects.map((p) => (
                   <tr key={p.listing.id}>
                     <td className="px-4 py-3 align-top">
                       <div className="break-words text-ink">{p.listing.name}</div>
@@ -905,7 +1171,7 @@ export default async function RevenuePage({
               rows={8}
               aria-label="Outreach queue, public business details only"
               className="mt-2 w-full rounded-card border border-line bg-asphalt p-3 font-mono text-xs text-muted"
-              value={outreachQueueLines(queue.prospects).join('\n')}
+              value={outreachQueueLines(prospectQueue.prospects).join('\n')}
             />
             <p className="mt-1 text-xs text-muted">
               Public business details only. Nothing here is sent, and no message text is generated —

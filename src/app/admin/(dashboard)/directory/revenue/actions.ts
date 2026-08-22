@@ -133,6 +133,125 @@ async function addTouch(
   }
 }
 
+/* ------------------------------------------------- opening an opportunity */
+
+/**
+ * Record a business the owner is selling to.
+ *
+ * THE GAP THIS CLOSES
+ *
+ * On `main` there is exactly one way a `sponsors` row can come into existence:
+ * a business fills in the public form at /sponsors and `POST
+ * /api/sponsor-inquiry` inserts it. There is no admin path at all — verified by
+ * searching every `from('sponsors')` call in `src/`, of which exactly one is an
+ * insert and it is that route.
+ *
+ * Production carries zero CRM rows. So an owner who rings a business off the
+ * prospect shortlist and gets a yes has nowhere to write it down: the console
+ * that is supposed to run the sale can only display deals that arrived by
+ * themselves. The nearest workaround is filling in the public form pretending
+ * to be the customer, which fabricates an inquiry that never happened.
+ *
+ * This is the missing half. Same table, same columns, same defaults as the
+ * public route — no migration, no new state, and no second CRM.
+ *
+ * WHAT IT DELIBERATELY DOES NOT DO
+ *
+ *   * It contacts nobody. No email, no text, no webhook. The row is a note to
+ *     the owner about a conversation the owner had.
+ *   * It records no money. A new row starts at `prospect` with no offer, no
+ *     amount and nothing paid — the quote and payment steps are unchanged and
+ *     still have to be walked in order.
+ *   * It refuses payment-instrument text in the notes, exactly as every other
+ *     operator-typed field here does.
+ *   * It sets `next_action` and `next_action_date` from the start, so a row
+ *     cannot be created already invisible to the queue. That is the same
+ *     courtesy the public route extends to an inbound inquiry.
+ */
+export async function createOpportunityAction(formData: FormData): Promise<void> {
+  requireAdmin();
+
+  const company = bounded(field(formData, 'company'), 160);
+  const contactName = bounded(field(formData, 'contact_name'), 120);
+  const email = bounded(field(formData, 'email'), 200).toLowerCase();
+  const phone = bounded(field(formData, 'phone'), 40);
+  const note = bounded(field(formData, 'note'), MAX_REASON);
+  const nextAction = bounded(field(formData, 'next_action'), 160) || 'Call and introduce the offer';
+  const nextActionDate = field(formData, 'next_action_date');
+  const recordedBy = bounded(field(formData, 'recorded_by'), 60);
+
+  const blockers: string[] = [];
+  if (!company) blockers.push('A business name is required.');
+  // One way to reach them, or the row is a reminder with nobody attached.
+  if (!email && !phone)
+    blockers.push('Record an email address or a phone number — otherwise there is nobody to call.');
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    blockers.push('That email address does not look like an address.');
+  if (!recordedBy) blockers.push('Record who opened this — it is the audit trail.');
+  if (nextActionDate && !/^\d{4}-\d{2}-\d{2}$/.test(nextActionDate))
+    blockers.push('The follow-up date must be a real date (YYYY-MM-DD).');
+  blockers.push(...paymentInstrumentBlockers(note, 'The note'));
+  if (blockers.length) fail(blockers);
+
+  const supabase = createAdminClient();
+
+  // A business already in the pipeline is a duplicate, not a second deal. The
+  // console flags near-matches on the way in; an EXACT name match is refused
+  // outright, because two rows for one relationship is how a placement gets
+  // sold twice.
+  try {
+    const { data: existing } = await supabase
+      .from('sponsors')
+      .select('id, company')
+      .ilike('company', company)
+      .limit(1);
+    const hit = (existing as { id: string; company: string | null }[] | null)?.[0];
+    if (hit)
+      fail([
+        `${hit.company ?? 'That business'} is already in the pipeline. Open the existing opportunity rather than starting a second one.`,
+      ]);
+  } catch {
+    /* A duplicate check that cannot run must not block recording the sale. */
+  }
+
+  const at = new Date();
+  const { data: created, error } = await supabase
+    .from('sponsors')
+    .insert({
+      company,
+      contact_name: contactName || null,
+      email: email || null,
+      phone: phone || null,
+      // No offer, no amount: an opportunity opens unsold, and the quote step is
+      // the only thing that may record what was agreed.
+      tier_interest: null,
+      stage: 'prospect',
+      status: 'new',
+      priority: 3,
+      next_action: nextAction,
+      next_action_date: nextActionDate || isoDay(at),
+      notes: appendNote(
+        note || null,
+        `Opportunity opened by ${recordedBy} on ${isoDay(at)} — recorded from the admin, not an inbound inquiry.`,
+      ),
+    })
+    .select('id')
+    .single();
+
+  if (error || !created) fail(['That opportunity could not be created. Nothing was changed.']);
+
+  await addTouch(
+    supabase,
+    (created as { id: string }).id,
+    'other',
+    'outbound',
+    `Opportunity opened by ${recordedBy}`,
+  );
+
+  revalidatePath(PATH);
+  back({ ok: `${company} is now in the pipeline.`, open: (created as { id: string }).id });
+}
+
 /* ------------------------------------------------------------ stage moves */
 
 /**
