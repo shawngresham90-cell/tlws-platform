@@ -137,8 +137,25 @@ export function isFeaturedActive(
   const status = featuredWindowStatus(row, now, schema);
   if (status === 'active') return true;
   if (status === 'schema-unavailable') {
-    // Legacy behaviour, unchanged: the pre-057 rule was `is_featured` plus a
-    // published, non-deleted, non-held row.
+    // Pre-057, with ONE deliberate tightening.
+    //
+    // The rule on main was `is_featured` alone — the published/not-deleted
+    // conditions came from the query, and `isHeldBrand` never touched the
+    // public read path at all (it lived only in the admin placement and
+    // prospect code). So this is NOT a byte-for-byte replay of the old
+    // behaviour, and saying so would be the kind of quiet inaccuracy this
+    // milestone exists to remove: a held brand carrying `is_featured = true`
+    // was badged before and is withheld here.
+    //
+    // Kept, rather than reverted to the exact legacy rule, because a held
+    // brand must never wear a Sponsored badge — that is the one case where
+    // matching yesterday would mean shipping a known defect — and because the
+    // post-057 path already refuses it, so reverting would make the bridge
+    // disagree with the thing it is bridging to.
+    //
+    // Blast radius today: none. Production carries ZERO rows with
+    // `is_featured = true` (verified read-only against the live database), so
+    // no visitor sees a difference on merge.
     return row.isPublished && !row.deletedAt && !isHeldBrand(row.name);
   }
   return false;

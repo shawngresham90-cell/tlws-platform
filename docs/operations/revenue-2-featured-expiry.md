@@ -39,6 +39,19 @@ A driver sees nothing except that an unpaid listing stops being labelled
 Sponsored. No listing is hidden, moved, or removed. Expiry takes away a **label**,
 never a business.
 
+### One behaviour change that lands on merge, before the migration
+
+The compatibility bridge replays the old rule with exactly one tightening: a
+**held brand** (Love's, Pilot, Flying J, Sapp Bros, GoAsis, Thorntons) carrying
+`is_featured = true` was badged before and is withheld now. The old public read
+path did not know about held brands at all — that rule lived only in the admin
+placement and prospect code.
+
+It is kept rather than replayed exactly, because a held brand must never wear a
+Sponsored badge and the post-057 path already refuses it. **Blast radius today
+is none:** production carries zero rows with `is_featured = true`, so no visitor
+sees a difference on merge.
+
 ---
 
 ## 2. Before you apply anything

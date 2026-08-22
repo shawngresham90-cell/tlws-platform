@@ -543,6 +543,39 @@ check(
   );
 }
 
+// The ONE way the pre-migration bridge is not a byte-for-byte replay of main.
+//
+// On main the public rule was `is_featured` alone — the published/not-deleted
+// conditions came from the query, and `isHeldBrand` never appeared on the
+// public read path (only in admin placement and prospect code). The bridge
+// tightens exactly one case: a held brand carrying `is_featured = true` was
+// badged before and is withheld now.
+//
+// Pinned here on purpose. It is a deliberate, defensible tightening — a held
+// brand must never wear a Sponsored badge — but it is a DIFFERENCE, and the
+// first draft of this milestone described it as "legacy behaviour, unchanged".
+// A test is the only thing that stops that description drifting back.
+{
+  const heldPre = row({ name: "Love's Travel Stop", featuredUntil: undefined });
+  extra(
+    'pre-migration: a held brand flagged featured is withheld (a tightening, not a replay)',
+    isFeaturedActive(heldPre, NOW, 'unavailable') === false,
+  );
+  extra(
+    'pre-migration: an ordinary flagged brand is unaffected by that tightening',
+    isFeaturedActive(row({ featuredUntil: undefined }), NOW, 'unavailable') === true,
+  );
+  // And the public path on main really did not know about held brands, so the
+  // difference is with the OLD code, not with some other guard that already
+  // existed. If a held-brand filter is ever added to the public read path
+  // itself, this stops being a difference and this assertion should go.
+  extra(
+    'the held-brand rule still lives in one place, not scattered across the read path',
+    /isHeldBrand/.test(src('src/lib/directory/featured-window.ts')) &&
+      !/isHeldBrand/.test(src('src/lib/directory/dto.ts')),
+  );
+}
+
 /* ============================================== 6 · the public read surfaces */
 
 function entry(over: Partial<DirectoryEntry> = {}): DirectoryEntry {
