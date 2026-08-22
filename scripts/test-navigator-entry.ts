@@ -820,11 +820,41 @@ check(
   'NE69b: and the same flush covers returning from it — the trip is in the snapshot either way',
   /saveSnapshotNow\(\)/.test(SCREEN),
 );
-check(
-  'NE70: no production data or schema change — this milestone adds no migration',
-  readdirSync('supabase/migrations').filter((f) => Number(f.slice(0, 3)) > 56).length === 0,
-  readdirSync('supabase/migrations').filter((f) => Number(f.slice(0, 3)) > 56),
-);
+/**
+ * Migrations that arrived after NAV-ENTRY-1, and belong to another milestone.
+ *
+ * The original form was "nothing above 056 exists", which said the right thing
+ * about THIS milestone's scope and aged the moment another milestone added a
+ * migration for its own reasons. Naming them keeps the teeth — an unexplained
+ * new migration still trips this — without the assertion becoming false about
+ * a milestone that never touched the schema.
+ */
+const OTHER_MILESTONE_MIGRATIONS: Record<string, string> = {
+  '057_featured_listing_term.sql': 'REVENUE-2 — adds locations.featured_until',
+};
+{
+  const later = readdirSync('supabase/migrations').filter((f) => Number(f.slice(0, 3)) > 56);
+  const unexplained = later.filter((f) => !(f in OTHER_MILESTONE_MIGRATIONS));
+  check(
+    'NE70: no production data or schema change — this milestone adds no migration',
+    unexplained.length === 0,
+    unexplained,
+  );
+  // And the ones that did arrive must be nothing to do with Navigator. This is
+  // the half that actually protects the claim: a migration named after another
+  // milestone could still touch a Navigator table.
+  check(
+    'NE70a: and no later migration touches a Navigator object',
+    later.every((f) => {
+      const sql = read(`supabase/migrations/${f}`)
+        .split('\n')
+        .filter((l) => !l.trimStart().startsWith('--'))
+        .join('\n');
+      return !/navigator/i.test(sql);
+    }),
+    later,
+  );
+}
 check(
   'NE70b: and no Navigator surface writes to a database',
   !/supabase|postgrest/i.test(code(SETTINGS)) &&

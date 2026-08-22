@@ -54,6 +54,19 @@ function check(name: string, cond: boolean, detail: unknown = '') {
 
 const NOW = new Date('2026-08-01T12:00:00Z');
 
+/**
+ * REVENUE-2: a featured row now carries a term, and migration 057's CHECK makes
+ * that structural — `not is_featured or featured_until is not null`. So the
+ * fixture default is a far-future term, and a row that sets `isFeatured: true`
+ * without saying otherwise is an ACTIVE placement, which is what every capacity
+ * and eligibility case below was always about. Cases that care about expiry
+ * override `featuredUntil` explicitly.
+ *
+ * The date is a fixed literal rather than a computed offset so these stay
+ * deterministic under an injected clock.
+ */
+const FAR_FUTURE = '2099-01-01T00:00:00.000Z';
+
 function listing(over: Partial<PromotableListing> = {}): PromotableListing {
   return {
     id: 'l1',
@@ -64,6 +77,7 @@ function listing(over: Partial<PromotableListing> = {}): PromotableListing {
     isPublished: true,
     isFeatured: false,
     deletedAt: null,
+    featuredUntil: FAR_FUTURE,
     ...over,
   };
 }
@@ -577,10 +591,25 @@ check(
   'the placements console admits the capacity check is not a DB constraint',
   /not a database constraint/i.test(src.placementPage),
 );
-check(
-  'the placements console admits a featured listing does not self-expire',
-  /no end date in the database/i.test(src.placementPage),
-);
+// REVENUE-2 CHANGED THIS CONTRACT, deliberately. A featured listing DOES
+// self-expire now — but only once migration 057 has given it a term the public
+// read path can see. So the console must state whichever of those is currently
+// true, and both branches have to exist in the source.
+{
+  // JSX wraps prose across lines, so compare against a whitespace-collapsed
+  // copy — otherwise this assertion breaks the next time Prettier reflows a
+  // paragraph, which is how a real check gets deleted for being flaky.
+  const consoleCopy = src.placementPage.replace(/\s+/g, ' ');
+  check(
+    'the placements console states the self-expiry position for both schema states',
+    // Post-migration: the placement ends on its own.
+    /stops showing the moment the term passes/i.test(consoleCopy) &&
+      // Pre-migration: the old warning is still accurate, and activation is barred.
+      /Featured-expiry schema is not active yet/i.test(consoleCopy) &&
+      /stopped by hand/i.test(consoleCopy) &&
+      /Activation is blocked until migration 057/i.test(consoleCopy),
+  );
+}
 check(
   'the placements console warns about the every-corridor wildcard',
   /EVERY CORRIDOR|every corridor page/i.test(src.placementPage),

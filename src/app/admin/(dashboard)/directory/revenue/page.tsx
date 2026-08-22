@@ -26,6 +26,7 @@ import {
 } from '@/lib/directory/revenue';
 import { FEATURED_PER_PAGE, PRIMARY_CORRIDOR_SPONSORS } from '@/lib/directory/placements';
 import { parseDirectoryInquiry } from '@/lib/admin/directory-inquiry';
+import { adminFeaturedSchema } from '@/lib/admin/featured-schema';
 import {
   MONETIZABLE_CATEGORIES,
   outreachQueueLines,
@@ -198,11 +199,12 @@ export default async function RevenuePage({
   const ok = one(searchParams?.ok);
   const openId = one(searchParams?.open);
 
+  const featuredSchema = await adminFeaturedSchema();
   const { ok: loaded, rows, listings } = await load();
   const now = new Date();
   const today = isoDay(now);
   const saleRows = rows.map(toSaleRow);
-  const summary = pipelineSummary(saleRows, now);
+  const summary = pipelineSummary(saleRows, now, featuredSchema);
 
   const contacted = summary.total - summary.byStage.prospect;
   const contactRate = rate(contacted, summary.total);
@@ -216,7 +218,7 @@ export default async function RevenuePage({
     const sale = readSaleState(toSaleRow(r));
     const dir = parseDirectoryInquiry(r.tier_interest, r.notes);
     const isLive = r.status === 'active';
-    const renewal = renewalView(sale.offerId, sale.renewalDate, isLive, now);
+    const renewal = renewalView(sale.offerId, sale.renewalDate, isLive, now, featuredSchema);
     const duplicates = findDuplicates(
       { id: r.id, company: r.company, email: r.email, phone: r.phone },
       rows.map((o) => ({ id: o.id, company: o.company, email: o.email, phone: o.phone })),
@@ -263,6 +265,17 @@ export default async function RevenuePage({
         </Link>
         , and it refuses any deal that has not cleared the checks below.
       </p>
+
+      {featuredSchema !== 'ready' && (
+        <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm text-diesel-300">
+          <span className="font-semibold">Featured-expiry schema is not active yet.</span> Migration
+          057 has not been applied, so a featured listing still has no end date of its own: its term
+          ending changes nothing on the public site until someone stops it by hand, and this console
+          keeps warning you about that. New featured activations are blocked until it is applied.
+          Corridor sponsorship already enforces its own window and is unaffected — it remains the
+          safer first sale.
+        </p>
+      )}
 
       {!loaded && (
         <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm text-diesel-300">
@@ -338,10 +351,22 @@ export default async function RevenuePage({
         Renewals and expiry ({renewalQueue.length})
       </h2>
       <p className="mt-1 text-xs text-muted">
-        A corridor sponsor stops showing the moment its window passes. A featured listing{' '}
-        <span className="font-semibold text-ink">does not</span> — the column behind it is a bare
-        boolean with no end date, so its term ending is a job for a human, and this queue is where
-        that job appears. Rows show inside {RENEWAL_LEAD_DAYS} days of the recorded term end.
+        {featuredSchema === 'ready' ? (
+          <>
+            Both offers stop showing the moment their window passes — a corridor sponsor always did,
+            and since migration 057 a featured listing does too. So this queue is about RENEWAL, not
+            rescue: a row here has either ended or is about to, and the public pages have already
+            acted on it.
+          </>
+        ) : (
+          <>
+            A corridor sponsor stops showing the moment its window passes. A featured listing{' '}
+            <span className="font-semibold text-ink">does not yet</span> — migration 057 is not
+            applied, so its term ending is still a job for a human, and this queue is where that job
+            appears.
+          </>
+        )}{' '}
+        Rows show inside {RENEWAL_LEAD_DAYS} days of the recorded term end.
       </p>
       {renewalQueue.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
