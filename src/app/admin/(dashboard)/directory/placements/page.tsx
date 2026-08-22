@@ -541,7 +541,28 @@ export default async function PlacementsPage({
                       className="flex flex-wrap items-end gap-2"
                     >
                       <input type="hidden" name="listing_id" value={l.id} />
-                      {paidBy && <input type="hidden" name="sponsor_id" value={paidBy.id} />}
+                      {/* The opportunity is supplied by the application when the
+                          audit line identifies it, and only asked for when it
+                          does not — and then as a picker, never as an id to
+                          type. Without one the stop still succeeds; it just
+                          files no note, which is worse than filing one. */}
+                      {paidBy ? (
+                        <input type="hidden" name="sponsor_id" value={paidBy.id} />
+                      ) : (
+                        opportunities.length > 0 && (
+                          <label className={label}>
+                            File this against
+                            <select name="sponsor_id" defaultValue="" className={`${input} w-56`}>
+                              <option value="">No opportunity — file no note</option>
+                              {opportunities.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.company}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )
+                      )}
                       <label className={label}>
                         Reviewer
                         <input name="reviewer" className={`${input} w-32`} placeholder="Shawn" />
@@ -565,6 +586,20 @@ export default async function PlacementsPage({
       <h2 id="review" className="mt-10 font-display text-lg uppercase text-ink">
         {mode === 'renew' ? 'Renew a featured listing' : 'Sell a featured listing'}
       </h2>
+
+      {/* Stated at the top of the section rather than inside the checklist, so
+          an owner learns the sale cannot complete BEFORE they search for a
+          listing and assemble it — the checklist line says what is wrong, this
+          says which migration puts it right. */}
+      {schema !== 'ready' && (
+        <p className="mt-3 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm text-diesel-300">
+          <span className="font-semibold">
+            Activation is blocked until migration 057 is applied.
+          </span>{' '}
+          Switching a listing on now would give it no expiry, which is exactly what that migration
+          removes. Corridor sponsorship is unaffected and can be sold and activated normally.
+        </p>
+      )}
 
       {/* ---------------------------------------------------- step 1: find it */}
       {mode === 'activate' && (
@@ -657,16 +692,6 @@ export default async function PlacementsPage({
               <button className={btnGhost}>Re-check</button>
             </div>
           </form>
-
-          {/* Named here as well as in the checklist line, because the fix is
-              an operational one the owner has to go and do: the line says what
-              is wrong, this says which migration puts it right. */}
-          {schema !== 'ready' && (
-            <p className="mt-3 rounded-card border border-diesel bg-diesel/10 px-3 py-2 text-xs text-diesel-300">
-              Activation is blocked until migration 057 is applied. Switching a listing on now would
-              give it no expiry, which is exactly what that migration removes.
-            </p>
-          )}
 
           {/* The gates, all of them, before anything is written. */}
           <ul className="mt-4">

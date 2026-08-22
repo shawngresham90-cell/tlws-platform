@@ -32,7 +32,7 @@
  *     --alias:server-only=./scripts/shims/server-only.ts \
  *     --outfile=/tmp/test-revenue-first-sale.cjs && node /tmp/test-revenue-first-sale.cjs
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   GATE_ORDER,
   daysUntil,
@@ -1159,14 +1159,27 @@ check(
   'FS60',
   'this milestone adds no migration, no payment processor and no production write hook',
   (() => {
-    const fs = code(FIRST_SALE);
-    const page = code(CONSOLE);
-    const noProcessor =
-      !/stripe|paypal|braintree|checkout\.session|payment_intent|card_number/i.test(fs) &&
-      !/stripe|paypal|braintree|checkout\.session|payment_intent|card_number/i.test(page);
-    // The console still says, in words, that it takes no payment.
-    const saysSo = /takes no payment/i.test(src(CONSOLE));
-    return noProcessor && saysSo;
+    const PROCESSOR = /stripe|paypal|braintree|checkout\.session|payment_intent|card_number/i;
+    const noProcessor = [FIRST_SALE, CONSOLE, ACTIONS].every((f) => !PROCESSOR.test(code(f)));
+    // The console still says, in words, that it takes no payment. Read from the
+    // comment-stripped source: this is visible JSX prose, and it has to stay
+    // that rather than becoming a note to developers.
+    const saysSo = /takes no payment/i.test(code(CONSOLE));
+    // 057 is the last migration, and it is the one REVENUE-2 wrote. A file
+    // numbered above it would mean this milestone added schema work it was
+    // told not to; a 057 without the constraint would mean it edited that one.
+    const migrations = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql'));
+    const highest = Math.max(
+      ...migrations.map((f) => Number(f.slice(0, 3))).filter((n) => Number.isFinite(n)),
+    );
+    const fiveSeven = src('supabase/migrations/057_featured_listing_term.sql');
+    return (
+      noProcessor &&
+      saysSo &&
+      highest === 57 &&
+      /add column featured_until timestamptz;/.test(fiveSeven) &&
+      /DO NOT APPLY WITHOUT EXPLICIT APPROVAL/.test(fiveSeven)
+    );
   })(),
 );
 
