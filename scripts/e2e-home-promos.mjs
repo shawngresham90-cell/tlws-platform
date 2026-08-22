@@ -8,7 +8,7 @@
  *   - the whole square navigates to the EXISTING /directory/parking
  *   - keyboard: tile is reachable and Enter activates it; focus is visible
  *   - reduced-motion: no running animations on the tile
- *   - shirt promo shows "Only 7" from the single inventory source; the
+ *   - shirt promo shows "Only 5" from the single inventory source; the
  *     Stan checkout link is unchanged
  *   - existing parking entrances (bottom bar) still work
  *
@@ -106,10 +106,10 @@ try {
     const promoText = await page
       .locator('section[aria-label*="Founding Supporter T-shirt"]')
       .innerText();
-    check(`${label}: shirt promo shows Only 7`, /Only 7/i.test(promoText), promoText.slice(0, 80));
+    check(`${label}: shirt promo shows Only 5`, /Only 5/i.test(promoText), promoText.slice(0, 80));
     check(
-      `${label}: no stale 16 on the page`,
-      !/Only 16/i.test(await page.locator('body').innerText()),
+      `${label}: no stale 7 on the page`,
+      !/Only 7/i.test(await page.locator('body').innerText()),
     );
 
     if (width === 390) {

@@ -25,8 +25,9 @@
  * Final pilot milestone additions, measured at every width BEFORE the
  * trip starts (the flow now drives the REAL parked map-top search, not
  * the developer coordinate boxes):
- *   7. the parked search sits at the top of the map, does not autofocus,
- *      and never causes horizontal overflow;
+ *   7. the parked search sits ABOVE the map (NAV-ENTRY-2), fully painted
+ *      and inside the initial viewport, does not autofocus, and never
+ *      causes horizontal overflow;
  *   8. typed results render inside the viewport, stay reachable with the
  *      phone keyboard up (visual viewport shrunk ~45%), and selecting
  *      one updates the chosen destination beside Start;
@@ -394,19 +395,55 @@ async function parkedSearchProof(page, w, h) {
     if (!inp) return null;
     const r = inp.getBoundingClientRect();
     const m = mapEl ? mapEl.getBoundingClientRect() : null;
+    /*
+     * NAV-ENTRY-2 moved the search OUT of the map. `overMap` below is kept
+     * and reported so the change stays visible in the record, but it is no
+     * longer what the check asserts — see the verdict.
+     */
+    let clip = { top: 0, bottom: innerHeight };
+    for (let el = inp.parentElement; el; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      if (cs.overflow === 'visible' && cs.overflowX === 'visible' && cs.overflowY === 'visible') {
+        continue;
+      }
+      const b = el.getBoundingClientRect();
+      clip = { top: Math.max(clip.top, b.top), bottom: Math.min(clip.bottom, b.bottom) };
+    }
     return {
       rect: { left: Math.round(r.left), top: Math.round(r.top), w: Math.round(r.width) },
       overMap: m !== null && r.top >= m.top - 1 && r.top <= m.top + m.height / 2,
+      aboveMap: m === null || r.bottom <= m.top + 1,
+      painted: Math.round(Math.max(0, Math.min(r.bottom, clip.bottom) - Math.max(r.top, clip.top))),
+      height: Math.round(r.height),
+      inViewport: r.top >= -1 && r.bottom <= innerHeight + 1,
       hscroll: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
       focused: document.activeElement === inp,
     };
   });
   verdict('parked: search input present', overlay !== null);
   if (overlay) {
+    /*
+     * THIS ASSERTION IS REPLACED, NOT RELAXED (NAV-ENTRY-2).
+     *
+     * It read `overMap` — the search's top had to be inside the upper half
+     * of the map box — and it had been FAILING on main at all eight cases
+     * this bench runs, with the input measured 649 to 935 px down. The
+     * failure was not a flaw in the check. The overlay it described really
+     * had put the search inside a 286 px scroller under 541 px of other
+     * material, where its painted height was zero.
+     *
+     * "Inside the map" is now the wrong contract to hold: this milestone's
+     * requirement is destination search THEN map, so a search still sitting
+     * over the map would be the regression. What replaces it is the
+     * stronger statement the old one was trying to approximate — the search
+     * is above the map, entirely inside the initial viewport, and every
+     * pixel of it is actually painted rather than clipped by an ancestor.
+     * A search that satisfies this cannot be the one that shipped.
+     */
     verdict(
-      'parked: search sits at the top of the map',
-      overlay.overMap,
-      JSON.stringify(overlay.rect),
+      'parked: search sits above the map, fully painted, inside the viewport',
+      overlay.aboveMap && overlay.inViewport && overlay.painted >= overlay.height - 1,
+      JSON.stringify({ ...overlay.rect, painted: overlay.painted, aboveMap: overlay.aboveMap }),
     );
     verdict(
       'parked: no autofocus — the keyboard stays down until the driver taps',

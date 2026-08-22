@@ -32,9 +32,9 @@
  *   8. a genuinely MOVING truck loses the text field through the shared
  *      lock (compact locked row, passenger path intact), and GPS loss
  *      AFTER established motion keeps it locked (UNKNOWN never re-opens)
- *   9. structure: the overlay clears Leaflet panes but sits under its
- *      controls, scrolls internally instead of clipping, and the input
- *      never autofocuses
+ *   9. structure: the search is a sibling of the map and PRECEDES it, no
+ *      overlay chrome clips it (NAV-ENTRY-2), and the input never
+ *      autofocuses
  *
  * Run:
  *   node scripts/run-tests.mjs navigator-map-search
@@ -691,18 +691,47 @@ async function main(): Promise<void> {
   {
     const screen = readFileSync('src/components/navigator/DrivingScreen.tsx', 'utf8');
     const search = readFileSync('src/components/navigator/DestinationSearch.tsx', 'utf8');
+    /*
+     * THREE ASSERTIONS RETIRED HERE, AND WHY (NAV-ENTRY-2).
+     *
+     * They pinned the OVERLAY MECHANISM: a `z-[500]` layer over the map,
+     * a `pointer-events-none` wrapper so the map kept the pixels the card
+     * did not, and `max-h-full overflow-y-auto` so a long result list
+     * scrolled inside the map box instead of being clipped by it.
+     *
+     * That mechanism is gone, so those three assertions describe code that
+     * no longer exists — and the last of them was the one that mattered:
+     * "scrolls inside the map box INSTEAD OF CLIPPING" was the promise,
+     * and it did not hold. Measured on the shipped build at all six
+     * required viewports, the destination input's visible height inside
+     * that scroller was 0 px: 541 px of plan prompt and road-test arm sat
+     * above it in a 286 px box. The list scrolled; the driver had no
+     * reason to know there was anything to scroll.
+     *
+     * The replacement is not a weaker version of the same promise, it is
+     * the stronger one that makes the promise unnecessary: the search is a
+     * SIBLING of the map, before it, in ordinary page flow. Nothing
+     * overlays it, so nothing has to be told to pass touches through; and
+     * nothing between it and the top of the surface clips, so a long
+     * result list cannot be hidden by an ancestor no matter how long it
+     * gets. Comments are stripped first, so a description of the old
+     * mechanism can never satisfy a check about the new one.
+     */
+    const code = screen.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     check(
-      'structure: the overlay clears Leaflet panes (400) and sits under its controls (1000)',
-      screen.includes('z-[500]'),
+      'structure: the search is not inside the map wrapper any more',
+      !/<div className=\{mapWrapCls\}>\s*\{mapSlot\}\s*\{mapSearchSlot\}/.test(code) &&
+        /<div className=\{mapWrapCls\}>\{mapSlot\}<\/div>/.test(code.replace(/\s+/g, ' ')),
     );
     check(
-      'structure: the wrapper passes touches through; only the card catches them',
-      screen.includes('pointer-events-none absolute inset-0 z-[500]') &&
-        screen.includes('pointer-events-auto'),
+      'structure: the search PRECEDES the map, so the first question is the first thing',
+      code.indexOf('{mapSearchSlot}') < code.indexOf('{mapSlot}'),
     );
     check(
-      'structure: a long result list scrolls inside the map box instead of clipping',
-      screen.includes('max-h-full overflow-y-auto'),
+      'structure: nothing overlays or clips the search — no overlay chrome survives',
+      !code.includes('z-[500]') &&
+        !code.includes('pointer-events-none') &&
+        !code.includes('max-h-full overflow-y-auto'),
     );
     check(
       'structure: the input never autofocuses (no keyboard auto-open)',
