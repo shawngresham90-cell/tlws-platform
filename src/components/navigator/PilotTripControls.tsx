@@ -112,6 +112,9 @@ export function PilotTripControls({
   prefsPanel = null,
   setupConfigured = false,
   setupSummarySlot = null,
+  rootClassName = 'space-y-4',
+  primaryClassName = '',
+  optionalClassName = '',
   setupOpen = false,
   onSetupOpen,
   routeAvoid = [],
@@ -216,6 +219,25 @@ export function PilotTripControls({
    * by the owner, which holds the truck, the preferences and the name.
    */
   setupSummarySlot?: ReactNode;
+  /**
+   * How the OWNER wants this component's two halves laid out.
+   *
+   * The halves have always existed — the source has said "optional, below
+   * the primary flow on purpose" since the startup-simplification round —
+   * but they were siblings in one `space-y-4` box, so a parent could only
+   * ever place BOTH or NEITHER. NAV-ENTRY-3 needed to place them apart: the
+   * primary flow (what was picked, and the Start that commits to it) belongs
+   * directly under the destination search, while the optional half — the
+   * pilot briefing, the road-test report and the debug log — is diagnostic
+   * tooling that measured 2,192 px on a preview build and would have pushed
+   * the parked map 2,451 px down the page if it travelled with Start.
+   *
+   * Defaults reproduce the previous single-box rendering exactly, so every
+   * other caller and every existing assertion sees what it saw before.
+   */
+  rootClassName?: string;
+  primaryClassName?: string;
+  optionalClassName?: string;
   /**
    * The driver's own request to see the long setup again, owned by the
    * driving screen — the "Change setup" button that sets it lives in the
@@ -612,78 +634,79 @@ export function PilotTripControls({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-lg font-semibold text-ink">
-        Pilot trip controls <span className="font-normal text-ink/60">(preview builds only)</span>
-      </p>
+    <div className={rootClassName}>
+      <div className={primaryClassName === '' ? 'contents' : primaryClassName}>
+        <p className="text-lg font-semibold text-ink">
+          Pilot trip controls <span className="font-normal text-ink/60">(preview builds only)</span>
+        </p>
 
-      {state === 'idle' ? (
-        <div className="space-y-3">
-          {/*
-           * TWO ORDERS, chosen by whether there is any setup left to do.
-           *
-           * SETUP STILL OPEN (first run, or the driver tapped "Change
-           * setup"): Driver → Region → Truck → Preferences → Clocks →
-           * Destination → Start. Start comes LAST, after everything it
-           * requires, because it used to sit above the truck editor it
-           * depended on: a driver tapped it, nothing visible happened,
-           * and the reason printed two hundred pixels further down.
-           *
-           * SETUP SETTLED (the returning driver — the pilot's own case):
-           * Destination → Start → the compact summary. The audit measured
-           * 8,826 px of parked screen with Start 5,758 px down for a
-           * driver who had already entered all of it. Nothing there was
-           * wrong; it was simply all still open. Collapsing it is the
-           * whole answer to "it takes too long to get moving".
-           *
-           * The ORDER INVERTS rather than the panels merely hiding,
-           * because a driver who has finished setting up is answering a
-           * different question. Their question is "where am I going?",
-           * and it should be the first thing on the screen.
-           *
-           * The destination SEARCH itself stays on the parked map (final
-           * pilot milestone) — the driver looks at the map, so that is
-           * where "where are you going?" belongs. What sits here is the
-           * confirmation of what they picked, immediately above the Start
-           * it commits to, in BOTH orders.
-           */}
-          {setupExpanded ? (
-            <>
-              {setupStatusSlot}
-              {driverSlot}
-              {regionPanel}
-              {truckSlot}
-              {prefsPanel}
-              {clocksPanel}
-            </>
-          ) : null}
+        {state === 'idle' ? (
+          <div className="space-y-3">
+            {/*
+             * TWO ORDERS, chosen by whether there is any setup left to do.
+             *
+             * SETUP STILL OPEN (first run, or the driver tapped "Change
+             * setup"): Driver → Region → Truck → Preferences → Clocks →
+             * Destination → Start. Start comes LAST, after everything it
+             * requires, because it used to sit above the truck editor it
+             * depended on: a driver tapped it, nothing visible happened,
+             * and the reason printed two hundred pixels further down.
+             *
+             * SETUP SETTLED (the returning driver — the pilot's own case):
+             * Destination → Start → the compact summary. The audit measured
+             * 8,826 px of parked screen with Start 5,758 px down for a
+             * driver who had already entered all of it. Nothing there was
+             * wrong; it was simply all still open. Collapsing it is the
+             * whole answer to "it takes too long to get moving".
+             *
+             * The ORDER INVERTS rather than the panels merely hiding,
+             * because a driver who has finished setting up is answering a
+             * different question. Their question is "where am I going?",
+             * and it should be the first thing on the screen.
+             *
+             * The destination SEARCH itself stays on the parked map (final
+             * pilot milestone) — the driver looks at the map, so that is
+             * where "where are you going?" belongs. What sits here is the
+             * confirmation of what they picked, immediately above the Start
+             * it commits to, in BOTH orders.
+             */}
+            {setupExpanded ? (
+              <>
+                {setupStatusSlot}
+                {driverSlot}
+                {regionPanel}
+                {truckSlot}
+                {prefsPanel}
+                {clocksPanel}
+              </>
+            ) : null}
 
-          {picked !== null ? (
-            <p className="text-xl text-ink">
-              Destination: <span className="font-semibold">{picked.title}</span>
-              {picked.address ? <span className="text-ink/70"> — {picked.address}</span> : null}
-            </p>
-          ) : (
-            <p className="text-lg text-ink/70">
-              Search for a destination on the map above, then tap Start.
-            </p>
-          )}
+            {picked !== null ? (
+              <p className="text-xl text-ink">
+                Destination: <span className="font-semibold">{picked.title}</span>
+                {picked.address ? <span className="text-ink/70"> — {picked.address}</span> : null}
+              </p>
+            ) : (
+              <p className="text-lg text-ink/70">
+                Search for a destination on the map above, then tap Start.
+              </p>
+            )}
 
-          {/* A cross-border route is the driver's to prepare for. The app
+            {/* A cross-border route is the driver's to prepare for. The app
               returns road geometry; it knows nothing about customs
               status, admissibility, permits or booth hours, and says so
               here rather than implying coverage by silence. Parked, above
               Start — never a permanent live-map box. */}
-          {crossBorder ? (
-            <p
-              role="status"
-              className="rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-lg text-ink"
-            >
-              {CROSS_BORDER_NOTICE}
-            </p>
-          ) : null}
+            {crossBorder ? (
+              <p
+                role="status"
+                className="rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-lg text-ink"
+              >
+                {CROSS_BORDER_NOTICE}
+              </p>
+            ) : null}
 
-          {/* THE Start control — the whole simplified flow in one tap:
+            {/* THE Start control — the whole simplified flow in one tap:
               just-in-time location permission, wait for a real fix, one
               validated truck route, then navigation.
 
@@ -694,216 +717,237 @@ export function PilotTripControls({
               driver cannot act on is worse than useless if it does not
               say what to do instead — so `startBlockedReason` names the
               one missing item, and it is TEXT, not a colour. */}
-          <button
-            type="button"
-            onClick={startTrip}
-            disabled={attemptActive || startBlockedReason !== null}
-            aria-busy={attemptActive}
-            aria-describedby={startBlockedReason === null ? undefined : 'start-blocked-reason'}
-            className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-60"
-          >
-            {progressText ?? 'Start Route'}
-          </button>
-          {startBlockedReason !== null ? (
-            <p id="start-blocked-reason" className="text-lg font-semibold text-ink">
-              {startBlockedReason}
-            </p>
-          ) : null}
+            <button
+              type="button"
+              onClick={startTrip}
+              disabled={attemptActive || startBlockedReason !== null}
+              aria-busy={attemptActive}
+              aria-describedby={startBlockedReason === null ? undefined : 'start-blocked-reason'}
+              className="min-h-[4.5rem] w-full rounded-cockpit bg-nav-good px-4 text-2xl font-bold text-asphalt disabled:opacity-60"
+            >
+              {progressText ?? 'Start Route'}
+            </button>
+            {startBlockedReason !== null ? (
+              <p id="start-blocked-reason" className="text-lg font-semibold text-ink">
+                {startBlockedReason}
+              </p>
+            ) : null}
 
-          {/* The settled setup, BELOW the Start it no longer blocks —
+            {/* The settled setup, BELOW the Start it no longer blocks —
               four numbers, a preference line, and two ways back in. It
               is still on the screen, and still says what the clocks
               being blank costs; it simply is not standing between the
               driver and the road. */}
-          {!setupExpanded ? setupSummarySlot : null}
+            {/*
+              The settled setup, the developer coordinate box and the way
+              back to the long form used to sit here, immediately under
+              Start. NAV-ENTRY-3 moved them into the optional half — see the
+              seam below — because they are supporting material and the
+              milestone's hierarchy puts the map between the primary action
+              and its support. They render on EXACTLY the conditions they
+              always did; only their position moved.
+          */}
 
-          {/* The way back to the long form, when the driver expanded it
-              themselves. Not shown on a first run, where there is no
-              collapsed state to return to. */}
-          {setupExpanded && setupConfigured ? (
-            <button
-              type="button"
-              onClick={() => onSetupOpen?.(false)}
-              data-close-setup=""
-              className="min-h-16 w-full rounded-cockpit border border-line px-4 text-lg font-semibold text-ink"
-            >
-              Done with setup
-            </button>
-          ) : null}
-
-          {/* Developer-only coordinate entry. It is now gated on the
-              EXISTING debug mechanism (Pilot Mode's `debugLogging`, which
-              is off on the production host) rather than merely collapsed:
-              a fleet manager watching a demonstration should not be shown
-              a latitude box at all, and "collapsed" is still shown.
-              Bench-testing an exact point still works wherever debug is
-              on — which is every preview build. */}
-          {debugLog !== null ? (
-            <details className="text-base text-ink/60">
-              <summary className="min-h-16 cursor-pointer text-lg text-ink/70">
-                Developer: enter coordinates instead
-              </summary>
-              <div className="mt-2 space-y-3">
-                <label className="block text-lg text-ink/80">
-                  Destination latitude
-                  <input
-                    className={inputClass}
-                    inputMode="decimal"
-                    value={destLat}
-                    onChange={(e) => {
-                      setDestLat(e.target.value);
-                      onPicked(null);
-                    }}
-                    aria-label="Destination latitude"
-                  />
-                </label>
-                <label className="block text-lg text-ink/80">
-                  Destination longitude
-                  <input
-                    className={inputClass}
-                    inputMode="decimal"
-                    value={destLng}
-                    onChange={(e) => {
-                      setDestLng(e.target.value);
-                      onPicked(null);
-                    }}
-                    aria-label="Destination longitude"
-                  />
-                </label>
-                <label className="block text-lg text-ink/80">
-                  Facility type
-                  <select
-                    className={inputClass}
-                    value={facility}
-                    onChange={(e) => setFacility(e.target.value as DestinationFacility)}
-                    aria-label="Destination facility type"
-                  >
-                    {FACILITIES.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </details>
-          ) : null}
-
-          {/* The truck itself: verified, adjustable, and confirmed once
+            {/* The truck itself: verified, adjustable, and confirmed once
               before any route is requested. It replaces the read-only
               panel — a driver who cannot change the numbers cannot
               honestly confirm them. The panel's disclosure survives
               inside the editor's "Not used for routing" section. */}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      {/* Honest progress + the way out, whatever lifecycle state the
+        {/* Honest progress + the way out, whatever lifecycle state the
           attempt is passing through. role=status so a screen reader
           hears the same phases the sighted driver watches. */}
-      {attemptActive ? (
-        <div className="space-y-3">
-          {state !== 'idle' ? <p className="text-xl text-ink/80">{progressText}</p> : null}
-          <p role="status" className="sr-only">
-            {progressText}
-          </p>
-          <button type="button" className={buttonClass} onClick={cancelStart}>
-            Cancel
-          </button>
-        </div>
-      ) : null}
+        {attemptActive ? (
+          <div className="space-y-3">
+            {state !== 'idle' ? <p className="text-xl text-ink/80">{progressText}</p> : null}
+            <p role="status" className="sr-only">
+              {progressText}
+            </p>
+            <button type="button" className={buttonClass} onClick={cancelStart}>
+              Cancel
+            </button>
+          </div>
+        ) : null}
 
-      {/* Route-ready is the flight briefing (design blueprint Phase 3):
+        {/* Route-ready is the flight briefing (design blueprint Phase 3):
           destination, the provider's numbers, the truck the plan request
           actually carried, the provider's own major roads, and only the
           warnings the app genuinely has. Presentation only — Start and
           Discard call the SAME lifecycle transitions they always did,
           and the plausibility advisory renders unchanged inside it. */}
-      {state === 'route-ready' ? (
-        <RouteBriefing
-          destination={picked}
-          sentRestrictions={sentRestrictionLines(
-            toTruckProfile(truckProfile),
-            truckProfile.avoid,
-            metric,
-          )}
-          totalMi={lifecycle.view().totalMi}
-          etaText={formatEta(
-            lifecycle.view().remainingMi,
-            lifecycle.view().totalMi,
-            lifecycle.routeBrief()?.durationSeconds ?? null,
-            Date.now(),
-            new Date().getTimezoneOffset(),
-          )}
-          brief={lifecycle.routeBrief()}
-          metric={metric}
-          plausibilitySlot={<RouteCheck lifecycle={lifecycle} metric={metric} />}
-          onStart={() => act(() => lifecycle.startNavigation(Date.now()))}
-          onDiscard={() => act(() => lifecycle.discardRoute(Date.now()))}
-        />
-      ) : null}
+        {state === 'route-ready' ? (
+          <RouteBriefing
+            destination={picked}
+            sentRestrictions={sentRestrictionLines(
+              toTruckProfile(truckProfile),
+              truckProfile.avoid,
+              metric,
+            )}
+            totalMi={lifecycle.view().totalMi}
+            etaText={formatEta(
+              lifecycle.view().remainingMi,
+              lifecycle.view().totalMi,
+              lifecycle.routeBrief()?.durationSeconds ?? null,
+              Date.now(),
+              new Date().getTimezoneOffset(),
+            )}
+            brief={lifecycle.routeBrief()}
+            metric={metric}
+            plausibilitySlot={<RouteCheck lifecycle={lifecycle} metric={metric} />}
+            onStart={() => act(() => lifecycle.startNavigation(Date.now()))}
+            onDiscard={() => act(() => lifecycle.discardRoute(Date.now()))}
+          />
+        ) : null}
 
-      {state === 'navigating' ||
-      state === 'off-route' ||
-      state === 'rerouting' ||
-      state === 'final-approach' ? (
-        <div className="space-y-3">
-          <p className="text-xl text-ink">Trip active — {state.replace(/-/g, ' ')}.</p>
-          <button
-            type="button"
-            className={buttonClass}
-            onClick={() => act(() => lifecycle.cancel(Date.now()))}
-          >
-            Cancel trip
-          </button>
-        </div>
-      ) : null}
+        {state === 'navigating' ||
+        state === 'off-route' ||
+        state === 'rerouting' ||
+        state === 'final-approach' ? (
+          <div className="space-y-3">
+            <p className="text-xl text-ink">Trip active — {state.replace(/-/g, ' ')}.</p>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => act(() => lifecycle.cancel(Date.now()))}
+            >
+              Cancel trip
+            </button>
+          </div>
+        ) : null}
 
-      {state === 'arrived' ? (
-        <div className="space-y-3">
-          <p className="text-xl text-ink">
-            Trip ended: {summary?.endReason ?? 'arrived'} ({summary?.entranceKind ?? 'unknown'}),{' '}
-            {formatDistance(summary?.plannedMiles ?? null, metric)} planned.
+        {state === 'arrived' ? (
+          <div className="space-y-3">
+            <p className="text-xl text-ink">
+              Trip ended: {summary?.endReason ?? 'arrived'} ({summary?.entranceKind ?? 'unknown'}),{' '}
+              {formatDistance(summary?.plannedMiles ?? null, metric)} planned.
+            </p>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => act(() => lifecycle.complete(Date.now()))}
+            >
+              Complete trip
+            </button>
+            <PostTripFeedback />
+          </div>
+        ) : null}
+
+        {state === 'completed' ? (
+          <div className="space-y-3">
+            <p className="text-xl text-ink">
+              Trip completed{summary ? ` (${summary.endReason})` : ''}. Engines released.
+            </p>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => act(() => lifecycle.reset(Date.now()))}
+            >
+              New trip
+            </button>
+            <PostTripFeedback />
+          </div>
+        ) : null}
+
+        {note ? (
+          <p role="status" className="text-lg text-ink/80">
+            {note}
           </p>
+        ) : null}
+      </div>
+
+      <div className={optionalClassName === '' ? 'contents' : optionalClassName}>
+        {/*
+          RELOCATED BY NAV-ENTRY-3, NOT CHANGED. The settled-setup summary,
+          the way back to the long form and the developer coordinate box
+          rendered directly under Start until this milestone. Each still
+          renders on exactly the condition it always did — the idle branch,
+          plus its own — and each is still below the Start it never blocked.
+          What changed is that the parked map now sits between the primary
+          action and this supporting material, which is the hierarchy the
+          milestone asks for.
+      */}
+        {state === 'idle' && !setupExpanded ? setupSummarySlot : null}
+        {/* The way back to the long form, when the driver expanded it
+          themselves. Not shown on a first run, where there is no
+          collapsed state to return to. */}
+        {state === 'idle' && setupExpanded && setupConfigured ? (
           <button
             type="button"
-            className={buttonClass}
-            onClick={() => act(() => lifecycle.complete(Date.now()))}
+            onClick={() => onSetupOpen?.(false)}
+            data-close-setup=""
+            className="min-h-16 w-full rounded-cockpit border border-line px-4 text-lg font-semibold text-ink"
           >
-            Complete trip
+            Done with setup
           </button>
-          <PostTripFeedback />
-        </div>
-      ) : null}
+        ) : null}
 
-      {state === 'completed' ? (
-        <div className="space-y-3">
-          <p className="text-xl text-ink">
-            Trip completed{summary ? ` (${summary.endReason})` : ''}. Engines released.
-          </p>
-          <button
-            type="button"
-            className={buttonClass}
-            onClick={() => act(() => lifecycle.reset(Date.now()))}
-          >
-            New trip
-          </button>
-          <PostTripFeedback />
-        </div>
-      ) : null}
+        {/* Developer-only coordinate entry. It is now gated on the
+          EXISTING debug mechanism (Pilot Mode's `debugLogging`, which
+          is off on the production host) rather than merely collapsed:
+          a fleet manager watching a demonstration should not be shown
+          a latitude box at all, and "collapsed" is still shown.
+          Bench-testing an exact point still works wherever debug is
+          on — which is every preview build. */}
+        {debugLog !== null ? (
+          <details className="text-base text-ink/60">
+            <summary className="min-h-16 cursor-pointer text-lg text-ink/70">
+              Developer: enter coordinates instead
+            </summary>
+            <div className="mt-2 space-y-3">
+              <label className="block text-lg text-ink/80">
+                Destination latitude
+                <input
+                  className={inputClass}
+                  inputMode="decimal"
+                  value={destLat}
+                  onChange={(e) => {
+                    setDestLat(e.target.value);
+                    onPicked(null);
+                  }}
+                  aria-label="Destination latitude"
+                />
+              </label>
+              <label className="block text-lg text-ink/80">
+                Destination longitude
+                <input
+                  className={inputClass}
+                  inputMode="decimal"
+                  value={destLng}
+                  onChange={(e) => {
+                    setDestLng(e.target.value);
+                    onPicked(null);
+                  }}
+                  aria-label="Destination longitude"
+                />
+              </label>
+              <label className="block text-lg text-ink/80">
+                Facility type
+                <select
+                  className={inputClass}
+                  value={facility}
+                  onChange={(e) => setFacility(e.target.value as DestinationFacility)}
+                  aria-label="Destination facility type"
+                >
+                  {FACILITIES.map((f) => (
+                    <option key={f} value={f}>
+                      {f}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
+        ) : null}
 
-      {note ? (
-        <p role="status" className="text-lg text-ink/80">
-          {note}
-        </p>
-      ) : null}
-
-      {/* ---- optional, below the primary flow on purpose ---------------
+        {/* ---- optional, below the primary flow on purpose ---------------
           The pilot driver's complaint was startup STEPS. Destination and
           Start are the flow; everything from here down is optional and
           never blocks navigation: the name only feeds the spoken
           greeting (blank name = no personalized line, never a fabricated
           one), and the pilot briefing remains one tap away. */}
-      {/* THE DRIVER NAME IS NOT HERE ANY MORE. It used to render at the
+        {/* THE DRIVER NAME IS NOT HERE ANY MORE. It used to render at the
           bottom of the page, below everything, on the reasoning that it
           was optional and should not compete with the flow. The pre-trip
           setup milestone put it at POSITION 1 instead — a driver reads a
@@ -913,18 +957,18 @@ export function PilotTripControls({
           `driverSlot`, and rendering it twice would give one value two
           controls. */}
 
-      {/* The build a driver is running, in one line they can read aloud on
+        {/* The build a driver is running, in one line they can read aloud on
           the phone or quote in a message. Every generated report carries
           the same identifier, so a screenshot and a report always agree. */}
-      {build ? (
-        <p className="text-base text-ink/60">
-          Build: <span className="font-mono text-ink/80">{build.label}</span>
-        </p>
-      ) : null}
+        {build ? (
+          <p className="text-base text-ink/60">
+            Build: <span className="font-mono text-ink/80">{build.label}</span>
+          </p>
+        ) : null}
 
-      <PilotOnboarding onSeenSaved={onOnboardingSeen} />
+        <PilotOnboarding onSeenSaved={onOnboardingSeen} />
 
-      {/*
+        {/*
         Road-test report. It lives inside this component, which the
         driving screen already renders inside the stationary-only
         'edit-destination' gate — so it inherits that rail rather than
@@ -937,118 +981,119 @@ export function PilotTripControls({
         does nothing is worse than no button. Showing it also means the
         driver can read what they are about to send before they send it.
       */}
-      {buildReport ? (
-        <details className="text-base text-ink/70">
-          <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
-            Report a navigation problem
-          </summary>
+        {buildReport ? (
+          <details className="text-base text-ink/70">
+            <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
+              Report a navigation problem
+            </summary>
 
-          {/* The category is a tap and the note is optional, in that order.
+            {/* The category is a tap and the note is optional, in that order.
               A triager reads the category first, and a driver at the end of
               a shift will pick from a list long after they have stopped
               being willing to type. */}
-          <fieldset className="mt-2">
-            <legend className="text-lg text-ink/80">What kind of problem was it?</legend>
-            <div className="mt-1 space-y-1">
-              {PROBLEM_CATEGORIES.map((c) => (
-                <label key={c.id} className="flex min-h-16 items-center gap-3 text-lg text-ink">
-                  <input
-                    type="radio"
-                    name="problem-category"
-                    value={c.id}
-                    checked={reportCategory === c.id}
-                    onChange={() => {
-                      setReportCategory(c.id);
-                      setCopyState(null);
-                    }}
-                    className="size-6 shrink-0"
-                  />
-                  <span>
-                    {c.label}
-                    <span className="block text-base text-ink/60">{c.hint}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset className="mt-2">
+              <legend className="text-lg text-ink/80">What kind of problem was it?</legend>
+              <div className="mt-1 space-y-1">
+                {PROBLEM_CATEGORIES.map((c) => (
+                  <label key={c.id} className="flex min-h-16 items-center gap-3 text-lg text-ink">
+                    <input
+                      type="radio"
+                      name="problem-category"
+                      value={c.id}
+                      checked={reportCategory === c.id}
+                      onChange={() => {
+                        setReportCategory(c.id);
+                        setCopyState(null);
+                      }}
+                      className="size-6 shrink-0"
+                    />
+                    <span>
+                      {c.label}
+                      <span className="block text-base text-ink/60">{c.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-          <label className="mt-3 block text-lg text-ink/80" htmlFor="road-test-note">
-            Anything to add? (optional, {MAX_NOTE_CHARS} characters)
-          </label>
-          <textarea
-            id="road-test-note"
-            value={reportNote}
-            onChange={(e) => setReportNote(e.target.value)}
-            maxLength={MAX_NOTE_CHARS}
-            rows={3}
-            className="mt-1 w-full rounded-card border border-line bg-transparent p-3 text-lg text-ink"
-          />
-          <button
-            type="button"
-            className={`${buttonClass} mt-2`}
-            onClick={() => {
-              const built = buildProblemReport({
-                categoryId: reportCategory,
-                note: reportNote,
-              });
-              if (!built.ok) {
-                setCopyState(built.reason);
-                return;
-              }
-              const text = buildReport({ note: '', problem: built.report });
-              setReportText(text);
-              const clip =
-                typeof navigator !== 'undefined' && navigator.clipboard
-                  ? navigator.clipboard
-                  : null;
-              if (clip === null) {
-                setCopyState('Clipboard unavailable — select the text below and copy it.');
-                return;
-              }
-              clip.writeText(text).then(
-                () => setCopyState('Copied.'),
-                () => setCopyState('Copy refused — select the text below and copy it.'),
-              );
-            }}
-          >
-            Copy problem report
-          </button>
-          {copyState ? (
-            <p role="status" className="mt-2 text-lg text-ink/80">
-              {copyState}
-            </p>
-          ) : null}
-          {reportText ? (
+            <label className="mt-3 block text-lg text-ink/80" htmlFor="road-test-note">
+              Anything to add? (optional, {MAX_NOTE_CHARS} characters)
+            </label>
             <textarea
-              readOnly
-              aria-label="Problem report"
-              value={reportText}
-              rows={12}
-              className="mt-2 w-full rounded-card border border-line bg-transparent p-3 font-mono text-sm text-ink"
+              id="road-test-note"
+              value={reportNote}
+              onChange={(e) => setReportNote(e.target.value)}
+              maxLength={MAX_NOTE_CHARS}
+              rows={3}
+              className="mt-1 w-full rounded-card border border-line bg-transparent p-3 text-lg text-ink"
             />
-          ) : null}
-        </details>
-      ) : null}
+            <button
+              type="button"
+              className={`${buttonClass} mt-2`}
+              onClick={() => {
+                const built = buildProblemReport({
+                  categoryId: reportCategory,
+                  note: reportNote,
+                });
+                if (!built.ok) {
+                  setCopyState(built.reason);
+                  return;
+                }
+                const text = buildReport({ note: '', problem: built.report });
+                setReportText(text);
+                const clip =
+                  typeof navigator !== 'undefined' && navigator.clipboard
+                    ? navigator.clipboard
+                    : null;
+                if (clip === null) {
+                  setCopyState('Clipboard unavailable — select the text below and copy it.');
+                  return;
+                }
+                clip.writeText(text).then(
+                  () => setCopyState('Copied.'),
+                  () => setCopyState('Copy refused — select the text below and copy it.'),
+                );
+              }}
+            >
+              Copy problem report
+            </button>
+            {copyState ? (
+              <p role="status" className="mt-2 text-lg text-ink/80">
+                {copyState}
+              </p>
+            ) : null}
+            {reportText ? (
+              <textarea
+                readOnly
+                aria-label="Problem report"
+                value={reportText}
+                rows={12}
+                className="mt-2 w-full rounded-card border border-line bg-transparent p-3 font-mono text-sm text-ink"
+              />
+            ) : null}
+          </details>
+        ) : null}
 
-      {debugLog ? (
-        <details className="text-base text-ink/60">
-          <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
-            Pilot debug log ({debugLog.entries().length}
-            {debugLog.dropped() > 0 ? `, ${debugLog.dropped()} dropped` : ''})
-          </summary>
-          <ul className="mt-2 space-y-1 font-mono text-sm">
-            {debugLog
-              .entries()
-              .slice(-30)
-              .map((e, i) => (
-                <li key={`${e.tMs}-${i}`}>
-                  {new Date(e.tMs).toISOString().slice(11, 19)} {e.event}
-                  {e.detail ? ` — ${e.detail}` : ''}
-                </li>
-              ))}
-          </ul>
-        </details>
-      ) : null}
+        {debugLog ? (
+          <details className="text-base text-ink/60">
+            <summary className="min-h-16 cursor-pointer text-lg text-ink/80">
+              Pilot debug log ({debugLog.entries().length}
+              {debugLog.dropped() > 0 ? `, ${debugLog.dropped()} dropped` : ''})
+            </summary>
+            <ul className="mt-2 space-y-1 font-mono text-sm">
+              {debugLog
+                .entries()
+                .slice(-30)
+                .map((e, i) => (
+                  <li key={`${e.tMs}-${i}`}>
+                    {new Date(e.tMs).toISOString().slice(11, 19)} {e.event}
+                    {e.detail ? ` — ${e.detail}` : ''}
+                  </li>
+                ))}
+            </ul>
+          </details>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -151,33 +151,102 @@ check(
 );
 
 {
-  const block = SCREEN_CODE.slice(
+  /*
+   * NED6 CHANGED WITH THE LAYOUT, AND IT HAD TO (NAV-ENTRY-3).
+   *
+   * It used to read "the input comes first, before the border toggle",
+   * sliced from `mapSearchSlot={` to `parkedPlanSlot={`. NAV-ENTRY-3 moved
+   * the border toggle out of the search card entirely — it is a 72 px
+   * control answering "which country am I searching?", and on the two
+   * landscape phone shapes those 72 px were the difference between Start
+   * being on screen and Start being clipped to 15 px of itself.
+   *
+   * Left alone, the old assertion would still have PASSED, and dishonestly:
+   * the new `parkedSearchScopeSlot` happens to sit between those two slice
+   * anchors, so the toggle was still "inside the block" as far as the regex
+   * could tell. An assertion that survives the change it was meant to
+   * notice is worse than no assertion. So the slice is now the search CARD
+   * itself, and what is asserted is that the input is the first thing in it
+   * and the toggle is no longer in it at all.
+   */
+  const card = SCREEN_CODE.slice(
     SCREEN_CODE.indexOf('mapSearchSlot={'),
-    SCREEN_CODE.indexOf('parkedPlanSlot={'),
+    SCREEN_CODE.indexOf('parkedSearchScopeSlot={'),
   );
   check(
-    'NED6: within the search block the input comes first, before the border toggle',
-    block.indexOf('<DestinationSearch') >= 0 &&
-      block.indexOf('<DestinationSearch') < block.indexOf('crossBorderSearchLabel'),
+    'NED6: the destination input is the first control in the search card',
+    card.indexOf('<DestinationSearch') >= 0 && !card.includes('crossBorderSearchLabel'),
   );
 }
 
+/**
+ * The parked `order-N` a given anchor carries, read out of the source.
+ *
+ * NAV-ENTRY-2 asserted these by spelling — `'order-1'}>` next to the slot
+ * name — which pinned one arrangement rather than the RULE, and broke the
+ * moment NAV-ENTRY-3 inserted anything. Reading the number back lets the
+ * assertions compare positions, which is the thing that actually matters.
+ */
+function parkedOrderOf(anchor: string): number | null {
+  const at = SCREEN_CODE.indexOf(anchor);
+  if (at < 0) return null;
+  const window = SCREEN_CODE.slice(Math.max(0, at - 400), at + 200);
+  const hits = [...window.matchAll(/order-(\d+)/g)].map((m) => Number(m[1]));
+  return hits.length === 0 ? null : hits[hits.length - 1];
+}
+
+/**
+ * The map's parked order, read from the class-string DECLARATION rather
+ * than from a class name. Anchoring on `h-[38dvh]` found the dynamic-import
+ * loading placeholder first — which shares the height rule by design and
+ * carries no order — and reported null.
+ */
+function parkedMapOrder(): number | null {
+  const at = SCREEN_CODE.indexOf('const mapWrapCls = fullScreen');
+  if (at < 0) return null;
+  const decl = SCREEN_CODE.slice(at, at + 900);
+  const m = /order-(\d+)/.exec(decl);
+  return m === null ? null : Number(m[1]);
+}
+
+/**
+ * The order the trip controls' PRIMARY half takes when parked, read from
+ * the exact prop expression. A windowed search around an anchor is not good
+ * enough here: `optionalClassName` is declared on the very next line, so a
+ * window that reached forward reported 11 and a window that took the last
+ * match reported 11 too. The expression itself is unambiguous.
+ */
+function primaryHalfOrder(): number | null {
+  const m = /primaryClassName=\{[^}]*?'order-(\d+)/.exec(SCREEN_CODE);
+  return m === null ? null : Number(m[1]);
+}
+
 check(
-  'NED7: parked, the route/start controls are ordered ahead of the supporting blocks',
-  /order-1'\}>\s*\{destinationSlot/.test(SCREEN_CODE.replace(/\s+/g, ' ').replace(/ \}/g, '}')) ||
-    SCREEN_CODE.includes("'order-1'}>"),
+  'NED7: parked, the route/start cluster is ordered between the search and the map',
+  (() => {
+    const search = parkedOrderOf('data-parked-search');
+    const cta = primaryHalfOrder();
+    const map = parkedMapOrder();
+    return search !== null && cta !== null && map !== null && search < cta && cta < map;
+  })(),
+  {
+    search: parkedOrderOf('data-parked-search'),
+    cta: primaryHalfOrder(),
+    map: parkedMapOrder(),
+  },
 );
 
 check(
-  'NED8: the parked hierarchy names destination, then map, then start controls',
+  'NED8: the parked hierarchy names destination, then the route-start cluster, then map',
   PARKED_HIERARCHY[0] === 'destination-search' &&
-    PARKED_HIERARCHY[1] === 'map' &&
-    PARKED_HIERARCHY[2] === 'route-start-controls',
+    PARKED_HIERARCHY[1] === 'route-start-cluster' &&
+    PARKED_HIERARCHY[2] === 'map',
+  [...PARKED_HIERARCHY],
 );
 
 check(
   'NED9: a rendered order matching the hierarchy has no violations',
-  parkedOrderViolations(['destination-search', 'map', 'route-start-controls']).length === 0,
+  parkedOrderViolations(['destination-search', 'route-start-cluster', 'map']).length === 0,
 );
 
 check(
@@ -188,6 +257,11 @@ check(
 check(
   'NED11: search-after-map is a violation even when both are present',
   parkedOrderViolations(['map', 'destination-search']).length === 1,
+);
+
+check(
+  'NED11b: the OLD NAV-ENTRY-2 order — Start after the map — is now a violation',
+  parkedOrderViolations(['destination-search', 'map', 'route-start-cluster']).length === 1,
 );
 
 check(
@@ -708,7 +782,15 @@ check(
 
 check(
   'NED57: the full-screen branch keeps its own ordering — no parked order class leaks in',
-  !/fullScreen \? 'order-/.test(SCREEN_CODE) && /fullScreen \? '' : 'order-1'/.test(SCREEN_CODE),
+  /*
+   * Every parked order class must live in the FALSE arm of a `fullScreen`
+   * ternary. The first half proves none leaked into the true arm; the
+   * second proves the parked arrangement exists at all, so this cannot
+   * pass by the orders having quietly disappeared.
+   */
+  !/fullScreen \? (?:'[^']*order-|`[^`]*order-)/.test(SCREEN_CODE) &&
+    (SCREEN_CODE.match(/: '?[^']*order-\d/g) ?? []).length >= 6,
+  (SCREEN_CODE.match(/order-\d+/g) ?? []).length,
 );
 
 /* =================================================================== */

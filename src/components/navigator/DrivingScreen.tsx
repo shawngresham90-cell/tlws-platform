@@ -218,6 +218,7 @@ export function DrivingScreenView({
   onBottomInset,
   mapSearchSlot = null,
   parkedPlanSlot = null,
+  parkedSearchScopeSlot = null,
   regionPanel = null,
   metric = false,
   crossBorder = false,
@@ -310,6 +311,13 @@ export function DrivingScreenView({
    * where a driver looks once they have said where they are going.
    */
   parkedPlanSlot?: ReactNode;
+  /**
+   * The deliberate cross-border search-scope toggle, parked only. It scopes
+   * the search rather than answering it, so it renders after the map with
+   * the other supporting controls instead of between the destination box
+   * and the Start it feeds.
+   */
+  parkedSearchScopeSlot?: ReactNode;
   /** Region + units + the Canadian pilot status, parked-only. */
   regionPanel?: ReactNode;
   /** Show distances, speeds and dimensions in metric. */
@@ -681,9 +689,31 @@ export function DrivingScreenView({
   // measured, and invisible before this item because the old surface
   // never reached the edges. The important modifier is required: the
   // space-y selector outranks a plain utility.
+  /*
+   * PARKED, THE SHELL IS THE LAYOUT (NAV-ENTRY-3).
+   *
+   * It used to be an unstyled wrapper around two independent blocks: the
+   * "surface" (search, map, status, clocks, controls) and, beneath it, the
+   * trip controls that carry the destination confirmation and Start. Two
+   * blocks meant the order INSIDE one could never interleave with the
+   * other — and Start lived in the second one, so it landed after the
+   * whole map, the status line, the 230 px clock card and the control row.
+   * Measured on main: after choosing a destination, Start sat 859-1182 px
+   * down with a PAINTED HEIGHT OF 0 px at all six required viewports, and
+   * the driver had to scroll 315-541 px to find out that picking had
+   * worked.
+   *
+   * Making the shell one flex column and both blocks `display: contents`
+   * puts every parked element in ONE ordering context, so `order` can put
+   * the confirmation and Start directly under the search where the driver
+   * is already looking. The DOM is untouched and identical in both modes —
+   * only classes change — which is what keeps the map mounted across the
+   * parked -> guidance transition and keeps the trip-control state machine
+   * from being torn down mid-Start.
+   */
   const shellCls = fullScreen
     ? 'fixed inset-0 z-[60] !mt-0 overflow-y-auto overscroll-contain bg-nav-bg'
-    : '';
+    : 'flex flex-col gap-4 [@media(max-height:480px)]:gap-2';
   /*
    * FULL-SCREEN MAP (pilot round 3, item "full-screen navigation map").
    *
@@ -726,15 +756,16 @@ export function DrivingScreenView({
       'pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] ' +
       'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]'
     : /*
-       * PARKED RHYTHM (NAV-ENTRY-2). `space-y-6` is the site's prose
-       * rhythm and it was costing 24 px between every block on a surface
-       * that is not prose. Sixteen keeps the blocks clearly separate —
-       * still above the blueprint's 12 px minimum between adjacent touch
-       * targets — and on a short screen (a phone in landscape, where the
-       * header alone is a sixth of the viewport) it tightens again so the
-       * map keeps as much of what is left as it can.
+       * PARKED RHYTHM (NAV-ENTRY-2, re-homed by NAV-ENTRY-3). The 16 px
+       * rhythm — still above the blueprint's 12 px minimum between
+       * adjacent touch targets, tightening on a short screen — is now the
+       * SHELL's `gap`, because this element no longer generates a box:
+       * `display: contents` hands its children to the shell's flex
+       * container so they can be ordered alongside the trip controls.
+       * Nothing is reparented and nothing is remounted; the box simply
+       * stops existing.
        */
-      'space-y-4 [@media(max-height:480px)]:space-y-2';
+      'contents';
   const colOne = fullScreen ? 'relative z-10 shrink-0 landscape:max-w-[38vw]' : '';
   /*
    * The BOTTOM band takes the width the screen actually has.
@@ -776,13 +807,27 @@ export function DrivingScreenView({
   const mapWrapCls = fullScreen
     ? 'absolute inset-0 z-0 overflow-hidden'
     : mapSlot !== null
-      ? 'relative h-[38dvh] min-h-[200px] [@media(max-height:480px)]:min-h-[150px] w-full overflow-hidden rounded-cockpit border border-line'
+      ? /*
+         * `order-4` (NAV-ENTRY-3) rides INSIDE this string rather than on
+         * the JSX, deliberately. Three harnesses pin the exact one-line
+         * form of the map wrapper below, because that single wrapper IS
+         * the invariant: one mount point for the map, one element order
+         * across both modes. Spelling the order onto the JSX would have
+         * broken those checks while changing nothing they protect, so the
+         * parked class string carries it and the wrapper stays as written.
+         *
+         * The wrapper's own tokens are deliberately NOT quoted in this
+         * comment: two of those harnesses COUNT occurrences of the map
+         * slot to prove there is only one mount point, and a comment that
+         * spelled it out made the count read 2.
+         */
+        'order-4 relative h-[38dvh] min-h-[200px] [@media(max-height:480px)]:min-h-[150px] w-full overflow-hidden rounded-cockpit border border-line'
       : '';
 
   return (
     <div ref={shellRef} className={shellCls}>
       <div className={surfaceCls} data-driving-surface={fullScreen ? '' : undefined}>
-        <div className={colOne}>{maneuverCard}</div>
+        <div className={fullScreen ? colOne : 'order-1'}>{maneuverCard}</div>
 
         {/* Off route. Sits directly under the maneuver card because it is
             the reason that card may no longer apply. Deliberately a
@@ -805,7 +850,7 @@ export function DrivingScreenView({
             className={
               fullScreen
                 ? `${colOne} shrink-0 rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-asphalt/95 px-3 py-1 text-base font-semibold text-ink`
-                : 'rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-xl font-semibold text-ink'
+                : 'order-1 rounded-cockpit border border-line border-l-4 border-l-nav-warn px-3 py-2 text-xl font-semibold text-ink'
             }
           >
             <span aria-hidden="true">⚠ </span>
@@ -845,7 +890,7 @@ export function DrivingScreenView({
             classes change, so the map is never torn down to move UI.
         */}
         <div
-          className={fullScreen ? '' : 'scroll-mt-4'}
+          className={fullScreen ? '' : 'order-2 scroll-mt-4'}
           data-parked-search={fullScreen ? undefined : ''}
         >
           {mapSearchSlot}
@@ -889,7 +934,7 @@ export function DrivingScreenView({
                            backing to stay readable on any basemap. */
                         ' self-start rounded-cockpit bg-asphalt/85 px-3 py-1'
                 }`
-              : 'text-xl font-semibold text-ink'
+              : 'order-5 text-xl font-semibold text-ink'
           }
         >
           {statusGlyph ? <span aria-hidden="true">{statusGlyph} </span> : null}
@@ -911,7 +956,7 @@ export function DrivingScreenView({
             className={
               fullScreen
                 ? `${colOne} rounded-cockpit border border-line border-l-4 border-l-nav-warn bg-nav-surface px-3 py-1 text-base font-semibold text-ink`
-                : 'text-xl font-semibold text-ink'
+                : 'order-5 text-xl font-semibold text-ink'
             }
           >
             <span aria-hidden="true">⚠ </span>
@@ -953,7 +998,7 @@ export function DrivingScreenView({
               : 'contents'
           }
         >
-          <div className={fullScreen ? colBottom : ''}>
+          <div className={fullScreen ? colBottom : 'order-6'}>
             {fullScreen ? (
               compactStrip
             ) : view.totalMi !== null ? (
@@ -993,7 +1038,7 @@ export function DrivingScreenView({
             from the map. Because the instance is never remounted, the
             clocks do not restart when guidance starts, when a reroute
             lands, or when the trip ends. */}
-          <div className={fullScreen ? colBottom : ''} data-hos-region="">
+          <div className={fullScreen ? colBottom : 'order-7'} data-hos-region="">
             {hosUnavailableNotice !== null ? (
               /* No clocks at all — not greyed-out US clocks, which would
                still read as numbers a driver could act on. */
@@ -1052,7 +1097,7 @@ export function DrivingScreenView({
             must live here on the driving surface and not below the fold. */}
           {/* gap-3 = the blueprint's 12px minimum spacing between adjacent
             touch targets, so a glove aiming for Stop cannot land on Mute. */}
-          <div className={fullScreen ? `${colBottom} flex gap-3` : ''}>
+          <div className={fullScreen ? `${colBottom} flex gap-3` : 'order-8'}>
             {fullScreen ? overviewSlot : null}
             {/*
             THE CLOCKS TOGGLE LIVES HERE, not under the strip.
@@ -1135,7 +1180,7 @@ export function DrivingScreenView({
           the full-screen region below guidance keeps exactly the order it
           shipped with.
       */}
-      <div className={fullScreen ? 'space-y-4 p-4' : 'mt-6 flex flex-col gap-6'}>
+      <div className={fullScreen ? 'space-y-4 p-4' : 'contents'}>
         {/*
             The planning material, AFTER the map and beside Start
             (NAV-ENTRY-2). It used to sit above the destination box inside
@@ -1147,14 +1192,27 @@ export function DrivingScreenView({
             driver who arrives carrying a planned stop still finds it — one
             block below the map, next to the Start it feeds.
         */}
-        <div className={fullScreen ? '' : 'order-2'}>{parkedPlanSlot}</div>
-        <div className={fullScreen ? '' : 'order-3'}>
+        {/*
+            The border toggle lives here (NAV-ENTRY-3), after the map.
+
+            It used to sit inside the search card, directly under the input.
+            That reads well until you count it: a full-width 64 px control
+            plus its margin is 72 px, and on the two landscape phone shapes
+            those 72 px were the difference between Start being on the
+            screen and Start being clipped to 15 px of itself. It answers a
+            question — "which country am I searching?" — that a driver asks
+            far less often than "where am I going?", and it is still one
+            clearly labelled deliberate tap, exactly as before.
+        */}
+        <div className={fullScreen ? '' : 'order-9'}>{parkedSearchScopeSlot}</div>
+        <div className={fullScreen ? '' : 'order-9'}>{parkedPlanSlot}</div>
+        <div className={fullScreen ? '' : 'order-10'}>
           <MotionLockOverlay />
         </div>
         {lifecycleLine ? (
-          <p className={`text-lg text-ink/70${fullScreen ? '' : ' order-4'}`}>{lifecycleLine}</p>
+          <p className={`text-lg text-ink/70${fullScreen ? '' : ' order-11'}`}>{lifecycleLine}</p>
         ) : null}
-        <div className={fullScreen ? '' : 'order-5'}>{mapStyleSlot}</div>
+        <div className={fullScreen ? '' : 'order-12'}>{mapStyleSlot}</div>
 
         {/*
           NOT GATED (NAV-ENTRY-1). This slot used to sit behind the shared
@@ -1166,7 +1224,36 @@ export function DrivingScreenView({
           map now always permits — a gate that can never fire reads like a
           protection that exists.
         */}
-        <div className={fullScreen ? '' : 'order-1'}>
+        {/*
+            ORDER 3: THE ANSWER TO "I PICKED THE PLACE — NOW WHAT?"
+            (NAV-ENTRY-3).
+
+            This block carries the selected-destination confirmation and the
+            Start control that commits to it, and it now sits directly under
+            the search box and ABOVE the map. It used to be the last thing on
+            the parked page: measured on main, after choosing a destination
+            the confirmation was 819-1114 px down and Start 859-1182 px down,
+            both with a painted height of ZERO, behind 315-541 px of
+            scrolling — past the map, the status line, the clock card and the
+            control row.
+
+            A driver who has just tapped a search result is asking one
+            question, and the answer to it should not be below the fold. The
+            map keeps its place immediately after, because at this moment it
+            is context for the choice rather than the thing being chosen.
+        */}
+        {/*
+            PARKED, THIS WRAPPER GENERATES NO BOX (NAV-ENTRY-3).
+
+            `display: contents` hands the trip controls' own two halves to
+            the shell's flex container, so the primary flow can take
+            `order-3` — directly under the destination search — while the
+            optional diagnostic half takes `order-11` and rides past the
+            map. A wrapper with a box could only ever place both together,
+            which is what put 2,192 px of pilot tooling between Start and
+            the map and pushed the parked map to 2,451 px.
+        */}
+        <div className={fullScreen ? '' : 'contents'} data-route-start-cluster="">
           {destinationSlot ?? (
             <p className="text-xl text-ink/80">
               Destination entry unlocks here when routing ships (a later milestone).
@@ -2533,18 +2620,25 @@ export function DrivingScreen({
               country={searchCountryFor(searchRegion)}
               metric={metric}
             />
-            {/* Crossing the border is DELIBERATE: one tap, clearly
-                  labelled, never a side effect of typing. It swaps only
-                  which country this search asks about — the region
-                  setting, the units and the truck are untouched. */}
-            <button
-              type="button"
-              onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
-              className="mt-2 min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
-            >
-              {crossBorderSearchLabel(searchRegion)}
-            </button>
           </div>
+        ) : null
+      }
+      /*
+       * The cross-border search scope, parked and idle only — the SAME
+       * control on the SAME condition, rendered after the map. Crossing the
+       * border stays DELIBERATE: one tap, clearly labelled, never a side
+       * effect of typing. It swaps only which country this search asks
+       * about — the region setting, the units and the truck are untouched.
+       */
+      parkedSearchScopeSlot={
+        pilot.active && !fullScreen && lcState === 'idle' ? (
+          <button
+            type="button"
+            onClick={() => setSearchRegion((r) => (r === 'CA' ? 'US' : 'CA'))}
+            className="min-h-16 w-full rounded-cockpit border border-line bg-nav-surface px-3 text-lg text-ink"
+          >
+            {crossBorderSearchLabel(searchRegion)}
+          </button>
         ) : null
       }
       /*
@@ -2640,6 +2734,26 @@ export function DrivingScreen({
              * screen has no way to open the long form, so the two states the
              * control used to switch between are one state.
              */
+            /*
+             * PARKED, THE TWO HALVES ARE PLACED APART (NAV-ENTRY-3).
+             *
+             * `order-3` puts the primary flow — what was picked, and the
+             * Start that commits to it — directly under the destination
+             * search and above the map. `order-11` sends the optional half
+             * (the pilot briefing, the road-test report, the debug log) past
+             * the map with the other supporting material.
+             *
+             * Measured before this split: hoisting the component as ONE
+             * block put 2,192 px of diagnostic tooling between Start and the
+             * map, and pushed the parked map to 2,451 px — effectively gone.
+             * The seam is the component's own — its source has said
+             * "optional, below the primary flow on purpose" since the
+             * startup-simplification round — and the prop defaults leave
+             * every other caller rendering exactly as it did before.
+             */
+            rootClassName={fullScreen ? 'space-y-4' : 'contents'}
+            primaryClassName={fullScreen ? '' : 'order-3 space-y-4'}
+            optionalClassName={fullScreen ? '' : 'order-11 space-y-4'}
             setupConfigured
             setupOpen={false}
             setupSummarySlot={
