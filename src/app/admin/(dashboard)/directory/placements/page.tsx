@@ -165,14 +165,18 @@ async function load(query: string, targetId: string, schema: FeaturedSchema) {
             .order('name')
             .limit(20)
         : Promise.resolve({ data: [] as Record<string, unknown>[] }),
-      // Featured-listing opportunities at ANY stage, not only the activatable
-      // ones. An operator whose deal is in the wrong stage needs to see it in
-      // the picker and read why it is refused; an empty picker would leave them
-      // guessing whether the row exists at all.
+      // PAID opportunities at ANY stage, not only the activatable ones. An
+      // operator whose deal is in the wrong stage needs to see it in the picker
+      // and read why it is refused; an empty picker would leave them guessing
+      // whether the row exists at all.
+      //
+      // Both paid offers, because both activation forms on this page need one:
+      // the featured checklist and the corridor form. Each option names its
+      // offer, so choosing the wrong one is visible before it is refused.
       supabase
         .from('sponsors')
         .select(SALE_COLS)
-        .eq('tier_interest', 'featured-listing')
+        .in('tier_interest', ['featured-listing', 'corridor-sponsor'])
         .order('created_at', { ascending: false })
         .limit(50),
       // The listing under review is loaded by id rather than taken from the
@@ -262,7 +266,8 @@ function OpportunityPicker({
       <option value="">Choose the opportunity that paid…</option>
       {opportunities.map((o) => (
         <option key={o.id} value={o.id}>
-          {o.company} — {STAGE_LABEL[o.sale.stage]}
+          {o.company} — {o.sale.offerId ? getOffer(o.sale.offerId).name : 'no offer'} ·{' '}
+          {STAGE_LABEL[o.sale.stage]}
           {o.sale.paymentConfirmed ? ' · paid' : ' · unpaid'}
           {o.sale.term ? ` · ${o.sale.term}` : ''}
         </option>
@@ -810,6 +815,7 @@ export default async function PlacementsPage({
       )}
 
       <form
+        id="corridor"
         action={activateCorridorSponsorAction}
         className="mt-6 grid gap-3 rounded-card border border-line bg-asphalt-800 p-5 sm:grid-cols-3"
       >
@@ -856,8 +862,20 @@ export default async function PlacementsPage({
           <input name="reviewer" placeholder="Shawn" required className={input} />
         </label>
         <label className={label}>
-          CRM row id (required)
-          <input name="sponsor_id" required className={input} />
+          Which opportunity paid for this?
+          {opportunities.length === 0 ? (
+            <input name="sponsor_id" required className={input} placeholder="CRM row id" />
+          ) : (
+            <select name="sponsor_id" required defaultValue={saleId} className={input}>
+              <option value="">Choose the opportunity that paid…</option>
+              {opportunities.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.company} — {STAGE_LABEL[o.sale.stage]}
+                  {o.sale.paymentConfirmed ? ' · paid' : ' · unpaid'}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
         <label className={label}>
           Type ACTIVATE to confirm

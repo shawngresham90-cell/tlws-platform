@@ -575,9 +575,13 @@ export function activationHandoffHref(view: OpportunityView): string | null {
   }
 
   if (view.offerId === 'corridor-sponsor') {
-    // Corridor sponsorship has no per-listing checklist; the console's own
-    // activation form is the destination.
-    return '/admin/directory/placements#corridor';
+    // Corridor sponsorship has no per-listing checklist — its activation form
+    // on the placements console is the destination. The opportunity travels
+    // with it all the same: that form asks for the paying CRM row, and asking
+    // an operator to retype a UUID is the exact defect REVENUE-3 removed from
+    // the featured side.
+    params.set('sale', view.id);
+    return `/admin/directory/placements?${params.toString()}#corridor`;
   }
 
   // A free listing claim is not a placement and has nothing to activate.

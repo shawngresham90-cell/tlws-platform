@@ -472,22 +472,34 @@ export default async function RevenuePage({
   return (
     <div className="max-w-5xl">
       <h1 className="font-display text-2xl uppercase text-ink">Directory revenue</h1>
+      {/* ONE LINE ABOVE THE QUEUE.
+          Measured at 360px: the offer/capacity paragraph and the "takes no
+          payment" paragraph together pushed the first card of Today's Money to
+          776px — below the fold on the phone this is worked from between calls.
+          A console whose whole purpose is "open it and see who to call" cannot
+          spend a screen on standing text, so the detail moved into the
+          collapsible below and the queue starts immediately. */}
       <p className="mt-2 text-sm text-muted">
-        {OFFERS.map((o) => `${o.name} ${priceLabel(o)}`).join(' · ')}. Capacity:{' '}
-        {PRIMARY_CORRIDOR_SPONSORS} primary sponsor per corridor page, up to {FEATURED_PER_PAGE}{' '}
-        sponsored listings per category or corridor page.
+        <span className="font-semibold text-ink">Takes no payment. Contacts nobody.</span> It
+        records what already happened.
       </p>
-      <p className="mt-2 text-sm text-muted">
-        <span className="font-semibold text-ink">
-          This console takes no payment and contacts nobody.
-        </span>{' '}
-        It records what has already happened. Turning a placement on is a separate, deliberate step
-        on{' '}
-        <Link href="/admin/directory/placements" className="text-signal underline">
-          the placements console
-        </Link>
-        , and it refuses any deal that has not cleared the checks below.
-      </p>
+      <details className="mt-2 rounded-card border border-line bg-asphalt-800 px-4 py-3">
+        <summary className="min-h-[44px] cursor-pointer py-2 text-sm text-muted">
+          Offers, capacity and what this console will not do
+        </summary>
+        <p className="mt-2 text-sm text-muted">
+          {OFFERS.map((o) => `${o.name} ${priceLabel(o)}`).join(' · ')}. Capacity:{' '}
+          {PRIMARY_CORRIDOR_SPONSORS} primary sponsor per corridor page, up to {FEATURED_PER_PAGE}{' '}
+          sponsored listings per category or corridor page.
+        </p>
+        <p className="mt-2 text-sm text-muted">
+          Turning a placement on is a separate, deliberate step on{' '}
+          <Link href="/admin/directory/placements" className="text-signal underline">
+            the placements console
+          </Link>
+          , and it refuses any deal that has not cleared the checks here.
+        </p>
+      </details>
 
       {featuredSchema !== 'ready' && (
         <p className="mt-4 rounded-card border border-diesel bg-diesel/10 px-4 py-3 text-sm text-diesel-300">
@@ -1124,10 +1136,15 @@ export default async function RevenuePage({
                   <tr key={p.listing.id}>
                     <td className="px-4 py-3 align-top">
                       <div className="break-words text-ink">{p.listing.name}</div>
+                      {/* 44px like every other control here. Measured at 16px by
+                          the REVENUE-4 bench: the prospect shortlist is now the
+                          first thing an owner works from an empty pipeline, so
+                          its links are aimed at on a phone rather than being
+                          incidental table chrome. */}
                       {p.listing.detailSlug && (
                         <Link
                           href={`/directory/location/${p.listing.detailSlug}`}
-                          className="mt-1 inline-block break-all text-xs text-signal underline"
+                          className="mt-1 inline-flex min-h-[44px] items-center break-all text-xs text-signal underline"
                         >
                           view listing
                         </Link>

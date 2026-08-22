@@ -759,9 +759,22 @@ check(
 
 check(
   'RQ57',
-  'a corridor sponsorship routes to its own activation form',
-  activationHandoffHref(view({}, { ...PAID_ROW, tierInterest: 'corridor-sponsor' })) ===
-    '/admin/directory/placements#corridor',
+  'a corridor sponsorship routes to its own form, carrying the opportunity',
+  (() => {
+    // Corridor sponsorship has no per-listing checklist, so the destination is
+    // its own activation form — but that form asks for the paying CRM row, so
+    // the opportunity travels with it exactly as it does for a featured sale.
+    const href = activationHandoffHref(
+      view({ id: 'op9' }, { ...PAID_ROW, tierInterest: 'corridor-sponsor' }),
+    );
+    return (
+      href !== null &&
+      href.startsWith('/admin/directory/placements?') &&
+      href.includes('sale=op9') &&
+      href.endsWith('#corridor')
+    );
+  })(),
+  activationHandoffHref(view({ id: 'op9' }, { ...PAID_ROW, tierInterest: 'corridor-sponsor' })),
 );
 
 check(
@@ -1122,9 +1135,15 @@ const mutations: Array<[string, () => boolean]> = [
   ],
   [
     'the activation handoff loses the opportunity',
+    // GLOBAL: both offer branches set it now, and a non-global replace would
+    // strip one and leave the other, making the mutation read as uncaught for
+    // the wrong reason. The predicate asserts BOTH branches still carry it.
     () =>
-      sourceMutation(QUEUE, /params\.set\('sale', view\.id\);/, '', (t) =>
-        /params\.set\('sale', view\.id\);/.test(t),
+      sourceMutation(
+        QUEUE,
+        /params\.set\('sale', view\.id\);/g,
+        '',
+        (t) => (t.match(/params\.set\('sale', view\.id\);/g) ?? []).length === 2,
       ),
   ],
   [
