@@ -1140,6 +1140,88 @@ check(
   );
 }
 
+/* ============================== 12b · the operations package is a contract */
+
+/**
+ * The operations doc is the only thing standing between a correct migration and
+ * a blanket `supabase db push`. Five migrations on this project are
+ * deliberately unapplied, so "apply the pending migrations" is not a safe
+ * instruction here — and a document that omitted that would be worse than no
+ * document, because it would read as complete.
+ */
+{
+  const ops = src('docs/operations/revenue-2-featured-expiry.md');
+  const verifier = src('scripts/verify-featured-term-migration.mjs');
+
+  extra('the operations doc names migration 057 specifically', /migration 057/i.test(ops));
+  extra(
+    'it forbids a blanket migration command, in those words',
+    /DO NOT USE A BLANKET MIGRATION COMMAND/.test(ops) && /supabase db push/.test(ops),
+  );
+  // Every one of the five must be named. A list that quietly omitted one would
+  // be the exact failure it exists to prevent.
+  extra(
+    'it names all five deliberately unapplied migrations',
+    ['049', '050', '051', '052', '053'].every((n) => ops.includes(n)),
+  );
+  extra(
+    'it requires the ledger to be checked before AND after',
+    /Ledger before/i.test(ops) && /Ledger and object after/i.test(ops),
+  );
+  // The ledger is provably incomplete on this project (047 is applied but has
+  // no row), so a procedure that trusted it alone would be wrong.
+  extra(
+    'it warns that the ledger is not a complete record',
+    /ledger is not a complete record/i.test(ops) && /047/.test(ops),
+  );
+  extra(
+    'it states the ISR staleness bound rather than claiming instant expiry',
+    /up to five minutes/i.test(ops) && /revalidate = 300/.test(ops),
+  );
+  extra(
+    'it documents the rollback and its refusal',
+    /Rolling back/i.test(ops) && /Do not run that while/i.test(ops),
+  );
+  extra(
+    'it tells the operator to redeploy after a rollback',
+    /After a rollback, \*\*redeploy\*\*/.test(ops),
+  );
+  extra('it records the live preconditions that were actually checked', /2,454/.test(ops));
+  extra(
+    'it states that no payment processor or outreach was added',
+    /No payment processor/i.test(ops) && /No outreach automation/i.test(ops),
+  );
+
+  extra(
+    'the verifier writes nothing and says so',
+    /IT WRITES NOTHING\. EVER\./.test(verifier) &&
+      /const inRollback = \(body\) => `begin;/.test(verifier),
+  );
+  extra(
+    'the verifier issues no commit anywhere',
+    !/\bcommit;/.test(verifier.replace(/\/\*[\s\S]*?\*\//g, ' ')),
+  );
+  extra(
+    'the verifier refuses a production ref unless explicitly overridden',
+    /PRODUCTION_REFS/.test(verifier) &&
+      /FEATURED_TERM_VERIFY_ALLOW_PRODUCTION/.test(verifier) &&
+      /No connection was opened/.test(verifier),
+  );
+  extra(
+    'the production rail runs BEFORE any connection is opened',
+    verifier.indexOf('const namedRef = PRODUCTION_REFS.find') <
+      verifier.indexOf('serverVersion = run('),
+  );
+  extra(
+    'the verifier skips loudly rather than passing when it cannot run',
+    /This is NOT a pass/.test(verifier),
+  );
+  extra(
+    'the verifier reads no credential from anywhere but the environment',
+    !/postgres:\/\//.test(verifier),
+  );
+}
+
 /* ============================================ 13 · end-to-end lifecycle */
 
 /**

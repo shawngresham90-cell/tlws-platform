@@ -43,6 +43,7 @@
 import { spawn } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import * as fs from 'node:fs';
+import * as net from 'node:net';
 import * as path from 'node:path';
 
 function arg(name, fallback = null) {
@@ -90,6 +91,13 @@ const FIXTURE_IDS = [
   '0f000000-0000-4000-8000-000000000002',
   '0f000000-0000-4000-8000-000000000003',
 ];
+
+/**
+ * The placements panel itself, not the admin shell around it. The sidebar is
+ * pre-existing chrome on every admin page; what this milestone owns is the
+ * panel and the controls it adds to it.
+ */
+const ADMIN_PANEL = 'div.max-w-4xl';
 
 const WIDTHS = [
   { w: 360, h: 740 },
@@ -262,9 +270,72 @@ function adminContext(browser) {
   });
 }
 
+/**
+ * Compare the controls on a PLACEMENT card against those on an ordinary card.
+ *
+ * Absolute target sizes on a directory card are pre-existing site typography.
+ * What has to be true of this milestone is narrower and checkable: a card that
+ * carries a Sponsored badge must not contain any control an ordinary card
+ * lacks, and none of its controls may be smaller than the matching control on
+ * an ordinary card. The badge itself is a <span>, not a control — nothing about
+ * a paid placement is meant to be tappable that is not tappable anyway.
+ */
+async function controlShapes(page) {
+  return page.evaluate(() => {
+    const cards = [...document.querySelectorAll('div.rounded-card')].filter((d) =>
+      d.querySelector(':scope > h3'),
+    );
+    const describe = (card) =>
+      [...card.querySelectorAll('a, button, input, select, textarea')].map((n) => ({
+        tag: n.tagName.toLowerCase(),
+        // The label text differs per listing, so shape is keyed on the role the
+        // control plays, not on what it says.
+        role: n.getAttribute('href')?.startsWith('tel:')
+          ? 'phone'
+          : n.closest('h3')
+            ? 'title'
+            : (n.getAttribute('rel') ?? n.tagName.toLowerCase()),
+        h: Math.round(n.getBoundingClientRect().height),
+      }));
+    const isSponsored = (card) =>
+      [...card.querySelectorAll(':scope > span')].some(
+        (sp) => (sp.textContent ?? '').trim() === 'Sponsored',
+      );
+    const placement = cards.find(isSponsored);
+    const ordinaries = cards.filter((c) => !isSponsored(c));
+    if (!placement || ordinaries.length === 0)
+      return { placementOnly: [], smallerThanOrdinary: [], note: 'one of the two kinds is absent' };
+
+    const p = describe(placement);
+    // Compare against what ordinary cards do COLLECTIVELY, not against one
+    // arbitrary neighbour. A single card may simply have no phone number, and
+    // "the sponsored one has a phone link" would then read as a finding about
+    // sponsorship when it is a fact about that row's data.
+    const all = ordinaries.flatMap(describe);
+    const ordinaryRoles = new Set(all.map((c) => c.role));
+    // For size, the fairest bar is the SMALLEST ordinary control of that role:
+    // a placement control may not be smaller than any ordinary one.
+    const o = [...ordinaryRoles].map((role) => ({
+      role,
+      h: Math.min(...all.filter((c) => c.role === role).map((c) => c.h)),
+    }));
+    const placementOnly = p
+      .filter((c) => !ordinaryRoles.has(c.role))
+      .map((c) => `${c.role} h=${c.h}`);
+    const smallerThanOrdinary = p
+      .filter((c) => {
+        const match = o.find((x) => x.role === c.role);
+        return match && c.h < match.h;
+      })
+      .map((c) => `${c.role} h=${c.h}`);
+    return { placementOnly, smallerThanOrdinary, placement: p, ordinary: o };
+  });
+}
+
 function startMock(env) {
   return spawn('node', [path.join('scripts', 'bench', 'mock-postgrest.mjs')], {
     cwd: TREE,
+    detached: true,
     env: {
       ...process.env,
       MOCK_PORT: String(MOCK_PORT),
@@ -281,9 +352,60 @@ function startMock(env) {
   });
 }
 
+/**
+ * Wait until nothing is LISTENING on the server port.
+ *
+ * A raw TCP connect, not a fetch: `fetch` can be satisfied by an outbound
+ * proxy and then reports a dead port as alive, which is exactly how the first
+ * version of this check passed while the restart underneath it was failing.
+ */
+function portInUse() {
+  return new Promise((resolve) => {
+    const sock = net.connect({ host: '127.0.0.1', port: PORT });
+    const done = (v) => {
+      sock.destroy();
+      resolve(v);
+    };
+    sock.once('connect', () => done(true));
+    sock.once('error', () => done(false));
+    sock.setTimeout(1000, () => done(false));
+  });
+}
+
+async function waitForPortFree(tries = 60) {
+  for (let i = 0; i < tries; i++) {
+    if (!(await portInUse())) return true;
+    await sleep(500);
+  }
+  return false;
+}
+
+/**
+ * Kill a child AND its descendants.
+ *
+ * `spawn('npx', …).kill()` signals npx, which does not forward the signal to
+ * the `next-server` it launched — so the port stays bound, the replacement
+ * loses the bind race, and every assertion after it describes a server on its
+ * way out. The children are started detached, in their own process group, and
+ * killed by group.
+ */
+function killTree(child) {
+  if (!child?.pid) return;
+  try {
+    process.kill(-child.pid, 'SIGTERM');
+  } catch {
+    try {
+      child.kill('SIGTERM');
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
 function startServer() {
   return spawn('npx', ['next', 'start', '-p', String(PORT)], {
     cwd: TREE,
+    detached: true,
     env: {
       ...process.env,
       NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${MOCK_PORT}`,
@@ -295,7 +417,10 @@ function startServer() {
       NO_PROXY: '*',
       no_proxy: '*',
     },
-    stdio: ['ignore', 'ignore', 'inherit'],
+    // Next writes render errors to STDOUT. Discarding it turns a
+    // partially-rendered page into an assertion mystery with no evidence, which
+    // cost a debugging cycle here — so both streams are kept.
+    stdio: ['ignore', 'inherit', 'inherit'],
   });
 }
 
@@ -407,11 +532,27 @@ async function main() {
       /* --------------------------------------- layout under the real content */
       const over = await horizontalOverflow(page);
       check(`${w}: the corridor page does not scroll sideways`, !over.over, over);
-      // Scoped to the listing grid: the site's global nav and card titles are
-      // pre-existing layout on 2,454 pages that this milestone neither
-      // introduced nor may change. What REVENUE-2 owns is the placement cards.
-      const small = await smallTargets(page, 'div.rounded-card');
-      check(`${w}: controls inside a placement card clear 44px`, small.length === 0, small);
+      // A placement card must introduce nothing an ordinary card does not
+      // already have.
+      //
+      // The site's global nav, card title links and phone links are
+      // pre-existing layout on 2,454 pages. They measure under 44px today, they
+      // measured under 44px before this milestone, and changing card typography
+      // is not REVENUE-2's to do — a bench that failed on them would be
+      // reporting someone else's finding as this branch's regression, which is
+      // how a real assertion gets deleted for being noisy. So the comparison is
+      // relative: same shapes, same sizes, sponsored or not.
+      const shapes = await controlShapes(page);
+      check(
+        `${w}: a placement card introduces no control an ordinary card lacks`,
+        shapes.placementOnly.length === 0,
+        shapes,
+      );
+      check(
+        `${w}: a placement card's controls are the same size as an ordinary card's`,
+        shapes.smallerThanOrdinary.length === 0,
+        shapes,
+      );
       check(`${w}: no console errors`, consoleErrors.length === 0, consoleErrors.slice(0, 3));
 
       await ctx.close();
@@ -425,10 +566,12 @@ async function main() {
 
       await setClock(3_600_000);
       await page.goto(`${base}/admin/directory/placements`, { waitUntil: 'networkidle' });
+      // Case-insensitive throughout: `innerText` reflects CSS `text-transform`.
       const liveText = await page.locator('body').innerText();
       check(
         'admin: a live placement reads Active',
-        /Active/.test(liveText) && !/Term expired/.test(liveText),
+        /\bActive\b/i.test(liveText) && !/Term expired/i.test(liveText),
+        liveText.slice(0, 200),
       );
 
       await setClock(-2_000);
@@ -439,17 +582,23 @@ async function main() {
       // than emergency.
       check(
         'admin: an expired placement reads as ended, in words',
-        /Term expired/.test(expiredText),
+        /Term expired/i.test(expiredText),
         expiredText.slice(-400),
       );
       check(
         'admin: an expired placement is not described as still showing',
-        !/STILL SHOWING/.test(expiredText),
+        !/STILL SHOWING/i.test(expiredText),
       );
       check('admin: a renewal control is offered for it', /Renew/i.test(expiredText));
 
-      const adminSmall = await smallTargets(page, 'main');
-      check('admin: every control clears 44px', adminSmall.length === 0, adminSmall);
+      // Scoped to the placements panel: the admin shell's sidebar is
+      // pre-existing chrome on every admin page and not this milestone's.
+      const adminSmall = await smallTargets(page, ADMIN_PANEL);
+      check(
+        'admin: every control in the placements panel clears 44px',
+        adminSmall.length === 0,
+        adminSmall,
+      );
       const adminOver = await horizontalOverflow(page);
       check('admin: the console does not scroll sideways at 1280', !adminOver.over, adminOver);
 
@@ -516,9 +665,15 @@ async function main() {
       // for the life of the process — deliberately, so that applying the
       // migration under a running server is picked up and never un-picked-up.
       // Going the other way is a rollback, and a rollback restarts the server.
-      server.kill();
-      mock.kill();
-      await sleep(1000);
+      killTree(server);
+      killTree(mock);
+      // Wait for the port to actually free. Without this the replacement server
+      // loses the bind race, `waitFor` is satisfied by the DYING old one, and
+      // every assertion after it describes a server that is on its way out —
+      // which is exactly what happened the first time this ran.
+      const freed = await waitForPortFree();
+      check('pre-migration: the old server released its port before the restart', freed);
+      await sleep(500);
       mock = startMock({ MOCK_FEATURED_SCHEMA: 'unavailable' });
       if (!(await waitFor(`http://127.0.0.1:${MOCK_PORT}/__mock/health`)))
         throw new Error('mock did not restart');
@@ -574,22 +729,58 @@ async function main() {
         /Featured-expiry schema is not active yet/i.test(text),
         text.slice(-400),
       );
+
+      // The per-candidate refusal only renders once a candidate is on screen,
+      // so the console has to be driven the way an owner would drive it:
+      // search for the listing you intend to sell, and see what you are offered.
+      await page.goto(`${base}/admin/directory/placements?q=Bench+Featured+Placement+4`, {
+        waitUntil: 'networkidle',
+      });
+      // `innerText` reflects CSS `text-transform`, so a heading written in
+      // sentence case comes back SHOUTING. Every comparison against rendered
+      // text in this file is case-insensitive for that reason — a
+      // case-sensitive one fails on styling and reads as a product defect,
+      // which cost a debugging cycle here before it was pinned down.
+      const searched = await page.locator('body').innerText();
       check(
-        'pre-migration admin: activation is stated to be blocked',
-        /Activation is blocked until migration 057/i.test(text),
+        'pre-migration admin: a candidate listing is found',
+        /bench featured placement 4/i.test(searched),
+        {
+          url: page.url(),
+          saysNoMatch: /No published listing matches/i.test(searched),
+          saysReadFailed: /Could not read placement data/i.test(searched),
+        },
+      );
+      check(
+        'pre-migration admin: activation is stated to be blocked for that candidate',
+        /Activation is blocked until migration 057/i.test(searched),
+        searched.slice(-400),
       );
       // The one thing that must NOT happen before the migration: a placement
-      // written with no column to hold its term.
-      const activateEnabled = await page.evaluate(
+      // written with no column to hold its term. Scoped to the FEATURED
+      // control — a corridor sponsorship is a different product on a different
+      // table with its own window, and it is meant to stay sellable.
+      const featuredActivate = await page.evaluate(
         () =>
           [...document.querySelectorAll('button')].filter(
-            (b) => /^\s*Activate/i.test(b.textContent ?? '') && !b.disabled,
+            (b) => /Activate featured listing/i.test(b.textContent ?? '') && !b.disabled,
           ).length,
       );
       check(
-        'pre-migration admin: no enabled Activate control is offered',
-        activateEnabled === 0,
-        activateEnabled,
+        'pre-migration admin: no featured Activate control is offered',
+        featuredActivate === 0,
+        featuredActivate,
+      );
+      const corridorActivate = await page.evaluate(
+        () =>
+          [...document.querySelectorAll('button')].filter((b) =>
+            /Activate corridor sponsor/i.test(b.textContent ?? ''),
+          ).length,
+      );
+      check(
+        'pre-migration admin: corridor sponsorship stays sellable — it has its own window',
+        corridorActivate === 1,
+        corridorActivate,
       );
       // And the console must still say the placement needs stopping by hand,
       // because before the migration that is the truth.
@@ -601,8 +792,8 @@ async function main() {
     }
   } finally {
     await browser.close();
-    server.kill();
-    mock.kill();
+    killTree(server);
+    killTree(mock);
   }
 
   console.log(`\nfeatured-expiry bench: ${passed} passed, ${failed} failed`);

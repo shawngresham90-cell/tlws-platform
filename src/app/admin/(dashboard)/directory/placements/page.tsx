@@ -124,11 +124,21 @@ async function load(query: string, schema: FeaturedSchema) {
   }
 }
 
-const input = 'w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
+// 44px minimum on every control, matching the revenue console.
+//
+// Found by the REVENUE-2 browser bench: the buttons on this page measured 30px
+// and the inputs 38px, under the touch target the owner actually works from —
+// this console gets used on a phone between calls, not only at a desk. The
+// revenue console was raised to 44px in REVENUE-1 and this page was missed;
+// REVENUE-2 then added a Renew form to it, so the gap is now this milestone's
+// to close rather than someone else's to inherit.
+const input =
+  'min-h-[44px] w-full rounded-card border border-line bg-asphalt px-3 py-2 text-sm text-ink';
 const label = 'block text-xs text-muted';
 const btn =
-  'rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt hover:bg-signal-600';
-const btnGhost = 'rounded-card border border-line px-3 py-1.5 text-xs text-ink hover:border-signal';
+  'min-h-[44px] rounded-card bg-signal px-4 py-2 font-display text-sm uppercase tracking-wide text-asphalt hover:bg-signal-600';
+const btnGhost =
+  'min-h-[44px] rounded-card border border-line px-3 py-2 text-xs text-ink hover:border-signal';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const fmt = (iso: string | null) => (iso ? iso.slice(0, 10) : '—');
