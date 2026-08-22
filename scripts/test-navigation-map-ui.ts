@@ -784,14 +784,29 @@ const T0 = 1_754_000_000_000;
   // grants the same box the dynamic-import placeholder promises — and
   // only while a map is actually mounted, so no empty bordered box
   // renders before Enable location.
+  /*
+   * NAV-ENTRY-2 changed the BOX, not the invariant. The parked map used to
+   * be a fixed 288 px growing to 384 px at the `sm` WIDTH breakpoint —
+   * which handed the tallest map to the shortest screens, the two
+   * landscape phone shapes. It is a viewport fraction with a floor now.
+   *
+   * What this check has always protected is unchanged and still checked:
+   * the wrapper grants a box ONLY while a map is mounted (no empty
+   * bordered box before Enable location), and the box it grants is the
+   * SAME one the dynamic-import placeholder promises — the two occurrences
+   * are counted so they cannot drift apart and reintroduce the jump when
+   * the map chunk lands.
+   */
+  const PARKED_MAP_BOX =
+    'h-[38dvh] min-h-[200px] [@media(max-height:480px)]:min-h-[150px] w-full overflow-hidden rounded-cockpit border border-line';
   check(
     '34. parked, the map wrapper grants the placeholder box only while a map is mounted',
     screen.includes('mapSlot !== null') &&
-      screen.includes(
-        'relative h-72 w-full overflow-hidden rounded-cockpit border border-line sm:h-96',
-      ) &&
-      (screen.match(/h-72/g) ?? []).length >= 2 &&
-      (screen.match(/sm:h-96/g) ?? []).length >= 2,
+      screen.includes(`relative ${PARKED_MAP_BOX}`) &&
+      (screen.match(/h-\[38dvh\]/g) ?? []).length >= 2 &&
+      (screen.match(/min-h-\[200px\]/g) ?? []).length >= 2 &&
+      (screen.match(/min-h-\[150px\]/g) ?? []).length >= 2 &&
+      !screen.includes('sm:h-96'),
   );
 }
 
