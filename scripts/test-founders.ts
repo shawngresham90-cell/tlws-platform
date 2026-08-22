@@ -19,7 +19,13 @@ import {
   tierRemaining,
   tierUsage,
 } from '@/lib/community/campaign';
-import { TIER_ORDER, TIER_CAPACITY, FOUNDER_TIERS } from '@/components/community/tiers';
+import {
+  TIER_ORDER,
+  TIER_CAPACITY,
+  TIER_AMOUNT_CENTS,
+  FOUNDER_TIERS,
+  tierAmountLabel,
+} from '@/components/community/tiers';
 
 let passed = 0;
 let failed = 0;
@@ -441,6 +447,181 @@ const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(
   );
   check('rollback returns to 26 founders', /expected 26 founders/.test(rollback));
   check('rollback deletes exactly one row', /Expected to delete exactly 1 row/.test(rollback));
+}
+
+/* ----------------------- approved tier contribution amounts ----------------------- */
+// Iron $1,000 / Steel $500 / Brick $100 are confirmed. The two sponsor tiers
+// have no approved figure and must stay contact-based rather than inventing one.
+{
+  check('Iron Founder is $1,000', TIER_AMOUNT_CENTS.iron === 100_000);
+  check('Steel Founder is $500', TIER_AMOUNT_CENTS.steel === 50_000);
+  check('Brick Founder is $100', TIER_AMOUNT_CENTS.brick === 10_000);
+  check('Equipment Sponsor has no set amount', TIER_AMOUNT_CENTS.equipment_sponsor === null);
+  check('Student Sponsor has no set amount', TIER_AMOUNT_CENTS.student_sponsor === null);
+
+  const byValue = Object.fromEntries(FOUNDER_TIERS.map((t) => [t.value, t]));
+  check('Iron renders "$1,000"', tierAmountLabel(byValue.iron) === '$1,000');
+  check('Steel renders "$500"', tierAmountLabel(byValue.steel) === '$500');
+  check('Brick renders "$100"', tierAmountLabel(byValue.brick) === '$100');
+  check(
+    'Equipment Sponsor renders a contact-based label, not a number',
+    !tierAmountLabel(byValue.equipment_sponsor).includes('$'),
+  );
+  check(
+    'Student Sponsor renders a contact-based label, not a number',
+    !tierAmountLabel(byValue.student_sponsor).includes('$'),
+  );
+
+  // Ordering is unchanged by adding amounts: sponsors first, then Iron > Steel > Brick.
+  check(
+    'priced tiers descend Iron > Steel > Brick',
+    TIER_AMOUNT_CENTS.iron! > TIER_AMOUNT_CENTS.steel! &&
+      TIER_AMOUNT_CENTS.steel! > TIER_AMOUNT_CENTS.brick!,
+  );
+  check(
+    'wall/recognition order is untouched',
+    TIER_ORDER.join(',') === 'equipment_sponsor,student_sponsor,iron,steel,brick',
+  );
+
+  // Steel is $500 — the same figure stored for Lauren. That agreement is what
+  // makes the tier amount correct; it must NOT become a per-founder display.
+  check('Steel tier amount matches the Steel contribution', TIER_AMOUNT_CENTS.steel === 50_000);
+}
+
+/* --------------- the page shows the amounts and no longer stalls --------------- */
+{
+  const page = readFileSync('src/app/(community)/founders/page.tsx', 'utf8');
+
+  check('the "amounts TBD" placeholder is gone', !/amounts TBD/i.test(page));
+  check('the "being finalized" copy is gone', !/being finalized/i.test(page));
+  check('the Placeholder marker is no longer imported', !/\bPlaceholder\b/.test(page));
+
+  check('tier cards render the amount from the tiers module', page.includes('tierAmountLabel'));
+  check('tier cards carry an accessible amount label', /aria-label=\{/.test(page));
+
+  // The FAQ array is also the FAQPage JSON-LD source (AcademyFaq emits schema
+  // from the same array it renders), so asserting the copy asserts both.
+  check('FAQ states Iron Founder is $1,000', /Iron Founder is \$1,000/.test(page));
+  check('FAQ states Steel Founder is \\$500', /Steel Founder is \$500/.test(page));
+  check('FAQ states Brick Founder is $100', /Brick Founder is \$100/.test(page));
+  check(
+    'FAQ keeps the sponsor tiers contact-based',
+    /Equipment Sponsor and Student Sponsor don’t have a set figure/.test(page),
+  );
+  check(
+    'FAQ says individual amounts are never shown beside a name',
+    /never displayed next to their name/.test(page),
+  );
+  check('the personal follow-up flow is preserved', /Shawn follows up personally/.test(page));
+  check('no payment is collected on the page', /No payment is collected here/.test(page));
+
+  // Nothing that would amount to selling: no checkout, no card processing, no
+  // guarantee, no tax claim beyond the existing "not tax advice" disclaimer.
+  for (const banned of [
+    'checkout',
+    'add to cart',
+    'stripe',
+    'card number',
+    'guarantee',
+    'refund',
+  ]) {
+    check(`page adds no "${banned}"`, !new RegExp(banned, 'i').test(page));
+  }
+  check('page still declines to give tax advice', /tax advice/.test(page));
+
+  // Lauren's individual contribution is still not displayed anywhere on the page.
+  check('page never prints a per-founder amount', !/founder\.amount|amount_cents/i.test(page));
+  const wallList = readFileSync('src/components/community/FoundersWallList.tsx', 'utf8');
+  check('the wall list never references an amount', !/amount/i.test(wallList));
+
+  const form = readFileSync('src/components/community/BecomeFounderForm.tsx', 'utf8');
+  check('the interest form labels tiers with the same amounts', form.includes('tierAmountLabel'));
+  // "card" alone would match the rounded-card utility class, so match the
+  // payment senses specifically.
+  check(
+    'the interest form still collects no payment',
+    !/stripe|checkout|card number|credit card|cardholder|payment method/i.test(form),
+  );
+}
+
+/* ------------- the permission-hardening statement does what it says ------------- */
+// Part 2 of this change is a database permission change, not code — so the SQL
+// is asserted here the same way the Lauren statement is.
+{
+  const apply = readFileSync('data/founders/privacy-hardening-2026-07-26/APPLY.sql', 'utf8');
+
+  check('hardening is transactional', /^begin;/m.test(apply) && /^commit;/m.test(apply));
+  check(
+    'it clears the blanket grants first',
+    /revoke all on public\.founders from anon, authenticated;/.test(apply),
+  );
+  check(
+    'it re-grants only column-level SELECT on founders',
+    /grant select \([\s\S]*?\) on public\.founders to anon, authenticated;/.test(apply),
+  );
+
+  // The whole point: these columns must not appear in the granted list.
+  const grantBlock = apply.split('grant select (')[1]?.split(') on public.founders')[0] ?? '';
+  for (const restricted of [
+    'amount_cents',
+    'payment_ref',
+    'payment_provider',
+    'status',
+    'created_at',
+    'updated_at',
+  ]) {
+    check(`anon is not granted ${restricted}`, !grantBlock.includes(restricted));
+  }
+  for (const allowed of [
+    'id',
+    'display_name',
+    'business_name',
+    'business_url',
+    'tier',
+    'position',
+    'message',
+    'logo_url',
+    'paid_at',
+    'is_public',
+  ]) {
+    check(`anon keeps ${allowed}`, grantBlock.includes(allowed));
+  }
+
+  check(
+    'it strips the write grants on campaign_settings',
+    /revoke all on public\.campaign_settings from anon, authenticated;/.test(apply),
+  );
+  check(
+    'the view no longer sums per-founder amounts',
+    !/sum\(amount_cents\)/.test(apply.split('create or replace view')[1] ?? ''),
+  );
+  check('the view stays security_invoker', /security_invoker = true/.test(apply));
+  check('RLS is not weakened', !/disable row level security|drop policy/i.test(apply));
+
+  // It must not modify a single founder row.
+  check('hardening inserts no founder row', !/insert\s+into\s+public\.founders/i.test(apply));
+  check('hardening updates no founder row', !/update\s+public\.founders/i.test(apply));
+  check('hardening deletes no founder row', !/delete\s+from\s+public\.founders/i.test(apply));
+  check('hardening does not move the campaign totals', !/set\s+raised_cents_override/i.test(apply));
+
+  // Guards.
+  check('it asserts the pre-change exposure', /found 16|all 16 founders columns/.test(apply));
+  check('it asserts the 27-founder state', /expected 27 founders/.test(apply));
+  check('it proves the denials as the anon role', /set local role anon/.test(apply));
+  check('it verifies the totals still read $9,555 / $1,995', /955500|199500/.test(apply));
+
+  const rollback = readFileSync('data/founders/privacy-hardening-2026-07-26/ROLLBACK.sql', 'utf8');
+  check('a permission rollback exists', /revoke all on public\.founders/.test(rollback));
+  check('the rollback restores the original view', /sum\(amount_cents\)/.test(rollback));
+  check('the rollback is transactional', /^begin;/m.test(rollback) && /^commit;/m.test(rollback));
+  check('the rollback touches no founder row', !/insert into public\.founders/i.test(rollback));
+
+  const probe = readFileSync(
+    'data/founders/privacy-hardening-2026-07-26/PROVE-UNPUBLISHED.sql',
+    'utf8',
+  );
+  check('the unpublished-row probe never commits', !/^commit;/m.test(probe));
+  check('the unpublished-row probe rolls back', /^rollback;/m.test(probe));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

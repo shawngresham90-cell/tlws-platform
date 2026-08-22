@@ -6,7 +6,7 @@ import { TextField, SelectField } from '@/components/apply/Fields';
 import { TurnstileWidget } from '@/components/apply/TurnstileWidget';
 import { SmsConsentField } from '@/components/conversion/SmsConsentField';
 import { leadAttribution } from '@/lib/attribution';
-import { FOUNDER_TIERS } from './tiers';
+import { FOUNDER_TIERS, tierAmountLabel } from './tiers';
 
 /**
  * "Become a founder" interest capture. No payment is processed here (payments
@@ -19,7 +19,13 @@ import { FOUNDER_TIERS } from './tiers';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+()\-.\s]{7,20}$/;
 
-const TIER_OPTIONS = FOUNDER_TIERS.map((t) => ({ value: t.value, label: t.label }));
+// Labels carry the tier amount so the dropdown can never disagree with the
+// cards above it — both read from FOUNDER_TIERS. Selecting a tier still commits
+// nothing: no rate is agreed and no payment is collected here.
+const TIER_OPTIONS = FOUNDER_TIERS.map((t) => ({
+  value: t.value,
+  label: `${t.label} — ${tierAmountLabel(t)}`,
+}));
 
 type Errors = Record<string, string>;
 

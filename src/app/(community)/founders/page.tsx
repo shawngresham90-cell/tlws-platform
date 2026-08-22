@@ -1,10 +1,11 @@
 import { Section, Button } from '@/components/ui';
-import { PageHero, Placeholder, AcademyFaq } from '@/components/academy';
+import { PageHero, AcademyFaq } from '@/components/academy';
 import {
   FundedStatusPanel,
   FoundersWallList,
   BecomeFounderForm,
   FOUNDER_TIERS,
+  tierAmountLabel,
 } from '@/components/community';
 import { getPublicFounders } from '@/lib/community/founders';
 import { tierRemaining, tierUsage } from '@/lib/community/campaign';
@@ -34,12 +35,20 @@ const FAQS = [
     a: 'It’s how the community built Trucking Life Academy. The school is funded, and the founders who backed it keep their name — and their business, if they have one — recognized on the wall.',
   },
   {
+    q: 'What does each tier cost?',
+    a: 'Iron Founder is $1,000, Steel Founder is $500, and Brick Founder is $100. Equipment Sponsor and Student Sponsor don’t have a set figure — those are arranged directly, because they depend on the equipment or the student being backed.',
+  },
+  {
     q: 'Is my contribution tax-deductible?',
     a: 'That depends on your situation and how the contribution is structured. We’ll confirm the details with you directly — don’t treat anything here as tax advice.',
   },
   {
     q: 'How do I actually pay?',
     a: 'You don’t pay on this page. Tell us you’re interested and Shawn follows up personally to arrange the contribution in whatever way works best for you.',
+  },
+  {
+    q: 'Is my contribution amount shown on the wall?',
+    a: 'No. The wall shows your name, your tier and your business if you have one. What any individual founder gave is never displayed next to their name — only the campaign total is public.',
   },
   {
     q: 'Can my business be listed?',
@@ -101,16 +110,31 @@ export default async function FoundersPage() {
         <div className="mb-10 max-w-2xl">
           <h2 className="display-section">Ways to found the school</h2>
           <p className="mt-4 text-muted">
-            Pick the level that fits. Exact contribution amounts are being finalized —{' '}
-            <Placeholder>amounts TBD</Placeholder> — so reach out and we’ll walk you through it.
+            Pick the level that fits. Nothing is collected on this page — tell us which tier you
+            want and Shawn follows up personally to arrange it.
           </p>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FOUNDER_TIERS.map((t) => {
             const open = tierRemaining(t.capacity, usage[t.value]);
+            const amount = tierAmountLabel(t);
             return (
               <div key={t.value} className="rounded-card border border-line bg-asphalt-800 p-6">
-                <h3 className="font-display text-xl text-signal">{t.label}</h3>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <h3 className="font-display text-xl text-signal">{t.label}</h3>
+                  <p
+                    className="font-display text-lg text-ink"
+                    // Screen readers get the relationship spelled out; sighted
+                    // users get the label and the figure side by side.
+                    aria-label={
+                      t.amountCents === null
+                        ? `${t.label}: contribution amount arranged directly with Shawn`
+                        : `${t.label}: ${amount} contribution`
+                    }
+                  >
+                    {amount}
+                  </p>
+                </div>
                 <p className="mt-2 text-sm text-muted">{t.blurb}</p>
                 {open !== null && (
                   <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted">
